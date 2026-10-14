@@ -1,4 +1,6 @@
-:root {
+/* Modified for AI Drama Studio: scoped under .legacy-root so it cannot leak into the new UI. */
+.legacy-root {
+& {
   --bg: #0f1419;
   --panel: #1a222c;
   --panel-2: #243040;
@@ -20,9 +22,7 @@
   box-sizing: border-box;
 }
 
-html,
-body,
-#root {
+& {
   margin: 0;
   height: 100%;
 }
@@ -1006,4 +1006,6 @@ button.tiny {
 .modal-error {
   color: var(--danger);
   font-size: 13px;
+}
+
 }

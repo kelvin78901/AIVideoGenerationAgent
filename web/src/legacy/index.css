@@ -1,6 +1,1 @@
-html,
-body,
-#root {
-  margin: 0;
-  height: 100%;
-}
+/* Modified for AI Drama Studio: global rules removed; the legacy UI is scoped under .legacy-root. */

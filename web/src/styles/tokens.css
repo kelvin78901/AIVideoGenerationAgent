@@ -25,6 +25,11 @@
   --input: #d2d2cc;
   --ring: #2350c2;
 
+  --topbar: #1a1b1e;
+  --topbar-foreground: #f2f2ef;
+  --topbar-muted: #c9cac6;
+  --topbar-border: #5b5e63;
+
   --sidebar: #ecece8;
   --sidebar-foreground: #2b2c30;
   --sidebar-accent: #dfe6f8;
@@ -67,6 +72,11 @@
   --border: #2e2f35;
   --input: #3a3b42;
   --ring: #6f95f0;
+
+  --topbar: #0c0d0f;
+  --topbar-foreground: #ececea;
+  --topbar-muted: #a7a8a5;
+  --topbar-border: #3d3f44;
 
   --sidebar: #18191d;
   --sidebar-foreground: #d4d4d1;

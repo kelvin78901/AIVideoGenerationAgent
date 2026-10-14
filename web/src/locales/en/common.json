@@ -1,3 +1,29 @@
 {
-  "app": { "name": "AI Drama Studio" }
+  "app": { "name": "AI Drama Studio" },
+  "shell": {
+    "noSeries": "No series selected",
+    "specTagTitle": "Output spec (click to change)",
+    "gpu": "Local GPU: {{status}}",
+    "gpuIdle": "idle",
+    "gpuBusy": "{{running}} running · {{queued}} queued",
+    "spend": "Episode API spend",
+    "budget": "budget {{budget}}",
+    "noBudget": "no budget set",
+    "langToggle": "中 / EN",
+    "langToggleLabel": "切换界面语言 / Switch language",
+    "themeToggleLabel": "Toggle light / dark",
+    "skipToContent": "Skip to content"
+  },
+  "placeholder": {
+    "comingSoon": "This page is built in a later milestone ({{milestone}}).",
+    "prototype": "Layout and copy follow the prototype {{file}}."
+  },
+  "error": {
+    "network": "Cannot reach the backend: {{message}}",
+    "unknown": "Something went wrong: {{code}}",
+    "job_not_found": "Job {{id}} not found",
+    "job_invalid_state": "The job is \"{{state}}\"; this action is not allowed",
+    "mock_only": "Only available in mock mode",
+    "unknown_component": "Unknown component {{id}}"
+  }
 }

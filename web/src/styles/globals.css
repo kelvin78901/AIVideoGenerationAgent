@@ -23,6 +23,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-topbar: var(--topbar);
+  --color-topbar-foreground: var(--topbar-foreground);
+  --color-topbar-muted: var(--topbar-muted);
+  --color-topbar-border: var(--topbar-border);
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-accent: var(--sidebar-accent);
