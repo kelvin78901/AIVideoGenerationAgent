@@ -32,7 +32,7 @@ jobs:
       - uses: actions/checkout@v7
 
       # ---------------------------------------------------------------- backend
-      - uses: astral-sh/setup-uv@v10
+      - uses: astral-sh/setup-uv@v10.2.0  # no floating major tag; pin a release
         with:
           enable-cache: true
       - name: Install backend
