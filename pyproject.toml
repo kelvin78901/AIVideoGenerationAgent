@@ -63,6 +63,7 @@ target-version = "py312"
 line-length = 100
 src = ["src", "tests"]
 extend-exclude = [
+  "docs",
   "scripts",
   "skills",
   "src/drama_series_agent/adapters",
