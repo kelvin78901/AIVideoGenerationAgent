@@ -1,5 +1,6 @@
 import {
   ChartNoAxesColumn,
+  FlaskConical,
   Grid2x2Plus,
   Moon,
   SlidersHorizontal,
@@ -24,6 +25,8 @@ export interface ShellStatus {
   gpuQueued: number;
   spentUsd: number | null;
   budgetUsd: number | null;
+  /** Backend runs mock adapters (DRAMA_MOCK != 0); null until /health answers. */
+  mock?: boolean | null;
 }
 
 const IDLE: ShellStatus = { gpuRunning: 0, gpuQueued: 0, spentUsd: null, budgetUsd: null };
@@ -45,6 +48,16 @@ function TopBar({ series, status }: { series: string; status: ShellStatus }) {
   return (
     <header className="flex flex-wrap items-center gap-x-5 gap-y-2 bg-topbar px-5 py-2.5 text-topbar-foreground">
       <div className="text-[15px] font-bold tracking-wide">{t("app.name")}</div>
+      {status.mock ? (
+        <span
+          data-testid="mock-badge"
+          title={t("shell.mockBadgeTitle")}
+          className="inline-flex items-center gap-1 rounded-md bg-status-warn px-2 py-0.5 text-xs font-bold tracking-wide text-white uppercase"
+        >
+          <FlaskConical className="size-3.5" aria-hidden />
+          {t("shell.mockBadge")}
+        </span>
+      ) : null}
       <div className="text-sm text-topbar-muted">{t("shell.noSeries")}</div>
       <NavLink
         to={paths.spec(series)}

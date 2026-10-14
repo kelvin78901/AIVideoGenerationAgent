@@ -5,6 +5,18 @@ import type { Job, ModelCall } from "@/api/types";
 
 export const jobKeys = { all: ["jobs"] as const };
 export const callKeys = { all: ["model-calls"] as const };
+export const healthKeys = { all: ["health"] as const };
+
+export interface Health {
+  status: string;
+  version: string;
+  /** True unless the backend runs with DRAMA_MOCK=0. */
+  mock: boolean;
+}
+
+export function useHealth() {
+  return useQuery({ queryKey: healthKeys.all, queryFn: () => api<Health>("/health") });
+}
 
 export function useJobs() {
   return useQuery({ queryKey: jobKeys.all, queryFn: () => api<Job[]>("/jobs?limit=200") });

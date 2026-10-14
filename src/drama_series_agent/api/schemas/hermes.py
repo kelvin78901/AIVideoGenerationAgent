@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Modified for AI Drama Studio: *_set flags so the settings API can report keys without returning them.
 """Pydantic schemas for Hermes Agent API."""
 
 from __future__ import annotations
@@ -66,12 +67,15 @@ class LlmSettings(BaseModel):
     api_key: str = ""
     base_url: str = ""
     model: str = ""
+    api_key_set: bool = False
 
 
 class WorkflowSettings(BaseModel):
     comfyui_url: str = "http://127.0.0.1:8188"
     comfyui_api_key: Optional[str] = None
     runninghub_api_key: Optional[str] = None
+    comfyui_api_key_set: bool = False
+    runninghub_api_key_set: bool = False
     runninghub_concurrent_limit: int = 1
     runninghub_instance_type: Optional[str] = None
     image_default_workflow: Optional[str] = None

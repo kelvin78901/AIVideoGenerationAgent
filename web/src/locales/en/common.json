@@ -14,7 +14,9 @@
     "langToggle": "中 / EN",
     "langToggleLabel": "切换界面语言 / Switch language",
     "themeToggleLabel": "Toggle light / dark",
-    "skipToContent": "Skip to content"
+    "skipToContent": "Skip to content",
+    "mockBadge": "Mock mode",
+    "mockBadgeTitle": "DRAMA_MOCK is not 0: every model call is faked and free. Set DRAMA_MOCK=0 to call real models."
   },
   "placeholder": {
     "comingSoon": "This page is built in a later milestone ({{milestone}}).",
@@ -30,5 +32,9 @@
   },
   "toast": {
     "generic": "Notice: {{code}}"
+  },
+  "legacy": {
+    "banner": "Legacy UI: calls are not logged and not budget-limited",
+    "detail": "This is the upstream Hermes UI, removed after M2. Model calls started here bypass router.call(): no model_call rows, no budget checks."
   }
 }

@@ -8,13 +8,16 @@ from fastapi.testclient import TestClient
 from drama_series_agent.api.app import create_app
 from drama_series_agent.core.paths import database_path
 
+LOCAL = "http://127.0.0.1"
+CLIENT_HEADERS = {"X-Drama-Studio": "1"}  # required on non-GET requests
+
 
 def test_lifespan_migrates_and_starts_queue(
     monkeypatch: pytest.MonkeyPatch, tmp_path: Path
 ) -> None:
     monkeypatch.setenv("DRAMA_SERIES_ROOT", str(tmp_path / "workspace"))
     assert not database_path().exists()
-    with TestClient(create_app()) as client:
+    with TestClient(create_app(), base_url=LOCAL, headers=CLIENT_HEADERS) as client:
         assert database_path().exists()
         state = client.app.state.studio  # type: ignore[attr-defined]
         assert state.jobs._dispatcher is not None
@@ -25,7 +28,7 @@ def test_lifespan_migrates_and_starts_queue(
 
 
 def test_openapi_lists_studio_routes() -> None:
-    with TestClient(create_app()) as client:
+    with TestClient(create_app(), base_url=LOCAL, headers=CLIENT_HEADERS) as client:
         paths = client.get("/openapi.json").json()["paths"]
     for path in (
         "/api/v1/health",

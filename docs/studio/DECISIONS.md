@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-14 · M0 合并前补充（Kelvin 审阅后）
+
+- **本机接口防护**（`api/security.py:LocalOnlyGuard`，对上游 `/api` 和新 `/api/v1` 都生效）：Host 头只接受 `127.0.0.1` / `localhost` / `[::1]`（否则 421 `host_not_allowed`，防 DNS 重绑定）；所有非 GET 请求必须带 `X-Drama-Studio: 1`（否则 403 `missing_client_header`），带了 `Origin` 的必须是本机前端（否则 403 `origin_not_allowed`）。不带 Origin 的非浏览器客户端（脚本、将来的 ComfyUI 节点包）加上这个头即可。CORS 只放行 `content-type`、`x-drama-studio`、`last-event-id` 三个请求头。
+- **上游设置接口不再返回密钥**：`GET/PUT /api/series/settings` 和 `/settings/reset` 的密钥字段一律清空，改给 `api_key_set` / `comfyui_api_key_set` / `runninghub_api_key_set`；保存时密钥字段为空表示「保留原值」。选择改返回值而不是摘掉路由，是为了 `/legacy` 的设置面板还能用。
+- **上游直接调模型的 5 处只能经 `/legacy` 触发**：都只被上游 `/api/series/*` 路由（`/legacy` 界面在用）或上游 `drama-series-render` 命令行调用；`tests/unit/test_isolation.py` 用 AST 检查新代码不导入这些模块（例外：纯函数 `normalize_base_url`、挂载上游路由的 `router`）。`/legacy` 顶部常驻警示条。
+- **Mock 模式标记**：`GET /api/v1/health` 返回 `mock`，顶栏在 Mock 时显示琥珀色「Mock 模式」。
+- **PowerShell 一律加 `-ExecutionPolicy Bypass`**：这台机器的执行策略禁止 `powershell -File` 运行脚本，状态栏、两个钩子和 `start.ps1` 原来的写法都会直接失败。`Bypass` 只对那一个进程生效，不改系统设置。
+- **启动脚本**：`start.ps1` / `start.sh` 改为 `uv sync` + `corepack pnpm -C web install --frozen-lockfile`，再启动 `uv run drama-studio dev` 和 `pnpm -C web dev`；后端固定监听 127.0.0.1（去掉了 `--host`），`--port` 通过 `DRAMA_BACKEND_URL` 同步给 Vite 代理；`.env` 逐行解析而不是 `source`。
+
 ## 2026-10-14 · M0 前端工具链
 
 - **pnpm 替换 npm、ESLint 替换 oxlint**：CLAUDE.md 约定的命令是 pnpm；ESLint 能写「JSX 里禁止中文字面量」这条规则（`no-restricted-syntax`），落实硬规则 4。pnpm 12 默认拦截依赖的安装脚本，`web/pnpm-workspace.yaml` 只放行 esbuild。

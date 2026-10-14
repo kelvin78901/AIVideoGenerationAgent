@@ -78,6 +78,7 @@ def test_jobs_resume_after_backend_is_killed(backend: Backend) -> None:
         resp = httpx.post(
             f"{backend.base}/dev/llm-test",
             json={"prompt": f"镜头 {i}", "delay_s": 2, "where": "local"},
+            headers={"X-Drama-Studio": "1"},
             timeout=5,
         )
         assert resp.status_code == 200

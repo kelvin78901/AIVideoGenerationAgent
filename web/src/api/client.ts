@@ -4,6 +4,9 @@ import type { ApiErrorBody } from "@/api/types";
 
 export const API_BASE = "/api/v1";
 
+/** The backend rejects writes without this header (see `api/security.py`). */
+export const CLIENT_HEADERS = { "X-Drama-Studio": "1" } as const;
+
 /** A backend error: `code` + `params` are translated by the front end (SPEC 16.3). */
 export class ApiError extends Error {
   readonly status: number;
@@ -30,7 +33,7 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   try {
     resp = await fetch(`${API_BASE}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", ...init.headers },
+      headers: { "Content-Type": "application/json", ...CLIENT_HEADERS, ...init.headers },
     });
   } catch (err) {
     throw new ApiError(0, { code: "network", params: { message: String(err) } });

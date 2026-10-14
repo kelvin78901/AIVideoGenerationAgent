@@ -8,14 +8,16 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
+from typing import Annotated, Any
 
-from fastapi import APIRouter, FastAPI
+from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from drama_series_agent import __version__
 from drama_series_agent.api import sse
 from drama_series_agent.api.routes import dev, jobs, providers
-from drama_series_agent.api.state import StudioState
+from drama_series_agent.api.security import CLIENT_HEADER, LocalOnlyGuard
+from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.secrets import install_log_redaction
 
 # The Vite dev server is the only browser origin allowed to call the backend.
@@ -26,8 +28,9 @@ def _v1_router() -> APIRouter:
     router = APIRouter(prefix="/api/v1")
 
     @router.get("/health")
-    async def health() -> dict[str, str]:
-        return {"status": "ok", "version": __version__}
+    async def health(state: Annotated[StudioState, Depends(get_state)]) -> dict[str, Any]:
+        # `mock` drives the front end's "Mock 模式" badge.
+        return {"status": "ok", "version": __version__, "mock": state.registry.mock}
 
     router.include_router(sse.router)
     router.include_router(jobs.router)
@@ -52,12 +55,14 @@ def create_app() -> FastAPI:
     from drama_series_agent.api.routers.series import router as upstream_router
 
     app = FastAPI(title="AI Drama Studio", version=__version__, lifespan=lifespan)
+    # Added first = runs inside CORS, so preflight requests are answered by CORS untouched.
+    app.add_middleware(LocalOnlyGuard, allowed_origins=ALLOWED_ORIGINS)
     app.add_middleware(
         CORSMiddleware,
         allow_origins=ALLOWED_ORIGINS,
         allow_credentials=True,
         allow_methods=["*"],
-        allow_headers=["*"],
+        allow_headers=["content-type", CLIENT_HEADER, "last-event-id"],
     )
     app.include_router(upstream_router, prefix="/api")
     app.include_router(_v1_router())

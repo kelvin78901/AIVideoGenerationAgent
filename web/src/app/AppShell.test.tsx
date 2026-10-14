@@ -65,6 +65,17 @@ describe("AppShell", () => {
     expect(screen.getByText("Local GPU: idle")).toBeInTheDocument();
   });
 
+  it("shows the Mock badge only in mock mode, in both languages", async () => {
+    const idle = { gpuRunning: 0, gpuQueued: 0, spentUsd: null, budgetUsd: null };
+    const { unmount } = renderAt(<AppRoutes status={{ ...idle, mock: false }} />, "/models");
+    expect(screen.queryByTestId("mock-badge")).not.toBeInTheDocument();
+    unmount();
+    renderAt(<AppRoutes status={{ ...idle, mock: true }} />, "/models");
+    expect(screen.getByTestId("mock-badge")).toHaveTextContent("Mock 模式");
+    await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
+    expect(screen.getByTestId("mock-badge")).toHaveTextContent("Mock mode");
+  });
+
   it("shows GPU activity and spend", () => {
     renderAt(
       <AppRoutes status={{ gpuRunning: 1, gpuQueued: 2, spentUsd: 8.94, budgetUsd: 15 }} />,

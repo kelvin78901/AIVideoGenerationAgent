@@ -18,6 +18,7 @@ describe("api client", () => {
     const spy = mockFetch(200, { ok: true });
     await expect(api("/health")).resolves.toEqual({ ok: true });
     expect(spy.mock.calls[0]?.[0]).toBe("/api/v1/health");
+    expect(spy.mock.calls[0]?.[1]?.headers).toMatchObject({ "X-Drama-Studio": "1" });
   });
 
   it("sends JSON bodies with post", async () => {

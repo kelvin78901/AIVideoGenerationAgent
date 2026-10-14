@@ -1,7 +1,10 @@
 // @ts-nocheck
 // Modified for AI Drama Studio: moved to src/legacy/ (upstream Hermes UI, removed after M2); type-checking disabled.
-const BASE =
-  import.meta.env.VITE_HERMES_API_BASE || "http://127.0.0.1:8000/api/series";
+// Modified for AI Drama Studio: same-origin base (Vite proxy) and the client header the
+// backend now requires on writes (api/security.py).
+const BASE = import.meta.env.VITE_HERMES_API_BASE || "/api/series";
+const fetch = (input: RequestInfo | URL, init: RequestInit = {}) =>
+  window.fetch(input, { ...init, headers: { "X-Drama-Studio": "1", ...(init.headers || {}) } });
 
 export type Conversation = {
   conversation_id: string;

@@ -1,15 +1,17 @@
-# Drama Series Agent launcher (Windows PowerShell)
-# Origin host: Pixelle-Video-v0.1.15-win64 (start.bat -> streamlit) -> this repo is the new home.
-# Usage:
-#   .\start.ps1
-#   .\start.ps1 -WithWeb
-#   .\start.ps1 -Host 127.0.0.1 -Port 8000 -SkipInstall
+# Modified for AI Drama Studio: starts `uv run drama-studio dev` + `pnpm -C web dev` (no pip / npm).
+# AI Drama Studio launcher (Windows PowerShell)
+# Usage (the execution policy on this machine blocks running .ps1 files directly):
+#   powershell -ExecutionPolicy Bypass -File .\start.ps1                       # backend + web
+#   powershell -ExecutionPolicy Bypass -File .\start.ps1 -NoWeb                # backend only
+#   powershell -ExecutionPolicy Bypass -File .\start.ps1 -Port 8001 -SkipInstall
+#
+# The backend always binds 127.0.0.1. Mock adapters are the default; set $env:DRAMA_MOCK = "0"
+# to call real models.
 
 [CmdletBinding()]
 param(
-    [string]$HostAddress = "127.0.0.1",
     [int]$Port = 8000,
-    [switch]$WithWeb,
+    [switch]$NoWeb,
     [switch]$SkipInstall
 )
 
@@ -17,12 +19,8 @@ $ErrorActionPreference = "Stop"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
 Set-Location $Root
 
-$env:DRAMA_SERIES_ROOT = $Root
-if (-not $env:COMFYUI_URL) {
-    $env:COMFYUI_URL = "http://127.0.0.1:8188"
-}
-
-# Load .env if present (KEY=VALUE lines)
+# .env (KEY=VALUE lines) for upstream settings such as COMFYUI_URL / FFMPEG_PATH.
+# API keys belong in the keyring (Models page); the backend also reads .env as a fallback.
 $EnvFile = Join-Path $Root ".env"
 if (Test-Path $EnvFile) {
     Get-Content $EnvFile | ForEach-Object {
@@ -34,83 +32,56 @@ if (Test-Path $EnvFile) {
         $val = $line.Substring($idx + 1).Trim().Trim('"').Trim("'")
         [Environment]::SetEnvironmentVariable($key, $val, "Process")
     }
-    $env:DRAMA_SERIES_ROOT = $Root
 }
+$env:DRAMA_SERIES_ROOT = $Root
+if (-not $env:COMFYUI_URL) { $env:COMFYUI_URL = "http://127.0.0.1:8188" }
+$env:DRAMA_BACKEND_URL = "http://127.0.0.1:$Port"   # Vite proxies /api here
+$env:COREPACK_ENABLE_DOWNLOAD_PROMPT = "0"
 
-function Get-ProjectPython {
-    $venvUnix = Join-Path $Root ".venv\bin\python"
-    $venvWin = Join-Path $Root ".venv\Scripts\python.exe"
-    if (Test-Path $venvWin) { return $venvWin }
-    if (Test-Path $venvUnix) { return $venvUnix }
-    $cmd = Get-Command python -ErrorAction SilentlyContinue
-    if ($cmd) { return $cmd.Source }
-    $cmd3 = Get-Command python3 -ErrorAction SilentlyContinue
-    if ($cmd3) { return $cmd3.Source }
-    throw "Python not found. Create a venv: python -m venv .venv; .\.venv\Scripts\pip install -e `".[render,dev]`""
+if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
+    throw "uv not found. Install it: winget install --id astral-sh.uv -e"
 }
-
-$Python = Get-ProjectPython
+if (-not $NoWeb -and -not (Get-Command corepack -ErrorAction SilentlyContinue)) {
+    throw "corepack not found. Install Node.js 24 (it ships corepack), or run with -NoWeb."
+}
 
 if (-not $SkipInstall) {
-    & $Python -c "import fastapi, uvicorn" 2>$null
-    if ($LASTEXITCODE -ne 0) {
-        Write-Host "[Setup] Installing package (editable)..."
-        & $Python -m pip install -e ".[render,dev]"
-        if ($LASTEXITCODE -ne 0) { throw "pip install failed" }
+    Write-Host "[Setup] uv sync"
+    & uv sync
+    if ($LASTEXITCODE -ne 0) { throw "uv sync failed" }
+    if (-not $NoWeb) {
+        Write-Host "[Setup] pnpm install (web/)"
+        & corepack pnpm -C web install --frozen-lockfile
+        if ($LASTEXITCODE -ne 0) { throw "pnpm install failed in web/" }
     }
 }
 
+$mock = if ($env:DRAMA_MOCK -eq "0") { "off (real models)" } else { "on" }
 Write-Host "========================================"
-Write-Host "  Drama Series Agent"
+Write-Host "  AI Drama Studio"
 Write-Host "========================================"
-Write-Host "  Root:  $env:DRAMA_SERIES_ROOT"
-Write-Host "  API:   http://${HostAddress}:${Port}"
-Write-Host "  Docs:  http://${HostAddress}:${Port}/docs"
+Write-Host "  API:   http://127.0.0.1:$Port   (docs: /docs)"
+if (-not $NoWeb) { Write-Host "  Web:   http://127.0.0.1:5173" }
+Write-Host "  Mock:  $mock"
 Write-Host "  Comfy: $env:COMFYUI_URL"
 Write-Host "  Ctrl+C to stop"
 Write-Host "========================================"
-Write-Host ""
 
 $webProc = $null
 try {
-    if ($WithWeb) {
-        # On Windows, npm is npm.cmd — Start-Process cannot launch the bare "npm" shim.
-        $npmCmd = Get-Command npm.cmd -ErrorAction SilentlyContinue
-        if (-not $npmCmd) {
-            Write-Host "[WARN] npm.cmd not found; skipping web"
-        }
-        else {
-            $webDir = Join-Path $Root "web"
-            $viteCmd = Join-Path $webDir "node_modules\.bin\vite.cmd"
-            # -SkipInstall only skips Python; web still needs local vite or npm run fails.
-            if (-not (Test-Path $viteCmd)) {
-                Write-Host "[Setup] web deps missing; npm install in web/..."
-                $npmCache = Join-Path $env:LOCALAPPDATA "npm-cache"
-                New-Item -ItemType Directory -Force -Path $npmCache | Out-Null
-                Push-Location $webDir
-                try {
-                    & npm.cmd install --cache $npmCache
-                    if ($LASTEXITCODE -ne 0) { throw "npm install failed in web/" }
-                }
-                finally { Pop-Location }
-            }
-            if (-not (Test-Path $viteCmd)) {
-                throw "vite not found after npm install: $viteCmd"
-            }
-            Write-Host "[Starting] Vite web workbench..."
-            $webProc = Start-Process -FilePath "cmd.exe" `
-                -ArgumentList "/c", "`"$($npmCmd.Source)`"", "run", "dev" `
-                -WorkingDirectory $webDir `
-                -PassThru -NoNewWindow
-        }
+    if (-not $NoWeb) {
+        Write-Host "[Starting] web workbench (pnpm -C web dev)"
+        # corepack is corepack.cmd on Windows; start it through cmd.exe.
+        $webProc = Start-Process -FilePath "cmd.exe" `
+            -ArgumentList "/c", "corepack", "pnpm", "-C", "web", "dev" `
+            -WorkingDirectory $Root -PassThru -NoNewWindow
     }
-
-    Write-Host "[Starting] FastAPI..."
-    & $Python (Join-Path $Root "scripts\run_api.py") --host $HostAddress --port $Port
+    Write-Host "[Starting] backend (uv run drama-studio dev)"
+    & uv run drama-studio dev --port $Port
 }
 finally {
     if ($webProc -and -not $webProc.HasExited) {
-        # Kill cmd + child node/vite tree
+        # Kill cmd + the node/vite tree under it.
         & taskkill.exe /PID $webProc.Id /T /F 2>$null | Out-Null
     }
 }

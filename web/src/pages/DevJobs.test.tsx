@@ -22,6 +22,7 @@ beforeEach(() => {
   act(() => useUiStore.setState({ lang: "zh-CN" }));
   routes.clear();
   routes.set("GET /api/v1/jobs?limit=200", () => []);
+  routes.set("GET /api/v1/health", () => ({ status: "ok", version: "0.1.0", mock: true }));
   routes.set("GET /api/v1/dev/model-calls?limit=200", () => []);
   vi.spyOn(globalThis, "fetch").mockImplementation(async (input, init) => {
     const handler = routes.get(`${init?.method ?? "GET"} ${String(input)}`);
@@ -78,6 +79,7 @@ describe("/dev/jobs", () => {
     await waitFor(() =>
       expect(screen.getByTestId("calls-total")).toHaveTextContent("共 1 条，已计费 API 花费 $0.25"),
     );
+    expect(screen.getByTestId("mock-badge")).toHaveTextContent("Mock 模式");
     // the top bar's spend follows the same data
     expect(screen.getAllByText("$0.25").length).toBeGreaterThanOrEqual(1);
   });

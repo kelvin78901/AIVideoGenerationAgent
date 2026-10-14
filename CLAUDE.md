@@ -37,6 +37,8 @@
 常用命令（M0 已建好；pnpm 由 corepack 提供：`corepack enable pnpm`）：
 
 ```bash
+./start.sh                                # 一键：uv sync + pnpm install + 后端 + 前端（--no-web / --skip-install / --port）
+# Windows：powershell -ExecutionPolicy Bypass -File .\start.ps1   （-NoWeb / -SkipInstall / -Port）
 uv sync                                   # 安装后端依赖（Python 3.12，uv 自动下载）
 uv run pytest                             # 后端测试（Mock；含 tests/e2e 的重启续跑测试）
 uv run ruff check . && uv run ruff format --check . && uv run mypy
@@ -46,6 +48,7 @@ pnpm -C web install && pnpm -C web dev    # 前端 127.0.0.1:5173，/api 代理�
 pnpm -C web test                          # i18n key 检查 + Vitest
 pnpm -C web lint && pnpm -C web typecheck && pnpm -C web format:check
 # 开发面板：http://127.0.0.1:5173/dev/jobs（发起 Mock LLM 调用、看任务和 model_call）
+# 脚本调写接口要带请求头 X-Drama-Studio: 1（见 api/security.py）
 # 示例项目 `uv run drama-studio demo` 还没做（随 M2 的产物 / 版本一起做）
 ```
 
@@ -68,7 +71,7 @@ pnpm -C web lint && pnpm -C web typecheck && pnpm -C web format:check
 - **里程碑报告** `docs/studio/reports/Mx.md`：里程碑做完时写，中文，写给 Kelvin：做了什么、怎么验证（能直接复制的命令）、测试和 CI 结果、和计划不一样的地方及原因、新加的 DECISIONS、遗留问题、需要 Kelvin 动手的事。PR 描述直接用这份报告。
 - **节奏**：一个会话做 3–4 个小步。上下文到 60% 时（`context-guard` 钩子会提醒）做完当前小步就收尾；到 75% 时不再开始新的小步，马上整理到能提交的状态并交接。不要硬撑到自动压缩。
 - **收尾**：跑测试 → 提交 → push → 更新 PROGRESS.md → 停下，告诉 Kelvin 输入 `/clear` 再输入 `/continue`。`/handoff` 立即执行这套收尾；`/continue` 读 PROGRESS、计划和 git log，核对一致后接着做下一个小步，不重新出计划，计划要改先问 Kelvin。
-- **机制**（Windows，PowerShell 脚本一律 `powershell -NoProfile -File` 调用）：
+- **机制**（Windows，PowerShell 脚本一律 `powershell -NoProfile -ExecutionPolicy Bypass -File` 调用；本机执行策略禁止直接运行脚本）：
   - `.claude/statusline.ps1`：状态栏显示「模型 · 上下文 N% · 5 小时额度 N%」，并把 session_id 和上下文用量写进 `.claude/state/context.json`。`statusLine` 配在 `.claude/settings.local.json`（不进 git）。
   - `.claude/hooks/context-guard.ps1`（PostToolUse）：60% 和 75% 各提醒一次（每会话），记录在 `.claude/state/`。
   - `.claude/hooks/session-start.ps1`（SessionStart）：把 PROGRESS.md、`git status --short`、最近 5 条提交打印进新会话。

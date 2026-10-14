@@ -11,12 +11,16 @@ from loguru import logger
 
 from drama_series_agent.api.app import create_app
 
+LOCAL = "http://127.0.0.1"
+CLIENT_HEADERS = {"X-Drama-Studio": "1"}  # required on non-GET requests
+
+
 SECRET = "sk-deepseek-REAL-looking-0123456789"
 
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    with TestClient(create_app()) as c:
+    with TestClient(create_app(), base_url=LOCAL, headers=CLIENT_HEADERS) as c:
         yield c
 
 

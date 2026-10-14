@@ -29,10 +29,12 @@
 | 13 | `.github/workflows/ci.yml`：push 只跑 Linux，PR 到 main / 手动触发时 Linux + Windows；后端 ruff（check + format）/ mypy / pytest，前端 eslint / prettier / tsc / vitest（含 i18n 检查）/ build；ruff 排除 `docs/`（ruff 0.17 会改 Markdown 里的 Python 代码块） | 934dd35 | 本地全部通过；CI 结果见下一步 |
 | 14 | `tests/e2e/test_restart_resume.py`（子进程起后端 → gpu 队列 3 个任务 → 第一个运行中时硬杀进程 → 重启 → 3 个都完成，被打断的那个 attempt=2）；`/dev/llm-test` 加 `where`；CI action 升到 checkout@v7 / setup-node@v7 / setup-uv@v10；CLAUDE.md 常用命令；ROADMAP 勾选 M0；里程碑报告 `docs/studio/reports/M0.md` | 019b971 | pytest 93 passed（e2e 连跑 2 次稳定）；vitest 20 passed；lint / 类型 / 格式全过 |
 
+| 补 | 合并前补充 5 项（接口防护、上游设置接口不返回密钥、`/legacy` 警示条、Mock 标记、启动脚本）+ PowerShell `-ExecutionPolicy Bypass` 修复 | 本提交 | pytest 113 passed；vitest 22 passed；两个启动脚本本机实跑通过 |
+
 ## 下一步
 
 - M0 代码全部完成，PR 已开（链接见报告 / PR 列表：`gh pr list -R kelvin78901/AIVideoGenerationAgent`）。
-- PR #1 上 Linux、Windows CI 都已通过，ROADMAP M0 全部勾选。Kelvin 合并后，下一个里程碑是 **M1 首次启动 + 成片规格**，用 `/milestone` 出计划。
+- 合并前补充已推送，等 PR #1 的 CI。Kelvin 合并后，下一个里程碑是 **M1 首次启动 + 成片规格**，用 `/milestone` 出计划。
 
 ## 没提交的改动
 
@@ -40,6 +42,8 @@
 
 ## 踩过的坑 / 临时绕过
 
+- **本机 PowerShell 执行策略禁止 `-File` 跑脚本**：钩子、状态栏、`start.ps1` 都要 `powershell -NoProfile -ExecutionPolicy Bypass -File …`。
+- 写接口（非 GET）要带 `X-Drama-Studio: 1`，Host 必须是 127.0.0.1 / localhost；`TestClient` 要用 `base_url="http://127.0.0.1"`。
 - Windows PowerShell 5.1：`.ps1` 必须存成 UTF-8 带 BOM，否则中文乱码；`ConvertFrom-Json` 读数组会多套一层，所以“已提醒”记录改用纯文本。
 - 钩子和状态栏在会话启动时加载：本会话里新建的 `settings.json` / `settings.local.json` 当场不生效，实时自测要等新会话。
 - YAML 1.1 会把 `on:` / `mode: off` 解析成布尔值：`core/config.py` 用只认 true/false 的加载器。

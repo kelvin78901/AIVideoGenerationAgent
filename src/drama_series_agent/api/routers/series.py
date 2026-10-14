@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Modified for AI Drama Studio: /settings never returns stored keys (only *_set flags); empty keys on save keep the stored ones.
 """Hermes Agent API — conversations, chat, workbench actions, job SSE."""
 
 from __future__ import annotations
@@ -1382,9 +1383,16 @@ def _settings_payload() -> dict[str, Any]:
     from drama_series_agent.adapters.config import config_manager
     from drama_series_agent.llm_presets import LLM_PRESETS
 
+    # Hard rule 3: keys are write-only. Report whether each one is set, never its value.
+    llm = config_manager.get_llm_config()
+    llm = {**llm, "api_key": "", "api_key_set": bool(llm.get("api_key"))}
+    workflow = _workflow_from_comfy(config_manager.get_comfyui_config())
+    for name in ("comfyui_api_key", "runninghub_api_key"):
+        workflow[f"{name}_set"] = bool(workflow.get(name))
+        workflow[name] = None
     return {
-        "llm": config_manager.get_llm_config(),
-        "workflow": _workflow_from_comfy(config_manager.get_comfyui_config()),
+        "llm": llm,
+        "workflow": workflow,
         "presets": LLM_PRESETS,
         "configured": bool(config_manager.validate()),
         "video_workflow_options": _scan_workflow_keys(prefix="video"),
@@ -1424,16 +1432,19 @@ def api_put_settings(body: HermesSettingsUpdate) -> dict[str, Any]:
 
     if body.llm is not None:
         llm = body.llm
-        if not (llm.api_key and llm.base_url and llm.model):
+        # The UI never sees the stored key, so an empty field means "keep the current one".
+        api_key = llm.api_key or config_manager.get_llm_config().get("api_key") or ""
+        if not (api_key and llm.base_url and llm.model):
             raise HTTPException(status_code=400, detail="模型配置需填写 api_key、base_url、model")
-        config_manager.set_llm_config(llm.api_key, llm.base_url, llm.model)
+        config_manager.set_llm_config(api_key, llm.base_url, llm.model)
 
     if body.workflow is not None:
         wf = body.workflow
+        current = config_manager.get_comfyui_config()
         config_manager.set_comfyui_config(
             comfyui_url=wf.comfyui_url or None,
-            comfyui_api_key=wf.comfyui_api_key,
-            runninghub_api_key=wf.runninghub_api_key,
+            comfyui_api_key=wf.comfyui_api_key or current.get("comfyui_api_key"),
+            runninghub_api_key=wf.runninghub_api_key or current.get("runninghub_api_key"),
             runninghub_concurrent_limit=wf.runninghub_concurrent_limit,
             runninghub_instance_type=wf.runninghub_instance_type or "",
         )
