@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Modified for AI Drama Studio: moved to src/legacy/ (upstream Hermes UI, removed after M2); type-checking disabled.
 const BASE =
   import.meta.env.VITE_HERMES_API_BASE || "http://127.0.0.1:8000/api/series";
 

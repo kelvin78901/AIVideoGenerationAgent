@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Modified for AI Drama Studio: moved to src/legacy/ (upstream Hermes UI, removed after M2); type-checking disabled.
 /** Hash routes for Hermes shell — isolates pages by conversation id. */
 
 export type Route =

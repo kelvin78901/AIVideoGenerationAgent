@@ -21,12 +21,13 @@
 | 6 | `core/jobs.py` 持久化队列：gpu 并发 1、cpu 核数/2、`api:<x>` 默认 2；优先级 + 先进先出；依赖；取消（排队 / 运行中）、确认（`waiting_confirm`）；启动时把 running 放回队列（超过 max_attempts 判 `interrupted`），正常关闭也放回队列；每次状态变化发 `job.updated`；`api/routes/jobs.py`、`api/errors.py`（错误码 + 参数） | dfbd698 | pytest 49 passed（连跑 5 次稳定）；ruff、mypy 通过 |
 | 7 | modelhub：`adapters/base.py`（协议、请求 / 结果类型、`ModelError`）、`adapters/mock.py`（LLM 文本 / JSON、PNG、WAV、FFmpeg MP4，可配延迟 / 失败 / 卡死）、`registry.py`（providers.yaml 三段 → spec；Mock 默认开启，`DRAMA_MOCK=0` 才走真实）、`pricing.py`、`calllog.py`、`router.py`（解析配置选模型 → 估价 → 预算钩子 → 超时 → 存文件 → 每次尝试一行 `model_call` → `cost.updated`；error/timeout 兜底一跳）；`api/handlers.py` + `POST /api/v1/dev/llm-test`、`GET /api/v1/dev/model-calls` | 3aa82a4 | pytest 69 passed；ruff、mypy 通过 |
 | 8 | `modelhub/adapters/openai_compat.py`（httpx 直连 `/chat/completions`：JSON 模式、流式 + `CallContext.on_delta`、429/5xx 指数退避并尊重 Retry-After、错误码映射；`health()` = `GET /models`），非 Mock 时注册给所有带 base_url 的 llm；`core/secrets.py`（keyring → 环境变量 → `.env`，loguru 打码）；`api/routes/providers.py`（列表只给 `has_key` / `key_source`，存 / 删密钥，测试连接） | 26d8970 | pytest 89 passed（respx 模拟厂商；断言响应和日志里没有密钥）；ruff、mypy 通过 |
-| 9 | 上游 `cli.py:run_api_main` 和 `scripts/run_api.py` 改为启动 `create_app()`（文件头加了修改说明）；应用装配测试（lifespan 迁移 + 队列启停、上游 `/api` 仍可用、OpenAPI 列出全部 `/api/v1` 路由） | 本提交 | pytest 92 passed；手动 `uv run drama-studio dev` + curl 走通 Mock LLM：SSE 依次收到 queued → running → cost.updated → succeeded，`model_call` 1 行 |
+| 9 | 上游 `cli.py:run_api_main` 和 `scripts/run_api.py` 改为启动 `create_app()`（文件头加了修改说明）；应用装配测试（lifespan 迁移 + 队列启停、上游 `/api` 仍可用、OpenAPI 列出全部 `/api/v1` 路由） | 1ee8cf9 | pytest 92 passed；手动 `uv run drama-studio dev` + curl 走通 Mock LLM：SSE 依次收到 queued → running → cost.updated → succeeded，`model_call` 1 行 |
+| 10 | 前端工具链：npm → pnpm 12（corepack；`package-lock.json` 删掉，`pnpm-workspace.yaml` 只放行 esbuild 的安装脚本）、oxlint → ESLint（typescript-eslint strict + react-hooks；**禁止 JSX 里写死中文**）+ Prettier、Vitest + Testing Library、TS strict + `noUncheckedIndexedAccess`、`@/` 别名、Vite 代理 `/api`；Tailwind v4 + `styles/tokens.css`（亮 / 暗两套，图表色按 SPEC 11.3）+ shadcn 基础组件（button / badge / dropdown-menu / tooltip / separator / scroll-area / sonner）；`stores/ui.ts`；`scripts/check-i18n.ts`。**提前做了 11b 的搬家**：上游界面挪到 `src/legacy/` 并加 `// @ts-nocheck`（上游代码过不了 strict） | 本提交 | vitest 4 passed、i18n 检查、eslint、tsc、vite build、prettier 全过；pytest 92 passed |
 
 ## 下一步
 
-- 第 10 步：前端工具链 —— `corepack enable` 后用 pnpm（删 `web/package-lock.json`）；oxlint → eslint（typescript-eslint、react-hooks）+ prettier；Vitest + Testing Library；Tailwind v4 + shadcn/ui（`components.json`，button / badge / dropdown-menu / tooltip / separator / scroll-area / sonner）+ lucide；`web/src/styles/tokens.css`（亮 / 暗两套 token，图表色按 SPEC 11.3）；Vite 代理 `/api` → `127.0.0.1:8000`。
-- 注意：上游前端还在 `web/src/`，第 11b 步才挪到 `legacy/`；第 10 步只动工具链，保证 `pnpm -C web build` 仍然能过。
+- 第 11 步：`web/src/app/routes.tsx`（react-router，SPEC 16.1 的 11 个路由，页面先空壳）+ `web/src/app/AppShell.tsx`（照 `prototype/Main.dc.html` 顶栏和左侧导航）+ i18next（`src/i18n.ts`，`locales/{zh-CN,en}/{common,nav}.json`，语言跟 `stores/ui.ts`）；把 `/legacy/*` 挂到 `src/legacy/App`（11b 剩下的部分：CSS 包进 `.legacy-root` 作用域）；`src/main.tsx` 改为渲染新应用。
+- 前端命令：`pnpm -C web lint | typecheck | test | build | format:check`（pnpm 由 corepack 装在 `~/bin`）。
 
 ## 没提交的改动
 
@@ -39,7 +40,8 @@
 - YAML 1.1 会把 `on:` / `mode: off` 解析成布尔值：`core/config.py` 用只认 true/false 的加载器。
 - SQLAlchemy async 需要 `greenlet`（已加依赖）；SQLite 读回时间会丢时区，用 `models_db.UtcDateTime`。
 - 新迁移：`uv run alembic revision --autogenerate -m ...`（`env.py` 的 `render_item` 会把 SQLModel / 自定义类型写成纯 `sa.*`）。
-- 本机没有 pnpm（第 10 步用 corepack 启用）；Python 3.12 要用 uv 下载（第 2 步）。
+- pnpm：`corepack enable --install-directory ~/bin pnpm`（`~/bin` 在 PATH 里，不需要管理员）；命令前加 `COREPACK_ENABLE_DOWNLOAD_PROMPT=0` 避免首次下载提示。
+- 上游 `start.ps1` / `start.sh` 还在用 `npm install`、`npm run dev`，会重新生成 `package-lock.json`；新的启动方式是 `uv run drama-studio dev` + `pnpm -C web dev`（M0 收尾时在报告里说明，暂不改上游脚本）。
 
 ## 等 Kelvin 的事
 

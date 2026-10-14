@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Modified for AI Drama Studio: moved to src/legacy/ (upstream Hermes UI, removed after M2); type-checking disabled.
 import { useEffect, useRef, useState, type FormEvent } from "react";
 import type { ChatMessage } from "../api";
 

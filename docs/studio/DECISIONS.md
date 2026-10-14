@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-14 · M0 前端工具链
+
+- **pnpm 替换 npm、ESLint 替换 oxlint**：CLAUDE.md 约定的命令是 pnpm；ESLint 能写「JSX 里禁止中文字面量」这条规则（`no-restricted-syntax`），落实硬规则 4。pnpm 12 默认拦截依赖的安装脚本，`web/pnpm-workspace.yaml` 只放行 esbuild。
+- **TypeScript**：`strict` + `noUncheckedIndexedAccess`。上游界面过不了，**挪到 `web/src/legacy/` 并整文件 `// @ts-nocheck`**，ESLint 也忽略它；M2 新页面做完后整个目录删除。
+- **shadcn/ui 组件手写进 `src/components/ui/`**（按 new-york 风格，`components.json` 留着以后用 CLI 加组件），颜色全部来自 `styles/tokens.css` 的 CSS 变量；暗色是单独挑的一套。
+- **JSON 文件没法写注释**：改过的上游 `web/package.json`、`tsconfig*.json` 不加文件头说明，在 NOTICE 的总说明里覆盖。
+
 ## 2026-10-14 · M0 模型层
 
 - **Mock 是默认模式**：没设 `DRAMA_MOCK` 也走 Mock，只有 `DRAMA_MOCK=0` 才调真实模型。原因：硬规则 2「开发默认用 Mock」，防止误花钱。Mock 保留真实模型的 key 和单价，Mock 模式下的花费数字和真实调用一致。

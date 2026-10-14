@@ -1,3 +1,5 @@
+// @ts-nocheck
+// Modified for AI Drama Studio: moved to src/legacy/ (upstream Hermes UI, removed after M2); type-checking disabled.
 import { useEffect, useState } from "react";
 import { getConversation, type StatusPayload } from "../api";
 import { goBible, goCast, goJobs, goLiterary } from "../routing";
