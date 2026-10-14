@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from collections.abc import Iterator
+import asyncio
+from collections.abc import AsyncIterator, Iterator
 from pathlib import Path
 
 import keyring
 import pytest
 from keyring.backend import KeyringBackend
+
+from drama_series_agent.core.db import Database, migrate
+from drama_series_agent.core.paths import database_path
 
 
 class MemoryKeyring(KeyringBackend):
@@ -36,3 +40,13 @@ def _isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[N
     keyring.set_keyring(MemoryKeyring())
     yield
     keyring.set_keyring(previous)
+
+
+@pytest.fixture
+async def studio_db() -> AsyncIterator[Database]:
+    """A migrated database under the per-test DRAMA_HOME."""
+    path = database_path()
+    await asyncio.to_thread(migrate, path)
+    db = Database(path)
+    yield db
+    await db.dispose()

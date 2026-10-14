@@ -15,12 +15,14 @@
 | 0 | 计划存档、PROGRESS / 报告规则、状态栏 + 上下文提醒钩子 + SessionStart 钩子、/handoff 和 /continue、CLAUDE.md 新增一节 | 5e650b7 | 钩子脚本用模拟输入自测通过（65% 提醒一次、重复不提醒、session 不符不提醒、80% 提醒一次、直接跳到 80% 只提醒一次、无 rate_limits 显示「—」）；项目还没有自动化测试 |
 | 1 | `NOTICE`；`docs/studio/UPSTREAM_NOTES.md`（上游模块地图、数据文件、H3 runner、失效传播、续跑、直接调 LLM 的位置、全局状态） | 934c772 | 仅文档 |
 | 2 | Python 3.12 + uv（`uv.lock`、`.python-version`）、新依赖、ruff / mypy（strict，只覆盖新代码）/ pytest 配置；`config/*.yaml` 从 seed 拷入；`drama-studio dev` CLI；`api/app.py` 最小 app factory（上游 `/api` + `/api/v1/health`，CORS 只放行 5173）；`tests/conftest.py` | 4b4fe2b | pytest 9 passed；ruff、mypy 通过 |
-| 4 | `core/storage.py`：按 sha256 存文件（`blobs/sha256/ab/<hash>`），临时文件 + `os.replace` 原子写、重复内容只存一份、大文件流式复制 | 本提交 | pytest 25 passed；ruff、mypy 通过 |
+| 3 | `core/paths.py`（`DRAMA_HOME` 默认 `~/.drama-studio/`）、`core/config.py`（YAML → Pydantic、四级解析 factory→project→component→item 并标来源）、`core/overrides.py`、`core/db.py`（SQLite WAL、async 会话、程序内跑迁移）、`core/models_db.py` 六张表 + Alembic `0001` | d9356ef | pytest 19 passed（含迁移升降级、模型与迁移一致、WAL、时区往返）；ruff、mypy 通过 |
+| 4 | `core/storage.py`：按 sha256 存文件（`blobs/sha256/ab/<hash>`），临时文件 + `os.replace` 原子写、重复内容只存一份、大文件流式复制 | 9f60836 | pytest 25 passed；ruff、mypy 通过 |
+| 5 | `core/events.py`：事件先写 `event` 表再广播，支持补发、慢订阅者从库里追、保留最近 5000 条；`api/sse.py` 的 `GET /api/v1/events`（`Last-Event-ID` 或 `?after=`，15 s 心跳）；`api/state.py` + lifespan（启动时迁移数据库） | 本提交 | pytest 34 passed（含真实 uvicorn 上的 SSE 补发测试，连跑 3 次稳定）；ruff、mypy 通过 |
 
 ## 下一步
 
-- 第 5 步：`core/events.py`（写 `event` 表 + asyncio 广播、保留最近 5000 条）和 `GET /api/v1/events`（SSE，`Last-Event-ID` 补发，15 s 心跳），测试补发和多订阅者。
-- 然后第 6 步持久化任务队列（`core/jobs.py`）。
+- 第 6 步：`core/jobs.py` 持久化任务队列（queued → running → succeeded / failed / canceled，`waiting_confirm` 先建状态；`gpu` 并发 1、`api:<provider>` 可配、`cpu` 核数/2；处理器按 `kind` 注册；启动时 running → queued；每次变化发 `job.updated`）+ `api/routes/jobs.py`（`GET /jobs`、`POST /jobs/{id}/cancel|confirm`），挂到 `api/state.py:StudioState` 和 `api/app.py` 的 lifespan。
+- 然后第 7 步 modelhub。
 
 ## 没提交的改动
 
