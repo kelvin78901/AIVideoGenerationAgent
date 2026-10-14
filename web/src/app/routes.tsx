@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router";
 import { AppShell, type ShellStatus } from "@/app/AppShell";
 import { DEMO_EPISODE, DEMO_SERIES, paths } from "@/app/paths";
 import AssetsPage from "@/pages/Assets";
+import DevJobsPage from "@/pages/DevJobs";
 import DashboardPage from "@/pages/Dashboard";
 import GeneratePage from "@/pages/Generate";
 import LegacyPage from "@/pages/Legacy";
@@ -40,6 +41,7 @@ export function AppRoutes({ status }: { status?: ShellStatus }) {
             <Route path="post" element={<PostPage />} />
           </Route>
         </Route>
+        {import.meta.env.DEV ? <Route path="dev/jobs" element={<DevJobsPage />} /> : null}
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

@@ -1,0 +1,43 @@
+{
+  "intro": "Start one LLM call in mock mode, watch the job state change live and check the call log. This page is not part of the product UI.",
+  "llmTest": "Start a mock LLM call",
+  "llmTestPending": "Queuing…",
+  "queued": "Queued: {{id}}",
+  "jobs": "Jobs",
+  "calls": "Model calls (model_call)",
+  "empty": "Nothing yet",
+  "total": "{{count}} rows, billed API spend {{cost}}",
+  "col": {
+    "id": "ID",
+    "kind": "Kind",
+    "queue": "Queue",
+    "state": "State",
+    "attempt": "Attempt",
+    "created": "Created",
+    "result": "Result",
+    "time": "Time",
+    "model": "Model",
+    "where": "Where",
+    "status": "Status",
+    "tokens": "Tokens in / out",
+    "cost": "Cost"
+  },
+  "where": {
+    "local": "Local",
+    "api": "API"
+  },
+  "state": {
+    "queued": "Queued",
+    "waiting_confirm": "Waiting for confirmation",
+    "running": "Running",
+    "succeeded": "Done",
+    "failed": "Failed",
+    "canceled": "Canceled"
+  },
+  "status": {
+    "success": "Success",
+    "error": "Error",
+    "timeout": "Timeout",
+    "canceled": "Canceled"
+  }
+}

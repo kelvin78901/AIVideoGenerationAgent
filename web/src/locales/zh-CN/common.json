@@ -1,5 +1,7 @@
 {
-  "app": { "name": "短剧工作台" },
+  "app": {
+    "name": "短剧工作台"
+  },
   "shell": {
     "noSeries": "未选择剧集",
     "specTagTitle": "成片规格（点击修改）",
@@ -16,7 +18,7 @@
   },
   "placeholder": {
     "comingSoon": "这一页在后续里程碑实现（{{milestone}}）。",
-    "prototype": "布局和文案以原型 {{file}} 为准。"
+    "prototype": "布局和文案以 {{file}} 为准。"
   },
   "error": {
     "network": "连不上后端：{{message}}",
@@ -25,5 +27,8 @@
     "job_invalid_state": "任务当前状态是「{{state}}」，不能这样操作",
     "mock_only": "这个操作只在 Mock 模式下可用",
     "unknown_component": "未知组件 {{id}}"
+  },
+  "toast": {
+    "generic": "通知：{{code}}"
   }
 }

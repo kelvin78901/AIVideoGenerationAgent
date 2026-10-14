@@ -1,5 +1,7 @@
 {
-  "app": { "name": "AI Drama Studio" },
+  "app": {
+    "name": "AI Drama Studio"
+  },
   "shell": {
     "noSeries": "No series selected",
     "specTagTitle": "Output spec (click to change)",
@@ -16,7 +18,7 @@
   },
   "placeholder": {
     "comingSoon": "This page is built in a later milestone ({{milestone}}).",
-    "prototype": "Layout and copy follow the prototype {{file}}."
+    "prototype": "Layout and copy follow {{file}}."
   },
   "error": {
     "network": "Cannot reach the backend: {{message}}",
@@ -25,5 +27,8 @@
     "job_invalid_state": "The job is \"{{state}}\"; this action is not allowed",
     "mock_only": "Only available in mock mode",
     "unknown_component": "Unknown component {{id}}"
+  },
+  "toast": {
+    "generic": "Notice: {{code}}"
   }
 }
