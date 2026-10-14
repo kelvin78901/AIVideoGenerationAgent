@@ -10,6 +10,7 @@ from fastapi import Request
 
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
+from drama_series_agent.core.jobs import JobQueue
 from drama_series_agent.core.paths import database_path
 
 
@@ -17,15 +18,22 @@ from drama_series_agent.core.paths import database_path
 class StudioState:
     db: Database
     bus: EventBus
+    jobs: JobQueue
 
     @classmethod
     async def start(cls, db_path: Path | None = None) -> StudioState:
         path = db_path or database_path()
         await asyncio.to_thread(migrate, path)
         db = Database(path)
-        return cls(db=db, bus=EventBus(db))
+        bus = EventBus(db)
+        return cls(db=db, bus=bus, jobs=JobQueue(db, bus))
+
+    async def run(self) -> None:
+        """Start background work (the job dispatcher, which first re-queues interrupted jobs)."""
+        await self.jobs.start()
 
     async def stop(self) -> None:
+        await self.jobs.stop()
         await self.db.dispose()
 
 

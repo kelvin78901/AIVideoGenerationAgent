@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-14 · M0 任务队列
+
+- **只有处理器明确抛 `JobError(retryable=True)` 才自动重试**（到 `max_attempts` 为止）；其他异常直接失败，错误写 `error_json = {code, params}`。原因：模型调用的重试、兜底在 `router.call()` 里做，队列再盲目重试会重复花钱。
+- **崩溃后续跑也算一次尝试**：启动时 running → queued；已经用完 `max_attempts` 的判 `failed`（`interrupted`），避免一个会搞崩进程的任务无限循环。**正常关闭**时运行中的任务也放回 queued，下次启动接着跑。
+- **API 错误统一为** `{"detail": {"code", "params"}}`（`api/errors.py:ApiError`），前端按 code 翻译。
+
 ## 2026-10-14 · M0 数据库与配置
 
 - **数据目录** `DRAMA_HOME`，默认 `~/.drama-studio/`：`studio.db`、`blobs/`，和 `envs/` 放在一起。测试里每个用例一个临时目录。

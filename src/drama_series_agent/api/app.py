@@ -14,6 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from drama_series_agent import __version__
 from drama_series_agent.api import sse
+from drama_series_agent.api.routes import jobs
 from drama_series_agent.api.state import StudioState
 
 # The Vite dev server is the only browser origin allowed to call the backend.
@@ -28,6 +29,7 @@ def _v1_router() -> APIRouter:
         return {"status": "ok", "version": __version__}
 
     router.include_router(sse.router)
+    router.include_router(jobs.router)
     return router
 
 
@@ -35,6 +37,7 @@ def _v1_router() -> APIRouter:
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     state = await StudioState.start()
     app.state.studio = state
+    await state.run()
     try:
         yield
     finally:

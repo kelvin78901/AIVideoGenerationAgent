@@ -17,12 +17,13 @@
 | 2 | Python 3.12 + uv（`uv.lock`、`.python-version`）、新依赖、ruff / mypy（strict，只覆盖新代码）/ pytest 配置；`config/*.yaml` 从 seed 拷入；`drama-studio dev` CLI；`api/app.py` 最小 app factory（上游 `/api` + `/api/v1/health`，CORS 只放行 5173）；`tests/conftest.py` | 4b4fe2b | pytest 9 passed；ruff、mypy 通过 |
 | 3 | `core/paths.py`（`DRAMA_HOME` 默认 `~/.drama-studio/`）、`core/config.py`（YAML → Pydantic、四级解析 factory→project→component→item 并标来源）、`core/overrides.py`、`core/db.py`（SQLite WAL、async 会话、程序内跑迁移）、`core/models_db.py` 六张表 + Alembic `0001` | d9356ef | pytest 19 passed（含迁移升降级、模型与迁移一致、WAL、时区往返）；ruff、mypy 通过 |
 | 4 | `core/storage.py`：按 sha256 存文件（`blobs/sha256/ab/<hash>`），临时文件 + `os.replace` 原子写、重复内容只存一份、大文件流式复制 | 9f60836 | pytest 25 passed；ruff、mypy 通过 |
-| 5 | `core/events.py`：事件先写 `event` 表再广播，支持补发、慢订阅者从库里追、保留最近 5000 条；`api/sse.py` 的 `GET /api/v1/events`（`Last-Event-ID` 或 `?after=`，15 s 心跳）；`api/state.py` + lifespan（启动时迁移数据库） | 本提交 | pytest 34 passed（含真实 uvicorn 上的 SSE 补发测试，连跑 3 次稳定）；ruff、mypy 通过 |
+| 5 | `core/events.py`：事件先写 `event` 表再广播，支持补发、慢订阅者从库里追、保留最近 5000 条；`api/sse.py` 的 `GET /api/v1/events`（`Last-Event-ID` 或 `?after=`，15 s 心跳）；`api/state.py` + lifespan（启动时迁移数据库） | 499003d | pytest 34 passed（含真实 uvicorn 上的 SSE 补发测试，连跑 3 次稳定）；ruff、mypy 通过 |
+| 6 | `core/jobs.py` 持久化队列：gpu 并发 1、cpu 核数/2、`api:<x>` 默认 2；优先级 + 先进先出；依赖；取消（排队 / 运行中）、确认（`waiting_confirm`）；启动时把 running 放回队列（超过 max_attempts 判 `interrupted`），正常关闭也放回队列；每次状态变化发 `job.updated`；`api/routes/jobs.py`、`api/errors.py`（错误码 + 参数） | 本提交 | pytest 49 passed（连跑 5 次稳定）；ruff、mypy 通过 |
 
 ## 下一步
 
-- 第 6 步：`core/jobs.py` 持久化任务队列（queued → running → succeeded / failed / canceled，`waiting_confirm` 先建状态；`gpu` 并发 1、`api:<provider>` 可配、`cpu` 核数/2；处理器按 `kind` 注册；启动时 running → queued；每次变化发 `job.updated`）+ `api/routes/jobs.py`（`GET /jobs`、`POST /jobs/{id}/cancel|confirm`），挂到 `api/state.py:StudioState` 和 `api/app.py` 的 lifespan。
-- 然后第 7 步 modelhub。
+- 第 7 步：modelhub —— `modelhub/adapters/base.py`（协议和数据类）、`registry.py`（读 providers.yaml，`DRAMA_MOCK=1` 全换 Mock 但保留 key 和单价）、`adapters/mock.py`（llm / image PNG / tts WAV / video MP4）、`pricing.py`、`calllog.py`、`router.py`（`router.call()`：解析配置 → estimate → 预算钩子 → 调用 → 写 `model_call` → 发 `cost.updated`；error/timeout 兜底）、开发接口 `POST /api/v1/dev/llm-test`（入队一个 Mock 延迟 3 s 的 script 调用）。
+- 任务处理器用 `JobQueue.register(kind, handler)`；`JobError(code, params, retryable=True)` 才会重试。
 
 ## 没提交的改动
 
