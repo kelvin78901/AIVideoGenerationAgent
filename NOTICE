@@ -1,0 +1,12 @@
+AI Drama Studio (短剧工作台)
+
+This product is a modified version of drama-series-agent
+(https://github.com/binwu1/drama-series-agent), Copyright the Drama Series Agent
+Contributors, licensed under the Apache License, Version 2.0. See LICENSE.
+
+Modifications: the upstream code base has been extended into an integrated short-drama
+production workbench (new subpackages under src/drama_series_agent/ such as core/,
+modelhub/, pipeline/, spec/, setup/, sync/, and a rebuilt web/ front end). Upstream files
+that were changed carry a one-line modification notice at the top of the file.
+
+Bundled third-party content keeps its own license, e.g. skills/0xsline-short-drama/LICENSE.

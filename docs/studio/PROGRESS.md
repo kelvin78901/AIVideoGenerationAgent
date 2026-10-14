@@ -12,12 +12,12 @@
 
 | 步 | 做了什么 | 提交 | 测试 |
 | --- | --- | --- | --- |
-| 0 | 计划存档、PROGRESS / 报告规则、状态栏 + 上下文提醒钩子 + SessionStart 钩子、/handoff 和 /continue、CLAUDE.md 新增一节 | 本提交 | 钩子脚本用模拟输入自测通过（65% 提醒一次、重复不提醒、session 不符不提醒、80% 提醒一次、直接跳到 80% 只提醒一次、无 rate_limits 显示「—」）；项目还没有自动化测试 |
+| 0 | 计划存档、PROGRESS / 报告规则、状态栏 + 上下文提醒钩子 + SessionStart 钩子、/handoff 和 /continue、CLAUDE.md 新增一节 | 5e650b7 | 钩子脚本用模拟输入自测通过（65% 提醒一次、重复不提醒、session 不符不提醒、80% 提醒一次、直接跳到 80% 只提醒一次、无 rate_limits 显示「—」）；项目还没有自动化测试 |
+| 1 | `NOTICE`；`docs/studio/UPSTREAM_NOTES.md`（上游模块地图、数据文件、H3 runner、失效传播、续跑、直接调 LLM 的位置、全局状态） | 本提交 | 仅文档 |
 
 ## 下一步
 
-- 第 1 步：新增 `NOTICE`；通读上游，写 `docs/studio/UPSTREAM_NOTES.md`。
-- 从 `src/drama_series_agent/adapters/r2v/runner.py`、`drama/runtime.py`、`drama/dispatch.py`、`api/routers/series.py` 和 `docs/contracts/*.schema.json` 开始读。
+- 第 2 步：Python 工具链（pyproject、uv.lock、ruff/mypy/pytest、`config/`、`tests/conftest.py`）。
 
 ## 没提交的改动
 
