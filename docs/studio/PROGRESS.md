@@ -20,12 +20,13 @@
 | 5 | `core/events.py`：事件先写 `event` 表再广播，支持补发、慢订阅者从库里追、保留最近 5000 条；`api/sse.py` 的 `GET /api/v1/events`（`Last-Event-ID` 或 `?after=`，15 s 心跳）；`api/state.py` + lifespan（启动时迁移数据库） | 499003d | pytest 34 passed（含真实 uvicorn 上的 SSE 补发测试，连跑 3 次稳定）；ruff、mypy 通过 |
 | 6 | `core/jobs.py` 持久化队列：gpu 并发 1、cpu 核数/2、`api:<x>` 默认 2；优先级 + 先进先出；依赖；取消（排队 / 运行中）、确认（`waiting_confirm`）；启动时把 running 放回队列（超过 max_attempts 判 `interrupted`），正常关闭也放回队列；每次状态变化发 `job.updated`；`api/routes/jobs.py`、`api/errors.py`（错误码 + 参数） | dfbd698 | pytest 49 passed（连跑 5 次稳定）；ruff、mypy 通过 |
 | 7 | modelhub：`adapters/base.py`（协议、请求 / 结果类型、`ModelError`）、`adapters/mock.py`（LLM 文本 / JSON、PNG、WAV、FFmpeg MP4，可配延迟 / 失败 / 卡死）、`registry.py`（providers.yaml 三段 → spec；Mock 默认开启，`DRAMA_MOCK=0` 才走真实）、`pricing.py`、`calllog.py`、`router.py`（解析配置选模型 → 估价 → 预算钩子 → 超时 → 存文件 → 每次尝试一行 `model_call` → `cost.updated`；error/timeout 兜底一跳）；`api/handlers.py` + `POST /api/v1/dev/llm-test`、`GET /api/v1/dev/model-calls` | 3aa82a4 | pytest 69 passed；ruff、mypy 通过 |
-| 8 | `modelhub/adapters/openai_compat.py`（httpx 直连 `/chat/completions`：JSON 模式、流式 + `CallContext.on_delta`、429/5xx 指数退避并尊重 Retry-After、错误码映射；`health()` = `GET /models`），非 Mock 时注册给所有带 base_url 的 llm；`core/secrets.py`（keyring → 环境变量 → `.env`，loguru 打码）；`api/routes/providers.py`（列表只给 `has_key` / `key_source`，存 / 删密钥，测试连接） | 本提交 | pytest 89 passed（respx 模拟厂商；断言响应和日志里没有密钥）；ruff、mypy 通过 |
+| 8 | `modelhub/adapters/openai_compat.py`（httpx 直连 `/chat/completions`：JSON 模式、流式 + `CallContext.on_delta`、429/5xx 指数退避并尊重 Retry-After、错误码映射；`health()` = `GET /models`），非 Mock 时注册给所有带 base_url 的 llm；`core/secrets.py`（keyring → 环境变量 → `.env`，loguru 打码）；`api/routes/providers.py`（列表只给 `has_key` / `key_source`，存 / 删密钥，测试连接） | 26d8970 | pytest 89 passed（respx 模拟厂商；断言响应和日志里没有密钥）；ruff、mypy 通过 |
+| 9 | 上游 `cli.py:run_api_main` 和 `scripts/run_api.py` 改为启动 `create_app()`（文件头加了修改说明）；应用装配测试（lifespan 迁移 + 队列启停、上游 `/api` 仍可用、OpenAPI 列出全部 `/api/v1` 路由） | 本提交 | pytest 92 passed；手动 `uv run drama-studio dev` + curl 走通 Mock LLM：SSE 依次收到 queued → running → cost.updated → succeeded，`model_call` 1 行 |
 
 ## 下一步
 
-- 第 9 步：应用装配收尾 —— 上游 `cli.py:run_api_main` 改成用 `create_app()`（文件头加修改说明），`drama-studio dev` 实测能起；补齐每个 `/api/v1` 路由「一正一反」的 API 测试；确认 lifespan 里迁移、队列启动、续跑、日志打码都在。
-- 之后第 10 步开始前端（pnpm via corepack）。
+- 第 10 步：前端工具链 —— `corepack enable` 后用 pnpm（删 `web/package-lock.json`）；oxlint → eslint（typescript-eslint、react-hooks）+ prettier；Vitest + Testing Library；Tailwind v4 + shadcn/ui（`components.json`，button / badge / dropdown-menu / tooltip / separator / scroll-area / sonner）+ lucide；`web/src/styles/tokens.css`（亮 / 暗两套 token，图表色按 SPEC 11.3）；Vite 代理 `/api` → `127.0.0.1:8000`。
+- 注意：上游前端还在 `web/src/`，第 11b 步才挪到 `legacy/`；第 10 步只动工具链，保证 `pnpm -C web build` 仍然能过。
 
 ## 没提交的改动
 

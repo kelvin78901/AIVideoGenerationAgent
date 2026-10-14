@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
+# Modified for AI Drama Studio: run_api_main serves api.app:create_app (upstream /api + studio /api/v1).
 """CLI entry points for drama-series-agent."""
 
 from __future__ import annotations
@@ -22,25 +23,15 @@ def _ensure_path() -> Path:
 def run_api_main() -> None:
     _ensure_path()
     import uvicorn
-    from fastapi import FastAPI
-    from fastapi.middleware.cors import CORSMiddleware
-    from drama_series_agent.api.routers.series import router as series_router
 
     p = argparse.ArgumentParser(description="Drama Series Agent API")
     p.add_argument("--host", default="127.0.0.1")
     p.add_argument("--port", type=int, default=8000)
     args = p.parse_args()
 
-    app = FastAPI(title="Drama Series Agent", version="0.1.0")
-    app.add_middleware(
-        CORSMiddleware,
-        allow_origins=["*"],
-        allow_credentials=True,
-        allow_methods=["*"],
-        allow_headers=["*"],
+    uvicorn.run(
+        "drama_series_agent.api.app:create_app", factory=True, host=args.host, port=args.port
     )
-    app.include_router(series_router, prefix="/api")
-    uvicorn.run(app, host=args.host, port=args.port)
 
 
 def run_episode_main() -> None:
