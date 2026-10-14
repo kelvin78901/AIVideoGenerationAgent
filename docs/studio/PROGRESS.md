@@ -15,12 +15,12 @@
 | 0 | 计划存档、PROGRESS / 报告规则、状态栏 + 上下文提醒钩子 + SessionStart 钩子、/handoff 和 /continue、CLAUDE.md 新增一节 | 5e650b7 | 钩子脚本用模拟输入自测通过（65% 提醒一次、重复不提醒、session 不符不提醒、80% 提醒一次、直接跳到 80% 只提醒一次、无 rate_limits 显示「—」）；项目还没有自动化测试 |
 | 1 | `NOTICE`；`docs/studio/UPSTREAM_NOTES.md`（上游模块地图、数据文件、H3 runner、失效传播、续跑、直接调 LLM 的位置、全局状态） | 934c772 | 仅文档 |
 | 2 | Python 3.12 + uv（`uv.lock`、`.python-version`）、新依赖、ruff / mypy（strict，只覆盖新代码）/ pytest 配置；`config/*.yaml` 从 seed 拷入；`drama-studio dev` CLI；`api/app.py` 最小 app factory（上游 `/api` + `/api/v1/health`，CORS 只放行 5173）；`tests/conftest.py` | 4b4fe2b | pytest 9 passed；ruff、mypy 通过 |
+| 4 | `core/storage.py`：按 sha256 存文件（`blobs/sha256/ab/<hash>`），临时文件 + `os.replace` 原子写、重复内容只存一份、大文件流式复制 | 本提交 | pytest 25 passed；ruff、mypy 通过 |
 
 ## 下一步
 
-- 第 4 步：`core/storage.py` 内容哈希文件存储（`blobs/sha256/ab/<hash>`，临时文件 + 原子 rename，去重）+ `tests/unit/test_storage.py`。
-- 然后第 5 步事件总线 + SSE（`core/events.py` 用已建好的 `event` 表）。
-- 后续步骤要注意 UPSTREAM_NOTES 第 2、7 节列出的全局状态和直接调 LLM 的位置（M0 不改上游，只是 app factory 里别在导入时触发 `adapters/service.py`）。
+- 第 5 步：`core/events.py`（写 `event` 表 + asyncio 广播、保留最近 5000 条）和 `GET /api/v1/events`（SSE，`Last-Event-ID` 补发，15 s 心跳），测试补发和多订阅者。
+- 然后第 6 步持久化任务队列（`core/jobs.py`）。
 
 ## 没提交的改动
 
