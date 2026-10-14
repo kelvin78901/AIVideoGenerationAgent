@@ -18,12 +18,12 @@
 | 3 | `core/paths.py`（`DRAMA_HOME` 默认 `~/.drama-studio/`）、`core/config.py`（YAML → Pydantic、四级解析 factory→project→component→item 并标来源）、`core/overrides.py`、`core/db.py`（SQLite WAL、async 会话、程序内跑迁移）、`core/models_db.py` 六张表 + Alembic `0001` | d9356ef | pytest 19 passed（含迁移升降级、模型与迁移一致、WAL、时区往返）；ruff、mypy 通过 |
 | 4 | `core/storage.py`：按 sha256 存文件（`blobs/sha256/ab/<hash>`），临时文件 + `os.replace` 原子写、重复内容只存一份、大文件流式复制 | 9f60836 | pytest 25 passed；ruff、mypy 通过 |
 | 5 | `core/events.py`：事件先写 `event` 表再广播，支持补发、慢订阅者从库里追、保留最近 5000 条；`api/sse.py` 的 `GET /api/v1/events`（`Last-Event-ID` 或 `?after=`，15 s 心跳）；`api/state.py` + lifespan（启动时迁移数据库） | 499003d | pytest 34 passed（含真实 uvicorn 上的 SSE 补发测试，连跑 3 次稳定）；ruff、mypy 通过 |
-| 6 | `core/jobs.py` 持久化队列：gpu 并发 1、cpu 核数/2、`api:<x>` 默认 2；优先级 + 先进先出；依赖；取消（排队 / 运行中）、确认（`waiting_confirm`）；启动时把 running 放回队列（超过 max_attempts 判 `interrupted`），正常关闭也放回队列；每次状态变化发 `job.updated`；`api/routes/jobs.py`、`api/errors.py`（错误码 + 参数） | 本提交 | pytest 49 passed（连跑 5 次稳定）；ruff、mypy 通过 |
+| 6 | `core/jobs.py` 持久化队列：gpu 并发 1、cpu 核数/2、`api:<x>` 默认 2；优先级 + 先进先出；依赖；取消（排队 / 运行中）、确认（`waiting_confirm`）；启动时把 running 放回队列（超过 max_attempts 判 `interrupted`），正常关闭也放回队列；每次状态变化发 `job.updated`；`api/routes/jobs.py`、`api/errors.py`（错误码 + 参数） | dfbd698 | pytest 49 passed（连跑 5 次稳定）；ruff、mypy 通过 |
+| 7 | modelhub：`adapters/base.py`（协议、请求 / 结果类型、`ModelError`）、`adapters/mock.py`（LLM 文本 / JSON、PNG、WAV、FFmpeg MP4，可配延迟 / 失败 / 卡死）、`registry.py`（providers.yaml 三段 → spec；Mock 默认开启，`DRAMA_MOCK=0` 才走真实）、`pricing.py`、`calllog.py`、`router.py`（解析配置选模型 → 估价 → 预算钩子 → 超时 → 存文件 → 每次尝试一行 `model_call` → `cost.updated`；error/timeout 兜底一跳）；`api/handlers.py` + `POST /api/v1/dev/llm-test`、`GET /api/v1/dev/model-calls` | 本提交 | pytest 69 passed；ruff、mypy 通过 |
 
 ## 下一步
 
-- 第 7 步：modelhub —— `modelhub/adapters/base.py`（协议和数据类）、`registry.py`（读 providers.yaml，`DRAMA_MOCK=1` 全换 Mock 但保留 key 和单价）、`adapters/mock.py`（llm / image PNG / tts WAV / video MP4）、`pricing.py`、`calllog.py`、`router.py`（`router.call()`：解析配置 → estimate → 预算钩子 → 调用 → 写 `model_call` → 发 `cost.updated`；error/timeout 兜底）、开发接口 `POST /api/v1/dev/llm-test`（入队一个 Mock 延迟 3 s 的 script 调用）。
-- 任务处理器用 `JobQueue.register(kind, handler)`；`JobError(code, params, retryable=True)` 才会重试。
+- 第 8 步：`modelhub/adapters/openai_compat.py`（httpx 直连 `/chat/completions`，JSON 模式、流式、429 指数退避；`health()` = `GET /models`），在 `api/state.py` 用 `registry.add_factory()` 注册给所有 `kind == "llm"` 的 spec；`core/secrets.py`（keyring 服务名 `drama-studio` → `.env` 兜底；日志打码）；`api/routes/providers.py`（`GET /providers` 只返回 `has_key`，`POST/DELETE /providers/{id}/key`，`POST /providers/{id}/test`）。测试用 respx，断言响应和日志里没有密钥。
 
 ## 没提交的改动
 
