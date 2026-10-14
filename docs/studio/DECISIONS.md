@@ -8,6 +8,8 @@
 - **兜底只跳一次**：失败后换到 `fallback.to`（为空取 `alt_order` 第一个没试过的），再失败就报错。原因：沿着整个备选列表一路试下去，坏天气里花费会成倍增加；要再试由用户点「不满意换一个」。未知模型、预算超限不触发兜底。
 - **每次尝试一行 `model_call`**：失败、超时、取消也记（`billed=false`、`cost_usd=0`，厂商明确计费的错误除外）。
 - **`api:<provider>` 队列名取模型的 `provider_id`**：LLM 用 providers.yaml 里的供应商 id（如 `deepseek`），媒体和本地模型取 key 的前缀（如 `minimax`、`comfy`）。
+- **OpenAICompatAdapter 用 httpx 直连**，不用 openai SDK：重试、错误码、流式都要自己控制，且便于 respx 测试；URL 规范化复用上游 `utils/llm_client.normalize_base_url`。
+- **密钥查找顺序**：系统钥匙串（服务名 `drama-studio`，条目名 = `key_name`）→ 环境变量 → `.env`。`GET /providers` 返回 `has_key` 和 `key_source`（keyring / env / none），不返回密钥。所有 loguru 日志经过打码（Authorization、api_key、`sk-…`，以及本进程读到过的密钥原文）。测试里 `DRAMA_ENV_FILE` 指向空文件，不会读到开发机上的真实 `.env`。
 - **开发接口 `/api/v1/dev/*`**：`llm-test` 只在 Mock 模式可用（否则 403 `mock_only`），给前端 `/dev/jobs` 面板和 M0 验收用。
 
 ## 2026-10-14 · M0 任务队列

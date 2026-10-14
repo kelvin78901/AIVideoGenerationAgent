@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Any, Literal, Protocol, runtime_checkable
@@ -133,6 +134,8 @@ class CallContext:
     job_id: str | None = None
     attempt: int = 1
     is_switch: bool = False
+    # Streaming LLMs push text deltas here (e.g. to forward them over SSE).
+    on_delta: Callable[[str], Awaitable[None]] | None = None
 
 
 class ModelError(Exception):

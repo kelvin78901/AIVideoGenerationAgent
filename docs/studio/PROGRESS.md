@@ -19,11 +19,13 @@
 | 4 | `core/storage.py`：按 sha256 存文件（`blobs/sha256/ab/<hash>`），临时文件 + `os.replace` 原子写、重复内容只存一份、大文件流式复制 | 9f60836 | pytest 25 passed；ruff、mypy 通过 |
 | 5 | `core/events.py`：事件先写 `event` 表再广播，支持补发、慢订阅者从库里追、保留最近 5000 条；`api/sse.py` 的 `GET /api/v1/events`（`Last-Event-ID` 或 `?after=`，15 s 心跳）；`api/state.py` + lifespan（启动时迁移数据库） | 499003d | pytest 34 passed（含真实 uvicorn 上的 SSE 补发测试，连跑 3 次稳定）；ruff、mypy 通过 |
 | 6 | `core/jobs.py` 持久化队列：gpu 并发 1、cpu 核数/2、`api:<x>` 默认 2；优先级 + 先进先出；依赖；取消（排队 / 运行中）、确认（`waiting_confirm`）；启动时把 running 放回队列（超过 max_attempts 判 `interrupted`），正常关闭也放回队列；每次状态变化发 `job.updated`；`api/routes/jobs.py`、`api/errors.py`（错误码 + 参数） | dfbd698 | pytest 49 passed（连跑 5 次稳定）；ruff、mypy 通过 |
-| 7 | modelhub：`adapters/base.py`（协议、请求 / 结果类型、`ModelError`）、`adapters/mock.py`（LLM 文本 / JSON、PNG、WAV、FFmpeg MP4，可配延迟 / 失败 / 卡死）、`registry.py`（providers.yaml 三段 → spec；Mock 默认开启，`DRAMA_MOCK=0` 才走真实）、`pricing.py`、`calllog.py`、`router.py`（解析配置选模型 → 估价 → 预算钩子 → 超时 → 存文件 → 每次尝试一行 `model_call` → `cost.updated`；error/timeout 兜底一跳）；`api/handlers.py` + `POST /api/v1/dev/llm-test`、`GET /api/v1/dev/model-calls` | 本提交 | pytest 69 passed；ruff、mypy 通过 |
+| 7 | modelhub：`adapters/base.py`（协议、请求 / 结果类型、`ModelError`）、`adapters/mock.py`（LLM 文本 / JSON、PNG、WAV、FFmpeg MP4，可配延迟 / 失败 / 卡死）、`registry.py`（providers.yaml 三段 → spec；Mock 默认开启，`DRAMA_MOCK=0` 才走真实）、`pricing.py`、`calllog.py`、`router.py`（解析配置选模型 → 估价 → 预算钩子 → 超时 → 存文件 → 每次尝试一行 `model_call` → `cost.updated`；error/timeout 兜底一跳）；`api/handlers.py` + `POST /api/v1/dev/llm-test`、`GET /api/v1/dev/model-calls` | 3aa82a4 | pytest 69 passed；ruff、mypy 通过 |
+| 8 | `modelhub/adapters/openai_compat.py`（httpx 直连 `/chat/completions`：JSON 模式、流式 + `CallContext.on_delta`、429/5xx 指数退避并尊重 Retry-After、错误码映射；`health()` = `GET /models`），非 Mock 时注册给所有带 base_url 的 llm；`core/secrets.py`（keyring → 环境变量 → `.env`，loguru 打码）；`api/routes/providers.py`（列表只给 `has_key` / `key_source`，存 / 删密钥，测试连接） | 本提交 | pytest 89 passed（respx 模拟厂商；断言响应和日志里没有密钥）；ruff、mypy 通过 |
 
 ## 下一步
 
-- 第 8 步：`modelhub/adapters/openai_compat.py`（httpx 直连 `/chat/completions`，JSON 模式、流式、429 指数退避；`health()` = `GET /models`），在 `api/state.py` 用 `registry.add_factory()` 注册给所有 `kind == "llm"` 的 spec；`core/secrets.py`（keyring 服务名 `drama-studio` → `.env` 兜底；日志打码）；`api/routes/providers.py`（`GET /providers` 只返回 `has_key`，`POST/DELETE /providers/{id}/key`，`POST /providers/{id}/test`）。测试用 respx，断言响应和日志里没有密钥。
+- 第 9 步：应用装配收尾 —— 上游 `cli.py:run_api_main` 改成用 `create_app()`（文件头加修改说明），`drama-studio dev` 实测能起；补齐每个 `/api/v1` 路由「一正一反」的 API 测试；确认 lifespan 里迁移、队列启动、续跑、日志打码都在。
+- 之后第 10 步开始前端（pnpm via corepack）。
 
 ## 没提交的改动
 

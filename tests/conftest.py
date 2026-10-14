@@ -36,6 +36,7 @@ def _isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[N
     monkeypatch.setenv("DRAMA_MOCK", "1")
     monkeypatch.delenv("DRAMA_LIVE", raising=False)
     monkeypatch.setenv("DRAMA_HOME", str(tmp_path / "drama-home"))
+    monkeypatch.setenv("DRAMA_ENV_FILE", str(tmp_path / "no.env"))  # never read the real .env
     previous = keyring.get_keyring()
     keyring.set_keyring(MemoryKeyring())
     yield
