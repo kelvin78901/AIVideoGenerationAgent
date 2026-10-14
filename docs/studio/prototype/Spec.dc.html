@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>成片规格 · 画幅、分辨率与平台</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F3F3F1}
+a{color:#2350C2}a:hover{color:#173A94}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+button:focus-visible,a:focus-visible{outline:2px solid #2350C2;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: #F3F3F1; color: #1A1B1E; font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 20px; background: #1A1B1E; color: #F2F2EF">
+<div style="font-size: 15px; font-weight: 700; letter-spacing: 0.02em">短剧工作台</div>
+<div style="font-size: 14px; color: #C9CAC6">《雨停之前》 · 第 1 集《红伞》</div>
+<a href="Spec.dc.html" aria-current="page" style="display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border: 1px solid #F2F2EF; border-radius: 999px; color: #FFFFFF; font-size: 12px; text-decoration: none; font-family: 'IBM Plex Mono', ui-monospace, monospace">{{chip}}</a>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: #C9CAC6">
+<span>本地 GPU：RTX 5090 32GB · 空闲</span>
+<span>本集 API 花费 <b style="color: #FFFFFF; font-weight: 500">$8.94</b> / 预算 $15</span>
+<button type="button" onClick="{{toggleLang}}" aria-label="切换界面语言 / Switch language" style="min-height: 32px; padding: 0 10px; border: 1px solid #5B5E63; border-radius: 6px; background: transparent; color: #F2F2EF; font-size: 12px">中 / EN</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: stretch; flex: 1 1 auto">
+
+<nav aria-label="制作步骤" style="flex: 1 1 200px; box-sizing: border-box; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; background: #ECECE8; border-right: 1px solid #DADAD5">
+<div style="font-size: 12px; color: #4F5257; padding: 0 10px 6px">制作步骤</div>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #4F5257; width: 20px">{{n.no}}</span>
+<span style="font-size: 14px; font-weight: 500">{{n.label}}</span>
+<span style="margin-left: auto; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: {{n.bbg}}; color: {{n.bfg}}">{{n.badge}}</span>
+</a>
+</sc-for>
+<div style="height: 1px; background: #DADAD5; margin: 10px 4px"></div>
+<a href="Spec.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; background: #FFFFFF; border: 1px solid #CFCFC9">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path></svg>
+<span style="font-size: 14px; font-weight: 700">成片规格</span>
+</a>
+<a href="Models.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+<span style="font-size: 14px; font-weight: 500">模型与兜底</span>
+</a>
+<a href="Sync.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M17.5 14v7"></path><path d="M14 17.5h7"></path></svg>
+<span style="font-size: 14px; font-weight: 500">素材整理与同步</span>
+</a>
+<a href="Dashboard.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+<span style="font-size: 14px; font-weight: 500">数据看板</span>
+</a>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px 28px 48px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; margin-right: auto; min-width: 0">
+<div style="font-size: 12px; color: #4F5257; font-family: 'IBM Plex Mono', ui-monospace, monospace">新建剧集时设定 · 全剧共用</div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700">成片规格</h1>
+<p style="margin: 0; font-size: 14px; color: #4F5257; line-height: 1.7; max-width: 700px">先定横版还是竖版、交付分辨率和帧率。画幅决定所有关键帧和视频的构图，第一张关键帧采纳后就锁定；之后再改，已生成的关键帧和视频都要重做。</p>
+</div>
+<span style="display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 0 10px; border-radius: 6px; background: #E8EEFB; color: #1A3E9E; font-size: 13px">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"></rect><path d="M8 11V7a4 4 0 0 1 8 0v4"></path></svg>已锁定 · 第 1 集已有 9 张关键帧</span>
+<a href="Main.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 14px; font-weight: 500; text-decoration: none">下一步：导入小说
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+</div>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="padding: 10px 14px; border-radius: 8px; background: #E8EEFB; color: #173A94; font-size: 14px">{{toast}}</div>
+</sc-if>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<div style="flex: 999 1 520px; min-width: 0; display: flex; flex-direction: column; gap: 16px">
+
+<section style="box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">发布到哪里</h2>
+<p style="margin: 0; font-size: 13px; color: #4F5257">选平台会自动填好下面的画幅和分辨率，之后可以再单独改。</p>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(190px, 1fr)); gap: 10px">
+<sc-for list="{{platforms}}" as="p" hint-placeholder-count="4">
+<button type="button" onClick="{{p.pick}}" aria-pressed="{{p.on}}" style="text-align: left; min-height: 76px; padding: 12px; border-radius: 10px; border: 2px solid {{p.ring}}; background: #FFFFFF; color: #1A1B1E; display: flex; flex-direction: column; gap: 4px">
+<span style="font-size: 14px; font-weight: 700">{{p.name}}</span>
+<span style="font-size: 12px; color: #4F5257; line-height: 1.6">{{p.sub}}</span>
+<span style="font-size: 12px; color: #1A3E9E; font-family: 'IBM Plex Mono', ui-monospace, monospace">{{p.spec}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<section style="box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">画幅</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 10px">
+<sc-for list="{{aspects}}" as="a" hint-placeholder-count="5">
+<button type="button" onClick="{{a.pick}}" aria-pressed="{{a.on}}" style="flex: 1 1 120px; min-height: 96px; padding: 10px; border-radius: 10px; border: 2px solid {{a.ring}}; background: #FFFFFF; color: #1A1B1E; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px">
+<span style="display: flex; align-items: center; justify-content: center; width: 40px; height: 40px"><span style="display: block; width: {{a.iw}}; height: {{a.ih}}; border: 2px solid #1A1B1E; border-radius: 3px; box-sizing: border-box; background: {{a.fill}}"></span></span>
+<span style="font-size: 13px; font-weight: 700">{{a.name}}</span>
+<span style="font-size: 11px; color: #4F5257">{{a.tag}}</span>
+</button>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 13px; color: #4F5257; line-height: 1.7">{{aspectNote}}</p>
+</section>
+
+<sc-if value="{{showImpact}}" hint-placeholder-val="{{ false }}">
+<section aria-labelledby="impact-h"style="box-sizing: border-box; padding: 18px; background: #FFF7EE; border: 2px solid #C25E0A; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<h2 id="impact-h" style="margin: 0; font-size: 16px; font-weight: 700; display: flex; align-items: center; gap: 8px">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#A2480B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l10 18H2z"></path><path d="M12 10v5"></path><path d="M12 18h0"></path></svg>改成 {{aspectName}} 会影响已经做好的部分</h2>
+<div style="display: flex; flex-direction: column; gap: 6px; font-size: 14px; line-height: 1.7">
+<div>关键帧 9 张（9 个镜头）要按新画幅重画 · 约 $1.26</div>
+<div>视频候选 10 条（已采纳 3 条）要重做：本地草稿重跑不花钱，API 终版约 $2.76</div>
+<div>场景参考图 3 张是按 9:16 出的，建议重出（可选）</div>
+<div style="color: #4F5257">剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" onClick="{{impactMark}}" style="min-height: 40px; padding: 0 14px; border: 1px solid #1A1B1E; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">改，并标记待更新</button>
+<button type="button" onClick="{{impactRerun}}" style="min-height: 40px; padding: 0 14px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 14px; font-weight: 500">改，并自动重做（约 $4.02）</button>
+<button type="button" onClick="{{impactUndo}}" style="min-height: 40px; padding: 0 14px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">撤销，保持 9:16</button>
+</div>
+</section>
+</sc-if>
+
+<section style="box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">分辨率和帧率</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">交付分辨率</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{resOpts}}" as="r" hint-placeholder-count="2">
+<button type="button" onClick="{{r.pick}}" aria-pressed="{{r.on}}" style="flex: 1 1 220px; text-align: left; min-height: 60px; padding: 10px 12px; border-radius: 8px; border: 2px solid {{r.ring}}; background: #FFFFFF; color: #1A1B1E; display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 14px; font-weight: 700">{{r.name}} <span style="font-weight: 400; font-family: 'IBM Plex Mono', ui-monospace, monospace">{{r.dims}}</span></span>
+<span style="font-size: 12px; color: #4F5257; line-height: 1.6">{{r.desc}}</span>
+</button>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #4F5257; line-height: 1.7">草稿固定用 768p 档在本地 H3 抽卡，不花钱；你采纳后才按交付分辨率出终版。</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">帧率</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{fpsOpts}}" as="f" hint-placeholder-count="3">
+<button type="button" onClick="{{f.pick}}" aria-pressed="{{f.on}}" style="min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid {{f.bd}}; background: {{f.bg}}; color: {{f.fg}}; font-size: 14px">{{f.label}}</button>
+</sc-for>
+</div>
+<div style="font-size: 13px; color: #4F5257; line-height: 1.7">{{fpsNote}}</div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">每集时长</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{lenOpts}}" as="l" hint-placeholder-count="4">
+<button type="button" onClick="{{l.pick}}" aria-pressed="{{l.on}}" style="min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid {{l.bd}}; background: {{l.bg}}; color: {{l.fg}}; font-size: 14px">{{l.label}}</button>
+</sc-for>
+</div>
+<div style="font-size: 13px; color: #4F5257; line-height: 1.7">{{lenNote}}</div>
+</div>
+</section>
+
+<section style="box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">当前路由下的模型能不能直接出这个规格</h2>
+<span style="font-size: 12px; color: #4F5257">不支持的模型会在选择器里隐藏；能力以各家官方文档为准</span>
+</div>
+<div style="overflow-x: auto">
+<div role="table" aria-label="模型兼容检查" style="min-width: 640px; display: grid; grid-template-columns: 1.2fr 1.3fr 1fr 2fr; font-size: 13px">
+<div role="row" style="display: contents">
+<span role="columnheader" style="padding: 8px; border-bottom: 1px solid #CFCFC9; color: #4F5257">环节</span>
+<span role="columnheader" style="padding: 8px; border-bottom: 1px solid #CFCFC9; color: #4F5257">模型</span>
+<span role="columnheader" style="padding: 8px; border-bottom: 1px solid #CFCFC9; color: #4F5257">{{aspectName}}</span>
+<span role="columnheader" style="padding: 8px; border-bottom: 1px solid #CFCFC9; color: #4F5257">怎么处理</span>
+</div>
+<sc-for list="{{compat}}" as="c" hint-placeholder-count="7">
+<div role="row" style="display: contents">
+<span role="cell" style="padding: 8px; border-bottom: 1px solid #ECECE8">{{c.stage}}</span>
+<span role="cell" style="padding: 8px; border-bottom: 1px solid #ECECE8; font-weight: 500">{{c.model}}</span>
+<span role="cell" style="padding: 8px; border-bottom: 1px solid #ECECE8; display: flex; align-items: center; gap: 6px; color: {{c.fg}}">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="{{c.icon}}"></path></svg>{{c.st}}</span>
+<span role="cell" style="padding: 8px; border-bottom: 1px solid #ECECE8; color: #3E4146; line-height: 1.6">{{c.how}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+<section style="box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">声音、字幕和导出</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 10px; font-size: 13px">
+<div style="padding: 10px 12px; border-radius: 8px; background: #F7F7F5; display: flex; flex-direction: column; gap: 2px"><span style="color: #4F5257">视频编码</span><span style="font-weight: 500">MP4 · H.264 High · Rec.709 SDR</span></div>
+<div style="padding: 10px 12px; border-radius: 8px; background: #F7F7F5; display: flex; flex-direction: column; gap: 2px"><span style="color: #4F5257">声音</span><span style="font-weight: 500">48 kHz · 响度 -14 LUFS · 峰值 -1 dBTP</span></div>
+<div style="padding: 10px 12px; border-radius: 8px; background: #F7F7F5; display: flex; flex-direction: column; gap: 2px"><span style="color: #4F5257">AI 生成标识</span><span style="font-weight: 500">画面角标 + 文件元数据</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">字幕</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{subOpts}}" as="o" hint-placeholder-count="3">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" style="min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid {{o.bd}}; background: {{o.bg}}; color: {{o.fg}}; font-size: 14px">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+<label style="display: flex; align-items: flex-start; gap: 10px; min-height: 44px; font-size: 14px; line-height: 1.6">
+<input type="checkbox" checked="{{derive}}" onChange="{{toggleDerive}}" style="width: 18px; height: 18px; margin: 3px 0 0">
+<span><b style="font-weight: 500">{{deriveTitle}}</b><br><span style="font-size: 13px; color: #4F5257">{{deriveNote}}</span></span>
+</label>
+</section>
+
+</div>
+
+<aside aria-label="安全区预览" style="flex: 1 1 300px; min-width: 0; box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">构图和安全区</h2>
+<p style="margin: 0; font-size: 13px; color: #4F5257; line-height: 1.7">分镜和关键帧页会叠同一套参考线。人脸和关键文字别放进平台按钮和文案会挡住的地方。</p>
+<div style="display: flex; justify-content: center; padding: 8px 0">
+<div role="img" aria-label="{{previewAria}}" style="position: relative; width: {{pw}}; height: {{ph}}; border-radius: 8px; overflow: hidden; background: linear-gradient(160deg, #3B3F48 0%, #23252B 55%, #15161A 100%)">
+<span aria-hidden="true" style="position: absolute; left: 34%; top: 30%; width: 32%; height: 40%; border-radius: 50% 50% 8px 8px; background: #4A4F59"></span>
+<sc-if value="{{showSafe}}" hint-placeholder-val="{{ true }}">
+<sc-for list="{{zones}}" as="z" hint-placeholder-count="3">
+<span style="position: absolute; left: {{z.l}}; top: {{z.t}}; width: {{z.w}}; height: {{z.h}}; box-sizing: border-box; border: 1px dashed #F2F2EF; background: rgba(242,242,239,0.16); color: #F2F2EF; font-size: 10px; padding: 3px 4px; line-height: 1.3">{{z.label}}</span>
+</sc-for>
+</sc-if>
+<sc-if value="{{showSub}}" hint-placeholder-val="{{ true }}">
+<span style="position: absolute; left: 0; right: {{subRight}}; top: {{subTop}}; text-align: center; color: #FFFFFF; font-size: 13px; font-weight: 700; text-shadow: 0 0 3px #000000, 0 0 3px #000000">……周屿？</span>
+</sc-if>
+</div>
+</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #3E4146; text-align: center">{{previewCap}}</div>
+<label style="display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px">
+<input type="checkbox" checked="{{showSafe}}" onChange="{{toggleSafe}}" style="width: 18px; height: 18px; margin: 0">显示平台遮挡区（示意）</label>
+<label style="display: flex; align-items: center; gap: 10px; min-height: 44px; font-size: 14px">
+<input type="checkbox" checked="{{showSub}}" onChange="{{toggleSub}}" style="width: 18px; height: 18px; margin: 0">显示字幕位置</label>
+<button type="button" onClick="{{save}}" style="min-height: 44px; padding: 0 16px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 14px; font-weight: 500">保存规格</button>
+</aside>
+
+</div>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1500}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = { platform: 'cn', aspect: '9:16', res: '1080', fps: 24, len: 'short', subs: 'both', showSafe: true, showSub: true, derive: false, toast: '' };
+  }
+
+  componentWillUnmount() { clearTimeout(this._tt); }
+
+  flash(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: msg });
+    this._tt = setTimeout(() => this.setState({ toast: '' }), 4500);
+  }
+
+  aspectsData() {
+    return {
+      '9:16': { name: '9:16 竖版', tag: '短剧主流 · 推荐', w: 9, h: 16, dims: ['1080×1920', '1440×2560'], note: '手机全屏竖着看，国内外短剧平台都以竖屏为主。主要的图像和视频模型都能原生出 9:16。' },
+      '16:9': { name: '16:9 横版', tag: '长视频平台', w: 16, h: 9, dims: ['1920×1080', '2560×1440'], note: '适合 B 站、YouTube 这类横屏播放器。放到竖屏短剧平台上会有大黑边。' },
+      '3:4': { name: '3:4 竖版', tag: '信息流', w: 3, h: 4, dims: ['1080×1440', '1440×1920'], note: '比 9:16 矮，人物和场景更容易放进画面；全屏播放时上下会留边。' },
+      '1:1': { name: '1:1 方形', tag: '广告切片', w: 1, h: 1, dims: ['1080×1080', '1440×1440'], note: '多用于投放素材和社交平台信息流。' },
+      '21:9': { name: '21:9 宽银幕', tag: '电影感', w: 21, h: 9, dims: ['2520×1080', '2976×1248'], note: 'Nano Banana Pro 不支持 21:9，关键帧要先出 16:9 再外扩或裁切；H3 的 2K 档在这个画幅约 2976×1248。' }
+    };
+  }
+
+  renderVals() {
+    const s = this.state;
+    const AD = this.aspectsData();
+    const A = AD[s.aspect];
+    const vertical = A.h > A.w;
+
+    const platD = [
+      { id: 'cn', name: '国内短剧平台', sub: '抖音 · 快手 · 视频号 · 红果短剧', aspect: '9:16', res: '1080' },
+      { id: 'intl', name: '海外短剧 App', sub: 'ReelShort · DramaBox · TikTok', aspect: '9:16', res: '1080' },
+      { id: 'wide', name: '横屏平台', sub: 'B 站 · YouTube · 西瓜视频', aspect: '16:9', res: '1080' },
+      { id: 'custom', name: '自定义', sub: '自己定画幅和分辨率', aspect: null, res: null }
+    ];
+    const platforms = platD.map((p) => {
+      const on = s.platform === p.id;
+      const spec = p.aspect ? p.aspect + ' · ' + AD[p.aspect].dims[p.res === '2k' ? 1 : 0] : s.aspect + ' · ' + A.dims[s.res === '2k' ? 1 : 0];
+      return { name: p.name, sub: p.sub, spec: spec, on: on, ring: on ? '#2350C2' : '#DADAD5', pick: () => this.setState(p.aspect ? { platform: p.id, aspect: p.aspect, res: p.res } : { platform: p.id }) };
+    });
+
+    const aspects = Object.keys(AD).map((k) => {
+      const a = AD[k];
+      const on = s.aspect === k;
+      const big = 30;
+      const iw = a.w >= a.h ? big : Math.round(big * a.w / a.h);
+      const ih = a.h >= a.w ? big : Math.round(big * a.h / a.w);
+      return { name: a.name, tag: a.tag, on: on, ring: on ? '#2350C2' : '#DADAD5', fill: on ? '#E8EEFB' : '#FFFFFF', iw: iw + 'px', ih: ih + 'px', pick: () => {
+        const match = platD.find((p) => p.id === this.state.platform);
+        const keep = match && match.aspect === k;
+        this.setState({ aspect: k, platform: keep ? this.state.platform : 'custom' });
+      } };
+    });
+
+    const resOpts = [
+      { id: '1080', name: '1080p', desc: '短剧平台常见的上限，推荐。终版走 H3 API 或本地超分到这个尺寸。' },
+      { id: '2k', name: '2K', desc: '终版多一步 2K 精修：本地 SeedVR2 不花钱但慢；H3 2K 重生成约 $0.10 / 秒（输出 + 输入）。' }
+    ].map((r) => {
+      const on = s.res === r.id;
+      return { name: r.name, desc: r.desc, dims: A.dims[r.id === '2k' ? 1 : 0], on: on, ring: on ? '#2350C2' : '#DADAD5', pick: () => this.setState({ res: r.id }) };
+    });
+
+    const chipOpt = (list, key) => list.map((x) => {
+      const on = s[key] === x.id;
+      return { label: x.label, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', bd: on ? '#1A1B1E' : '#CFCFC9', pick: () => { const o = {}; o[key] = x.id; this.setState(o); } };
+    });
+    const fpsOpts = chipOpt([{ id: 24, label: '24 fps · 推荐' }, { id: 25, label: '25 fps' }, { id: 30, label: '30 fps' }], 'fps');
+    const fpsNote = s.fps === 24 ? 'MiniMax H3 等视频模型原生输出 24 fps，不用转换。' : (s.fps === 25 ? '导出时从 24 fps 转成 25 fps，运动镜头可能有轻微顿挫。只影响后期导出，不用重做视频。' : '导出时用本地插帧（如 RIFE）补到 30 fps，多花一些时间，快速运动处偶尔有伪影。只影响后期导出。');
+    const lenOpts = chipOpt([{ id: 'short', label: '30–90 秒' }, { id: 'mid', label: '1.5–3 分钟' }, { id: 'long', label: '3–5 分钟' }, { id: 'xl', label: '10 分钟左右' }], 'len');
+    const lenNote = { short: '按第 1 集的节奏（34 秒 9 个镜头，平均每镜约 3.8 秒），每集约 8–24 个镜头。分集规划会按这个时长切集。', mid: '每集约 24–47 个镜头。分集规划会按这个时长切集。', long: '每集约 47–79 个镜头，审片工作量明显变大。', xl: '每集约 160 个镜头，建议先用短集把流程跑顺。' }[s.len];
+    const subOpts = chipOpt([{ id: 'burn', label: '烧进画面' }, { id: 'srt', label: '单独 SRT' }, { id: 'both', label: '两样都要' }], 'subs');
+
+    const okI = 'M5 12l5 5 9-10', cvI = 'M4 12h12M12 6l6 6-6 6', noI = 'M6 6l12 12M18 6L6 18';
+    const st = (k) => k === 'ok' ? { st: '原生支持', fg: '#0B7A0B', icon: okI } : (k === 'cv' ? { st: '需要转换', fg: '#8A4B00', icon: cvI } : { st: '不支持', fg: '#B22F2F', icon: noI });
+    const is21 = s.aspect === '21:9';
+    const compat = [
+      { stage: '关键帧', model: 'Nano Banana Pro', k: is21 ? 'no' : 'ok', how: is21 ? '先出 16:9，再外扩或裁切成 21:9' : '直接按画幅出图，最高 4K' },
+      { stage: '带字关键帧', model: 'GPT Image 2', k: 'cv', how: '部分接入渠道这个画幅只到 1K，出图后本地超分到交付尺寸' },
+      { stage: '草图', model: 'Seedream 5.0', k: 'ok', how: '按画幅出低价草图' },
+      { stage: '视频（草稿）', model: 'MiniMax H3 本地', k: 'ok', how: '支持 21:9 到 9:16 共 6 种画幅，24 fps，单段 5–15 秒' },
+      { stage: '视频（终版）', model: 'H3 2K 重生成', k: 'ok', how: '跟随草稿画幅，2K 档短边 1440' },
+      { stage: '视频（备选）', model: 'Seedance 2.5', k: 'cv', how: '支持这个画幅；部分渠道只到 720p，需要再超分' },
+      { stage: '2K 精修', model: 'SeedVR2 / FlashVSR', k: 'ok', how: '只放大不改构图，任意画幅都行' }
+    ].map((c) => Object.assign({}, c, st(c.k)));
+
+    const maxV = 380, maxH = 300;
+    let pw, ph;
+    if (vertical) { ph = maxV; pw = Math.round(maxV * A.w / A.h); }
+    else { pw = maxH; ph = Math.round(maxH * A.h / A.w); }
+    const onPlat = s.platform === 'cn' || s.platform === 'intl' || (s.platform === 'custom' && vertical);
+    let zones, subTop, subRight;
+    if (vertical && onPlat) {
+      zones = [
+        { l: '0%', t: '0%', w: '100%', h: '7%', label: '顶部栏' },
+        { l: '84%', t: '38%', w: '16%', h: '42%', label: '按钮' },
+        { l: '0%', t: '82%', w: '100%', h: '18%', label: '标题 · 文案 · 进度条' }
+      ];
+      subTop = '70%'; subRight = '16%';
+    } else if (vertical) {
+      zones = [{ l: '0%', t: '86%', w: '100%', h: '14%', label: '播放控件' }];
+      subTop = '76%'; subRight = '0%';
+    } else {
+      zones = [{ l: '0%', t: '86%', w: '100%', h: '14%', label: '进度条与控件' }];
+      subTop = '72%'; subRight = '0%';
+    }
+
+    const changed = s.aspect !== '9:16';
+    const dimsNow = A.dims[s.res === '2k' ? 1 : 0];
+    const steps = [
+      ['01', '小说', 'Main.dc.html', '已确认', true], ['02', '剧本', 'Script.dc.html', '已确认', true], ['03', '素材', 'Assets.dc.html', '7/13', false],
+      ['04', '分镜', 'Storyboard.dc.html', '3/9', false], ['05', '生成', 'Generate.dc.html', '3/9', false], ['06', '后期', 'Post.dc.html', '未开始', false]
+    ];
+
+    return {
+      nav: steps.map((x) => ({ no: x[0], label: x[1], href: x[2], badge: x[3], bbg: x[4] ? '#E8EEFB' : '#E2E2DD', bfg: x[4] ? '#1A3E9E' : '#3E4146' })),
+      chip: s.aspect + ' · ' + dimsNow + ' · ' + s.fps + ' fps',
+      platforms: platforms, aspects: aspects, aspectNote: A.note, aspectName: A.name,
+      showImpact: changed,
+      impactMark: () => this.flash('已改成 ' + A.name + '：9 张关键帧和 10 条视频候选标为「待更新」，在分镜和生成页逐个重做。'),
+      impactRerun: () => this.flash('已改成 ' + A.name + '，并把 9 个镜头的关键帧加入队列；关键帧确认后再重做视频。预计 $4.02。'),
+      impactUndo: () => this.setState({ aspect: '9:16', platform: 'cn' }),
+      resOpts: resOpts, fpsOpts: fpsOpts, fpsNote: fpsNote, lenOpts: lenOpts, lenNote: lenNote,
+      compat: compat, subOpts: subOpts,
+      derive: s.derive, toggleDerive: () => this.setState({ derive: !this.state.derive }),
+      deriveTitle: vertical ? '另出一版横屏（16:9）' : '另出一版竖屏（9:16）',
+      deriveNote: vertical ? '后期导出时逐镜头用 AI 把两侧画面外扩出来，按外扩模型另计费；不用重做视频。' : '后期导出时按人物位置自动裁成竖屏，不额外花钱；画面边缘的内容会被裁掉。',
+      pw: pw + 'px', ph: ph + 'px', zones: zones, subTop: subTop, subRight: subRight,
+      showSafe: s.showSafe, showSub: s.showSub,
+      toggleSafe: () => this.setState({ showSafe: !this.state.showSafe }),
+      toggleSub: () => this.setState({ showSub: !this.state.showSub }),
+      previewCap: A.name + ' · ' + dimsNow + ' · ' + s.fps + ' fps',
+      previewAria: '安全区预览：' + A.name + '，' + zones.map((z) => z.label).join('、') + (s.showSub ? '，字幕在画面下方安全区内' : ''),
+      save: () => this.flash(changed ? '先在上面的提示里选怎么处理已生成的内容。' : '已保存：' + A.name + ' · ' + dimsNow + ' · ' + s.fps + ' fps。'),
+      toggleLang: () => this.flash('原型里「00 首次启动」页做了完整的中英切换；正式版所有页面的文字都走同一套词表。'),
+      toast: s.toast, hasToast: !!s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

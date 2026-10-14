@@ -1,0 +1,415 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>素材整理与同步 · ComfyUI、文件夹、Eagle、达芬奇</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F3F3F1}
+a{color:#2350C2}a:hover{color:#173A94}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid #2350C2;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: #F3F3F1; color: #1A1B1E; font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 20px; background: #1A1B1E; color: #F2F2EF">
+<div style="font-size: 15px; font-weight: 700; letter-spacing: 0.02em">短剧工作台</div>
+<div style="font-size: 14px; color: #C9CAC6">《雨停之前》 · 第 1 集《红伞》</div>
+<a href="Spec.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border: 1px solid #5B5E63; border-radius: 999px; color: #F2F2EF; font-size: 12px; text-decoration: none; font-family: 'IBM Plex Mono', ui-monospace, monospace">9:16 · 1080×1920 · 24 fps</a>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: #C9CAC6">
+<span>本地 GPU：RTX 5090 32GB · 运行中 1 · 排队 2</span>
+<span>本集 API 花费 <b style="color: #FFFFFF; font-weight: 500">$8.94</b> / 预算 $15</span>
+<button type="button" onClick="{{toggleLang}}" aria-label="切换界面语言 / Switch language" style="min-height: 32px; padding: 0 10px; border: 1px solid #5B5E63; border-radius: 6px; background: transparent; color: #F2F2EF; font-size: 12px">中 / EN</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: stretch; flex: 1 1 auto">
+
+<nav aria-label="制作步骤" style="flex: 1 1 200px; box-sizing: border-box; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; background: #ECECE8; border-right: 1px solid #DADAD5">
+<div style="font-size: 12px; color: #4F5257; padding: 0 10px 6px">制作步骤</div>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #4F5257; width: 20px">{{n.no}}</span>
+<span style="font-size: 14px; font-weight: 500">{{n.label}}</span>
+<span style="margin-left: auto; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: {{n.bbg}}; color: {{n.bfg}}">{{n.badge}}</span>
+</a>
+</sc-for>
+<div style="height: 1px; background: #DADAD5; margin: 10px 4px"></div>
+<a href="Spec.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path></svg>
+<span style="font-size: 14px; font-weight: 500">成片规格</span>
+</a>
+<a href="Models.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+<span style="font-size: 14px; font-weight: 500">模型与兜底</span>
+</a>
+<a href="Sync.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; background: #FFFFFF; border: 1px solid #CFCFC9">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M17.5 14v7"></path><path d="M14 17.5h7"></path></svg>
+<span style="font-size: 14px; font-weight: 700">素材整理与同步</span>
+</a>
+<a href="Dashboard.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+<span style="font-size: 14px; font-weight: 500">数据看板</span>
+</a>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px 28px 48px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; margin-right: auto; min-width: 0">
+<div style="font-size: 12px; color: #4F5257; font-family: 'IBM Plex Mono', ui-monospace, monospace">全剧共用 · 自动进行</div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700">素材整理与同步</h1>
+<p style="margin: 0; font-size: 14px; color: #4F5257; line-height: 1.7; max-width: 720px">生成的角色图、场景、关键帧、视频和配音，按集、场、镜头自动整理好，推到 ComfyUI 画布和你习惯用的软件里看、排、接着做。在 ComfyUI 里做出的新图和新视频也能存回来，进同一份历史。</p>
+</div>
+<button type="button" onClick="{{openComfy}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 14px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 4h6v6"></path><path d="M20 4l-9 9"></path><path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5"></path></svg>在 ComfyUI 里打开素材板</button>
+<button type="button" onClick="{{syncNow}}" disabled="{{syncing}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 14px; font-weight: 500">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>{{syncLabel}}</button>
+</div>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="padding: 10px 14px; border-radius: 8px; background: #E8EEFB; color: #173A94; font-size: 14px">{{toast}}</div>
+</sc-if>
+
+<section aria-labelledby="tg-h" style="display: flex; flex-direction: column; gap: 10px">
+<h2 id="tg-h" style="margin: 0; font-size: 16px; font-weight: 700">同步到哪里</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 12px">
+<sc-for list="{{targets}}" as="t" hint-placeholder-count="4">
+<div style="box-sizing: border-box; padding: 16px; background: #FFFFFF; border: 1px solid {{t.bd}}; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px">
+<span style="font-size: 15px; font-weight: 700; margin-right: auto">{{t.name}}</span>
+<span style="font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #ECECE8; color: #3E4146">{{t.dir}}</span>
+<button type="button" role="switch" aria-checked="{{t.on}}" aria-label="{{t.aria}}" onClick="{{t.toggle}}" style="position: relative; width: 46px; height: 26px; border-radius: 13px; border: none; background: {{t.track}}; flex: 0 0 auto; padding: 0">
+<span style="position: absolute; top: 3px; left: {{t.knob}}; width: 20px; height: 20px; border-radius: 10px; background: #FFFFFF"></span>
+</button>
+</div>
+<div style="display: flex; align-items: flex-start; gap: 6px; font-size: 13px; color: {{t.stFg}}; line-height: 1.6">
+<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" style="flex: 0 0 auto; margin-top: 3px"><path d="{{t.stIcon}}"></path></svg>
+<span>{{t.st}}</span>
+</div>
+<p style="margin: 0; font-size: 13px; color: #3E4146; line-height: 1.7">{{t.what}}</p>
+<sc-if value="{{t.hasModes}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{t.modes}}" as="m" hint-placeholder-count="2">
+<button type="button" onClick="{{m.pick}}" aria-pressed="{{m.on}}" style="min-height: 36px; padding: 0 10px; border-radius: 8px; border: 1px solid {{m.bd}}; background: {{m.bg}}; color: {{m.fg}}; font-size: 13px">{{m.label}}</button>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{t.hasAction}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{t.act}}" style="align-self: flex-start; min-height: 36px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 13px">{{t.actLabel}}</button>
+</sc-if>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-labelledby="cv-h" style="box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-wrap: wrap; align-items: baseline; gap: 6px 12px">
+<h2 id="cv-h" style="margin: 0; font-size: 16px; font-weight: 700">第 1 集素材板（在 ComfyUI 画布里的样子）</h2>
+<span style="font-size: 12px; color: #4F5257">点任意节点看它对应的文件和版本；右下角是“拿工作台的镜头接着做，再存回来”的示例</span>
+</div>
+<div style="overflow-x: auto; border-radius: 10px">
+<div style="position: relative; width: 1060px; height: 640px; background-color: #1E1F22; background-image: radial-gradient(#34363B 1px, transparent 1px); background-size: 20px 20px">
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+<div style="position: absolute; left: {{g.x}}; top: {{g.y}}; width: {{g.w}}; height: {{g.h}}; border-radius: 6px; background: {{g.fill}}; border: 1px solid {{g.c}}">
+<div style="height: 26px; padding: 0 10px; display: flex; align-items: center; border-radius: 5px 5px 0 0; background: {{g.c}}; color: #FFFFFF; font-size: 12px; font-weight: 700">{{g.t}}</div>
+</div>
+</sc-for>
+<svg aria-hidden="true" width="1060" height="640" viewBox="0 0 1060 640" style="position: absolute; left: 0; top: 0; pointer-events: none">
+<sc-for list="{{wires}}" as="w" hint-placeholder-count="6">
+<path d="{{w.d}}" fill="none" stroke="{{w.c}}" stroke-width="2"></path>
+</sc-for>
+</svg>
+<sc-for list="{{nodes}}" as="n" hint-placeholder-count="20">
+<button type="button" onClick="{{n.pick}}" aria-pressed="{{n.on}}" aria-label="{{n.aria}}" style="position: absolute; left: {{n.x}}; top: {{n.y}}; width: {{n.w}}; height: {{n.h}}; box-sizing: border-box; padding: 0; text-align: left; border-radius: 6px; border: {{n.ring}}; background: #2B2D31; color: #E6E6E3; overflow: hidden; display: flex; flex-direction: column">
+<span style="flex: 0 0 auto; height: 20px; padding: 0 6px; display: flex; align-items: center; background: #36393F; font-size: 11px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{n.title}}</span>
+<sc-if value="{{n.isThumb}}" hint-placeholder-val="{{ true }}">
+<span style="display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 6px 4px 0">
+<span style="display: block; width: {{n.tw}}; height: {{n.th}}; border-radius: 3px; background: {{n.tone}}; border: {{n.tb}}"></span>
+<span style="font-size: 10px; line-height: 1.35; color: {{n.capFg}}; text-align: center">{{n.cap}}</span>
+</span>
+</sc-if>
+<sc-if value="{{n.isAudio}}" hint-placeholder-val="{{ false }}">
+<span style="display: flex; align-items: center; gap: 2px; height: 22px; padding: 0 8px">
+<sc-for list="{{n.bars}}" as="b" hint-placeholder-count="30">
+<span style="display: block; width: 3px; height: {{b.h}}; border-radius: 1px; background: #8FB3FF"></span>
+</sc-for>
+</span>
+</sc-if>
+<sc-if value="{{n.isNote}}" hint-placeholder-val="{{ false }}">
+<span style="padding: 4px 8px; font-size: 10px; line-height: 1.5; color: #C9CAC6">{{n.text}}</span>
+</sc-if>
+<sc-if value="{{n.isFunc}}" hint-placeholder-val="{{ false }}">
+<span style="display: flex; flex-direction: column; gap: 0; padding: 4px 0">
+<sc-for list="{{n.rows}}" as="r" hint-placeholder-count="6">
+<span style="display: flex; align-items: center; height: 18px; padding: 0 8px; gap: 6px; font-size: 10px; color: {{r.fg}}; justify-content: {{r.jc}}">
+<sc-if value="{{r.inPort}}" hint-placeholder-val="{{ false }}"><span style="display: block; width: 8px; height: 8px; border-radius: 4px; background: {{r.pc}}; margin-left: -4px"></span></sc-if>
+<span>{{r.label}}</span>
+<sc-if value="{{r.outPort}}" hint-placeholder-val="{{ false }}"><span style="display: block; width: 8px; height: 8px; border-radius: 4px; background: {{r.pc}}; margin-right: -4px"></span></sc-if>
+</span>
+</sc-for>
+</span>
+</sc-if>
+</button>
+</sc-for>
+</div>
+</div>
+<div role="status" style="display: flex; flex-wrap: wrap; gap: 6px 18px; padding: 12px 14px; border-radius: 8px; background: #F7F7F5; font-size: 13px; line-height: 1.6">
+<span style="font-weight: 700">{{sel.title}}</span>
+<sc-for list="{{sel.facts}}" as="f" hint-placeholder-count="4">
+<span><span style="color: #4F5257">{{f.k}}</span> {{f.v}}</span>
+</sc-for>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+
+<section aria-labelledby="rl-h" style="flex: 999 1 480px; min-width: 0; box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 14px">
+<h2 id="rl-h" style="margin: 0; font-size: 16px; font-weight: 700">同步规则</h2>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">什么时候同步</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{whenOpts}}" as="o" hint-placeholder-count="3">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" style="min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid {{o.bd}}; background: {{o.bg}}; color: {{o.fg}}; font-size: 14px">{{o.label}}</button>
+</sc-for>
+</div>
+</div>
+<fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-direction: column; gap: 8px">
+<legend style="padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 500">同步哪些</legend>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 2px 12px">
+<sc-for list="{{kinds}}" as="k" hint-placeholder-count="9">
+<label style="display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 14px">
+<input type="checkbox" checked="{{k.on}}" onChange="{{k.toggle}}" style="width: 18px; height: 18px; margin: 0">{{k.label}}</label>
+</sc-for>
+</div>
+</fieldset>
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">怎么整理</div>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{orgOpts}}" as="o" hint-placeholder-count="2">
+<button type="button" onClick="{{o.pick}}" aria-pressed="{{o.on}}" style="min-height: 40px; padding: 0 14px; border-radius: 8px; border: 1px solid {{o.bd}}; background: {{o.bg}}; color: {{o.fg}}; font-size: 14px">{{o.label}}</button>
+</sc-for>
+</div>
+<div style="padding: 10px 12px; border-radius: 8px; background: #F7F7F5; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.8; color: #3E4146; overflow-wrap: anywhere">
+<div>{{pathEx}}</div>
+<div>{{fileEx}}</div>
+</div>
+</div>
+<fieldset style="margin: 0; padding: 0; border: none; display: flex; flex-direction: column; gap: 8px">
+<legend style="padding: 0; margin-bottom: 8px; font-size: 13px; font-weight: 500">一起带过去的信息</legend>
+<div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 2px 12px">
+<sc-for list="{{extras}}" as="k" hint-placeholder-count="3">
+<label style="display: flex; align-items: center; gap: 8px; min-height: 40px; font-size: 14px">
+<input type="checkbox" checked="{{k.on}}" onChange="{{k.toggle}}" style="width: 18px; height: 18px; margin: 0">{{k.label}}</label>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #4F5257; line-height: 1.7">ComfyUI 里写进节点旁的便签；Eagle 里写成注释和标签；文件夹里每个文件旁放一份同名 .json。</div>
+</fieldset>
+</section>
+
+<aside aria-labelledby="lg-h" style="flex: 1 1 320px; min-width: 0; box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 12px">
+<h2 id="lg-h" style="margin: 0; font-size: 16px; font-weight: 700">同步记录</h2>
+<ol style="margin: 0; padding: 0; list-style: none; display: flex; flex-direction: column; gap: 10px">
+<sc-for list="{{log}}" as="l" hint-placeholder-count="6">
+<li style="display: flex; gap: 10px; font-size: 13px; line-height: 1.6">
+<span style="flex: 0 0 auto; font-family: 'IBM Plex Mono', ui-monospace, monospace; color: #4F5257">{{l.t}}</span>
+<span><span style="font-weight: 500">{{l.what}}</span><br><span style="color: #4F5257">{{l.to}}</span></span>
+</li>
+</sc-for>
+</ol>
+<div style="padding: 12px; border-radius: 8px; background: #F3F6FD; font-size: 13px; line-height: 1.7; display: flex; flex-direction: column; gap: 6px">
+<b style="font-weight: 700">两边怎么对应</b>
+<span>在 ComfyUI 里挪节点、改分组、删节点，只改画布，不动工作台的数据。</span>
+<span>用「存回工作台」节点输出的图、视频、音频，会作为对应镜头或素材的新候选出现，自动跑质检、记进历史，等你采纳。</span>
+<span style="color: #4F5257">之后再做：把节点拖进别的组，回写成工作台里的标签。</span>
+</div>
+</aside>
+
+</div>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1900}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = {
+      on: { comfy: true, folder: true, eagle: false, resolve: true },
+      resolveMode: 'fcpxml', when: 'adopt', org: 'shot',
+      kinds: { chr: true, scene: true, prop: true, text: true, voice: true, kf: true, vidA: true, vidAll: false, dub: true },
+      extras: { prompt: true, model: true, qa: true },
+      sel: 'kf103', syncing: false, done: 0, extraLog: [], toast: ''
+    };
+  }
+
+  componentWillUnmount() { clearTimeout(this._tt); clearInterval(this._si); }
+
+  flash(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: msg });
+    this._tt = setTimeout(() => this.setState({ toast: '' }), 4500);
+  }
+
+  syncNow() {
+    clearInterval(this._si);
+    this.setState({ syncing: true, done: 0 });
+    this._si = setInterval(() => {
+      const n = this.state.done + 1;
+      if (n >= 24) {
+        clearInterval(this._si);
+        const log = [{ t: '11:55', what: '手动同步：24 个文件，其中新增 3 个', to: '→ ComfyUI 素材板 · 本地文件夹 · 达芬奇文件夹' }].concat(this.state.extraLog);
+        this.setState({ syncing: false, done: 24, extraLog: log });
+        this.flash('同步完成：新增 1-06 关键帧 v3、1-07 关键帧 v1、1-04 T4，其余没有变化。');
+      } else {
+        this.setState({ done: n });
+      }
+    }, 90);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const okI = 'M5 12l5 5 9-10', warnI = 'M12 4v10M12 19h0', offI = 'M6 12h12';
+
+    const tD = [
+      { id: 'comfy', name: 'ComfyUI 画布', dir: '双向', st: '已连接 127.0.0.1:8188 · 节点包 DramaStudio 已装', k: 'ok', what: '每集生成一张「素材板」工作流，放进 ComfyUI 的工作流列表（短剧 / 雨停之前）。素材按组摆好，可以直接连线进你自己的生成工作流。' },
+      { id: 'folder', name: '本地文件夹', dir: '单向', st: 'D:\\短剧\\雨停之前\\ · 剩余 1.2 TB', k: 'ok', what: '按集、场、镜头建文件夹，文件名带版本号；每个文件旁放一份 .json，记提示词、模型、花费和质检分。' },
+      { id: 'eagle', name: 'Eagle 素材库', dir: '单向', st: '没检测到 Eagle（付费软件，需要先安装并打开）', k: 'off', what: '按剧、集、素材类型建文件夹，自动打标签（角色、场景、状态、模型），提示词写进注释。适合按标签筛选和找图。', action: '重新检测' },
+      { id: 'resolve', name: '达芬奇 Resolve', dir: '单向', st: '检测到免费版 21.1：不能用外部脚本', k: 'warn', what: '免费版改为导出整理好的文件夹和时间线（FCPXML），在达芬奇里把文件夹拖进媒体池，按文件夹建 Bin。Studio 版可以自动建 Bin、写元数据和标记。', modes: true }
+    ];
+    const targets = tD.map((t) => {
+      const on = !!s.on[t.id];
+      const stFg = t.k === 'ok' ? '#0B7A0B' : (t.k === 'warn' ? '#8A4B00' : '#4F5257');
+      const modes = t.modes ? [{ id: 'fcpxml', label: '文件夹 + FCPXML（免费版）' }, { id: 'api', label: '自动建 Bin（需要 Studio）' }].map((m) => {
+        const mon = s.resolveMode === m.id;
+        return { label: m.label, on: mon, bg: mon ? '#1A1B1E' : '#FFFFFF', fg: mon ? '#FFFFFF' : '#1A1B1E', bd: mon ? '#1A1B1E' : '#CFCFC9', pick: () => {
+          if (m.id === 'api') { this.flash('这台电脑上是达芬奇免费版，自动建 Bin 需要 Studio 版。先用文件夹 + FCPXML。'); return; }
+          this.setState({ resolveMode: m.id });
+        } };
+      }) : [];
+      return {
+        name: t.name, dir: t.dir, st: t.st, stFg: stFg, stIcon: t.k === 'ok' ? okI : (t.k === 'warn' ? warnI : offI), what: t.what,
+        on: on, aria: t.name + (on ? '：已开启同步' : '：未开启同步'), track: on ? '#2350C2' : '#9A9C98', knob: on ? '23px' : '3px', bd: on ? '#AFC3EE' : '#DADAD5',
+        toggle: () => {
+          if (t.id === 'eagle' && !on) { this.flash('没检测到 Eagle：请先安装并打开 Eagle，再点「重新检测」。'); return; }
+          const o = Object.assign({}, this.state.on); o[t.id] = !on; this.setState({ on: o });
+        },
+        hasModes: !!t.modes, modes: modes,
+        hasAction: !!t.action, actLabel: t.action || '', act: () => this.flash('还是没检测到 Eagle（默认端口 41595 没有响应）。')
+      };
+    });
+
+    const groupsD = [
+      { t: '角色与音色', x: 20, y: 20, w: 300, h: 280, c: '#4B6A9B' },
+      { t: '场景 · 道具 · 画面文字', x: 340, y: 20, w: 300, h: 280, c: '#3F7A62' },
+      { t: '场 1 · 老小区楼道（5 镜）', x: 660, y: 20, w: 380, h: 280, c: '#6E5A98' },
+      { t: '场 2 · 林晚出租屋（4 镜）', x: 20, y: 320, w: 300, h: 300, c: '#6E5A98' },
+      { t: '你的工作流 · 拿 1-04 接着做，再存回来', x: 340, y: 320, w: 700, h: 300, c: '#8A6A2E' }
+    ];
+    const hexA = (h, a) => { const n = parseInt(h.slice(1), 16); return 'rgba(' + ((n >> 16) & 255) + ',' + ((n >> 8) & 255) + ',' + (n & 255) + ',' + a + ')'; };
+    const groups = groupsD.map((g) => ({ t: g.t, x: g.x + 'px', y: g.y + 'px', w: g.w + 'px', h: g.h + 'px', c: g.c, fill: hexA(g.c, 0.16) }));
+
+    const T = (id, x, y, title, cap, tone, info, opt) => Object.assign({ id: id, type: 'thumb', x: x, y: y, w: 84, h: 176, title: title, cap: cap, tone: tone, tw: '72px', th: '128px', info: info }, opt || {});
+    const S = (id, x, y, title, cap, tone, info, opt) => Object.assign({ id: id, type: 'thumb', x: x, y: y, w: 64, h: 162, title: title, cap: cap, tone: tone, tw: '56px', th: '100px', info: info }, opt || {});
+    const g1 = 'linear-gradient(160deg,#5B6270,#2E3138)', g2 = 'linear-gradient(160deg,#4E5A52,#262B28)', g3 = 'linear-gradient(160deg,#6A4848,#2A2224)', g4 = 'linear-gradient(160deg,#4A4F66,#22242C)';
+    const ok = '#7FD77F', blue = '#9DBBFF', amber = '#F2C266', grey = '#A9ABA6';
+    const nodesD = [
+      T('lw1', 36, 58, '林晚 · 正面', '已锁定 v2', g1, [['文件', 'E01/角色/林晚/林晚_正面_v2.png'], ['模型', 'Nano Banana Pro · $0.14'], ['用在', '1-01、1-04、1-05、1-06']], { capFg: ok }),
+      T('lw2', 128, 58, '林晚 · 侧面', '锁定后补齐', g1, [['文件', 'E01/角色/林晚/林晚_侧面_v1.png'], ['来源', '锁定正面后自动补齐']], { capFg: ok }),
+      T('zy1', 220, 58, '周屿 · 字迹', '已锁定 v1', g4, [['文件', 'E01/角色/周屿/周屿_字迹_v1.png'], ['说明', '本集只出现字迹']], { capFg: ok }),
+      { id: 'vc1', type: 'audio', x: 36, y: 244, w: 268, h: 44, title: '音色 · 林晚（平静）· 已锁定', info: [['文件', 'E01/音色/林晚_平静_v1.wav'], ['模型', 'MiniMax 音色设计 · $3.00'], ['变体', '平静、哭腔、耳语']] },
+      T('sc1', 356, 58, '楼道 · 夜', '已锁定 v1', g2, [['文件', 'E01/场景/楼道_夜_v1.png'], ['用在', '场 1 全部 5 镜']], { capFg: ok }),
+      T('sc2', 448, 58, '出租屋 · 夜', '已锁定 v1', g4, [['文件', 'E01/场景/出租屋_夜_v1.png'], ['用在', '场 2 全部 4 镜']], { capFg: ok }),
+      T('pp1', 540, 58, '红色长柄伞', '已锁定 v1', g3, [['文件', 'E01/道具/红伞_v1.png'], ['用在', '1-02、1-09']], { capFg: ok }),
+      { id: 'tx1', type: 'note', x: 356, y: 244, w: 268, h: 44, title: '画面文字 · 便利贴', text: '「十二点前，伞还在门口，我就回来。」逐字核对 · GPT Image 2', info: [['文件', 'E01/画面文字/便利贴_v2.png'], ['模型', 'GPT Image 2 · $0.28 × 2'], ['核对', 'OCR 逐字一致']] },
+      S('kf101', 676, 58, '1-01', '已采纳 v2', g2, [['文件', 'E01/S01/1-01/E01_S01_1-01_video_v2.mp4'], ['模型', 'H3 API 终版 · $0.32'], ['质检', '通过']], { capFg: ok }),
+      S('kf102', 748, 58, '1-02', '已采纳 v2', g3, [['文件', 'E01/S01/1-02/E01_S01_1-02_video_v2.mp4'], ['模型', 'H3 API 终版 · $0.24'], ['质检', '通过（草稿伞色偏橙没过）']], { capFg: ok }),
+      S('kf103', 820, 58, '1-03', '已采纳 v2', g2, [['文件', 'E01/S01/1-03/E01_S01_1-03_video_v2.mp4'], ['模型', 'H3 API 终版 · $0.24'], ['质检', '画面文字逐字一致'], ['2K', 'SeedVR2 本地精修']], { capFg: ok }),
+      S('kf104', 892, 58, '1-04', '待挑选 · 4 条', g1, [['文件', 'E01/S01/1-04/（T1–T4 共 4 条）'], ['状态', '还没采纳，最好的 T3 人脸 0.82'], ['花费', '$1.96']], { capFg: amber }),
+      S('kf105', 964, 58, '1-05', '生成中', g1, [['文件', 'E01/S01/1-05/E01_S01_1-05_kf_v1.png'], ['状态', '本地 H3 正在出 T1']], { capFg: blue }),
+      { id: 'nt1', type: 'note', x: 676, y: 232, w: 352, h: 56, title: '便签 · 场 1', text: '雨夜 23:40 前后 · 楼道（六楼）· 关键帧 Nano Banana Pro · 视频本地 H3 草稿 → H3 API 终版', info: [['来源', '自动生成，跟随剧本和路由更新']] },
+      S('kf106', 36, 358, '1-06', '关键帧 v3 待采纳', g4, [['文件', 'E01/S02/1-06/E01_S02_1-06_kf_v3.png'], ['来源', 'ComfyUI 存回（Qwen-Image-Edit 局部重绘）'], ['花费', '本地，无 API 费用']], { capFg: amber }),
+      S('kf107', 108, 358, '1-07', '排队', g4, [['文件', 'E01/S02/1-07/E01_S02_1-07_kf_v1.png'], ['状态', '关键帧已出，等本地队列']], { capFg: grey }),
+      S('kf108', 180, 358, '1-08', '等 1-06', '#2B2D31', [['状态', '首帧接 1-06 的尾帧，等 1-06 采纳']], { capFg: grey, tb: '1px dashed #6A6D72' }),
+      S('kf109', 252, 358, '1-09', '等 1-08', '#2B2D31', [['状态', '首帧接 1-08 的尾帧']], { capFg: grey, tb: '1px dashed #6A6D72' }),
+      { id: 'ds1', type: 'func', x: 356, y: 362, w: 200, h: 200, title: 'DramaStudio ▸ 镜头', rows: [['镜头：1-04 ▾', 'w'], ['版本：已锁定', 'w'], ['关键帧', 'o', '#7FD77F'], ['台词音频', 'o', '#9DBBFF'], ['参考图 ×3', 'o', '#7FD77F'], ['提示词', 'o', '#F2C266'], ['1080×1920 · 24fps', 'o', '#C9A0FF'], ['时长 4.0 秒', 'o', '#C9A0FF']], info: [['作用', '从工作台读这个镜头已锁定的关键帧、台词音频、参考图和提示词'], ['尺寸', '跟随成片规格']] },
+      { id: 'h3', type: 'func', x: 596, y: 362, w: 200, h: 200, title: 'MiniMax H3 图生视频', rows: [['首帧', 'i', '#7FD77F'], ['音频', 'i', '#9DBBFF'], ['参考', 'i', '#7FD77F'], ['提示词', 'i', '#F2C266'], ['尺寸', 'i', '#C9A0FF'], ['视频', 'o', '#FF9F7A'], ['步数 8 · Turbo LoRA', 'w']], info: [['说明', '你自己的工作流节点，平台不改它']] },
+      { id: 'sv', type: 'func', x: 836, y: 362, w: 190, h: 200, title: 'DramaStudio ▸ 存回工作台', rows: [['视频', 'i', '#FF9F7A'], ['存为：1-04 新候选', 'w'], ['来源：ComfyUI 本地', 'w'], ['自动质检：开', 'w']], info: [['作用', '把结果存成 1-04 的新候选 T5，进历史、跑质检、记调用（本地为 0）'], ['不会', '覆盖已采纳的版本']] }
+    ];
+    const nodes = nodesD.map((n) => {
+      const on = s.sel === n.id;
+      const rows = (n.rows || []).map((r) => ({ label: r[0], inPort: r[1] === 'i', outPort: r[1] === 'o', pc: r[2] || '#6A6D72', fg: r[1] === 'w' ? '#C9CAC6' : '#E6E6E3', jc: r[1] === 'o' ? 'flex-end' : 'flex-start' }));
+      const bars = n.type === 'audio' ? [6, 10, 14, 9, 16, 12, 18, 8, 13, 17, 11, 6, 9, 15, 18, 12, 7, 10, 14, 16, 9, 12, 6, 11, 15, 8, 13, 10, 7, 5].map((h) => ({ h: h + 'px' })) : [];
+      return {
+        title: n.title, cap: n.cap || '', capFg: n.capFg || '#C9CAC6', tone: n.tone || '#2B2D31', tw: n.tw || '0px', th: n.th || '0px', tb: n.tb || 'none', text: n.text || '',
+        isThumb: n.type === 'thumb', isAudio: n.type === 'audio', isNote: n.type === 'note', isFunc: n.type === 'func',
+        rows: rows, bars: bars,
+        x: n.x + 'px', y: n.y + 'px', w: n.w + 'px', h: n.h + 'px', on: on,
+        ring: on ? '2px solid #8FB3FF' : '1px solid #45484E',
+        aria: n.title + (n.cap ? '，' + n.cap : ''),
+        pick: () => this.setState({ sel: n.id })
+      };
+    });
+    const selN = nodesD.find((n) => n.id === s.sel) || nodesD[0];
+    const sel = { title: selN.title, facts: selN.info.map((f) => ({ k: f[0], v: f[1] })) };
+
+    const rowY = (nodeY, i) => nodeY + 20 + 4 + i * 18 + 9;
+    const wire = (x1, y1, x2, y2, c) => ({ d: 'M' + x1 + ' ' + y1 + ' C' + (x1 + 20) + ' ' + y1 + ' ' + (x2 - 20) + ' ' + y2 + ' ' + x2 + ' ' + y2, c: c });
+    const wires = [
+      wire(548, rowY(362, 2), 604, rowY(362, 0), '#7FD77F'),
+      wire(548, rowY(362, 3), 604, rowY(362, 1), '#9DBBFF'),
+      wire(548, rowY(362, 4), 604, rowY(362, 2), '#7FD77F'),
+      wire(548, rowY(362, 5), 604, rowY(362, 3), '#F2C266'),
+      wire(548, rowY(362, 6), 604, rowY(362, 4), '#C9A0FF'),
+      wire(788, rowY(362, 5), 844, rowY(362, 0), '#FF9F7A')
+    ];
+
+    const chipOpt = (list, key) => list.map((x) => {
+      const on = s[key] === x.id;
+      return { label: x.label, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', bd: on ? '#1A1B1E' : '#CFCFC9', pick: () => { const o = {}; o[key] = x.id; this.setState(o); } };
+    });
+    const whenOpts = chipOpt([{ id: 'adopt', label: '采纳或锁定时（推荐）' }, { id: 'every', label: '每次生成都同步' }, { id: 'manual', label: '只手动同步' }], 'when');
+    const orgOpts = chipOpt([{ id: 'shot', label: '按 集 → 场 → 镜头' }, { id: 'type', label: '按素材类型' }], 'org');
+    const box = (dict, key, labels) => Object.keys(labels).map((k) => ({ label: labels[k], on: !!dict[k], toggle: () => { const o = Object.assign({}, this.state[key]); o[k] = !o[k]; const p = {}; p[key] = o; this.setState(p); } }));
+    const kinds = box(s.kinds, 'kinds', { chr: '角色', scene: '场景', prop: '道具', text: '画面文字', voice: '音色', kf: '关键帧', vidA: '视频（已采纳）', vidAll: '视频（全部候选）', dub: '台词配音' });
+    const extras = box(s.extras, 'extras', { prompt: '提示词（意图层）', model: '模型和花费', qa: '质检分' });
+    const pathEx = s.org === 'shot' ? 'D:\\短剧\\雨停之前\\E01\\S01\\1-03\\' : 'D:\\短剧\\雨停之前\\E01\\视频\\';
+    const fileEx = 'E01_S01_1-03_video_v2.mp4  +  E01_S01_1-03_video_v2.json';
+
+    const baseLog = [
+      { t: '11:48', what: 'ComfyUI 存回：1-06 关键帧 v3（Qwen-Image-Edit 局部重绘）', to: '→ 已进 1-06 的历史，等你采纳' },
+      { t: '11:20', what: '1-01 至 1-03 的 2K 精修完成（SeedVR2 本地）', to: '→ 本地文件夹 · 达芬奇文件夹（替换 768p 版本）' },
+      { t: '11:19', what: '1-03 视频 v2 采纳', to: '→ ComfyUI 素材板 · 本地文件夹' },
+      { t: '11:13', what: '1-02 视频 v2 采纳', to: '→ ComfyUI 素材板 · 本地文件夹' },
+      { t: '11:06', what: '1-01 视频 v2 采纳', to: '→ ComfyUI 素材板 · 本地文件夹' },
+      { t: '10:44', what: '素材锁定：林晚、周屿、楼道、出租屋、红伞、便利贴、林晚音色', to: '→ ComfyUI 素材板 · 本地文件夹 · Eagle 没检测到，已跳过' }
+    ];
+    const steps = [
+      ['01', '小说', 'Main.dc.html', '已确认', true], ['02', '剧本', 'Script.dc.html', '已确认', true], ['03', '素材', 'Assets.dc.html', '7/13', false],
+      ['04', '分镜', 'Storyboard.dc.html', '3/9', false], ['05', '生成', 'Generate.dc.html', '3/9', false], ['06', '后期', 'Post.dc.html', '未开始', false]
+    ];
+
+    return {
+      nav: steps.map((x) => ({ no: x[0], label: x[1], href: x[2], badge: x[3], bbg: x[4] ? '#E8EEFB' : '#E2E2DD', bfg: x[4] ? '#1A3E9E' : '#3E4146' })),
+      targets: targets, groups: groups, nodes: nodes, wires: wires, sel: sel,
+      whenOpts: whenOpts, orgOpts: orgOpts, kinds: kinds, extras: extras, pathEx: pathEx, fileEx: fileEx,
+      log: s.extraLog.concat(baseLog),
+      syncing: s.syncing, syncLabel: s.syncing ? '同步中 ' + s.done + ' / 24' : '立即同步',
+      syncNow: () => this.syncNow(),
+      openComfy: () => this.flash('已在 ComfyUI 打开「短剧 / 雨停之前 / 第 1 集 · 素材板」（原型里为示意）。'),
+      toggleLang: () => this.flash('原型里「00 首次启动」页做了完整的中英切换；正式版所有页面的文字都走同一套词表。'),
+      toast: s.toast, hasToast: !!s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

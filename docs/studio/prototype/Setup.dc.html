@@ -1,0 +1,486 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>首次启动 · 主机检测与自动安装</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F3F3F1}
+a{color:#2350C2}a:hover{color:#173A94}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+textarea,input{font-family:inherit}
+button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid #2350C2;outline-offset:2px}
+</style>
+</helmet>
+<div lang="{{htmlLang}}" style="min-height: 100vh; display: flex; flex-direction: column; background: #F3F3F1; color: #1A1B1E; font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 20px; background: #1A1B1E; color: #F2F2EF">
+<div style="font-size: 15px; font-weight: 700; letter-spacing: 0.02em">{{T.app}}</div>
+<div style="font-size: 14px; color: #C9CAC6">{{T.firstRun}}</div>
+<div role="group" aria-label="Language" style="margin-left: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #5B5E63; border-radius: 6px; overflow: hidden">
+<sc-for list="{{langs}}" as="l" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{l.on}}" onClick="{{l.pick}}" style="min-height: 32px; padding: 0 12px; border: 0; background: {{l.bg}}; color: {{l.fg}}; font-size: 12px">{{l.label}}</button>
+</sc-for>
+</div>
+</header>
+
+<main style="width: 100%; max-width: 1120px; margin: 0 auto; box-sizing: border-box; padding: 28px 24px 56px; display: flex; flex-direction: column; gap: 20px">
+
+<ol aria-label="{{T.stepsLabel}}" style="margin: 0; padding: 0; list-style: none; display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{steps}}" as="st" hint-placeholder-count="3">
+<li style="display: flex; align-items: center; gap: 8px; padding: 6px 12px 6px 6px; border-radius: 18px; background: {{st.bg}}; color: {{st.fg}}; font-size: 13px; font-weight: 500">
+<span style="display: flex; align-items: center; justify-content: center; width: 24px; height: 24px; border-radius: 12px; background: {{st.dotBg}}; color: {{st.dotFg}}; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px">{{st.no}}</span>{{st.label}}</li>
+</sc-for>
+</ol>
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 20px">
+<div style="display: flex; flex-direction: column; gap: 6px; margin-right: auto; min-width: 0; max-width: 720px">
+<h1 style="margin: 0; font-size: 28px; font-weight: 700">{{T.title}}</h1>
+<p style="margin: 0; font-size: 14px; color: #4F5257; line-height: 1.7">{{T.lead}}</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; color: #4F5257">{{T.demoMachine}}</div>
+<div role="group" aria-label="{{T.demoMachine}}" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 8px; overflow: hidden">
+<sc-for list="{{machines}}" as="m" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{m.on}}" onClick="{{m.pick}}" style="min-height: 36px; padding: 0 12px; border: 0; background: {{m.bg}}; color: {{m.fg}}; font-size: 13px">{{m.label}}</button>
+</sc-for>
+</div>
+</div>
+</div>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="padding: 10px 14px; border-radius: 8px; background: #E8EEFB; color: #173A94; font-size: 14px">{{toast}}</div>
+</sc-if>
+
+<sc-if value="{{isIdle}}" hint-placeholder-val="{{ true }}">
+<section style="box-sizing: border-box; padding: 24px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">{{T.willCheck}}</h2>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+<sc-for list="{{checkList}}" as="c" hint-placeholder-count="5">
+<div style="padding: 12px 14px; border-radius: 10px; background: #F8F8F6; display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 14px; font-weight: 700">{{c.name}}</div>
+<div style="font-size: 13px; color: #4F5257; line-height: 1.6">{{c.desc}}</div>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 12px">
+<button type="button" onClick="{{startScan}}" style="min-height: 44px; padding: 0 20px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 15px; font-weight: 500">{{T.startScan}}</button>
+<span style="font-size: 13px; color: #4F5257">{{T.scanNote}}</span>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{hasResults}}" hint-placeholder-val="{{ false }}">
+<section aria-label="{{T.summary}}" style="box-sizing: border-box; padding: 14px 16px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 14px">
+<span style="font-size: 15px; font-weight: 700">{{statusLine}}</span>
+<sc-for list="{{counts}}" as="k" hint-placeholder-count="5">
+<span style="font-size: 12px; padding: 2px 8px; border-radius: 4px; background: {{k.bg}}; color: {{k.fg}}">{{k.label}} {{k.n}}</span>
+</sc-for>
+<button type="button" onClick="{{rescan}}" disabled="{{busy}}" style="margin-left: auto; min-height: 36px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 13px">{{T.rescan}}</button>
+</div>
+<div aria-hidden="true" style="height: 6px; border-radius: 3px; background: #ECECE8; overflow: hidden"><div style="height: 6px; width: {{overallPct}}; background: #2350C2"></div></div>
+</section>
+
+<sc-for list="{{groups}}" as="g" hint-placeholder-count="5">
+<section style="box-sizing: border-box; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; overflow-x: auto">
+<div style="min-width: 760px">
+<div style="display: flex; align-items: baseline; gap: 10px; padding: 12px 16px; border-bottom: 1px solid #ECECE8">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700">{{g.name}}</h2>
+<span style="font-size: 12px; color: #4F5257">{{g.hint}}</span>
+</div>
+<sc-for list="{{g.items}}" as="it" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 76px minmax(150px, 1.1fr) minmax(170px, 1.4fr) minmax(170px, 1.4fr) 150px; gap: 12px; align-items: center; padding: 10px 16px; border-bottom: 1px solid #F0F0EC; min-height: 44px">
+<span style="justify-self: start; font-size: 12px; padding: 2px 8px; border-radius: 4px; background: {{it.sBg}}; color: {{it.sFg}}">{{it.sLabel}}</span>
+<span style="font-size: 14px; font-weight: 500">{{it.name}}</span>
+<span style="font-size: 13px; color: #4F5257; line-height: 1.5">{{it.found}}</span>
+<span style="font-size: 13px; line-height: 1.5; color: {{it.fixFg}}">{{it.fix}}</span>
+<div style="display: flex; align-items: center; gap: 8px; min-width: 0">
+<sc-if value="{{it.showCheck}}" hint-placeholder-val="{{ false }}">
+<input id="chk-{{it.id}}" type="checkbox" checked="{{it.checked}}" onChange="{{it.toggle}}" style="width: 18px; height: 18px; margin: 0">
+<label for="chk-{{it.id}}" style="font-size: 13px">{{it.checkLabel}}</label>
+</sc-if>
+<sc-if value="{{it.showBar}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="flex: 1 1 auto; height: 6px; border-radius: 3px; background: #ECECE8; overflow: hidden"><div style="height: 6px; width: {{it.pct}}; background: {{it.barColor}}"></div></div>
+<span style="flex: 0 0 auto; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: {{it.pctFg}}">{{it.pctLabel}}</span>
+</sc-if>
+</div>
+</div>
+</sc-for>
+</div>
+</section>
+</sc-for>
+</sc-if>
+
+<sc-if value="{{isScanned}}" hint-placeholder-val="{{ false }}">
+<section style="box-sizing: border-box; padding: 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">{{T.installTitle}}</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<div style="flex: 1 1 280px; display: flex; flex-direction: column; gap: 6px">
+<label for="dir" style="font-size: 13px; font-weight: 500">{{T.dir}}</label>
+<input id="dir" type="text" value="{{dir}}" onChange="{{setDir}}" style="box-sizing: border-box; min-height: 40px; padding: 0 10px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px">
+<div style="font-size: 12px; color: #4F5257">{{T.dirHint}}</div>
+</div>
+<div style="flex: 1 1 320px; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 13px; font-weight: 500">{{T.mirror}}</div>
+<div role="group" aria-label="{{T.mirror}}" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 8px; overflow: hidden">
+<sc-for list="{{mirrors}}" as="m" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{m.on}}" onClick="{{m.pick}}" style="min-height: 40px; border: 0; background: {{m.bg}}; color: {{m.fg}}; font-size: 13px">{{m.label}}</button>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #4F5257; line-height: 1.6">{{mirrorHint}}</div>
+</div>
+</div>
+<div style="font-size: 13px; color: #4F5257; line-height: 1.7">{{T.installNote}}</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<button type="button" onClick="{{startInstall}}" disabled="{{noneSelected}}" style="min-height: 44px; padding: 0 20px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 15px; font-weight: 500">{{installBtn}}</button>
+<button type="button" onClick="{{selectRequired}}" style="min-height: 44px; padding: 0 14px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">{{T.onlyRequired}}</button>
+<button type="button" onClick="{{selectAll}}" style="min-height: 44px; padding: 0 14px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">{{T.selectAll}}</button>
+<a href="Main.dc.html" style="margin-left: auto; font-size: 14px">{{T.skip}}</a>
+</div>
+</section>
+</sc-if>
+
+<sc-if value="{{showLog}}" hint-placeholder-val="{{ false }}">
+<section aria-label="{{T.log}}" style="box-sizing: border-box; padding: 14px 16px; background: #1F2024; border-radius: 12px; display: flex; flex-direction: column; gap: 4px">
+<div style="font-size: 12px; color: #B9BAB6; margin-bottom: 4px">{{T.log}}</div>
+<sc-for list="{{logLines}}" as="l" hint-placeholder-count="6">
+<div style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.7; color: {{l.fg}}">{{l.text}}</div>
+</sc-for>
+</section>
+</sc-if>
+
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<section style="box-sizing: border-box; padding: 20px; background: #FFFFFF; border: 2px solid #2350C2; border-radius: 12px; display: flex; flex-direction: column; gap: 14px">
+<h2 style="margin: 0; font-size: 18px; font-weight: 700">{{T.doneTitle}}</h2>
+<p style="margin: 0; font-size: 14px; line-height: 1.7">{{doneLine}}</p>
+<div style="padding: 14px; border-radius: 10px; background: #F3F6FD; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; color: #4F5257">{{T.recommend}}</div>
+<div style="font-size: 16px; font-weight: 700">{{rec.name}}</div>
+<div style="font-size: 13px; line-height: 1.7">{{rec.why}}</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px">
+<a href="Spec.dc.html" style="display: inline-flex; align-items: center; min-height: 44px; padding: 0 20px; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 15px; font-weight: 500; text-decoration: none">{{T.enter}}</a>
+<a href="Models.dc.html" style="font-size: 14px">{{T.toModels}}</a>
+<span style="font-size: 12px; color: #4F5257">{{T.later}}</span>
+</div>
+</section>
+</sc-if>
+
+</main>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1460}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = { lang: 'zh', machine: 'pc', phase: 'idle', shown: 0, sel: {}, prog: {}, failed: {}, queue: [], qi: 0, mirror: 'auto', dir: 'D:\\DramaStudio', log: [], toast: '' };
+  }
+
+  componentWillUnmount() { clearInterval(this._si); clearInterval(this._ii); clearTimeout(this._tt); }
+
+  dict() {
+    return {
+      zh: {
+        app: '短剧工作台', firstRun: '首次启动', stepsLabel: '安装步骤',
+        s1: '检测主机', s2: '安装缺少的部分', s3: '完成',
+        title: '先看看这台电脑能跑什么',
+        lead: '检测显卡、驱动、运行环境、ComfyUI 节点和模型权重，缺什么就列出来，你勾选后一键装好。哪些步骤能本地跑、哪些该走 API，也会按检测结果给出建议。',
+        demoMachine: '示例机器（原型演示用）', pc: 'Windows + RTX 5090', mac: 'Mac M4 Pro',
+        willCheck: '会检测这些',
+        startScan: '开始检测', scanNote: '只读取信息，不会改动任何东西，大约 10 秒。',
+        summary: '检测结果', rescan: '重新检测',
+        scanning: '正在检测…', scanned: '检测完成', installing: '正在安装…', done: '安装完成',
+        installTitle: '安装设置', dir: '安装位置', dirHint: '模型权重放在这里，要留足空间。',
+        mirror: '下载源', mAuto: '自动选择', mOfficial: '官方源', mCn: '国内镜像',
+        mAutoHint: '先测速，哪个快用哪个；单个文件失败会自动换源重试。',
+        mOfficialHint: '直接从 GitHub、Hugging Face、PyPI 下载。',
+        mCnHint: '用国内镜像下载 Python 包和模型权重，适合直连慢的网络。',
+        installNote: '大文件支持断点续传；装到一半关掉，下次打开会接着装。装好的东西会写进清单，卸载时一并清理。',
+        install: '安装选中的', items: '项', onlyRequired: '只选必需的', selectAll: '全选', skip: '先跳过，进入工作台',
+        log: '安装日志',
+        doneTitle: '准备好了', recommend: '按这台机器推荐的预设',
+        enter: '新建剧集：先定画幅和规格', toModels: '去「模型与兜底」填 API 密钥',
+        later: '以后可以在「模型与兜底」里重新检测。',
+        st_ok: '通过', st_missing: '缺少', st_old: '需更新', st_optional: '可选', st_warn: '注意', st_skip: '跳过', st_fail: '失败', st_done: '已装好', st_pending: '检测中',
+        pick: '安装', pickOpt: '安装（可选）', na: '—',
+        lStart: '开始：', lDone: '完成：', lFail: '失败，已跳过（可选项，不影响使用）：', lMirror: '下载源：', lFinish: '全部结束。',
+        g_sys: '系统与硬件', g_sys_h: '决定哪些模型能本地跑',
+        g_rt: '运行环境', g_rt_h: 'Python、PyTorch、FFmpeg 这些底层依赖',
+        g_comfy: 'ComfyUI 与节点', g_comfy_h: '本地出图、出视频、超分都靠它',
+        g_w: '模型权重', g_w_h: '体积大，支持断点续传',
+        g_svc: '网络与服务', g_svc_h: '下载速度、本地 LLM 服务、API 密钥',
+        c_sys: '显卡和显存、驱动、内存、磁盘空间', c_rt: 'Python、PyTorch 的 CUDA 版本、FFmpeg、Git',
+        c_comfy: 'ComfyUI 版本，H3、超分、ControlNet 等自定义节点', c_w: '视频、图像、超分、配音、本地 LLM 的权重文件',
+        c_svc: '能不能顺畅访问模型仓库，本地 LLM 服务，已填的 API 密钥',
+        recPc: '均衡：草稿和重跑在本地跑，采纳前用 API 出终版',
+        recPcWhy: '32 GB 显存能本地跑 MiniMax H3 出视频草稿，图像、超分、配音、LLM 也都能本地跑。定稿的那一条再用 API，花费最低又不牺牲成片质量。',
+        recMac: '均衡（视频走 API）',
+        recMacWhy: '苹果芯片跑不了 MiniMax H3 这类依赖 CUDA 的视频模型，所以视频、关键帧和超分走 API；LLM 和配音可以在本地跑，省一部分钱。',
+        doneLinePre: '装好 ', doneLineMid: ' 项', doneLineFail: '，失败 ', doneLineEnd: ' 项（都是可选项）。'
+      },
+      en: {
+        app: 'Drama Studio', firstRun: 'First run', stepsLabel: 'Setup steps',
+        s1: 'Scan this machine', s2: 'Install what is missing', s3: 'Done',
+        title: 'Let us see what this machine can run',
+        lead: 'We check your GPU, driver, runtime, ComfyUI nodes and model weights, list anything missing, and install what you tick in one go. Based on the result we also suggest which steps should run locally and which should use an API.',
+        demoMachine: 'Sample machine (prototype only)', pc: 'Windows + RTX 5090', mac: 'Mac M4 Pro',
+        willCheck: 'What we check',
+        startScan: 'Start scan', scanNote: 'Read-only. Nothing is changed. Takes about 10 seconds.',
+        summary: 'Scan result', rescan: 'Scan again',
+        scanning: 'Scanning…', scanned: 'Scan complete', installing: 'Installing…', done: 'Install complete',
+        installTitle: 'Install settings', dir: 'Install location', dirHint: 'Model weights go here. Leave plenty of space.',
+        mirror: 'Download source', mAuto: 'Automatic', mOfficial: 'Official', mCn: 'China mirror',
+        mAutoHint: 'Tests speed first and uses the fastest. A failed file is retried from another source.',
+        mOfficialHint: 'Downloads straight from GitHub, Hugging Face and PyPI.',
+        mCnHint: 'Uses mirrors in China for Python packages and model weights. Good for slow connections.',
+        installNote: 'Large files resume if interrupted. Close the app halfway and it picks up next time. Everything installed is recorded so it can be removed cleanly.',
+        install: 'Install', items: 'selected', onlyRequired: 'Required only', selectAll: 'Select all', skip: 'Skip for now and open the studio',
+        log: 'Install log',
+        doneTitle: 'Ready', recommend: 'Recommended preset for this machine',
+        enter: 'New series: set the output format', toModels: 'Add API keys in Models & fallback',
+        later: 'You can run this scan again from Models & fallback.',
+        st_ok: 'OK', st_missing: 'Missing', st_old: 'Outdated', st_optional: 'Optional', st_warn: 'Note', st_skip: 'Skipped', st_fail: 'Failed', st_done: 'Installed', st_pending: 'Checking',
+        pick: 'Install', pickOpt: 'Install (optional)', na: '—',
+        lStart: 'Start: ', lDone: 'Done: ', lFail: 'Failed, skipped (optional, nothing else affected): ', lMirror: 'Download source: ', lFinish: 'All finished.',
+        g_sys: 'System and hardware', g_sys_h: 'Decides which models can run locally',
+        g_rt: 'Runtime', g_rt_h: 'Python, PyTorch, FFmpeg and other basics',
+        g_comfy: 'ComfyUI and nodes', g_comfy_h: 'Runs local image, video and upscaling',
+        g_w: 'Model weights', g_w_h: 'Large files, downloads can resume',
+        g_svc: 'Network and services', g_svc_h: 'Download speed, local LLM server, API keys',
+        c_sys: 'GPU and VRAM, driver, memory, disk space', c_rt: 'Python, the CUDA build of PyTorch, FFmpeg, Git',
+        c_comfy: 'ComfyUI version and custom nodes for H3, upscaling, ControlNet', c_w: 'Weights for video, image, upscaling, voice and local LLM',
+        c_svc: 'Access to model hubs, local LLM server, saved API keys',
+        recPc: 'Balanced: drafts and reruns local, final take via API',
+        recPcWhy: '32 GB of VRAM runs MiniMax H3 locally for video drafts, and image, upscaling, voice and LLM can all run locally too. Only the take you approve goes through an API, which keeps cost low without hurting the final cut.',
+        recMac: 'Balanced (video via API)',
+        recMacWhy: 'Apple silicon cannot run CUDA video models like MiniMax H3, so video, keyframes and upscaling use APIs. The LLM and voice can run locally to save some money.',
+        doneLinePre: 'Installed ', doneLineMid: ' items', doneLineFail: ', failed ', doneLineEnd: ' (all optional).'
+      }
+    };
+  }
+
+  items(machine) {
+    const I = (id, g, n, f, st, fix, req, inst, dl) => ({ id: id, g: g, n: n, f: f, st: st, fix: fix, req: req, inst: inst, dl: !!dl });
+    if (machine === 'mac') return [
+      I('os', 'sys', ['操作系统', 'Operating system'], ['macOS · Apple 芯片', 'macOS · Apple silicon'], 'ok', ['—', '—'], false, false),
+      I('gpu', 'sys', ['显卡', 'GPU'], ['Apple M4 Pro · 统一内存', 'Apple M4 Pro · unified memory'], 'warn', ['不支持 CUDA：视频生成改走 API', 'No CUDA: video generation will use APIs'], false, false),
+      I('ram', 'sys', ['内存', 'Memory'], ['48 GB 统一内存', '48 GB unified'], 'ok', ['—', '—'], false, false),
+      I('disk', 'sys', ['磁盘空间', 'Disk space'], ['剩余 600 GB', '600 GB free'], 'ok', ['—', '—'], false, false),
+      I('python', 'rt', ['Python', 'Python'], ['3.12', '3.12'], 'ok', ['—', '—'], false, false),
+      I('torch', 'rt', ['PyTorch', 'PyTorch'], ['没找到', 'Not found'], 'missing', ['安装 PyTorch（MPS 版）', 'Install PyTorch (MPS build)'], true, true),
+      I('ffmpeg', 'rt', ['FFmpeg', 'FFmpeg'], ['没找到', 'Not found'], 'missing', ['安装 FFmpeg', 'Install FFmpeg'], true, true),
+      I('git', 'rt', ['Git', 'Git'], ['已安装', 'Installed'], 'ok', ['—', '—'], false, false),
+      I('comfy', 'comfy', ['ComfyUI', 'ComfyUI'], ['没找到', 'Not found'], 'optional', ['只用于本地出图，可以不装', 'Only for local images; can skip'], false, true),
+      I('node_h3', 'comfy', ['MiniMax H3 节点', 'MiniMax H3 nodes'], ['需要 CUDA', 'Needs CUDA'], 'skip', ['不支持，跳过', 'Not supported, skipped'], false, false),
+      I('node_sr', 'comfy', ['SeedVR2 / FlashVSR 节点', 'SeedVR2 / FlashVSR nodes'], ['需要 CUDA', 'Needs CUDA'], 'skip', ['不支持，超分走 API', 'Not supported, upscaling via API'], false, false),
+      I('w_llm', 'w', ['Qwen3.6-27B（MLX 版）', 'Qwen3.6-27B (MLX)'], ['没找到', 'Not found'], 'missing', ['下载，用于本地写作类任务', 'Download for local writing tasks'], true, true, true),
+      I('w_tts', 'w', ['本地配音模型', 'Local voice model'], ['没找到', 'Not found'], 'optional', ['可在 Mac 上跑，速度较慢', 'Runs on Mac, slower'], false, true, true),
+      I('w_img', 'w', ['Qwen-Image-Edit', 'Qwen-Image-Edit'], ['没找到', 'Not found'], 'optional', ['在 Mac 上很慢，建议走 API', 'Very slow on Mac; API recommended'], false, true, true),
+      I('hf', 'svc', ['模型下载网络', 'Model download network'], ['直连 Hugging Face 较慢', 'Slow direct link to Hugging Face'], 'warn', ['下面选「国内镜像」或「自动选择」', 'Pick China mirror or Automatic below'], false, false),
+      I('llmsrv', 'svc', ['本地 LLM 服务', 'Local LLM server'], ['没找到', 'Not found'], 'missing', ['安装 Ollama（MLX 后端）', 'Install Ollama (MLX backend)'], true, true),
+      I('keys', 'svc', ['API 密钥', 'API keys'], ['还没填', 'None yet'], 'warn', ['视频要走 API，装完后去填', 'Video needs APIs; add keys after setup'], false, false)
+    ];
+    return [
+      I('os', 'sys', ['操作系统', 'Operating system'], ['Windows 11 · 64 位', 'Windows 11 · 64-bit'], 'ok', ['—', '—'], false, false),
+      I('gpu', 'sys', ['显卡', 'GPU'], ['NVIDIA RTX 5090 · 32 GB 显存', 'NVIDIA RTX 5090 · 32 GB VRAM'], 'ok', ['—', '—'], false, false),
+      I('driver', 'sys', ['显卡驱动', 'GPU driver'], ['支持 CUDA 13', 'Supports CUDA 13'], 'ok', ['—', '—'], false, false),
+      I('ram', 'sys', ['内存', 'Memory'], ['64 GB', '64 GB'], 'ok', ['—', '—'], false, false),
+      I('disk', 'sys', ['磁盘空间', 'Disk space'], ['D: 剩余 1.2 TB', 'D: 1.2 TB free'], 'ok', ['—', '—'], false, false),
+      I('python', 'rt', ['Python', 'Python'], ['3.12', '3.12'], 'ok', ['—', '—'], false, false),
+      I('torch', 'rt', ['PyTorch', 'PyTorch'], ['已装，但不是 CUDA 13 版', 'Installed, but not the CUDA 13 build'], 'old', ['换成 CUDA 13.0 版（NVFP4 量化需要）', 'Switch to the CUDA 13.0 build (needed for NVFP4)'], true, true),
+      I('ffmpeg', 'rt', ['FFmpeg', 'FFmpeg'], ['没找到', 'Not found'], 'missing', ['安装 FFmpeg', 'Install FFmpeg'], true, true),
+      I('git', 'rt', ['Git', 'Git'], ['已安装', 'Installed'], 'ok', ['—', '—'], false, false),
+      I('comfy', 'comfy', ['ComfyUI', 'ComfyUI'], ['已装，版本较旧', 'Installed, outdated'], 'old', ['更新到最新版', 'Update to latest'], true, true),
+      I('node_h3', 'comfy', ['MiniMax H3 节点', 'MiniMax H3 nodes'], ['没找到', 'Not found'], 'missing', ['安装节点', 'Install nodes'], true, true),
+      I('node_vhs', 'comfy', ['VideoHelperSuite', 'VideoHelperSuite'], ['已安装', 'Installed'], 'ok', ['—', '—'], false, false),
+      I('node_seedvr2', 'comfy', ['SeedVR2 节点（本地超分）', 'SeedVR2 nodes (local upscaling)'], ['没找到', 'Not found'], 'missing', ['安装节点', 'Install nodes'], true, true),
+      I('node_flashvsr', 'comfy', ['FlashVSR 节点（快速超分）', 'FlashVSR nodes (fast upscaling)'], ['没找到', 'Not found'], 'optional', ['安装节点', 'Install nodes'], false, true),
+      I('node_ctrl', 'comfy', ['Fun ControlNet 节点', 'Fun ControlNet nodes'], ['没找到', 'Not found'], 'optional', ['需要控制站位和动作时再装', 'Install when you need pose or layout control'], false, true),
+      I('sage', 'comfy', ['SageAttention 加速', 'SageAttention speed-up'], ['没找到', 'Not found'], 'optional', ['编译安装，能提速', 'Build from source for speed'], false, true),
+      I('w_h3', 'w', ['MiniMax H3 权重（int8）', 'MiniMax H3 weights (int8)'], ['没找到', 'Not found'], 'missing', ['下载', 'Download'], true, true, true),
+      I('w_te', 'w', ['Qwen3-VL-32B 文本编码器（NVFP4）', 'Qwen3-VL-32B text encoder (NVFP4)'], ['没找到', 'Not found'], 'missing', ['下载', 'Download'], true, true, true),
+      I('w_img', 'w', ['Qwen-Image-Edit', 'Qwen-Image-Edit'], ['没找到', 'Not found'], 'missing', ['下载', 'Download'], true, true, true),
+      I('w_sr', 'w', ['SeedVR2 权重', 'SeedVR2 weights'], ['没找到', 'Not found'], 'missing', ['下载', 'Download'], true, true, true),
+      I('w_tts', 'w', ['IndexTTS2', 'IndexTTS2'], ['没找到', 'Not found'], 'missing', ['下载', 'Download'], true, true, true),
+      I('w_llm', 'w', ['Qwen3.6-27B（本地 LLM）', 'Qwen3.6-27B (local LLM)'], ['没找到', 'Not found'], 'optional', ['想让写作类任务也本地跑再装', 'Install if writing tasks should run locally'], false, true, true),
+      I('hf', 'svc', ['模型下载网络', 'Model download network'], ['直连 Hugging Face 较慢', 'Slow direct link to Hugging Face'], 'warn', ['下面选「国内镜像」或「自动选择」', 'Pick China mirror or Automatic below'], false, false),
+      I('llmsrv', 'svc', ['本地 LLM 服务', 'Local LLM server'], ['没找到', 'Not found'], 'optional', ['安装 Ollama 或 llama.cpp 服务', 'Install Ollama or a llama.cpp server'], false, true),
+      I('keys', 'svc', ['API 密钥', 'API keys'], ['还没填', 'None yet'], 'optional', ['装完后在「模型与兜底」里填', 'Add later in Models & fallback'], false, false)
+    ];
+  }
+
+  flash(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: msg });
+    this._tt = setTimeout(() => this.setState({ toast: '' }), 4000);
+  }
+
+  startScan() {
+    clearInterval(this._si); clearInterval(this._ii);
+    const list = this.items(this.state.machine);
+    this.setState({ phase: 'scanning', shown: 0, prog: {}, failed: {}, log: [], queue: [], qi: 0 });
+    this._si = setInterval(() => {
+      const n = this.state.shown + 1;
+      if (n >= list.length) {
+        clearInterval(this._si);
+        const sel = {};
+        list.forEach((x) => { if (x.inst && x.req) sel[x.id] = true; });
+        this.setState({ shown: list.length, phase: 'scanned', sel: sel });
+        return;
+      }
+      this.setState({ shown: n });
+    }, 110);
+  }
+
+  startInstall() {
+    const list = this.items(this.state.machine);
+    const queue = list.filter((x) => x.inst && this.state.sel[x.id]).map((x) => x.id);
+    if (!queue.length) return;
+    clearInterval(this._ii);
+    this.setState({ phase: 'installing', queue: queue, qi: 0, prog: {}, failed: {}, log: [{ k: 'mirror' }] });
+    this._ii = setInterval(() => {
+      const s = this.state;
+      if (s.qi >= s.queue.length) {
+        clearInterval(this._ii);
+        this.setState({ phase: 'done', log: s.log.concat([{ k: 'finish' }]) });
+        return;
+      }
+      const id = s.queue[s.qi];
+      const it = list.find((x) => x.id === id);
+      const cur = s.prog[id];
+      const prog = Object.assign({}, s.prog);
+      let log = s.log;
+      if (cur == null) { prog[id] = 0; log = log.concat([{ k: 'start', id: id }]); this.setState({ prog: prog, log: log }); return; }
+      const next = cur + (it.dl ? 10 : 34);
+      if (id === 'sage' && next >= 60) {
+        const failed = Object.assign({}, s.failed); failed[id] = true;
+        prog[id] = 60;
+        this.setState({ prog: prog, failed: failed, qi: s.qi + 1, log: log.concat([{ k: 'fail', id: id }]) });
+        return;
+      }
+      if (next >= 100) {
+        prog[id] = 100;
+        this.setState({ prog: prog, qi: s.qi + 1, log: log.concat([{ k: 'done', id: id }]) });
+        return;
+      }
+      prog[id] = next;
+      this.setState({ prog: prog });
+    }, 120);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const L = s.lang === 'en' ? 1 : 0;
+    const T = this.dict()[s.lang];
+    const list = this.items(s.machine);
+    const phase = s.phase;
+    const revealed = phase === 'idle' ? 0 : (phase === 'scanning' ? s.shown : list.length);
+    const stCol = {
+      ok: ['#E8EEFB', '#1A3E9E'], missing: ['#FCEFE3', '#7A3608'], old: ['#FCEFE3', '#7A3608'], optional: ['#ECECE8', '#3E4146'],
+      warn: ['#FCEFE3', '#7A3608'], skip: ['#ECECE8', '#3E4146'], fail: ['#FCEFE3', '#7A3608'], done: ['#E8EEFB', '#1A3E9E'], pending: ['#F3F3F1', '#4F5257']
+    };
+    const effSt = (x, i) => {
+      if (i >= revealed) return 'pending';
+      if (s.failed[x.id]) return 'fail';
+      if (s.prog[x.id] === 100) return 'done';
+      return x.st;
+    };
+
+    const groupDefs = [['sys', T.g_sys, T.g_sys_h], ['rt', T.g_rt, T.g_rt_h], ['comfy', T.g_comfy, T.g_comfy_h], ['w', T.g_w, T.g_w_h], ['svc', T.g_svc, T.g_svc_h]];
+    const groups = groupDefs.map((g) => ({
+      name: g[1], hint: g[2],
+      items: list.map((x, i) => ({ x: x, i: i })).filter((o) => o.x.g === g[0]).map((o) => {
+        const x = o.x;
+        const st = effSt(x, o.i);
+        const col = stCol[st];
+        const p = s.prog[x.id];
+        const inQueue = s.queue.indexOf(x.id) >= 0;
+        const showBar = (phase === 'installing' || phase === 'done') && inQueue;
+        return {
+          id: x.id, name: x.n[L], found: st === 'pending' ? '…' : x.f[L],
+          fix: st === 'pending' ? '' : x.fix[L], fixFg: (x.st === 'missing' || x.st === 'old') && st !== 'done' ? '#1A1B1E' : '#4F5257',
+          sLabel: T['st_' + st], sBg: col[0], sFg: col[1],
+          showCheck: phase === 'scanned' && x.inst,
+          checked: !!s.sel[x.id], checkLabel: x.req ? T.pick : T.pickOpt,
+          toggle: () => { const o = Object.assign({}, this.state.sel); o[x.id] = !o[x.id]; this.setState({ sel: o }); },
+          showBar: showBar, pct: (p || 0) + '%', pctLabel: s.failed[x.id] ? T.st_fail : ((p || 0) + '%'),
+          barColor: s.failed[x.id] ? '#C9864E' : '#2350C2', pctFg: s.failed[x.id] ? '#7A3608' : '#4F5257'
+        };
+      })
+    })).filter((g) => g.items.length > 0);
+
+    const shownList = list.slice(0, revealed).map((x) => effSt(x, list.indexOf(x)));
+    const countKeys = phase === 'done' ? ['done', 'fail', 'ok', 'optional', 'skip'] : ['ok', 'missing', 'old', 'optional', 'warn', 'skip'];
+    const counts = countKeys.map((k) => ({ k: k, n: shownList.filter((v) => v === k).length })).filter((c) => c.n > 0).map((c) => ({ label: T['st_' + c.k], n: c.n, bg: stCol[c.k][0], fg: stCol[c.k][1] }));
+
+    const qn = s.queue.length;
+    const doneN = s.queue.filter((id) => s.prog[id] === 100).length;
+    const failN = s.queue.filter((id) => s.failed[id]).length;
+    let overall = 0;
+    if (phase === 'scanning') overall = Math.round(s.shown / list.length * 100);
+    else if (phase === 'scanned') overall = 100;
+    else if (phase === 'installing') overall = qn ? Math.round(s.queue.reduce((a, id) => a + (s.prog[id] || 0), 0) / qn) : 0;
+    else if (phase === 'done') overall = 100;
+
+    const stepIdx = phase === 'idle' || phase === 'scanning' || phase === 'scanned' ? 0 : (phase === 'installing' ? 1 : 2);
+    const steps = [T.s1, T.s2, T.s3].map((label, i) => {
+      const on = i === stepIdx; const past = i < stepIdx;
+      return { no: past ? '✓' : String(i + 1), label: label, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : (past ? '#1A3E9E' : '#4F5257'), dotBg: on ? '#FFFFFF' : (past ? '#E8EEFB' : '#ECECE8'), dotFg: on ? '#1A1B1E' : (past ? '#1A3E9E' : '#4F5257') };
+    });
+
+    const langs = [{ id: 'zh', label: '中文' }, { id: 'en', label: 'English' }].map((l) => {
+      const on = s.lang === l.id;
+      return { label: l.label, on: on, bg: on ? '#F2F2EF' : 'transparent', fg: on ? '#1A1B1E' : '#F2F2EF', pick: () => this.setState({ lang: l.id }) };
+    });
+    const machines = [{ id: 'pc', label: T.pc }, { id: 'mac', label: T.mac }].map((m) => {
+      const on = s.machine === m.id;
+      return { label: m.label, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', pick: () => { clearInterval(this._si); clearInterval(this._ii); this.setState({ machine: m.id, phase: 'idle', shown: 0, sel: {}, prog: {}, failed: {}, queue: [], qi: 0, log: [] }); } };
+    });
+    const mirrors = [{ id: 'auto', label: T.mAuto }, { id: 'official', label: T.mOfficial }, { id: 'cn', label: T.mCn }].map((m) => {
+      const on = s.mirror === m.id;
+      return { label: m.label, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', pick: () => this.setState({ mirror: m.id }) };
+    });
+    const mirrorName = { auto: T.mAuto, official: T.mOfficial, cn: T.mCn }[s.mirror];
+    const nameOf = (id) => { const x = list.find((y) => y.id === id); return x ? x.n[L] : id; };
+    const logLines = s.log.slice(-9).map((e) => {
+      if (e.k === 'mirror') return { text: T.lMirror + mirrorName + ' · ' + s.dir, fg: '#B9BAB6' };
+      if (e.k === 'start') return { text: T.lStart + nameOf(e.id), fg: '#E6E6E3' };
+      if (e.k === 'done') return { text: T.lDone + nameOf(e.id), fg: '#A9C1F5' };
+      if (e.k === 'fail') return { text: T.lFail + nameOf(e.id), fg: '#F0B98A' };
+      return { text: T.lFinish, fg: '#A9C1F5' };
+    });
+    const selN = list.filter((x) => x.inst && s.sel[x.id]).length;
+    const checkList = [['sys', T.g_sys, T.c_sys], ['rt', T.g_rt, T.c_rt], ['comfy', T.g_comfy, T.c_comfy], ['w', T.g_w, T.c_w], ['svc', T.g_svc, T.c_svc]].map((c) => ({ name: c[1], desc: c[2] }));
+    const isMac = s.machine === 'mac';
+
+    return {
+      T: T, htmlLang: s.lang === 'en' ? 'en' : 'zh',
+      langs: langs, machines: machines, steps: steps, checkList: checkList,
+      isIdle: phase === 'idle', hasResults: phase !== 'idle', isScanned: phase === 'scanned', isDone: phase === 'done',
+      showLog: phase === 'installing' || phase === 'done', busy: phase === 'scanning' || phase === 'installing',
+      statusLine: T[phase] || '', counts: counts, overallPct: overall + '%', groups: groups,
+      startScan: () => this.startScan(), rescan: () => this.startScan(),
+      dir: s.dir, setDir: (e) => this.setState({ dir: e.target.value }),
+      mirrors: mirrors, mirrorHint: { auto: T.mAutoHint, official: T.mOfficialHint, cn: T.mCnHint }[s.mirror],
+      installBtn: L ? (T.install + ' ' + selN + ' ' + T.items) : (T.install + ' ' + selN + ' ' + T.items),
+      noneSelected: selN === 0,
+      startInstall: () => this.startInstall(),
+      selectRequired: () => { const o = {}; list.forEach((x) => { if (x.inst && x.req) o[x.id] = true; }); this.setState({ sel: o }); },
+      selectAll: () => { const o = {}; list.forEach((x) => { if (x.inst) o[x.id] = true; }); this.setState({ sel: o }); },
+      logLines: logLines,
+      doneLine: T.doneLinePre + doneN + T.doneLineMid + (failN ? T.doneLineFail + failN + T.doneLineEnd : (L ? '.' : '。')),
+      rec: { name: isMac ? T.recMac : T.recPc, why: isMac ? T.recMacWhy : T.recPcWhy },
+      toast: s.toast, hasToast: !!s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

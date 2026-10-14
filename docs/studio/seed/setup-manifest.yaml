@@ -1,0 +1,133 @@
+# 首次启动的检测与安装清单（M1 时拷到 config/setup-manifest.yaml）。
+# 字段说明见 SPEC 第 12.1 节。条目和原型 Setup.dc.html 的 PC / Mac 两套一致。
+# url / ref / sha256 写 TODO 的要在实现时补上并锁定版本；verify: true 的检测方式需要实测确认。
+# {comfy} = ComfyUI 根目录，{envs} = ~/.drama-studio/envs，{models} = 模型目录（用户可改）
+
+version: 1
+mirrors:
+  official: { hf: https://huggingface.co, pypi: https://pypi.org/simple, github: https://github.com }
+  cn:       { hf: https://hf-mirror.com,  pypi: https://pypi.tuna.tsinghua.edu.cn/simple, github: TODO }
+  auto:     { strategy: speedtest }
+
+items:
+  # ---------- 系统（只检测） ----------
+  - { id: os,     group: sys, name: { zh: 操作系统, en: Operating system }, detect: { type: platform } }
+  - { id: gpu,    group: sys, name: { zh: 显卡, en: GPU }, detect: { type: nvml, fallback: apple_silicon }, note: "没有 CUDA 时把视频、关键帧、超分默认切到 API" }
+  - { id: driver, group: sys, name: { zh: 显卡驱动, en: GPU driver }, platforms: [windows, linux], detect: { type: nvml, field: cuda_driver_version }, require: { cuda: ">=13.0" } }
+  - { id: ram,    group: sys, name: { zh: 内存, en: Memory }, detect: { type: platform, field: ram } }
+  - { id: disk,   group: sys, name: { zh: 磁盘空间, en: Disk space }, detect: { type: platform, field: disk_free, path: "{models}" }, require: { free_gb: ">=200" } }
+
+  # ---------- 运行环境 ----------
+  - id: python
+    group: rt
+    name: { zh: Python, en: Python }
+    required: true
+    detect: { type: command, cmd: "uv python find 3.12", version_regex: "(\\d+\\.\\d+)" }
+    install: [ { type: script, run: "uv python install 3.12" } ]
+  - id: uv
+    group: rt
+    name: { zh: uv, en: uv }
+    required: true
+    detect: { type: command, cmd: "uv --version" }
+    install: [ { type: pkg, winget: astral-sh.uv, brew: uv, script_fallback: "官方安装脚本 TODO" } ]
+  - id: torch
+    group: rt
+    name: { zh: PyTorch, en: PyTorch }
+    required: true
+    depends_on: [python, uv]
+    detect: { type: py_import, env: comfy, module: torch, check: "torch.version.cuda", verify: true }
+    require: { cuda_build: "13.0", note: "NVFP4 量化需要 CUDA 13.0 版" }
+    install:
+      - { type: uv_pip, env: comfy, packages: [torch, torchvision, torchaudio], index_url: "PyTorch CUDA 13.0 源 TODO", platforms: [windows, linux] }
+      - { type: uv_pip, env: comfy, packages: [torch, torchvision, torchaudio], platforms: [macos], note: "MPS 版" }
+  - id: ffmpeg
+    group: rt
+    name: { zh: FFmpeg, en: FFmpeg }
+    required: true
+    detect: { type: command, cmd: "ffmpeg -version" }
+    install: [ { type: pkg, winget: Gyan.FFmpeg, brew: ffmpeg, apt: ffmpeg } ]
+  - id: git
+    group: rt
+    name: { zh: Git, en: Git }
+    required: true
+    detect: { type: command, cmd: "git --version" }
+    install: [ { type: pkg, winget: Git.Git, brew: git, apt: git } ]
+
+  # ---------- ComfyUI 与节点 ----------
+  - id: comfy
+    group: comfy
+    name: { zh: ComfyUI, en: ComfyUI }
+    required: true            # macOS 上 optional：只用于本地出图
+    depends_on: [git, torch]
+    detect: { type: http, url: "http://127.0.0.1:8188/system_stats", or: { type: file, path: "{comfy}/main.py" } }
+    install:
+      - { type: git_clone, url: https://github.com/comfyanonymous/ComfyUI, ref: TODO, dest: "{comfy}" }
+      - { type: uv_pip, env: comfy, requirements: "{comfy}/requirements.txt" }
+  - id: node_h3
+    group: comfy
+    name: { zh: MiniMax H3 节点, en: MiniMax H3 nodes }
+    requires_cuda: true
+    required: true
+    depends_on: [comfy]
+    detect: { type: comfy_node, classes: TODO, verify: true }
+    install: [ { type: script, run: "更新 ComfyUI 到含 H3 原生节点的版本；需要时装官方节点包 TODO" } ]
+    docs: https://docs.comfy.org/tutorials/video/minimax/minimax-h3-native
+  - id: node_vhs
+    group: comfy
+    name: { zh: VideoHelperSuite, en: VideoHelperSuite }
+    depends_on: [comfy]
+    detect: { type: comfy_node, dir: ComfyUI-VideoHelperSuite }
+    install: [ { type: git_clone, url: https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite, ref: TODO, dest: "{comfy}/custom_nodes/ComfyUI-VideoHelperSuite" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
+  - id: node_seedvr2
+    group: comfy
+    name: { zh: SeedVR2 节点（本地超分）, en: SeedVR2 nodes (local upscaling) }
+    requires_cuda: true
+    required: true
+    depends_on: [comfy]
+    detect: { type: comfy_node, dir: ComfyUI-SeedVR2_VideoUpscaler, verify: true }
+    install: [ { type: git_clone, url: https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler, ref: TODO, dest: "{comfy}/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
+  - id: node_flashvsr
+    group: comfy
+    name: { zh: FlashVSR 节点（快速超分）, en: FlashVSR nodes (fast upscaling) }
+    requires_cuda: true
+    depends_on: [comfy]
+    detect: { type: comfy_node, dir: TODO }
+    install: [ { type: git_clone, url: TODO, ref: TODO, dest: "{comfy}/custom_nodes/" } ]
+    docs: https://www.runcomfy.com/comfyui-nodes/ComfyUI-FlashVSR
+  - id: node_ctrl
+    group: comfy
+    name: { zh: Fun ControlNet 节点, en: Fun ControlNet nodes }
+    requires_cuda: true
+    depends_on: [comfy]
+    detect: { type: comfy_node, classes: TODO }
+    install: [ { type: script, run: TODO } ]
+    docs: https://docs.comfy.org/tutorials/video/minimax/minimax-h3-fun-controlnet
+  - id: sage
+    group: comfy
+    name: { zh: SageAttention 加速, en: SageAttention speed-up }
+    requires_cuda: true
+    depends_on: [torch]
+    detect: { type: py_import, env: comfy, module: sageattention }
+    install: [ { type: uv_pip, env: comfy, packages: [sageattention], note: "Windows 可能需要预编译 wheel，失败只记录不阻塞" } ]
+  - id: node_dramastudio
+    group: comfy
+    name: { zh: DramaStudio 节点包（素材板与存回）, en: DramaStudio nodes (boards and save-back) }
+    required: true
+    depends_on: [comfy]
+    detect: { type: comfy_node, dir: comfyui-dramastudio }
+    install: [ { type: copy, from: "integrations/comfyui-dramastudio", dest: "{comfy}/custom_nodes/comfyui-dramastudio" }, { type: script, run: "写入本地令牌和后端地址" } ]
+
+  # ---------- 模型权重（断点续传 + sha256） ----------
+  - { id: w_h3,  group: w, name: { zh: "MiniMax H3 权重（int8）", en: "MiniMax H3 weights (int8)" }, requires_cuda: true, required: true, detect: { type: file, path: "{models}/TODO", sha256: TODO }, install: [ { type: download, hf_repo: MiniMaxAI/MiniMax-H3, files: TODO, dest: "{comfy}/models/TODO" } ] }
+  - { id: w_te,  group: w, name: { zh: "Qwen3-VL-32B 文本编码器（NVFP4）", en: "Qwen3-VL-32B text encoder (NVFP4)" }, requires_cuda: true, required: true, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_img, group: w, name: { zh: Qwen-Image-Edit, en: Qwen-Image-Edit }, required: true, macos: optional, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_sr,  group: w, name: { zh: SeedVR2 权重, en: SeedVR2 weights }, requires_cuda: true, required: true, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_tts, group: w, name: { zh: IndexTTS2, en: IndexTTS2 }, required: true, macos: optional, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, macos: { variant: MLX, required: true }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
+
+  # ---------- 网络与服务 ----------
+  - { id: hf,      group: svc, name: { zh: 模型下载网络, en: Model download network }, detect: { type: http, speedtest: [hf, pypi, github] } }
+  - { id: llmsrv,  group: svc, name: { zh: 本地 LLM 服务, en: Local LLM server }, detect: { type: service, urls: ["http://127.0.0.1:11434/v1/models", "http://127.0.0.1:8080/v1/models"] }, install: [ { type: pkg, winget: Ollama.Ollama, brew: ollama } ] }
+  - { id: keys,    group: svc, name: { zh: API 密钥, en: API keys }, detect: { type: keyring, names_from: providers.yaml } }
+  - { id: eagle,   group: svc, name: { zh: Eagle 素材库（可选）, en: Eagle library (optional) }, detect: { type: http, url: "http://localhost:41595/api/application/info", verify: true }, install: [] }
+  - { id: resolve, group: svc, name: { zh: 达芬奇 Resolve（可选）, en: DaVinci Resolve (optional) }, detect: { type: resolve, fields: [version, edition] }, install: [], note: "免费版 21.1 起不支持外部 Python 脚本，同步改走文件夹 + FCPXML" }

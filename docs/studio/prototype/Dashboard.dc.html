@@ -1,0 +1,771 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>数据看板 · 花费、耗时与速度</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F3F3F1}
+a{color:#2350C2}a:hover{color:#173A94}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+textarea,input{font-family:inherit}
+button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid #2350C2;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: #F3F3F1; color: #1A1B1E; font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 20px; background: #1A1B1E; color: #F2F2EF">
+<div style="font-size: 15px; font-weight: 700; letter-spacing: 0.02em">短剧工作台</div>
+<div style="font-size: 14px; color: #C9CAC6">《雨停之前》 · 第 1 集《红伞》</div>
+<a href="Spec.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border: 1px solid #5B5E63; border-radius: 999px; color: #F2F2EF; font-size: 12px; text-decoration: none; font-family: 'IBM Plex Mono', ui-monospace, monospace">9:16 · 1080×1920 · 24 fps</a>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 18px; font-size: 13px; color: #C9CAC6">
+<span>本地 GPU：RTX 5090 32GB · 运行中 1 · 排队 2</span>
+<span>本集 API 花费 <b style="color: #FFFFFF; font-weight: 500">$8.94</b> / 预算 $15</span>
+<button type="button" onClick="{{toggleLang}}" aria-label="切换界面语言 / Switch language" style="min-height: 32px; padding: 0 10px; border: 1px solid #5B5E63; border-radius: 6px; background: transparent; color: #F2F2EF; font-size: 12px">中 / EN</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: stretch; flex: 1 1 auto">
+
+<nav aria-label="制作步骤" style="flex: 1 1 200px; box-sizing: border-box; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; background: #ECECE8; border-right: 1px solid #DADAD5">
+<div style="font-size: 12px; color: #4F5257; padding: 0 10px 6px">制作步骤</div>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+<a href="{{n.href}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #4F5257; width: 20px">{{n.no}}</span>
+<span style="font-size: 14px; font-weight: 500">{{n.label}}</span>
+<span style="margin-left: auto; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: {{n.bbg}}; color: {{n.bfg}}">{{n.badge}}</span>
+</a>
+</sc-for>
+<div style="height: 1px; background: #DADAD5; margin: 10px 4px"></div>
+<a href="Spec.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path></svg>
+<span style="font-size: 14px; font-weight: 500">成片规格</span>
+</a>
+<a href="Models.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+<span style="font-size: 14px; font-weight: 500">模型与兜底</span>
+</a>
+<a href="Sync.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M17.5 14v7"></path><path d="M14 17.5h7"></path></svg>
+<span style="font-size: 14px; font-weight: 500">素材整理与同步</span>
+</a>
+<a href="Dashboard.dc.html" aria-current="page" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; background: #FFFFFF; border: 1px solid #CFCFC9">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+<span style="font-size: 14px; font-weight: 700">数据看板</span>
+</a>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px 28px 48px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; margin-right: auto; min-width: 0">
+<h1 style="margin: 0; font-size: 28px; font-weight: 700">数据看板</h1>
+<p style="margin: 0; font-size: 14px; color: #4F5257; line-height: 1.7; max-width: 760px">钱花在哪、时间花在哪、哪个模型又快又便宜。每次调用都记了时间、模型、用量和花费，这里按集、场、镜头、组件汇总。数据更新于 11:55。</p>
+</div>
+<button type="button" onClick="{{exportCsv}}" style="min-height: 40px; padding: 0 14px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">导出 CSV</button>
+</div>
+
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 10px 16px">
+<span style="font-size: 13px; color: #4F5257">范围</span>
+<div role="group" aria-label="范围" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 8px; overflow: hidden">
+<sc-for list="{{scopes}}" as="s" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{s.on}}" onClick="{{s.pick}}" style="min-height: 36px; padding: 0 14px; border: 0; background: {{s.bg}}; color: {{s.fg}}; font-size: 13px">{{s.label}}</button>
+</sc-for>
+</div>
+<span style="font-size: 12px; color: #4F5257">{{scopeNote}}</span>
+</div>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="padding: 10px 14px; border-radius: 8px; background: #E8EEFB; color: #173A94; font-size: 14px">{{toast}}</div>
+</sc-if>
+
+<section aria-label="预算" style="box-sizing: border-box; padding: 20px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-wrap: wrap; gap: 20px 32px; align-items: flex-start">
+<div style="flex: 1 1 380px; min-width: 0; display: flex; flex-direction: column; gap: 12px">
+<div style="font-size: 13px; color: #4F5257">{{hero.label}}</div>
+<div style="display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap">
+<span style="font-size: 52px; font-weight: 700; line-height: 1">{{hero.spent}}</span>
+<span style="font-size: 15px; color: #4F5257">{{hero.of}}</span>
+</div>
+<div style="position: relative; height: 14px; border-radius: 7px; background: #E8EEFB; overflow: hidden" role="img" aria-label="{{hero.aria}}">
+<div style="position: absolute; left: 0; top: 0; bottom: 0; width: {{hero.spentPct}}; background: #2a78d6"></div>
+<div style="position: absolute; top: 0; bottom: 0; left: {{hero.spentPct}}; width: {{hero.projPct}}; background: #86b6ef; border-left: 2px solid #FFFFFF; box-sizing: border-box"></div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: #4F5257">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: #2a78d6"></span>已花 {{hero.spent}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: #86b6ef"></span>预计还要 {{hero.remain}}</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: #E8EEFB; box-shadow: inset 0 0 0 1px #9DB2E6"></span>预算 {{hero.budget}}</span>
+<span style="font-weight: 500; color: #1A1B1E">{{hero.verdict}}</span>
+</div>
+</div>
+<div style="flex: 1 1 340px; min-width: 0; display: flex; flex-direction: column; gap: 10px">
+<div style="font-size: 13px; font-weight: 700">值得注意</div>
+<sc-for list="{{insights}}" as="i" hint-placeholder-count="3">
+<div style="display: flex; gap: 10px; font-size: 14px; line-height: 1.7">
+<span aria-hidden="true" style="flex: 0 0 auto; width: 6px; height: 6px; border-radius: 3px; background: #1A1B1E; margin-top: 10px"></span>
+<span>{{i.t}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+
+<section aria-label="关键指标" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px">
+<sc-for list="{{kpis}}" as="k" hint-placeholder-count="6">
+<div style="box-sizing: border-box; padding: 14px 16px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 13px; color: #4F5257">{{k.label}}</div>
+<div style="font-size: 26px; font-weight: 700; line-height: 1.2">{{k.value}}</div>
+<sc-if value="{{k.hasMeter}}" hint-placeholder-val="{{ false }}">
+<div aria-hidden="true" style="height: 6px; border-radius: 3px; background: #E8EEFB; overflow: hidden"><div style="height: 6px; width: {{k.pct}}; background: #2a78d6"></div></div>
+</sc-if>
+<div style="font-size: 12px; color: #4F5257; line-height: 1.6">{{k.sub}}</div>
+</div>
+</sc-for>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+
+<section aria-label="累计花费" onMouseLeave="{{clearHover}}" style="flex: 1 1 460px; min-width: 0; box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px; margin-right: auto">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">累计 API 花费（美元）</h2>
+<span style="font-size: 12px; color: #4F5257">今天 09:30 到现在；虚线按剩余镜头和当前路由估算</span>
+</div>
+<div role="group" aria-label="显示方式" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 6px; overflow: hidden">
+<sc-for list="{{vt.spend}}" as="v" hint-placeholder-count="2"><button type="button" aria-pressed="{{v.on}}" onClick="{{v.pick}}" style="min-height: 30px; padding: 0 10px; border: 0; background: {{v.bg}}; color: {{v.fg}}; font-size: 12px">{{v.label}}</button></sc-for>
+</div>
+</div>
+<sc-if value="{{show.spendChart}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; height: 230px; margin: 10px 56px 0 40px">
+<sc-for list="{{sp.yTicks}}" as="t" hint-placeholder-count="4">
+<div style="position: absolute; left: 0; right: 0; top: {{t.top}}; height: 1px; background: #ECECE8"></div>
+<span style="position: absolute; left: -40px; width: 32px; text-align: right; top: {{t.top}}; transform: translateY(-50%); font-size: 11px; color: #6A6D72; font-variant-numeric: tabular-nums">{{t.label}}</span>
+</sc-for>
+<div style="position: absolute; left: 0; right: 0; top: {{sp.budgetTop}}; height: 0; border-top: 1px solid #B9B9B2"></div>
+<span style="position: absolute; right: -56px; width: 52px; top: {{sp.budgetTop}}; transform: translateY(-50%); font-size: 11px; color: #4F5257">预算 $15</span>
+<svg aria-hidden="true" viewBox="0 0 1000 300" preserveAspectRatio="none" style="position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible">
+<path d="{{sp.area}}" fill="rgba(42, 120, 214, 0.10)" stroke="none"></path>
+<path d="{{sp.proj}}" fill="none" stroke="#2a78d6" stroke-width="2" stroke-dasharray="5 5" stroke-opacity="0.6" vector-effect="non-scaling-stroke"></path>
+<path d="{{sp.line}}" fill="none" stroke="#2a78d6" stroke-width="2" stroke-linejoin="round" stroke-linecap="round" vector-effect="non-scaling-stroke"></path>
+</svg>
+<sc-if value="{{sp.hasHover}}" hint-placeholder-val="{{ false }}">
+<div style="position: absolute; top: 0; bottom: 0; left: {{sp.hoverX}}; width: 1px; background: #898781"></div>
+<div style="position: absolute; left: {{sp.hoverX}}; top: {{sp.hoverY}}; width: 10px; height: 10px; border-radius: 5px; background: #2a78d6; box-shadow: 0 0 0 2px #FFFFFF; transform: translate(-50%, -50%)"></div>
+</sc-if>
+<div style="position: absolute; left: {{sp.nowX}}; top: {{sp.nowY}}; width: 10px; height: 10px; border-radius: 5px; background: #2a78d6; box-shadow: 0 0 0 2px #FFFFFF; transform: translate(-50%, -50%)"></div>
+<span style="position: absolute; left: {{sp.nowX}}; top: {{sp.nowY}}; transform: translate(-50%, 10px); font-size: 12px; font-weight: 500; white-space: nowrap">现在 $8.94</span>
+<span style="position: absolute; right: 0; top: {{sp.projY}}; transform: translate(0, -130%); font-size: 12px; color: #4F5257; white-space: nowrap">预计 $13.35</span>
+<sc-for list="{{sp.strips}}" as="s" hint-placeholder-count="10">
+<button type="button" onMouseEnter="{{s.hover}}" onFocus="{{s.hover}}" onClick="{{s.hover}}" aria-label="{{s.aria}}" style="position: absolute; top: 0; bottom: 0; left: {{s.left}}; width: {{s.width}}; padding: 0; border: 0; background: transparent"></button>
+</sc-for>
+</div>
+<div style="position: relative; height: 18px; margin: 0 56px 0 40px">
+<sc-for list="{{sp.xTicks}}" as="t" hint-placeholder-count="5">
+<span style="position: absolute; left: {{t.left}}; transform: translateX(-50%); font-size: 11px; color: #6A6D72; font-variant-numeric: tabular-nums">{{t.label}}</span>
+</sc-for>
+</div>
+<div style="min-height: 44px; padding: 8px 10px; border-radius: 8px; background: #F6F6F3; font-size: 13px; line-height: 1.6">
+<b style="font-weight: 700">{{ro.title}}</b><span style="color: #4F5257"> · {{ro.body}}</span>
+</div>
+</sc-if>
+<sc-if value="{{show.spendTable}}" hint-placeholder-val="{{ false }}">
+<div style="overflow-x: auto">
+<div style="min-width: 520px; font-size: 12px">
+<div style="display: grid; grid-template-columns: 92px 72px 72px minmax(0, 1fr); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #DADAD5; color: #4F5257; font-weight: 500"><span>时段</span><span>新增</span><span>累计</span><span>花在哪</span></div>
+<sc-for list="{{bucketRows}}" as="r" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 92px 72px 72px minmax(0, 1fr); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #F0F0EC; font-variant-numeric: tabular-nums"><span>{{r.t}}</span><span>{{r.add}}</span><span>{{r.cum}}</span><span style="color: #4F5257">{{r.note}}</span></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</section>
+
+<section aria-label="API 调用次数" onMouseLeave="{{clearHover}}" style="flex: 1 1 420px; min-width: 0; box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px; margin-right: auto">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">API 调用次数（每 15 分钟）</h2>
+<span style="font-size: 12px; color: #4F5257">共 42 次，成功 41 次；悬停看这一段花了多少</span>
+</div>
+<div role="group" aria-label="显示方式" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 6px; overflow: hidden">
+<sc-for list="{{vt.calls}}" as="v" hint-placeholder-count="2"><button type="button" aria-pressed="{{v.on}}" onClick="{{v.pick}}" style="min-height: 30px; padding: 0 10px; border: 0; background: {{v.bg}}; color: {{v.fg}}; font-size: 12px">{{v.label}}</button></sc-for>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: #4F5257">
+<sc-for list="{{kindLegend}}" as="l" hint-placeholder-count="3">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: {{l.c}}"></span>{{l.name}} {{l.calls}} 次 · {{l.cost}}</span>
+</sc-for>
+</div>
+<sc-if value="{{show.callsChart}}" hint-placeholder-val="{{ true }}">
+<div style="position: relative; height: 196px; margin: 8px 0 0 28px">
+<sc-for list="{{cl.yTicks}}" as="t" hint-placeholder-count="4">
+<div style="position: absolute; left: 0; right: 0; top: {{t.top}}; height: 1px; background: #ECECE8"></div>
+<span style="position: absolute; left: -28px; width: 20px; text-align: right; top: {{t.top}}; transform: translateY(-50%); font-size: 11px; color: #6A6D72; font-variant-numeric: tabular-nums">{{t.label}}</span>
+</sc-for>
+<div style="position: absolute; inset: 0; display: flex; align-items: stretch">
+<sc-for list="{{cl.cols}}" as="c" hint-placeholder-count="10">
+<button type="button" onMouseEnter="{{c.hover}}" onFocus="{{c.hover}}" onClick="{{c.hover}}" aria-label="{{c.aria}}" style="position: relative; flex: 1 1 0; min-width: 0; height: 100%; padding: 0; border: 0; border-radius: 4px; background: {{c.bg}}; display: flex; flex-direction: column; justify-content: flex-end; align-items: center; gap: 2px">
+<sc-if value="{{c.hasFail}}" hint-placeholder-val="{{ false }}">
+<span style="display: inline-flex; align-items: center; gap: 3px; margin-bottom: 4px; font-size: 11px; color: #1A1B1E; white-space: nowrap"><span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border-radius: 7px; background: #d03b3b; color: #FFFFFF; font-size: 10px; font-weight: 700">!</span>失败 1</span>
+</sc-if>
+<sc-if value="{{c.hasTop}}" hint-placeholder-val="{{ false }}">
+<span style="margin-bottom: 2px; font-size: 11px; font-weight: 500; color: #1A1B1E">{{c.total}}</span>
+</sc-if>
+<sc-for list="{{c.segs}}" as="g" hint-placeholder-count="2">
+<span style="display: block; flex: 0 0 auto; width: 20px; height: {{g.h}}; background: {{g.c}}; border-radius: {{g.r}}"></span>
+</sc-for>
+</button>
+</sc-for>
+</div>
+</div>
+<div style="display: flex; margin-left: 28px; height: 18px">
+<sc-for list="{{cl.cols}}" as="c" hint-placeholder-count="10">
+<span style="flex: 1 1 0; min-width: 0; text-align: center; font-size: 11px; color: #6A6D72; font-variant-numeric: tabular-nums">{{c.xl}}</span>
+</sc-for>
+</div>
+<div style="min-height: 44px; padding: 8px 10px; border-radius: 8px; background: #F6F6F3; font-size: 13px; line-height: 1.6">
+<b style="font-weight: 700">{{ro.title}}</b><span style="color: #4F5257"> · {{ro.calls}}</span>
+</div>
+</sc-if>
+<sc-if value="{{show.callsTable}}" hint-placeholder-val="{{ false }}">
+<div style="overflow-x: auto">
+<div style="min-width: 420px; font-size: 12px">
+<div style="display: grid; grid-template-columns: 92px repeat(4, minmax(0, 1fr)); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #DADAD5; color: #4F5257; font-weight: 500"><span>时段</span><span>文本</span><span>图像</span><span>音视频</span><span>失败</span></div>
+<sc-for list="{{bucketRows}}" as="r" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 92px repeat(4, minmax(0, 1fr)); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #F0F0EC; font-variant-numeric: tabular-nums"><span>{{r.t}}</span><span>{{r.text}}</span><span>{{r.img}}</span><span>{{r.av}}</span><span>{{r.fail}}</span></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</section>
+</div>
+
+<section aria-label="每个镜头的耗时" style="box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px; margin-right: auto">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">每个镜头花了多少时间和钱</h2>
+<span style="font-size: 12px; color: #4F5257">按场分组；条的长度是累计计算时长（分钟），点一行看明细</span>
+</div>
+<div role="group" aria-label="显示方式" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 6px; overflow: hidden">
+<sc-for list="{{vt.shots}}" as="v" hint-placeholder-count="2"><button type="button" aria-pressed="{{v.on}}" onClick="{{v.pick}}" style="min-height: 30px; padding: 0 10px; border: 0; background: {{v.bg}}; color: {{v.fg}}; font-size: 12px">{{v.label}}</button></sc-for>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: #4F5257">
+<sc-for list="{{stageLegend}}" as="l" hint-placeholder-count="3">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: {{l.c}}"></span>{{l.name}}</span>
+</sc-for>
+</div>
+<sc-if value="{{show.shotsChart}}" hint-placeholder-val="{{ true }}">
+<div style="overflow-x: auto">
+<div style="min-width: 760px; display: flex; flex-direction: column; gap: 2px">
+<div style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 60px 52px 64px 72px; gap: 12px; padding: 4px 8px; font-size: 12px; color: #4F5257; font-weight: 500">
+<span>镜头</span><span>计算时长（0–40 分钟）</span><span>合计</span><span>候选</span><span>花费</span><span>状态</span>
+</div>
+<sc-for list="{{shotRows}}" as="r" hint-placeholder-count="11">
+<sc-if value="{{r.isGroup}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 4px 16px; align-items: baseline; padding: 10px 8px 4px; border-top: 1px solid #ECECE8; font-size: 13px">
+<span style="font-weight: 700">{{r.name}}</span>
+<span style="color: #4F5257">{{r.sum}}</span>
+</div>
+</sc-if>
+<sc-if value="{{r.isShot}}" hint-placeholder-val="{{ true }}">
+<button type="button" aria-pressed="{{r.on}}" onClick="{{r.pick}}" onFocus="{{r.pick}}" style="display: grid; grid-template-columns: 170px minmax(0, 1fr) 60px 52px 64px 72px; gap: 12px; align-items: center; width: 100%; min-height: 36px; padding: 4px 8px; border: 0; border-radius: 6px; background: {{r.bg}}; color: #1A1B1E; text-align: left">
+<span style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis"><span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-weight: 500">{{r.id}}</span> {{r.d}}</span>
+<span style="position: relative; display: flex; align-items: center; gap: 2px; height: 20px">
+<sc-for list="{{r.segs}}" as="g" hint-placeholder-count="3"><span style="flex: 0 0 auto; height: 18px; width: {{g.w}}; background: {{g.c}}; border-radius: {{g.r}}"></span></sc-for>
+<sc-if value="{{r.empty}}" hint-placeholder-val="{{ false }}"><span style="font-size: 12px; color: #6A6D72">{{r.emptyText}}</span></sc-if>
+</span>
+<span style="font-size: 13px; font-variant-numeric: tabular-nums">{{r.total}}</span>
+<span style="font-size: 13px; font-variant-numeric: tabular-nums">{{r.takes}}</span>
+<span style="font-size: 13px; font-variant-numeric: tabular-nums">{{r.cost}}</span>
+<span style="justify-self: start; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: {{r.stBg}}; color: {{r.stFg}}">{{r.st}}</span>
+</button>
+</sc-if>
+</sc-for>
+</div>
+</div>
+<div style="padding: 10px 12px; border-radius: 8px; background: #F6F6F3; font-size: 13px; line-height: 1.7">
+<b style="font-weight: 700">{{shotDetail.title}}</b><span style="color: #4F5257"> · {{shotDetail.split}}</span><br><span>{{shotDetail.note}}</span>
+</div>
+</sc-if>
+<sc-if value="{{show.shotsTable}}" hint-placeholder-val="{{ false }}">
+<div style="overflow-x: auto">
+<div style="min-width: 640px; font-size: 12px">
+<div style="display: grid; grid-template-columns: 64px repeat(7, minmax(0, 1fr)); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #DADAD5; color: #4F5257; font-weight: 500"><span>镜头</span><span>关键帧</span><span>视频生成</span><span>质检与精修</span><span>合计</span><span>候选</span><span>花费</span><span>状态</span></div>
+<sc-for list="{{shotTable}}" as="r" hint-placeholder-count="9">
+<div style="display: grid; grid-template-columns: 64px repeat(7, minmax(0, 1fr)); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #F0F0EC; font-variant-numeric: tabular-nums"><span>{{r.id}}</span><span>{{r.kf}}</span><span>{{r.vid}}</span><span>{{r.post}}</span><span>{{r.total}}</span><span>{{r.takes}}</span><span>{{r.cost}}</span><span>{{r.st}}</span></div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+
+<section aria-label="各组件耗时" style="flex: 1 1 440px; min-width: 0; box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px; margin-right: auto">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">各组件累计计算时长（分钟）</h2>
+<span style="font-size: 12px; color: #4F5257">本地 132 分钟，等 API 44 分钟</span>
+</div>
+<div role="group" aria-label="显示方式" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 6px; overflow: hidden">
+<sc-for list="{{vt.comps}}" as="v" hint-placeholder-count="2"><button type="button" aria-pressed="{{v.on}}" onClick="{{v.pick}}" style="min-height: 30px; padding: 0 10px; border: 0; background: {{v.bg}}; color: {{v.fg}}; font-size: 12px">{{v.label}}</button></sc-for>
+</div>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 16px; font-size: 12px; color: #4F5257">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: #86b6ef"></span>本地</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: #2a78d6"></span>API</span>
+</div>
+<sc-if value="{{show.compsChart}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{compRows}}" as="r" hint-placeholder-count="11">
+<div style="display: grid; grid-template-columns: 104px minmax(0, 1fr) 48px; gap: 10px; align-items: center; min-height: 24px">
+<span style="font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{r.n}}</span>
+<span role="img" aria-label="{{r.aria}}" style="display: flex; align-items: center; gap: 2px; height: 18px">
+<sc-for list="{{r.segs}}" as="g" hint-placeholder-count="2"><span style="flex: 0 0 auto; height: 16px; width: {{g.w}}; background: {{g.c}}; border-radius: {{g.r}}"></span></sc-for>
+</span>
+<span style="font-size: 13px; font-variant-numeric: tabular-nums">{{r.total}}</span>
+</div>
+</sc-for>
+</div>
+</sc-if>
+<sc-if value="{{show.compsTable}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px">
+<div style="display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #DADAD5; color: #4F5257; font-weight: 500"><span>组件</span><span>本地</span><span>API</span><span>合计</span></div>
+<sc-for list="{{compRows}}" as="r" hint-placeholder-count="11">
+<div style="display: grid; grid-template-columns: minmax(0, 1.4fr) repeat(3, minmax(0, 1fr)); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #F0F0EC; font-variant-numeric: tabular-nums"><span>{{r.n}}</span><span>{{r.loc}}</span><span>{{r.api}}</span><span>{{r.total}}</span></div>
+</sc-for>
+</div>
+</sc-if>
+</section>
+
+<section aria-label="生成速度" style="flex: 1 1 440px; min-width: 0; box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-wrap: wrap; align-items: flex-start; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px; margin-right: auto">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">出 1 秒成片要算多少秒</h2>
+<span style="font-size: 12px; color: #4F5257">点是中位数，横线是最快到最慢；越靠左越快</span>
+</div>
+<div role="group" aria-label="显示方式" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 6px; overflow: hidden">
+<sc-for list="{{vt.speed}}" as="v" hint-placeholder-count="2"><button type="button" aria-pressed="{{v.on}}" onClick="{{v.pick}}" style="min-height: 30px; padding: 0 10px; border: 0; background: {{v.bg}}; color: {{v.fg}}; font-size: 12px">{{v.label}}</button></sc-for>
+</div>
+</div>
+<sc-if value="{{show.speedChart}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<sc-for list="{{speedRows}}" as="r" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 96px; gap: 12px; align-items: center; min-height: 52px">
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0">
+<span style="font-size: 13px; font-weight: 500">{{r.n}}</span>
+<span style="font-size: 11px; color: #4F5257">{{r.where}} · {{r.unit}}</span>
+</span>
+<span role="img" aria-label="{{r.aria}}" style="position: relative; height: 28px">
+<span style="position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #ECECE8"></span>
+<span style="position: absolute; top: 50%; left: {{r.minX}}; width: {{r.rangeW}}; height: 2px; margin-top: -1px; background: #898781; border-radius: 1px"></span>
+<span style="position: absolute; top: 50%; left: {{r.medX}}; width: 10px; height: 10px; border-radius: 5px; background: #2a78d6; box-shadow: 0 0 0 2px #FFFFFF; transform: translate(-50%, -50%)"></span>
+</span>
+<span style="display: flex; flex-direction: column; gap: 2px">
+<span style="font-size: 13px; font-variant-numeric: tabular-nums">中位 {{r.med}} 秒</span>
+<span style="font-size: 11px; color: #4F5257">{{r.eg}}</span>
+</span>
+</div>
+</sc-for>
+<div style="display: grid; grid-template-columns: 150px minmax(0, 1fr) 96px; gap: 12px">
+<span></span>
+<span style="position: relative; height: 16px">
+<sc-for list="{{speedTicks}}" as="t" hint-placeholder-count="5"><span style="position: absolute; left: {{t.left}}; transform: translateX(-50%); font-size: 11px; color: #6A6D72; font-variant-numeric: tabular-nums">{{t.label}}</span></sc-for>
+</span>
+<span style="font-size: 11px; color: #6A6D72">秒 / 每秒成片</span>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{show.speedTable}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px">
+<div style="display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #DADAD5; color: #4F5257; font-weight: 500"><span>模型</span><span>中位</span><span>最快</span><span>最慢</span><span>样本</span></div>
+<sc-for list="{{speedRows}}" as="r" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: minmax(0, 1.6fr) repeat(4, minmax(0, 1fr)); gap: 10px; padding: 6px 4px; border-bottom: 1px solid #F0F0EC; font-variant-numeric: tabular-nums"><span>{{r.n}}</span><span>{{r.med}} 秒</span><span>{{r.min}} 秒</span><span>{{r.max}} 秒</span><span>{{r.cnt}} 条</span></div>
+</sc-for>
+</div>
+</sc-if>
+<div style="font-size: 12px; color: #4F5257; line-height: 1.6">本地 H3 最慢的一条是超时（10 分钟没出结果），已按兜底规则改用 API。</div>
+</section>
+</div>
+
+<section aria-label="API 明细" style="box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">各 API 的调用和花费</h2>
+<span style="font-size: 12px; color: #4F5257">按花费从高到低；耗时是单次调用从发出到拿到结果的中位数</span>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 900px; font-size: 13px">
+<div style="display: grid; grid-template-columns: minmax(150px, 1.4fr) 80px 52px 64px 84px minmax(150px, 1.4fr) minmax(170px, 1.6fr); gap: 12px; padding: 8px 4px; border-bottom: 1px solid #DADAD5; font-size: 12px; color: #4F5257; font-weight: 500">
+<span>API</span><span>类别</span><span>调用</span><span>成功率</span><span>中位耗时</span><span>用量 · 单价</span><span>花费（占本集）</span>
+</div>
+<sc-for list="{{apiRows}}" as="r" hint-placeholder-count="8">
+<div style="display: grid; grid-template-columns: minmax(150px, 1.4fr) 80px 52px 64px 84px minmax(150px, 1.4fr) minmax(170px, 1.6fr); gap: 12px; align-items: center; padding: 8px 4px; border-bottom: 1px solid #F0F0EC">
+<span style="display: flex; flex-direction: column; gap: 2px; min-width: 0"><span style="font-weight: 500">{{r.n}}</span><sc-if value="{{r.hasNote}}" hint-placeholder-val="{{ false }}"><span style="display: inline-flex; align-items: center; gap: 4px; font-size: 11px; color: #4F5257"><span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 12px; height: 12px; border-radius: 6px; background: #d03b3b; color: #FFFFFF; font-size: 9px; font-weight: 700">!</span>{{r.note}}</span></sc-if></span>
+<span style="display: inline-flex; align-items: center; gap: 6px; font-size: 12px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 2px; background: {{r.kc}}"></span>{{r.kn}}</span>
+<span style="font-variant-numeric: tabular-nums">{{r.calls}}</span>
+<span style="font-variant-numeric: tabular-nums">{{r.rate}}</span>
+<span style="font-variant-numeric: tabular-nums">{{r.lat}}</span>
+<span style="display: flex; flex-direction: column; gap: 2px; font-size: 12px"><span>{{r.use}}</span><span style="color: #4F5257">{{r.unit}}</span></span>
+<span style="display: grid; grid-template-columns: minmax(0, 1fr) 92px; gap: 8px; align-items: center">
+<span style="height: 12px; display: flex; align-items: center"><span style="height: 12px; width: {{r.w}}; background: {{r.kc}}; border-radius: 0 4px 4px 0"></span></span>
+<span style="font-variant-numeric: tabular-nums; font-weight: 500">{{r.cost}} <span style="font-weight: 400; color: #4F5257">{{r.share}}</span></span>
+</span>
+</div>
+</sc-for>
+<div style="display: grid; grid-template-columns: minmax(150px, 1.4fr) 80px 52px 64px 84px minmax(150px, 1.4fr) minmax(170px, 1.6fr); gap: 12px; padding: 8px 4px; font-weight: 700">
+<span>合计</span><span></span><span style="font-variant-numeric: tabular-nums">42</span><span style="font-variant-numeric: tabular-nums">97.6%</span><span></span><span></span><span style="font-variant-numeric: tabular-nums">$8.94</span>
+</div>
+</div>
+</div>
+</section>
+
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: stretch">
+
+<section aria-label="本地模型" style="flex: 1.3 1 480px; min-width: 0; box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">本地模型：跑了多久、占多少显存</h2>
+<span style="font-size: 12px; color: #4F5257">显存条的满格是 32 GB；同一时间只加载一个大模型</span>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 600px; font-size: 13px">
+<div style="display: grid; grid-template-columns: minmax(140px, 1.3fr) minmax(120px, 1.2fr) 48px 72px minmax(150px, 1.4fr); gap: 12px; padding: 8px 4px; border-bottom: 1px solid #DADAD5; font-size: 12px; color: #4F5257; font-weight: 500">
+<span>模型</span><span>用在</span><span>次数</span><span>累计时长</span><span>显存峰值</span>
+</div>
+<sc-for list="{{localRows}}" as="r" hint-placeholder-count="7">
+<div style="display: grid; grid-template-columns: minmax(140px, 1.3fr) minmax(120px, 1.2fr) 48px 72px minmax(150px, 1.4fr); gap: 12px; align-items: center; padding: 8px 4px; border-bottom: 1px solid #F0F0EC">
+<span style="font-weight: 500">{{r.n}}</span>
+<span style="font-size: 12px; color: #4F5257">{{r.use}}</span>
+<span style="font-variant-numeric: tabular-nums">{{r.runs}}</span>
+<span style="font-variant-numeric: tabular-nums">{{r.min}}</span>
+<span style="display: grid; grid-template-columns: minmax(0, 1fr) 64px; gap: 8px; align-items: center">
+<span style="height: 10px; border-radius: 5px; background: #E8EEFB; overflow: hidden"><span style="display: block; height: 10px; width: {{r.vw}}; background: {{r.vc}}"></span></span>
+<span style="font-variant-numeric: tabular-nums; font-size: 12px">{{r.vram}}</span>
+</span>
+</div>
+</sc-for>
+</div>
+</div>
+<div style="font-size: 12px; color: #4F5257; line-height: 1.6">MiniMax H3 峰值 29.6 GB，离 32 GB 只差 2.4 GB；15 秒长镜头或 8 张参考图时可能爆显存，兜底规则会接住。</div>
+</section>
+
+<section aria-label="质检" style="flex: 1 1 340px; min-width: 0; box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">自动质检</h2>
+<span style="font-size: 12px; color: #4F5257">本集已出 10 条视频候选</span>
+</div>
+<div style="display: flex; gap: 2px; height: 14px" role="img" aria-label="通过 6 条，未过 4 条">
+<span style="flex: 6 1 0; background: #0ca30c; border-radius: 4px 0 0 4px"></span>
+<span style="flex: 4 1 0; background: #d03b3b; border-radius: 0 4px 4px 0"></span>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px">
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 8px; background: #0ca30c; color: #FFFFFF; font-size: 10px; font-weight: 700">✓</span>通过 6</span>
+<span style="display: inline-flex; align-items: center; gap: 6px"><span aria-hidden="true" style="display: inline-flex; align-items: center; justify-content: center; width: 16px; height: 16px; border-radius: 8px; background: #d03b3b; color: #FFFFFF; font-size: 10px; font-weight: 700">!</span>未过 4</span>
+<span style="color: #4F5257">自动重跑 1 · 自动兜底 1 · 手动换模型 1</span>
+</div>
+<div style="font-size: 13px; font-weight: 500">没过的原因（一条可能有几项）</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{qaRows}}" as="r" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: 96px minmax(0, 1fr) 24px; gap: 10px; align-items: center; font-size: 13px">
+<span>{{r.n}}</span>
+<span style="height: 14px; display: flex; align-items: center"><span style="height: 14px; width: {{r.w}}; background: #2a78d6; border-radius: 0 4px 4px 0"></span></span>
+<span style="font-variant-numeric: tabular-nums">{{r.c}}</span>
+</div>
+</sc-for>
+</div>
+</section>
+</div>
+
+<section aria-label="按集汇总" style="box-sizing: border-box; padding: 16px 18px; background: #FFFFFF; border: {{epBorder}}; border-radius: 12px; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">按集汇总</h2>
+<span style="font-size: 12px; color: #4F5257">没开始的集按时长和当前路由估算；素材复用，后面的集更便宜</span>
+</div>
+<div style="overflow-x: auto">
+<div style="min-width: 720px; font-size: 13px">
+<div style="display: grid; grid-template-columns: minmax(150px, 1.4fr) 100px 120px 80px minmax(130px, 1.2fr) 110px; gap: 12px; padding: 8px 4px; border-bottom: 1px solid #DADAD5; font-size: 12px; color: #4F5257; font-weight: 500">
+<span>集</span><span>状态</span><span>成片（已采纳 / 总长）</span><span>已花</span><span>预计总花费</span><span>累计计算时长</span>
+</div>
+<sc-for list="{{epRows}}" as="r" hint-placeholder-count="4">
+<div style="display: grid; grid-template-columns: minmax(150px, 1.4fr) 100px 120px 80px minmax(130px, 1.2fr) 110px; gap: 12px; align-items: center; padding: 8px 4px; border-bottom: 1px solid #F0F0EC; font-weight: {{r.fw}}; font-variant-numeric: tabular-nums">
+<span>{{r.n}}</span><span style="font-weight: 400; color: #4F5257">{{r.st}}</span><span>{{r.len}}</span><span>{{r.spent}}</span><span>{{r.est}}</span><span>{{r.time}}</span>
+</div>
+</sc-for>
+</div>
+</div>
+</section>
+
+</main>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":3400}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = { scope: 'ep', hoverB: null, selShot: '1-04', views: {}, toast: '' };
+  }
+
+  componentWillUnmount() { clearTimeout(this._tt); }
+
+  flash(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: msg });
+    this._tt = setTimeout(() => this.setState({ toast: '' }), 4000);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const K = { text: { n: '文本', c: '#2a78d6' }, img: { n: '图像', c: '#eb6834' }, av: { n: '音视频', c: '#1baf7a' } };
+    const money = (v) => '$' + v.toFixed(2);
+
+    const B = [
+      { t: '09:30', text: 0, img: 0, av: 0, add: 0, note: '只跑了本地：小说补全草稿' },
+      { t: '09:45', text: 2, img: 0, av: 0, add: 0.03, note: '小说补全、设定提取（DeepSeek V4 Pro）' },
+      { t: '10:00', text: 3, img: 0, av: 0, add: 0.04, note: '分集（V4.1 Flash）、剧本化（V4 Pro）' },
+      { t: '10:15', text: 4, img: 0, av: 0, add: 0.05, note: '剧本化换成 Kimi K2.6、分镜规划' },
+      { t: '10:30', text: 2, img: 6, av: 3, add: 3.89, note: '音色设计 $3.02 · 参考图 6 张 $0.84 · 文本 $0.03' },
+      { t: '10:45', text: 2, img: 5, av: 1, add: 1.29, note: '画面文字 4 张 $1.12 · 参考图 1 张 $0.14 · 试听 $0.01' },
+      { t: '11:00', text: 1, img: 4, av: 2, add: 1.14, note: '关键帧 4 张 $0.56 · 视频 1-01、1-02 $0.56' },
+      { t: '11:15', text: 0, img: 2, av: 1, add: 0.52, note: '关键帧 2 张 $0.28 · 视频 1-03 $0.24' },
+      { t: '11:30', text: 1, img: 0, av: 2, add: 0.33, fail: 1, note: '1-04 本地超时，兜底到 H3 API $0.32；1 次 429 限流已自动重试' },
+      { t: '11:45', text: 0, img: 0, av: 1, add: 1.65, note: '1-04 换 Seedance 2.5 出 T4 $1.64' }
+    ];
+    const W = 270, YM = 16, NOW = 145;
+    const X = (t) => (t / W * 1000).toFixed(1);
+    const Y = (v) => (300 - v / YM * 300).toFixed(1);
+    const pct = (v, max) => (v / max * 100).toFixed(2) + '%';
+    let cum = 0;
+    const pts = [{ t: 0, v: 0 }];
+    const cums = [];
+    B.forEach((b, i) => { cum = Math.round((cum + b.add) * 100) / 100; cums.push(cum); pts.push({ t: Math.min((i + 1) * 15, NOW), v: cum }); });
+    const line = pts.map((p, i) => (i ? 'L ' : 'M ') + X(p.t) + ' ' + Y(p.v)).join(' ');
+    const area = line + ' L ' + X(NOW) + ' 300 L 0 300 Z';
+    const proj = 'M ' + X(NOW) + ' ' + Y(8.94) + ' L 1000 ' + Y(13.35);
+    const hb = s.hoverB;
+    const hEnd = hb != null ? Math.min((hb + 1) * 15, NOW) : null;
+    const tLabel = (i) => B[i].t + '–' + (i === 9 ? '11:55' : B[i + 1].t);
+    const sp = {
+      line: line, area: area, proj: proj,
+      yTicks: [0, 5, 10, 15].map((v) => ({ label: '$' + v, top: pct(YM - v, YM) })),
+      budgetTop: pct(YM - 15, YM),
+      xTicks: [[0, '09:30'], [60, '10:30'], [120, '11:30'], [180, '12:30'], [240, '13:30']].map((x) => ({ left: pct(x[0], W), label: x[1] })),
+      nowX: pct(NOW, W), nowY: pct(YM - 8.94, YM), projY: pct(YM - 13.35, YM),
+      hasHover: hb != null, hoverX: hEnd != null ? pct(hEnd, W) : '0%', hoverY: hb != null ? pct(YM - cums[hb], YM) : '0%',
+      strips: B.map((b, i) => ({
+        left: pct(i * 15, W), width: pct(i === 9 ? 10 : 15, W),
+        aria: tLabel(i) + '，新增 ' + money(b.add) + '，累计 ' + money(cums[i]),
+        hover: () => this.setState({ hoverB: i })
+      }))
+    };
+    const ri = hb != null ? hb : 9;
+    const rb = B[ri];
+    const ro = {
+      title: tLabel(ri) + (hb == null ? '（最近一段）' : ''),
+      body: '新增 ' + money(rb.add) + '，累计 ' + money(cums[ri]) + '。' + rb.note,
+      calls: '文本 ' + rb.text + ' 次 · 图像 ' + rb.img + ' 次 · 音视频 ' + rb.av + ' 次' + (rb.fail ? ' · 失败 ' + rb.fail + ' 次' : '') + '，花了 ' + money(rb.add)
+    };
+
+    const CY = 12;
+    let maxTotal = 0;
+    B.forEach((b) => { maxTotal = Math.max(maxTotal, b.text + b.img + b.av); });
+    const cl = {
+      yTicks: [0, 4, 8, 12].map((v) => ({ label: String(v), top: pct(CY - v, CY) })),
+      cols: B.map((b, i) => {
+        const tot = b.text + b.img + b.av;
+        const parts = [['av', b.av], ['img', b.img], ['text', b.text]].filter((p) => p[1] > 0);
+        const segs = parts.map((p, j) => ({ h: (p[1] / CY * 196 - 2).toFixed(1) + 'px', c: K[p[0]].c, r: j === 0 ? '4px 4px 0 0' : '0' }));
+        return {
+          segs: segs, total: tot, hasTop: tot === maxTotal, hasFail: !!b.fail,
+          xl: i % 2 === 0 ? b.t : '',
+          bg: hb === i ? '#EEF2FC' : 'transparent',
+          aria: tLabel(i) + '：文本 ' + b.text + '，图像 ' + b.img + '，音视频 ' + b.av + (b.fail ? '，失败 ' + b.fail : ''),
+          hover: () => this.setState({ hoverB: i })
+        };
+      })
+    };
+    const bucketRows = B.map((b, i) => ({ t: tLabel(i), add: money(b.add), cum: money(cums[i]), note: b.note, text: b.text, img: b.img, av: b.av, fail: b.fail || 0 }));
+
+    const API = [
+      { n: 'MiniMax Speech 2.8 HD', k: 'av', calls: 4, ok: 4, lat: '18 秒', use: '音色设计 1 个 + 412 字', unit: '$3 / 个 · $100 / 百万字', cost: 3.04 },
+      { n: 'Nano Banana Pro', k: 'img', calls: 13, ok: 13, lat: '14 秒', use: '13 张（参考图 4、关键帧 9）', unit: '约 $0.14 / 张', cost: 1.82 },
+      { n: 'Seedance 2.5', k: 'av', calls: 1, ok: 1, lat: '3 分 10 秒', use: '视频 4 秒', unit: '约 $0.41 / 秒', cost: 1.64 },
+      { n: 'MiniMax H3 API', k: 'av', calls: 5, ok: 4, lat: '62 秒', use: '视频 14 秒', unit: '$0.08 / 秒', cost: 1.12, note: '1 次 429 限流，已自动重试' },
+      { n: 'GPT Image 2', k: 'img', calls: 4, ok: 4, lat: '38 秒', use: '4 张（画面文字）', unit: '约 $0.28 / 张', cost: 1.12 },
+      { n: 'DeepSeek V4 Pro', k: 'text', calls: 9, ok: 9, lat: '21 秒', use: '输入 61k / 输出 18k token', unit: '$1.32 / $3.96 每百万', cost: 0.15 },
+      { n: 'Kimi K2.6', k: 'text', calls: 2, ok: 2, lat: '26 秒', use: '输入 14k / 输出 6k token', unit: '$0.95 / $4 每百万', cost: 0.04 },
+      { n: 'DeepSeek V4.1 Flash', k: 'text', calls: 4, ok: 4, lat: '6 秒', use: '输入 22k / 输出 5k token', unit: '$0.30 / $1.20 每百万', cost: 0.01 }
+    ];
+    const totalCost = 8.94;
+    const maxCost = 3.04;
+    const apiRows = API.slice().sort((a, b) => b.cost - a.cost).map((a) => ({
+      n: a.n, kn: K[a.k].n, kc: K[a.k].c, calls: a.calls, rate: (a.ok / a.calls * 100).toFixed(a.ok === a.calls ? 0 : 1) + '%',
+      lat: a.lat, use: a.use, unit: a.unit, cost: money(a.cost), share: Math.round(a.cost / totalCost * 100) + '%',
+      w: Math.max(0.6, a.cost / maxCost * 100).toFixed(1) + '%', hasNote: !!a.note, note: a.note || ''
+    }));
+    const kindTotals = ['text', 'img', 'av'].map((k) => {
+      const rows = API.filter((a) => a.k === k);
+      return { name: K[k].n, c: K[k].c, calls: rows.reduce((n, a) => n + a.calls, 0), cost: money(rows.reduce((n, a) => n + a.cost, 0)) };
+    });
+
+    const STAGE = [{ k: 'kf', n: '关键帧', c: '#86b6ef' }, { k: 'vid', n: '视频生成', c: '#2a78d6' }, { k: 'post', n: '质检与精修', c: '#104281' }];
+    const SH = [
+      { id: '1-01', sc: 1, d: '楼道全景', kf: 6, vid: 9, post: 7, cost: 0.74, takes: 2, st: '已采纳', note: '关键帧本地出草稿，Nano Banana Pro 出终版；视频本地草稿后用 H3 API 出终版；SeedVR2 精修 4 分钟。' },
+      { id: '1-02', sc: 1, d: '门口的红伞', kf: 5, vid: 8, post: 6, cost: 0.66, takes: 2, st: '已采纳', note: '本地草稿伞的颜色偏橙，质检没过；API 终版通过。' },
+      { id: '1-03', sc: 1, d: '便利贴特写', kf: 5, vid: 9, post: 5, cost: 0.66, takes: 2, st: '已采纳', note: '本地草稿 OCR 读成「十二占」，没过；API 终版逐字一致。' },
+      { id: '1-04', sc: 1, d: '林晚：……周屿？', kf: 4, vid: 31, post: 3, cost: 1.96, takes: 4, st: '待挑选', note: 'T1 本地 7.5 分钟（人脸、手指没过）→ 自动重跑 T2 本地 7.5 分钟 → T3 本地 10 分钟超时，兜底到 H3 API 1 分钟 → 换 Seedance 2.5 出 T4 3 分钟（灯没闪，没过）。' },
+      { id: '1-05', sc: 1, d: '指尖、旧发圈', kf: 4, vid: 6, post: 0, cost: 0, takes: 0, st: '生成中', note: '本地 H3 正在出第 1 条，已经跑了 6 分钟。' },
+      { id: '1-06', sc: 2, d: '背靠着门', kf: 4, vid: 0, post: 0, cost: 0, takes: 0, st: '排队', note: '关键帧本地出完，等本地队列。' },
+      { id: '1-07', sc: 2, d: '手机 23:52', kf: 3, vid: 0, post: 0, cost: 0, takes: 0, st: '排队', note: '关键帧本地出完，等本地队列。' },
+      { id: '1-08', sc: 2, d: '开门，关门，再开门', kf: 0, vid: 0, post: 0, cost: 0, takes: 0, st: '等待', wait: '等 1-06 采纳，要它的尾帧', note: '首帧接 1-06 的尾帧，所以要等 1-06 采纳。' },
+      { id: '1-09', sc: 2, d: '拿起伞（卡点）', kf: 0, vid: 0, post: 0, cost: 0, takes: 0, st: '等待', wait: '等 1-08 采纳', note: '首帧接 1-08 的尾帧。' }
+    ];
+    const SMAX = 40;
+    const stCol = (st) => st === '已采纳' ? ['#E8EEFB', '#1A3E9E'] : (st === '待挑选' ? ['#FCEFE3', '#7A3608'] : ['#ECECE8', '#3E4146']);
+    const sceneSum = (n) => {
+      const xs = SH.filter((x) => x.sc === n);
+      const m = xs.reduce((a, x) => a + x.kf + x.vid + x.post, 0);
+      const c = xs.reduce((a, x) => a + x.cost, 0);
+      const done = xs.filter((x) => x.st === '已采纳').length;
+      return xs.length + ' 个镜头 · 已采纳 ' + done + ' · ' + m + ' 分钟 · ' + money(c);
+    };
+    const shotRows = [];
+    [[1, '场 1 · 楼道'], [2, '场 2 · 出租屋']].forEach((g) => {
+      shotRows.push({ isGroup: true, isShot: false, name: g[1], sum: sceneSum(g[0]) });
+      SH.filter((x) => x.sc === g[0]).forEach((x) => {
+        const total = x.kf + x.vid + x.post;
+        const parts = STAGE.filter((p) => x[p.k] > 0);
+        const sc = stCol(x.st);
+        const on = s.selShot === x.id;
+        shotRows.push({
+          isGroup: false, isShot: true, id: x.id, d: x.d, on: on, bg: on ? '#EEF2FC' : 'transparent',
+          segs: parts.map((p, j) => ({ w: 'calc(' + (x[p.k] / SMAX * 100).toFixed(2) + '% - 2px)', c: p.c, r: j === parts.length - 1 ? '0 4px 4px 0' : '0' })),
+          empty: total === 0, emptyText: x.wait || '',
+          total: total ? total + ' 分' : '—', takes: x.takes || '—', cost: x.cost ? money(x.cost) : '—',
+          st: x.st, stBg: sc[0], stFg: sc[1],
+          pick: () => this.setState({ selShot: x.id })
+        });
+      });
+    });
+    const sel = SH.find((x) => x.id === s.selShot) || SH[3];
+    const shotDetail = {
+      title: sel.id + ' ' + sel.d,
+      split: '关键帧 ' + sel.kf + ' 分 · 视频生成 ' + sel.vid + ' 分 · 质检与精修 ' + sel.post + ' 分 · 花费 ' + money(sel.cost) + ' · 候选 ' + sel.takes + ' 条',
+      note: sel.note
+    };
+    const shotTable = SH.map((x) => ({ id: x.id, kf: x.kf, vid: x.vid, post: x.post, total: x.kf + x.vid + x.post, takes: x.takes, cost: money(x.cost), st: x.st }));
+
+    const COMP = [
+      { n: '视频生成', loc: 51, api: 12 }, { n: '关键帧', loc: 25, api: 6 }, { n: '参考图', loc: 22, api: 8 },
+      { n: '自动质检', loc: 12, api: 0 }, { n: '剧本化', loc: 4, api: 5 }, { n: '2K 精修', loc: 9, api: 0 },
+      { n: '画面文字', loc: 3, api: 4 }, { n: '小说补全', loc: 3, api: 2 }, { n: '音色', loc: 1, api: 3 },
+      { n: '分镜规划', loc: 0, api: 3 }, { n: '设定提取、分集', loc: 2, api: 1 }
+    ];
+    const CMAX = 63;
+    const compRows = COMP.map((c) => {
+      const parts = [['#86b6ef', c.loc], ['#2a78d6', c.api]].filter((p) => p[1] > 0);
+      return {
+        n: c.n, loc: c.loc, api: c.api, total: c.loc + c.api,
+        aria: c.n + '：本地 ' + c.loc + ' 分钟，API ' + c.api + ' 分钟',
+        segs: parts.map((p, j) => ({ w: 'calc(' + (p[1] / CMAX * 100).toFixed(2) + '% - 2px)', c: p[0], r: j === parts.length - 1 ? '0 4px 4px 0' : '0' }))
+      };
+    }).sort((a, b) => b.total - a.total);
+
+    const SP = [
+      { n: 'MiniMax H3', where: '本地', unit: '不计费', med: 112, min: 98, max: 150, cnt: 6, eg: '4 秒约 7.5 分钟' },
+      { n: 'Seedance 2.5', where: 'API', unit: '约 $0.41 / 秒', med: 48, min: 48, max: 48, cnt: 1, eg: '4 秒约 3 分钟' },
+      { n: 'SeedVR2 2K 精修', where: '本地', unit: '不计费', med: 45, min: 40, max: 52, cnt: 3, eg: '4 秒约 3 分钟' },
+      { n: 'MiniMax H3', where: 'API', unit: '$0.08 / 秒', med: 15, min: 13, max: 18, cnt: 4, eg: '4 秒约 1 分钟' }
+    ];
+    const SPMAX = 160;
+    const speedRows = SP.map((r) => ({
+      n: r.n, where: r.where, unit: r.unit, med: r.med, min: r.min, max: r.max, cnt: r.cnt, eg: r.eg,
+      minX: pct(r.min, SPMAX), rangeW: pct(Math.max(r.max - r.min, 0.5), SPMAX), medX: pct(r.med, SPMAX),
+      aria: r.n + '（' + r.where + '）：中位 ' + r.med + ' 秒，最快 ' + r.min + '，最慢 ' + r.max
+    }));
+    const speedTicks = [0, 40, 80, 120, 160].map((v) => ({ left: pct(v, SPMAX), label: String(v) }));
+
+    const LOC = [
+      { n: 'MiniMax H3', use: '视频生成', runs: 7, min: 51, vram: 29.6 },
+      { n: 'Qwen-Image-Edit', use: '参考图、关键帧', runs: 16, min: 47, vram: 21.4 },
+      { n: 'Qwen3-VL-32B', use: '自动质检', runs: 10, min: 12, vram: 22.5 },
+      { n: 'Qwen3.6-27B', use: '补全、设定、剧本草稿', runs: 4, min: 9, vram: 18.9 },
+      { n: 'SeedVR2', use: '2K 精修', runs: 3, min: 9, vram: 23.8 },
+      { n: 'Qwen-Image', use: '画面文字草稿', runs: 1, min: 3, vram: 20.1 },
+      { n: 'IndexTTS2', use: '预演配音', runs: 2, min: 1, vram: 5.7 }
+    ];
+    const localRows = LOC.map((r) => ({ n: r.n, use: r.use, runs: r.runs, min: r.min + ' 分', vram: r.vram.toFixed(1) + ' GB', vw: pct(r.vram, 32), vc: r.vram > 28 ? '#104281' : '#2a78d6' }));
+
+    const QA = [['与描述不符', 2], ['人脸不一致', 1], ['手指畸形', 1], ['画面文字错字', 1]];
+    const qaRows = QA.map((q) => ({ n: q[0], c: q[1], w: pct(q[1], 2) }));
+
+    const isAll = s.scope === 'all';
+    const hero = isAll
+      ? { label: '全剧已花（API）', spent: '$8.94', of: '预计全剧 $28.1 · 预算 $45', spentPct: pct(8.94, 45), projPct: pct(28.05 - 8.94, 45), remain: '$19.11', budget: '$45', verdict: '预计在预算内，剩 $16.9', aria: '已花 8.94 美元，预计全剧 28.1 美元，预算 45 美元' }
+      : { label: '本集已花（API）', spent: '$8.94', of: '预计本集 $13.35 · 预算 $15', spentPct: pct(8.94, 15), projPct: pct(4.41, 15), remain: '$4.41', budget: '$15', verdict: '预计在预算内，剩 $1.65', aria: '已花 8.94 美元，预计本集 13.35 美元，预算 15 美元' };
+    const insights = [
+      { t: '一次性素材占了大头：音色设计 $3.04、参考图和画面文字 $1.68，合计占已花的 53%。第 2 集起直接复用，不再花这笔钱。' },
+      { t: '最耗时的是视频生成。1-04 一个镜头就算了 31 分钟：本地超时一次，又换了一次模型。' },
+      { t: 'Seedance 2.5 每秒 $0.41，是 H3 API 的 5 倍；在 1-04 用过一次，质检没过。' }
+    ];
+    const kpis = [
+      { label: '已采纳成片', value: '10 秒', hasMeter: true, pct: pct(10, 34), sub: '共 34 秒 · 9 个镜头采纳了 3 个' },
+      { label: '每秒成片成本', value: '$0.89', hasMeter: false, pct: '0%', sub: '素材摊薄后，预计做完本集约 $0.39 / 秒' },
+      { label: '本地 GPU 运行', value: '2 小时 12 分', hasMeter: false, pct: '0%', sub: '另外等 API 44 分钟 · 显存峰值 29.6 GB' },
+      { label: 'API 调用', value: '42 次', hasMeter: false, pct: '0%', sub: '成功 41 次（97.6%）· 1 次限流已重试' },
+      { label: '质检通过', value: '6 / 10 条', hasMeter: true, pct: '60%', sub: '自动重跑 1 · 自动兜底 1 · 手动换模型 1' },
+      { label: '镜头从开始到采纳', value: '中位 19 分钟', hasMeter: false, pct: '0%', sub: '最慢的 1-04 已用 38 分钟，还没采纳' }
+    ];
+    const epRows = [
+      { n: '第 1 集《红伞》', st: '进行中', len: '10 / 34 秒', spent: '$8.94', est: '约 $13.35', time: '2 小时 56 分', fw: '400' },
+      { n: '第 2 集《十二点》', st: '剧本未生成', len: '0 / 约 70 秒', spent: '$0', est: '约 $7.1（素材复用）', time: '—', fw: '400' },
+      { n: '第 3 集《旧发圈》', st: '未开始', len: '0 / 约 80 秒', spent: '$0', est: '约 $7.6', time: '—', fw: '400' },
+      { n: '全剧合计', st: '', len: '10 / 约 184 秒', spent: '$8.94', est: '约 $28.1', time: '2 小时 56 分', fw: '700' }
+    ];
+
+    const views = s.views || {};
+    const vt = {};
+    const show = {};
+    ['spend', 'calls', 'shots', 'comps', 'speed'].forEach((id) => {
+      const cur = views[id] || 'chart';
+      vt[id] = [{ k: 'chart', label: '图' }, { k: 'table', label: '表' }].map((v) => {
+        const on = cur === v.k;
+        return { label: v.label, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', pick: () => { const o = Object.assign({}, this.state.views); o[id] = v.k; this.setState({ views: o }); } };
+      });
+      show[id + 'Chart'] = cur === 'chart';
+      show[id + 'Table'] = cur === 'table';
+    });
+
+    const scopes = [{ id: 'ep', label: '第 1 集' }, { id: 'all', label: '全剧' }].map((x) => {
+      const on = s.scope === x.id;
+      return { label: x.label, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', pick: () => this.setState({ scope: x.id }) };
+    });
+    const steps = [
+      ['01', '小说', 'Main.dc.html', '已确认', true], ['02', '剧本', 'Script.dc.html', '已确认', true], ['03', '素材', 'Assets.dc.html', '7/13', false],
+      ['04', '分镜', 'Storyboard.dc.html', '3/9', false], ['05', '生成', 'Generate.dc.html', '3/9', false], ['06', '后期', 'Post.dc.html', '未开始', false]
+    ];
+
+    return {
+      nav: steps.map((x) => ({ no: x[0], label: x[1], href: x[2], badge: x[3], bbg: x[4] ? '#E8EEFB' : '#E2E2DD', bfg: x[4] ? '#1A3E9E' : '#3E4146' })),
+      scopes: scopes, scopeNote: isAll ? '全剧 3 集，目前只有第 1 集在跑，下面的图都是第 1 集的数据' : '第 1 集《红伞》 · 场 1–2 · 9 个镜头',
+      hero: hero, insights: insights, kpis: kpis,
+      sp: sp, ro: ro, cl: cl, bucketRows: bucketRows, kindLegend: kindTotals,
+      clearHover: () => { if (this.state.hoverB != null) this.setState({ hoverB: null }); },
+      stageLegend: STAGE.map((x) => ({ name: x.n, c: x.c })),
+      shotRows: shotRows, shotDetail: shotDetail, shotTable: shotTable,
+      compRows: compRows, speedRows: speedRows, speedTicks: speedTicks,
+      apiRows: apiRows, localRows: localRows, qaRows: qaRows,
+      epRows: epRows, epBorder: isAll ? '2px solid #2350C2' : '1px solid #DADAD5',
+      vt: vt, show: show,
+      exportCsv: () => this.flash('已导出 calls.csv：每次调用一行（时间、环节、镜头、模型、本地 / API、耗时、用量、花费、结果）。'),
+      toggleLang: () => this.flash('原型里「00 首次启动」页做了完整的中英切换；正式版所有页面的文字都走同一套词表。'),
+      toast: s.toast, hasToast: !!s.toast
+    };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,210 @@
+# 出厂默认的供应商与模型表（M0 时拷到 config/providers.yaml）。
+# 价格截至 2026-10-14，来源见 docs/studio/PLAN.md 的「来源」。
+# verify: true 表示接口地址或模型 ID 没有逐一核对过：上线前对照 docs 链接核对，
+# 或在「模型与兜底 → 测试连接」里用 GET /models 拉取真实 ID 后再填。
+# model_id 为 null 的必须先填。用户在界面里改的值存数据库，不回写本文件。
+
+as_of: "2026-10-14"
+currency_rates:            # 只用于把人民币单价折算成美元显示；以记账当天汇率为准
+  CNY_per_USD: 7.1
+
+# ---------------------------------------------------------------------------
+# 写作类 LLM：全部走 OpenAI 兼容协议（OpenAICompatAdapter）
+# price 单位：每百万 token，in / out
+# ---------------------------------------------------------------------------
+llm_providers:
+  - id: deepseek
+    name: DeepSeek
+    base_url: https://api.deepseek.com/v1
+    key_name: DEEPSEEK_API_KEY
+    docs: https://api-docs.deepseek.com/quick_start/pricing
+    verify: true
+    models:
+      - key: deepseek/v4-pro
+        display: DeepSeek V4 Pro
+        model_id: null
+        price: { in: 1.32, out: 3.96, currency: USD }
+        offpeak: { factor: 0.5, note: "闲时半价，时段以官方为准" }
+        json_mode: true
+      - key: deepseek/v4.1-flash
+        display: DeepSeek V4.1 Flash
+        model_id: null
+        price: { in: 0.30, out: 1.20, currency: USD }
+        offpeak: { factor: 0.5, note: "闲时半价，时段以官方为准" }
+        json_mode: true
+
+  - id: moonshot
+    name: Moonshot（Kimi）
+    base_url: https://api.moonshot.ai/v1        # 国内站：https://api.moonshot.cn/v1
+    key_name: MOONSHOT_API_KEY
+    docs: https://platform.kimi.ai/docs/pricing/chat
+    verify: true
+    models:
+      - key: moonshot/kimi-k2.6
+        display: Kimi K2.6
+        model_id: null
+        price: { in: 0.95, out: 4.00, currency: USD }
+        json_mode: true
+
+  - id: dashscope
+    name: 阿里云百炼（Qwen）
+    base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1   # 国内：https://dashscope.aliyuncs.com/compatible-mode/v1
+    key_name: DASHSCOPE_API_KEY
+    docs: https://www.alibabacloud.com/help/en/model-studio/model-pricing
+    verify: true
+    models:
+      - { key: qwen/qwen3.8-max,   display: Qwen3.8-max,   model_id: null, price: { in: 2.00, out: 6.00, currency: USD }, json_mode: true }
+      - { key: qwen/qwen3.7-plus,  display: Qwen3.7-plus,  model_id: null, price: { in: 0.40, out: 1.60, currency: USD }, json_mode: true }
+      - { key: qwen/qwen3.8-flash, display: Qwen3.8-flash, model_id: null, price: { in: 0.15, out: 0.47, currency: USD }, json_mode: true }
+
+  - id: volcengine
+    name: 火山引擎（豆包）
+    base_url: https://ark.cn-beijing.volces.com/api/v3
+    key_name: ARK_API_KEY
+    docs: https://tech.ifeng.com/c/8uBqB6LMgIn
+    verify: true
+    models:
+      - { key: volc/doubao-2.1-pro, display: 豆包 2.1 Pro, model_id: null, price: { in: 6, out: 30, currency: CNY }, json_mode: true }
+
+  - id: zhipu
+    name: 智谱（GLM）
+    base_url: https://open.bigmodel.cn/api/paas/v4    # 海外：https://api.z.ai/api/paas/v4
+    key_name: ZHIPU_API_KEY
+    docs: https://docs.z.ai/guides/overview/pricing
+    verify: true
+    models:
+      - { key: zhipu/glm-5.3,       display: GLM-5.3,       model_id: null, price: { in: 1.40, out: 4.40, currency: USD }, json_mode: true }
+      - { key: zhipu/glm-5.3-flash, display: GLM-5.3-Flash, model_id: null, price: { in: 0.15, out: 0.50, currency: USD }, json_mode: true }
+
+  - id: minimax_llm
+    name: MiniMax
+    base_url: https://api.minimax.io/v1               # 国内：https://api.minimaxi.com/v1
+    key_name: MINIMAX_API_KEY                         # 和配音、视频共用账号
+    docs: https://platform.minimax.io/docs/guides/pricing
+    verify: true
+    models:
+      - { key: minimax/m3, display: MiniMax-M3, model_id: null, price: { in: 0.30, out: 1.20, currency: USD }, json_mode: true }
+
+  - id: google_llm
+    name: Google（Gemini）
+    base_url: https://generativelanguage.googleapis.com/v1beta/openai/
+    key_name: GEMINI_API_KEY
+    docs: https://ai.google.dev/gemini-api/docs/pricing
+    verify: true
+    models:
+      - key: google/gemini-3.6-flash
+        display: Gemini 3.6 Flash
+        model_id: null
+        price: { in: 0.75, out: 3.75, currency: USD }
+        price_change: { from: "2027-01-01", factor: 2.0, note: "官方公告 2027-01-01 起翻倍" }
+        vision: true
+        json_mode: true
+      - { key: google/gemini-3.1-flash-lite, display: Gemini 3.1 Flash-Lite, model_id: null, price: { in: 0.25, out: 1.50, currency: USD }, vision: true, json_mode: true }
+
+  - id: openai_llm
+    name: OpenAI
+    base_url: https://api.openai.com/v1
+    key_name: OPENAI_API_KEY
+    docs: https://www.eesel.ai/blog/gpt-6-luna-pricing
+    verify: true
+    models:
+      - { key: openai/gpt-6-luna, display: GPT-6 Luna, model_id: null, price: { in: 0.10, out: 0.50, currency: USD }, note: "价格来自第三方整理", json_mode: true }
+
+  - id: openrouter
+    name: OpenRouter
+    base_url: https://openrouter.ai/api/v1
+    key_name: OPENROUTER_API_KEY
+    docs: https://openrouter.ai/docs/faq
+    fee: { credit_purchase_pct: 5.5 }
+    verify: true
+    models:
+      - { key: openrouter/claude-sonnet-5.5, display: Claude Sonnet 5.5（经 OpenRouter）, model_id: null, price: null, note: "按 OpenRouter 实时价" }
+      - { key: openrouter/any, display: 任意模型, model_id: null, price: null, note: "用户自填" }
+
+  - id: custom
+    name: 自定义（OpenAI 兼容）
+    base_url: null
+    key_name: CUSTOM_API_KEY
+    models: []                   # 用户在界面里加，存 custom_model 表
+
+  - id: local_llm
+    name: 本地 LLM 服务
+    base_url: http://127.0.0.1:11434/v1      # Ollama；llama.cpp server 默认 http://127.0.0.1:8080/v1
+    key_name: null
+    where: local
+    models:
+      - { key: local/qwen3.6-27b,   display: Qwen3.6-27B（本地）,   model_id: null, price: { in: 0, out: 0, currency: USD } }
+      - { key: local/qwen3-30b-a3b, display: Qwen3-30B-A3B（本地）, model_id: null, price: { in: 0, out: 0, currency: USD } }
+
+# 写作类组件在模型选择器里的顺序；前 6 个直接显示，其余收进「更多供应商」
+llm_ui_order:
+  - deepseek/v4-pro
+  - deepseek/v4.1-flash
+  - moonshot/kimi-k2.6
+  - qwen/qwen3.8-max
+  - qwen/qwen3.7-plus
+  - volc/doubao-2.1-pro
+  - zhipu/glm-5.3
+  - minimax/m3
+  - qwen/qwen3.8-flash
+  - zhipu/glm-5.3-flash
+  - google/gemini-3.6-flash
+  - openai/gpt-6-luna
+  - openrouter/claude-sonnet-5.5
+  - openrouter/any
+  - custom
+
+# ---------------------------------------------------------------------------
+# 媒体类 API：各写一个适配器。unit 决定怎么记用量。
+# ---------------------------------------------------------------------------
+media_models:
+  # 图像
+  - { key: google/nano-banana-pro, kind: image, display: Nano Banana Pro, unit: image, price: 0.14, currency: USD, caps: { aspects: ["1:1", "3:4", "4:3", "9:16", "16:9"], max_res: 4K, max_refs: null }, verify: true }
+  - { key: openai/gpt-image-2,     kind: image, display: GPT Image 2,     unit: image, price: 0.28, currency: USD, caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], note: "部分渠道 9:16 只到 1K" }, verify: true }
+  - { key: volc/seedream-5.0,      kind: image, display: Seedream 5.0,    unit: image, price: 0.03, currency: USD, verify: true }
+  # 视频
+  - key: minimax/h3-api
+    kind: video
+    display: MiniMax H3 API
+    unit: second
+    price_by_res: { "768p": 0.08, "2k": 0.13 }
+    currency: USD
+    caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440, max_images: 9, max_videos: 3, max_audios: 3, max_files: 12, audio_needs_visual: true }
+    docs: https://platform.minimax.io/docs/guides/pricing-paygo.md
+  - { key: minimax/h3-regenerate-2k, kind: upscale, display: H3 Regenerate-2K, unit: second, price: 0.05, input_price_per_second: 0.05, currency: USD, note: "输出 $0.05/秒 + 输入视频 $0.05/秒" }
+  - { key: minimax/context-ir, kind: llm_aux, display: H3 Context-IR, unit: token, price: { in: 0.90, out: 3.60 }, currency: USD }
+  - { key: volc/seedance-2.5, kind: video, display: Seedance 2.5, unit: minute, price: 24.60, currency: USD, caps: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], note: "部分渠道只到 720p" }, verify: true }
+  - { key: google/gemini-omni-flash-1.1, kind: video, display: Gemini Omni Flash 1.1, unit: minute, price: 9.12, currency: USD, verify: true }
+  - { key: alibaba/wan-3.0, kind: video, display: Wan 3.0, unit: minute, price: 12.00, currency: USD, verify: true }
+  - { key: kling/kling-3.0, kind: video, display: Kling 3.0, unit: second, price: null, verify: true }
+  - { key: google/veo-3.1, kind: video, display: Veo 3.1, unit: second, price: null, verify: true }
+  # 配音
+  - { key: minimax/speech-2.8-hd, kind: tts, display: MiniMax Speech 2.8 HD, unit: char, price_per_million: 100, currency: USD, extras: { voice_design: 3.00, voice_clone: 1.50 } }
+  - { key: elevenlabs/v3, kind: tts, display: ElevenLabs v3, unit: char, price: null, docs: https://invideo.io/blog/ai-voice-model-pricing/, verify: true }
+  # 口型、超分、配乐、字幕、3D
+  - { key: sync/lipsync-2-pro, kind: lipsync, display: sync lipsync-2-pro, unit: second, price_range: [0.067, 0.083], currency: USD }
+  - { key: topaz/starlight-precise-2.5, kind: upscale, display: Topaz Starlight Precise 2.5, unit: second, price: 0.12, currency: USD, note: "1080p，按积分换算" }
+  - { key: elevenlabs/music, kind: music, display: ElevenLabs Music, unit: subscription, price: 22, currency: USD, period: month }
+  - { key: elevenlabs/scribe, kind: asr, display: ElevenLabs Scribe, unit: minute, price: null, verify: true }
+  - { key: worldlabs/marble, kind: world, display: World Labs Marble, unit: world, price: 1.2, currency: USD, enabled_by_default: false }
+
+# 本地模型（价格 0，记时长和显存）
+local_models:
+  - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3_i2v }
+  - { key: comfy/h3-fun-controlnet, kind: video,   display: H3 Fun ControlNet（本地）, runtime: comfyui, workflow: h3_controlnet }
+  - { key: comfy/wan-2.2,           kind: video,   display: Wan 2.2（本地）,          runtime: comfyui }
+  - { key: comfy/ltx,               kind: video,   display: LTX（本地）,              runtime: comfyui, verify: true }
+  - { key: comfy/qwen-image-edit,   kind: image,   display: Qwen-Image-Edit（本地）,  runtime: comfyui }
+  - { key: comfy/qwen-image,        kind: image,   display: Qwen-Image（本地）,       runtime: comfyui }
+  - { key: comfy/flux2-dev,         kind: image,   display: FLUX.2 dev（本地）,       runtime: comfyui }
+  - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui }
+  - { key: comfy/flashvsr,          kind: upscale, display: FlashVSR（本地）,         runtime: comfyui }
+  - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python }
+  - { key: local/cosyvoice,         kind: tts,     display: CosyVoice（本地）,        runtime: python }
+  - { key: local/qwen3-tts,         kind: tts,     display: Qwen3-TTS（本地试听）,     runtime: python }
+  - { key: local/latentsync,        kind: lipsync, display: LatentSync（本地）,       runtime: python }
+  - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python }
+  - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server }
+  - { key: local/ace-step,          kind: music,   display: ACE-Step（本地）,         runtime: python }
+  - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python }
+  - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }

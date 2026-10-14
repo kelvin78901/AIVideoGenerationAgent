@@ -1,0 +1,181 @@
+{
+  "v": 3,
+  "createdOnFiles": {
+    "v": 1,
+    "at": "2026-10-14T19:05:00Z"
+  },
+  "title": "短剧工作台原型",
+  "launch": {
+    "view": "canvas"
+  },
+  "pages": [],
+  "boards": {
+    "Setup.dc.html": {
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 1460,
+      "title": "00 首次启动 · 主机检测与自动安装（中 / EN）",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Spec.dc.html": {
+      "x": 1520,
+      "y": 0,
+      "w": 1440,
+      "h": 1500,
+      "title": "00b 新建剧集 · 成片规格（横竖版、分辨率、帧率）",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Main.dc.html": {
+      "x": 3040,
+      "y": 0,
+      "w": 1440,
+      "h": 1240,
+      "title": "01 小说 · 导入与补全",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Script.dc.html": {
+      "x": 4560,
+      "y": 0,
+      "w": 1440,
+      "h": 1380,
+      "title": "02 剧本 · 分集与剧本化",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Assets.dc.html": {
+      "x": 6080,
+      "y": 0,
+      "w": 1440,
+      "h": 1300,
+      "title": "03 素材 · 角色、场景、道具、文字、音色",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Storyboard.dc.html": {
+      "x": 7600,
+      "y": 0,
+      "w": 1440,
+      "h": 1500,
+      "title": "04 分镜 · 关键帧与镜头设定",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Generate.dc.html": {
+      "x": 9120,
+      "y": 0,
+      "w": 1440,
+      "h": 1420,
+      "title": "05 生成 · 候选墙与自动质检",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Post.dc.html": {
+      "x": 10640,
+      "y": 0,
+      "w": 1440,
+      "h": 1260,
+      "title": "06 后期 · 时间线与导出",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Models.dc.html": {
+      "x": 12160,
+      "y": 0,
+      "w": 1440,
+      "h": 1640,
+      "title": "模型与兜底 · 全局默认",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Sync.dc.html": {
+      "x": 13680,
+      "y": 0,
+      "w": 1440,
+      "h": 1900,
+      "title": "素材整理与同步 · ComfyUI 画布 / 文件夹 / Eagle / 达芬奇",
+      "expand": "fill",
+      "is_interactive": true
+    },
+    "Dashboard.dc.html": {
+      "x": 15200,
+      "y": 0,
+      "w": 1440,
+      "h": 3400,
+      "title": "数据看板 · 花费、耗时与速度",
+      "expand": "fill",
+      "is_interactive": true
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Script.dc.html",
+    "Assets.dc.html",
+    "Storyboard.dc.html",
+    "Generate.dc.html",
+    "Post.dc.html",
+    "Models.dc.html",
+    "Setup.dc.html",
+    "Spec.dc.html",
+    "Sync.dc.html",
+    "Dashboard.dc.html"
+  ],
+  "notes": {
+    "title": {
+      "x": 0,
+      "y": -360,
+      "text": "AI 短剧工作台 · 可点击原型（示例：《雨停之前》第 1 集）",
+      "kind": "title1",
+      "maxW": 16640
+    },
+    "logic-actions": {
+      "x": -1000,
+      "y": 0,
+      "w": 880,
+      "maxH": 420,
+      "size": "m",
+      "fill": "blue",
+      "text": "每个产物都有同一组按钮\n\n改提示词：你只写「意图层」（自己的话），系统把它和上下文、设定卡编译成真正发给模型的提示词；高级模式可以直接改编译层，改了就不再自动编译。\n重跑：同一个模型换随机种子再来一次。\n不满意换一个：从备选模型里挑一个重跑，结果作为新版本放在旁边。\n历史：所有版本都保留，可以设为当前、采纳。"
+    },
+    "logic-config": {
+      "x": -1000,
+      "y": 460,
+      "w": 880,
+      "maxH": 420,
+      "size": "m",
+      "fill": "teal",
+      "text": "运行设置（右侧栏，每个组件一份）\n\n运行位置：本地 / API / 混合（本地出草稿，采纳前用 API 出终版）。\nAPI 用哪家、本地用哪个模型，分开选。写作类组件常用 6 家先显示，其余收在「更多供应商」里，也能填任意 OpenAI 兼容接口。\n自动兜底：本地报错、超时或质检连续不过时，自动换到你指定的模型，并在历史里记一笔。\n全局默认在「模型与兜底」页，环节里改的只覆盖这个组件。"
+    },
+    "logic-gates": {
+      "x": -1000,
+      "y": 920,
+      "w": 880,
+      "maxH": 420,
+      "size": "m",
+      "fill": "orange",
+      "text": "确认与失效传播\n\n每一步点「采纳 / 确认」后，下游才会用它，确认的产物会锁定。\n改了已确认的上游（比如剧本某一段），会先弹出影响范围：哪些素材、分镜、关键帧、视频要跟着变。\n你来选：只标记待更新 / 自动重跑受影响的部分（显示预计花费）/ 撤销修改。\n在「02 剧本」里点任意一段剧本、编辑并保存，就能看到这个流程。"
+    },
+    "logic-howto": {
+      "x": -1000,
+      "y": 1380,
+      "w": 880,
+      "maxH": 420,
+      "size": "m",
+      "fill": "gray",
+      "text": "怎么看\n\n11 个画板是 11 个页面，按 Play 后左侧导航能互相跳转。「00 首次启动」做了完整的中英切换，其他页右上角的「中 / EN」在正式版里走同一套词表。\n小说片段是为演示编的；API 单价按官方或公开价估算，花费、耗时、质检分、检测到的硬件等其他数字都是示意，但各页之间和看板里的数字是对得上的。\n没有套设计系统，用的是中性的工具风格，之后可以换。"
+    },
+    "logic-sync": {
+      "x": -1000,
+      "y": 1840,
+      "w": 880,
+      "maxH": 420,
+      "size": "m",
+      "fill": "purple",
+      "text": "规格先定，素材往外送\n\n成片规格：新建剧集时先定横版还是竖版、交付分辨率和帧率。各页顶栏都显示当前规格，点它就能改；第一张关键帧采纳后锁定，再改会弹出影响范围。\n素材整理与同步：生成的素材按集、场、镜头自动整理，推到 ComfyUI 画布（每集一张素材板）、本地文件夹、Eagle 或达芬奇。在 ComfyUI 里用「存回工作台」节点做出的新结果会回到对应镜头的历史里。"
+    }
+  },
+  "designSystems": []
+}

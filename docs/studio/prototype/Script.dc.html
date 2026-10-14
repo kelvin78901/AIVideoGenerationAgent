@@ -1,0 +1,887 @@
+<!doctype html>
+<html lang="zh">
+<head>
+<meta charset="utf-8">
+<title>剧本 · 分集与剧本化</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700&amp;family=Noto+Serif+SC:wght@400;600&amp;family=IBM+Plex+Mono:wght@400;500&amp;display=swap">
+<style>
+body{margin:0;background:#F3F3F1}
+a{color:#2350C2}a:hover{color:#173A94}
+button{font-family:inherit;cursor:pointer}
+button:disabled{cursor:not-allowed;opacity:.5}
+textarea,input{font-family:inherit}
+button:focus-visible,a:focus-visible,textarea:focus-visible,input:focus-visible{outline:2px solid #2350C2;outline-offset:2px}
+</style>
+</helmet>
+<div style="min-height: 100vh; display: flex; flex-direction: column; background: #F3F3F1; color: #1A1B1E; font-family: 'Noto Sans SC', 'PingFang SC', 'Microsoft YaHei', sans-serif">
+
+<header style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 20px; padding: 10px 20px; background: #1A1B1E; color: #F2F2EF">
+<div style="font-size: 15px; font-weight: 700; letter-spacing: 0.02em">短剧工作台</div>
+<div style="font-size: 14px; color: #C9CAC6">《雨停之前》 · 第 1 集《红伞》</div>
+<a href="Spec.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 28px; padding: 0 10px; border: 1px solid #5B5E63; border-radius: 999px; color: #F2F2EF; font-size: 12px; text-decoration: none; font-family: 'IBM Plex Mono', ui-monospace, monospace">9:16 · 1080×1920 · 24 fps</a>
+<div style="margin-left: auto; display: flex; flex-wrap: wrap; gap: 6px 18px; font-size: 13px; color: #C9CAC6">
+<span>本地 GPU：RTX 5090 32GB · 空闲</span>
+<span>本集 API 花费 <b style="color: #FFFFFF; font-weight: 500">$8.94</b> / 预算 $15</span>
+<button type="button" onClick="{{toggleLang}}" aria-label="切换界面语言 / Switch language" style="min-height: 32px; padding: 0 10px; border: 1px solid #5B5E63; border-radius: 6px; background: transparent; color: #F2F2EF; font-size: 12px">中 / EN</button>
+</div>
+</header>
+
+<div style="display: flex; flex-wrap: wrap; align-items: stretch; flex: 1 1 auto">
+
+<nav aria-label="制作步骤" style="flex: 1 1 200px; box-sizing: border-box; padding: 16px 12px; display: flex; flex-direction: column; gap: 4px; background: #ECECE8; border-right: 1px solid #DADAD5">
+<div style="font-size: 12px; color: #4F5257; padding: 0 10px 6px">制作步骤</div>
+<sc-for list="{{nav}}" as="n" hint-placeholder-count="6">
+<a href="{{n.href}}" aria-current="{{n.cur}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; background: {{n.bg}}; border: 1px solid {{n.bd}}">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #4F5257; width: 20px">{{n.no}}</span>
+<span style="font-size: 14px; font-weight: {{n.fw}}">{{n.label}}</span>
+<span style="margin-left: auto; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: {{n.bbg}}; color: {{n.bfg}}">{{n.badge}}</span>
+</a>
+</sc-for>
+<div style="height: 1px; background: #DADAD5; margin: 10px 4px"></div>
+<a href="Spec.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="7" y="2" width="10" height="20" rx="2"></rect><path d="M11 18h2"></path></svg>
+<span style="font-size: 14px; font-weight: 500">成片规格</span>
+</a>
+<a href="Models.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h10"></path><path d="M18 6h2"></path><circle cx="16" cy="6" r="2"></circle><path d="M4 12h4"></path><path d="M12 12h8"></path><circle cx="10" cy="12" r="2"></circle><path d="M4 18h12"></path><circle cx="18" cy="18" r="2"></circle></svg>
+<span style="font-size: 14px; font-weight: 500">模型与兜底</span>
+</a>
+<a href="Sync.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1"></rect><rect x="14" y="3" width="7" height="7" rx="1"></rect><rect x="3" y="14" width="7" height="7" rx="1"></rect><path d="M17.5 14v7"></path><path d="M14 17.5h7"></path></svg>
+<span style="font-size: 14px; font-weight: 500">素材整理与同步</span>
+</a>
+<a href="Dashboard.dc.html" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 0 10px; border-radius: 8px; text-decoration: none; color: #1A1B1E; border: 1px solid transparent">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10"></path><path d="M10 20V4"></path><path d="M16 20v-7"></path><path d="M22 20H2"></path></svg>
+<span style="font-size: 14px; font-weight: 500">数据看板</span>
+</a>
+</nav>
+
+<main style="flex: 999 1 560px; min-width: 0; box-sizing: border-box; padding: 24px 28px 48px; display: flex; flex-direction: column; gap: 20px">
+
+<div style="display: flex; flex-wrap: wrap; align-items: flex-end; gap: 12px 16px">
+<div style="display: flex; flex-direction: column; gap: 6px; margin-right: auto; min-width: 0">
+<div style="font-size: 12px; color: #4F5257; font-family: 'IBM Plex Mono', ui-monospace, monospace">步骤 02 / 06</div>
+<h1 style="margin: 0; font-size: 28px; font-weight: 700">剧本</h1>
+<p style="margin: 0; font-size: 14px; color: #4F5257; line-height: 1.7; max-width: 680px">把小说的叙述改成能拍的结构：场景头、动作（△）、台词和语气。点任意一段剧本，左边会标出它来自原文哪里；原文没有、AI 加的会单独标出来。</p>
+</div>
+<a href="Assets.dc.html" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 16px; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 14px; font-weight: 500; text-decoration: none">确认剧本，分析素材
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12h14"></path><path d="M13 6l6 6-6 6"></path></svg></a>
+</div>
+
+<section aria-label="分集" style="display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px">
+<h2 style="margin: 0; font-size: 15px; font-weight: 700">分集</h2>
+<span style="font-size: 13px; color: #4F5257">每集结尾一个卡点；点一集查看它的剧本</span>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+<sc-for list="{{eps}}" as="e" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{e.on}}" onClick="{{e.pick}}" style="display: flex; flex-direction: column; gap: 4px; padding: 12px 14px; border-radius: 10px; border: 1px solid {{e.bd}}; background: {{e.bg}}; color: #1A1B1E; text-align: left">
+<span style="font-size: 15px; font-weight: 700">{{e.name}}</span>
+<span style="font-size: 12px; color: #4F5257">{{e.meta}}</span>
+<span style="font-size: 13px; line-height: 1.6">{{e.hook}}</span>
+<span style="font-size: 12px; font-weight: 500; color: {{e.stFg}}">{{e.st}}</span>
+</button>
+</sc-for>
+</div>
+</section>
+
+<div style="position: relative; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 10px; padding: 10px 12px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 10px">
+<div style="display: flex; flex-direction: column; gap: 2px; min-width: 0; margin-right: auto">
+<div style="font-size: 12px; color: #4F5257">当前产物 · {{bar.what}}</div>
+<div style="font-size: 14px; font-weight: 500">{{bar.ver}} · {{bar.model}} <span style="font-weight: 400; color: #4F5257">· {{bar.where}} · {{bar.time}} · {{bar.st}}</span></div>
+</div>
+<sc-if value="{{running}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="font-size: 13px; color: #2350C2">正在用 {{runModel}} 生成…</div>
+</sc-if>
+<button type="button" onClick="{{openPrompt}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path></svg>改提示词</button>
+<button type="button" onClick="{{rerun}}" disabled="{{running}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>重跑</button>
+<button type="button" onClick="{{toggleBarMenu}}" aria-expanded="{{barMenuOpen}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3"></path><path d="M17 17H6l3 3"></path></svg>不满意换一个<svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"></path></svg></button>
+<button type="button" onClick="{{openVers}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><path d="M12 8v4l3 2"></path></svg>历史 {{verCount}}</button>
+<sc-if value="{{barMenuOpen}}" hint-placeholder-val="{{ false }}">
+<div role="menu" aria-label="换一个模型重跑" style="position: absolute; top: calc(100% + 6px); right: 12px; z-index: 20; width: 340px; max-width: calc(100% - 24px); max-height: 440px; overflow-y: auto; box-sizing: border-box; padding: 8px; background: #FFFFFF; border: 1px solid #CFCFC9; border-radius: 10px; box-shadow: 0 10px 28px rgba(20, 20, 20, 0.14)">
+<div style="font-size: 12px; color: #4F5257; padding: 6px 8px 8px; line-height: 1.6">换一个模型重跑这一步。当前版本会保留在历史里。</div>
+<sc-for list="{{alts}}" as="a" hint-placeholder-count="4">
+<button type="button" role="menuitem" onClick="{{a.pick}}" style="width: 100%; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 8px; border: 0; border-radius: 6px; background: #FFFFFF; color: #1A1B1E; text-align: left">
+<span style="flex: 0 0 auto; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: {{a.tagBg}}; color: {{a.tagFg}}">{{a.where}}</span>
+<span style="flex: 1 1 auto; font-size: 14px">{{a.n}}</span>
+<span style="font-size: 12px; color: #4F5257">{{a.p}}</span>
+</button>
+</sc-for>
+<div style="border-top: 1px solid #E6E6E1; margin-top: 6px; padding: 8px 8px 2px; font-size: 12px; color: #4F5257">备选顺序在「模型与兜底」里调整</div>
+</div>
+</sc-if>
+</div>
+
+<sc-if value="{{hasToast}}" hint-placeholder-val="{{ false }}">
+<div role="status" style="display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-radius: 8px; background: #E8EEFB; color: #173A94; font-size: 14px">
+<svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l4 4 10-10"></path></svg>
+<span>{{toast}}</span>
+</div>
+</sc-if>
+
+<sc-if value="{{hasImpact}}" hint-placeholder-val="{{ false }}">
+<section role="alertdialog" aria-label="修改的影响范围" style="box-sizing: border-box; padding: 16px; border-radius: 12px; border: 1px solid #E0B089; background: #FCEFE3; display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; align-items: center; gap: 10px; color: #7A3608">
+<svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4l9 16H3z"></path><path d="M12 10v4"></path><path d="M12 17h.01"></path></svg>
+<h2 style="margin: 0; font-size: 16px; font-weight: 700">这段剧本已经确认过，改动会影响下游</h2>
+</div>
+<div style="font-size: 14px; color: #1A1B1E">改的是：{{impact.label}}</div>
+<ul style="margin: 0; padding-left: 20px; font-size: 14px; line-height: 1.85; color: #1A1B1E">
+<sc-for list="{{impact.items}}" as="it" hint-placeholder-count="3"><li>{{it.t}}</li></sc-for>
+</ul>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" onClick="{{markDirty}}" style="min-height: 40px; padding: 0 14px; border: 1px solid #1A1B1E; border-radius: 8px; background: #1A1B1E; color: #FFFFFF; font-size: 14px">只标记待更新</button>
+<button type="button" onClick="{{autoRerun}}" style="min-height: 40px; padding: 0 14px; border: 1px solid #A2480B; border-radius: 8px; background: #FFFFFF; color: #7A3608; font-size: 14px">自动重跑受影响的部分 · 预计 {{impact.cost}}</button>
+<button type="button" onClick="{{undoEdit}}" style="min-height: 40px; padding: 0 14px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">撤销修改</button>
+</div>
+<div style="font-size: 12px; color: #5E3A1C">预计花费按当前「模型与兜底」的路由估算；本地跑的部分不计费。已采纳的视频不会被覆盖，新结果作为新版本出现。</div>
+</section>
+</sc-if>
+
+<sc-if value="{{epOne}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">第 1 集剧本</h2>
+<span style="font-size: 13px; color: #4F5257">2 场 · 12 段 · 其中 AI 新增 2 段</span>
+<div role="group" aria-label="显示方式" style="margin-left: auto; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 8px; overflow: hidden">
+<sc-for list="{{modesView}}" as="v" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{v.on}}" onClick="{{v.pick}}" style="min-height: 36px; padding: 0 14px; border: 0; background: {{v.bg}}; color: {{v.fg}}; font-size: 13px">{{v.label}}</button>
+</sc-for>
+</div>
+</div>
+
+<sc-if value="{{viewScript}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; gap: 20px; align-items: flex-start">
+<section aria-label="原文对照" style="flex: 1 1 300px; min-width: 0; box-sizing: border-box; padding: 14px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 13px; font-weight: 700; padding: 0 4px 4px">原文（已采纳补写）</div>
+<sc-for list="{{paras}}" as="p" hint-placeholder-count="5">
+<div style="display: flex; gap: 10px; padding: 8px 10px; border-radius: 8px; background: {{p.bg}}; border: 1px solid {{p.bd}}">
+<div style="flex: 0 0 22px; padding-top: 4px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; color: #4F5257">{{p.no}}</div>
+<p style="margin: 0; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 14px; line-height: 1.85">{{p.text}}</p>
+</div>
+</sc-for>
+</section>
+
+<section aria-label="剧本" style="flex: 1.4 1 420px; min-width: 0; box-sizing: border-box; padding: 14px; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px; display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{blocks}}" as="b" hint-placeholder-count="8">
+<div style="box-sizing: border-box; padding: 6px 10px; border-radius: 8px; border: 1px solid {{b.bd}}; background: {{b.bg}}; display: flex; flex-direction: column; gap: 6px">
+<button type="button" aria-pressed="{{b.on}}" onClick="{{b.pick}}" style="display: flex; align-items: flex-start; gap: 10px; width: 100%; padding: 2px 0; border: 0; background: transparent; color: #1A1B1E; text-align: left">
+<span style="flex: 1 1 auto; min-width: 0; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 15px; line-height: 1.85; font-weight: {{b.fw}}">{{b.lead}}{{b.text}}</span>
+<sc-if value="{{b.hasTag}}" hint-placeholder-val="{{ false }}">
+<span style="flex: 0 0 auto; margin-top: 4px; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: #1A1B1E; color: #FFFFFF">{{b.tag}}</span>
+</sc-if>
+<span style="flex: 0 0 auto; margin-top: 4px; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: {{b.pBg}}; color: {{b.pFg}}">{{b.prov}}</span>
+</button>
+<sc-if value="{{b.on}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 8px; padding-bottom: 4px">
+<sc-if value="{{b.editing}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="edit-{{b.id}}" style="font-size: 12px; color: #4F5257">编辑这一段（保存后会显示影响范围）</label>
+<textarea id="edit-{{b.id}}" rows="3" value="{{b.editText}}" onChange="{{b.setEdit}}" style="box-sizing: border-box; width: 100%; padding: 8px 10px; border: 1px solid #CFCFC9; border-radius: 8px; font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 15px; line-height: 1.7; color: #1A1B1E; resize: vertical"></textarea>
+<div style="display: flex; gap: 8px">
+<button type="button" onClick="{{b.save}}" style="min-height: 36px; padding: 0 14px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 13px">保存</button>
+<button type="button" onClick="{{b.cancel}}" style="min-height: 36px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 13px">取消</button>
+</div>
+</div>
+</sc-if>
+<sc-if value="{{b.notEditing}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<button type="button" onClick="{{b.edit}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 13px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4L19 9l-4-4L4 16v4z"></path></svg>编辑</button>
+<button type="button" onClick="{{b.rewrite}}" disabled="{{b.busy}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 13px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>{{b.rwLabel}}</button>
+<button type="button" onClick="{{b.toggleAlt}}" aria-expanded="{{b.altOpen}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 13px"><svg aria-hidden="true" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3"></path><path d="M17 17H6l3 3"></path></svg>换模型重写</button>
+<span style="font-size: 12px; color: #4F5257">{{b.srcLabel}}</span>
+</div>
+<sc-if value="{{b.altOpen}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{b.alts}}" as="m" hint-placeholder-count="3">
+<button type="button" onClick="{{m.pick}}" style="min-height: 36px; padding: 0 10px; border: 1px solid #CFCFC9; border-radius: 6px; background: #FFFFFF; color: #1A1B1E; font-size: 12px">{{m.where}} · {{m.n}}</button>
+</sc-for>
+</div>
+</sc-if>
+</sc-if>
+</div>
+</sc-if>
+</div>
+</sc-for>
+</section>
+</div>
+</sc-if>
+
+<sc-if value="{{viewTable}}" hint-placeholder-val="{{ false }}">
+<div style="overflow-x: auto; background: #FFFFFF; border: 1px solid #DADAD5; border-radius: 12px">
+<div style="min-width: 760px; display: flex; flex-direction: column">
+<div style="display: grid; grid-template-columns: 52px 72px minmax(0, 1fr) 64px 84px 64px 92px; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #DADAD5; font-size: 12px; font-weight: 500; color: #4F5257">
+<div>序号</div><div>类型</div><div>内容</div><div>人物</div><div>情绪/语气</div><div>时长</div><div>来源</div>
+</div>
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
+<div style="display: grid; grid-template-columns: 52px 72px minmax(0, 1fr) 64px 84px 64px 92px; gap: 12px; padding: 10px 14px; border-bottom: 1px solid #ECECE8; font-size: 13px; line-height: 1.6; background: {{r.bg}}">
+<div style="font-family: 'IBM Plex Mono', ui-monospace, monospace; color: #4F5257">{{r.no}}</div>
+<div>{{r.kind}}</div>
+<div style="font-family: 'Noto Serif SC', 'Songti SC', serif; font-size: 14px">{{r.text}}</div>
+<div>{{r.who}}</div>
+<div>{{r.mood}}</div>
+<div style="font-family: 'IBM Plex Mono', ui-monospace, monospace">{{r.dur}}</div>
+<div style="color: {{r.pFg}}">{{r.prov}}</div>
+</div>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</sc-if>
+
+<sc-if value="{{epOther}}" hint-placeholder-val="{{ false }}">
+<section style="box-sizing: border-box; padding: 32px 24px; background: #FFFFFF; border: 1px dashed #B9B9B2; border-radius: 12px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">{{epName}} 的剧本</h2>
+<p style="margin: 0; font-size: 14px; color: #4F5257; line-height: 1.7">{{epNote}}</p>
+<button type="button" onClick="{{genEp}}" disabled="{{running}}" style="min-height: 40px; padding: 0 16px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 14px; font-weight: 500">{{epBtn}}</button>
+</section>
+</sc-if>
+
+</main>
+
+<aside aria-label="本环节运行设置" style="flex: 1 1 320px; min-width: 0; box-sizing: border-box; background: #FFFFFF; border-left: 1px solid #DADAD5; display: flex; flex-direction: column">
+<div style="padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 10px; border-bottom: 1px solid #E6E6E1">
+<div style="font-size: 12px; color: #4F5257">本环节的组件</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{comps}}" as="c" hint-placeholder-count="2">
+<button type="button" aria-pressed="{{c.on}}" onClick="{{c.pick}}" style="min-height: 36px; padding: 0 14px; border-radius: 18px; border: 1px solid {{c.bd}}; background: {{c.bg}}; color: {{c.fg}}; font-size: 13px">{{c.name}}</button>
+</sc-for>
+</div>
+</div>
+<div role="tablist" aria-label="设置分页" style="display: flex; border-bottom: 1px solid #E6E6E1">
+<sc-for list="{{tabs}}" as="t" hint-placeholder-count="3">
+<button type="button" role="tab" aria-selected="{{t.on}}" onClick="{{t.pick}}" style="flex: 1 1 0; min-height: 44px; border: 0; border-bottom: 2px solid {{t.bd}}; background: #FFFFFF; color: {{t.fg}}; font-size: 14px; font-weight: 500">{{t.label}}</button>
+</sc-for>
+</div>
+
+<sc-if value="{{tabRun}}" hint-placeholder-val="{{ true }}">
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 18px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">{{cur.name}}</h2>
+<p style="margin: 0; font-size: 13px; color: #4F5257; line-height: 1.6">{{cur.desc}}</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">运行位置</div>
+<div role="group" aria-label="运行位置" style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); border: 1px solid #CFCFC9; border-radius: 8px; overflow: hidden">
+<sc-for list="{{modes}}" as="m" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{m.on}}" disabled="{{m.dis}}" onClick="{{m.pick}}" style="min-height: 40px; border: 0; background: {{m.bg}}; color: {{m.fg}}; font-size: 14px">{{m.label}}</button>
+</sc-for>
+</div>
+<p style="margin: 0; font-size: 12px; color: #4F5257; line-height: 1.6">{{modeHint}}</p>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">API 服务</div>
+<span style="margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: {{apiRoleBg}}; color: {{apiRoleFg}}">{{apiRole}}</span>
+</div>
+<sc-if value="{{hasA}}" hint-placeholder-val="{{ true }}">
+<div role="radiogroup" aria-label="API 服务" style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{apiOpts}}" as="o" hint-placeholder-count="3">
+<button type="button" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid {{o.bd}}; background: {{o.bg}}; color: #1A1B1E; text-align: left">
+<span aria-hidden="true" style="flex: 0 0 auto; box-sizing: border-box; width: 16px; height: 16px; border-radius: 8px; border: 2px solid {{o.ring}}; display: flex; align-items: center; justify-content: center"><span style="width: 6px; height: 6px; border-radius: 3px; background: {{o.dot}}"></span></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px">{{o.n}}</span><span style="font-size: 12px; color: #4F5257">{{o.p}}</span></span>
+</button>
+</sc-for>
+</div>
+<sc-if value="{{apiHasMore}}" hint-placeholder-val="{{ false }}">
+<button type="button" onClick="{{toggleApiMore}}" style="align-self: flex-start; min-height: 32px; padding: 0; border: 0; background: transparent; color: #2350C2; font-size: 13px">{{apiMoreLabel}}</button>
+</sc-if>
+<sc-if value="{{hasApiNote}}" hint-placeholder-val="{{ false }}">
+<div style="font-size: 12px; color: #4F5257; line-height: 1.6">{{apiNote}}</div>
+</sc-if>
+</sc-if>
+<sc-if value="{{noA}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 12px; color: #4F5257">这个组件没有 API 版本，只能本地跑。</p>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px">
+<div style="font-size: 13px; font-weight: 500">本地模型</div>
+<span style="margin-left: auto; font-size: 11px; padding: 2px 8px; border-radius: 10px; background: {{localRoleBg}}; color: {{localRoleFg}}">{{localRole}}</span>
+</div>
+<sc-if value="{{hasL}}" hint-placeholder-val="{{ true }}">
+<div role="radiogroup" aria-label="本地模型" style="display: flex; flex-direction: column; gap: 6px">
+<sc-for list="{{localOpts}}" as="o" hint-placeholder-count="2">
+<button type="button" role="radio" aria-checked="{{o.on}}" onClick="{{o.pick}}" style="display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 10px; border-radius: 8px; border: 1px solid {{o.bd}}; background: {{o.bg}}; color: #1A1B1E; text-align: left">
+<span aria-hidden="true" style="flex: 0 0 auto; box-sizing: border-box; width: 16px; height: 16px; border-radius: 8px; border: 2px solid {{o.ring}}; display: flex; align-items: center; justify-content: center"><span style="width: 6px; height: 6px; border-radius: 3px; background: {{o.dot}}"></span></span>
+<span style="display: flex; flex-direction: column; gap: 1px; min-width: 0"><span style="font-size: 14px">{{o.n}}</span><span style="font-size: 12px; color: #4F5257">{{o.p}}</span></span>
+</button>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #4F5257">本地服务：ComfyUI / 推理服务已连接</div>
+</sc-if>
+<sc-if value="{{noL}}" hint-placeholder-val="{{ false }}">
+<p style="margin: 0; font-size: 12px; color: #4F5257">这个组件没有可本地运行的模型。</p>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid #DADAD5; border-radius: 10px; background: #F8F8F6">
+<button type="button" role="switch" aria-checked="{{fbOn}}" onClick="{{toggleFb}}" style="display: flex; align-items: center; gap: 12px; min-height: 44px; padding: 0; border: 0; background: transparent; color: #1A1B1E; text-align: left">
+<span style="flex: 1 1 auto; display: flex; flex-direction: column; gap: 2px"><span style="font-size: 14px; font-weight: 500">自动兜底</span><span style="font-size: 12px; color: #4F5257; line-height: 1.5">{{fbSummary}}</span></span>
+<span aria-hidden="true" style="position: relative; flex: 0 0 44px; width: 44px; height: 24px; border-radius: 12px; background: {{fbTrack}}"><span style="position: absolute; top: 3px; left: {{fbKnob}}; width: 18px; height: 18px; border-radius: 9px; background: #FFFFFF"></span></span>
+</button>
+<sc-if value="{{fbOn}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 8px">
+<div style="font-size: 12px; color: #4F5257">什么时候兜底</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{fbConds}}" as="f" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}" style="min-height: 36px; padding: 0 10px; border-radius: 6px; border: 1px solid {{f.bd}}; background: {{f.bg}}; color: {{f.fg}}; font-size: 12px">{{f.mark}}{{f.label}}</button>
+</sc-for>
+</div>
+<div style="font-size: 12px; color: #4F5257">兜底到</div>
+<div style="display: flex; flex-wrap: wrap; gap: 6px">
+<sc-for list="{{fbTargets}}" as="f" hint-placeholder-count="3">
+<button type="button" aria-pressed="{{f.on}}" onClick="{{f.pick}}" style="min-height: 36px; padding: 0 10px; border-radius: 6px; border: 1px solid {{f.bd}}; background: {{f.bg}}; color: {{f.fg}}; font-size: 12px">{{f.n}}</button>
+</sc-for>
+</div>
+</div>
+</sc-if>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="budget" style="font-size: 13px; font-weight: 500">单次花费上限（美元）</label>
+<input id="budget" type="number" min="0" step="0.1" value="{{budget}}" onChange="{{setBudget}}" style="box-sizing: border-box; min-height: 40px; padding: 0 10px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">
+<p style="margin: 0; font-size: 12px; color: #4F5257">超过上限会先停下来问你。本地运行不计费。</p>
+</div>
+
+<div style="position: relative; display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" onClick="{{rerun}}" disabled="{{running}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 16px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 14px; font-weight: 500"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"></path><path d="M20 4v7h-7"></path></svg>重跑</button>
+<button type="button" onClick="{{toggleInspMenu}}" aria-expanded="{{inspMenuOpen}}" style="display: inline-flex; align-items: center; gap: 6px; min-height: 44px; padding: 0 14px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 7h11l-3-3"></path><path d="M17 17H6l3 3"></path></svg>不满意换一个</button>
+<sc-if value="{{inspMenuOpen}}" hint-placeholder-val="{{ false }}">
+<div role="menu" aria-label="换一个模型重跑" style="position: absolute; bottom: calc(100% + 6px); left: 0; z-index: 20; width: 300px; max-width: 100%; max-height: 380px; overflow-y: auto; box-sizing: border-box; padding: 8px; background: #FFFFFF; border: 1px solid #CFCFC9; border-radius: 10px; box-shadow: 0 10px 28px rgba(20, 20, 20, 0.14)">
+<div style="font-size: 12px; color: #4F5257; padding: 6px 8px 8px">换一个模型重跑，当前版本保留</div>
+<sc-for list="{{alts}}" as="a" hint-placeholder-count="4">
+<button type="button" role="menuitem" onClick="{{a.pick}}" style="width: 100%; display: flex; align-items: center; gap: 10px; min-height: 44px; padding: 6px 8px; border: 0; border-radius: 6px; background: #FFFFFF; color: #1A1B1E; text-align: left">
+<span style="flex: 0 0 auto; font-size: 11px; padding: 2px 6px; border-radius: 4px; background: {{a.tagBg}}; color: {{a.tagFg}}">{{a.where}}</span>
+<span style="flex: 1 1 auto; font-size: 14px">{{a.n}}</span>
+</button>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<a href="Models.dc.html" style="font-size: 13px">在「模型与兜底」里改全局默认</a>
+</div>
+</sc-if>
+
+<sc-if value="{{tabPrompt}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 14px">
+<div style="display: flex; flex-direction: column; gap: 4px">
+<h2 style="margin: 0; font-size: 17px; font-weight: 700">{{cur.name}} · 提示词</h2>
+<p style="margin: 0; font-size: 13px; color: #4F5257; line-height: 1.6">用自己的话写要求。系统会把它和上下文、设定卡一起编译成发给模型的提示词。</p>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="intent" style="font-size: 13px; font-weight: 500">你的要求（意图层）</label>
+<textarea id="intent" rows="7" value="{{intent}}" onChange="{{setIntent}}" style="box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #CFCFC9; border-radius: 8px; font-size: 14px; line-height: 1.7; color: #1A1B1E; resize: vertical"></textarea>
+</div>
+<button type="button" onClick="{{toggleAdv}}" aria-expanded="{{adv}}" style="align-self: flex-start; min-height: 36px; padding: 0; border: 0; background: transparent; color: #2350C2; font-size: 13px">{{advLabel}}</button>
+<sc-if value="{{advOff}}" hint-placeholder-val="{{ true }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div style="font-size: 12px; color: #4F5257">编译后的提示词（预览）</div>
+<pre style="margin: 0; padding: 10px; max-height: 260px; overflow: auto; white-space: pre-wrap; border-radius: 8px; background: #F3F3F1; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.6; color: #2B2D31">{{compiled}}</pre>
+</div>
+</sc-if>
+<sc-if value="{{adv}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="compiled" style="font-size: 12px; color: #4F5257">编译层（直接改；改过后不再自动编译）</label>
+<textarea id="compiled" rows="12" value="{{compiled}}" onChange="{{setCompiled}}" style="box-sizing: border-box; width: 100%; padding: 10px; border: 1px solid #CFCFC9; border-radius: 8px; font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 12px; line-height: 1.6; color: #1A1B1E; resize: vertical"></textarea>
+<sc-if value="{{compiledLocked}}" hint-placeholder-val="{{ false }}">
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; font-size: 12px; color: #A2480B">已手动修改编译层
+<button type="button" onClick="{{resetCompiled}}" style="min-height: 32px; padding: 0 10px; border: 1px solid #CFCFC9; border-radius: 6px; background: #FFFFFF; color: #1A1B1E; font-size: 12px">恢复自动编译</button>
+</div>
+</sc-if>
+</div>
+</sc-if>
+<div style="display: flex; flex-wrap: wrap; gap: 8px">
+<button type="button" onClick="{{saveRun}}" disabled="{{running}}" style="min-height: 44px; padding: 0 16px; border: 1px solid #2350C2; border-radius: 8px; background: #2350C2; color: #FFFFFF; font-size: 14px; font-weight: 500">保存并重跑</button>
+<button type="button" onClick="{{saveOnly}}" style="min-height: 44px; padding: 0 14px; border: 1px solid #CFCFC9; border-radius: 8px; background: #FFFFFF; color: #1A1B1E; font-size: 14px">只保存</button>
+</div>
+</div>
+</sc-if>
+
+<sc-if value="{{tabVer}}" hint-placeholder-val="{{ false }}">
+<div style="padding: 16px; display: flex; flex-direction: column; gap: 10px">
+<p style="margin: 0; font-size: 13px; color: #4F5257; line-height: 1.6">{{cur.name}} 的全部版本，新的在上。只有「采纳」的版本会被下一步使用。</p>
+<sc-for list="{{verList}}" as="v" hint-placeholder-count="2">
+<div style="box-sizing: border-box; padding: 10px 12px; border-radius: 8px; background: {{v.bg}}; border: 1px solid {{v.bd}}; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; align-items: center; gap: 8px">
+<span style="font-family: 'IBM Plex Mono', ui-monospace, monospace; font-size: 13px; font-weight: 500">{{v.v}}</span>
+<span style="font-size: 13px; min-width: 0">{{v.m}}</span>
+<span style="margin-left: auto; font-size: 12px; font-weight: 500; color: {{v.stFg}}">{{v.stLabel}}</span>
+</div>
+<div style="font-size: 12px; color: #4F5257">{{v.where}} · {{v.t}} · {{v.cost}} · {{v.note}}</div>
+<div style="display: flex; gap: 8px">
+<button type="button" onClick="{{v.pick}}" style="min-height: 32px; padding: 0 10px; border: 1px solid #CFCFC9; border-radius: 6px; background: #FFFFFF; color: #1A1B1E; font-size: 12px">设为当前</button>
+<button type="button" onClick="{{v.accept}}" style="min-height: 32px; padding: 0 10px; border: 1px solid #CFCFC9; border-radius: 6px; background: #FFFFFF; color: #1A1B1E; font-size: 12px">采纳这一版</button>
+</div>
+</div>
+</sc-for>
+</div>
+</sc-if>
+</aside>
+
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1380}}'>
+class Component extends DCLogic {
+  constructor(...args) {
+    super(...args);
+    this.state = Object.assign({ comp: 0, tab: 'run', cfg: {}, menu: null, running: false, runModel: '', vers: {}, cur: {}, intent: {}, comp2: {}, adv: false, fbc: {}, toast: '' }, this.initState());
+  }
+
+  initState() {
+    return { comp: 1, ep: 0, epDone: {}, view: 'script', sel: 'b3', editId: null, editText: '', over: {}, prevText: null, impact: null, dirty: {}, busy: null, altFor: null };
+  }
+
+  componentWillUnmount() { clearTimeout(this._t); clearTimeout(this._tt); clearTimeout(this._bt); }
+
+  D() {
+    if (this._d) return this._d;
+    const apis = [
+      { n: 'DeepSeek V4 Pro', p: '$1.32 / $3.96，闲时半价', cost: '按 token 计费' },
+      { n: 'DeepSeek V4.1 Flash', p: '$0.30 / $1.20，便宜，适合反复重跑', cost: '按 token 计费' },
+      { n: 'Kimi K2.6', p: '$0.95 / $4', cost: '按 token 计费' },
+      { n: 'Qwen3.8-max', p: '$2 / $6', cost: '按 token 计费' },
+      { n: 'Qwen3.7-plus', p: '$0.40 / $1.60', cost: '按 token 计费' },
+      { n: '豆包 2.1 Pro', p: '¥6 / ¥30', cost: '按 token 计费' },
+      { n: 'GLM-5.3', p: '$1.40 / $4.40', cost: '按 token 计费' },
+      { n: 'MiniMax-M3', p: '$0.30 / $1.20', cost: '按 token 计费' },
+      { n: 'Qwen3.8-flash', p: '$0.15 / $0.47，抽取、分类够用', cost: '按 token 计费' },
+      { n: 'GLM-5.3-Flash', p: '$0.15 / $0.50', cost: '按 token 计费' },
+      { n: 'Gemini 3.6 Flash', p: '$0.75 / $3.75，2027 年起翻倍', cost: '按 token 计费' },
+      { n: 'GPT-6 Luna', p: '约 $0.10 / $0.50', cost: '按 token 计费' },
+      { n: 'Claude Sonnet 5.5', p: '按官方价', cost: '按 token 计费' },
+      { n: 'OpenRouter', p: '一个密钥调多家模型，充值收 5.5%', cost: '按 token 计费' },
+      { n: '自定义（OpenAI 兼容）', p: '填 base URL、密钥和模型名', cost: '按量计费' }
+    ];
+    const locals = [
+      { n: 'Qwen3.6-27B（本地）', p: '4-bit 量化，32 GB 显存够用' },
+      { n: 'Qwen3-30B-A3B（本地）', p: '更快，质量略低' }
+    ];
+    const note = '价格是每百万 token 的输入 / 输出，以各家官方页面为准。';
+    this._d = {
+      comps: [
+        {
+          id: 'split', name: '分集规划', what: '分集方案 · 3 集',
+          desc: '按原文顺序切成若干集，每集结尾放一个卡点，第 1 集开头要有钩子。',
+          mode: 'api', api: 1, local: 0, fb: true, fbTo: 'Qwen3.7-plus', budget: 0.3, apiNote: note,
+          apis: apis, locals: locals,
+          intent: '每集 1 分钟左右，结尾必须有卡点；第 1 集前 3 秒要有钩子。按原文顺序切，不打乱时间线。',
+          compile: (intent, pr) => '[system]\n你负责给竖屏短剧分集。\n\n[规则]\n' + intent + '\n\n[上下文]\n{全文摘要 + 段落索引}\n\n[输出 JSON]\n[{ "ep": 1, "title": "", "paras": [1, 5], "hook": "", "cliff": "" }]\n\n# 目标模型：' + pr.n,
+          vers: [
+            { v: 'v1', m: 'DeepSeek V4.1 Flash', where: 'API', t: '10:08', cost: '按 token 计费', note: '初版', st: '已采纳' }
+          ]
+        },
+        {
+          id: 'script', name: '剧本化', what: '第 1 集剧本 · 场 1–2 · 12 段',
+          desc: '把叙述改成场景头、动作、台词和语气；每段标明来自原文第几段。',
+          mode: 'api', api: 0, local: 0, fb: true, fbTo: 'Qwen3.8-max', budget: 0.8, apiNote: note,
+          apis: apis, locals: locals,
+          intent: '把叙述改成能拍的剧本：场景头（场次、日夜、内外、地点）、动作（△）、台词（人物和语气）。心理活动尽量变成动作或画外音（OS）。原文没有的台词标为 AI 新增，宁少勿多。',
+          compile: (intent, pr) => '[system]\n你是竖屏短剧编剧。下游是分镜和 AI 视频模型。\n\n[规则]\n' + intent + '\n- 场景头格式：场次　日/夜　内/外　地点\n- 每段写明 src（原文段号）\n\n[上下文]\n{已确认原文 + 补写}\n{设定卡}\n{分集方案：第 1 集 = 原文第 1–5 段}\n\n[输出 JSON]\n[{ "kind": "scene|action|line|os", "who": "", "paren": "", "text": "", "src": [] }]\n\n# 目标模型：' + pr.n,
+          vers: [
+            { v: 'v1', m: 'Qwen3.6-27B（本地）', where: '本地', t: '10:12', cost: '无 API 费用', note: '初版', st: '草稿' },
+            { v: 'v2', m: 'Kimi K2.6', where: 'API', t: '10:20', cost: '按 token 计费', note: '不满意换一个', st: '已采纳' }
+          ]
+        }
+      ]
+    };
+    return this._d;
+  }
+
+  nav(active, dirty) {
+    const d = dirty || {};
+    const steps = [
+      { id: 'novel', no: '01', label: '小说', href: 'Main.dc.html', st: 'done' },
+      { id: 'script', no: '02', label: '剧本', href: 'Script.dc.html', st: 'done' },
+      { id: 'assets', no: '03', label: '素材', href: 'Assets.dc.html', st: 'doing', prog: '7/13' },
+      { id: 'board', no: '04', label: '分镜', href: 'Storyboard.dc.html', st: 'doing', prog: '3/9' },
+      { id: 'gen', no: '05', label: '生成', href: 'Generate.dc.html', st: 'doing', prog: '3/9' },
+      { id: 'post', no: '06', label: '后期', href: 'Post.dc.html', st: 'todo' }
+    ];
+    return steps.map((x) => {
+      const on = x.id === active;
+      const dd = d[x.id];
+      return {
+        no: x.no, label: x.label, href: x.href, cur: on ? 'page' : 'false',
+        bg: on ? '#FFFFFF' : 'transparent', bd: on ? '#CFCFC9' : 'transparent', fw: on ? '700' : '500',
+        badge: dd ? '待更新 ' + dd : (x.st === 'done' ? '已确认' : (x.st === 'doing' ? x.prog : '未开始')),
+        bbg: dd ? '#FCEFE3' : (x.st === 'done' ? '#E8EEFB' : '#E2E2DD'),
+        bfg: dd ? '#A2480B' : (x.st === 'done' ? '#1A3E9E' : '#3E4146')
+      };
+    });
+  }
+
+  hhmm() {
+    const d = new Date();
+    return String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0');
+  }
+
+  cfgOf(c) {
+    const o = (this.state.cfg || {})[c.id] || {};
+    return {
+      mode: o.mode || c.mode,
+      api: o.api != null ? o.api : c.api,
+      local: o.local != null ? o.local : c.local,
+      fb: o.fb != null ? o.fb : c.fb,
+      fbTo: o.fbTo || c.fbTo,
+      budget: o.budget != null ? o.budget : c.budget
+    };
+  }
+
+  setCfg(c, patch) {
+    const all = Object.assign({}, this.state.cfg);
+    all[c.id] = Object.assign({}, this.cfgOf(c), patch);
+    this.setState({ cfg: all });
+  }
+
+  primary(c, cfg) {
+    if (cfg.mode !== 'api' && c.locals.length) return { n: c.locals[Math.min(cfg.local, c.locals.length - 1)].n, where: '本地' };
+    if (c.apis.length) return { n: c.apis[Math.min(cfg.api, c.apis.length - 1)].n, where: 'API' };
+    return { n: c.locals[0].n, where: '本地' };
+  }
+
+  prod() {
+    const c = this.D().comps[this.state.comp];
+    const p = this.product ? this.product(c) : null;
+    return p || { key: c.id, what: c.what, base: c.vers };
+  }
+
+  versOf(p) { return (this.state.vers || {})[p.key] || p.base; }
+
+  curOf(p, list) {
+    const i = (this.state.cur || {})[p.key];
+    return i != null ? i : list.length - 1;
+  }
+
+  flash(msg) {
+    clearTimeout(this._tt);
+    this.setState({ toast: msg });
+    this._tt = setTimeout(() => this.setState({ toast: '' }), 4500);
+  }
+
+  run(model, note) {
+    if (this.state.running) return;
+    const c = this.D().comps[this.state.comp];
+    const pr = this.primary(c, this.cfgOf(c));
+    const m = model || pr.n;
+    const p = this.prod();
+    this.setState({ running: true, runModel: m, menu: null });
+    clearTimeout(this._t);
+    this._t = setTimeout(() => {
+      const list = this.versOf(p).slice();
+      const loc = c.locals.find((x) => x.n === m);
+      const api = c.apis.find((x) => x.n === m);
+      list.push({ v: 'v' + (list.length + 1), m: m, where: loc ? '本地' : 'API', t: this.hhmm(), cost: loc ? '无 API 费用' : ((api && api.cost) || '按量计费'), note: note || '重跑', st: '草稿' });
+      const vers = Object.assign({}, this.state.vers); vers[p.key] = list;
+      const cur = Object.assign({}, this.state.cur); cur[p.key] = list.length - 1;
+      this.setState({ running: false, vers: vers, cur: cur });
+      this.flash('已生成 v' + list.length + '（' + m + '）。上一版还在历史里，满意就点「采纳」。');
+      if (this.afterRun) this.afterRun(p, m, note);
+    }, 1400);
+  }
+
+  common() {
+    const s = this.state;
+    const D = this.D();
+    const c = D.comps[s.comp];
+    const cfg = this.cfgOf(c);
+    const pr = this.primary(c, cfg);
+    const p = this.prod();
+    const list = this.versOf(p);
+    const ci = this.curOf(p, list);
+    const cv = list[ci];
+    const hasA = c.apis.length > 0;
+    const hasL = c.locals.length > 0;
+    const all = c.locals.map((x) => ({ n: x.n, cost: x.cost, where: '本地' })).concat(c.apis.map((x) => ({ n: x.n, cost: x.cost, where: 'API' })));
+    const others = all.filter((x) => x.n !== pr.n);
+    const fbTo = others.some((x) => x.n === cfg.fbTo) ? cfg.fbTo : (others[0] ? others[0].n : '无');
+
+    const modes = [
+      { id: 'local', label: '本地', dis: !hasL },
+      { id: 'api', label: 'API', dis: !hasA },
+      { id: 'hybrid', label: '混合', dis: !(hasL && hasA) }
+    ].map((m) => {
+      const on = cfg.mode === m.id;
+      return { label: m.label, on: on, dis: m.dis, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : (m.dis ? '#8C8F8A' : '#1A1B1E'), pick: () => { if (!m.dis) this.setCfg(c, { mode: m.id }); } };
+    });
+    const modeHint = cfg.mode === 'local'
+      ? '只用本地模型，不产生 API 费用。'
+      : (cfg.mode === 'api' ? '直接调用 API，按次计费。' : '草稿和重跑走本地；点「采纳」前用 API 出终版。');
+
+    const radio = (arr, sel, key) => arr.map((x, i) => {
+      const on = sel === i;
+      return { n: x.n, p: x.p, on: on, ring: on ? '#2350C2' : '#8C8F8A', dot: on ? '#2350C2' : 'transparent', bg: on ? '#EEF2FC' : '#FFFFFF', bd: on ? '#2350C2' : '#DADAD5', pick: () => { const o = {}; o[key] = i; this.setCfg(c, o); } };
+    });
+    const roleOf = (has, main) => {
+      if (!has) return '无';
+      if (main) return main;
+      return cfg.fb ? '兜底可用' : '未使用';
+    };
+    const apiRole = roleOf(hasA, cfg.mode === 'api' ? '主用' : (cfg.mode === 'hybrid' ? '出终版' : ''));
+    const localRole = roleOf(hasL, cfg.mode === 'local' ? '主用' : (cfg.mode === 'hybrid' ? '出草稿' : ''));
+    const roleBg = (r) => (r === '主用' || r === '出终版' || r === '出草稿') ? '#E8EEFB' : '#ECECE8';
+    const roleFg = (r) => (r === '主用' || r === '出终版' || r === '出草稿') ? '#1A3E9E' : '#3E4146';
+
+    const fbcState = (s.fbc || {})[c.id] || { 0: true, 1: true, 2: false };
+    const fbConds = ['报错或显存不足', '超过 10 分钟没结果', '自动质检连续 2 次不过'].map((label, i) => {
+      const on = !!fbcState[i];
+      return { label: label, on: on, mark: on ? '✓ ' : '', bg: on ? '#EEF2FC' : '#FFFFFF', bd: on ? '#2350C2' : '#CFCFC9', fg: on ? '#173A94' : '#3E4146', pick: () => { const f = Object.assign({}, s.fbc); f[c.id] = Object.assign({}, fbcState); f[c.id][i] = !on; this.setState({ fbc: f }); } };
+    });
+    const fbTargets = others.map((x) => {
+      const on = x.n === fbTo;
+      return { n: x.n, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', bd: on ? '#1A1B1E' : '#CFCFC9', pick: () => this.setCfg(c, { fbTo: x.n }) };
+    });
+    const alts = others.map((x) => ({
+      n: x.n, where: x.where, p: x.where === '本地' ? '无 API 费用' : (x.cost || '按量计费'),
+      tagBg: x.where === '本地' ? '#ECECE8' : '#E8EEFB', tagFg: x.where === '本地' ? '#3E4146' : '#1A3E9E',
+      pick: () => this.run(x.n, '不满意换一个')
+    }));
+
+    const intentMap = s.intent || {};
+    const intent = intentMap[p.key] != null ? intentMap[p.key] : (p.intent != null ? p.intent : c.intent);
+    const manual = (s.comp2 || {})[p.key];
+    const compiled = manual != null ? manual : c.compile(intent, pr);
+
+    const verList = list.map((v, i) => {
+      const isCur = i === ci;
+      const ok = v.st === '已采纳';
+      return {
+        v: v.v, m: v.m, where: v.where, t: v.t, cost: v.cost, note: v.note,
+        bg: isCur ? '#EEF2FC' : '#FFFFFF', bd: isCur ? '#2350C2' : '#DADAD5',
+        stLabel: (ok ? '已采纳' : '草稿') + (isCur ? ' · 当前' : ''), stFg: ok ? '#1A3E9E' : '#4F5257',
+        pick: () => { const o = Object.assign({}, this.state.cur); o[p.key] = i; this.setState({ cur: o }); },
+        accept: () => {
+          const nl = list.map((x, j) => Object.assign({}, x, { st: j === i ? '已采纳' : '草稿' }));
+          const vv = Object.assign({}, this.state.vers); vv[p.key] = nl;
+          const o = Object.assign({}, this.state.cur); o[p.key] = i;
+          this.setState({ vers: vv, cur: o });
+          this.flash(v.v + ' 已采纳，下一步会用这一版。');
+        }
+      };
+    }).reverse();
+
+    const tabs = [
+      { id: 'run', label: '运行设置' },
+      { id: 'prompt', label: '提示词' },
+      { id: 'ver', label: '历史 ' + list.length }
+    ].map((t) => {
+      const on = s.tab === t.id;
+      return { label: t.label, on: on, fg: on ? '#1A1B1E' : '#4F5257', bd: on ? '#1A1B1E' : 'transparent', pick: () => this.setState({ tab: t.id, menu: null }) };
+    });
+    const comps = D.comps.map((x, i) => {
+      const on = i === s.comp;
+      return { name: x.name, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', bd: on ? '#1A1B1E' : '#CFCFC9', pick: () => this.setState({ comp: i, menu: null }) };
+    });
+
+    return {
+      comps: comps, tabs: tabs,
+      tabRun: s.tab === 'run', tabPrompt: s.tab === 'prompt', tabVer: s.tab === 'ver',
+      cur: { name: c.name, desc: c.desc },
+      modes: modes, modeHint: modeHint,
+      hasA: hasA, noA: !hasA, hasL: hasL, noL: !hasL,
+      apiOpts: radio(c.apis, cfg.api, 'api').slice(0, (((s.allA || {})[c.id]) || cfg.api >= 6) ? c.apis.length : 6),
+      apiHasMore: c.apis.length > 6,
+      apiMoreLabel: (((s.allA || {})[c.id]) || cfg.api >= 6) ? '收起' : '更多供应商（' + (c.apis.length - 6) + '）',
+      toggleApiMore: () => { const o = Object.assign({}, this.state.allA); o[c.id] = !((this.state.allA || {})[c.id]); this.setState({ allA: o }); },
+      hasApiNote: !!c.apiNote, apiNote: c.apiNote || '',
+      localOpts: radio(c.locals, cfg.local, 'local'),
+      apiRole: apiRole, apiRoleBg: roleBg(apiRole), apiRoleFg: roleFg(apiRole),
+      localRole: localRole, localRoleBg: roleBg(localRole), localRoleFg: roleFg(localRole),
+      fbOn: !!cfg.fb, fbTrack: cfg.fb ? '#2350C2' : '#9A9C98', fbKnob: cfg.fb ? '23px' : '3px',
+      fbSummary: cfg.fb ? ('主用的 ' + pr.n + ' 出问题时，自动改用 ' + fbTo + '，并记进历史。') : '已关闭：出问题时停下来等你处理。',
+      toggleFb: () => this.setCfg(c, { fb: !cfg.fb }),
+      fbConds: fbConds, fbTargets: fbTargets,
+      budget: cfg.budget, setBudget: (e) => this.setCfg(c, { budget: e.target.value }),
+      running: !!s.running, runModel: s.runModel,
+      rerun: () => this.run(null, '重跑'),
+      barMenuOpen: s.menu === 'bar', inspMenuOpen: s.menu === 'insp',
+      toggleBarMenu: () => this.setState({ menu: s.menu === 'bar' ? null : 'bar' }),
+      toggleInspMenu: () => this.setState({ menu: s.menu === 'insp' ? null : 'insp' }),
+      alts: alts,
+      openPrompt: () => this.setState({ tab: 'prompt', menu: null }),
+      openVers: () => this.setState({ tab: 'ver', menu: null }),
+      verCount: list.length, verList: verList,
+      bar: { what: p.what, ver: cv ? cv.v : '无', model: cv ? cv.m : '未生成', where: cv ? cv.where : '', time: cv ? cv.t : '', st: cv ? cv.st : '' },
+      intent: intent, compiled: compiled,
+      setIntent: (e) => { const o = Object.assign({}, this.state.intent); o[p.key] = e.target.value; this.setState({ intent: o }); },
+      setCompiled: (e) => { const o = Object.assign({}, this.state.comp2); o[p.key] = e.target.value; this.setState({ comp2: o }); },
+      resetCompiled: () => { const o = Object.assign({}, this.state.comp2); delete o[p.key]; this.setState({ comp2: o }); },
+      compiledLocked: manual != null,
+      adv: !!s.adv, advOff: !s.adv, advLabel: s.adv ? '收起编译层' : '查看 / 修改编译后的提示词（高级）',
+      toggleAdv: () => this.setState({ adv: !s.adv }),
+      saveRun: () => this.run(null, '改提示词后重跑'),
+      saveOnly: () => this.flash('提示词已保存，下次运行生效。'),
+      toast: s.toast, hasToast: !!s.toast
+    };
+  }
+
+  blocksData() {
+    return [
+      { id: 'b1', k: 'scene', text: '场 1　夜　内　老小区楼道 · 六楼林晚家门口', src: [0, 1], alt: '场 1　夜　内　老小区六楼楼道', dur: '', who: '', mood: '',
+        imp: { items: ['素材 · 场景「老小区楼道 · 夜」', '分镜 · 1-01 到 1-05，共 5 个', '关键帧 · 5 张', '视频 · 1-01 到 1-03 已采纳，1-04 有 4 条候选'], cost: '$2.20', n: { assets: 1, board: 5, gen: 5 } } },
+      { id: 'b2', k: 'action', text: '声控灯坏了一半，忽明忽暗。林晚（26，米色风衣湿了半边，挎帆布画板袋）走上六楼。', src: [0], alt: '声控灯一闪一灭。林晚（26，米色风衣湿了半边）抱着帆布画板袋，一步一步走上六楼。', dur: '4 秒', who: '林晚', mood: '疲惫',
+        imp: { items: ['素材 · 角色「林晚」的外观描述', '分镜 · 1-01', '关键帧 · 1 张', '视频 · 1-01（已采纳）'], cost: '$0.60', n: { assets: 1, board: 1, gen: 1 } } },
+      { id: 'b3', k: 'action', text: '门口靠着一把红色长柄伞，伞柄上贴着一张黄色便利贴。', src: [1], alt: '门边的墙上斜靠着一把红色长柄伞，伞柄上粘着一张黄色便利贴。', dur: '3 秒', who: '', mood: '',
+        imp: { items: ['素材 · 道具「红色长柄伞」「黄色便利贴」', '分镜 · 1-02', '关键帧 · 1 张', '视频 · 1-02（已采纳）'], cost: '$0.66', n: { assets: 2, board: 1, gen: 1 } } },
+      { id: 'b4', k: 'action', text: '特写：便利贴，字迹歪扭——“楼下便利店，等你到十二点。”', src: [2], alt: '特写：黄色便利贴上一行歪扭的字——“楼下便利店，等你到十二点。”', dur: '3 秒', who: '', mood: '',
+        imp: { items: ['素材 · 画面文字「便利贴手写」', '分镜 · 1-03', '关键帧 · 1 张', '视频 · 1-03（已采纳）'], cost: '$0.38', n: { assets: 1, board: 1, gen: 1 } } },
+      { id: 'b5', k: 'line', who: '林晚', paren: '低声，愣住', text: '……周屿？', src: [1], ai: true, alt: '……是你啊。', dur: '4 秒', mood: '愣住',
+        imp: { items: ['素材 · 音色「林晚」的试读台词', '分镜 · 1-04 的台词', '视频 · 1-04（4 条候选，需要重新生成）'], cost: '$0.33', n: { assets: 1, board: 1, gen: 1 } } },
+      { id: 'b6', k: 'action', text: '她的指尖停在便利贴上，下意识摸了摸左手腕的旧发圈。', src: [1], alt: '她的手指在便利贴上停住，又缩回来，攥住了左手腕的旧发圈。', dur: '3 秒', who: '林晚', mood: '动摇',
+        imp: { items: ['素材 · 道具「旧发圈」', '分镜 · 1-05', '关键帧 · 1 张', '视频 · 1-05（未生成）'], cost: '$0.52', n: { assets: 1, board: 1, gen: 1 } } },
+      { id: 'b7', k: 'scene', text: '场 2　夜　内　林晚出租屋', src: [3], alt: '场 2　夜　内　林晚出租屋 · 门内', dur: '', who: '', mood: '',
+        imp: { items: ['素材 · 场景「林晚出租屋 · 夜」', '分镜 · 1-06 到 1-09，共 4 个', '关键帧 · 4 张', '视频 · 1-06 到 1-09（未生成）'], cost: '$2.06', n: { assets: 1, board: 4, gen: 4 } } },
+      { id: 'b8', k: 'action', text: '林晚把伞靠回墙边，进屋，关门，背靠着门。', src: [3], alt: '她把伞留在门外，进屋反手关门，后背抵着门板。', dur: '5 秒', who: '林晚', mood: '强撑',
+        imp: { items: ['分镜 · 1-06', '关键帧 · 1 张', '视频 · 1-06（未生成）'], cost: '$0.54', n: { board: 1, gen: 1 } } },
+      { id: 'b9', k: 'action', text: '特写：手机亮屏，23:52。', src: [3], alt: '特写：手机锁屏亮起，23:52，没有新消息。', dur: '2 秒', who: '', mood: '',
+        imp: { items: ['素材 · 画面文字「手机锁屏时间」', '分镜 · 1-07', '关键帧 · 1 张', '视频 · 1-07（未生成）'], cost: '$0.30', n: { assets: 1, board: 1, gen: 1 } } },
+      { id: 'b10', k: 'os', who: '林晚', paren: 'OS', text: '三年了。他凭什么。', src: [1], ai: true, alt: '三年了，一句话就想让我下去？', dur: '叠在 1-06', mood: '压着火',
+        imp: { items: ['分镜 · 1-06 的画外音', '配音 · 1 条', '视频 · 1-06 换音轨'], cost: '$0.01', n: { board: 1, gen: 1 } } },
+      { id: 'b11', k: 'action', text: '她拉开门，又关上。停了两秒，再拉开。', src: [3], alt: '她握住门把手，拉开一条缝，又关上。两秒后，再一次拉开。', dur: '6 秒', who: '林晚', mood: '犹豫',
+        imp: { items: ['分镜 · 1-08', '关键帧 · 1 张', '视频 · 1-08（未生成）'], cost: '$0.62', n: { board: 1, gen: 1 } } },
+      { id: 'b12', k: 'action', text: '门外，她拿起了那把伞。', src: [4], tag: '本集卡点', alt: '她弯下腰，从墙边拿起那把红伞。', dur: '4 秒', who: '林晚', mood: '下定决心',
+        imp: { items: ['分镜 · 1-09', '关键帧 · 1 张', '视频 · 1-09（未生成）'], cost: '$0.46', n: { board: 1, gen: 1 } } }
+    ];
+  }
+
+  applyChange(id, newText, how) {
+    const s = this.state;
+    const B = this.blocksData();
+    const b = B.find((x) => x.id === id);
+    const old = s.over[id] != null ? s.over[id] : b.text;
+    if (newText === old) { this.setState({ editId: null }); return; }
+    const o = Object.assign({}, s.over); o[id] = newText;
+    this.setState({ over: o, editId: null, impact: id, prevText: old, altFor: null });
+    if (how) this.flash(how);
+  }
+
+  renderVals() {
+    const s = this.state;
+    const P = [
+      '那天雨下得很大。林晚加完班回到老小区，一层一层爬上六楼。她的米色风衣湿了半边，头发随手扎着，肩上挎着装画板的帆布袋。楼道的声控灯坏了一半，随着她的脚步忽明忽暗。',
+      '家门口靠着一把红色的长柄伞，伞柄上贴着一张便利贴。她认得那个字迹。三年了，周屿的字还是歪歪扭扭的，像他这个人一样不靠谱。她的指尖停在便利贴上，下意识摸了摸左手腕上那根旧发圈。',
+      '便利贴上只写了一句话：“楼下便利店，等你到十二点。”',
+      '她把伞靠在墙边，进了屋，又出来，又进去。手机屏幕亮了一下：23:52。',
+      '最后，她还是拿起了那把伞。'
+    ];
+    const B = this.blocksData();
+    const selB = B.find((x) => x.id === s.sel);
+    const srcSet = selB ? selB.src : [];
+    const paras = P.map((t, i) => {
+      const hit = srcSet.indexOf(i) >= 0;
+      return { no: String(i + 1).padStart(2, '0'), text: t, bg: hit ? '#EEF2FC' : 'transparent', bd: hit ? '#9DB2E6' : 'transparent' };
+    });
+    const sc = this.D().comps[1];
+    const scCfg = this.cfgOf(sc);
+    const scPr = this.primary(sc, scCfg);
+    const scAll = sc.locals.map((x) => ({ n: x.n, where: '本地' })).concat(sc.apis.map((x) => ({ n: x.n, where: 'API' })));
+
+    const textOf = (b) => (s.over[b.id] != null ? s.over[b.id] : b.text);
+    const leadOf = (b) => (b.k === 'action' ? '△ ' : (b.k === 'line' || b.k === 'os' ? b.who + '（' + b.paren + '）：' : ''));
+    const provOf = (b) => (b.ai ? 'AI 新增' : '原文第 ' + b.src.map((i) => i + 1).join('、') + ' 段');
+
+    const blocks = B.map((b) => {
+      const on = b.id === s.sel;
+      const editing = s.editId === b.id;
+      const busy = s.busy === b.id;
+      const changed = s.over[b.id] != null;
+      const doRewrite = (model) => {
+        if (this.state.busy) return;
+        this.setState({ busy: b.id, altFor: null });
+        clearTimeout(this._bt);
+        this._bt = setTimeout(() => {
+          this.setState({ busy: null });
+          this.applyChange(b.id, b.alt, '这一段已用 ' + model + ' 重写。');
+        }, 1100);
+      };
+      return {
+        id: b.id, on: on, editing: editing, notEditing: !editing, busy: busy,
+        lead: leadOf(b), text: textOf(b), fw: b.k === 'scene' ? '700' : '400',
+        bg: on ? '#F3F6FD' : (b.k === 'scene' ? '#ECECE8' : '#FFFFFF'),
+        bd: on ? '#2350C2' : (changed ? '#E0B089' : 'transparent'),
+        prov: changed ? '已修改' : provOf(b),
+        pBg: changed ? '#FCEFE3' : (b.ai ? '#FCEFE3' : '#ECECE8'), pFg: changed || b.ai ? '#A2480B' : '#3E4146',
+        hasTag: !!b.tag, tag: b.tag || '',
+        srcLabel: b.ai ? '原文没有这句，是 AI 为了可拍加的' : '来自原文第 ' + b.src.map((i) => i + 1).join('、') + ' 段',
+        rwLabel: busy ? '重写中…' : '重写这一段',
+        editText: s.editText,
+        setEdit: (e) => this.setState({ editText: e.target.value }),
+        pick: () => this.setState({ sel: b.id, altFor: null, editId: s.editId === b.id ? s.editId : null }),
+        edit: () => this.setState({ editId: b.id, editText: textOf(b) }),
+        cancel: () => this.setState({ editId: null }),
+        save: () => this.applyChange(b.id, this.state.editText, ''),
+        rewrite: () => doRewrite(scPr.n),
+        altOpen: s.altFor === b.id,
+        toggleAlt: () => this.setState({ altFor: s.altFor === b.id ? null : b.id }),
+        alts: scAll.filter((x) => x.n !== scPr.n).map((x) => ({ n: x.n, where: x.where, pick: () => doRewrite(x.n) }))
+      };
+    });
+
+    const kindName = { action: '动作', line: '台词', os: '画外音' };
+    let no = 0;
+    const rows = B.filter((b) => b.k !== 'scene').map((b) => {
+      no += 1;
+      const changed = s.over[b.id] != null;
+      return {
+        no: String(no).padStart(2, '0'), kind: kindName[b.k], text: (b.k === 'line' || b.k === 'os') ? textOf(b) : textOf(b),
+        who: b.who || '—', mood: (b.k === 'line' || b.k === 'os') ? b.paren : (b.mood || '—'), dur: b.dur || '—',
+        prov: changed ? '已修改' : provOf(b), pFg: changed || b.ai ? '#A2480B' : '#4F5257',
+        bg: b.id === s.sel ? '#F3F6FD' : '#FFFFFF'
+      };
+    });
+
+    const epD = [
+      { name: '第 1 集《红伞》', meta: '场 1–2 · 9 个镜头 · 约 0:34', hook: '卡点：她拿起了那把伞' },
+      { name: '第 2 集《十二点》', meta: '场 3–4 · 约 1:10', hook: '卡点：便利店里没有他' },
+      { name: '第 3 集《旧发圈》', meta: '场 5–7 · 约 1:20', hook: '卡点：待定' }
+    ];
+    const eps = epD.map((e, i) => {
+      const on = s.ep === i;
+      const st = i === 0 ? '剧本已确认' : (s.epDone[i] ? '剧本草稿' : '剧本未生成');
+      return { name: e.name, meta: e.meta, hook: e.hook, on: on, st: st, stFg: i === 0 ? '#1A3E9E' : '#4F5257', bg: on ? '#FFFFFF' : '#F8F8F6', bd: on ? '#2350C2' : '#DADAD5', pick: () => this.setState({ ep: i }) };
+    });
+
+    const modesView = [{ id: 'script', label: '剧本格式' }, { id: 'table', label: '结构化表格' }].map((v) => {
+      const on = s.view === v.id;
+      return { label: v.label, on: on, bg: on ? '#1A1B1E' : '#FFFFFF', fg: on ? '#FFFFFF' : '#1A1B1E', pick: () => this.setState({ view: v.id }) };
+    });
+
+    const impB = s.impact ? B.find((x) => x.id === s.impact) : null;
+    const addDirty = () => {
+      const d = Object.assign({}, this.state.dirty);
+      const n = impB.imp.n;
+      if (n.assets) d.assets = (d.assets || 0) + n.assets;
+      if (n.board) d.board = (d.board || 0) + n.board;
+      if (n.gen) d.gen = (d.gen || 0) + n.gen;
+      return d;
+    };
+
+    return Object.assign(this.common(), {
+      nav: this.nav('script', s.dirty),
+      toggleLang: () => this.flash('原型里「00 首次启动」页做了完整的中英切换；正式版所有页面的文字都走同一套词表。'),
+      eps: eps, epOne: s.ep === 0, epOther: s.ep !== 0,
+      epName: epD[s.ep].name,
+      epNote: s.epDone[s.ep] ? '剧本草稿已生成（这个原型只展开第 1 集的内容）。确认前可以先在右侧改提示词或换模型。' : '这一集的剧本还没生成。会沿用第 1 集确认过的人物、设定和写法。',
+      epBtn: s.epDone[s.ep] ? '重新生成这一集' : '生成这一集的剧本',
+      genEp: () => { const d = Object.assign({}, s.epDone); d[s.ep] = true; this.setState({ epDone: d, comp: 1 }); this.run(null, '生成' + epD[s.ep].name); },
+      modesView: modesView, viewScript: s.view === 'script', viewTable: s.view === 'table',
+      paras: paras, blocks: blocks, rows: rows,
+      hasImpact: !!impB,
+      impact: impB ? { label: leadOf(impB) + textOf(impB), items: impB.imp.items.map((t) => ({ t: t })), cost: impB.imp.cost } : { label: '', items: [], cost: '' },
+      markDirty: () => { this.setState({ dirty: addDirty(), impact: null }); this.flash('已把受影响的素材、分镜和视频标成「待更新」，左侧导航能看到数量。'); },
+      autoRerun: () => { this.setState({ dirty: addDirty(), impact: null }); this.flash('受影响的部分已排进队列，按当前路由预计 ' + impB.imp.cost + '。完成后会作为新版本出现，等你采纳。'); },
+      undoEdit: () => { const o = Object.assign({}, s.over); delete o[s.impact]; this.setState({ over: o, impact: null }); this.flash('已撤销修改。'); }
+    });
+  }
+}
+</script>
+</body>
+</html>
