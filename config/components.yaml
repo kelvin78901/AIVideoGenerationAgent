@@ -1,0 +1,220 @@
+# 每个流水线组件的可选模型和默认路由（M0 时拷到 config/components.yaml）。
+# 组件 ID 和原型「模型与兜底」页一致；模型 key 见 providers.yaml。
+#
+# presets 的规则照搬原型 Models.dc.html 的 presetCfg()：
+#   quality  : 有 API 用 api[0]，本地只做兜底
+#   balanced : 用下面每个组件的 balanced.mode；没写时有本地也有 API 的用 hybrid
+#   cheap    : 有本地用本地；否则 API 用 cheap 指定的那个
+#   local    : 只用本地；没有本地版本的组件跳过
+# P0 实测后在这里调默认值，并在 docs/studio/DECISIONS.md 记一条。
+
+llm_api: &llm_api
+  - deepseek/v4-pro
+  - deepseek/v4.1-flash
+  - moonshot/kimi-k2.6
+  - qwen/qwen3.8-max
+  - qwen/qwen3.7-plus
+  - volc/doubao-2.1-pro
+  - zhipu/glm-5.3
+  - minimax/m3
+  - qwen/qwen3.8-flash
+  - zhipu/glm-5.3-flash
+  - google/gemini-3.6-flash
+  - openai/gpt-6-luna
+  - openrouter/claude-sonnet-5.5
+  - openrouter/any
+  - custom
+llm_local: &llm_local [local/qwen3.6-27b, local/qwen3-30b-a3b]
+img_api: &img_api [openai/gpt-image-2, google/nano-banana-pro, volc/seedream-5.0]
+img_local: &img_local [comfy/qwen-image-edit, comfy/flux2-dev]
+
+fallback_defaults:
+  on: [error, timeout, qa_fail]
+  qa_fail_n: 2
+  local_timeout_s: 600
+  notify: after            # after = 直接兜底事后通知；ask = 兜底前先问
+
+components:
+  - id: extract
+    stage: novel
+    name: { zh: 设定提取, en: Story bible extraction }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: local, api: qwen/qwen3.8-flash, local: local/qwen3.6-27b, fallback_to: qwen/qwen3.8-flash }
+    cheap_api: qwen/qwen3.8-flash
+
+  - id: enrich
+    stage: novel
+    name: { zh: 小说补全, en: Novel enrichment }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: api, api: deepseek/v4-pro, fallback_to: moonshot/kimi-k2.6 }
+    cheap_api: deepseek/v4.1-flash
+    gate: novel
+
+  - id: split
+    stage: script
+    name: { zh: 分集规划, en: Episode planning }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: api, api: deepseek/v4.1-flash, fallback_to: qwen/qwen3.7-plus }
+    cheap_api: deepseek/v4.1-flash
+
+  - id: script
+    stage: script
+    name: { zh: 剧本化, en: Scriptwriting }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: api, api: deepseek/v4-pro, fallback_to: qwen/qwen3.8-max }
+    alt_order: [moonshot/kimi-k2.6, qwen/qwen3.8-max, qwen/qwen3.7-plus, local/qwen3.6-27b]
+    cheap_api: deepseek/v4.1-flash
+    gate: script
+
+  - id: assets
+    stage: assets
+    name: { zh: 素材分析, en: Asset breakdown }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: api, api: deepseek/v4.1-flash, fallback_to: qwen/qwen3.7-plus }
+    cheap_api: deepseek/v4.1-flash
+
+  - id: img
+    stage: assets
+    name: { zh: 参考图生成, en: Reference images }
+    kind: image
+    api: *img_api
+    local: *img_local
+    balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image-edit, fallback_to: volc/seedream-5.0 }
+    cheap_api: volc/seedream-5.0
+    candidates: 4
+    gate: assets
+
+  - id: text
+    stage: assets
+    name: { zh: 画面文字, en: On-screen text }
+    kind: image
+    api: [openai/gpt-image-2, google/nano-banana-pro]
+    local: [comfy/qwen-image]
+    balanced: { mode: hybrid, api: openai/gpt-image-2, local: comfy/qwen-image, fallback_to: google/nano-banana-pro }
+    cheap_api: google/nano-banana-pro
+    gate: assets
+
+  - id: voice
+    stage: assets
+    name: { zh: 音色, en: Voices }
+    kind: tts
+    api: [minimax/speech-2.8-hd, elevenlabs/v3]
+    local: [local/indextts2, local/cosyvoice, local/qwen3-tts]
+    balanced: { mode: hybrid, api: minimax/speech-2.8-hd, local: local/qwen3-tts, fallback_to: elevenlabs/v3 }
+    cheap_api: minimax/speech-2.8-hd
+    candidates: 3
+    gate: assets
+
+  - id: dub
+    stage: assets
+    name: { zh: 台词配音, en: Dialogue audio }
+    kind: tts
+    api: [minimax/speech-2.8-hd, elevenlabs/v3]
+    local: [local/indextts2, local/cosyvoice]
+    balanced: { mode: api, api: minimax/speech-2.8-hd, fallback_to: elevenlabs/v3 }
+    note: 原型里没有单独一行，界面放在素材页；用锁定的音色包，决定镜头时长
+
+  - id: plan
+    stage: storyboard
+    name: { zh: 分镜规划, en: Shot planning }
+    kind: llm
+    api: *llm_api
+    local: [local/qwen3.6-27b]
+    balanced: { mode: api, api: deepseek/v4-pro, fallback_to: moonshot/kimi-k2.6 }
+    cheap_api: deepseek/v4.1-flash
+
+  - id: kf
+    stage: storyboard
+    name: { zh: 关键帧, en: Keyframes }
+    kind: image
+    api: *img_api
+    local: *img_local
+    balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image-edit, fallback_to: volc/seedream-5.0 }
+    cheap_api: volc/seedream-5.0
+    candidates: 3
+    follows_output_spec: true
+    gate: storyboard
+
+  - id: world
+    stage: storyboard
+    name: { zh: 3D 场景（可选）, en: 3D world (optional) }
+    kind: world
+    api: [worldlabs/marble]
+    local: []
+    balanced: { mode: off }
+    note: v1 只留接口
+
+  - id: vid
+    stage: generate
+    name: { zh: 视频生成, en: Video generation }
+    kind: video
+    api: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1, alibaba/wan-3.0, kling/kling-3.0, google/veo-3.1]
+    local: [comfy/h3, comfy/wan-2.2, comfy/ltx]
+    balanced: { mode: hybrid, api: minimax/h3-api, local: comfy/h3, fallback_to: minimax/h3-api }
+    alt_order: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1]
+    candidates: 2
+    follows_output_spec: true
+    gate: takes
+
+  - id: ctrl
+    stage: generate
+    name: { zh: 结构控制, en: Structure control }
+    kind: video
+    api: []
+    local: [comfy/h3-fun-controlnet]
+    balanced: { mode: local, local: comfy/h3-fun-controlnet }
+
+  - id: up
+    stage: generate
+    name: { zh: 2K 精修, en: 2K finishing }
+    kind: upscale
+    api: [minimax/h3-regenerate-2k, topaz/starlight-precise-2.5]
+    local: [comfy/seedvr2, comfy/flashvsr]
+    balanced: { mode: local, local: comfy/seedvr2, api: minimax/h3-regenerate-2k, fallback_to: comfy/flashvsr }
+    cheap_api: minimax/h3-regenerate-2k
+    note: 本地超分只放大不改内容；要补细节时用 H3 2K 重生成
+
+  - id: lip
+    stage: generate
+    name: { zh: 口型修复, en: Lip-sync repair }
+    kind: lipsync
+    api: [sync/lipsync-2-pro]
+    local: [local/latentsync, local/infinitetalk]
+    balanced: { mode: hybrid, api: sync/lipsync-2-pro, local: local/latentsync, fallback_to: local/infinitetalk }
+
+  - id: qa
+    stage: generate
+    name: { zh: 自动质检, en: Auto QA }
+    kind: vlm
+    api: [google/gemini-3.6-flash, google/gemini-3.1-flash-lite]
+    local: [local/qwen3-vl-32b]
+    balanced: { mode: local, local: local/qwen3-vl-32b, api: google/gemini-3.6-flash, fallback_to: google/gemini-3.6-flash }
+    cheap_api: google/gemini-3.1-flash-lite
+    thresholds: { face_sim: 0.75, syncnet_conf: 6, cer_max: 0.10, ocr: exact }
+
+  - id: music
+    stage: post
+    name: { zh: 配乐, en: Music }
+    kind: music
+    api: [elevenlabs/music]
+    local: [local/ace-step]
+    balanced: { mode: hybrid, api: elevenlabs/music, local: local/ace-step }
+
+  - id: sub
+    stage: post
+    name: { zh: 字幕对齐, en: Subtitle alignment }
+    kind: asr
+    api: [elevenlabs/scribe]
+    local: [local/whisper-large-v3, local/paraformer]
+    balanced: { mode: local, local: local/whisper-large-v3, fallback_to: elevenlabs/scribe }
+    note: 字幕文字取自剧本，识别只用来对齐时间（原型 presetCfg 会算成 hybrid，这里改为 local）

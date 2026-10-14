@@ -1,9 +1,10 @@
+# Modified for AI Drama Studio: Python 3.12, uv dependency groups, studio deps, drama-studio CLI, ruff/mypy/pytest config.
 [project]
 name = "drama-series-agent"
 version = "0.1.0"
-description = "Series-scoped agent for short-drama production: intake, enrich, build, render jobs, chat shell — clone and render with local ComfyUI."
+description = "AI Drama Studio — short-drama production workbench based on drama-series-agent (intake, enrich, build, render via ComfyUI and model APIs)."
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = ">=3.12"
 license = { text = "Apache-2.0" }
 authors = [{ name = "Drama Series Agent Contributors" }]
 keywords = ["short-drama", "agent", "series", "comfyui", "aigc", "minimax", "h3"]
@@ -16,15 +17,31 @@ dependencies = [
   "httpx>=0.27",
   "openai>=1.40",
   "imageio-ffmpeg>=0.5",
+  "sqlmodel>=0.0.48",
+  "alembic>=1.20.0",
+  "aiosqlite>=0.22.1",
+  "pyyaml>=6.0.3",
+  "keyring>=25.7.0",
+  "greenlet>=3.5.6",
 ]
 
 [project.optional-dependencies]
 render = ["comfykit>=0.1.12"]
-dev = ["pytest>=7.0", "comfykit>=0.1.12"]
 
 [project.scripts]
 drama-series-api = "drama_series_agent.cli:run_api_main"
 drama-series-render = "drama_series_agent.cli:run_episode_main"
+drama-studio = "drama_series_agent.studio_cli:main"
+
+[dependency-groups]
+dev = [
+    "mypy>=2.4.0",
+    "pytest>=9.1.1",
+    "pytest-asyncio>=1.4.0",
+    "respx>=0.23.1",
+    "ruff>=0.17.0",
+    "types-pyyaml>=6.0.12.20260906",
+]
 
 [build-system]
 requires = ["setuptools>=68", "wheel"]
@@ -32,3 +49,72 @@ build-backend = "setuptools.build_meta"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.package-data]
+drama_series_agent = ["py.typed"]
+
+# ---------------------------------------------------------------------------
+# Quality tools. New studio code is checked strictly; upstream modules are
+# excluded for now (see docs/studio/DECISIONS.md, 2026-10-14) and get pulled in
+# as they are touched.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+src = ["src", "tests"]
+extend-exclude = [
+  "scripts",
+  "skills",
+  "src/drama_series_agent/adapters",
+  "src/drama_series_agent/agent",
+  "src/drama_series_agent/api/routers",
+  "src/drama_series_agent/api/schemas",
+  "src/drama_series_agent/drama",
+  "src/drama_series_agent/intake",
+  "src/drama_series_agent/utils",
+  "src/drama_series_agent/__main__.py",
+  "src/drama_series_agent/cli.py",
+  "src/drama_series_agent/llm_presets.py",
+]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "B", "UP", "SIM", "RUF", "ASYNC"]
+ignore = [
+  "RUF001", "RUF002", "RUF003",  # full-width CJK punctuation in strings/comments is intended
+  "SIM108",  # if/else blocks are often clearer than nested ternaries
+]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+packages = ["drama_series_agent"]
+mypy_path = "src"
+exclude = [
+  "src/drama_series_agent/(adapters|agent|drama|intake|utils|api/routers|api/schemas)/",
+  "src/drama_series_agent/(cli|llm_presets|__main__)\\.py$",
+]
+plugins = ["pydantic.mypy"]
+
+[[tool.mypy.overrides]]
+module = [
+  "drama_series_agent.adapters.*",
+  "drama_series_agent.agent.*",
+  "drama_series_agent.drama.*",
+  "drama_series_agent.intake.*",
+  "drama_series_agent.utils.*",
+  "drama_series_agent.api.routers.*",
+  "drama_series_agent.api.schemas.*",
+  "drama_series_agent.cli",
+  "drama_series_agent.llm_presets",
+]
+follow_imports = "skip"
+ignore_errors = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+addopts = "-ra --strict-markers"
+markers = [
+  "e2e: end-to-end tests that start the backend in a subprocess",
+]

@@ -13,11 +13,12 @@
 | 步 | 做了什么 | 提交 | 测试 |
 | --- | --- | --- | --- |
 | 0 | 计划存档、PROGRESS / 报告规则、状态栏 + 上下文提醒钩子 + SessionStart 钩子、/handoff 和 /continue、CLAUDE.md 新增一节 | 5e650b7 | 钩子脚本用模拟输入自测通过（65% 提醒一次、重复不提醒、session 不符不提醒、80% 提醒一次、直接跳到 80% 只提醒一次、无 rate_limits 显示「—」）；项目还没有自动化测试 |
-| 1 | `NOTICE`；`docs/studio/UPSTREAM_NOTES.md`（上游模块地图、数据文件、H3 runner、失效传播、续跑、直接调 LLM 的位置、全局状态） | 本提交 | 仅文档 |
+| 1 | `NOTICE`；`docs/studio/UPSTREAM_NOTES.md`（上游模块地图、数据文件、H3 runner、失效传播、续跑、直接调 LLM 的位置、全局状态） | 934c772 | 仅文档 |
+| 2 | Python 3.12 + uv（`uv.lock`、`.python-version`）、新依赖、ruff / mypy（strict，只覆盖新代码）/ pytest 配置；`config/*.yaml` 从 seed 拷入；`drama-studio dev` CLI；`api/app.py` 最小 app factory（上游 `/api` + `/api/v1/health`，CORS 只放行 5173）；`tests/conftest.py` | 本提交 | pytest 9 passed；ruff、mypy 通过 |
 
 ## 下一步
 
-- 第 2 步：Python 工具链（pyproject、uv.lock、ruff/mypy/pytest、`config/`、`tests/conftest.py`）。
+- 第 3 步：core 配置 + 数据库（`core/config.py`、`core/db.py`、`core/models_db.py`、Alembic `0001`）。
 
 ## 没提交的改动
 
