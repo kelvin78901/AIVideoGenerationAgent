@@ -14,11 +14,13 @@
 | --- | --- | --- | --- |
 | 0 | 计划存档、PROGRESS / 报告规则、状态栏 + 上下文提醒钩子 + SessionStart 钩子、/handoff 和 /continue、CLAUDE.md 新增一节 | 5e650b7 | 钩子脚本用模拟输入自测通过（65% 提醒一次、重复不提醒、session 不符不提醒、80% 提醒一次、直接跳到 80% 只提醒一次、无 rate_limits 显示「—」）；项目还没有自动化测试 |
 | 1 | `NOTICE`；`docs/studio/UPSTREAM_NOTES.md`（上游模块地图、数据文件、H3 runner、失效传播、续跑、直接调 LLM 的位置、全局状态） | 934c772 | 仅文档 |
-| 2 | Python 3.12 + uv（`uv.lock`、`.python-version`）、新依赖、ruff / mypy（strict，只覆盖新代码）/ pytest 配置；`config/*.yaml` 从 seed 拷入；`drama-studio dev` CLI；`api/app.py` 最小 app factory（上游 `/api` + `/api/v1/health`，CORS 只放行 5173）；`tests/conftest.py` | 本提交 | pytest 9 passed；ruff、mypy 通过 |
+| 2 | Python 3.12 + uv（`uv.lock`、`.python-version`）、新依赖、ruff / mypy（strict，只覆盖新代码）/ pytest 配置；`config/*.yaml` 从 seed 拷入；`drama-studio dev` CLI；`api/app.py` 最小 app factory（上游 `/api` + `/api/v1/health`，CORS 只放行 5173）；`tests/conftest.py` | 4b4fe2b | pytest 9 passed；ruff、mypy 通过 |
 
 ## 下一步
 
-- 第 3 步：core 配置 + 数据库（`core/config.py`、`core/db.py`、`core/models_db.py`、Alembic `0001`）。
+- 第 4 步：`core/storage.py` 内容哈希文件存储（`blobs/sha256/ab/<hash>`，临时文件 + 原子 rename，去重）+ `tests/unit/test_storage.py`。
+- 然后第 5 步事件总线 + SSE（`core/events.py` 用已建好的 `event` 表）。
+- 后续步骤要注意 UPSTREAM_NOTES 第 2、7 节列出的全局状态和直接调 LLM 的位置（M0 不改上游，只是 app factory 里别在导入时触发 `adapters/service.py`）。
 
 ## 没提交的改动
 
@@ -28,6 +30,9 @@
 
 - Windows PowerShell 5.1：`.ps1` 必须存成 UTF-8 带 BOM，否则中文乱码；`ConvertFrom-Json` 读数组会多套一层，所以“已提醒”记录改用纯文本。
 - 钩子和状态栏在会话启动时加载：本会话里新建的 `settings.json` / `settings.local.json` 当场不生效，实时自测要等新会话。
+- YAML 1.1 会把 `on:` / `mode: off` 解析成布尔值：`core/config.py` 用只认 true/false 的加载器。
+- SQLAlchemy async 需要 `greenlet`（已加依赖）；SQLite 读回时间会丢时区，用 `models_db.UtcDateTime`。
+- 新迁移：`uv run alembic revision --autogenerate -m ...`（`env.py` 的 `render_item` 会把 SQLModel / 自定义类型写成纯 `sa.*`）。
 - 本机没有 pnpm（第 10 步用 corepack 启用）；Python 3.12 要用 uv 下载（第 2 步）。
 
 ## 等 Kelvin 的事
