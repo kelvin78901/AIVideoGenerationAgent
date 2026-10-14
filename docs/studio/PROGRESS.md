@@ -29,12 +29,12 @@
 | 13 | `.github/workflows/ci.yml`：push 只跑 Linux，PR 到 main / 手动触发时 Linux + Windows；后端 ruff（check + format）/ mypy / pytest，前端 eslint / prettier / tsc / vitest（含 i18n 检查）/ build；ruff 排除 `docs/`（ruff 0.17 会改 Markdown 里的 Python 代码块） | 934dd35 | 本地全部通过；CI 结果见下一步 |
 | 14 | `tests/e2e/test_restart_resume.py`（子进程起后端 → gpu 队列 3 个任务 → 第一个运行中时硬杀进程 → 重启 → 3 个都完成，被打断的那个 attempt=2）；`/dev/llm-test` 加 `where`；CI action 升到 checkout@v7 / setup-node@v7 / setup-uv@v10；CLAUDE.md 常用命令；ROADMAP 勾选 M0；里程碑报告 `docs/studio/reports/M0.md` | 019b971 | pytest 93 passed（e2e 连跑 2 次稳定）；vitest 20 passed；lint / 类型 / 格式全过 |
 
-| 补 | 合并前补充 5 项（接口防护、上游设置接口不返回密钥、`/legacy` 警示条、Mock 标记、启动脚本）+ PowerShell `-ExecutionPolicy Bypass` 修复 | 本提交 | pytest 113 passed；vitest 22 passed；两个启动脚本本机实跑通过 |
+| 补 | 合并前补充 5 项（接口防护、上游设置接口不返回密钥、`/legacy` 警示条、Mock 标记、启动脚本）+ PowerShell `-ExecutionPolicy Bypass` 修复 | 1ab588d | pytest 113 passed；vitest 22 passed；两个启动脚本本机实跑通过；PR CI（Linux + Windows）通过 |
 
 ## 下一步
 
 - M0 代码全部完成，PR 已开（链接见报告 / PR 列表：`gh pr list -R kelvin78901/AIVideoGenerationAgent`）。
-- 合并前补充已推送，等 PR #1 的 CI。Kelvin 合并后，下一个里程碑是 **M1 首次启动 + 成片规格**，用 `/milestone` 出计划。
+- 合并前补充已推送，PR #1 的 Linux、Windows CI 都通过。Kelvin 合并后，下一个里程碑是 **M1 首次启动 + 成片规格**，用 `/milestone` 出计划。
 
 ## 没提交的改动
 
