@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Literal
 
 from drama_series_agent.core.jobs import JobContext, JobError
 from drama_series_agent.modelhub.adapters.base import CallContext, ModelError, ModelRequest
@@ -29,7 +29,8 @@ def register_handlers(state: StudioState) -> None:
             attempt=ctx.job.attempt,
         )
         try:
-            routed = await state.router.call(component_id, req, call_ctx)
+            where: Literal["local", "api"] = "local" if params.get("where") == "local" else "api"
+            routed = await state.router.call(component_id, req, call_ctx, where=where)
         except ModelError as exc:
             raise JobError(exc.code, {"message": str(exc)}, retryable=exc.retryable) from exc
         return {

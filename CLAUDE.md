@@ -34,16 +34,19 @@
 
 后端 Python 3.12 + FastAPI + Pydantic v2 + SQLModel / SQLite（WAL）+ Alembic + httpx，uv 管理依赖；自研 asyncio 任务队列（持久化在 SQLite）；SSE 推送。本地生成走 ComfyUI 的 HTTP / WebSocket 接口，本地 LLM 走 Ollama 或 llama.cpp 的 OpenAI 兼容接口。前端 React + Vite + TypeScript（strict）+ TanStack Query + Zustand + react-router + i18next，组件用 shadcn/ui（Radix + Tailwind）。详见 SPEC 第 2 节。
 
-常用命令（M0 建好后以实际为准，并更新这里）：
+常用命令（M0 已建好；pnpm 由 corepack 提供：`corepack enable pnpm`）：
 
 ```bash
-uv sync                       # 安装后端依赖
-uv run pytest                 # 后端测试（默认 Mock）
-uv run ruff check . && uv run mypy src
-uv run drama-studio dev       # 启动后端（127.0.0.1）
-uv run drama-studio demo      # 用 Mock 生成示例项目《雨停之前》
-pnpm -C web install && pnpm -C web dev
-pnpm -C web test
+uv sync                                   # 安装后端依赖（Python 3.12，uv 自动下载）
+uv run pytest                             # 后端测试（Mock；含 tests/e2e 的重启续跑测试）
+uv run ruff check . && uv run ruff format --check . && uv run mypy
+uv run drama-studio dev                   # 启动后端 127.0.0.1:8000（默认 Mock；DRAMA_MOCK=0 才调真实模型）
+uv run alembic revision --autogenerate -m "..."   # 新增数据表时生成迁移
+pnpm -C web install && pnpm -C web dev    # 前端 127.0.0.1:5173，/api 代理到后端
+pnpm -C web test                          # i18n key 检查 + Vitest
+pnpm -C web lint && pnpm -C web typecheck && pnpm -C web format:check
+# 开发面板：http://127.0.0.1:5173/dev/jobs（发起 Mock LLM 调用、看任务和 model_call）
+# 示例项目 `uv run drama-studio demo` 还没做（随 M2 的产物 / 版本一起做）
 ```
 
 ## 工作方式

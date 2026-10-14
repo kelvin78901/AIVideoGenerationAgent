@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Query
 from pydantic import BaseModel, Field
@@ -23,6 +23,8 @@ class LlmTestBody(BaseModel):
     prompt: str = "林晚撑着红伞走进楼道。"
     component_id: str = "script"
     delay_s: float = Field(default=3.0, ge=0, le=60)
+    # "local" runs the component's local model on the gpu queue (concurrency 1).
+    where: Literal["api", "local"] = "api"
 
 
 @router.post("/llm-test")
@@ -32,7 +34,7 @@ async def llm_test(state: State, body: LlmTestBody | None = None) -> dict[str, A
         raise ApiError(403, "mock_only")
     try:
         settings = await state.router.settings(body.component_id)
-        key = state.router.primary_model(settings, "api")
+        key = state.router.primary_model(settings, body.where)
         spec = state.registry.spec(key)
     except KeyError:
         raise ApiError(404, "unknown_component", id=body.component_id) from None
@@ -40,10 +42,10 @@ async def llm_test(state: State, body: LlmTestBody | None = None) -> dict[str, A
         raise ApiError(422, exc.code) from None
     job = await state.jobs.enqueue(
         LLM_TEST,
-        f"api:{spec.provider_id or 'unknown'}",
+        "gpu" if spec.where == "local" else f"api:{spec.provider_id or 'unknown'}",
         body.model_dump(),
         component_id=body.component_id,
-        max_attempts=1,
+        max_attempts=3,  # survives a backend restart (crash recovery counts an attempt)
     )
     return job_public(job)
 
