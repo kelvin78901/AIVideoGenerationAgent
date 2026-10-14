@@ -30,3 +30,7 @@ LOCAL_OPS.md
 .cursor/
 # Compressed copy only for GitHub Issue drag-upload (≤10MB); not required in git
 docs/assets/demo-github.mp4
+
+# Claude Code local state
+.claude/state/
+.claude/settings.local.json

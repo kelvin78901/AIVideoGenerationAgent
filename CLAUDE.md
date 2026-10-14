@@ -53,6 +53,23 @@ pnpm -C web test
 - 做了 SPEC 没写或和 SPEC 不同的工程决定，在 `docs/studio/DECISIONS.md` 加一条（日期、决定、原因）。
 - 产品层面的问题（交互、默认值、要不要做某个功能）问 Kelvin；纯工程问题自己决定并记下来。
 - 不确定的厂商接口（模型 ID、参数）以官方文档为准，`config/providers.yaml` 里标 `verify: true` 的都要核对。
+- **分支和推送**：每个里程碑开一个分支（如 `m0-foundation`），每完成一个小步提交后马上 push 到这个分支；**不直接推 main**。里程碑做完用 `gh pr create --base main` 开 PR，描述用里程碑报告，Kelvin 看完再合并。
+- CI：Linux 每次 push 都跑；Windows 只在往 main 提 PR 时跑，也可以手动触发（workflow_dispatch）。
+
+## 进度报告与上下文交接
+
+每个里程碑都照做，保证 `/clear` 之后能无缝接着做。
+
+- **计划文件** `docs/studio/plans/Mx.md`：计划批准后原样存进仓库，每个小步一个复选框，做完一步勾一步。
+- **交接文件** `docs/studio/PROGRESS.md`（≤ 80 行，旧内容挪进里程碑报告）：当前里程碑和计划文件路径；已完成的小步（每步一行：做了什么、提交 hash、测试结果）；下一步做什么、从哪个文件开始；没提交的改动；踩过的坑和临时绕过的办法；等 Kelvin 决定的问题。每完成一个小步就更新，和代码放在同一个提交里（hash 写法见 DECISIONS 2026-10-14）。
+- **里程碑报告** `docs/studio/reports/Mx.md`：里程碑做完时写，中文，写给 Kelvin：做了什么、怎么验证（能直接复制的命令）、测试和 CI 结果、和计划不一样的地方及原因、新加的 DECISIONS、遗留问题、需要 Kelvin 动手的事。PR 描述直接用这份报告。
+- **节奏**：一个会话做 3–4 个小步。上下文到 60% 时（`context-guard` 钩子会提醒）做完当前小步就收尾；到 75% 时不再开始新的小步，马上整理到能提交的状态并交接。不要硬撑到自动压缩。
+- **收尾**：跑测试 → 提交 → push → 更新 PROGRESS.md → 停下，告诉 Kelvin 输入 `/clear` 再输入 `/continue`。`/handoff` 立即执行这套收尾；`/continue` 读 PROGRESS、计划和 git log，核对一致后接着做下一个小步，不重新出计划，计划要改先问 Kelvin。
+- **机制**（Windows，PowerShell 脚本一律 `powershell -NoProfile -File` 调用）：
+  - `.claude/statusline.ps1`：状态栏显示「模型 · 上下文 N% · 5 小时额度 N%」，并把 session_id 和上下文用量写进 `.claude/state/context.json`。`statusLine` 配在 `.claude/settings.local.json`（不进 git）。
+  - `.claude/hooks/context-guard.ps1`（PostToolUse）：60% 和 75% 各提醒一次（每会话），记录在 `.claude/state/`。
+  - `.claude/hooks/session-start.ps1`（SessionStart）：把 PROGRESS.md、`git status --short`、最近 5 条提交打印进新会话。
+  - 钩子配在 `.claude/settings.json`（进 git）；`.claude/state/` 不进 git。
 
 ## 一个功能怎样算完成
 
