@@ -29,7 +29,7 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 - [x] 前端：设计 token + shadcn/ui 基础组件、AppShell（顶栏、导航、中英切换、规格标签占位）、i18n 词表和 key 一致性检查、TanStack Query + SSE hook
 
 **验收**
-- [ ] `uv run pytest` 和前端测试全绿，CI 通过（本地全绿、Linux CI 通过；等 PR 上的 Windows CI）
+- [x] `uv run pytest` 和前端测试全绿，CI 通过
 - [x] 打开前端能切中英文，导航能到各页（页面可以是空壳）
 - [x] Mock 模式下发起一次 LLM 调用：前端实时看到任务状态变化，`model_call` 多一行
 - [x] 任务排队时杀掉后端再启动，任务继续执行

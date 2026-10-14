@@ -27,12 +27,12 @@
 | 11 | `web/src/app/`（`App.tsx`、`routes.tsx` 11 个 SPEC 路由 + `/` 跳到示例剧集第 1 集小说页 + 404、`AppShell.tsx` 照原型的深色顶栏和左侧导航、`paths.ts`）、11 个空壳页（`pages/*.tsx`，标明哪个里程碑实现、对照哪个原型）、i18next（`src/i18n.ts`，`common` / `nav` 两个命名空间，带 key 类型检查；语言和亮暗主题存 Zustand + localStorage）；11b 收尾：`/legacy/*` 懒加载上游界面，上游 CSS 包进 `.legacy-root`；`.gitattributes` 统一 LF | 44f9db9 | vitest 9 passed（路由、导航链接、中英切换、GPU / 花费显示）、eslint（验证了写死中文会报错）、tsc、build、prettier 通过 |
 | 12 | `web/src/api/`：`client.ts`（`/api/v1` 前缀；错误 → `ApiError(code, params)`，`errorMessage()` 按 `error.<code>` 翻译）、`hooks/useJobs.ts`、`useEventStream.ts`（全局一个 EventSource：`job.updated` 写进 Query 缓存，`cost.updated` 刷新调用记录，`toast` → sonner，重连后整体刷新）、`queryClient.ts`；顶栏 GPU 状态和 API 花费接真实数据；开发面板 `/dev/jobs`（只在 dev 构建注册） | 6913efe | vitest 20 passed（client 错误翻译、SSE hook、面板交互）；**在本机 Chrome 里实测**：点按钮后任务 排队中 → 完成 实时变化、调用记录增加、中英切换、`/legacy` 正常；Vite 代理下 SSE 实时推送无缓冲 |
 | 13 | `.github/workflows/ci.yml`：push 只跑 Linux，PR 到 main / 手动触发时 Linux + Windows；后端 ruff（check + format）/ mypy / pytest，前端 eslint / prettier / tsc / vitest（含 i18n 检查）/ build；ruff 排除 `docs/`（ruff 0.17 会改 Markdown 里的 Python 代码块） | 934dd35 | 本地全部通过；CI 结果见下一步 |
-| 14 | `tests/e2e/test_restart_resume.py`（子进程起后端 → gpu 队列 3 个任务 → 第一个运行中时硬杀进程 → 重启 → 3 个都完成，被打断的那个 attempt=2）；`/dev/llm-test` 加 `where`；CI action 升到 checkout@v7 / setup-node@v7 / setup-uv@v10；CLAUDE.md 常用命令；ROADMAP 勾选 M0；里程碑报告 `docs/studio/reports/M0.md` | 本提交 | pytest 93 passed（e2e 连跑 2 次稳定）；vitest 20 passed；lint / 类型 / 格式全过 |
+| 14 | `tests/e2e/test_restart_resume.py`（子进程起后端 → gpu 队列 3 个任务 → 第一个运行中时硬杀进程 → 重启 → 3 个都完成，被打断的那个 attempt=2）；`/dev/llm-test` 加 `where`；CI action 升到 checkout@v7 / setup-node@v7 / setup-uv@v10；CLAUDE.md 常用命令；ROADMAP 勾选 M0；里程碑报告 `docs/studio/reports/M0.md` | 019b971 | pytest 93 passed（e2e 连跑 2 次稳定）；vitest 20 passed；lint / 类型 / 格式全过 |
 
 ## 下一步
 
 - M0 代码全部完成，PR 已开（链接见报告 / PR 列表：`gh pr list -R kelvin78901/AIVideoGenerationAgent`）。
-- 剩下：等 PR 上的 Windows CI；通过后把 ROADMAP M0 验收第一条勾上。Kelvin 合并后，下一个里程碑是 **M1 首次启动 + 成片规格**，用 `/milestone` 出计划。
+- PR #1 上 Linux、Windows CI 都已通过，ROADMAP M0 全部勾选。Kelvin 合并后，下一个里程碑是 **M1 首次启动 + 成片规格**，用 `/milestone` 出计划。
 
 ## 没提交的改动
 
