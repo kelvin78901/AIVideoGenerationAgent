@@ -9,8 +9,10 @@ import { toast } from "sonner";
 
 import { generateKeys } from "@/api/hooks/generate";
 import { productKeys } from "@/api/hooks/products";
+import { applySetupProgress } from "@/api/hooks/setup";
 import { callKeys, upsertJob } from "@/api/hooks/useJobs";
 import { JobSchema } from "@/api/schemas/jobs";
+import { SetupProgressSchema } from "@/api/schemas/setup";
 
 export const EVENT_TYPES = [
   "job.updated",
@@ -56,6 +58,10 @@ export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType
     const job = JobSchema.safeParse(data);
     if (job.success) upsertJob(client, job.data);
     else console.error("[events] bad job.updated payload", job.error);
+  } else if (type === "setup.progress") {
+    const ev = SetupProgressSchema.safeParse(data);
+    if (ev.success) applySetupProgress(client, ev.data);
+    else console.error("[events] bad setup.progress payload", ev.error);
   } else if (type === "toast") {
     const ev = data as ToastEvent;
     const text = t(`toast.${ev.code}` as "toast.generic", {

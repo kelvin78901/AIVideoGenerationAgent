@@ -45,6 +45,9 @@
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
  * | PUT /series/{id}/spec, GET /spec/presets | M1     |
  * | GET /series/{id}/spec/compat     | M1             |
+ * | POST /setup/scan, /setup/install | M1             |
+ * | POST /setup/items/{id}/retry, skip | M1           |
+ * | POST /demo/setup/machine (demo only, no backend) | — |
  */
 import { assetHandlers } from "@/mocks/handlers/assets";
 import { configHandlers } from "@/mocks/handlers/config";

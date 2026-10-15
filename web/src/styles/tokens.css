@@ -71,6 +71,9 @@
   --media: #1d1e22;
   --media-foreground: #ececea;
   --media-muted: #8d8e93;
+  /* Lines on dark panels (install log): done / failed. */
+  --media-ok: #a9c1f5;
+  --media-warn: #f0b98a;
 
   --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
@@ -140,4 +143,6 @@
   --media: #0b0c0e;
   --media-foreground: #e6e6e3;
   --media-muted: #7d7e83;
+  --media-ok: #9db6ee;
+  --media-warn: #e8b07f;
 }

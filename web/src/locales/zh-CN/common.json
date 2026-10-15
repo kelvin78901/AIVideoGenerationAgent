@@ -53,7 +53,11 @@
     "upstream_not_adopted": "等 {{id}} 采纳：这个镜头的首帧要用 {{id}} 的最后一帧",
     "clip_not_found": "找不到片段 {{id}}",
     "subtitle_not_found": "找不到字幕 {{id}}",
-    "spec_locked": "画幅已锁定（{{aspect}}）：先看影响范围再改"
+    "spec_locked": "画幅已锁定（{{aspect}}）：先看影响范围再改",
+    "setup_busy": "正在检测或安装，等它结束再试",
+    "nothing_selected": "还没勾选要安装的项",
+    "setup_item_not_found": "找不到安装项 {{id}}",
+    "setup_item_state": "{{id}} 现在不能这样操作"
   },
   "toast": {
     "generic": "通知：{{code}}",

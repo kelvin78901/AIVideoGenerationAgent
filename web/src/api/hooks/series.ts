@@ -6,7 +6,6 @@ import { api, put } from "@/api/client";
 import { EpisodeProgressSchema, EpisodeSchema, type Episode } from "@/api/schemas/episodes";
 import { MetricsSummarySchema, type MetricsScope } from "@/api/schemas/metrics";
 import { SeriesSchema } from "@/api/schemas/series";
-import { MachineProfileSchema } from "@/api/schemas/setup";
 import {
   CompatSchema,
   OutputSpecSchema,
@@ -26,7 +25,6 @@ export const seriesKeys = {
   presets: ["spec", "presets"] as const,
   progress: (episodeId: string) => ["episodes", episodeId, "progress"] as const,
   summary: (scope: MetricsScope, id: string) => ["metrics", "summary", scope, id] as const,
-  profile: ["setup", "profile"] as const,
 };
 
 export function useSeries(id: string) {
@@ -84,13 +82,6 @@ export function useMetricsSummary(scope: MetricsScope, id: string | undefined) {
     queryFn: () =>
       api(`/metrics/summary?scope=${scope}&${scope}=${enc(id ?? "")}`, MetricsSummarySchema),
     enabled: !!id,
-  });
-}
-
-export function useMachineProfile() {
-  return useQuery({
-    queryKey: seriesKeys.profile,
-    queryFn: () => api("/setup/profile", MachineProfileSchema),
   });
 }
 

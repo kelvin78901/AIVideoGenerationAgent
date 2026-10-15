@@ -16,7 +16,7 @@ import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
 import { series } from "@/mocks/fixtures/demo/series";
 import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtures/demo/post";
 import { products } from "@/mocks/fixtures/demo/products";
-import { profile } from "@/mocks/fixtures/demo/setup";
+import { profile, type DemoMachine } from "@/mocks/fixtures/demo/setup";
 import { spec } from "@/mocks/fixtures/demo/spec";
 import { generateLog, generateRules, takeProducts } from "@/mocks/fixtures/demo/takes";
 
@@ -28,6 +28,8 @@ function createDb() {
     specs: { [spec.series_id]: spec },
     summary,
     profile,
+    /** Demo-only: which sample machine the setup page scans, and the running scan / install. */
+    setup: { machine: "pc" as DemoMachine, run: 0, pumping: false, installed: [] as string[] },
     products: Object.fromEntries(
       [...products, ...assetProducts, ...shotProducts, ...takeProducts, ...postProducts].map(
         (p) => [p.id, p],

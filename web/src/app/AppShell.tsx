@@ -16,12 +16,12 @@ import { NavLink, Outlet, useLocation } from "react-router";
 
 import {
   useEpisodeProgress,
-  useMachineProfile,
   useMetricsSummary,
   useOutputSpec,
   useRouteEpisode,
   useSeries,
 } from "@/api/hooks/series";
+import { useMachineProfile } from "@/api/hooks/setup";
 import type { StepProgress } from "@/api/schemas/episodes";
 import { paths, STEPS } from "@/app/paths";
 import { Button } from "@/components/ui/button";

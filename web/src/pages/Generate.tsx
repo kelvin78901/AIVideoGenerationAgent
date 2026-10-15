@@ -8,12 +8,8 @@ import { useAssets } from "@/api/hooks/assets";
 import { useComponentCatalog, useComponentModels, useResolvedConfig } from "@/api/hooks/config";
 import { useGenerateLog, useGenerateRules } from "@/api/hooks/generate";
 import { useProduct, useProducts } from "@/api/hooks/products";
-import {
-  useMachineProfile,
-  useMetricsSummary,
-  useOutputSpec,
-  useRouteEpisode,
-} from "@/api/hooks/series";
+import { useMetricsSummary, useOutputSpec, useRouteEpisode } from "@/api/hooks/series";
+import { useMachineProfile } from "@/api/hooks/setup";
 import { useShots } from "@/api/hooks/shots";
 import { useJobs } from "@/api/hooks/useJobs";
 import type { Product } from "@/api/schemas/products";

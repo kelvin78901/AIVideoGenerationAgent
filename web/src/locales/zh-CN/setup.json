@@ -1,0 +1,168 @@
+{
+  "steps": {
+    "label": "安装步骤",
+    "scan": "检测主机",
+    "install": "安装缺少的部分",
+    "done": "完成"
+  },
+  "title": "先看看这台电脑能跑什么",
+  "lead": "检测显卡、驱动、运行环境、ComfyUI 节点和模型权重，缺什么就列出来，你勾选后一键装好。哪些步骤能本地跑、哪些该走 API，也会按检测结果给出建议。",
+  "demoMachine": "示例机器（原型演示用）",
+  "machine": {
+    "pc": "Windows + RTX 5090",
+    "mac": "Mac M4 Pro"
+  },
+  "willCheck": "会检测这些",
+  "startScan": "开始检测",
+  "scanNote": "只读取信息，不会改动任何东西，大约 10 秒。",
+  "summary": "检测结果",
+  "rescan": "重新检测",
+  "phase": {
+    "idle": "还没检测",
+    "scanning": "正在检测…",
+    "scanned": "检测完成",
+    "installing": "正在安装…",
+    "done": "安装完成"
+  },
+  "group": {
+    "sys": {
+      "name": "系统与硬件",
+      "hint": "决定哪些模型能本地跑",
+      "check": "显卡和显存、驱动、内存、磁盘空间"
+    },
+    "rt": {
+      "name": "运行环境",
+      "hint": "Python、PyTorch、FFmpeg 这些底层依赖",
+      "check": "Python、PyTorch 的 CUDA 版本、FFmpeg、Git"
+    },
+    "comfy": {
+      "name": "ComfyUI 与节点",
+      "hint": "本地出图、出视频、超分都靠它",
+      "check": "ComfyUI 版本，H3、超分、ControlNet 等自定义节点"
+    },
+    "w": {
+      "name": "模型权重",
+      "hint": "体积大，支持断点续传",
+      "check": "视频、图像、超分、配音、本地 LLM 的权重文件"
+    },
+    "svc": {
+      "name": "网络与服务",
+      "hint": "下载速度、本地 LLM 服务、API 密钥",
+      "check": "能不能顺畅访问模型仓库，本地 LLM 服务，已填的 API 密钥"
+    }
+  },
+  "status": {
+    "checking": "检测中",
+    "ok": "通过",
+    "missing": "缺少",
+    "old": "需更新",
+    "optional": "可选",
+    "warn": "注意",
+    "skip": "跳过",
+    "done": "已装好",
+    "fail": "失败"
+  },
+  "found": {
+    "os": "{{name}} · {{bits}} 位",
+    "os_apple": "{{name}} · Apple 芯片",
+    "gpu_vram": "{{name}} · {{gb}} GB 显存",
+    "gpu_unified": "{{name}} · 统一内存",
+    "driver_cuda": "支持 CUDA {{cuda}}",
+    "ram": "{{gb}} GB",
+    "ram_unified": "{{gb}} GB 统一内存",
+    "disk_free": "剩余 {{free}}",
+    "disk_free_on": "{{drive}} 剩余 {{free}}",
+    "version": "{{version}}",
+    "not_found": "没找到",
+    "installed": "已安装",
+    "torch_not_cuda": "已装，但不是 CUDA {{cuda}} 版",
+    "outdated": "已装，版本较旧",
+    "needs_cuda": "需要 CUDA",
+    "hf_slow": "直连 Hugging Face 较慢",
+    "no_keys": "还没填"
+  },
+  "fix": {
+    "install_named": "安装 {{name}}",
+    "install_torch_mps": "安装 PyTorch（MPS 版）",
+    "torch_cuda": "换成 CUDA {{cuda}} 版（NVFP4 量化需要）",
+    "update_latest": "更新到最新版",
+    "install_nodes": "安装节点",
+    "ctrl_later": "需要控制站位和动作时再装",
+    "sage_build": "编译安装，能提速",
+    "download": "下载",
+    "llm_optional": "想让写作类任务也本地跑再装",
+    "pick_mirror": "下面选「国内镜像」或「自动选择」",
+    "install_llm_server": "安装 Ollama 或 llama.cpp 服务",
+    "keys_later": "装完后在「模型与兜底」里填",
+    "no_cuda_video_api": "不支持 CUDA：视频生成改走 API",
+    "comfy_images_only": "只用于本地出图，可以不装",
+    "unsupported_skip": "不支持，跳过",
+    "unsupported_upscale_api": "不支持，超分走 API",
+    "download_local_writing": "下载，用于本地写作类任务",
+    "mac_voice_slow": "可在 Mac 上跑，速度较慢",
+    "mac_image_slow": "在 Mac 上很慢，建议走 API",
+    "install_ollama_mlx": "安装 Ollama（MLX 后端）",
+    "keys_video_api": "视频要走 API，装完后去填"
+  },
+  "error": {
+    "no_wheel": "没有适合这台机器的预编译包，现场编译也没成功"
+  },
+  "none": "—",
+  "pick": "安装",
+  "pickOptional": "安装（可选）",
+  "retry": "重试",
+  "skipItem": "跳过",
+  "progressOf": "{{name}} 安装进度",
+  "installTitle": "安装设置",
+  "dir": "安装位置",
+  "dirHint": "模型权重放在这里，要留足空间。",
+  "mirror": {
+    "label": "下载源",
+    "name": {
+      "auto": "自动选择",
+      "official": "官方源",
+      "cn": "国内镜像"
+    },
+    "hint": {
+      "auto": "先测速，哪个快用哪个；单个文件失败会自动换源重试。",
+      "official": "直接从 GitHub、Hugging Face、PyPI 下载。",
+      "cn": "用国内镜像下载 Python 包和模型权重，适合直连慢的网络。"
+    }
+  },
+  "installNote": "大文件支持断点续传；装到一半关掉，下次打开会接着装。装好的东西会写进清单，卸载时一并清理。",
+  "install": "安装选中的 {{count}} 项",
+  "onlyRequired": "只选必需的",
+  "selectAll": "全选",
+  "skip": "先跳过，进入工作台",
+  "log": {
+    "title": "安装日志",
+    "mirror": "下载源：{{mirror}} · {{dir}}",
+    "start": "开始：{{item}}",
+    "done": "完成：{{item}}",
+    "fail": "失败：{{item}}，可以重试或跳过",
+    "fail_optional": "失败（可选项，不影响使用）：{{item}}",
+    "retry": "重试：{{item}}",
+    "skip": "已跳过：{{item}}",
+    "finish": "全部结束。"
+  },
+  "done": {
+    "title": "准备好了",
+    "line": "装好 {{done}} 项。",
+    "lineFailed": "装好 {{done}} 项，失败 {{failed}} 项（都是可选项）。",
+    "lineFailedRequired": "装好 {{done}} 项，失败 {{failed}} 项，其中有必需项：先重试；还不行就在「模型与兜底」里把用到它的步骤改成走 API。",
+    "recommend": "按这台机器推荐的预设",
+    "enter": "新建剧集：先定画幅和规格",
+    "toModels": "去「模型与兜底」填 API 密钥",
+    "later": "以后可以在「模型与兜底」里重新检测。"
+  },
+  "rec": {
+    "local_video": {
+      "name": "均衡：草稿和重跑在本地跑，采纳前用 API 出终版",
+      "why": "32 GB 显存能本地跑 MiniMax H3 出视频草稿，图像、超分、配音、LLM 也都能本地跑。定稿的那一条再用 API，花费最低又不牺牲成片质量。"
+    },
+    "no_cuda": {
+      "name": "均衡（视频走 API）",
+      "why": "苹果芯片跑不了 MiniMax H3 这类依赖 CUDA 的视频模型，所以视频、关键帧和超分走 API；LLM 和配音可以在本地跑，省一部分钱。"
+    }
+  }
+}

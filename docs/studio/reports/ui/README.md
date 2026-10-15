@@ -16,7 +16,7 @@ pnpm -C web shots:prototype --runtime <path/to/dc-runtime.js> [--only Main,Spec]
 
 | 页面 | 原型 | 实现 · 亮色 | 实现 · 暗色 | 有意的差异 |
 | --- | --- | --- | --- | --- |
-| 00 首次启动 `/setup` | [Setup](prototype/Setup.jpg) | 待做 | 待做 | |
+| 00 首次启动 `/setup` | [Setup](prototype/Setup.jpg) | [亮色](setup.light.jpg) | [暗色](setup.dark.jpg) | 顶栏用工作台自己的（原型这一页单独一条「首次启动」顶栏）；失败项行内有「重试 / 跳过」，不再自动跳过（日志文案相应改成「失败（可选项，不影响使用）」）；重新检测时已装好的项显示「通过 · 已安装」；「示例机器」切换只在示例数据模式下出现；日志面板可滚动，保留全部行（原型只显示最后 9 行） |
 | 00b 成片规格 `/s/demo/spec` | [Spec](prototype/Spec.jpg) | [亮色](spec.light.jpg) | [暗色](spec.dark.jpg) | 锁定标记写「第 1 集已有 9 个镜头」（原型「9 张关键帧」，示例库里只有 7 个镜头有自己的关键帧，另外 2 个接尾帧）；改画幅后的三个选项走共用的 ImpactDialog（提示由组件统一给，不是原型那两句）；规格改动先放草稿，「保存规格」才写入，规格没改时提示「没有改动」；交付分辨率用单选卡片（带圆点）；遮挡区和字幕位置的开关不保存（只影响这一页的预览） |
 | 01 小说 `/s/demo/e/1/novel` | [Main](prototype/Main.jpg) | [亮色](novel.light.jpg) | [暗色](novel.dark.jpg) | 「导入 .txt / .docx」置灰（导入在 M2 接后端，原型里这个按钮也没有行为）；闸门按钮放在页头右侧，确认后旁边显示「已确认 · 重新打开」；模型名不带「（本地）」后缀（运行位置有单独的标记）；API 单价统一写「每百万 token」，原型里的「闲时半价」等备注没放（要等 providers.yaml 的 note 进接口） |
 | 02 剧本 `/s/demo/e/1/script` | [Script](prototype/Script.jpg) | [亮色](script.light.jpg) | [暗色](script.dark.jpg) | 分集卡是链接，点了切到那一集的路由（顶栏集名跟着变），不是页内切换；影响范围在保存前预览，弹窗打开时还没写进剧本，选「撤销」什么都不改；左侧原文按当前已采纳的补写拼出（示例里只采纳了 1 条，原型里是 4 条全采纳后的文字）；默认选中第一段动作而不是第 3 段 |

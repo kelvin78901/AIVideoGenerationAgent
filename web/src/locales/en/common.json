@@ -53,7 +53,11 @@
     "upstream_not_adopted": "Waiting for {{id}} to be adopted: this shot starts from its last frame",
     "clip_not_found": "Clip {{id}} not found",
     "subtitle_not_found": "Subtitle {{id}} not found",
-    "spec_locked": "The aspect is locked ({{aspect}}): review the impact before changing it"
+    "spec_locked": "The aspect is locked ({{aspect}}): review the impact before changing it",
+    "setup_busy": "A scan or install is running. Try again when it finishes",
+    "nothing_selected": "Nothing is ticked to install",
+    "setup_item_not_found": "Setup item {{id}} not found",
+    "setup_item_state": "{{id}} cannot do that right now"
   },
   "toast": {
     "generic": "Notice: {{code}}",

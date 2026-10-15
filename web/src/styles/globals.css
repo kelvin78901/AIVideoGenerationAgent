@@ -58,6 +58,8 @@
   --color-media: var(--media);
   --color-media-foreground: var(--media-foreground);
   --color-media-muted: var(--media-muted);
+  --color-media-ok: var(--media-ok);
+  --color-media-warn: var(--media-warn);
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);

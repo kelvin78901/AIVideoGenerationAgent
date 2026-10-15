@@ -7,6 +7,10 @@ export const demoTiming = {
   runMs: 1400,
   /** 「重写这一段」 (prototype: 1.1 s). */
   rewriteMs: 1100,
+  /** First-run scan: one item per tick (prototype: 110 ms). */
+  setupScanMs: 110,
+  /** Install: one progress step per tick (prototype: 120 ms; +10 % for downloads, +34 % otherwise). */
+  setupTickMs: 120,
 };
 
 export function emitDemoEvent(type: EventType, data: unknown, delayMs = 0): void {
