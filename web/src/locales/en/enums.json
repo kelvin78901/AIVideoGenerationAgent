@@ -43,7 +43,9 @@
   },
   "componentDesc": {
     "enrich": "Finds what the camera cannot show in the source text and suggests additions, without changing the plot.",
-    "extract": "Pulls characters, locations, props and the timeline out of the text for the script and asset steps."
+    "extract": "Pulls characters, locations, props and the timeline out of the text for the script and asset steps.",
+    "split": "Cuts the novel into episodes in story order, each ending on a cliffhanger, with a hook at the start of episode 1.",
+    "script": "Turns narration into scene headings, action, dialogue and delivery; every block cites its source paragraph."
   },
   "suggestionKind": {
     "appearance": "Appearance",
@@ -54,5 +56,11 @@
     "timeline": "Timeline",
     "consistency": "Consistency",
     "gap": "Gap"
+  },
+  "lineType": {
+    "action": "Action",
+    "dialogue": "Dialogue",
+    "vo": "Voice-over",
+    "sfx": "Sound"
   }
 }

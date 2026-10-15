@@ -29,6 +29,9 @@
 - **小说页的接口（M0.5 第 6 步）**：`GET /series/{id}/novel`（段落带字符偏移）、`GET /series/{id}/suggestions`、`GET /series/{id}/bible`；建议的决定是 `POST /suggestions/{id}/accept|reject|reset|rewrite`（SPEC 只列了 accept / reject / rewrite；「撤销采纳」和「恢复」都回到未决定，所以加了 `reset`），外加 `POST /series/{id}/suggestions/accept-all`（「全部采纳」，跳过已忽略的）。建议的 `kind` 在 SPEC 的 motive / timeline / consistency / gap 之外加上补全组件的四类（appearance / lighting / inner_to_action / cliffhanger，原型的外貌 / 光线 / 心理外化 / 卡点）。重写后 `status=rewritten`，`rewrite_instruction` 和 `rewritten_by` 保留（采纳后也显示「已按要求重写」）；已采纳的建议重写后仍是已采纳。字数 = 原文 + 已采纳补写，前端算。
 - **步骤页布局 `StepLayout`**：工作区 + 右侧整列 Inspector（宽 360 / 400），窄屏时 Inspector 排到下面。没用 sticky：Inspector 本身比视口高，sticky 会把下半截藏起来。
 - **「导入 .txt / .docx」在 M0.5 置灰并说明原因**：原型里这个按钮没有行为，导入要后端（`POST /series/{id}/novel`，M2）。做一个假的导入只会让示例数据前后不一致。
+- **剧本页的接口（M0.5 第 7 步）**：`GET /episodes/{id}/script` 返回 `scenes` + `lines`（SPEC 4.1 的字段，另加 `duration_s`、`overlay_shot`「叠在 1-06」、`mood`、`cliffhanger`、`edited`；场景头文本放 `scene.heading`）。分集多了 `scene_from` / `scene_to`、`shot_count`、`script_status`（none / draft / confirmed）。「重写这一段 / 换模型重写」是 `POST /lines|scenes/{id}/rewrite {model?}`，只返回建议文本 `{text, model_key}`，不落盘。
+- **改已确认内容一律「先预览、后落盘」**：保存或重写后先 `POST /impact/preview {kind: line_edit | scene_edit, target_id, patch: {text}}`，弹窗打开期间页面只在本地显示新文字（标「已修改」）；选「只标记 / 自动重跑」时由 `/impact/apply` 写入改动并标记下游，选「撤销」什么都不写。预览没有任何影响行时直接按「只标记」写入。这样 SPEC 9.1 的 `PATCH /lines/{id}` 不再需要单独的「返回影响范围」语义——M2 实现时可以保留 PATCH 给未确认的剧本用。
+- **分集卡用路由切换**：点一集跳到 `/s/:series/e/:n/script`，顶栏的集名、导航徽标都跟着这一集走；原型是页内切换。每集的剧本是一个 `owner_type=episode` 的产物，「生成这一集的剧本」就是对它 `run`。
 
 ## 2026-10-14 · M0 合并前补充（Kelvin 审阅后）
 

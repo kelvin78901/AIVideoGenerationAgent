@@ -147,7 +147,20 @@
       "asset_scene": "素材 · 场景「{{name}}」",
       "shots_range": "分镜 · {{from}} 到 {{to}}，共 {{count}} 个",
       "keyframes": "关键帧 · {{count}} 张",
-      "videos_adopted_candidates": "视频 · {{from}} 到 {{to}} 已采纳，{{shot}} 有 {{candidates}} 条候选"
+      "videos_adopted_candidates": "视频 · {{from}} 到 {{to}} 已采纳，{{shot}} 有 {{candidates}} 条候选",
+      "asset_character_look": "素材 · 角色「{{name}}」的外观描述",
+      "asset_props": "素材 · 道具「{{names}}」",
+      "asset_text": "素材 · 画面文字「{{name}}」",
+      "asset_voice_sample": "素材 · 音色「{{name}}」的试读台词",
+      "shot": "分镜 · {{id}}",
+      "shot_dialogue": "分镜 · {{id}} 的台词",
+      "shot_vo": "分镜 · {{id}} 的画外音",
+      "video_adopted": "视频 · {{id}}（已采纳）",
+      "video_candidates_redo": "视频 · {{id}}（{{count}} 条候选，需要重新生成）",
+      "video_not_generated": "视频 · {{id}}（未生成）",
+      "videos_not_generated": "视频 · {{from}} 到 {{to}}（未生成）",
+      "dub_lines": "配音 · {{count}} 条",
+      "video_audio_swap": "视频 · {{id}} 换音轨"
     },
     "unaffected": {
       "unaffected_spec": "剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。"

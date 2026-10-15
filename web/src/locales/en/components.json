@@ -147,7 +147,20 @@
       "asset_scene": "Asset · scene “{{name}}”",
       "shots_range": "Shots · {{from}} to {{to}}, {{count}} in total",
       "keyframes": "Keyframes · {{count}}",
-      "videos_adopted_candidates": "Videos · {{from}} to {{to}} adopted, {{shot}} has {{candidates}} takes"
+      "videos_adopted_candidates": "Videos · {{from}} to {{to}} adopted, {{shot}} has {{candidates}} takes",
+      "asset_character_look": "Asset · how “{{name}}” looks",
+      "asset_props": "Asset · props “{{names}}”",
+      "asset_text": "Asset · on-screen text “{{name}}”",
+      "asset_voice_sample": "Asset · sample lines of the voice “{{name}}”",
+      "shot": "Shot · {{id}}",
+      "shot_dialogue": "Shot · dialogue of {{id}}",
+      "shot_vo": "Shot · voice-over of {{id}}",
+      "video_adopted": "Video · {{id}} (adopted)",
+      "video_candidates_redo": "Video · {{id}} ({{count}} takes to generate again)",
+      "video_not_generated": "Video · {{id}} (not generated)",
+      "videos_not_generated": "Videos · {{from}} to {{to}} (not generated)",
+      "dub_lines": "Dialogue audio · {{count}}",
+      "video_audio_swap": "Video · {{id}} gets a new audio track"
     },
     "unaffected": {
       "unaffected_spec": "Script, shot list, dialogue audio and voices are unaffected. Adopted videos are kept; new results arrive as new versions."

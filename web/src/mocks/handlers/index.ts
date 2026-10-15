@@ -30,6 +30,8 @@
  * | POST /series/{id}/suggestions/accept-all | M2     |
  * | POST /suggestions/{id}/accept, reject, reset, rewrite | M2 |
  * | GET /series/{id}/bible           | M2             |
+ * | GET /episodes/{id}/script        | M2             |
+ * | POST /lines/{id}/rewrite, /scenes/{id}/rewrite | M2 |
  */
 import { configHandlers } from "@/mocks/handlers/config";
 import { gateHandlers } from "@/mocks/handlers/gates";
@@ -37,6 +39,7 @@ import { impactHandlers } from "@/mocks/handlers/impact";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { novelHandlers } from "@/mocks/handlers/novel";
 import { productHandlers } from "@/mocks/handlers/products";
+import { scriptHandlers } from "@/mocks/handlers/script";
 import { seriesHandlers } from "@/mocks/handlers/series";
 import { setupHandlers } from "@/mocks/handlers/setup";
 
@@ -49,4 +52,5 @@ export const handlers = [
   ...impactHandlers,
   ...gateHandlers,
   ...novelHandlers,
+  ...scriptHandlers,
 ];

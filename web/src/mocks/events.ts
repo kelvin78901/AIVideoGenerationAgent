@@ -5,6 +5,8 @@ import { injectEvent, type EventType } from "@/api/events";
 export const demoTiming = {
   /** `POST /products/{id}/run` appends the new version after this long (prototype: 1.4 s). */
   runMs: 1400,
+  /** 「重写这一段」 (prototype: 1.1 s). */
+  rewriteMs: 1100,
 };
 
 export function emitDemoEvent(type: EventType, data: unknown, delayMs = 0): void {

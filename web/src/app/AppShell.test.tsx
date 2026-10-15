@@ -28,7 +28,7 @@ describe("AppShell", () => {
       ["/s/demo/sync", "素材整理与同步"],
       ["/s/demo/dashboard", "数据看板 · 花费、耗时与速度"],
       ["/s/demo/e/1/novel", "小说"],
-      ["/s/demo/e/1/script", "剧本 · 分集与剧本化"],
+      ["/s/demo/e/1/script", "剧本"],
       ["/s/demo/e/1/assets", "素材 · 角色、场景、道具、文字、音色"],
       ["/s/demo/e/1/storyboard", "分镜 · 关键帧与镜头设定"],
       ["/s/demo/e/1/generate", "生成 · 候选墙与自动质检"],

@@ -96,6 +96,7 @@ function ImpactBody({
 export function ImpactDialog({
   impact,
   title,
+  detail,
   variant = "inline",
   open = true,
   onOpenChange,
@@ -105,6 +106,8 @@ export function ImpactDialog({
 }: {
   impact: Impact;
   title: ReactNode;
+  /** What changed, under the title (「改的是：……」). */
+  detail?: ReactNode;
   variant?: "inline" | "modal";
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
@@ -123,7 +126,9 @@ export function ImpactDialog({
             <AlertTriangle className="size-4 text-tone-warn-fg" aria-hidden />
             {title}
           </DialogTitle>
-          <DialogDescription className="sr-only">{title}</DialogDescription>
+          <DialogDescription className={detail ? "text-sm" : "sr-only"}>
+            {detail ?? title}
+          </DialogDescription>
           <ImpactBody
             impact={impact}
             labels={labels}
@@ -149,6 +154,7 @@ export function ImpactDialog({
         <AlertTriangle className="size-4 text-tone-warn-fg" aria-hidden />
         {title}
       </h2>
+      {detail ? <div className="text-sm">{detail}</div> : null}
       <ImpactBody impact={impact} labels={labels} onResolved={onResolved} />
     </section>
   );

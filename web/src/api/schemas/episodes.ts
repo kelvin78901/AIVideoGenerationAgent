@@ -15,6 +15,12 @@ export const EpisodeSchema = z.object({
   target_seconds: z.number().nullable(),
   budget_usd: z.number().nullable(),
   stage: EpisodeStageSchema,
+  /** Scenes the episode covers (场 1–2); null before episode planning. */
+  scene_from: z.number().int().nullable(),
+  scene_to: z.number().int().nullable(),
+  /** Shots once the storyboard exists. */
+  shot_count: z.number().int().nullable(),
+  script_status: z.enum(["none", "draft", "confirmed"]),
 });
 export type Episode = z.infer<typeof EpisodeSchema>;
 

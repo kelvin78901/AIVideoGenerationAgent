@@ -5,6 +5,7 @@ import { ApplyImpactRequestSchema, ImpactChangeSchema } from "@/api/schemas/impa
 import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { impactPreviews } from "@/mocks/fixtures/demo/impacts";
+import { applyScriptChange } from "@/mocks/handlers/script";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 let seq = 0;
@@ -31,7 +32,10 @@ export const impactHandlers = [
     if (!impact) return demoError(404, "impact_not_found", { id: body.data.impact_id });
     getDb().impacts.delete(impact.id);
     const { action } = body.data;
+    // Undo drops the previewed change; nothing was written yet.
     if (action === "undo") return demoJson({ action, stale: {}, job_ids: [] });
+    if (impact.change.kind === "line_edit" || impact.change.kind === "scene_edit")
+      applyScriptChange(impact.change);
     // Mark (and for rerun, queue) the affected products: the nav shows 「待更新 N」.
     const steps = getDb().progress[EP1]?.steps;
     for (const [step, n] of Object.entries(impact.stale) as [StepId, number][]) {

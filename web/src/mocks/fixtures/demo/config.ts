@@ -58,7 +58,7 @@ export const presetConfigs: Record<string, ComponentConfig> = {
   extract: balanced("local", "qwen/qwen3.8-flash", "qwen/qwen3.8-flash", 0.2),
   enrich: balanced("api", "deepseek/v4-pro", "moonshot/kimi-k2.6", 0.5),
   split: balanced("api", "deepseek/v4.1-flash", "qwen/qwen3.7-plus", 0.3),
-  script: balanced("api", "deepseek/v4-pro", "qwen/qwen3.8-max", 0.5),
+  script: balanced("api", "deepseek/v4-pro", "qwen/qwen3.8-max", 0.8),
   assets: balanced("api", "deepseek/v4.1-flash", "qwen/qwen3.7-plus", 0.3),
   plan: balanced("api", "deepseek/v4-pro", "moonshot/kimi-k2.6", 0.5),
 };

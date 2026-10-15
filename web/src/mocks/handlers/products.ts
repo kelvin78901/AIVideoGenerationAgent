@@ -123,6 +123,11 @@ function finishRun(
   p.current_version_id = last.id;
   p.running = null;
   settle(p);
+  // A first script for an episode makes it a draft (剧本草稿).
+  if (p.slot === "script" && p.owner_type === "episode") {
+    const ep = getDb().episodes.find((e) => e.id === p.owner_id);
+    if (ep?.script_status === "none") ep.script_status = "draft";
+  }
   for (const version of created) emitDemoEvent("version.created", { product_id: p.id, version });
   emitDemoEvent("product.updated", p);
   emitDemoEvent("toast", {

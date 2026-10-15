@@ -153,7 +153,11 @@ function RunButtons({
   const est = product.estimate;
   return (
     <div className="flex flex-wrap items-center gap-2">
-      <Button size="lg" disabled={busy} onClick={() => action.run({ mode: "rerun" })}>
+      <Button
+        size="lg"
+        disabled={busy}
+        onClick={() => action.run({ mode: product.versions.length ? "rerun" : "run" })}
+      >
         <RotateCw aria-hidden />
         {t("inspector.rerun")}
       </Button>

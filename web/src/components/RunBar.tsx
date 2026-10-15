@@ -80,7 +80,11 @@ export function RunBar({
         <TooltipTrigger asChild>
           {/* The span keeps the tooltip working while the button is disabled. */}
           <span tabIndex={busy ? 0 : -1}>
-            <Button variant="outline" disabled={busy} onClick={() => action.run({ mode: "rerun" })}>
+            <Button
+              variant="outline"
+              disabled={busy}
+              onClick={() => action.run({ mode: product.versions.length ? "rerun" : "run" })}
+            >
               <RotateCw aria-hidden />
               {t(variant === "take" ? "runBar.more" : "runBar.rerun")}
               {est ? <CostBadge where={est.where} usd={est.cost_usd} estimate compact /> : null}

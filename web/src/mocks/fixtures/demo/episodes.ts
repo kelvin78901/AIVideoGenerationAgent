@@ -15,6 +15,10 @@ export const episodes: Episode[] = [
     target_seconds: 34,
     budget_usd: 15,
     stage: "in_progress",
+    scene_from: 1,
+    scene_to: 2,
+    shot_count: 9,
+    script_status: "confirmed",
   },
   {
     id: "demo-e2",
@@ -26,6 +30,10 @@ export const episodes: Episode[] = [
     target_seconds: 70,
     budget_usd: 15,
     stage: "script_pending",
+    scene_from: 3,
+    scene_to: 4,
+    shot_count: null,
+    script_status: "none",
   },
   {
     id: "demo-e3",
@@ -37,6 +45,10 @@ export const episodes: Episode[] = [
     target_seconds: 80,
     budget_usd: 15,
     stage: "not_started",
+    scene_from: 5,
+    scene_to: 7,
+    shot_count: null,
+    script_status: "none",
   },
 ];
 

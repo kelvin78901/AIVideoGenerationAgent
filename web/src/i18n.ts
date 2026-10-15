@@ -7,12 +7,14 @@ import enDev from "@/locales/en/dev.json";
 import enEnums from "@/locales/en/enums.json";
 import enNav from "@/locales/en/nav.json";
 import enNovel from "@/locales/en/novel.json";
+import enScript from "@/locales/en/script.json";
 import zhCommon from "@/locales/zh-CN/common.json";
 import zhComponents from "@/locales/zh-CN/components.json";
 import zhDev from "@/locales/zh-CN/dev.json";
 import zhEnums from "@/locales/zh-CN/enums.json";
 import zhNav from "@/locales/zh-CN/nav.json";
 import zhNovel from "@/locales/zh-CN/novel.json";
+import zhScript from "@/locales/zh-CN/script.json";
 import { useUiStore, type Lang } from "@/stores/ui";
 
 export const resources = {
@@ -22,6 +24,7 @@ export const resources = {
     enums: zhEnums,
     nav: zhNav,
     novel: zhNovel,
+    script: zhScript,
     dev: zhDev,
   },
   en: {
@@ -30,6 +33,7 @@ export const resources = {
     enums: enEnums,
     nav: enNav,
     novel: enNovel,
+    script: enScript,
     dev: enDev,
   },
 } as const;
@@ -41,7 +45,7 @@ void i18n.use(initReactI18next).init({
   lng: useUiStore.getState().lang,
   fallbackLng: "zh-CN",
   defaultNS,
-  ns: ["common", "components", "enums", "nav", "novel", "dev"],
+  ns: ["common", "components", "enums", "nav", "novel", "script", "dev"],
   interpolation: { escapeValue: false },
   returnNull: false,
 });
