@@ -25,8 +25,11 @@ const renderSetup = () => renderAt(<Page />, "/setup");
 const row = (name: string) => screen.getByRole("listitem", { name });
 const summary = () => screen.getByRole("region", { name: "检测结果" });
 const timing = { ...demoTiming };
-/** Scan and install run on timers; the full suite runs files in parallel, so allow time. */
-const WAIT = { timeout: 8000 };
+/**
+ * Scan and install run on timers; each tick re-renders the whole page (about 120 ticks for a full
+ * install), which takes ~10 s on a CI runner. Allow plenty of time.
+ */
+const WAIT = { timeout: 25_000 };
 
 async function scan(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("button", { name: "开始检测" }));
@@ -47,7 +50,7 @@ afterEach(() => {
   Object.assign(demoTiming, timing);
 });
 
-describe("SetupPage", { timeout: 30_000 }, () => {
+describe("SetupPage", { timeout: 60_000 }, () => {
   it("starts before the first scan: what will be checked, step 1, the PC sample machine", async () => {
     renderSetup();
     expect(await screen.findByRole("heading", { name: "会检测这些" })).toBeInTheDocument();

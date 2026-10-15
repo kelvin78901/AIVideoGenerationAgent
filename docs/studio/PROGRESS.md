@@ -34,7 +34,7 @@
 
 ## 下一步
 
-- **第 18 步 收尾（剩下的）**：看 CI 的 Playwright 冒烟是否通过（`gh run list --branch m0.5-ui`）；写 `docs/studio/reports/M0.5.md`（中文，给 Kelvin；对照表引用 `reports/ui/README.md`）；ROADMAP 勾 M0.5（逐条核对验收）；SPEC 9.1 增补整理（DECISIONS 里各步的接口条目）；CLAUDE.md 常用命令加 `pnpm e2e`、`pnpm shots`、`VITE_DEMO_DATA=0`；计划勾第 18 步；push，等 M0 合并后 rebase 再开 PR。
+- **第 18 步 收尾（剩下的）**：看 CI 的 Playwright 冒烟是否通过（`gh run list -R kelvin78901/AIVideoGenerationAgent --branch m0.5-ui`）；写 `docs/studio/reports/M0.5.md`（中文，给 Kelvin；对照表引用 `reports/ui/README.md`）；ROADMAP 勾 M0.5（逐条核对验收）；SPEC 9.1 增补整理（DECISIONS 里各步的接口条目）；CLAUDE.md 常用命令加 `pnpm e2e`、`pnpm shots`、`VITE_DEMO_DATA=0`；计划勾第 18 步；push，等 M0 合并后 rebase 再开 PR。
 - 第 16–17 步没做的：SPEC 11 的「今天」范围（原型没有，已记 DECISIONS）。
 - 截图时区已固定：第 18 步全量重截时，之前各页里的时间（如小说页的 09:41）会变回原型的数字。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -47,6 +47,8 @@
 
 ## 踩过的坑 / 临时绕过
 
+- **`gh` 默认指向上游 `binwu1/drama-series-agent`**（有 `upstream` remote）：所有 `gh run` / `gh pr` 一律带 `-R kelvin78901/AIVideoGenerationAgent`，开 PR 尤其要注意。
+- CI 上 Vitest 比本机慢很多：Setup 测试的完整安装约 120 次刷新，CI 要 ~10 秒，等待上限已放到 25 秒。
 - Kelvin 本机常开着 `start.ps1`（5173 前端 + 8000 后端，Mock 模式），Vite 会热更新，可以直接拿来做浏览器核对；不要往里发真实（非 Mock）调用。
 - 示例里的运行延迟在 `mocks/events.ts:demoTiming.runMs`，测试里改成 20 ms（见 `components/products.test.tsx`）；测试要挂 `useEventStream()`（`FakeEventSource`）才收得到 `version.created`。
 - **Chromium 新版 `scrollIntoView()` 返回 Promise**：`useEffect(() => el.scrollIntoView())` 这种箭头表达式会把 Promise 当清理函数，整页白屏（jsdom 里测不出来）。effect 一律写花括号；滚动日志用容器的 `scrollTop`。
