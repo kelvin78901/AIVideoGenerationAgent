@@ -38,7 +38,7 @@ const timing = { ...demoTiming };
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   backend();
-  demoTiming.syncTickMs = 2;
+  demoTiming.syncTickMs = 0; // all 24 files in one task (mocks/events.ts:repeatDemo)
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -137,11 +137,7 @@ describe("SyncPage", () => {
     await ready();
     await user.click(screen.getByRole("button", { name: "立即同步" }));
     expect(
-      await screen.findByText(
-        "同步完成：检查了 24 个文件，新增 3 个，其余没有变化。",
-        {},
-        { timeout: 8000 },
-      ),
+      await screen.findByText("同步完成：检查了 24 个文件，新增 3 个，其余没有变化。"),
     ).toBeInTheDocument();
     const log = screen.getByRole("list", { name: "同步记录" });
     await waitFor(() => expect(within(log).getAllByRole("listitem")).toHaveLength(7));

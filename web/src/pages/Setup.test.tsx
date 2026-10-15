@@ -25,32 +25,25 @@ const renderSetup = () => renderAt(<Page />, "/setup");
 const row = (name: string) => screen.getByRole("listitem", { name });
 const summary = () => screen.getByRole("region", { name: "检测结果" });
 const timing = { ...demoTiming };
-/**
- * Scan and install run on timers; each tick re-renders the whole page (about 120 ticks for a full
- * install), which takes ~10 s on a CI runner. Allow plenty of time.
- */
-const WAIT = { timeout: 25_000 };
 
 async function scan(user: ReturnType<typeof userEvent.setup>) {
   await user.click(await screen.findByRole("button", { name: "开始检测" }));
-  await waitFor(
-    () => expect(within(summary()).getByRole("status")).toHaveTextContent("检测完成"),
-    WAIT,
-  );
+  await waitFor(() => expect(within(summary()).getByRole("status")).toHaveTextContent("检测完成"));
 }
 
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   backend();
-  demoTiming.setupScanMs = 2;
-  demoTiming.setupTickMs = 2;
+  // Zero delay: each scan / install runs in one task (mocks/events.ts:repeatDemo).
+  demoTiming.setupScanMs = 0;
+  demoTiming.setupTickMs = 0;
 });
 afterEach(() => {
   vi.unstubAllGlobals();
   Object.assign(demoTiming, timing);
 });
 
-describe("SetupPage", { timeout: 60_000 }, () => {
+describe("SetupPage", () => {
   it("starts before the first scan: what will be checked, step 1, the PC sample machine", async () => {
     renderSetup();
     expect(await screen.findByRole("heading", { name: "会检测这些" })).toBeInTheDocument();
@@ -122,7 +115,7 @@ describe("SetupPage", { timeout: 60_000 }, () => {
     await user.click(screen.getByRole("button", { name: "全选" }));
     await user.click(screen.getByRole("button", { name: "安装选中的 15 项" }));
     expect(await screen.findByRole("heading", { name: "安装日志" })).toBeInTheDocument();
-    expect(await screen.findByRole("heading", { name: "准备好了" }, WAIT)).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "准备好了" })).toBeInTheDocument();
 
     expect(screen.getByText("装好 14 项，失败 1 项（都是可选项）。")).toBeInTheDocument();
     expect(screen.getByText("均衡：草稿和重跑在本地跑，采纳前用 API 出终版")).toBeInTheDocument();
@@ -144,7 +137,7 @@ describe("SetupPage", { timeout: 60_000 }, () => {
 
     await user.click(within(sage).getByRole("button", { name: "重试 SageAttention 加速" }));
     expect(await screen.findByText("重试：SageAttention 加速")).toBeInTheDocument();
-    await waitFor(() => expect(screen.getAllByText("全部结束。")).toHaveLength(2), WAIT);
+    await waitFor(() => expect(screen.getAllByText("全部结束。")).toHaveLength(2));
     await user.click(
       within(row("SageAttention 加速")).getByRole("button", { name: "跳过 SageAttention 加速" }),
     );
@@ -163,7 +156,7 @@ describe("SetupPage", { timeout: 60_000 }, () => {
     expect(row("显卡")).toHaveTextContent("不支持 CUDA：视频生成改走 API");
     expect(screen.getByRole("button", { name: "安装选中的 4 项" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "安装选中的 4 项" }));
-    expect(await screen.findByText("均衡（视频走 API）", {}, WAIT)).toBeInTheDocument();
+    expect(await screen.findByText("均衡（视频走 API）", {})).toBeInTheDocument();
     expect(screen.getByText("装好 4 项。")).toBeInTheDocument();
   });
 
@@ -172,11 +165,10 @@ describe("SetupPage", { timeout: 60_000 }, () => {
     renderSetup();
     await scan(user);
     await user.click(screen.getByRole("button", { name: "安装选中的 10 项" }));
-    await screen.findByRole("heading", { name: "准备好了" }, WAIT);
+    await screen.findByRole("heading", { name: "准备好了" });
     await user.click(screen.getByRole("button", { name: "重新检测" }));
-    await waitFor(
-      () => expect(within(summary()).getByRole("status")).toHaveTextContent("检测完成"),
-      WAIT,
+    await waitFor(() =>
+      expect(within(summary()).getByRole("status")).toHaveTextContent("检测完成"),
     );
     expect(row("FFmpeg")).toHaveTextContent(/^通过/);
     expect(within(summary()).getByText("通过 18")).toBeInTheDocument();

@@ -12,7 +12,7 @@ import {
   type SetupLog,
 } from "@/api/schemas/setup";
 import { getDb, type DemoDb } from "@/mocks/db";
-import { demoTiming, emitDemoEvent } from "@/mocks/events";
+import { demoTiming, emitDemoEvent, repeatDemo } from "@/mocks/events";
 import {
   FAILING_ITEM,
   idleProfile,
@@ -53,9 +53,7 @@ function progress(p: MachineProfile, item: SetupItem | null = null) {
 /** Repeats `step` until it returns false, a newer scan / install starts, or the db is reset. */
 function every(d: DemoDb, ms: number, step: () => boolean) {
   const run = d.setup.run;
-  const timer = setInterval(() => {
-    if (getDb() !== d || d.setup.run !== run || !step()) clearInterval(timer);
-  }, ms);
+  repeatDemo(ms, step, () => getDb() === d && d.setup.run === run);
 }
 
 function startScan(d: DemoDb) {

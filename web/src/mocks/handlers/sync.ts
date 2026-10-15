@@ -12,7 +12,7 @@ import {
   type SyncTargetId,
 } from "@/api/schemas/sync";
 import { getDb, type DemoDb } from "@/mocks/db";
-import { demoTiming, emitDemoEvent } from "@/mocks/events";
+import { demoTiming, emitDemoEvent, repeatDemo } from "@/mocks/events";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import { SIZE_ROW, SYNC_ROOT, SYNC_RUN, syncBoard } from "@/mocks/fixtures/demo/sync";
@@ -80,26 +80,30 @@ export const syncHandlers = [
       total: SYNC_RUN.total,
     };
     d.sync.run = run;
-    const timer = setInterval(() => {
-      if (getDb() !== d || d.sync.run !== run) return clearInterval(timer);
-      run.done += 1;
-      if (run.done >= run.total) {
-        clearInterval(timer);
-        run.state = "done";
-        d.sync.log.unshift({
-          id: `sl-run-${d.sync.runs}`,
-          at: new Date().toISOString(),
-          what: { code: "manual", params: { files: run.total, added: SYNC_RUN.added } },
-          to: deliveredTo(d),
-        });
-        emitDemoEvent("toast", {
-          level: "success",
-          code: "sync_done",
-          params: { files: run.total, added: SYNC_RUN.added },
-        });
-      }
-      emitDemoEvent("sync.updated", { ...run });
-    }, demoTiming.syncTickMs);
+    repeatDemo(
+      demoTiming.syncTickMs,
+      () => {
+        run.done += 1;
+        const finished = run.done >= run.total;
+        if (finished) {
+          run.state = "done";
+          d.sync.log.unshift({
+            id: `sl-run-${d.sync.runs}`,
+            at: new Date().toISOString(),
+            what: { code: "manual", params: { files: run.total, added: SYNC_RUN.added } },
+            to: deliveredTo(d),
+          });
+          emitDemoEvent("toast", {
+            level: "success",
+            code: "sync_done",
+            params: { files: run.total, added: SYNC_RUN.added },
+          });
+        }
+        emitDemoEvent("sync.updated", { ...run });
+        return !finished;
+      },
+      () => getDb() === d && d.sync.run === run,
+    );
     return demoJson(run, { status: 202 });
   }),
 
