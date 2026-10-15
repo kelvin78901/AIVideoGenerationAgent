@@ -1,0 +1,77 @@
+{
+  "title": "剧本",
+  "lead": "把小说的叙述改成能拍的结构：场景头、动作（△）、台词和语气。点任意一段剧本，左边会标出它来自原文哪里；原文没有、AI 加的会单独标出来。",
+  "gate": "确认剧本，分析素材",
+  "what": {
+    "split": "分集方案 · {{count}} 集",
+    "script": "第 {{n}} 集剧本 · 场 {{from}}–{{to}} · {{count}} 段",
+    "scriptEmpty": "第 {{n}} 集剧本 · 还没生成"
+  },
+  "episodes": {
+    "title": "分集",
+    "lead": "每集结尾一个卡点；点一集查看它的剧本",
+    "name": "第 {{n}} 集《{{title}}》",
+    "scenes": "场 {{from}}–{{to}}",
+    "shots": "{{count}} 个镜头",
+    "length": "约 {{clock}}",
+    "cliffhanger": "卡点：{{text}}",
+    "cliffhangerTbd": "卡点：待定",
+    "status": {
+      "none": "剧本未生成",
+      "draft": "剧本草稿",
+      "confirmed": "剧本已确认"
+    }
+  },
+  "script": {
+    "title": "第 {{n}} 集剧本",
+    "meta": "{{scenes}} 场 · {{blocks}} 段 · 其中 AI 新增 {{ai}} 段",
+    "views": "显示方式",
+    "view": {
+      "script": "剧本格式",
+      "table": "结构化表格"
+    },
+    "source": "原文（已采纳补写）",
+    "actionMark": "△ ",
+    "speaker": "{{who}}（{{tone}}）：",
+    "cliffhanger": "本集卡点",
+    "prov": {
+      "source": "原文第 {{paras}} 段",
+      "ai": "AI 新增",
+      "edited": "已修改"
+    },
+    "srcLabel": {
+      "source": "来自原文第 {{paras}} 段",
+      "ai": "原文没有这句，是 AI 为了可拍加的"
+    },
+    "paraSep": "、",
+    "edit": "编辑",
+    "editLabel": "编辑这一段（保存后会显示影响范围）",
+    "save": "保存",
+    "cancel": "取消",
+    "rewrite": "重写这一段",
+    "rewriting": "重写中…",
+    "rewriteWith": "换模型重写",
+    "rewritten": "这一段已用 {{model}} 重写。",
+    "impactTitle": "这段剧本已经确认过，改动会影响下游",
+    "impactWhat": "改的是：{{text}}",
+    "col": {
+      "no": "序号",
+      "type": "类型",
+      "text": "内容",
+      "who": "人物",
+      "mood": "情绪/语气",
+      "duration": "时长",
+      "source": "来源"
+    },
+    "seconds": "{{n}} 秒",
+    "overlay": "叠在 {{shot}}",
+    "none": "—"
+  },
+  "other": {
+    "title": "{{name}} 的剧本",
+    "none": "这一集的剧本还没生成。会沿用第 1 集确认过的人物、设定和写法。",
+    "draft": "剧本草稿已生成（示例数据只展开第 1 集的内容）。确认前可以先在右侧改提示词或换模型。",
+    "generate": "生成这一集的剧本",
+    "regenerate": "重新生成这一集"
+  }
+}

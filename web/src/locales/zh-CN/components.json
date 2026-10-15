@@ -1,0 +1,195 @@
+{
+  "pageHeader": {
+    "step": "步骤 {{n}} / {{total}}"
+  },
+  "query": {
+    "loading": "正在加载",
+    "failed": "加载失败",
+    "blocked": "没有可显示的内容：它依赖的数据没加载到",
+    "retry": "重试"
+  },
+  "cost": {
+    "free": "无 API 费用",
+    "freeShort": "免费",
+    "metered": "按量计费",
+    "estimate": "预计 ≈{{amount}}",
+    "approx": "≈{{amount}}",
+    "seconds": "约 {{n}} 秒",
+    "minutes": "约 {{n}} 分钟",
+    "perMtok": "{{in}} / {{out}} 每百万 token",
+    "perImage": "{{amount}} / 张",
+    "perSecond": "{{amount}} / 秒",
+    "perCall": "{{amount}} / 次",
+    "perMchar": "{{amount}} / 百万字符"
+  },
+  "runBar": {
+    "product": "当前产物 · {{what}}",
+    "noVersion": "还没有版本",
+    "running": "正在用 {{model}} 生成…",
+    "queued": "排队中 · {{model}}",
+    "editPrompt": "改提示词",
+    "rerun": "重跑",
+    "more": "再出一条",
+    "switch": "不满意换一个",
+    "history": "历史 {{count}}"
+  },
+  "switchMenu": {
+    "label": "换一个模型重跑",
+    "intro": "换一个模型重跑这一步。当前版本会保留在历史里。",
+    "footer": "备选顺序在「模型与兜底」里调整"
+  },
+  "versions": {
+    "intro": "{{name}} 的全部版本，新的在上。只有「采纳」的版本会被下一步使用。",
+    "current": "当前",
+    "setCurrent": "设为当前",
+    "adopt": "采纳这一版",
+    "lockedHint": "已锁定：先在这一步重新打开，才能换采纳的版本。",
+    "adopted": "v{{n}} 已采纳，下一步会用这一版。",
+    "empty": "还没有版本"
+  },
+  "prompt": {
+    "title": "{{name}} · 提示词",
+    "lead": "用自己的话写要求。系统会把它和上下文、设定卡一起编译成发给模型的提示词。",
+    "intent": "你的要求（意图层）",
+    "showCompiled": "查看 / 修改编译后的提示词（高级）",
+    "hideCompiled": "收起编译层",
+    "preview": "编译后的提示词（预览）",
+    "compiled": "编译层（直接改；改过后不再自动编译）",
+    "overridden": "已手动修改编译层",
+    "restore": "恢复自动编译",
+    "saveRun": "保存并重跑",
+    "saveOnly": "只保存",
+    "saved": "提示词已保存，下次运行生效。"
+  },
+  "inspector": {
+    "label": "本环节运行设置",
+    "components": "本环节的组件",
+    "tabs": "设置分页",
+    "tab": {
+      "run": "运行设置",
+      "prompt": "提示词",
+      "history": "历史 {{count}}"
+    },
+    "rerun": "重跑",
+    "switch": "不满意换一个",
+    "globalLink": "在「模型与兜底」里改全局默认",
+    "noProduct": "这个组件还没有产物"
+  },
+  "picker": {
+    "location": "运行位置",
+    "mode": {
+      "local": "本地",
+      "api": "API",
+      "hybrid": "混合"
+    },
+    "modeHint": {
+      "local": "只用本地模型，不产生 API 费用。",
+      "api": "直接调用 API，按次计费。",
+      "hybrid": "草稿和重跑走本地；点「采纳」前用 API 出终版。",
+      "off": "这一步现在不跑（全本地预设下没有本地版本，或者这一步还只是留了接口）。"
+    },
+    "api": "API 服务",
+    "local": "本地模型",
+    "role": {
+      "main": "主用",
+      "final": "出终版",
+      "draft": "出草稿",
+      "fallback": "兜底可用",
+      "unused": "未使用",
+      "none": "无"
+    },
+    "more": "更多供应商（{{count}}）",
+    "less": "收起",
+    "priceNote": "价格是每百万 token 的输入 / 输出，以各家官方页面为准。",
+    "noApi": "这个组件没有 API 版本，只能本地跑。",
+    "noLocal": "这个组件没有可本地运行的模型。",
+    "runtimeOk": "本地服务：ComfyUI / 推理服务已连接",
+    "runtimeDown": "本地服务没连上：本地运行会排队等它恢复",
+    "keyMissing": "未填密钥",
+    "fallback": "自动兜底",
+    "fallbackOn": "主用的 {{primary}} 出问题时，自动改用 {{target}}，并记进历史。",
+    "fallbackOff": "已关闭：出问题时停下来等你处理。",
+    "fallbackNext": "备选顺序里的下一个",
+    "when": "什么时候兜底",
+    "trigger": {
+      "error": "报错或显存不足",
+      "timeout": "超过 {{minutes}} 分钟没结果",
+      "qa_fail": "自动质检连续 {{n}} 次不过"
+    },
+    "target": "兜底到",
+    "cap": "单次花费上限（美元）",
+    "capHint": "超过上限会先停下来问你。本地运行不计费。",
+    "source": {
+      "preset": "预设",
+      "project": "项目",
+      "component": "组件",
+      "item": "单项"
+    },
+    "sourceTitle": "这一项的值来自：{{source}}",
+    "unavailable": {
+      "no_local_model": "这个组件没有可本地运行的模型",
+      "no_api_model": "这个组件没有 API 版本",
+      "needs_both": "混合需要本地和 API 都能用",
+      "machine": "这台机器跑不了：{{reason}}"
+    },
+    "reasonLine": "{{mode}}：{{reason}}"
+  },
+  "impact": {
+    "mark": "只标记待更新",
+    "rerun": "自动重跑受影响的部分 · 预计 {{cost}}",
+    "undo": "撤销修改",
+    "footer": "预计花费按当前「模型与兜底」的路由估算；本地跑的部分不计费。已采纳的视频不会被覆盖，新结果作为新版本出现。",
+    "lineCost": "约 {{cost}}",
+    "optional": "（可选）",
+    "marked": "已把受影响的素材、分镜和视频标成「待更新」，左侧导航能看到数量。",
+    "rerunQueued": "受影响的部分已排进队列，按当前路由预计 {{cost}}。完成后会作为新版本出现，等你采纳。",
+    "undone": "已撤销修改。",
+    "line": {
+      "keyframes_redraw": "关键帧 {{count}} 张（{{shots}} 个镜头）要按新画幅重画",
+      "videos_redo": "视频候选 {{count}} 条（已采纳 {{adopted}} 条）要重做：本地草稿重跑不花钱，API 终版",
+      "ref_images_suggest": "场景参考图 {{count}} 张是按 {{aspect}} 出的，建议重出",
+      "asset_scene": "素材 · 场景「{{name}}」",
+      "shots_range": "分镜 · {{from}} 到 {{to}}，共 {{count}} 个",
+      "keyframes": "关键帧 · {{count}} 张",
+      "videos_adopted_candidates": "视频 · {{from}} 到 {{to}} 已采纳，{{shot}} 有 {{candidates}} 条候选",
+      "asset_character_look": "素材 · 角色「{{name}}」的外观描述",
+      "asset_props": "素材 · 道具「{{names}}」",
+      "asset_text": "素材 · 画面文字「{{name}}」",
+      "asset_voice_sample": "素材 · 音色「{{name}}」的试读台词",
+      "shot": "分镜 · {{id}}",
+      "shot_dialogue": "分镜 · {{id}} 的台词",
+      "shot_vo": "分镜 · {{id}} 的画外音",
+      "video_adopted": "视频 · {{id}}（已采纳）",
+      "video_candidates_redo": "视频 · {{id}}（{{count}} 条候选，需要重新生成）",
+      "video_not_generated": "视频 · {{id}}（未生成）",
+      "videos_not_generated": "视频 · {{from}} 到 {{to}}（未生成）",
+      "dub_lines": "配音 · {{count}} 条",
+      "video_audio_swap": "视频 · {{id}} 换音轨",
+      "shot_refs": "分镜 · {{ids}}，共 {{count}} 个镜头用它做参考"
+    },
+    "unaffected": {
+      "unaffected_spec": "剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。",
+      "unlock_keeps_adopted": "已采纳的视频不会被删；换了新参考后，这些镜头会出新版本。"
+    }
+  },
+  "gate": {
+    "confirmed": "已确认",
+    "reopen": "重新打开",
+    "reopened": "已重新打开这一步，改完后需要再确认。"
+  },
+  "asset": {
+    "source": {
+      "script_line": "剧本 场 {{scene}} △{{line}}",
+      "script_line_note": "剧本 场 {{scene}} △{{line}}（{{note}}）",
+      "scene_heading": "剧本 场 {{scene}} 场景头",
+      "episode_scene": "第 {{episode}} 集 场 {{scene}}",
+      "dialogue_count": "剧本 台词 {{count}} 句",
+      "episode": "第 {{episode}} 集"
+    }
+  },
+  "chart": {
+    "view": "显示方式",
+    "chart": "图",
+    "table": "表"
+  }
+}

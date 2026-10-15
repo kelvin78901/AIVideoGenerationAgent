@@ -10,6 +10,8 @@ export default defineConfig({
   },
   test: {
     environment: "jsdom",
+    // Demo timestamps are +08:00; render them as the prototype shows them (Playwright does the same).
+    env: { TZ: "Asia/Shanghai" },
     globals: true,
     setupFiles: ["./src/test/setup.ts"],
     include: ["src/**/*.test.{ts,tsx}", "scripts/**/*.test.ts"],

@@ -1,0 +1,231 @@
+/**
+ * Products and versions for the novel step (prototype Main.dc.html, Inspector「历史」):
+ * 小说补全 v1 Qwen3.6-27B 本地 09:41 草稿 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳；
+ * 设定提取 v1 Qwen3.6-27B 本地 10:05 已采纳.
+ */
+import type { Product, ProductVersion, VersionOrigin } from "@/api/schemas/products";
+import { modelByKey } from "@/mocks/fixtures/demo/models";
+import { compilePrompt, intents } from "@/mocks/fixtures/demo/prompts";
+import { EP1 } from "@/mocks/fixtures/demo/episodes";
+import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
+
+export const PRODUCT_ENRICH = "demo-p-enrich";
+export const PRODUCT_EXTRACT = "demo-p-extract";
+export const PRODUCT_SPLIT = "demo-p-split";
+
+/**
+ * 2026-10-14 at a wall-clock time in the viewer's time zone, so the demo shows the prototype's
+ * 09:41 / 10:02 / 10:05 wherever it runs.
+ */
+export function demoAt(hhmm: string): string {
+  const [h = 0, m = 0] = hhmm.split(":").map(Number);
+  return new Date(2026, 9, 14, h, m).toISOString();
+}
+
+/**
+ * Mock-mode cost of one run: a writing call is ~8k tokens in, ~3k out; an image run makes
+ * `units` candidates (default 4); a video take is `units` seconds; a voice run is one voice
+ * design ($3, providers.yaml `extras.voice_design`).
+ */
+export function demoCost(modelKey: string, units = 4): number {
+  const m = modelByKey(modelKey);
+  if (!m || m.where === "local") return 0;
+  if (m.price?.unit === "image" || m.price?.unit === "second")
+    return Math.round(m.price.amount * units * 100) / 100;
+  if (m.price?.unit === "mchar") return 3;
+  if (!m.price || m.price.unit !== "mtok") return 0.02;
+  const usd = (m.price.in * 8000 + m.price.out * 3000) / 1e6;
+  const rate = m.price.currency === "CNY" ? 1 / 7.1 : 1;
+  return Math.max(0.01, Math.round(usd * rate * 100) / 100);
+}
+
+function candidateCount(payload: Record<string, unknown> | undefined): number | undefined {
+  const c = payload?.candidates;
+  return Array.isArray(c) ? c.length : undefined;
+}
+
+export function demoVersion(
+  productId: string,
+  componentId: string,
+  v: {
+    n: number;
+    origin: VersionOrigin;
+    model: string;
+    at: string;
+    parent?: string | null;
+    intent?: string;
+    compiled?: string;
+    payload?: Record<string, unknown>;
+  },
+): ProductVersion {
+  const intent = v.intent ?? intents[componentId] ?? "";
+  return {
+    id: `${productId}-v${v.n}`,
+    product_id: productId,
+    n: v.n,
+    origin: v.origin,
+    parent_version_id: v.parent ?? null,
+    payload: v.payload ?? {},
+    files: [],
+    content_hash: `sha256:${productId}-v${v.n}`,
+    intent,
+    compiled: v.compiled ?? compilePrompt(componentId, intent, v.model),
+    compiled_overridden: v.compiled !== undefined,
+    model_key: v.model,
+    where: modelByKey(v.model)?.where ?? "api",
+    seed: 1000 + v.n,
+    params: {},
+    qa: null,
+    qa_pass: null,
+    fallback_reason: null,
+    stage: null,
+    rating: null,
+    cost_usd: demoCost(v.model, candidateCount(v.payload)),
+    job_id: null,
+    created_at: v.at,
+    note: null,
+  };
+}
+
+const LOCAL = "local/qwen3.6-27b";
+const DEEPSEEK = "deepseek/v4-pro";
+
+function novelProduct(
+  id: string,
+  componentId: string,
+  slot: Product["slot"],
+  versions: ProductVersion[],
+  seconds: number,
+  owner: { type: Product["owner_type"]; id: string } = { type: "series", id: DEMO_SERIES_ID },
+  model0 = LOCAL,
+): Product {
+  const last = versions[versions.length - 1];
+  const model = last?.model_key ?? model0;
+  const intent = last?.intent ?? intents[componentId] ?? "";
+  return {
+    id,
+    series_id: DEMO_SERIES_ID,
+    owner_type: owner.type,
+    owner_id: owner.id,
+    slot,
+    component_id: componentId,
+    current_version_id: last?.id ?? null,
+    adopted_version_id: last?.id ?? null,
+    locked_hash: null,
+    status: last ? "adopted" : "empty",
+    versions,
+    prompt: {
+      intent,
+      compiled: last?.compiled ?? compilePrompt(componentId, intent, model),
+      compiled_overridden: false,
+      model_key: model,
+    },
+    estimate: {
+      model_key: model,
+      where: modelByKey(model)?.where ?? "api",
+      cost_usd: demoCost(model),
+      seconds,
+    },
+    running: null,
+  };
+}
+
+const enrichV1 = demoVersion(PRODUCT_ENRICH, "enrich", {
+  n: 1,
+  origin: "run",
+  model: LOCAL,
+  at: demoAt("09:41"),
+  payload: { suggestions: 4 },
+});
+
+const scriptV1 = demoVersion("demo-p-script-e1", "script", {
+  n: 1,
+  origin: "run",
+  model: LOCAL,
+  at: demoAt("10:12"),
+  payload: { scenes: 2, blocks: 12 },
+});
+
+/** Episode N's script product (剧本化), owned by the episode. */
+export const scriptProductId = (episodeId: string) => `demo-p-script-${episodeId.slice(5)}`;
+
+export const products: Product[] = [
+  novelProduct(
+    PRODUCT_ENRICH,
+    "enrich",
+    "suggestions",
+    [
+      enrichV1,
+      demoVersion(PRODUCT_ENRICH, "enrich", {
+        n: 2,
+        origin: "switch",
+        model: DEEPSEEK,
+        at: demoAt("10:02"),
+        parent: enrichV1.id,
+        payload: { suggestions: 4 },
+      }),
+    ],
+    40,
+  ),
+  novelProduct(
+    PRODUCT_EXTRACT,
+    "extract",
+    "bible",
+    [
+      demoVersion(PRODUCT_EXTRACT, "extract", {
+        n: 1,
+        origin: "run",
+        model: LOCAL,
+        at: demoAt("10:05"),
+        payload: { characters: 2, locations: 3, props: 4 },
+      }),
+    ],
+    60,
+  ),
+  novelProduct(
+    PRODUCT_SPLIT,
+    "split",
+    "episodes",
+    [
+      demoVersion(PRODUCT_SPLIT, "split", {
+        n: 1,
+        origin: "run",
+        model: "deepseek/v4.1-flash",
+        at: demoAt("10:08"),
+        payload: { episodes: 3 },
+      }),
+    ],
+    30,
+  ),
+  // 剧本化 for episode 1: v1 本地 10:12 草稿 → v2 Kimi K2.6 10:20（不满意换一个）已采纳.
+  novelProduct(
+    "demo-p-script-e1",
+    "script",
+    "script",
+    [
+      scriptV1,
+      demoVersion("demo-p-script-e1", "script", {
+        n: 2,
+        origin: "switch",
+        model: "moonshot/kimi-k2.6",
+        at: demoAt("10:20"),
+        parent: scriptV1.id,
+        payload: { scenes: 2, blocks: 12 },
+      }),
+    ],
+    90,
+    { type: "episode", id: EP1 },
+  ),
+  // Episodes 2 and 3 have no script yet (「生成这一集的剧本」).
+  ...["demo-e2", "demo-e3"].map((ep) =>
+    novelProduct(
+      scriptProductId(ep),
+      "script",
+      "script",
+      [],
+      90,
+      { type: "episode", id: ep },
+      DEEPSEEK,
+    ),
+  ),
+];

@@ -1,0 +1,125 @@
+{
+  "title": "生成",
+  "lead": "每个镜头出几条候选，自动质检打分，你只负责挑。不满意就重跑或换模型，旧的都留着。",
+  "comfy": "在 ComfyUI 画布里整理",
+  "gate": "去后期",
+  "cards": {
+    "label": "队列和质检",
+    "local": "本地队列 · {{gpu}}",
+    "localNoGpu": "本地队列",
+    "idle": "空闲",
+    "busy": "运行中 {{running}} · 排队 {{queued}}",
+    "runningTake": "正在跑 {{id}} T{{n}}（{{model}}）",
+    "nothingRunning": "没有镜头在生成",
+    "api": "API 队列",
+    "apiLine": "{{status}} · 本集已花 {{spent}}",
+    "apiBusy": "运行中 {{count}}",
+    "shotCap": "单镜上限 {{cap}}，超了会先问你",
+    "qa": "自动质检（本集）",
+    "qaLine": "通过 {{pass}} · 未过 {{fail}}",
+    "qaMeta": "已自动重跑 {{rerun}} 次 · 自动兜底 {{fallback}} 次",
+    "dashboard": "看数据看板"
+  },
+  "pills": {
+    "label": "镜头",
+    "item": "{{id}} {{status}}"
+  },
+  "status": {
+    "adopted": "已采纳",
+    "picking": "待挑选",
+    "running": "生成中",
+    "queued": "排队",
+    "waiting": "等待",
+    "not_started": "未开始"
+  },
+  "what": {
+    "vid": "镜头 {{id}} 视频候选",
+    "up": "2K 精修队列 · {{count}} 条",
+    "lip": "口型修复 · {{count}} 条",
+    "qa": "质检模型"
+  },
+  "wall": {
+    "label": "候选",
+    "title": "镜头 {{id}} 的候选",
+    "take": "T{{n}}",
+    "takeLabel": "候选 T{{n}}",
+    "play": "播放 T{{n}}",
+    "recommended": "推荐",
+    "adopted": "已采纳",
+    "meta": "{{seconds}}s · {{res}}",
+    "qa": "自动质检",
+    "pass": "通过",
+    "fail": "未过",
+    "failN": "未过 {{count}} 项",
+    "na": "不适用",
+    "noIssue": "无问题",
+    "exact": "逐字一致",
+    "adopt": "采纳",
+    "unadopt": "取消采纳",
+    "fix": "局部修复",
+    "upscale": "2K 精修 · {{cost}}",
+    "upLocal": "本地",
+    "generating": "新候选生成中",
+    "rating": "{{n}} 分",
+    "keys": "← → 切换候选 · 空格播放 · 1–5 打分 · A 采纳"
+  },
+  "qa": {
+    "face": "人脸一致性",
+    "lipsync": "口型同步",
+    "asr": "台词识别",
+    "ocr": "画面文字",
+    "vlm": "画面检查"
+  },
+  "note": {
+    "switch": "不满意换一个",
+    "auto_rerun": "自动重跑",
+    "rerun_after_fail": "质检没过，已自动重跑",
+    "hybrid_final": "混合模式出终版",
+    "fallback_timeout": "本地超时，自动兜底到 API",
+    "fallback_error": "出错，自动兜底",
+    "fallback_qa_fail": "质检连续不过，自动兜底"
+  },
+  "empty": {
+    "running": "{{model}} 正在出第 {{n}} 条候选。出来后会自动质检，然后出现在这里。",
+    "queued": "排在本地队列第 {{pos}} 位。",
+    "queuedDub": "台词会先用锁定音色配好，再生成画面。",
+    "queuedText": "画面文字后期贴，所以这里只出无字画面。",
+    "waiting": "等 {{id}} 采纳：这个镜头的首帧要用 {{id}} 的最后一帧。",
+    "none": "还没有候选。点「再出一条」开始生成。"
+  },
+  "toast": {
+    "adopted": "{{id}} 采纳 T{{n}}。",
+    "adoptedWarn": "{{id}} 采纳 T{{n}}（注意：有 {{fails}} 项质检没过，你选择了保留）。",
+    "unblocked": "{{id}} 现在可以开始生成了。",
+    "unadopted": "已取消采纳 {{id}} T{{n}}。",
+    "play": "播放 {{id}} T{{n}}（示例数据里没有视频文件）。",
+    "fix": "在画面上圈出要修的区域，只重画那一块（本地 H3 + 蒙版重绘）。",
+    "upLocal": "已把 {{id}} T{{n}} 送去 2K 精修（{{model}}），本地跑，不计费。",
+    "upApi": "已把 {{id}} T{{n}} 送去 2K 精修（{{model}}），预计 {{cost}}。",
+    "rated": "{{id}} T{{n}}：{{stars}} 分"
+  },
+  "rules": {
+    "title": "自动规则",
+    "takesBefore": "每个镜头先出",
+    "takesAfter": "条候选",
+    "retryBefore": "质检没过，自动重跑最多",
+    "retryAfter": "次，仍不过就按兜底设置换模型",
+    "capBefore": "单个镜头花费超过 $",
+    "capAfter": "就停下来问我",
+    "thresholds": "质检阈值：人脸一致性 ≥ {{face}}（对比锁定参考）· 口型同步置信度 ≥ {{sync}} · 台词识别错字率 ≤ {{cer}} · 画面文字 OCR 逐字一致 · 画面检查由视觉模型看瑕疵和是否符合描述。"
+  },
+  "log": {
+    "title": "运行记录",
+    "empty": "还没有记录。",
+    "cost": " · {{amount}}",
+    "issueSep": "、",
+    "started": "开始生成 · {{model}}",
+    "take_pass": "{{model}} 出 T{{take}}{{cost}} · 质检通过",
+    "take_fail": "{{model}} 出 T{{take}}{{cost}} · 未过 {{fails}} 项",
+    "take_fail_rerun": "{{model}} 出 T{{take}} · 未过 {{fails}} 项（{{issues}}）→ 自动重跑",
+    "switch_pass": "你点了「不满意换一个」→ {{model}} 出 T{{take}}{{cost}} · 质检通过",
+    "switch_fail": "你点了「不满意换一个」→ {{model}} 出 T{{take}}{{cost}} · 未过 {{fails}} 项",
+    "fallback_timeout": "本地任务超过 {{minutes}} 分钟 → 自动兜底到 {{model}}",
+    "fallback_error": "本地任务出错 → 自动兜底到 {{model}}"
+  }
+}

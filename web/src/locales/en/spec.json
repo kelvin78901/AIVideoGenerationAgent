@@ -1,0 +1,169 @@
+{
+  "eyebrow": "Set when creating a series · shared by all episodes",
+  "title": "Output spec",
+  "lead": "Decide portrait or landscape, delivery resolution and frame rate first. The aspect sets the framing of every keyframe and video and locks once the first keyframe is adopted; changing it later means redoing generated keyframes and videos.",
+  "locked": "Locked · episode 1 has {{count}} shots",
+  "lockedTitle": "The aspect locked at {{time}} when the first keyframe was adopted; changing it shows the impact first",
+  "next": "Next: import the novel",
+  "platform": {
+    "title": "Where it will be published",
+    "lead": "A platform fills in the aspect and resolution below; you can still change them one by one.",
+    "name": {
+      "cn": "Chinese short-drama apps",
+      "intl": "Overseas short-drama apps",
+      "wide": "Landscape platforms",
+      "custom": "Custom"
+    },
+    "sub": {
+      "cn": "Douyin · Kuaishou · WeChat Channels · Hongguo",
+      "intl": "ReelShort · DramaBox · TikTok",
+      "wide": "Bilibili · YouTube · Xigua",
+      "custom": "Choose aspect and resolution yourself"
+    },
+    "spec": "{{aspect}} · {{w}}×{{h}}"
+  },
+  "aspect": {
+    "title": "Aspect ratio",
+    "name": {
+      "9x16": "9:16 portrait",
+      "16x9": "16:9 landscape",
+      "3x4": "3:4 portrait",
+      "1x1": "1:1 square",
+      "21x9": "21:9 widescreen"
+    },
+    "tag": {
+      "9x16": "Short-drama standard · recommended",
+      "16x9": "Long-form platforms",
+      "3x4": "Feeds",
+      "1x1": "Ad cut-downs",
+      "21x9": "Cinematic"
+    },
+    "note": {
+      "9x16": "Full-screen on a phone held upright; short-drama platforms everywhere are portrait-first. The main image and video models make 9:16 natively.",
+      "16x9": "For landscape players like Bilibili and YouTube. On portrait short-drama apps it shows wide black bars.",
+      "3x4": "Shorter than 9:16, so people and places fit more easily; full-screen playback leaves bars top and bottom.",
+      "1x1": "Mostly for ads and social feeds.",
+      "21x9": "Nano Banana Pro does not do 21:9: keyframes are made at 16:9 and then outpainted or cropped; H3's 2K tier is about 2976×1248 here."
+    }
+  },
+  "impact": {
+    "title": "Changing to {{name}} affects work already done",
+    "mark": "Change and mark for update",
+    "rerun": "Change and redo automatically (about {{cost}})",
+    "undo": "Undo, keep {{aspect}}"
+  },
+  "res": {
+    "title": "Resolution and frame rate",
+    "delivery": "Delivery resolution",
+    "desc": {
+      "1080p": "The usual ceiling on short-drama platforms; recommended. Finals come from the H3 API or a local upscale to this size.",
+      "2k": "Finals get an extra 2K finishing step: local SeedVR2 is free but slow; H3 2K regeneration is about $0.10 / s (output + input)."
+    },
+    "name": {
+      "1080p": "1080p",
+      "2k": "2K"
+    },
+    "draft": "Drafts always use the 768p tier ({{w}}×{{h}}) on local H3, free; finals are made at the delivery resolution once you adopt.",
+    "fps": "Frame rate",
+    "fpsOption": {
+      "24": "24 fps · recommended",
+      "25": "25 fps",
+      "30": "30 fps"
+    },
+    "fpsNote": {
+      "24": "MiniMax H3 and the other video models output 24 fps natively; no conversion.",
+      "25": "Converted from 24 to 25 fps at export; camera moves may stutter slightly. Only affects export, no video redo.",
+      "30": "Interpolated to 30 fps locally at export (e.g. RIFE); takes longer and fast motion may show artefacts. Only affects export."
+    },
+    "len": "Episode length",
+    "lenOption": {
+      "short": "30–90 s",
+      "mid": "1.5–3 min",
+      "long": "3–5 min",
+      "xl": "About 10 min"
+    },
+    "lenNote": {
+      "short": "At episode 1's pace (34 s, 9 shots, about 3.8 s each), about 8–24 shots per episode. Episode planning splits by this length.",
+      "mid": "About 24–47 shots per episode. Episode planning splits by this length.",
+      "long": "About 47–79 shots per episode; reviewing takes much longer.",
+      "xl": "About 160 shots per episode; run the pipeline on short episodes first."
+    }
+  },
+  "compat": {
+    "title": "Can the models on the current route make this spec directly?",
+    "note": "Unsupported models are hidden in the pickers; vendors' docs are authoritative",
+    "stageCol": "Stage",
+    "modelCol": "Model",
+    "howCol": "How it is handled",
+    "status": {
+      "native": "Native",
+      "convert": "Needs conversion",
+      "unsupported": "Not supported"
+    },
+    "stage": {
+      "keyframe": "Keyframes",
+      "text_keyframe": "Keyframes with text",
+      "sketch": "Sketches",
+      "video_draft": "Video (draft)",
+      "video_final": "Video (final)",
+      "video_alt": "Video (alternative)",
+      "upscale": "2K finishing"
+    },
+    "how": {
+      "native_4k": "Renders at this aspect directly, up to 4K",
+      "outpaint_from_16_9": "Make 16:9 first, then outpaint or crop to 21:9",
+      "upscale_from_1k": "Some channels only reach 1K at this aspect; upscaled locally to the delivery size",
+      "cheap_sketch": "Cheap sketches at this aspect",
+      "h3_aspects": "Six aspects from 21:9 to 9:16, 24 fps, 5–15 s per clip",
+      "follow_draft": "Follows the draft's aspect; 2K tier short edge 1440",
+      "upscale_from_720p": "Supports this aspect; some channels only reach 720p and need an upscale",
+      "any_aspect": "Only enlarges, keeps the framing; any aspect"
+    }
+  },
+  "output": {
+    "title": "Audio, subtitles and export",
+    "codec": "Video codec",
+    "codecValue": {
+      "h264": "MP4 · H.264 High · Rec.709 SDR"
+    },
+    "audio": "Audio",
+    "audioValue": "{{khz}} kHz · loudness {{lufs}} LUFS · peak {{peak}} dBTP",
+    "aiMark": "AI-generated label",
+    "aiMarkOn": "Corner mark + file metadata",
+    "aiMarkOff": "None",
+    "subs": "Subtitles",
+    "subsOption": {
+      "burn": "Burned in",
+      "srt": "Separate SRT",
+      "both": "Both"
+    },
+    "deriveTo169": "Also make a landscape version (16:9)",
+    "deriveTo916": "Also make a portrait version (9:16)",
+    "deriveNote169": "At export each shot is outpainted at the sides by AI, billed by the outpainting model; no video redo.",
+    "deriveNote916": "At export each shot is cropped to portrait around the people, free; content at the edges is cut off."
+  },
+  "preview": {
+    "title": "Framing and safe areas",
+    "lead": "The storyboard and keyframe pages overlay the same guides. Keep faces and key text out of where platform buttons and captions cover the picture.",
+    "zone": {
+      "top": "Top bar",
+      "buttons": "Buttons",
+      "caption": "Title · caption · progress",
+      "controls": "Player controls",
+      "controlsWide": "Progress and controls"
+    },
+    "subSample": "…Zhou Yu?",
+    "caption": "{{name}} · {{w}}×{{h}} · {{fps}} fps",
+    "aria": "Safe-area preview: {{name}}, {{zones}}",
+    "ariaSub": ", subtitles inside the lower safe area",
+    "zoneSep": ", ",
+    "showSafe": "Show platform overlays (approximate)",
+    "showSub": "Show subtitle position",
+    "save": "Save spec"
+  },
+  "toast": {
+    "saved": "Saved: {{spec}}.",
+    "resolveFirst": "First choose above what to do with the work already generated.",
+    "nothing": "Nothing changed."
+  }
+}

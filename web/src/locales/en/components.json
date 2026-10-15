@@ -1,0 +1,195 @@
+{
+  "pageHeader": {
+    "step": "Step {{n}} / {{total}}"
+  },
+  "query": {
+    "loading": "Loading",
+    "failed": "Could not load",
+    "blocked": "Nothing to show: the data this depends on did not load",
+    "retry": "Retry"
+  },
+  "cost": {
+    "free": "No API cost",
+    "freeShort": "Free",
+    "metered": "Pay as you go",
+    "estimate": "Est. ≈{{amount}}",
+    "approx": "≈{{amount}}",
+    "seconds": "~{{n}} s",
+    "minutes": "~{{n}} min",
+    "perMtok": "{{in}} / {{out}} per M tokens",
+    "perImage": "{{amount}} / image",
+    "perSecond": "{{amount}} / s",
+    "perCall": "{{amount}} / call",
+    "perMchar": "{{amount}} per M characters"
+  },
+  "runBar": {
+    "product": "Current output · {{what}}",
+    "noVersion": "No version yet",
+    "running": "Generating with {{model}}…",
+    "queued": "Queued · {{model}}",
+    "editPrompt": "Edit prompt",
+    "rerun": "Rerun",
+    "more": "One more take",
+    "switch": "Try another model",
+    "history": "History {{count}}"
+  },
+  "switchMenu": {
+    "label": "Rerun with another model",
+    "intro": "Rerun this step with another model. The current version stays in the history.",
+    "footer": "Set the fallback order in Models & fallback"
+  },
+  "versions": {
+    "intro": "All versions of {{name}}, newest first. Only the adopted version is used by the next step.",
+    "current": "Current",
+    "setCurrent": "Make current",
+    "adopt": "Adopt this version",
+    "lockedHint": "Locked: reopen this step before adopting a different version.",
+    "adopted": "v{{n}} adopted; the next step will use it.",
+    "empty": "No version yet"
+  },
+  "prompt": {
+    "title": "{{name}} · Prompt",
+    "lead": "Describe what you want in your own words. It is compiled with the context and the story bible into the prompt sent to the model.",
+    "intent": "Your request (intent layer)",
+    "showCompiled": "View / edit the compiled prompt (advanced)",
+    "hideCompiled": "Hide compiled layer",
+    "preview": "Compiled prompt (preview)",
+    "compiled": "Compiled layer (edit directly; it stops following the intent)",
+    "overridden": "Compiled layer edited by hand",
+    "restore": "Compile automatically again",
+    "saveRun": "Save and rerun",
+    "saveOnly": "Save only",
+    "saved": "Prompt saved; it applies to the next run."
+  },
+  "inspector": {
+    "label": "Run settings for this step",
+    "components": "Components in this step",
+    "tabs": "Settings tabs",
+    "tab": {
+      "run": "Run settings",
+      "prompt": "Prompt",
+      "history": "History {{count}}"
+    },
+    "rerun": "Rerun",
+    "switch": "Try another model",
+    "globalLink": "Change the global defaults in Models & fallback",
+    "noProduct": "This component has no output yet"
+  },
+  "picker": {
+    "location": "Run on",
+    "mode": {
+      "local": "Local",
+      "api": "API",
+      "hybrid": "Hybrid"
+    },
+    "modeHint": {
+      "local": "Local models only; no API cost.",
+      "api": "Calls the API; billed per call.",
+      "hybrid": "Drafts and reruns run locally; the API makes the final version when you adopt.",
+      "off": "This step does not run now (no local version under All local, or the step is only a placeholder so far)."
+    },
+    "api": "API service",
+    "local": "Local model",
+    "role": {
+      "main": "Primary",
+      "final": "Final version",
+      "draft": "Drafts",
+      "fallback": "Fallback",
+      "unused": "Not used",
+      "none": "None"
+    },
+    "more": "More providers ({{count}})",
+    "less": "Show fewer",
+    "priceNote": "Prices are per million input / output tokens; the providers' own pages are authoritative.",
+    "noApi": "This component has no API version; it runs locally only.",
+    "noLocal": "This component has no model that runs locally.",
+    "runtimeOk": "Local services: ComfyUI / inference server connected",
+    "runtimeDown": "Local services unreachable: local runs wait until they are back",
+    "keyMissing": "No key",
+    "fallback": "Automatic fallback",
+    "fallbackOn": "If {{primary}} fails, switch to {{target}} automatically and record it in the history.",
+    "fallbackOff": "Off: stop and wait for you when something fails.",
+    "fallbackNext": "the next model in the fallback order",
+    "when": "Fall back when",
+    "trigger": {
+      "error": "Error or out of VRAM",
+      "timeout": "No result after {{minutes}} min",
+      "qa_fail": "Auto QA fails {{n}} times in a row"
+    },
+    "target": "Fall back to",
+    "cap": "Cap per call (USD)",
+    "capHint": "Above the cap it stops and asks you first. Local runs are free.",
+    "source": {
+      "preset": "Preset",
+      "project": "Project",
+      "component": "Component",
+      "item": "This item"
+    },
+    "sourceTitle": "This value comes from: {{source}}",
+    "unavailable": {
+      "no_local_model": "This component has no model that runs locally",
+      "no_api_model": "This component has no API version",
+      "needs_both": "Hybrid needs both local and API",
+      "machine": "This machine cannot run it: {{reason}}"
+    },
+    "reasonLine": "{{mode}}: {{reason}}"
+  },
+  "impact": {
+    "mark": "Only mark as outdated",
+    "rerun": "Rerun what is affected · est. {{cost}}",
+    "undo": "Undo the change",
+    "footer": "Costs are estimated on the current route in Models & fallback; local parts are free. Adopted videos are never overwritten; new results arrive as new versions.",
+    "lineCost": "about {{cost}}",
+    "optional": " (optional)",
+    "marked": "Affected assets, shots and videos are marked outdated; the counts show in the left navigation.",
+    "rerunQueued": "The affected parts are queued, est. {{cost}} on the current route. They arrive as new versions for you to adopt.",
+    "undone": "Change undone.",
+    "line": {
+      "keyframes_redraw": "{{count}} keyframes ({{shots}} shots) must be redrawn for the new aspect",
+      "videos_redo": "{{count}} video takes ({{adopted}} adopted) must be redone: local drafts are free, API finals",
+      "ref_images_suggest": "{{count}} scene reference images were made for {{aspect}}; redoing them is recommended",
+      "asset_scene": "Asset · scene “{{name}}”",
+      "shots_range": "Shots · {{from}} to {{to}}, {{count}} in total",
+      "keyframes": "Keyframes · {{count}}",
+      "videos_adopted_candidates": "Videos · {{from}} to {{to}} adopted, {{shot}} has {{candidates}} takes",
+      "asset_character_look": "Asset · how “{{name}}” looks",
+      "asset_props": "Asset · props “{{names}}”",
+      "asset_text": "Asset · on-screen text “{{name}}”",
+      "asset_voice_sample": "Asset · sample lines of the voice “{{name}}”",
+      "shot": "Shot · {{id}}",
+      "shot_dialogue": "Shot · dialogue of {{id}}",
+      "shot_vo": "Shot · voice-over of {{id}}",
+      "video_adopted": "Video · {{id}} (adopted)",
+      "video_candidates_redo": "Video · {{id}} ({{count}} takes to generate again)",
+      "video_not_generated": "Video · {{id}} (not generated)",
+      "videos_not_generated": "Videos · {{from}} to {{to}} (not generated)",
+      "dub_lines": "Dialogue audio · {{count}}",
+      "video_audio_swap": "Video · {{id}} gets a new audio track",
+      "shot_refs": "Shots · {{ids}}: {{count}} shots use it as a reference"
+    },
+    "unaffected": {
+      "unaffected_spec": "Script, shot list, dialogue audio and voices are unaffected. Adopted videos are kept; new results arrive as new versions.",
+      "unlock_keeps_adopted": "Adopted videos are kept; with the new reference these shots get new versions."
+    }
+  },
+  "gate": {
+    "confirmed": "Confirmed",
+    "reopen": "Reopen",
+    "reopened": "Step reopened; confirm it again after your changes."
+  },
+  "asset": {
+    "source": {
+      "script_line": "Script scene {{scene}} △{{line}}",
+      "script_line_note": "Script scene {{scene}} △{{line}} ({{note}})",
+      "scene_heading": "Script scene {{scene}} heading",
+      "episode_scene": "Episode {{episode}} scene {{scene}}",
+      "dialogue_count": "Script · {{count}} lines",
+      "episode": "Episode {{episode}}"
+    }
+  },
+  "chart": {
+    "view": "View",
+    "chart": "Chart",
+    "table": "Table"
+  }
+}

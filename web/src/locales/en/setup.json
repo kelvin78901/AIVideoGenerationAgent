@@ -1,0 +1,168 @@
+{
+  "steps": {
+    "label": "Setup steps",
+    "scan": "Scan this machine",
+    "install": "Install what is missing",
+    "done": "Done"
+  },
+  "title": "Let us see what this machine can run",
+  "lead": "We check your GPU, driver, runtime, ComfyUI nodes and model weights, list anything missing, and install what you tick in one go. Based on the result we also suggest which steps should run locally and which should use an API.",
+  "demoMachine": "Sample machine (prototype only)",
+  "machine": {
+    "pc": "Windows + RTX 5090",
+    "mac": "Mac M4 Pro"
+  },
+  "willCheck": "What we check",
+  "startScan": "Start scan",
+  "scanNote": "Read-only. Nothing is changed. Takes about 10 seconds.",
+  "summary": "Scan result",
+  "rescan": "Scan again",
+  "phase": {
+    "idle": "Not scanned yet",
+    "scanning": "Scanning…",
+    "scanned": "Scan complete",
+    "installing": "Installing…",
+    "done": "Install complete"
+  },
+  "group": {
+    "sys": {
+      "name": "System and hardware",
+      "hint": "Decides which models can run locally",
+      "check": "GPU and VRAM, driver, memory, disk space"
+    },
+    "rt": {
+      "name": "Runtime",
+      "hint": "Python, PyTorch, FFmpeg and other basics",
+      "check": "Python, the CUDA build of PyTorch, FFmpeg, Git"
+    },
+    "comfy": {
+      "name": "ComfyUI and nodes",
+      "hint": "Runs local image, video and upscaling",
+      "check": "ComfyUI version and custom nodes for H3, upscaling, ControlNet"
+    },
+    "w": {
+      "name": "Model weights",
+      "hint": "Large files, downloads can resume",
+      "check": "Weights for video, image, upscaling, voice and local LLM"
+    },
+    "svc": {
+      "name": "Network and services",
+      "hint": "Download speed, local LLM server, API keys",
+      "check": "Access to model hubs, local LLM server, saved API keys"
+    }
+  },
+  "status": {
+    "checking": "Checking",
+    "ok": "OK",
+    "missing": "Missing",
+    "old": "Outdated",
+    "optional": "Optional",
+    "warn": "Note",
+    "skip": "Skipped",
+    "done": "Installed",
+    "fail": "Failed"
+  },
+  "found": {
+    "os": "{{name}} · {{bits}}-bit",
+    "os_apple": "{{name}} · Apple silicon",
+    "gpu_vram": "{{name}} · {{gb}} GB VRAM",
+    "gpu_unified": "{{name}} · unified memory",
+    "driver_cuda": "Supports CUDA {{cuda}}",
+    "ram": "{{gb}} GB",
+    "ram_unified": "{{gb}} GB unified",
+    "disk_free": "{{free}} free",
+    "disk_free_on": "{{drive}} {{free}} free",
+    "version": "{{version}}",
+    "not_found": "Not found",
+    "installed": "Installed",
+    "torch_not_cuda": "Installed, but not the CUDA {{cuda}} build",
+    "outdated": "Installed, outdated",
+    "needs_cuda": "Needs CUDA",
+    "hf_slow": "Slow direct link to Hugging Face",
+    "no_keys": "None yet"
+  },
+  "fix": {
+    "install_named": "Install {{name}}",
+    "install_torch_mps": "Install PyTorch (MPS build)",
+    "torch_cuda": "Switch to the CUDA {{cuda}} build (needed for NVFP4)",
+    "update_latest": "Update to latest",
+    "install_nodes": "Install nodes",
+    "ctrl_later": "Install when you need pose or layout control",
+    "sage_build": "Build from source for speed",
+    "download": "Download",
+    "llm_optional": "Install if writing tasks should run locally",
+    "pick_mirror": "Pick China mirror or Automatic below",
+    "install_llm_server": "Install Ollama or a llama.cpp server",
+    "keys_later": "Add later in Models & fallback",
+    "no_cuda_video_api": "No CUDA: video generation will use APIs",
+    "comfy_images_only": "Only for local images; can skip",
+    "unsupported_skip": "Not supported, skipped",
+    "unsupported_upscale_api": "Not supported, upscaling via API",
+    "download_local_writing": "Download for local writing tasks",
+    "mac_voice_slow": "Runs on Mac, slower",
+    "mac_image_slow": "Very slow on Mac; API recommended",
+    "install_ollama_mlx": "Install Ollama (MLX backend)",
+    "keys_video_api": "Video needs APIs; add keys after setup"
+  },
+  "error": {
+    "no_wheel": "No prebuilt package fits this machine, and building it failed"
+  },
+  "none": "—",
+  "pick": "Install",
+  "pickOptional": "Install (optional)",
+  "retry": "Retry",
+  "skipItem": "Skip",
+  "progressOf": "{{name}} install progress",
+  "installTitle": "Install settings",
+  "dir": "Install location",
+  "dirHint": "Model weights go here. Leave plenty of space.",
+  "mirror": {
+    "label": "Download source",
+    "name": {
+      "auto": "Automatic",
+      "official": "Official",
+      "cn": "China mirror"
+    },
+    "hint": {
+      "auto": "Tests speed first and uses the fastest. A failed file is retried from another source.",
+      "official": "Downloads straight from GitHub, Hugging Face and PyPI.",
+      "cn": "Uses mirrors in China for Python packages and model weights. Good for slow connections."
+    }
+  },
+  "installNote": "Large files resume if interrupted. Close the app halfway and it picks up next time. Everything installed is recorded so it can be removed cleanly.",
+  "install": "Install {{count}} selected",
+  "onlyRequired": "Required only",
+  "selectAll": "Select all",
+  "skip": "Skip for now and open the studio",
+  "log": {
+    "title": "Install log",
+    "mirror": "Download source: {{mirror}} · {{dir}}",
+    "start": "Start: {{item}}",
+    "done": "Done: {{item}}",
+    "fail": "Failed: {{item}}. Retry or skip it",
+    "fail_optional": "Failed (optional, nothing else affected): {{item}}",
+    "retry": "Retry: {{item}}",
+    "skip": "Skipped: {{item}}",
+    "finish": "All finished."
+  },
+  "done": {
+    "title": "Ready",
+    "line": "Installed {{done}} items.",
+    "lineFailed": "Installed {{done}} items, failed {{failed}} (all optional).",
+    "lineFailedRequired": "Installed {{done}} items, failed {{failed}}, including a required one. Retry it; if it still fails, switch the steps that need it to an API in Models & fallback.",
+    "recommend": "Recommended preset for this machine",
+    "enter": "New series: set the output format",
+    "toModels": "Add API keys in Models & fallback",
+    "later": "You can run this scan again from Models & fallback."
+  },
+  "rec": {
+    "local_video": {
+      "name": "Balanced: drafts and reruns local, final take via API",
+      "why": "32 GB of VRAM runs MiniMax H3 locally for video drafts, and image, upscaling, voice and LLM can all run locally too. Only the take you approve goes through an API, which keeps cost low without hurting the final cut."
+    },
+    "no_cuda": {
+      "name": "Balanced (video via API)",
+      "why": "Apple silicon cannot run CUDA video models like MiniMax H3, so video, keyframes and upscaling use APIs. The LLM and voice can run locally to save some money."
+    }
+  }
+}

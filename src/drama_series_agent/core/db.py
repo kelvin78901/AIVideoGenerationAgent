@@ -57,6 +57,8 @@ class Database:
         self.engine: AsyncEngine = create_async_engine(
             f"sqlite+aiosqlite:///{self.path.as_posix()}",
             connect_args={"timeout": 30},
+            # A connection broken by a cancelled request is replaced instead of handed out.
+            pool_pre_ping=True,
         )
         event.listen(self.engine.sync_engine, "connect", _set_sqlite_pragmas)
         self._sessions = async_sessionmaker(

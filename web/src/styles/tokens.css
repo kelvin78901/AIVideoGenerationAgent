@@ -43,9 +43,41 @@
   --chart-seq-1: #86b6ef;
   --chart-seq-2: #2a78d6;
   --chart-seq-3: #104281;
+  /* Chart furniture: hairline grid, crosshair, meter track (a light step of the sequential ramp). */
+  --chart-grid: #ecece8;
+  --chart-crosshair: #898781;
+  --chart-track: #e8eefb;
   --status-pass: #0ca30c;
   --status-fail: #d03b3b;
   --status-warn: #b7791f;
+  --status-info: #3563c9;
+
+  /* Tones: soft badges, banners and highlights (status meaning only; always with text). */
+  --tone-pass-bg: #e7f4e7;
+  --tone-pass-fg: #0b6e1d;
+  --tone-pass-border: #b9dfbd;
+  --tone-fail-bg: #fbeaea;
+  --tone-fail-fg: #a52828;
+  --tone-fail-border: #efc1c1;
+  --tone-warn-bg: #fcf0e3;
+  --tone-warn-fg: #9a4a0c;
+  --tone-warn-border: #f0cfa9;
+  --tone-info-bg: #e8eefb;
+  --tone-info-fg: #1d43a3;
+  --tone-info-border: #c5d3f3;
+  --tone-neutral-bg: #ebebe7;
+  --tone-neutral-fg: #55565b;
+  --tone-neutral-border: #d8d8d3;
+  /* Source highlight (script line <-> novel paragraph). */
+  --highlight: #fff1bf;
+
+  /* Media frames (keyframes, takes, players) are the visual centre: dark in both themes. */
+  --media: #1d1e22;
+  --media-foreground: #ececea;
+  --media-muted: #8d8e93;
+  /* Lines on dark panels (install log): done / failed. */
+  --media-ok: #a9c1f5;
+  --media-warn: #f0b98a;
 
   --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
@@ -84,13 +116,42 @@
   --sidebar-accent-foreground: #bccdf7;
   --sidebar-border: #2a2b31;
 
-  --chart-1: #5b9ae6;
-  --chart-2: #f2875a;
-  --chart-3: #36c996;
-  --chart-seq-1: #284f7f;
-  --chart-seq-2: #4f8fdc;
-  --chart-seq-3: #a9cbf3;
+  /* Validated for the dark card (dataviz validator: OKLCH L 0.48–0.67, CVD ΔE ≥ 8, ≥ 3:1). */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  /* Sequential flips in dark: more = lighter; no darker than step 550 so it clears the card. */
+  --chart-seq-1: #1c5cab;
+  --chart-seq-2: #3987e5;
+  --chart-seq-3: #9ec5f4;
+  --chart-grid: #2a2b31;
+  --chart-crosshair: #7d7e83;
+  --chart-track: #1f2a45;
   --status-pass: #3cc23c;
   --status-fail: #ee6b6b;
   --status-warn: #e0a440;
+  --status-info: #3d6fd6;
+
+  --tone-pass-bg: #13301b;
+  --tone-pass-fg: #84d98e;
+  --tone-pass-border: #22502d;
+  --tone-fail-bg: #3a1818;
+  --tone-fail-fg: #f29c9c;
+  --tone-fail-border: #5c2626;
+  --tone-warn-bg: #3a2511;
+  --tone-warn-fg: #f2b36b;
+  --tone-warn-border: #5c3a19;
+  --tone-info-bg: #18243f;
+  --tone-info-fg: #aac1f5;
+  --tone-info-border: #2a3d6e;
+  --tone-neutral-bg: #26272c;
+  --tone-neutral-fg: #b4b5ba;
+  --tone-neutral-border: #36373d;
+  --highlight: #3b3315;
+
+  --media: #0b0c0e;
+  --media-foreground: #e6e6e3;
+  --media-muted: #7d7e83;
+  --media-ok: #9db6ee;
+  --media-warn: #e8b07f;
 }

@@ -1,0 +1,80 @@
+{
+  "title": "后期",
+  "lead": "把采纳的镜头、对白、音效、音乐和字幕拼成一集。要细修就导出到达芬奇，时间线原样带过去。",
+  "what": {
+    "music": "配乐 · {{count}} 段 · {{seconds}} 秒",
+    "sfx": "音效 · {{count}} 个",
+    "sub": "字幕时间轴 · {{count}} 句"
+  },
+  "preview": {
+    "label": "预览",
+    "placeholder": "未采纳 · 用关键帧占位",
+    "play": "播放",
+    "pause": "暂停",
+    "time": "{{now}} / {{total}}"
+  },
+  "clip": {
+    "label": "片段设置",
+    "title": "片段 {{id}}",
+    "src": "T{{n}} · {{model}} · {{res}}",
+    "noTake": "还没采纳，暂用关键帧",
+    "switch": "换一条候选",
+    "trim": "裁掉开头 0.3 秒",
+    "trimHint": "H3 生成的视频开头偶尔会闪一下，默认裁掉。",
+    "transition": "进入方式",
+    "transitions": {
+      "cut": "硬切",
+      "dissolve": "叠化 0.3 秒",
+      "dip_black": "闪黑"
+    },
+    "dialogueVolume": "对白音量 {{n}}",
+    "ambienceVolume": "环境声音量 {{n}}"
+  },
+  "timeline": {
+    "label": "时间线",
+    "tracks": {
+      "video": "画面",
+      "dialogue": "对白",
+      "ambience": "环境/音效",
+      "music": "音乐",
+      "subtitle": "字幕"
+    },
+    "segment": "{{track}}：{{label}}",
+    "native": "{{label}}（视频原生音频）",
+    "nativeToast": "{{label}}来自视频模型的原生音频，各镜头之间自动交叉淡化。",
+    "seek": "跳到 {{time}}"
+  },
+  "subs": {
+    "title": "字幕",
+    "lead": "文字直接取自剧本，不靠语音识别；识别只用来对齐时间。",
+    "tc": "{{from}} → {{to}}",
+    "label": "字幕 {{tc}}",
+    "edited": "已改，和剧本不同",
+    "empty": "这一集还没有台词。"
+  },
+  "export": {
+    "title": "导出",
+    "status": {
+      "pass": "通过",
+      "warn": "注意",
+      "fail": "未过"
+    },
+    "check": {
+      "loudness": "响度 {{lufs}} LUFS，没有爆音",
+      "frames": "没有黑帧、跳帧",
+      "placeholders": "还有 {{count}} 个镜头没采纳，导出会用关键帧占位",
+      "all_adopted": "所有镜头都已采纳"
+    },
+    "mp4": "导出成片 MP4 · {{spec}}",
+    "fcpxml": "导出到达芬奇（FCPXML）",
+    "otio": "OTIO",
+    "srt": "字幕 SRT",
+    "toast": {
+      "mp4": "开始导出成片。",
+      "mp4Placeholders": "开始导出成片。{{count}} 个没采纳的镜头会用关键帧占位，并在画面角落标出来。",
+      "fcpxml": "开始生成 FCPXML：每个镜头、对白、音效、音乐、字幕各占一轨，在达芬奇里直接打开。",
+      "otio": "开始生成 OTIO 时间线文件。",
+      "srt": "开始导出字幕 SRT。"
+    }
+  }
+}

@@ -1,0 +1,72 @@
+{
+  "title": "分镜",
+  "lead": "一个镜头一张关键帧。在这里把镜头类型、构图、站位和衔接方式定下来，用预演看一遍节奏，再花钱生成视频。",
+  "spec": "画幅 {{aspect}} · 关键帧和视频按 {{w}}×{{h}} 出 · 改成片规格",
+  "gate": "去生成视频",
+  "what": {
+    "plan": "第 {{n}} 集分镜 · {{count}} 个镜头 · {{seconds}} 秒",
+    "kf": "镜头 {{id}} 关键帧 · 3 张候选"
+  },
+  "preview": {
+    "label": "预演",
+    "play": "播放预演",
+    "pause": "暂停预演",
+    "total": "共 {{seconds}} 秒 · 用当前关键帧 + 本地临时配音 + 字幕，不花钱",
+    "shot": "镜头 {{id}}，{{seconds}} 秒",
+    "seconds": "{{n}}s"
+  },
+  "cards": {
+    "label": "镜头列表",
+    "meta": "{{framing}} · {{seconds}}s"
+  },
+  "status": {
+    "confirmed": "已确认",
+    "draft": "草稿"
+  },
+  "shot": {
+    "label": "镜头设定",
+    "title": "镜头 {{id}}",
+    "confirm": "确认这个镜头",
+    "unconfirm": "取消确认",
+    "confirmed": "{{id}} 已确认：首帧、参考和镜头设定锁定，可以去生成视频。",
+    "unconfirmed": "已取消确认 {{id}}。",
+    "firstFrame": "首帧",
+    "ownKeyframe": "本镜关键帧",
+    "tailOf": "接续 {{id}} 的尾帧",
+    "kfLabel": "v{{n}} · {{letter}}",
+    "picked": "已选",
+    "noKeyframe": "这个镜头还没有关键帧。在右侧选「关键帧」组件后点「重跑」。",
+    "tailTitle": "{{id}} 尾帧",
+    "tailText": "不单独做关键帧：视频生成时取 {{id}} 的最后一帧当首帧，动作和光线连着走。",
+    "tailDefault": "想换成新关键帧，把镜头类型改成「同场切镜」。",
+    "type": "镜头类型",
+    "typeHint": {
+      "continuous": "接着前一个镜头的动作拍：用指定镜头的最后一帧当首帧，人物和光线不会跳。",
+      "same_scene_cut": "同一场景换角度或景别：生成新关键帧，场景和人物用锁定的参考图。",
+      "scene_change": "换到新地点：新关键帧 + 新场景参考，不和上一镜强行衔接。"
+    },
+    "framing": "景别",
+    "move": "机位运动",
+    "duration": "时长（秒）",
+    "desc": "画面描述（关键帧提示词的意图层）",
+    "refs": "参考素材（已锁定的才会传给模型）",
+    "unlocked": "未锁定",
+    "addRef": "添加参考",
+    "noMoreRefs": "已锁定的素材都加上了",
+    "sound": "台词与声音",
+    "noDialogue": "无台词",
+    "ambience": "环境声：{{sound}}",
+    "audio": "声音做法",
+    "audioHint": {
+      "native": "视频模型直接出声音和口型（H3 原生音频），用锁定音色当参考。",
+      "tts": "先用锁定音色配好音，再让视频按音频对口型；画外音、长台词用这个更稳。",
+      "none": "这个镜头不出人声，只保留环境声和音效。"
+    },
+    "blocking": "站位（俯视）",
+    "blockingHint": "拖动人物和机位（或选中后用方向键），会同步进关键帧提示词。",
+    "camera": "机位 · {{framing}}",
+    "blockingItem": "{{label}}：横 {{x}}%，纵 {{y}}%",
+    "text": "画面文字：{{text}}",
+    "textLink": "在素材里查看"
+  }
+}

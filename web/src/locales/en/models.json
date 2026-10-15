@@ -1,0 +1,116 @@
+{
+  "title": "Models & fallback",
+  "lead": "Choose for each component: local or API, which API service, which local model, whether to fall back automatically, and the order to try when you want another take. These are the global defaults; changes made in a step's side panel only affect that one component.",
+  "presets": {
+    "title": "Presets",
+    "current": "Current",
+    "switched": "Switched to {{name}}. Components you changed by hand stay as they are.",
+    "name": {
+      "quality": "Best quality",
+      "balanced": "Balanced",
+      "cheap": "Save money",
+      "local": "All local"
+    },
+    "desc": {
+      "quality": "Use the best API wherever there is one; local models only as fallback.",
+      "balanced": "Drafts and reruns run locally; the API makes the final version when you adopt. Money goes mostly into the take you keep.",
+      "cheap": "Local wherever possible; fall back to the cheapest API only when local fails.",
+      "local": "Never calls an API. Components without a local version (3D world) are skipped."
+    },
+    "cost": {
+      "quality": "Estimate: mostly H3 API, about $30 per finished minute",
+      "balanced": "Estimate: about $10–15 per finished minute",
+      "cheap": "Estimate: below Balanced, depending on how often it falls back",
+      "local": "No API cost, only power and time"
+    }
+  },
+  "services": {
+    "title": "Services",
+    "local": "Local: {{gpu}} · ComfyUI {{comfy}} · inference server {{llm}}",
+    "noGpu": "no usable GPU",
+    "connected": "connected",
+    "disconnected": "not reachable",
+    "statusUnknown": "unknown",
+    "rescan": "Scan this machine again and install what is missing",
+    "keySet": "set",
+    "keyMissing": "not set",
+    "keyNotNeeded": "no key needed",
+    "chip": "{{name}} · {{state}}",
+    "note": "Services without a key are skipped by automatic fallback and by Try another. Writing models all use the OpenAI-compatible API: a new model works once you enter its base URL and model name, no code change needed.",
+    "mediaLater": "Keys for image, video and voice services are added here when those models are connected."
+  },
+  "key": {
+    "title": "{{name}} API key",
+    "lead": "The key is stored only in this computer's system keychain: never in the database or logs, and it is not shown again.",
+    "status": {
+      "keyring": "Set (system keychain)",
+      "env": "Set (from environment / .env)",
+      "none": "Not set"
+    },
+    "input": "API key",
+    "placeholder": "Paste the key",
+    "save": "Save",
+    "replace": "Save new key",
+    "delete": "Delete key",
+    "test": "Test connection",
+    "testing": "Connecting…",
+    "saved": "{{name}} key saved.",
+    "deleted": "{{name}} key deleted.",
+    "envNote": "This key comes from the environment or .env; change it there to remove it.",
+    "testOk": "Connected. {{count}} models available.",
+    "testOkNoList": "Connected.",
+    "testFail": "Connection failed: {{detail}}",
+    "docs": "Get a key from the provider",
+    "baseUrl": "Endpoint: {{url}}",
+    "close": "Close"
+  },
+  "fallback": {
+    "title": "When something fails",
+    "mode": "Fallback behaviour",
+    "after": "Fall back, tell me after",
+    "ask": "Ask me first",
+    "hint": {
+      "after": "On a problem it switches to the fallback model and keeps going; the result and the reason are kept in the history and run log.",
+      "ask": "On a problem it pauses the step and asks you: fall back, retry or skip."
+    },
+    "budget": "Episode API budget $",
+    "budgetNote": "Fallback costs count too",
+    "budgetSaved": "Episode API budget set to {{amount}}.",
+    "budgetInvalid": "The budget must be 0 or more."
+  },
+  "table": {
+    "label": "Component settings",
+    "stage": "Step",
+    "component": "Component",
+    "location": "Runs on",
+    "locationOf": "Where {{name}} runs",
+    "primary": "Main model",
+    "fallback": "Fallback",
+    "fallbackOf": "Automatic fallback for {{name}}",
+    "fallbackTo": "Falls back to",
+    "alts": "Alternatives",
+    "expand": "Expand {{name}}",
+    "collapse": "Collapse {{name}}",
+    "changed": "Changed by hand; does not follow the preset",
+    "off": "This step does not run",
+    "offNoLocal": "No local version; this step is skipped",
+    "hybrid": "{{local}} → {{api}}",
+    "fallbackOff": "Off",
+    "altCount": "Alternatives: {{count}}",
+    "altNone": "None",
+    "apiModels": "API services",
+    "localModels": "Local models",
+    "noApi": "No API version",
+    "noLocal": "No local version",
+    "fallbackHint": "Triggers on a local error, out of VRAM, a timeout, or QA failing several times in a row.",
+    "altOrder": "Order for Try another",
+    "where": {
+      "local": "Local",
+      "api": "API"
+    },
+    "up": "Move {{name}} up",
+    "down": "Move {{name}} down",
+    "reset": "Reset to preset",
+    "resetDone": "{{name}} reset to the preset."
+  }
+}

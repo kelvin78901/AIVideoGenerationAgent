@@ -1,0 +1,72 @@
+{
+  "title": "Storyboard",
+  "lead": "One keyframe per shot. Settle shot type, framing, blocking and transitions here, check the rhythm in the preview, then spend money on video.",
+  "spec": "Aspect {{aspect}} · keyframes and video at {{w}}×{{h}} · change output spec",
+  "gate": "On to video",
+  "what": {
+    "plan": "Episode {{n}} storyboard · {{count}} shots · {{seconds}} s",
+    "kf": "Shot {{id}} keyframe · 3 candidates"
+  },
+  "preview": {
+    "label": "Preview",
+    "play": "Play preview",
+    "pause": "Pause preview",
+    "total": "{{seconds}} s in total · current keyframes + temporary local voice + subtitles, free",
+    "shot": "Shot {{id}}, {{seconds}} s",
+    "seconds": "{{n}}s"
+  },
+  "cards": {
+    "label": "Shots",
+    "meta": "{{framing}} · {{seconds}}s"
+  },
+  "status": {
+    "confirmed": "Confirmed",
+    "draft": "Draft"
+  },
+  "shot": {
+    "label": "Shot settings",
+    "title": "Shot {{id}}",
+    "confirm": "Confirm this shot",
+    "unconfirm": "Unconfirm",
+    "confirmed": "{{id}} confirmed: first frame, references and settings are locked; ready for video.",
+    "unconfirmed": "{{id}} is no longer confirmed.",
+    "firstFrame": "First frame",
+    "ownKeyframe": "Own keyframe",
+    "tailOf": "Continues from the last frame of {{id}}",
+    "kfLabel": "v{{n}} · {{letter}}",
+    "picked": "Picked",
+    "noKeyframe": "No keyframe yet. Pick the Keyframes component on the right and click Rerun.",
+    "tailTitle": "Last frame of {{id}}",
+    "tailText": "No keyframe of its own: video generation starts from the last frame of {{id}}, so action and light carry over.",
+    "tailDefault": "For a new keyframe, change the shot type to “same scene, new angle”.",
+    "type": "Shot type",
+    "typeHint": {
+      "continuous": "Continues an earlier shot's action: its last frame is the first frame here, so people and light don't jump.",
+      "same_scene_cut": "Same scene, new angle or framing: a new keyframe using the locked references.",
+      "scene_change": "New location: new keyframe and scene reference, no forced continuity with the last shot."
+    },
+    "framing": "Framing",
+    "move": "Camera move",
+    "duration": "Length (s)",
+    "desc": "Picture description (intent layer of the keyframe prompt)",
+    "refs": "References (only locked assets are sent to the model)",
+    "unlocked": "not locked",
+    "addRef": "Add reference",
+    "noMoreRefs": "All locked assets are already added",
+    "sound": "Dialogue and sound",
+    "noDialogue": "No dialogue",
+    "ambience": "Ambience: {{sound}}",
+    "audio": "Audio approach",
+    "audioHint": {
+      "native": "The video model makes voice and lip-sync itself (H3 native audio), using the locked voice as reference.",
+      "tts": "Record the line with the locked voice first, then lip-sync the video to it; steadier for voice-over and long lines.",
+      "none": "No voice in this shot; only ambience and effects."
+    },
+    "blocking": "Blocking (top view)",
+    "blockingHint": "Drag people and the camera (or select one and use the arrow keys); it feeds the keyframe prompt.",
+    "camera": "Camera · {{framing}}",
+    "blockingItem": "{{label}}: {{x}}% across, {{y}}% down",
+    "text": "On-screen text: {{text}}",
+    "textLink": "View in Assets"
+  }
+}

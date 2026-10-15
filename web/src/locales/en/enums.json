@@ -1,0 +1,122 @@
+{
+  "where": {
+    "local": "Local",
+    "api": "API"
+  },
+  "versionStatus": {
+    "draft": "Draft",
+    "adopted": "Adopted",
+    "locked": "Locked"
+  },
+  "origin": {
+    "first": "First version",
+    "run": "Generated",
+    "rerun": "Rerun",
+    "prompt_rerun": "Rerun with edited prompt",
+    "switch": "Switched model",
+    "edit": "Edited by hand",
+    "fallback": "Automatic fallback",
+    "import": "Imported",
+    "auto_qa_rerun": "Rerun after failed QA",
+    "comfy_ingest": "Saved back from ComfyUI"
+  },
+  "component": {
+    "extract": "Story bible extraction",
+    "enrich": "Novel enrichment",
+    "split": "Episode planning",
+    "script": "Scriptwriting",
+    "assets": "Asset breakdown",
+    "img": "Reference images",
+    "text": "On-screen text",
+    "voice": "Voices",
+    "dub": "Dialogue audio",
+    "plan": "Shot planning",
+    "kf": "Keyframes",
+    "world": "3D world (optional)",
+    "vid": "Video generation",
+    "ctrl": "Structure control",
+    "up": "2K finishing",
+    "lip": "Lip-sync repair",
+    "qa": "Auto QA",
+    "music": "Music",
+    "sfx": "Sound effects",
+    "sub": "Subtitle alignment"
+  },
+  "componentDesc": {
+    "enrich": "Finds what the camera cannot show in the source text and suggests additions, without changing the plot.",
+    "extract": "Pulls characters, locations, props and the timeline out of the text for the script and asset steps.",
+    "split": "Cuts the novel into episodes in story order, each ending on a cliffhanger, with a hook at the start of episode 1.",
+    "script": "Turns narration into scene headings, action, dialogue and delivery; every block cites its source paragraph.",
+    "img": "Reference images for characters, scenes and props. Once locked, keyframes and videos use them.",
+    "text": "Text that must be exact in the frame: notes, phone screens, signs. Every candidate is OCR-checked.",
+    "voice": "One voice per speaking character; all dialogue audio and auditions use it.",
+    "plan": "Breaks the script into shots: type, framing, length, where the first frame comes from, which references.",
+    "kf": "Three keyframes for every shot that needs a new first frame, following the framing and blocking set here.",
+    "vid": "Makes video takes per shot setting; first frame, references and voice come from what is locked upstream.",
+    "up": "Upscales the adopted 768p video to 2K. Local upscalers only enlarge; H3 Regenerate-2K regenerates detail — better, but billed.",
+    "lip": "When lip-sync QA fails but the picture is good, fix only the mouth instead of rerunning the take.",
+    "qa": "Face, lip-sync, dialogue and text are scored by fixed small local models; defects and match with the description are judged by a vision model.",
+    "music": "Scores the scene by mood and aligns the music to the cuts.",
+    "sfx": "Adds the sounds the video model missed: door creaks, the hit at the cliffhanger.",
+    "sub": "Subtitle text comes from the script; speech recognition only aligns each line in time."
+  },
+  "suggestionKind": {
+    "appearance": "Appearance",
+    "lighting": "Lighting",
+    "inner_to_action": "Inner to visible",
+    "cliffhanger": "Cliffhanger",
+    "motive": "Motive",
+    "timeline": "Timeline",
+    "consistency": "Consistency",
+    "gap": "Gap"
+  },
+  "lineType": {
+    "action": "Action",
+    "dialogue": "Dialogue",
+    "vo": "Voice-over",
+    "sfx": "Sound"
+  },
+  "assetKind": {
+    "character": "Characters",
+    "scene": "Scenes",
+    "prop": "Props",
+    "text": "On-screen text",
+    "voice": "Voices",
+    "style": "Style",
+    "world": "World"
+  },
+  "assetStatus": {
+    "locked": "Locked",
+    "choosing": "Pick one",
+    "not_generated": "Not generated"
+  },
+  "shotType": {
+    "continuous": "Continuous action",
+    "same_scene_cut": "Same scene, new angle",
+    "scene_change": "Scene change"
+  },
+  "framing": {
+    "wide": "Wide",
+    "medium": "Medium",
+    "close": "Close",
+    "closeup": "Close-up"
+  },
+  "cameraMove": {
+    "static": "Static",
+    "push": "Slow push",
+    "follow": "Follow",
+    "pan": "Pan"
+  },
+  "audioMode": {
+    "native": "Native sync",
+    "tts": "Voice first, then lip-sync",
+    "none": "No voice"
+  },
+  "qaIssue": {
+    "face_mismatch": "face",
+    "finger_fusion": "fingers",
+    "color_off": "colour",
+    "light_missing": "lighting",
+    "text_mismatch": "text"
+  }
+}

@@ -6,9 +6,11 @@ routes under ``/api/v1``.
 
 from __future__ import annotations
 
+import os
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
 from typing import Annotated, Any
+from urllib.parse import urlsplit
 
 from fastapi import APIRouter, Depends, FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,6 +24,25 @@ from drama_series_agent.core.secrets import install_log_redaction
 
 # The Vite dev server is the only browser origin allowed to call the backend.
 ALLOWED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"]
+_LOOPBACK = {"127.0.0.1", "localhost"}
+
+
+def allowed_origins() -> list[str]:
+    """``ALLOWED_ORIGINS`` plus ``DRAMA_WEB_ORIGINS`` (comma-separated, loopback http only).
+
+    The extra origins are for a second front end on another port, e.g. the Playwright
+    tests' own Vite server; anything that is not ``http://127.0.0.1:<port>`` or
+    ``http://localhost:<port>`` is refused so the setting cannot open the API to other sites.
+    """
+    extra = [o.strip().rstrip("/") for o in os.environ.get("DRAMA_WEB_ORIGINS", "").split(",")]
+    origins = list(ALLOWED_ORIGINS)
+    for origin in filter(None, extra):
+        parts = urlsplit(origin)
+        if parts.scheme != "http" or parts.hostname not in _LOOPBACK or parts.path:
+            raise ValueError(f"DRAMA_WEB_ORIGINS: {origin!r} is not a loopback http origin")
+        if origin not in origins:
+            origins.append(origin)
+    return origins
 
 
 def _v1_router() -> APIRouter:
@@ -55,11 +76,12 @@ def create_app() -> FastAPI:
     from drama_series_agent.api.routers.series import router as upstream_router
 
     app = FastAPI(title="AI Drama Studio", version=__version__, lifespan=lifespan)
+    origins = allowed_origins()
     # Added first = runs inside CORS, so preflight requests are answered by CORS untouched.
-    app.add_middleware(LocalOnlyGuard, allowed_origins=ALLOWED_ORIGINS)
+    app.add_middleware(LocalOnlyGuard, allowed_origins=origins)
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=ALLOWED_ORIGINS,
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["content-type", CLIENT_HEADER, "last-event-id"],

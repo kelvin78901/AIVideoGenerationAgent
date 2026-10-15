@@ -1,4 +1,4 @@
-import type { Job, ModelCall } from "@/api/types";
+import type { Job, ModelCall } from "@/api/schemas/jobs";
 
 export function makeJob(overrides: Partial<Job> = {}): Job {
   return {

@@ -34,13 +34,32 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 - [x] Mock 模式下发起一次 LLM 调用：前端实时看到任务状态变化，`model_call` 多一行
 - [x] 任务排队时杀掉后端再启动，任务继续执行
 
+## M0.5 界面先行（约 2 周）
+
+> 11 个页面按原型做成可点击的 React 页面，用《雨停之前》第 1 集示例数据跑起来。还没实现的 `/api/v1` 接口由 MSW 在浏览器里返回示例数据，已实现的（jobs、providers 等）直接走后端。**M1 起各里程碑的界面条目改为「接真实接口、删掉对应的 MSW handler」，界面不重写。** 计划：[`plans/M0.5.md`](plans/M0.5.md)。
+
+- [x] 接口契约：SPEC 9.1 的接口写成 zod schema + TS 类型，响应在运行时校验；补齐 9.1 缺的读接口（记进 SPEC 和 DECISIONS）
+- [x] MSW：未实现的接口返回示例数据，带 `x-drama-demo` 头；顶栏「示例数据」标记；演示事件和真实 SSE 走同一个分发器
+- [x] 共用组件正式版：RunBar、Inspector、ModelPicker、PromptEditor、VersionHistory、ImpactDialog、GateButton、CostBadge（`/dev/components` 陈列）
+- [x] 制作步骤 6 页：小说、剧本、素材、分镜、生成、后期
+- [x] 全局页 5 页：成片规格、首次启动、模型与兜底、素材整理与同步、数据看板
+- [x] Playwright：冒烟测试进 CI；每页亮 / 暗截图，和原型并排对照（`docs/studio/reports/ui/`）
+
+**验收**
+- [x] 11 页都能打开、能点，原型里的交互都能用；数字和原型一致（本集 $8.94 / 预计 $13.35 / 预算 $15、42 次调用 1 次失败、9 个镜头 34 秒、素材 7/13、分镜 3/9、采纳 3/9、质检 6/10）
+- [x] 中英切换后所有界面文字都变（示例内容除外）；亮色、暗色都检查过
+- [x] 页面不写死数据：`VITE_DEMO_DATA=0` 时显示加载失败或空状态，不出现假数据
+- [x] 8 个共用组件都是正式版：有 Vitest 测试，在 `/dev/components` 能看到各种状态
+- [x] `pnpm test`、lint、typecheck、`uv run pytest` 全绿；Playwright 冒烟进 CI，CI 通过
+- [x] 截图和原型的对照表写进里程碑报告
+
 ## M1 首次启动 + 成片规格（约 1 周）
 
 - [ ] `setup-manifest.yaml` 解析、各类检测器、只读扫描 → `machine_profile`
 - [ ] 安装器：按依赖顺序执行、SSE 实时日志、每步重试 / 跳过、`installed_item` 记录、镜像（自动 / 官方 / 国内）
-- [ ] Setup 页（对照 `prototype/Setup.dc.html`，中英文完整）
+- [ ] Setup 页（对照 `prototype/Setup.dc.html`，中英文完整）（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [ ] `output_spec` 表、`spec/dims.py`、`spec/compat.py`、平台预设
-- [ ] Spec 页（对照 `prototype/Spec.dc.html`）：平台、画幅、分辨率、帧率、每集时长、字幕、安全区预览、模型兼容表
+- [ ] Spec 页（对照 `prototype/Spec.dc.html`）：平台、画幅、分辨率、帧率、每集时长、字幕、安全区预览、模型兼容表（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [ ] 顶栏规格标签接真实数据
 
 **验收**
@@ -57,9 +76,9 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 - [ ] 分集规划（split）：节拍看板（可拖动换集）+ 情绪曲线
 - [ ] 剧本化（script）：原文和剧本左右对照，三向溯源跳转
 - [ ] 产物与版本：`product` / `product_version` / `dependency`
-- [ ] 共用组件：RunBar、Inspector、ModelPicker（前 6 家 + 更多供应商）、PromptEditor（意图层 / 编译层）、VersionHistory
+- [ ] 共用组件：RunBar、Inspector、ModelPicker（前 6 家 + 更多供应商）、PromptEditor（意图层 / 编译层）、VersionHistory（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [ ] 闸门：小说确认、剧本确认；失效传播 + ImpactDialog
-- [ ] 模型与兜底页：四个预设、全局默认、密钥、兜底方式、备选顺序
+- [ ] 模型与兜底页：四个预设、全局默认、密钥、兜底方式、备选顺序（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [ ] 预算：单次上限、超限进 `waiting_confirm`
 - [ ] 新页面做完后删除 `web/src/legacy/`（上游 Hermes 界面）和 `/legacy` 路由
 
@@ -137,8 +156,8 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 ## M8 数据看板（约 1 周）
 
 - [ ] `/metrics/*` 接口，口径按 SPEC 第 11 节
-- [ ] 看板页全部模块：预算条、值得注意、关键指标、累计花费、调用次数、每镜时间和钱、组件时长、生成速度、API 明细、本地模型和显存、质检、按集汇总
-- [ ] 每张图的「图 / 表」切换、悬停提示和联动、CSV 导出、本集 / 全剧切换
+- [ ] 看板页全部模块：预算条、值得注意、关键指标、累计花费、调用次数、每镜时间和钱、组件时长、生成速度、API 明细、本地模型和显存、质检、按集汇总（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
+- [ ] 每张图的「图 / 表」切换、悬停提示和联动、CSV 导出、本集 / 全剧切换（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 
 **验收**
 - [ ] Mock 示例项目的数字和原型一致：已花 $8.94、预计 $13.35、预算 $15、42 次调用 1 次失败
@@ -151,7 +170,7 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 - [ ] 节点包 `integrations/comfyui-dramastudio`：镜头、素材、存回工作台；`POST /api/v1/ingest`
 - [ ] Eagle（检测 + 文件夹 + 标签 + 注释）
 - [ ] 达芬奇：免费版文件夹 + FCPXML；Studio 版自动建 Bin、写元数据和标记
-- [ ] Sync 页（对照 `prototype/Sync.dc.html`）
+- [ ] Sync 页（对照 `prototype/Sync.dc.html`）（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 
 **验收**
 - [ ] 采纳一个 take 后，几秒内出现在 ComfyUI 素材板对应的组里

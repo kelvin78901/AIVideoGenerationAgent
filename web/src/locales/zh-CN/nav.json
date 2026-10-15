@@ -26,6 +26,14 @@
     "sync": "素材整理与同步",
     "dashboard": "数据看板 · 花费、耗时与速度",
     "devJobs": "开发 · 任务与调用记录",
-    "notFound": "页面不存在"
-  }
+    "notFound": "页面不存在",
+    "devComponents": "开发 · 共用组件陈列"
+  },
+  "badge": {
+    "confirmed": "已确认",
+    "inProgress": "进行中",
+    "notStarted": "未开始",
+    "stale": "待更新 {{count}}"
+  },
+  "devComponents": "开发 · 组件"
 }

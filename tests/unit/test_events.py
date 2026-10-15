@@ -3,6 +3,9 @@ from __future__ import annotations
 import asyncio
 from collections.abc import AsyncIterator
 
+import anyio
+import anyio.lowlevel
+
 from drama_series_agent.api.sse import event_stream, format_event
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import BusEvent, EventBus, EventType
@@ -113,3 +116,27 @@ async def test_event_stream_formats_and_heartbeats(studio_db: Database) -> None:
     rest = [chunk async for chunk in gen]
     assert rest in ([], [": ping\n\n"])
     assert bus.subscriber_count == 0
+
+
+async def test_pool_survives_streams_cancelled_mid_read(studio_db: Database) -> None:
+    """An SSE disconnect cancels the stream (anyio cancel scope) while it reads the database;
+    later requests must still get a working connection (they used to fail with HTTP 500)."""
+    bus = EventBus(studio_db)
+    for i in range(300):
+        await bus.publish(EventType.TOAST, {"i": i})
+
+    async def reader() -> None:
+        while True:
+            assert len(await bus.replay(0)) == 300  # shielded: never a partial result
+            await bus.last_id()
+            await anyio.lowlevel.checkpoint()  # unshielded, like the stream awaiting events
+
+    # Without the shield this deadlocked or broke the pool; fail instead of hanging the suite.
+    with anyio.fail_after(30):
+        for delay in [0, 0.0005, 0.001, 0.002, 0.004] * 6:
+            async with anyio.create_task_group() as tg:
+                tg.start_soon(reader)
+                await anyio.sleep(delay)
+                tg.cancel_scope.cancel()
+    assert await bus.last_id() == 300
+    assert len(await bus.replay(290)) == 10

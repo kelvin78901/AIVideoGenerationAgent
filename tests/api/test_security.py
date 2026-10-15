@@ -99,3 +99,23 @@ def test_hostname_parsing() -> None:
     assert _hostname("[::1]:8000") == "[::1]"
     assert _hostname("[::1]") == "[::1]"
     assert _hostname("127.0.0.1") == "127.0.0.1"
+
+
+def test_extra_loopback_origins_from_env(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The Playwright tests run their own Vite server on another port."""
+    monkeypatch.setenv("DRAMA_WEB_ORIGINS", "http://127.0.0.1:5183, http://localhost:5183/")
+    with TestClient(create_app(), base_url="http://127.0.0.1:8000") as c:
+        headers = {**HEADER, "Origin": "http://127.0.0.1:5183"}
+        resp = c.post("/api/v1/dev/llm-test", json={"delay_s": 0}, headers=headers)
+        assert resp.status_code == 200
+        headers["Origin"] = "http://127.0.0.1:5999"
+        assert c.post("/api/v1/dev/llm-test", json={}, headers=headers).status_code == 403
+
+
+@pytest.mark.parametrize(
+    "origin", ["https://127.0.0.1:5183", "http://evil.example:5183", "http://192.168.1.5:5173"]
+)
+def test_extra_origins_must_be_loopback_http(monkeypatch: pytest.MonkeyPatch, origin: str) -> None:
+    monkeypatch.setenv("DRAMA_WEB_ORIGINS", origin)
+    with pytest.raises(ValueError, match="not a loopback http origin"):
+        create_app()

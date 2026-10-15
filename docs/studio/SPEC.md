@@ -304,22 +304,25 @@ per_call_cap_usd: 0.50
 
 ### 9.1 HTTP 接口概览（`/api/v1`）
 
+标 ⁺ 的是 M0.5 做界面时补的接口（页面需要，原表没有）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
+
 | 资源 | 接口 |
 | --- | --- |
-| 剧集 | `GET/POST /series`，`GET/PATCH /series/{id}`，`GET/PUT /series/{id}/spec`（成片规格，改画幅时返回影响范围） |
-| 小说与设定 | `POST /series/{id}/novel`（上传），`GET /series/{id}/bible`，`PATCH /bible/{entity_id}`，`POST /suggestions/{id}/accept\|reject\|rewrite` |
-| 分集、场、剧本、镜头 | `GET/PATCH /episodes/{id}`，`PATCH /beats/{id}`（含拖动换集），`PATCH /lines/{id}`（返回影响范围），`POST /shots/{id}/split\|merge` |
-| 资产 | `GET/POST /series/{id}/assets`，`PATCH /assets/{id}` |
-| 产物与版本 | `GET /products/{id}`（含版本列表），`POST /products/{id}/run` `{mode: rerun\|switch\|run, model?, intent?, compiled?, count?}` → job，`POST /versions/{id}/set-current\|adopt`，`POST /products/{id}/lock` |
+| 剧集 | `GET/POST /series`，`GET/PATCH /series/{id}`，`GET/PUT /series/{id}/spec`（成片规格，改画幅时返回影响范围；锁定后直接改画幅返回 409 `spec_locked`），`GET /series/{id}/spec/compat`⁺（模型兼容表），`GET /spec/presets`⁺（平台预设和各画幅尺寸），`GET /series/{id}/episodes`⁺ |
+| 小说与设定 | `POST /series/{id}/novel`（上传），`GET /series/{id}/novel`⁺（段落），`GET /series/{id}/bible`，`PATCH /bible/{entity_id}`，`GET /series/{id}/suggestions`⁺，`POST /suggestions/{id}/accept\|reject\|rewrite`，`POST /suggestions/{id}/reset`⁺，`POST /series/{id}/suggestions/accept-all`⁺ |
+| 分集、场、剧本、镜头 | `GET/PATCH /episodes/{id}`，`GET /episodes/{id}/progress`⁺（导航徽标），`GET /episodes/{id}/script`⁺，`PATCH /beats/{id}`（含拖动换集），`PATCH /lines/{id}`（返回影响范围），`POST /lines/{id}/rewrite`⁺，`POST /scenes/{id}/rewrite`⁺，`GET /episodes/{id}/shots`⁺，`PATCH /shots/{id}`⁺，`POST /shots/{id}/split\|merge` |
+| 资产 | `GET/POST /series/{id}/assets`，`PATCH /assets/{id}`，`POST /assets/{id}/lock`⁺（解锁走影响范围 `asset_unlock`），`POST /episodes/{id}/assets/analyze`⁺ |
+| 产物与版本 | `GET /products?owner=&component=`⁺，`GET /products/{id}`（含版本列表、`prompt`、`estimate`、`running`），`POST /products/{id}/run` `{mode: rerun\|switch\|run, model?, intent?, compiled?, count?}` → job，`POST /versions/{id}/set-current\|adopt`，`POST /products/{id}/lock`，`POST /products/{id}/unlock`⁺，`POST /products/{id}/unadopt`⁺，`PUT /products/{id}/prompt`⁺，`POST /products/{id}/compile`⁺，`PATCH /versions/{id}`⁺（打分），`POST /versions/{id}/upscale`⁺ → job |
+| 生成 | `GET/PUT /series/{id}/generate-rules`⁺（每镜候选数、质检不过自动重跑、单镜上限），`GET /episodes/{id}/generate-log`⁺（运行记录） |
+| 后期 | `GET /episodes/{id}/timeline`⁺，`PATCH /clips/{id}`⁺，`PATCH /subtitles/{id}`⁺，`GET /episodes/{id}/export/checks`⁺，`POST /episodes/{id}/export`⁺ `{format: mp4\|fcpxml\|otio\|srt}` → job |
 | 影响范围 | `POST /impact/preview`（给一个待改动，返回受影响的产物和预计花费），`POST /impact/apply` `{action: mark\|rerun\|undo}` |
 | 闸门 | `POST /gates/{gate}/confirm\|reopen` |
 | 任务 | `GET /jobs`，`POST /jobs/{id}/cancel\|confirm` |
-| 配置与模型 | `GET /config/resolve`，`PUT /config/override`，`POST /config/preset`，`GET /providers`，`POST /providers/{id}/key`，`POST /providers/{id}/test`，`POST /custom-models` |
-| 看板 | `GET /metrics/*`（第 11 节） |
-| 同步 | `GET/PUT /sync/targets`，`POST /sync/run`，`GET /sync/log`，`POST /ingest`（ComfyUI 节点存回，第 14.2 节） |
-| 首次启动 | `POST /setup/scan`，`GET /setup/profile`，`POST /setup/install` `{items, mirror}`，`POST /setup/items/{id}/retry\|skip` |
+| 配置与模型 | `GET /config/components`⁺（组件目录、可选模型、`local_runtime_ok`），`GET /config/resolve`，`PUT /config/override`，`DELETE /config/override`⁺（恢复成预设），`GET/PUT /config/defaults`⁺（预设、兜底方式），`POST /config/preset`，`GET /providers`，`POST /providers/{id}/key`，`POST /providers/{id}/test`，`POST /custom-models` |
+| 看板 | `GET /metrics/summary`⁺（顶栏花费），`GET /metrics/kpis\|spend-series\|calls-series\|shots\|components\|speed\|apis\|local-models\|qa\|episodes`⁺，`GET /metrics/export.csv`⁺（第 11 节） |
+| 同步 | `GET/PUT /sync/targets`，`POST /sync/targets/{id}/detect`⁺，`POST /sync/run`，`GET /sync/log`，`GET /sync/board?episode=`⁺（ComfyUI 素材板），`POST /ingest`（ComfyUI 节点存回，第 14.2 节） |
+| 首次启动 | `POST /setup/scan`，`GET /setup/profile`，`POST /setup/install` `{items, mirror, dir}`，`POST /setup/items/{id}/retry\|skip` |
 | 事件 | `GET /events`（SSE） |
-
 
 ## 10. 调用记录（埋点）
 

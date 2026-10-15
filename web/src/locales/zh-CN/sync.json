@@ -1,0 +1,144 @@
+{
+  "eyebrow": "全剧共用 · 自动进行",
+  "title": "素材整理与同步",
+  "lead": "生成的角色图、场景、关键帧、视频和配音，按集、场、镜头自动整理好，推到 ComfyUI 画布和你习惯用的软件里看、排、接着做。在 ComfyUI 里做出的新图和新视频也能存回来，进同一份历史。",
+  "openComfy": "在 ComfyUI 里打开素材板",
+  "syncNow": "立即同步",
+  "syncing": "同步中 {{done}} / {{total}}",
+  "targets": {
+    "title": "同步到哪里",
+    "direction": {
+      "two_way": "双向",
+      "one_way": "单向"
+    },
+    "name": {
+      "comfy": "ComfyUI 画布",
+      "folder": "本地文件夹",
+      "eagle": "Eagle 素材库",
+      "resolve": "达芬奇 Resolve"
+    },
+    "what": {
+      "comfy": "每集生成一张「素材板」工作流，放进 ComfyUI 的工作流列表（短剧 / {{series}}）。素材按组摆好，可以直接连线进你自己的生成工作流。",
+      "folder": "按集、场、镜头建文件夹，文件名带版本号；每个文件旁放一份 .json，记提示词、模型、花费和质检分。",
+      "eagle": "按剧、集、素材类型建文件夹，自动打标签（角色、场景、状态、模型），提示词写进注释。适合按标签筛选和找图。",
+      "resolve": "免费版改为导出整理好的文件夹和时间线（FCPXML），在达芬奇里把文件夹拖进媒体池，按文件夹建 Bin。Studio 版可以自动建 Bin、写元数据和标记。"
+    },
+    "switchOn": "{{name}}：已开启同步",
+    "switchOff": "{{name}}：未开启同步",
+    "mode": {
+      "label": "达芬奇同步方式",
+      "fcpxml": "文件夹 + FCPXML（免费版）",
+      "api": "自动建 Bin（需要 Studio）"
+    },
+    "redetect": "重新检测",
+    "missing": "没检测到 {{name}}：请先安装并打开，再点「重新检测」。"
+  },
+  "status": {
+    "comfy_ok": "已连接 {{host}} · 节点包 {{pack}} 已装",
+    "folder_ok": "{{path}} · 剩余 {{free}}",
+    "eagle_missing": "没检测到 Eagle（付费软件，需要先安装并打开）",
+    "eagle_no_response": "还是没检测到 Eagle（默认端口 {{port}} 没有响应）",
+    "resolve_free": "检测到免费版 {{version}}：不能用外部脚本",
+    "resolve_needs_studio": "这台电脑上是达芬奇免费版，自动建 Bin 需要 Studio 版。先用文件夹 + FCPXML。"
+  },
+  "board": {
+    "title": "第 {{n}} 集素材板（在 ComfyUI 画布里的样子）",
+    "titleNoEpisode": "素材板（在 ComfyUI 画布里的样子）",
+    "hint": "点任意节点看它对应的文件和版本；右下角是“拿工作台的镜头接着做，再存回来”的示例",
+    "label": "素材板节点",
+    "node": "{{title}}，{{caption}}",
+    "group": {
+      "cast": "角色与音色",
+      "world": "场景 · 道具 · 画面文字",
+      "scene": "场 {{n}} · {{heading}}（{{shots}} 镜）",
+      "workflow": "你的工作流 · 拿 {{shot}} 接着做，再存回来"
+    },
+    "caption": {
+      "locked": "已锁定 v{{n}}",
+      "filled_after_lock": "锁定后补齐",
+      "adopted": "已采纳 v{{n}}",
+      "picking": "待挑选 · {{count}} 条",
+      "generating": "生成中",
+      "keyframe_pending": "关键帧 v{{n}} 待采纳",
+      "queued": "排队",
+      "waiting_for": "等 {{shot}}"
+    },
+    "fact": {
+      "file": "文件",
+      "model": "模型",
+      "used_in": "用在",
+      "source": "来源",
+      "note": "说明",
+      "status": "状态",
+      "cost": "花费",
+      "qa": "质检",
+      "upscale": "2K",
+      "variants": "变体",
+      "check": "核对",
+      "role": "作用",
+      "size": "尺寸",
+      "never": "不会"
+    }
+  },
+  "rules": {
+    "title": "同步规则",
+    "when": {
+      "label": "什么时候同步",
+      "adopt": "采纳或锁定时（推荐）",
+      "every": "每次生成都同步",
+      "manual": "只手动同步"
+    },
+    "kinds": {
+      "label": "同步哪些",
+      "character": "角色",
+      "scene": "场景",
+      "prop": "道具",
+      "text": "画面文字",
+      "voice": "音色",
+      "keyframe": "关键帧",
+      "video_adopted": "视频（已采纳）",
+      "video_all": "视频（全部候选）",
+      "dub": "台词配音"
+    },
+    "org": {
+      "label": "怎么整理",
+      "shot": "按 集 → 场 → 镜头",
+      "type": "按素材类型"
+    },
+    "extras": {
+      "label": "一起带过去的信息",
+      "prompt": "提示词（意图层）",
+      "model_cost": "模型和花费",
+      "qa": "质检分",
+      "note": "ComfyUI 里写进节点旁的便签；Eagle 里写成注释和标签；文件夹里每个文件旁放一份同名 .json。"
+    },
+    "preview": "文件放在哪里"
+  },
+  "log": {
+    "title": "同步记录",
+    "empty": "还没有同步过。",
+    "to": "→ {{list}}",
+    "what": {
+      "ingest": "ComfyUI 存回：{{shot}} 关键帧 v{{n}}（{{model}} 局部重绘）",
+      "upscaled": "{{from}} 至 {{to}} 的 2K 精修完成（{{model}} 本地）",
+      "adopted": "{{shot}} 视频 v{{n}} 采纳",
+      "locked": "素材锁定：{{names}}",
+      "manual": "手动同步：{{files}} 个文件，其中新增 {{added}} 个"
+    },
+    "target": {
+      "comfy": "ComfyUI 素材板",
+      "folder": "本地文件夹",
+      "eagle": "Eagle 素材库",
+      "resolve": "达芬奇文件夹",
+      "eagle_missing": "Eagle 没检测到，已跳过",
+      "history": "已进 {{shot}} 的历史，等你采纳",
+      "resolve_replaced": "达芬奇文件夹（替换 768p 版本）"
+    }
+  },
+  "mapping": {
+    "title": "两边怎么对应",
+    "canvas": "在 ComfyUI 里挪节点、改分组、删节点，只改画布，不动工作台的数据。",
+    "saveBack": "用「存回工作台」节点输出的图、视频、音频，会作为对应镜头或素材的新候选出现，自动跑质检、记进历史，等你采纳。",
+    "later": "之后再做：把节点拖进别的组，回写成工作台里的标签。"
+  }
+}

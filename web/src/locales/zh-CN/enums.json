@@ -1,0 +1,122 @@
+{
+  "where": {
+    "local": "本地",
+    "api": "API"
+  },
+  "versionStatus": {
+    "draft": "草稿",
+    "adopted": "已采纳",
+    "locked": "已锁定"
+  },
+  "origin": {
+    "first": "初版",
+    "run": "生成",
+    "rerun": "重跑",
+    "prompt_rerun": "改提示词后重跑",
+    "switch": "不满意换一个",
+    "edit": "手动修改",
+    "fallback": "自动兜底",
+    "import": "导入",
+    "auto_qa_rerun": "质检不过自动重跑",
+    "comfy_ingest": "从 ComfyUI 存回"
+  },
+  "component": {
+    "extract": "设定提取",
+    "enrich": "小说补全",
+    "split": "分集规划",
+    "script": "剧本化",
+    "assets": "素材分析",
+    "img": "参考图生成",
+    "text": "画面文字",
+    "voice": "音色",
+    "dub": "台词配音",
+    "plan": "分镜规划",
+    "kf": "关键帧",
+    "world": "3D 场景（可选）",
+    "vid": "视频生成",
+    "ctrl": "结构控制",
+    "up": "2K 精修",
+    "lip": "口型修复",
+    "qa": "自动质检",
+    "music": "配乐",
+    "sfx": "音效",
+    "sub": "字幕对齐"
+  },
+  "componentDesc": {
+    "enrich": "找出原文里镜头拍不出来的缺口，给出补写建议，不改剧情。",
+    "extract": "从原文抽出人物、地点、道具和时间线，交给剧本和素材两步使用。",
+    "split": "按原文顺序切成若干集，每集结尾放一个卡点，第 1 集开头要有钩子。",
+    "script": "把叙述改成场景头、动作、台词和语气；每段标明来自原文第几段。",
+    "img": "给角色、场景、道具出参考图。锁定后，关键帧和视频都拿它当参考。",
+    "text": "画面里必须一字不差的字：手写纸条、手机屏幕、招牌。每张候选都会过 OCR 核对。",
+    "voice": "给每个有台词的角色定一个音色，之后所有配音和试听都用它。",
+    "plan": "把剧本拆成镜头：类型、景别、时长、首帧怎么来、用哪些参考。",
+    "kf": "给每个需要新首帧的镜头出 3 张关键帧，构图和站位按这里的设定。",
+    "vid": "按镜头设定出视频候选：首帧、参考图、音色都从前面锁定的拿。",
+    "up": "把采纳的 768p 视频放大到 2K。本地超分只放大、不改内容；H3 Regenerate-2K 会重新生成细节，效果更好但收费。",
+    "lip": "口型质检没过、但画面很好时，只修嘴部，不重跑整条。",
+    "qa": "人脸、口型、台词、文字这些指标用固定的本地小模型算；画面瑕疵和是否符合描述交给视觉大模型看。",
+    "music": "按情绪生成配乐，自动对齐到镜头切点。",
+    "sfx": "补视频模型没出好的声音：门轴声、卡点音效。",
+    "sub": "字幕文字来自剧本；语音识别只用来把每句对到准确的时间。"
+  },
+  "suggestionKind": {
+    "appearance": "外貌",
+    "lighting": "光线",
+    "inner_to_action": "心理外化",
+    "cliffhanger": "卡点",
+    "motive": "动机",
+    "timeline": "时间线",
+    "consistency": "前后一致",
+    "gap": "缺口"
+  },
+  "lineType": {
+    "action": "动作",
+    "dialogue": "台词",
+    "vo": "画外音",
+    "sfx": "音效"
+  },
+  "assetKind": {
+    "character": "角色",
+    "scene": "场景",
+    "prop": "道具",
+    "text": "画面文字",
+    "voice": "音色",
+    "style": "风格",
+    "world": "世界观"
+  },
+  "assetStatus": {
+    "locked": "已锁定",
+    "choosing": "待选",
+    "not_generated": "待生成"
+  },
+  "shotType": {
+    "continuous": "连续动作",
+    "same_scene_cut": "同场切镜",
+    "scene_change": "换场"
+  },
+  "framing": {
+    "wide": "远景",
+    "medium": "中景",
+    "close": "近景",
+    "closeup": "特写"
+  },
+  "cameraMove": {
+    "static": "固定",
+    "push": "缓推",
+    "follow": "跟拍",
+    "pan": "摇"
+  },
+  "audioMode": {
+    "native": "原生同步",
+    "tts": "先配音再对口型",
+    "none": "无人声"
+  },
+  "qaIssue": {
+    "face_mismatch": "人脸",
+    "finger_fusion": "手指",
+    "color_off": "颜色",
+    "light_missing": "灯光",
+    "text_mismatch": "文字"
+  }
+}

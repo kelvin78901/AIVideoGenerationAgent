@@ -1,0 +1,116 @@
+{
+  "title": "模型与兜底",
+  "lead": "每个组件单独选：本地还是 API、API 用哪家、本地用哪个模型、要不要自动兜底、不满意时按什么顺序换。这里是全局默认；在各步骤右侧栏里改的，只影响那一个组件。",
+  "presets": {
+    "title": "一键预设",
+    "current": "当前",
+    "switched": "已切到「{{name}}」。手动改过的组件保持不变。",
+    "name": {
+      "quality": "质量优先",
+      "balanced": "均衡",
+      "cheap": "省钱",
+      "local": "全本地"
+    },
+    "desc": {
+      "quality": "能用 API 的都用效果最好的那家，本地只做兜底。",
+      "balanced": "草稿和重跑走本地，你点采纳前再用 API 出终版。钱主要花在定稿那一条上。",
+      "cheap": "能本地就本地；本地失败才兜底到 API，并优先选最便宜的。",
+      "local": "完全不调 API。没有本地版本的组件（3D 场景）会跳过。"
+    },
+    "cost": {
+      "quality": "估算：以 H3 API 为主，约 $30 / 分钟成片",
+      "balanced": "估算：约 $10–15 / 分钟成片",
+      "cheap": "估算：低于均衡，取决于兜底次数",
+      "local": "没有 API 费用，只花电费和时间"
+    }
+  },
+  "services": {
+    "title": "服务状态",
+    "local": "本地：{{gpu}} · ComfyUI {{comfy}} · 推理服务 {{llm}}",
+    "noGpu": "没有可用的显卡",
+    "connected": "已连接",
+    "disconnected": "没连上",
+    "statusUnknown": "未知",
+    "rescan": "重新检测主机、补装缺少的组件",
+    "keySet": "已配置",
+    "keyMissing": "未配置",
+    "keyNotNeeded": "不需要密钥",
+    "chip": "{{name}} · {{state}}",
+    "note": "没配置密钥的服务，自动兜底和「不满意换一个」都会跳过它。写作类模型都走 OpenAI 兼容接口：新出的模型填上 base URL 和模型名就能用，不用改代码。",
+    "mediaLater": "图像、视频、配音等服务的密钥等接入对应模型时再加到这里。"
+  },
+  "key": {
+    "title": "{{name}} 的 API 密钥",
+    "lead": "密钥只存在这台电脑的系统钥匙串里，不进数据库、不写日志，界面上也不会再显示出来。",
+    "status": {
+      "keyring": "已配置（系统钥匙串）",
+      "env": "已配置（来自环境变量 / .env）",
+      "none": "还没配置"
+    },
+    "input": "API 密钥",
+    "placeholder": "粘贴密钥",
+    "save": "保存",
+    "replace": "保存新密钥",
+    "delete": "删除密钥",
+    "test": "测试连接",
+    "testing": "正在连接…",
+    "saved": "{{name}} 的密钥已保存。",
+    "deleted": "{{name}} 的密钥已删除。",
+    "envNote": "这个密钥来自环境变量或 .env，要删除请改那边。",
+    "testOk": "连接正常，能看到 {{count}} 个模型。",
+    "testOkNoList": "连接正常。",
+    "testFail": "连接失败：{{detail}}",
+    "docs": "去官网拿密钥",
+    "baseUrl": "接口地址：{{url}}",
+    "close": "关闭"
+  },
+  "fallback": {
+    "title": "兜底时怎么做",
+    "mode": "兜底方式",
+    "after": "直接兜底，事后通知",
+    "ask": "兜底前先问我",
+    "hint": {
+      "after": "出问题时直接换到兜底模型继续跑，结果和原因记在历史和运行记录里。",
+      "ask": "出问题时先暂停这一步，弹出提示让你选：兜底、重试还是跳过。"
+    },
+    "budget": "本集 API 预算 $",
+    "budgetNote": "兜底产生的费用也计入",
+    "budgetSaved": "本集 API 预算改成 {{amount}}。",
+    "budgetInvalid": "预算要填 0 或更大的数字。"
+  },
+  "table": {
+    "label": "组件设置",
+    "stage": "环节",
+    "component": "组件",
+    "location": "运行位置",
+    "locationOf": "{{name}} 的运行位置",
+    "primary": "主用模型",
+    "fallback": "兜底",
+    "fallbackOf": "{{name}} 自动兜底",
+    "fallbackTo": "兜底到",
+    "alts": "不满意备选",
+    "expand": "展开 {{name}}",
+    "collapse": "收起 {{name}}",
+    "changed": "已手动改过，不跟随预设",
+    "off": "这一步不跑",
+    "offNoLocal": "没有本地版本，这一步跳过",
+    "hybrid": "{{local}} → {{api}}",
+    "fallbackOff": "关闭",
+    "altCount": "{{count}} 个备选",
+    "altNone": "无",
+    "apiModels": "API 服务",
+    "localModels": "本地模型",
+    "noApi": "没有 API 版本",
+    "noLocal": "没有本地版本",
+    "fallbackHint": "本地报错、显存不足、超时，或质检连续不过时触发。",
+    "altOrder": "「不满意换一个」的顺序",
+    "where": {
+      "local": "本地",
+      "api": "API"
+    },
+    "up": "上移 {{name}}",
+    "down": "下移 {{name}}",
+    "reset": "恢复成预设",
+    "resetDone": "「{{name}}」已恢复成预设。"
+  }
+}

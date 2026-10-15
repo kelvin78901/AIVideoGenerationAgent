@@ -13,6 +13,7 @@ from dataclasses import dataclass, field
 from enum import StrEnum
 from typing import Any
 
+import anyio
 from sqlmodel import col, delete, select
 
 from drama_series_agent.core.db import Database
@@ -75,23 +76,30 @@ class EventBus:
                     sub.lagged = True
         return event
 
+    # Both reads run inside SSE streams, which Starlette cancels (anyio cancel scope) when the
+    # browser disconnects, e.g. on every page navigation. Cancelling an aiosqlite query midway
+    # left a broken connection in the pool and the next request failed with "no active
+    # connection" (HTTP 500), so the short reads are shielded and finish first.
+
     async def replay(self, after_id: int, limit: int = 1000) -> list[BusEvent]:
-        async with self._db.session() as session:
-            rows = (
-                await session.exec(
-                    select(Event)
-                    .where(col(Event.id) > after_id)
-                    .order_by(col(Event.id))
-                    .limit(limit)
-                )
-            ).all()
+        with anyio.CancelScope(shield=True):
+            async with self._db.session() as session:
+                rows = (
+                    await session.exec(
+                        select(Event)
+                        .where(col(Event.id) > after_id)
+                        .order_by(col(Event.id))
+                        .limit(limit)
+                    )
+                ).all()
         return [BusEvent(id=r.id or 0, type=r.type, data=r.data_json) for r in rows]
 
     async def last_id(self) -> int:
-        async with self._db.session() as session:
-            row = (
-                await session.exec(select(Event).order_by(col(Event.id).desc()).limit(1))
-            ).first()
+        with anyio.CancelScope(shield=True):
+            async with self._db.session() as session:
+                row = (
+                    await session.exec(select(Event).order_by(col(Event.id).desc()).limit(1))
+                ).first()
         return row.id if row and row.id else 0
 
     @asynccontextmanager
