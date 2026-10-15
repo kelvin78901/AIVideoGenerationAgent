@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-15 · M1 兼容表（第 2 步）
+
+- **兼容表的行由 `config/spec.yaml` 的 `compat_stages` 定**：每行 = 一个组件的某个角色（`api_model` / `local_model` / `fallback` / `alt` = 备选里第一个不是主用的），按解析后的路由取模型，所以 Inspector 改了模型表格跟着变；组件 `mode: off` 或角色为空就不出这一行。原型的 7 行照这个规则得出，5 种画幅下和 MSW 版逐行一致。
+- **判定只看画幅和短边**：`caps.aspects` 不含 → 不支持，处理方式 `outpaint_from_<最接近的画幅>`；`caps.max_short_edge` 小于该行的档（草稿行用 768p，其他用交付档）→ 需要转换，`upscale_from_<1k / 720p>`；否则原生，说明用该行的 `native` code。帧率不判（SPEC 13.2 在后期转换）。没有 `caps` 的模型当原生。多个模型一行时取最差的。
+- **caps 补充**：`openai/gpt-image-2` 加 `max_short_edge: 1024`、`volc/seedance-2.5` 加 `720`（都按 note 里「部分渠道」的下限，带 `verify: true`）；本地模型可以写 `caps`，`comfy/h3` 照 H3 API 填了画幅、24 fps、5–15 秒、短边 1440。新增通用文案 `spec:compat.how.native`。
+
 ## 2026-10-15 · M1 剧集和成片规格（第 1 步）
 
 - **`config/spec.yaml` 进 `StudioConfig.spec`**：平台预设、新剧集默认规格、平台遮挡区比例都在这里；尺寸不进配置，只由 `spec/dims.py` 算（短边 1080 / 1440 / 768，21:9 2K 封顶 2976×1248）。取偶数用「四舍五入」而不是 Python 的银行家舍入，和前端 `Math.round` 一致（9:16 草稿 768×1366）。

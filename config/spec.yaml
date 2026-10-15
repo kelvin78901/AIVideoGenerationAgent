@@ -49,3 +49,17 @@ safe_areas:
     zones:
       - { key: controlsWide, l: 0, t: 86, w: 100, h: 14 }
     subtitle: { top: 72, right: 0 }
+
+# 兼容表（SPEC 13.3，spec/compat.py）：每行取当前路由里某个组件的某个角色的模型，
+# 按 providers.yaml 的 caps 判定原生 / 转换 / 不支持。
+#   pick：api_model / local_model / fallback（兜底模型）/ alt（换一个时的第一个备选）
+#   tier：判分辨率时用草稿档（draft）还是交付档（delivery）
+#   native：原生支持时的说明 code（spec:compat.how.<code>）
+compat_stages:
+  - { stage: keyframe, component: kf, pick: [api_model], tier: delivery, native: native_4k }
+  - { stage: text_keyframe, component: text, pick: [api_model], tier: delivery, native: native }
+  - { stage: sketch, component: kf, pick: [fallback], tier: draft, native: cheap_sketch }
+  - { stage: video_draft, component: vid, pick: [local_model], tier: draft, native: h3_aspects }
+  - { stage: video_final, component: up, pick: [api_model], tier: delivery, native: follow_draft }
+  - { stage: video_alt, component: vid, pick: [alt], tier: delivery, native: native }
+  - { stage: upscale, component: up, pick: [local_model, fallback], tier: delivery, native: any_aspect }

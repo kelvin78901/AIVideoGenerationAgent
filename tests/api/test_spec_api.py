@@ -93,3 +93,21 @@ def test_presets(client: TestClient) -> None:
     assert list(data["dims"]) == ["9:16", "16:9", "3:4", "1:1", "21:9"]
     assert data["dims"]["21:9"]["2k"] == {"w": 2976, "h": 1248}
     assert set(data["safe_areas"]) == {"vertical_app", "vertical_player", "horizontal"}
+
+
+def test_compat(client: TestClient) -> None:
+    data = client.get(f"{SPEC}/compat").json()
+    assert data["aspect"] == "9:16" and len(data["rows"]) == 7
+    assert data["rows"][0] == {
+        "stage": "keyframe",
+        "model_keys": ["google/nano-banana-pro"],
+        "status": "native",
+        "how": {"code": "native_4k", "params": {}},
+    }
+    data = client.get(f"{SPEC}/compat", params={"aspect": "21:9"}).json()
+    assert data["aspect"] == "21:9"
+    assert data["rows"][0]["status"] == "unsupported"
+    assert data["rows"][0]["how"]["code"] == "outpaint_from_16_9"
+    assert client.get(f"{SPEC}/compat", params={"aspect": "4:3"}).status_code == 422
+    resp = client.get("/api/v1/series/nope/spec/compat")
+    assert resp.status_code == 404 and _code(resp) == "series_not_found"

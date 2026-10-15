@@ -160,7 +160,7 @@ llm_ui_order:
 media_models:
   # 图像
   - { key: google/nano-banana-pro, kind: image, display: Nano Banana Pro, unit: image, price: 0.14, currency: USD, caps: { aspects: ["1:1", "3:4", "4:3", "9:16", "16:9"], max_res: 4K, max_refs: null }, verify: true }
-  - { key: openai/gpt-image-2,     kind: image, display: GPT Image 2,     unit: image, price: 0.28, currency: USD, caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], note: "部分渠道 9:16 只到 1K" }, verify: true }
+  - { key: openai/gpt-image-2,     kind: image, display: GPT Image 2,     unit: image, price: 0.28, currency: USD, caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_short_edge: 1024, note: "部分渠道 9:16 只到 1K" }, verify: true }
   - { key: volc/seedream-5.0,      kind: image, display: Seedream 5.0,    unit: image, price: 0.03, currency: USD, verify: true }
   # 视频
   - key: minimax/h3-api
@@ -173,7 +173,7 @@ media_models:
     docs: https://platform.minimax.io/docs/guides/pricing-paygo.md
   - { key: minimax/h3-regenerate-2k, kind: upscale, display: H3 Regenerate-2K, unit: second, price: 0.05, input_price_per_second: 0.05, currency: USD, note: "输出 $0.05/秒 + 输入视频 $0.05/秒" }
   - { key: minimax/context-ir, kind: llm_aux, display: H3 Context-IR, unit: token, price: { in: 0.90, out: 3.60 }, currency: USD }
-  - { key: volc/seedance-2.5, kind: video, display: Seedance 2.5, unit: minute, price: 24.60, currency: USD, caps: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], note: "部分渠道只到 720p" }, verify: true }
+  - { key: volc/seedance-2.5, kind: video, display: Seedance 2.5, unit: minute, price: 24.60, currency: USD, caps: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], max_short_edge: 720, note: "部分渠道只到 720p" }, verify: true }
   - { key: google/gemini-omni-flash-1.1, kind: video, display: Gemini Omni Flash 1.1, unit: minute, price: 9.12, currency: USD, verify: true }
   - { key: alibaba/wan-3.0, kind: video, display: Wan 3.0, unit: minute, price: 12.00, currency: USD, verify: true }
   - { key: kling/kling-3.0, kind: video, display: Kling 3.0, unit: second, price: null, verify: true }
@@ -190,7 +190,7 @@ media_models:
 
 # 本地模型（价格 0，记时长和显存）
 local_models:
-  - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3_i2v }
+  - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3_i2v, caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440 } }
   - { key: comfy/h3-fun-controlnet, kind: video,   display: H3 Fun ControlNet（本地）, runtime: comfyui, workflow: h3_controlnet }
   - { key: comfy/wan-2.2,           kind: video,   display: Wan 2.2（本地）,          runtime: comfyui }
   - { key: comfy/ltx,               kind: video,   display: LTX（本地）,              runtime: comfyui, verify: true }

@@ -13,11 +13,12 @@
 | 步 | 做了什么 | 提交 | 测试 |
 | --- | --- | --- | --- |
 | 0 | 开分支；计划存档 `plans/M1.md`；ROADMAP 加 M1 计划链接和「环境与安装」入口一项；DECISIONS 记 M1 的决定 | 3703675 | 仅文档 |
-| 1 | 表 `series`、`output_spec` + 迁移 `0002`；`spec/dims.py`、`spec/schema.py`；`config/spec.yaml`（进 `StudioConfig.spec`）；`GET /series/{id}`、`GET/PUT /series/{id}/spec`（409 `spec_locked`、`confirmed_impact`）、`GET /spec/presets`（含 `safe_areas`）；`studio/demo.py:seed_demo()` Mock 启动时执行 | 本提交 | pytest 142 通过；ruff、mypy 通过 |
+| 1 | 表 `series`、`output_spec` + 迁移 `0002`；`spec/dims.py`、`spec/schema.py`；`config/spec.yaml`（进 `StudioConfig.spec`）；`GET /series/{id}`、`GET/PUT /series/{id}/spec`（409 `spec_locked`、`confirmed_impact`）、`GET /spec/presets`（含 `safe_areas`）；`studio/demo.py:seed_demo()` Mock 启动时执行 | a4aae06 | pytest 142 通过；ruff、mypy 通过 |
+| 2 | `spec/compat.py` + `GET /series/{id}/spec/compat?aspect=`；行由 `spec.yaml:compat_stages` 定、按解析后的路由取模型、按 `caps`（`aspects`、`max_short_edge`）判；`comfy/h3` 等补 caps；新文案 `compat.how.native` | 本提交 | pytest 151 通过（5 种画幅和 MSW 逐行一致）；ruff、mypy、web test 通过 |
 
 ## 下一步
 
-- **第 2 步 兼容表（后端）**：`spec/compat.py`，对 `components.yaml` 当前路由（预设 + 覆盖）里每个模型按 `providers.yaml` 的 `caps` 判 native / convert / unsupported 和 `how`；行结构和示例数字照 `web/src/mocks/handlers/spec.ts:compatRows`；接口 `GET /series/{id}/spec/compat?aspect=` 加进 `api/routes/spec.py`。从 `config/providers.yaml` 的 `media_models[].caps` 和 `core/config.py:resolve()` 开始看。
+- **第 3 步 成片规格页和顶栏接真实接口（前端）**：删 `web/src/mocks/handlers/series.ts` 里的 `GET /series/:id`、`GET /series/:id/spec` 和 `spec.ts` 里全部 handler（`applySpecChange` 还被 `/impact/apply` 用，改成 `bypass()` 调真实 `PUT …/spec?confirmed_impact=<id>`）；handler 登记表标「已实现」；`test/backend.ts` 加剧集和规格；Spec 页测试改走它；Playwright 冒烟 + 重截 spec 两张图。从 `web/src/mocks/handlers/impact.ts`、`web/src/test/backend.ts` 开始看。注意 `/series/:id/episodes` 等其他 handler 仍留在 MSW。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。

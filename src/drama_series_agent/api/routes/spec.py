@@ -8,8 +8,11 @@ from fastapi import APIRouter, Depends, Query
 
 from drama_series_agent.api.errors import ApiError
 from drama_series_agent.api.state import StudioState, get_state
-from drama_series_agent.core.config import get_config
+from drama_series_agent.core.config import get_config, resolve
 from drama_series_agent.core.models_db import OutputSpecRow
+from drama_series_agent.core.overrides import load_overrides
+from drama_series_agent.spec.compat import Compat, compat_table
+from drama_series_agent.spec.dims import Aspect, Delivery
 from drama_series_agent.spec.schema import OutputSpec, SpecPatch, apply_patch, presets, to_public
 
 router = APIRouter(tags=["spec"])
@@ -55,3 +58,22 @@ async def put_spec(
         await session.commit()
         await session.refresh(row)
     return to_public(row)
+
+
+@router.get("/series/{series_id}/spec/compat")
+async def get_compat(series_id: str, state: State, aspect: Aspect | None = None) -> Compat:
+    """The compatibility table for ``aspect`` (default: the spec's), at the spec's delivery tier."""
+    async with state.db.session() as session:
+        row = await session.get(OutputSpecRow, series_id)
+        if row is None:
+            raise ApiError(404, "series_not_found", id=series_id)
+        overrides = await load_overrides(session)
+    cfg = get_config()
+    current: Aspect = row.aspect  # type: ignore[assignment]
+    delivery: Delivery = row.delivery  # type: ignore[assignment]
+    return compat_table(
+        aspect or current,
+        delivery,
+        lambda comp: resolve(comp, overrides, config=cfg).values,
+        cfg,
+    )

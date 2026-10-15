@@ -78,6 +78,7 @@ class LocalModel(_Loose):
     display: str
     runtime: str | None = None
     workflow: str | None = None
+    caps: dict[str, Any] = Field(default_factory=dict)
     verify: bool = False
 
 
@@ -150,12 +151,23 @@ class SafeArea(_Loose):
     subtitle: dict[str, float] = Field(default_factory=dict)
 
 
+class CompatStage(_Loose):
+    """One row of the compatibility table (SPEC 13.3): which route model(s) make this stage."""
+
+    stage: str
+    component: str
+    pick: list[Literal["api_model", "local_model", "fallback", "alt"]]
+    tier: Literal["draft", "delivery"] = "delivery"
+    native: str = "native"  # spec:compat.how.<code> when every picked model is native
+
+
 class SpecConfig(_Loose):
     """Output-spec presets (SPEC 13.1). Sizes are not here: only ``spec/dims.py`` computes them."""
 
     platforms: list[PlatformPreset] = Field(default_factory=list)
     defaults: dict[str, Any] = Field(default_factory=dict)
     safe_areas: dict[str, SafeArea] = Field(default_factory=dict)
+    compat_stages: list[CompatStage] = Field(default_factory=list)
 
 
 @dataclass(frozen=True)

@@ -117,7 +117,8 @@
       "h3_aspects": "Six aspects from 21:9 to 9:16, 24 fps, 5–15 s per clip",
       "follow_draft": "Follows the draft's aspect; 2K tier short edge 1440",
       "upscale_from_720p": "Supports this aspect; some channels only reach 720p and need an upscale",
-      "any_aspect": "Only enlarges, keeps the framing; any aspect"
+      "any_aspect": "Only enlarges, keeps the framing; any aspect",
+      "native": "Renders at this aspect and size directly"
     }
   },
   "output": {
