@@ -67,6 +67,16 @@ export const componentDefs: ComponentDef[] = [
     ["google/gemini-3.6-flash", "google/gemini-3.1-flash-lite"],
     ["local/qwen3-vl-32b"],
   ),
+  // Post step (prototype Post.dc.html Inspector).
+  media("music", "post", "music", ["elevenlabs/music"], ["local/ace-step"]),
+  media("sfx", "post", "sfx", ["elevenlabs/sfx"], ["local/mmaudio"]),
+  media(
+    "sub",
+    "post",
+    "asr",
+    ["elevenlabs/scribe"],
+    ["local/whisper-large-v3", "local/paraformer"],
+  ),
 ];
 
 /** 「不满意换一个」: the fallback target first, then the other models (local first). */
@@ -151,6 +161,18 @@ export const presetConfigs: Record<string, ComponentConfig> = {
     "local/qwen3-vl-32b",
     "google/gemini-3.6-flash",
     0.2,
+  ),
+  // Prototype Post.dc.html: 配乐 API ElevenLabs Music, $0.5; 音效 本地 MMAudio, $0.3;
+  // 字幕对齐 本地 Whisper, $0.1.
+  music: route("music", "api", "elevenlabs/music", "local/ace-step", "local/ace-step", 0.5),
+  sfx: route("sfx", "local", "elevenlabs/sfx", "local/mmaudio", "elevenlabs/sfx", 0.3),
+  sub: route(
+    "sub",
+    "local",
+    "elevenlabs/scribe",
+    "local/whisper-large-v3",
+    "elevenlabs/scribe",
+    0.1,
   ),
 };
 

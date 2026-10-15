@@ -39,6 +39,7 @@
     "lip": "Lip-sync repair",
     "qa": "Auto QA",
     "music": "Music",
+    "sfx": "Sound effects",
     "sub": "Subtitle alignment"
   },
   "componentDesc": {
@@ -50,7 +51,14 @@
     "text": "Text that must be exact in the frame: notes, phone screens, signs. Every candidate is OCR-checked.",
     "voice": "One voice per speaking character; all dialogue audio and auditions use it.",
     "plan": "Breaks the script into shots: type, framing, length, where the first frame comes from, which references.",
-    "kf": "Three keyframes for every shot that needs a new first frame, following the framing and blocking set here."
+    "kf": "Three keyframes for every shot that needs a new first frame, following the framing and blocking set here.",
+    "vid": "Makes video takes per shot setting; first frame, references and voice come from what is locked upstream.",
+    "up": "Upscales the adopted 768p video to 2K. Local upscalers only enlarge; H3 Regenerate-2K regenerates detail — better, but billed.",
+    "lip": "When lip-sync QA fails but the picture is good, fix only the mouth instead of rerunning the take.",
+    "qa": "Face, lip-sync, dialogue and text are scored by fixed small local models; defects and match with the description are judged by a vision model.",
+    "music": "Scores the scene by mood and aligns the music to the cuts.",
+    "sfx": "Adds the sounds the video model missed: door creaks, the hit at the cliffhanger.",
+    "sub": "Subtitle text comes from the script; speech recognition only aligns each line in time."
   },
   "suggestionKind": {
     "appearance": "Appearance",

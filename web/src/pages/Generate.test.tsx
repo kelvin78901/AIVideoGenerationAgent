@@ -23,12 +23,12 @@ function Page() {
   );
 }
 
-function renderGenerate() {
+function renderGenerate(path = "/s/demo/e/1/generate") {
   return renderAt(
     <Routes>
       <Route path="/s/:series/e/:ep/generate" element={<Page />} />
     </Routes>,
-    "/s/demo/e/1/generate",
+    path,
   );
 }
 
@@ -231,6 +231,12 @@ describe("GeneratePage", () => {
     expect(lines[2]).toHaveTextContent("MiniMax H3 API 出 T3 · $0.32 · 质检通过");
     expect(lines[3]).toHaveTextContent("本地任务超过 10 分钟 → 自动兜底到 MiniMax H3 API");
     expect(lines[5]).toHaveTextContent("未过 2 项（人脸、手指）→ 自动重跑");
+  });
+
+  it("opens on the shot in ?shot= (后期「换一条候选」)", async () => {
+    renderGenerate("/s/demo/e/1/generate?shot=1-02");
+    expect(await screen.findByRole("heading", { name: "镜头 1-02 的候选" })).toBeInTheDocument();
+    expect(pill("1-02")).toHaveAttribute("aria-pressed", "true");
   });
 
   it("the run bar follows the Inspector: 2K 精修", async () => {

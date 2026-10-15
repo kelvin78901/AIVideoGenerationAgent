@@ -5,6 +5,13 @@ import { server } from "@/mocks/node";
 import { useDemoStore } from "@/stores/demo";
 import { useInspectorStore } from "@/stores/inspector";
 
+// jsdom has no ResizeObserver; Radix (Slider) only needs it to exist.
+globalThis.ResizeObserver ??= class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+};
+
 // Demo handlers answer unimplemented endpoints; anything else must be mocked by the test itself.
 beforeAll(() => server.listen({ onUnhandledRequest: "bypass" }));
 afterEach(() => {

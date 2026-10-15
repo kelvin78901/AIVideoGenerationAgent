@@ -1,0 +1,80 @@
+{
+  "title": "Post",
+  "lead": "Assemble the adopted shots, dialogue, sound effects, music and subtitles into the episode. For fine work, export to DaVinci Resolve — the timeline goes over as is.",
+  "what": {
+    "music": "Music · {{count}} cue · {{seconds}} s",
+    "sfx": "Sound effects · {{count}}",
+    "sub": "Subtitle timing · {{count}} lines"
+  },
+  "preview": {
+    "label": "Preview",
+    "placeholder": "Not adopted · keyframe stand-in",
+    "play": "Play",
+    "pause": "Pause",
+    "time": "{{now}} / {{total}}"
+  },
+  "clip": {
+    "label": "Clip settings",
+    "title": "Clip {{id}}",
+    "src": "T{{n}} · {{model}} · {{res}}",
+    "noTake": "Not adopted yet; the keyframe stands in",
+    "switch": "Pick another take",
+    "trim": "Trim the first 0.3 s",
+    "trimHint": "H3 takes sometimes flash at the start; trimmed by default.",
+    "transition": "Transition in",
+    "transitions": {
+      "cut": "Cut",
+      "dissolve": "Dissolve 0.3 s",
+      "dip_black": "Dip to black"
+    },
+    "dialogueVolume": "Dialogue volume {{n}}",
+    "ambienceVolume": "Ambience volume {{n}}"
+  },
+  "timeline": {
+    "label": "Timeline",
+    "tracks": {
+      "video": "Picture",
+      "dialogue": "Dialogue",
+      "ambience": "Ambience/SFX",
+      "music": "Music",
+      "subtitle": "Subtitles"
+    },
+    "segment": "{{track}}: {{label}}",
+    "native": "{{label}} (native video audio)",
+    "nativeToast": "{{label}} is the video model's native audio, crossfaded between shots automatically.",
+    "seek": "Jump to {{time}}"
+  },
+  "subs": {
+    "title": "Subtitles",
+    "lead": "The text comes straight from the script, not from speech recognition; recognition only aligns the timing.",
+    "tc": "{{from}} → {{to}}",
+    "label": "Subtitle {{tc}}",
+    "edited": "Edited, differs from the script",
+    "empty": "This episode has no lines yet."
+  },
+  "export": {
+    "title": "Export",
+    "status": {
+      "pass": "Pass",
+      "warn": "Note",
+      "fail": "Fail"
+    },
+    "check": {
+      "loudness": "Loudness {{lufs}} LUFS, no clipping",
+      "frames": "No black or dropped frames",
+      "placeholders": "{{count}} shots are not adopted; export uses their keyframes",
+      "all_adopted": "Every shot is adopted"
+    },
+    "mp4": "Export MP4 · {{spec}}",
+    "fcpxml": "Export to DaVinci (FCPXML)",
+    "otio": "OTIO",
+    "srt": "Subtitles SRT",
+    "toast": {
+      "mp4": "Export started.",
+      "mp4Placeholders": "Export started. {{count}} shots without an adopted take use their keyframes, marked in the corner.",
+      "fcpxml": "Building FCPXML: shots, dialogue, effects, music and subtitles each on their own track; opens directly in Resolve.",
+      "otio": "Building the OTIO timeline.",
+      "srt": "Exporting subtitles as SRT."
+    }
+  }
+}

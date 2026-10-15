@@ -14,6 +14,7 @@ import { bible, novel, suggestions } from "@/mocks/fixtures/demo/novel";
 import { scripts } from "@/mocks/fixtures/demo/script";
 import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
 import { series } from "@/mocks/fixtures/demo/series";
+import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtures/demo/post";
 import { products } from "@/mocks/fixtures/demo/products";
 import { profile } from "@/mocks/fixtures/demo/setup";
 import { spec } from "@/mocks/fixtures/demo/spec";
@@ -28,7 +29,9 @@ function createDb() {
     summary,
     profile,
     products: Object.fromEntries(
-      [...products, ...assetProducts, ...shotProducts, ...takeProducts].map((p) => [p.id, p]),
+      [...products, ...assetProducts, ...shotProducts, ...takeProducts, ...postProducts].map(
+        (p) => [p.id, p],
+      ),
     ),
     assets,
     config: {
@@ -46,6 +49,13 @@ function createDb() {
     shots,
     generateRules: { [series.id]: generateRules } as Record<string, GenerateRules>,
     generateLog: { [EP1]: generateLog } as Record<string, GenerateLogEntry[]>,
+    /** Episode 1's post: per-shot clip settings, anchored audio and subtitles. */
+    post: {
+      episode_id: EP1,
+      clips: {} as Record<string, Partial<ClipSettings>>,
+      audio,
+      subtitles,
+    },
     impacts: new Map<string, Impact>(),
     gates: [] as GateDecision[],
   });

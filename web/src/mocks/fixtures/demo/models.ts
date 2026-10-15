@@ -112,6 +112,19 @@ export const generateModels: ModelOption[] = [
     price: perSecond(0.075),
   },
   { key: "local/qwen3-vl-32b", display: "Qwen3-VL-32B（本地）", where: "local", price: null },
+  // Post (prototype Post.dc.html).
+  { key: "elevenlabs/music", display: "ElevenLabs Music", where: "api", price: null },
+  { key: "local/ace-step", display: "ACE-Step（本地）", where: "local", price: null },
+  { key: "local/mmaudio", display: "MMAudio（本地）", where: "local", price: null },
+  { key: "elevenlabs/sfx", display: "ElevenLabs 音效", where: "api", price: null },
+  {
+    key: "local/whisper-large-v3",
+    display: "Whisper large-v3（本地）",
+    where: "local",
+    price: null,
+  },
+  { key: "local/paraformer", display: "Paraformer（本地）", where: "local", price: null },
+  { key: "elevenlabs/scribe", display: "ElevenLabs Scribe", where: "api", price: null },
   {
     key: "google/gemini-3.1-flash-lite",
     display: "Gemini 3.1 Flash-Lite",

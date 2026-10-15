@@ -40,6 +40,9 @@
  * | GET, PUT /series/{id}/generate-rules | M5        |
  * | GET /episodes/{id}/generate-log  | M5             |
  * | POST /versions/{id}/upscale      | M6             |
+ * | GET /episodes/{id}/timeline      | M7             |
+ * | PATCH /clips/{id}, /subtitles/{id} | M7           |
+ * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
  */
 import { assetHandlers } from "@/mocks/handlers/assets";
 import { configHandlers } from "@/mocks/handlers/config";
@@ -48,6 +51,7 @@ import { generateHandlers } from "@/mocks/handlers/generate";
 import { impactHandlers } from "@/mocks/handlers/impact";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { novelHandlers } from "@/mocks/handlers/novel";
+import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
 import { scriptHandlers } from "@/mocks/handlers/script";
 import { shotHandlers } from "@/mocks/handlers/shots";
@@ -67,4 +71,5 @@ export const handlers = [
   ...assetHandlers,
   ...shotHandlers,
   ...generateHandlers,
+  ...postHandlers,
 ];

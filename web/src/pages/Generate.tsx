@@ -2,7 +2,7 @@
 import { Layers } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 
 import { useAssets } from "@/api/hooks/assets";
 import { useComponentCatalog, useComponentModels, useResolvedConfig } from "@/api/hooks/config";
@@ -55,6 +55,8 @@ export default function GeneratePage() {
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(component);
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 后期「换一条候选」 links here with ?shot=1-04.
+  const [search] = useSearchParams();
 
   useEffect(() => {
     useInspectorStore.getState().reset();
@@ -67,7 +69,10 @@ export default function GeneratePage() {
   const byLabel = (label: string) => videoOf(list.find((s) => s.label === label));
   const statusOf = (s: Shot) => takeStatus(s, videoOf(s), byLabel);
   // Opens on the first shot with takes to pick, and stays there after adopting.
-  const firstPick = list.find((s) => statusOf(s) === "picking") ?? list[0];
+  const firstPick =
+    list.find((s) => s.label === search.get("shot")) ??
+    list.find((s) => statusOf(s) === "picking") ??
+    list[0];
   if (selectedId === null && videos.data && firstPick) setSelectedId(firstPick.id);
   const shot = list.find((s) => s.id === selectedId) ?? firstPick;
   const video = useProduct(shot?.video_product_id ?? undefined);

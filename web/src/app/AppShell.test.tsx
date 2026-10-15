@@ -32,7 +32,7 @@ describe("AppShell", () => {
       ["/s/demo/e/1/assets", "素材"],
       ["/s/demo/e/1/storyboard", "分镜"],
       ["/s/demo/e/1/generate", "生成"],
-      ["/s/demo/e/1/post", "后期 · 时间线与导出"],
+      ["/s/demo/e/1/post", "后期"],
       ["/nope", "页面不存在"],
     ];
     for (const [path, title] of cases) {

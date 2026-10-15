@@ -26,6 +26,7 @@ export const ProductSlotSchema = z.enum([
   "lipsync",
   "qa",
   "music",
+  "sfx",
   "subtitles",
   "cut",
 ]);

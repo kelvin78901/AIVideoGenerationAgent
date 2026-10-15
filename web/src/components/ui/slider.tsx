@@ -3,7 +3,14 @@ import type * as React from "react";
 
 import { cn } from "@/lib/utils";
 
-function Slider({ className, ...props }: React.ComponentProps<typeof SliderPrimitive.Root>) {
+function Slider({
+  className,
+  thumbLabel,
+  ...props
+}: React.ComponentProps<typeof SliderPrimitive.Root> & {
+  /** Accessible name of the thumb (the element with role=slider). */
+  thumbLabel?: string;
+}) {
   const count = (props.value ?? props.defaultValue ?? [0]).length;
   return (
     <SliderPrimitive.Root
@@ -20,6 +27,7 @@ function Slider({ className, ...props }: React.ComponentProps<typeof SliderPrimi
       {Array.from({ length: count }, (_, i) => (
         <SliderPrimitive.Thumb
           key={i}
+          aria-label={thumbLabel}
           className="block size-4 rounded-full border border-primary bg-card shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-ring"
         />
       ))}

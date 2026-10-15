@@ -9,6 +9,7 @@ import enEnums from "@/locales/en/enums.json";
 import enGenerate from "@/locales/en/generate.json";
 import enNav from "@/locales/en/nav.json";
 import enNovel from "@/locales/en/novel.json";
+import enPost from "@/locales/en/post.json";
 import enScript from "@/locales/en/script.json";
 import enStoryboard from "@/locales/en/storyboard.json";
 import zhAssets from "@/locales/zh-CN/assets.json";
@@ -19,6 +20,7 @@ import zhEnums from "@/locales/zh-CN/enums.json";
 import zhGenerate from "@/locales/zh-CN/generate.json";
 import zhNav from "@/locales/zh-CN/nav.json";
 import zhNovel from "@/locales/zh-CN/novel.json";
+import zhPost from "@/locales/zh-CN/post.json";
 import zhScript from "@/locales/zh-CN/script.json";
 import zhStoryboard from "@/locales/zh-CN/storyboard.json";
 import { useUiStore, type Lang } from "@/stores/ui";
@@ -34,6 +36,7 @@ export const resources = {
     assets: zhAssets,
     storyboard: zhStoryboard,
     generate: zhGenerate,
+    post: zhPost,
     dev: zhDev,
   },
   en: {
@@ -46,6 +49,7 @@ export const resources = {
     assets: enAssets,
     storyboard: enStoryboard,
     generate: enGenerate,
+    post: enPost,
     dev: enDev,
   },
 } as const;
