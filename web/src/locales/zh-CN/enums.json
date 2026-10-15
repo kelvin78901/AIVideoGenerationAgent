@@ -19,5 +19,30 @@
     "import": "导入",
     "auto_qa_rerun": "质检不过自动重跑",
     "comfy_ingest": "从 ComfyUI 存回"
+  },
+  "component": {
+    "extract": "设定提取",
+    "enrich": "小说补全",
+    "split": "分集规划",
+    "script": "剧本化",
+    "assets": "素材分析",
+    "img": "参考图生成",
+    "text": "画面文字",
+    "voice": "音色",
+    "dub": "台词配音",
+    "plan": "分镜规划",
+    "kf": "关键帧",
+    "world": "3D 场景（可选）",
+    "vid": "视频生成",
+    "ctrl": "结构控制",
+    "up": "2K 精修",
+    "lip": "口型修复",
+    "qa": "自动质检",
+    "music": "配乐",
+    "sub": "字幕对齐"
+  },
+  "componentDesc": {
+    "enrich": "找出原文里镜头拍不出来的缺口，给出补写建议，不改剧情。",
+    "extract": "从原文抽出人物、地点、道具和时间线，交给剧本和素材两步使用。"
   }
 }

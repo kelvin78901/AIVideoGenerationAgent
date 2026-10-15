@@ -21,6 +21,11 @@
 - **手改过的编译层什么时候保留**：普通「重跑」沿用已保存的手改编译层；「不满意换一个」总是按目标模型重新编译（SPEC 7.4「按目标模型重新编译」），手改不跟过去。
 - **示例里的运行不发 `job.updated`**：MSW 的 `POST /products/{id}/run` 返回一个 Job，但不推到任务列表——`/jobs` 是真实后端的，混进假任务会让顶栏 GPU 状态和开发面板失真。
 - **示例时间按本机时区的钟点生成**（`fixtures/demo/products.ts:demoAt`）：界面按看的人所在时区显示时间，示例数据要在任何时区都显示原型里的 09:41 / 10:02 / 10:05。
+- **运行设置、影响范围、闸门的接口细节（M0.5 第 5 步）**：`GET /config/components` 返回 `{components, models, local_runtime_ok}`，组件带 `api_models`、`local_models` 和 `unavailable`（运行位置 → 原因 `code + params`，前端翻译；没有本地 / API 模型的原因前端也能自己推）。`GET /config/resolve` 的 `sources` 逐字段给出 `preset / project / component / item`；兜底配置多一个 `timeout_s`（「超过 N 分钟没结果」用它）。`PUT /config/override` 在 Inspector 里按「有 item 写 item，否则写 component」，返回重新解析后的结果。组件名和说明是固定 id，前端用 `enums:component.<id>` / `componentDesc.<id>` 翻译，不从接口取文案。
+- **重跑用配置的路由，换一个从屏幕上的版本往后数**：「重跑」按组件当前配置的主用模型（本地 / 混合用本地模型，API 用 API 模型），所以在 Inspector 改了模型再点重跑就生效；产物的 `estimate` 每次读取时按配置重算。「不满意换一个」没指定模型时取当前版本之后的下一个。
+- **影响范围**：`POST /impact/preview` 返回 `lines`（每行 `code + params + cost_usd + optional`，前端用 `components:impact.line.<code>` 翻译）、`unaffected`、`rerun_cost_usd`、`stale`（每一步会标几个「待更新」）。`POST /impact/apply {impact_id, action}`；`undo` 只是丢掉这次预览，页面在回调里自己恢复编辑前的内容。
+- **闸门**：`POST /gates/{gate}/confirm|reopen` 的请求体是 `{scope_id: <episode id>}`，确认状态不单独提供读接口，用 `GET /episodes/{id}/progress` 里对应步骤的 `state`（`takes` → 生成、`export` → 后期）。确认后的按钮仍然能直接去下一步，旁边有「重新打开」。
+- **密钥提示只在真实模式显示**：模型选择器里「未填密钥」取真实后端 `/providers` 的 `has_key`，但 `/health` 说是 Mock 模式时不显示——Mock 不需要密钥，满屏提示只会干扰。
 
 ## 2026-10-14 · M0 合并前补充（Kelvin 审阅后）
 

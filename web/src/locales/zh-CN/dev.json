@@ -79,9 +79,14 @@
       "lock": "锁定已采纳的版本",
       "unlock": "解锁",
       "switchMenu": "单独的换模型菜单",
-      "picked": "选了 {{model}}"
+      "picked": "选了 {{model}}",
+      "gateLabel": "确认原文，生成剧本",
+      "impactInline": "预览改画幅的影响（嵌入）",
+      "impactModal": "预览改画幅的影响（弹窗）",
+      "impactTitle": "改成 16:9 会影响已经做好的部分"
     },
-    "products": "产物与版本（示例库，操作刷新后复原）",
-    "cost": "花费标记"
+    "products": "产物与版本 · Inspector（示例库，操作刷新后复原）",
+    "cost": "花费标记",
+    "impact": "影响范围（嵌入 / 弹窗）"
   }
 }

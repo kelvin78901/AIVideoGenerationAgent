@@ -57,5 +57,105 @@
     "saveRun": "保存并重跑",
     "saveOnly": "只保存",
     "saved": "提示词已保存，下次运行生效。"
+  },
+  "inspector": {
+    "label": "本环节运行设置",
+    "components": "本环节的组件",
+    "tabs": "设置分页",
+    "tab": {
+      "run": "运行设置",
+      "prompt": "提示词",
+      "history": "历史 {{count}}"
+    },
+    "rerun": "重跑",
+    "switch": "不满意换一个",
+    "globalLink": "在「模型与兜底」里改全局默认",
+    "noProduct": "这个组件还没有产物"
+  },
+  "picker": {
+    "location": "运行位置",
+    "mode": {
+      "local": "本地",
+      "api": "API",
+      "hybrid": "混合"
+    },
+    "modeHint": {
+      "local": "只用本地模型，不产生 API 费用。",
+      "api": "直接调用 API，按次计费。",
+      "hybrid": "草稿和重跑走本地；点「采纳」前用 API 出终版。"
+    },
+    "api": "API 服务",
+    "local": "本地模型",
+    "role": {
+      "main": "主用",
+      "final": "出终版",
+      "draft": "出草稿",
+      "fallback": "兜底可用",
+      "unused": "未使用",
+      "none": "无"
+    },
+    "more": "更多供应商（{{count}}）",
+    "less": "收起",
+    "priceNote": "价格是每百万 token 的输入 / 输出，以各家官方页面为准。",
+    "noApi": "这个组件没有 API 版本，只能本地跑。",
+    "noLocal": "这个组件没有可本地运行的模型。",
+    "runtimeOk": "本地服务：ComfyUI / 推理服务已连接",
+    "runtimeDown": "本地服务没连上：本地运行会排队等它恢复",
+    "keyMissing": "未填密钥",
+    "fallback": "自动兜底",
+    "fallbackOn": "主用的 {{primary}} 出问题时，自动改用 {{target}}，并记进历史。",
+    "fallbackOff": "已关闭：出问题时停下来等你处理。",
+    "fallbackNext": "备选顺序里的下一个",
+    "when": "什么时候兜底",
+    "trigger": {
+      "error": "报错或显存不足",
+      "timeout": "超过 {{minutes}} 分钟没结果",
+      "qa_fail": "自动质检连续 {{n}} 次不过"
+    },
+    "target": "兜底到",
+    "cap": "单次花费上限（美元）",
+    "capHint": "超过上限会先停下来问你。本地运行不计费。",
+    "source": {
+      "preset": "预设",
+      "project": "项目",
+      "component": "组件",
+      "item": "单项"
+    },
+    "sourceTitle": "这一项的值来自：{{source}}",
+    "unavailable": {
+      "no_local_model": "这个组件没有可本地运行的模型",
+      "no_api_model": "这个组件没有 API 版本",
+      "needs_both": "混合需要本地和 API 都能用",
+      "machine": "这台机器跑不了：{{reason}}"
+    },
+    "reasonLine": "{{mode}}：{{reason}}"
+  },
+  "impact": {
+    "mark": "只标记待更新",
+    "rerun": "自动重跑受影响的部分 · 预计 {{cost}}",
+    "undo": "撤销修改",
+    "footer": "预计花费按当前「模型与兜底」的路由估算；本地跑的部分不计费。已采纳的视频不会被覆盖，新结果作为新版本出现。",
+    "lineCost": "约 {{cost}}",
+    "optional": "（可选）",
+    "marked": "已把受影响的素材、分镜和视频标成「待更新」，左侧导航能看到数量。",
+    "rerunQueued": "受影响的部分已排进队列，按当前路由预计 {{cost}}。完成后会作为新版本出现，等你采纳。",
+    "undone": "已撤销修改。",
+    "line": {
+      "keyframes_redraw": "关键帧 {{count}} 张（{{shots}} 个镜头）要按新画幅重画",
+      "videos_redo": "视频候选 {{count}} 条（已采纳 {{adopted}} 条）要重做：本地草稿重跑不花钱，API 终版",
+      "ref_images_suggest": "场景参考图 {{count}} 张是按 {{aspect}} 出的，建议重出",
+      "asset_scene": "素材 · 场景「{{name}}」",
+      "shots_range": "分镜 · {{from}} 到 {{to}}，共 {{count}} 个",
+      "keyframes": "关键帧 · {{count}} 张",
+      "videos_adopted_candidates": "视频 · {{from}} 到 {{to}} 已采纳，{{shot}} 有 {{candidates}} 条候选"
+    },
+    "unaffected": {
+      "unaffected_spec": "剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。"
+    }
+  },
+  "gate": {
+    "confirmed": "已确认",
+    "reopen": "重新打开",
+    "reopened": "已重新打开这一步，改完后需要再确认。"
   }
 }

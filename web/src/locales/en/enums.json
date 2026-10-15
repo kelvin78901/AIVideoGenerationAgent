@@ -19,5 +19,30 @@
     "import": "Imported",
     "auto_qa_rerun": "Rerun after failed QA",
     "comfy_ingest": "Saved back from ComfyUI"
+  },
+  "component": {
+    "extract": "Story bible extraction",
+    "enrich": "Novel enrichment",
+    "split": "Episode planning",
+    "script": "Scriptwriting",
+    "assets": "Asset breakdown",
+    "img": "Reference images",
+    "text": "On-screen text",
+    "voice": "Voices",
+    "dub": "Dialogue audio",
+    "plan": "Shot planning",
+    "kf": "Keyframes",
+    "world": "3D world (optional)",
+    "vid": "Video generation",
+    "ctrl": "Structure control",
+    "up": "2K finishing",
+    "lip": "Lip-sync repair",
+    "qa": "Auto QA",
+    "music": "Music",
+    "sub": "Subtitle alignment"
+  },
+  "componentDesc": {
+    "enrich": "Finds what the camera cannot show in the source text and suggests additions, without changing the plot.",
+    "extract": "Pulls characters, locations, props and the timeline out of the text for the script and asset steps."
   }
 }

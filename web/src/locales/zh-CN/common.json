@@ -43,7 +43,9 @@
     "product_locked": "已锁定：先重新打开这一步，才能换采纳的版本",
     "nothing_adopted": "还没有采纳的版本，不能锁定",
     "unknown_model": "未知模型 {{key}}",
-    "invalid_request": "请求内容不对：{{issues}}"
+    "invalid_request": "请求内容不对：{{issues}}",
+    "impact_not_found": "找不到影响范围 {{id}}，可能已经处理过",
+    "unknown_gate": "未知闸门 {{gate}}"
   },
   "toast": {
     "generic": "通知：{{code}}",

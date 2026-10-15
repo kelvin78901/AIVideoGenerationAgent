@@ -43,7 +43,9 @@
     "product_locked": "Locked: reopen this step before adopting a different version",
     "nothing_adopted": "Nothing adopted yet, so there is nothing to lock",
     "unknown_model": "Unknown model {{key}}",
-    "invalid_request": "Invalid request: {{issues}}"
+    "invalid_request": "Invalid request: {{issues}}",
+    "impact_not_found": "Impact {{id}} not found; it may have been handled already",
+    "unknown_gate": "Unknown gate {{gate}}"
   },
   "toast": {
     "generic": "Notice: {{code}}",

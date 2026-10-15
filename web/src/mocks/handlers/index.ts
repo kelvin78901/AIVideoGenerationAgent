@@ -20,7 +20,15 @@
  * | POST /products/{id}/lock, unlock | M2             |
  * | PUT /products/{id}/prompt        | M2             |
  * | POST /products/{id}/compile      | M2             |
+ * | GET /config/components           | M2             |
+ * | GET /config/resolve              | M2             |
+ * | PUT /config/override             | M2             |
+ * | POST /impact/preview, apply      | M2             |
+ * | POST /gates/{gate}/confirm, reopen | M2           |
  */
+import { configHandlers } from "@/mocks/handlers/config";
+import { gateHandlers } from "@/mocks/handlers/gates";
+import { impactHandlers } from "@/mocks/handlers/impact";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { productHandlers } from "@/mocks/handlers/products";
 import { seriesHandlers } from "@/mocks/handlers/series";
@@ -31,4 +39,7 @@ export const handlers = [
   ...metricsHandlers,
   ...setupHandlers,
   ...productHandlers,
+  ...configHandlers,
+  ...impactHandlers,
+  ...gateHandlers,
 ];

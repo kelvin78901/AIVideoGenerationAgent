@@ -8,14 +8,20 @@ import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { ApiError } from "@/api/client";
-import { useLock, useProduct } from "@/api/hooks/products";
+import { useComponentModels } from "@/api/hooks/config";
+import { useImpactPreview } from "@/api/hooks/impact";
+import { useLock, useProducts } from "@/api/hooks/products";
+import { useEpisodes } from "@/api/hooks/series";
+import type { ModelOption } from "@/api/schemas/models";
 import { Chip } from "@/components/Chip";
 import { CostBadge } from "@/components/CostBadge";
 import { EmptyState } from "@/components/EmptyState";
+import { GateButton } from "@/components/GateButton";
+import { ImpactDialog } from "@/components/ImpactDialog";
+import { Inspector } from "@/components/Inspector";
 import { MediaThumb } from "@/components/MediaThumb";
 import { ModelSwitchMenu } from "@/components/ModelSwitchMenu";
 import { PageHeader } from "@/components/PageHeader";
-import { PromptEditor } from "@/components/PromptEditor";
 import { QueryError, QueryState, Skeleton } from "@/components/QueryState";
 import { RunBar } from "@/components/RunBar";
 import { SegmentedControl } from "@/components/SegmentedControl";
@@ -37,10 +43,8 @@ import { Progress } from "@/components/ui/progress";
 import { RadioCard, RadioGroup } from "@/components/ui/radio-group";
 import { Slider } from "@/components/ui/slider";
 import { Switch } from "@/components/ui/switch";
-import { VersionHistory } from "@/components/VersionHistory";
-// Dev-only page: model names come from the demo catalog until step 5's /config/components.
-import { llmModels } from "@/mocks/fixtures/demo/models";
-import { PRODUCT_ENRICH, PRODUCT_EXTRACT } from "@/mocks/fixtures/demo/products";
+import { DEMO_SERIES, paths } from "@/app/paths";
+import { useInspectorStore } from "@/stores/inspector";
 
 function Section({ title, children }: { title: string; children: ReactNode }) {
   return (
@@ -55,55 +59,109 @@ function Section({ title, children }: { title: string; children: ReactNode }) {
 
 type Sample = (key: string, opts?: Record<string, unknown>) => string;
 
-/** RunBar + history + prompt editor over one demo product, as the Inspector will show them. */
-function ProductShowcase({
-  id,
-  what,
-  name,
-  s,
-}: {
-  id: string;
-  what: string;
-  name: string;
-  s: Sample;
-}) {
-  const product = useProduct(id);
-  const lock = useLock(id);
-  const [tab, setTab] = useState<"prompt" | "history">("history");
+/** RunBar per demo product, driving the Inspector beside them (the novel page's layout). */
+function ProductShowcase({ s }: { s: Sample }) {
+  const products = useProducts({ owner: `series:${DEMO_SERIES}` });
+  const episodes = useEpisodes(DEMO_SERIES);
+  const show = useInspectorStore((st) => st.show);
+  const enrichModels = useComponentModels("enrich");
+  const extractModels = useComponentModels("extract");
+  const models: Record<string, ModelOption[]> = { enrich: enrichModels, extract: extractModels };
+  const what: Record<string, string> = { enrich: s("what"), extract: s("whatExtract") };
+  const episodeId = episodes.data?.[0]?.id;
   return (
-    <QueryState query={product}>
-      {(p) => (
-        <div className="flex w-full flex-col gap-3">
-          <RunBar
-            product={p}
-            what={what}
-            models={llmModels}
-            onEditPrompt={() => setTab("prompt")}
-            onOpenHistory={() => setTab("history")}
-          />
-          <div className="grid gap-3 md:grid-cols-2">
-            <Card>
-              <CardContent className="pt-4">
-                {tab === "history" ? (
-                  <VersionHistory product={p} models={llmModels} componentName={name} />
-                ) : (
-                  <PromptEditor product={p} componentName={name} />
-                )}
-              </CardContent>
-            </Card>
-            <div className="flex flex-col items-start gap-2">
-              <Button
-                variant="outline"
-                disabled={!p.adopted_version_id || lock.isPending}
-                onClick={() => lock.mutate(p.locked_hash === null)}
+    <QueryState query={products}>
+      {(list) => (
+        <div className="grid w-full gap-4 lg:grid-cols-[1fr_380px]">
+          <div className="flex flex-col gap-3">
+            {list.map((p) => (
+              <div key={p.id} className="flex flex-col gap-2">
+                <RunBar
+                  product={p}
+                  what={what[p.component_id] ?? p.component_id}
+                  models={models[p.component_id] ?? []}
+                  onEditPrompt={() => show("prompt", p.component_id)}
+                  onOpenHistory={() => show("history", p.component_id)}
+                />
+                <LockButton productId={p.id} locked={p.locked_hash !== null} s={s} />
+              </div>
+            ))}
+            <div className="flex flex-wrap items-center gap-3">
+              <ModelSwitchMenu
+                options={enrichModels}
+                currentKey="deepseek/v4-pro"
+                align="start"
+                onPick={(key) => toast.info(s("picked", { model: key }))}
               >
-                {s(p.locked_hash === null ? "lock" : "unlock")}
-              </Button>
+                <Button variant="outline">
+                  <ArrowLeftRight aria-hidden />
+                  {s("switchMenu")}
+                </Button>
+              </ModelSwitchMenu>
+              <GateButton
+                gate="novel"
+                episodeId={episodeId}
+                label={s("gateLabel")}
+                to={paths.devComponents()}
+              />
             </div>
           </div>
+          <Inspector
+            className="rounded-lg border"
+            components={list.map((p) => ({ id: p.component_id, productId: p.id }))}
+          />
         </div>
       )}
     </QueryState>
+  );
+}
+
+function LockButton({ productId, locked, s }: { productId: string; locked: boolean; s: Sample }) {
+  const lock = useLock(productId);
+  return (
+    <Button
+      variant="outline"
+      size="sm"
+      className="self-start"
+      disabled={lock.isPending}
+      onClick={() => lock.mutate(!locked)}
+    >
+      {s(locked ? "unlock" : "lock")}
+    </Button>
+  );
+}
+
+/** The 9:16 → 16:9 impact, inline (as on the spec page) and as a modal. */
+function ImpactShowcase({ s }: { s: Sample }) {
+  const preview = useImpactPreview();
+  const [variant, setVariant] = useState<"inline" | "modal">("inline");
+  const open = (v: "inline" | "modal") => {
+    setVariant(v);
+    preview.mutate({ kind: "spec_aspect", target_id: DEMO_SERIES, patch: { aspect: "16:9" } });
+  };
+  return (
+    <div className="flex w-full flex-col gap-3">
+      <div className="flex gap-2">
+        <Button variant="outline" onClick={() => open("inline")}>
+          {s("impactInline")}
+        </Button>
+        <Button variant="outline" onClick={() => open("modal")}>
+          {s("impactModal")}
+        </Button>
+      </div>
+      {preview.data ? (
+        <ImpactDialog
+          key={preview.data.id}
+          impact={preview.data}
+          variant={variant}
+          title={s("impactTitle")}
+          onOpenChange={(o) => {
+            if (!o) preview.reset();
+          }}
+          onResolved={() => preview.reset()}
+        />
+      ) : null}
+    </div>
   );
 }
 
@@ -143,19 +201,11 @@ export default function DevComponentsPage() {
       </Section>
 
       <Section title={t("showcase.products")}>
-        <ProductShowcase id={PRODUCT_ENRICH} what={s("what")} name={s("enrich")} s={s} />
-        <ProductShowcase id={PRODUCT_EXTRACT} what={s("whatExtract")} name={s("extract")} s={s} />
-        <ModelSwitchMenu
-          options={llmModels}
-          currentKey="deepseek/v4-pro"
-          align="start"
-          onPick={(key) => toast.info(s("picked", { model: key }))}
-        >
-          <Button variant="outline">
-            <ArrowLeftRight aria-hidden />
-            {s("switchMenu")}
-          </Button>
-        </ModelSwitchMenu>
+        <ProductShowcase s={s} />
+      </Section>
+
+      <Section title={t("showcase.impact")}>
+        <ImpactShowcase s={s} />
       </Section>
 
       <Section title={t("showcase.segmented")}>

@@ -79,9 +79,14 @@
       "lock": "Lock the adopted version",
       "unlock": "Unlock",
       "switchMenu": "Standalone model menu",
-      "picked": "Picked {{model}}"
+      "picked": "Picked {{model}}",
+      "gateLabel": "Confirm the text, write the script",
+      "impactInline": "Preview the aspect change (inline)",
+      "impactModal": "Preview the aspect change (modal)",
+      "impactTitle": "Switching to 16:9 affects work already done"
     },
-    "products": "Outputs and versions (demo store; resets on reload)",
-    "cost": "Cost labels"
+    "products": "Outputs, versions and the Inspector (demo store; resets on reload)",
+    "cost": "Cost labels",
+    "impact": "Impact (inline / modal)"
   }
 }

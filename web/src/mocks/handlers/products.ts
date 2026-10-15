@@ -10,9 +10,11 @@ import {
 } from "@/api/schemas/products";
 import { getDb } from "@/mocks/db";
 import { demoTiming, emitDemoEvent } from "@/mocks/events";
+import { primaryModel } from "@/mocks/fixtures/demo/config";
 import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
+import { resolveConfig } from "@/mocks/handlers/config";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 const notFound = (id: unknown) => demoError(404, "product_not_found", { id });
@@ -66,6 +68,30 @@ function nextModel(current: string): string {
   return llmModels[(i + 1) % llmModels.length]?.key ?? current;
 }
 
+/** The model a plain run uses: the component's configured route (Inspector「运行设置」). */
+function routeModel(p: Product): string {
+  const cfg = resolveConfig(p.component_id, null);
+  return (
+    (cfg && primaryModel(cfg.values)) ??
+    currentVersion(p)?.model_key ??
+    p.prompt?.model_key ??
+    DEFAULT_MODEL
+  );
+}
+
+/** `estimate` is computed on read, so it follows config changes (hard rule 6). */
+function withEstimate(p: Product): Product {
+  if (p.running) return p;
+  const model = routeModel(p);
+  p.estimate = {
+    model_key: model,
+    where: modelByKey(model)?.where ?? "api",
+    cost_usd: demoCost(model),
+    seconds: p.estimate?.seconds ?? null,
+  };
+  return p;
+}
+
 const hhmm = (d: Date) =>
   `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 
@@ -96,12 +122,6 @@ function finishRun(
   if (!last) return;
   p.current_version_id = last.id;
   p.running = null;
-  p.estimate = {
-    model_key: run.model,
-    where: modelByKey(run.model)?.where ?? "api",
-    cost_usd: demoCost(run.model),
-    seconds: p.estimate?.seconds ?? null,
-  };
   settle(p);
   for (const version of created) emitDemoEvent("version.created", { product_id: p.id, version });
   emitDemoEvent("product.updated", p);
@@ -127,12 +147,12 @@ export const productHandlers = [
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&
         (!component || p.component_id === component),
     );
-    return demoJson(list);
+    return demoJson(list.map(withEstimate));
   }),
 
   http.get(v1("/products/:id"), ({ params }) => {
     const p = getDb().products[String(params.id)];
-    return p ? demoJson(p) : notFound(params.id);
+    return p ? demoJson(withEstimate(p)) : notFound(params.id);
   }),
 
   http.post(v1("/products/:id/run"), async ({ params, request }) => {
@@ -143,7 +163,9 @@ export const productHandlers = [
     if (p.running) return demoError(409, "product_busy", { id: p.id });
 
     const req = body.data;
-    const base = currentVersion(p)?.model_key ?? p.prompt?.model_key ?? DEFAULT_MODEL;
+    // 重跑 uses the configured route; 不满意换一个 moves on from the version on screen.
+    const base =
+      req.mode === "switch" ? (currentVersion(p)?.model_key ?? routeModel(p)) : routeModel(p);
     const model = req.model ?? (req.mode === "switch" ? nextModel(base) : base);
     if (!modelByKey(model)) return demoError(404, "unknown_model", { key: model });
 
