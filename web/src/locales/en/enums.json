@@ -45,7 +45,10 @@
     "enrich": "Finds what the camera cannot show in the source text and suggests additions, without changing the plot.",
     "extract": "Pulls characters, locations, props and the timeline out of the text for the script and asset steps.",
     "split": "Cuts the novel into episodes in story order, each ending on a cliffhanger, with a hook at the start of episode 1.",
-    "script": "Turns narration into scene headings, action, dialogue and delivery; every block cites its source paragraph."
+    "script": "Turns narration into scene headings, action, dialogue and delivery; every block cites its source paragraph.",
+    "img": "Reference images for characters, scenes and props. Once locked, keyframes and videos use them.",
+    "text": "Text that must be exact in the frame: notes, phone screens, signs. Every candidate is OCR-checked.",
+    "voice": "One voice per speaking character; all dialogue audio and auditions use it."
   },
   "suggestionKind": {
     "appearance": "Appearance",
@@ -62,5 +65,19 @@
     "dialogue": "Dialogue",
     "vo": "Voice-over",
     "sfx": "Sound"
+  },
+  "assetKind": {
+    "character": "Characters",
+    "scene": "Scenes",
+    "prop": "Props",
+    "text": "On-screen text",
+    "voice": "Voices",
+    "style": "Style",
+    "world": "World"
+  },
+  "assetStatus": {
+    "locked": "Locked",
+    "choosing": "Pick one",
+    "not_generated": "Not generated"
   }
 }

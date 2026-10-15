@@ -21,5 +21,6 @@ export function formatPrice(t: TFunction<"components">, price: Price): string {
   const amount = formatMoney(price.amount, price.currency);
   if (price.unit === "image") return t("cost.perImage", { amount });
   if (price.unit === "second") return t("cost.perSecond", { amount });
+  if (price.unit === "mchar") return t("cost.perMchar", { amount });
   return t("cost.perCall", { amount });
 }

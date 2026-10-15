@@ -8,7 +8,7 @@ import {
   type ResolvedConfig,
 } from "@/api/schemas/config";
 import { getDb } from "@/mocks/db";
-import { llmModels } from "@/mocks/fixtures/demo/models";
+import { allModels } from "@/mocks/fixtures/demo/models";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 type Partial_ = Partial<ComponentConfig>;
@@ -42,7 +42,7 @@ export const configHandlers = [
   http.get(v1("/config/components"), () =>
     demoJson({
       components: getDb().config.components,
-      models: llmModels,
+      models: allModels,
       local_runtime_ok: true,
     }),
   ),

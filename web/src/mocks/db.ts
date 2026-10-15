@@ -6,6 +6,7 @@ import type { ComponentConfig } from "@/api/schemas/config";
 import type { GateDecision } from "@/api/schemas/gates";
 import type { Impact } from "@/api/schemas/impact";
 import { componentDefs, presetConfigs } from "@/mocks/fixtures/demo/config";
+import { assetProducts, assets } from "@/mocks/fixtures/demo/assets";
 import { episodes, progress } from "@/mocks/fixtures/demo/episodes";
 import { summary } from "@/mocks/fixtures/demo/metrics";
 import { bible, novel, suggestions } from "@/mocks/fixtures/demo/novel";
@@ -23,7 +24,8 @@ function createDb() {
     specs: { [spec.series_id]: spec },
     summary,
     profile,
-    products: Object.fromEntries(products.map((p) => [p.id, p])),
+    products: Object.fromEntries([...products, ...assetProducts].map((p) => [p.id, p])),
+    assets,
     config: {
       components: componentDefs,
       preset: presetConfigs,

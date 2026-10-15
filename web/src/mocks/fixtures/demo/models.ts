@@ -47,6 +47,36 @@ export const llmLocalModels: ModelOption[] = [
 
 export const llmModels: ModelOption[] = [...llmLocalModels, ...llmApiModels];
 
+const per = (unit: "image" | "mchar", amount: number) =>
+  ({ unit, amount, currency: "USD" }) as const;
+
+/** Image and voice models (providers.yaml `media_models`, `local_models`). */
+export const mediaModels: ModelOption[] = [
+  { key: "openai/gpt-image-2", display: "GPT Image 2", where: "api", price: per("image", 0.28) },
+  {
+    key: "google/nano-banana-pro",
+    display: "Nano Banana Pro",
+    where: "api",
+    price: per("image", 0.14),
+  },
+  { key: "volc/seedream-5.0", display: "Seedream 5.0", where: "api", price: per("image", 0.03) },
+  { key: "comfy/qwen-image-edit", display: "Qwen-Image-Edit", where: "local", price: null },
+  { key: "comfy/qwen-image", display: "Qwen-Image", where: "local", price: null },
+  { key: "comfy/flux2-dev", display: "FLUX.2 dev", where: "local", price: null },
+  {
+    key: "minimax/speech-2.8-hd",
+    display: "MiniMax Speech 2.8 HD",
+    where: "api",
+    price: per("mchar", 100),
+  },
+  { key: "elevenlabs/v3", display: "ElevenLabs v3", where: "api", price: null },
+  { key: "local/indextts2", display: "IndexTTS2", where: "local", price: null },
+  { key: "local/cosyvoice", display: "CosyVoice", where: "local", price: null },
+  { key: "local/qwen3-tts", display: "Qwen3-TTS", where: "local", price: null },
+];
+
+export const allModels: ModelOption[] = [...llmModels, ...mediaModels];
+
 export function modelByKey(key: string): ModelOption | undefined {
-  return llmModels.find((m) => m.key === key);
+  return allModels.find((m) => m.key === key);
 }

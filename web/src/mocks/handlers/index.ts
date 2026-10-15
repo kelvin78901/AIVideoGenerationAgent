@@ -32,7 +32,11 @@
  * | GET /series/{id}/bible           | M2             |
  * | GET /episodes/{id}/script        | M2             |
  * | POST /lines/{id}/rewrite, /scenes/{id}/rewrite | M2 |
+ * | GET /series/{id}/assets, PATCH /assets/{id} | M3   |
+ * | POST /assets/{id}/lock           | M3             |
+ * | POST /episodes/{id}/assets/analyze | M3           |
  */
+import { assetHandlers } from "@/mocks/handlers/assets";
 import { configHandlers } from "@/mocks/handlers/config";
 import { gateHandlers } from "@/mocks/handlers/gates";
 import { impactHandlers } from "@/mocks/handlers/impact";
@@ -53,4 +57,5 @@ export const handlers = [
   ...gateHandlers,
   ...novelHandlers,
   ...scriptHandlers,
+  ...assetHandlers,
 ];

@@ -1,0 +1,97 @@
+{
+  "title": "Assets",
+  "lead": "Characters, scenes, props, on-screen text and voices are found in the script automatically. Lock one candidate for each, and every shot uses the same reference.",
+  "sync": "Organize on the ComfyUI canvas",
+  "gate": "On to the storyboard",
+  "progress": "{{done}} / {{total}} locked",
+  "analyzed": "Found in the script: {{summary}}",
+  "kindCount": "{{count}} {{kind}}",
+  "summarySep": " · ",
+  "reanalyze": "Analyze the script again",
+  "reanalyzed": "Script analyzed again: no new assets. After editing the script, new or changed ones are marked.",
+  "reanalyzedChanged": "Script analyzed again: {{added}} new, {{changed}} changed.",
+  "what": {
+    "image": "{{name}} · 4 reference candidates",
+    "text": "{{name}} · 4 text candidates",
+    "voice": "{{name}} · 3 voice candidates"
+  },
+  "list": {
+    "label": "Asset list",
+    "filter": "Filter by type",
+    "all": "All",
+    "shots": "{{count}} shots",
+    "noShots": "Not in this episode"
+  },
+  "detail": {
+    "label": "Asset details",
+    "lock": "Lock as reference",
+    "unlock": "Unlock",
+    "source": "Source: {{source}}",
+    "appears": "Appears in:",
+    "noShots": "No shots in this episode",
+    "desc": "Description (the intent layer of this asset's prompt)",
+    "descHint": "Click Rerun to apply changes; editing a locked asset shows which shots are affected.",
+    "descSaved": "Description saved; it applies to the next rerun.",
+    "locked": "“{{name}}” locked: candidate {{letter}} is the reference.",
+    "lockedCharacter": "“{{name}}” locked: candidate {{letter}} is the reference; side, back and expression views are being filled in.",
+    "unlockTitle": "Unlocking “{{name}}” affects the shots that use it"
+  },
+  "text": {
+    "exact": "Text in the frame (checked letter by letter)",
+    "method": "Method",
+    "methods": {
+      "composite": "Composite in post (recommended)",
+      "model": "Drawn by the model"
+    },
+    "hint": {
+      "composite": "Generate the plate without text and composite the text in post. The text is always right; best for screens, signs and captions.",
+      "model": "The text is part of the image, with natural perspective and strokes; best for handwritten notes. Every candidate is OCR-checked and mismatches cannot be adopted directly."
+    },
+    "style": "Lettering",
+    "styles": {
+      "handwritten": "Handwritten",
+      "printed": "Printed",
+      "screen": "Screen UI"
+    }
+  },
+  "cands": {
+    "title": "Candidates",
+    "noteText": "Every candidate is OCR-checked against the text above",
+    "noteCharacter": "Side, back and expression views are filled in after locking",
+    "noteOther": "Pick one, then lock it",
+    "label": "v{{n}} · {{letter}}",
+    "picked": "Picked",
+    "metaCharacter": "Full body · front",
+    "metaOther": "{{aspect}} · daylight reference",
+    "metaComposite": "Plate + text in post",
+    "metaModel": "Text drawn by the model",
+    "compositeSample": "{{text}} (in post)",
+    "ocrOk": "OCR matches",
+    "ocrMissing": "OCR mismatch: missing characters or punctuation",
+    "ocrWrong": "OCR mismatch: wrong characters",
+    "emptyImage": "Not generated yet. Click Rerun above or on the right for 4 candidates.",
+    "emptyVoice": "Not generated yet. Click Rerun above or on the right for 3 voice candidates."
+  },
+  "voice": {
+    "source": "Voice source",
+    "methods": {
+      "design": "Design from description",
+      "clone": "Voice clone",
+      "local": "Local TTS"
+    },
+    "hint": {
+      "design": "Creates a new voice from the description above; no sample needed. MiniMax voice design is about $3 each.",
+      "clone": "Upload at least 10 s of clean speech (with the speaker's consent). MiniMax cloning is about $1.5 each.",
+      "local": "Uses local TTS (IndexTTS2 / CosyVoice): free, quality depends on the reference audio."
+    },
+    "cands": "Voice candidates",
+    "play": "Play {{letter}}",
+    "pause": "Pause {{letter}}",
+    "label": "v{{n}} · {{letter}} · {{label}}",
+    "pick": "Choose",
+    "picked": "Chosen",
+    "lines": "Audition with lines from the script",
+    "tryLine": "Audition: {{text}}",
+    "trying": "Auditioning “{{text}}” ({{tone}})."
+  }
+}

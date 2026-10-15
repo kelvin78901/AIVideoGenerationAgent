@@ -31,6 +31,7 @@
 - **「导入 .txt / .docx」在 M0.5 置灰并说明原因**：原型里这个按钮没有行为，导入要后端（`POST /series/{id}/novel`，M2）。做一个假的导入只会让示例数据前后不一致。
 - **剧本页的接口（M0.5 第 7 步）**：`GET /episodes/{id}/script` 返回 `scenes` + `lines`（SPEC 4.1 的字段，另加 `duration_s`、`overlay_shot`「叠在 1-06」、`mood`、`cliffhanger`、`edited`；场景头文本放 `scene.heading`）。分集多了 `scene_from` / `scene_to`、`shot_count`、`script_status`（none / draft / confirmed）。「重写这一段 / 换模型重写」是 `POST /lines|scenes/{id}/rewrite {model?}`，只返回建议文本 `{text, model_key}`，不落盘。
 - **改已确认内容一律「先预览、后落盘」**：保存或重写后先 `POST /impact/preview {kind: line_edit | scene_edit, target_id, patch: {text}}`，弹窗打开期间页面只在本地显示新文字（标「已修改」）；选「只标记 / 自动重跑」时由 `/impact/apply` 写入改动并标记下游，选「撤销」什么都不写。预览没有任何影响行时直接按「只标记」写入。这样 SPEC 9.1 的 `PATCH /lines/{id}` 不再需要单独的「返回影响范围」语义——M2 实现时可以保留 PATCH 给未确认的剧本用。
+- **素材页的接口（M0.5 第 8 步）**：`GET /series/{id}/assets`（`status` 由素材的产物推出：锁定 / 有候选 / 没生成）、`PATCH /assets/{id}`（描述 = 产物提示词的意图层，改了下次重跑生效；`pick`；画面文字的 `exact / method / style`；音色来源）、`POST /assets/{id}/lock`（采纳屏幕上的那一版并锁定）、`POST /episodes/{id}/assets/analyze`。解锁不单独开接口：走 `/impact/preview {kind: asset_unlock}` + `/impact/apply`，和剧本改动同一条路。候选放在版本的 `payload.candidates` （画面文字带 OCR，音色带说明和波形）；`files[]` 等 M3 有真文件再用。素材的完成数（导航 7/13）按实际锁定数算。价格多一种单位 `mchar`（每百万字符，TTS）。
 - **分集卡用路由切换**：点一集跳到 `/s/:series/e/:n/script`，顶栏的集名、导航徽标都跟着这一集走；原型是页内切换。每集的剧本是一个 `owner_type=episode` 的产物，「生成这一集的剧本」就是对它 `run`。
 
 ## 2026-10-14 · M0 合并前补充（Kelvin 审阅后）

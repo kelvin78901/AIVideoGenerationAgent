@@ -14,6 +14,7 @@ import { primaryModel } from "@/mocks/fixtures/demo/config";
 import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
+import { assetPayload } from "@/mocks/handlers/assets";
 import { resolveConfig } from "@/mocks/handlers/config";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
@@ -112,7 +113,7 @@ function finishRun(
       parent: parent?.id ?? null,
       intent: opts.intent,
       compiled: opts.compiled,
-      payload: parent?.payload,
+      payload: assetPayload(p) ?? parent?.payload,
     });
     version.job_id = run.jobId;
     p.versions.push(version);

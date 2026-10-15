@@ -47,7 +47,8 @@
     "impact_not_found": "Impact {{id}} not found; it may have been handled already",
     "unknown_gate": "Unknown gate {{gate}}",
     "suggestion_not_found": "Suggestion {{id}} not found",
-    "line_not_found": "Script block {{id}} not found"
+    "line_not_found": "Script block {{id}} not found",
+    "asset_not_found": "Asset {{id}} not found"
   },
   "toast": {
     "generic": "Notice: {{code}}",

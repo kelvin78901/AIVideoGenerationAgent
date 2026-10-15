@@ -32,7 +32,8 @@ export type Currency = z.infer<typeof CurrencySchema>;
 export const PriceSchema = z.union([
   z.object({ unit: z.literal("mtok"), in: z.number(), out: z.number(), currency: CurrencySchema }),
   z.object({
-    unit: z.enum(["image", "second", "call"]),
+    /** `mchar`: per million characters (TTS). */
+    unit: z.enum(["image", "second", "call", "mchar"]),
     amount: z.number(),
     currency: CurrencySchema,
   }),

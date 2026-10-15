@@ -15,6 +15,12 @@ export const intents: Record<string, string> = {
 };
 
 const templates: Record<string, (intent: string) => string> = {
+  img: (intent) =>
+    `[任务] 素材参考图，4 张候选\n[描述] ${intent}\n[风格] 写实电影感，干净背景，均匀柔光，9:16\n[约束] 人物：五官、发型、服装各候选间可不同，但单张内要完整清晰；不要出现任何文字\n[锁定后] 自动补齐侧面、背面和表情`,
+  text: (intent) =>
+    `[任务] 画面文字素材，4 张候选\n[文字，必须逐字一致] {画面里的字}\n[描述] ${intent}\n[核对] 每张出图后 OCR，与目标文字逐字比对；不一致的标红，不自动采纳`,
+  voice: (intent) =>
+    `[任务] 音色设计，3 个候选\n[描述] ${intent}\n[试读] 用剧本里该角色的台词，按标注的语气各读一遍\n[约束] 不要播音腔；保留气声和停顿`,
   split: (intent) =>
     "[system]\n你负责给竖屏短剧分集。\n\n[规则]\n" +
     intent +

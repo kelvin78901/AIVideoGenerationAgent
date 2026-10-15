@@ -18,7 +18,8 @@
     "perMtok": "{{in}} / {{out}} per M tokens",
     "perImage": "{{amount}} / image",
     "perSecond": "{{amount}} / s",
-    "perCall": "{{amount}} / call"
+    "perCall": "{{amount}} / call",
+    "perMchar": "{{amount}} per M characters"
   },
   "runBar": {
     "product": "Current output · {{what}}",
@@ -160,15 +161,27 @@
       "video_not_generated": "Video · {{id}} (not generated)",
       "videos_not_generated": "Videos · {{from}} to {{to}} (not generated)",
       "dub_lines": "Dialogue audio · {{count}}",
-      "video_audio_swap": "Video · {{id}} gets a new audio track"
+      "video_audio_swap": "Video · {{id}} gets a new audio track",
+      "shot_refs": "Shots · {{ids}}: {{count}} shots use it as a reference"
     },
     "unaffected": {
-      "unaffected_spec": "Script, shot list, dialogue audio and voices are unaffected. Adopted videos are kept; new results arrive as new versions."
+      "unaffected_spec": "Script, shot list, dialogue audio and voices are unaffected. Adopted videos are kept; new results arrive as new versions.",
+      "unlock_keeps_adopted": "Adopted videos are kept; with the new reference these shots get new versions."
     }
   },
   "gate": {
     "confirmed": "Confirmed",
     "reopen": "Reopen",
     "reopened": "Step reopened; confirm it again after your changes."
+  },
+  "asset": {
+    "source": {
+      "script_line": "Script scene {{scene}} △{{line}}",
+      "script_line_note": "Script scene {{scene}} △{{line}} ({{note}})",
+      "scene_heading": "Script scene {{scene}} heading",
+      "episode_scene": "Episode {{episode}} scene {{scene}}",
+      "dialogue_count": "Script · {{count}} lines",
+      "episode": "Episode {{episode}}"
+    }
   }
 }

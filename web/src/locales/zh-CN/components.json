@@ -18,7 +18,8 @@
     "perMtok": "{{in}} / {{out}} 每百万 token",
     "perImage": "{{amount}} / 张",
     "perSecond": "{{amount}} / 秒",
-    "perCall": "{{amount}} / 次"
+    "perCall": "{{amount}} / 次",
+    "perMchar": "{{amount}} / 百万字符"
   },
   "runBar": {
     "product": "当前产物 · {{what}}",
@@ -160,15 +161,27 @@
       "video_not_generated": "视频 · {{id}}（未生成）",
       "videos_not_generated": "视频 · {{from}} 到 {{to}}（未生成）",
       "dub_lines": "配音 · {{count}} 条",
-      "video_audio_swap": "视频 · {{id}} 换音轨"
+      "video_audio_swap": "视频 · {{id}} 换音轨",
+      "shot_refs": "分镜 · {{ids}}，共 {{count}} 个镜头用它做参考"
     },
     "unaffected": {
-      "unaffected_spec": "剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。"
+      "unaffected_spec": "剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。",
+      "unlock_keeps_adopted": "已采纳的视频不会被删；换了新参考后，这些镜头会出新版本。"
     }
   },
   "gate": {
     "confirmed": "已确认",
     "reopen": "重新打开",
     "reopened": "已重新打开这一步，改完后需要再确认。"
+  },
+  "asset": {
+    "source": {
+      "script_line": "剧本 场 {{scene}} △{{line}}",
+      "script_line_note": "剧本 场 {{scene}} △{{line}}（{{note}}）",
+      "scene_heading": "剧本 场 {{scene}} 场景头",
+      "episode_scene": "第 {{episode}} 集 场 {{scene}}",
+      "dialogue_count": "剧本 台词 {{count}} 句",
+      "episode": "第 {{episode}} 集"
+    }
   }
 }

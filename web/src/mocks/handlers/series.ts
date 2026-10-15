@@ -1,6 +1,7 @@
 import { http } from "msw";
 
 import { getDb } from "@/mocks/db";
+import { lockedAssetCount } from "@/mocks/handlers/assets";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 export const seriesHandlers = [
@@ -23,7 +24,12 @@ export const seriesHandlers = [
   http.get(v1("/episodes/:id/progress"), ({ params }) => {
     const id = String(params.id);
     const progress = getDb().progress[id];
-    if (progress) return demoJson(progress);
+    if (progress) {
+      // 素材 7/13 is the number of locked assets.
+      const assets = progress.steps.assets;
+      if (assets.state !== "not_started") Object.assign(assets, lockedAssetCount());
+      return demoJson(progress);
+    }
     if (!getDb().episodes.some((e) => e.id === id))
       return demoError(404, "episode_not_found", { id });
     // Episodes without work yet: every step not started.
