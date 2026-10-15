@@ -48,7 +48,8 @@
     "unknown_gate": "未知闸门 {{gate}}",
     "suggestion_not_found": "找不到这条建议 {{id}}",
     "line_not_found": "找不到这段剧本 {{id}}",
-    "asset_not_found": "找不到素材 {{id}}"
+    "asset_not_found": "找不到素材 {{id}}",
+    "shot_not_found": "找不到镜头 {{id}}"
   },
   "toast": {
     "generic": "通知：{{code}}",

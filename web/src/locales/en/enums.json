@@ -48,7 +48,9 @@
     "script": "Turns narration into scene headings, action, dialogue and delivery; every block cites its source paragraph.",
     "img": "Reference images for characters, scenes and props. Once locked, keyframes and videos use them.",
     "text": "Text that must be exact in the frame: notes, phone screens, signs. Every candidate is OCR-checked.",
-    "voice": "One voice per speaking character; all dialogue audio and auditions use it."
+    "voice": "One voice per speaking character; all dialogue audio and auditions use it.",
+    "plan": "Breaks the script into shots: type, framing, length, where the first frame comes from, which references.",
+    "kf": "Three keyframes for every shot that needs a new first frame, following the framing and blocking set here."
   },
   "suggestionKind": {
     "appearance": "Appearance",
@@ -79,5 +81,27 @@
     "locked": "Locked",
     "choosing": "Pick one",
     "not_generated": "Not generated"
+  },
+  "shotType": {
+    "continuous": "Continuous action",
+    "same_scene_cut": "Same scene, new angle",
+    "scene_change": "Scene change"
+  },
+  "framing": {
+    "wide": "Wide",
+    "medium": "Medium",
+    "close": "Close",
+    "closeup": "Close-up"
+  },
+  "cameraMove": {
+    "static": "Static",
+    "push": "Slow push",
+    "follow": "Follow",
+    "pan": "Pan"
+  },
+  "audioMode": {
+    "native": "Native sync",
+    "tts": "Voice first, then lip-sync",
+    "none": "No voice"
   }
 }

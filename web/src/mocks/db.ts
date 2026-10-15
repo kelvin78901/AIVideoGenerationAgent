@@ -11,6 +11,7 @@ import { episodes, progress } from "@/mocks/fixtures/demo/episodes";
 import { summary } from "@/mocks/fixtures/demo/metrics";
 import { bible, novel, suggestions } from "@/mocks/fixtures/demo/novel";
 import { scripts } from "@/mocks/fixtures/demo/script";
+import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
 import { series } from "@/mocks/fixtures/demo/series";
 import { products } from "@/mocks/fixtures/demo/products";
 import { profile } from "@/mocks/fixtures/demo/setup";
@@ -24,7 +25,9 @@ function createDb() {
     specs: { [spec.series_id]: spec },
     summary,
     profile,
-    products: Object.fromEntries([...products, ...assetProducts].map((p) => [p.id, p])),
+    products: Object.fromEntries(
+      [...products, ...assetProducts, ...shotProducts].map((p) => [p.id, p]),
+    ),
     assets,
     config: {
       components: componentDefs,
@@ -38,6 +41,7 @@ function createDb() {
     suggestions,
     bible,
     scripts,
+    shots,
     impacts: new Map<string, Impact>(),
     gates: [] as GateDecision[],
   });

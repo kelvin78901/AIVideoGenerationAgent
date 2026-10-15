@@ -35,6 +35,7 @@
  * | GET /series/{id}/assets, PATCH /assets/{id} | M3   |
  * | POST /assets/{id}/lock           | M3             |
  * | POST /episodes/{id}/assets/analyze | M3           |
+ * | GET /episodes/{id}/shots, PATCH /shots/{id} | M4  |
  */
 import { assetHandlers } from "@/mocks/handlers/assets";
 import { configHandlers } from "@/mocks/handlers/config";
@@ -44,6 +45,7 @@ import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { novelHandlers } from "@/mocks/handlers/novel";
 import { productHandlers } from "@/mocks/handlers/products";
 import { scriptHandlers } from "@/mocks/handlers/script";
+import { shotHandlers } from "@/mocks/handlers/shots";
 import { seriesHandlers } from "@/mocks/handlers/series";
 import { setupHandlers } from "@/mocks/handlers/setup";
 
@@ -58,4 +60,5 @@ export const handlers = [
   ...novelHandlers,
   ...scriptHandlers,
   ...assetHandlers,
+  ...shotHandlers,
 ];

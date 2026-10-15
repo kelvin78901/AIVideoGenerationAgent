@@ -30,7 +30,7 @@ describe("AppShell", () => {
       ["/s/demo/e/1/novel", "小说"],
       ["/s/demo/e/1/script", "剧本"],
       ["/s/demo/e/1/assets", "素材"],
-      ["/s/demo/e/1/storyboard", "分镜 · 关键帧与镜头设定"],
+      ["/s/demo/e/1/storyboard", "分镜"],
       ["/s/demo/e/1/generate", "生成 · 候选墙与自动质检"],
       ["/s/demo/e/1/post", "后期 · 时间线与导出"],
       ["/nope", "页面不存在"],

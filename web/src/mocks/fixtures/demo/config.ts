@@ -29,6 +29,7 @@ export const componentDefs: ComponentDef[] = [
   llm("assets", "assets"),
   llm("plan", "storyboard", [LOCAL]),
   media("img", "assets", "image", IMG_API, ["comfy/qwen-image-edit", "comfy/flux2-dev"]),
+  media("kf", "storyboard", "image", IMG_API, ["comfy/qwen-image-edit", "comfy/flux2-dev"]),
   media(
     "text",
     "assets",
@@ -81,7 +82,7 @@ export const presetConfigs: Record<string, ComponentConfig> = {
   split: balanced("api", "deepseek/v4.1-flash", "qwen/qwen3.7-plus", 0.3),
   script: balanced("api", "deepseek/v4-pro", "qwen/qwen3.8-max", 0.8),
   assets: balanced("api", "deepseek/v4.1-flash", "qwen/qwen3.7-plus", 0.3),
-  plan: balanced("api", "deepseek/v4-pro", "moonshot/kimi-k2.6", 0.5),
+  plan: balanced("api", "deepseek/v4-pro", "moonshot/kimi-k2.6", 0.8),
   // Prototype Assets.dc.html: 参考图 混合 (本地草稿 Qwen-Image-Edit, 终版 Nano Banana Pro).
   img: route(
     "img",
@@ -98,6 +99,14 @@ export const presetConfigs: Record<string, ComponentConfig> = {
     "comfy/qwen-image",
     "google/nano-banana-pro",
     1.2,
+  ),
+  kf: route(
+    "kf",
+    "hybrid",
+    "google/nano-banana-pro",
+    "comfy/qwen-image-edit",
+    "volc/seedream-5.0",
+    1,
   ),
   voice: route("voice", "api", "minimax/speech-2.8-hd", "local/indextts2", "local/indextts2", 3),
 };

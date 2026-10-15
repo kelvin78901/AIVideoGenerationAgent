@@ -9,6 +9,7 @@ import enEnums from "@/locales/en/enums.json";
 import enNav from "@/locales/en/nav.json";
 import enNovel from "@/locales/en/novel.json";
 import enScript from "@/locales/en/script.json";
+import enStoryboard from "@/locales/en/storyboard.json";
 import zhAssets from "@/locales/zh-CN/assets.json";
 import zhCommon from "@/locales/zh-CN/common.json";
 import zhComponents from "@/locales/zh-CN/components.json";
@@ -17,6 +18,7 @@ import zhEnums from "@/locales/zh-CN/enums.json";
 import zhNav from "@/locales/zh-CN/nav.json";
 import zhNovel from "@/locales/zh-CN/novel.json";
 import zhScript from "@/locales/zh-CN/script.json";
+import zhStoryboard from "@/locales/zh-CN/storyboard.json";
 import { useUiStore, type Lang } from "@/stores/ui";
 
 export const resources = {
@@ -28,6 +30,7 @@ export const resources = {
     novel: zhNovel,
     script: zhScript,
     assets: zhAssets,
+    storyboard: zhStoryboard,
     dev: zhDev,
   },
   en: {
@@ -38,6 +41,7 @@ export const resources = {
     novel: enNovel,
     script: enScript,
     assets: enAssets,
+    storyboard: enStoryboard,
     dev: enDev,
   },
 } as const;
@@ -49,7 +53,7 @@ void i18n.use(initReactI18next).init({
   lng: useUiStore.getState().lang,
   fallbackLng: "zh-CN",
   defaultNS,
-  ns: ["common", "components", "enums", "nav", "novel", "script", "assets", "dev"],
+  ns: ["common", "components", "enums", "nav", "novel", "script", "assets", "storyboard", "dev"],
   interpolation: { escapeValue: false },
   returnNull: false,
 });

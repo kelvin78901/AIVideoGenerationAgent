@@ -26,15 +26,20 @@ export function demoAt(hhmm: string): string {
  * Mock-mode cost of one run: a writing call is ~8k tokens in, ~3k out; an image run makes
  * 4 candidates; a voice run is one voice design ($3, providers.yaml `extras.voice_design`).
  */
-export function demoCost(modelKey: string): number {
+export function demoCost(modelKey: string, candidates = 4): number {
   const m = modelByKey(modelKey);
   if (!m || m.where === "local") return 0;
-  if (m.price?.unit === "image") return Math.round(m.price.amount * 4 * 100) / 100;
+  if (m.price?.unit === "image") return Math.round(m.price.amount * candidates * 100) / 100;
   if (m.price?.unit === "mchar") return 3;
   if (!m.price || m.price.unit !== "mtok") return 0.02;
   const usd = (m.price.in * 8000 + m.price.out * 3000) / 1e6;
   const rate = m.price.currency === "CNY" ? 1 / 7.1 : 1;
   return Math.max(0.01, Math.round(usd * rate * 100) / 100);
+}
+
+function candidateCount(payload: Record<string, unknown> | undefined): number | undefined {
+  const c = payload?.candidates;
+  return Array.isArray(c) ? c.length : undefined;
 }
 
 export function demoVersion(
@@ -70,7 +75,7 @@ export function demoVersion(
     params: {},
     qa: null,
     qa_pass: null,
-    cost_usd: demoCost(v.model),
+    cost_usd: demoCost(v.model, candidateCount(v.payload)),
     job_id: null,
     created_at: v.at,
     note: null,

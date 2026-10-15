@@ -2,6 +2,7 @@ import { http } from "msw";
 
 import { getDb } from "@/mocks/db";
 import { lockedAssetCount } from "@/mocks/handlers/assets";
+import { confirmedShotCount } from "@/mocks/handlers/shots";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 export const seriesHandlers = [
@@ -28,6 +29,9 @@ export const seriesHandlers = [
       // 素材 7/13 is the number of locked assets.
       const assets = progress.steps.assets;
       if (assets.state !== "not_started") Object.assign(assets, lockedAssetCount());
+      // 分镜 3/9 is the number of confirmed shots.
+      const board = progress.steps.storyboard;
+      if (board.state !== "not_started") Object.assign(board, confirmedShotCount(id));
       return demoJson(progress);
     }
     if (!getDb().episodes.some((e) => e.id === id))

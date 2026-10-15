@@ -14,6 +14,7 @@ import { primaryModel } from "@/mocks/fixtures/demo/config";
 import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
+import { keyframeCandidates } from "@/mocks/fixtures/demo/shots";
 import { assetPayload } from "@/mocks/handlers/assets";
 import { resolveConfig } from "@/mocks/handlers/config";
 import { demoError, demoJson, v1 } from "@/mocks/http";
@@ -87,7 +88,7 @@ function withEstimate(p: Product): Product {
   p.estimate = {
     model_key: model,
     where: modelByKey(model)?.where ?? "api",
-    cost_usd: demoCost(model),
+    cost_usd: demoCost(model, p.slot === "keyframe" ? 3 : 4),
     seconds: p.estimate?.seconds ?? null,
   };
   return p;
@@ -113,7 +114,7 @@ function finishRun(
       parent: parent?.id ?? null,
       intent: opts.intent,
       compiled: opts.compiled,
-      payload: assetPayload(p) ?? parent?.payload,
+      payload: assetPayload(p) ?? (p.slot === "keyframe" ? keyframeCandidates() : parent?.payload),
     });
     version.job_id = run.jobId;
     p.versions.push(version);

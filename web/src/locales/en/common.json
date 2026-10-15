@@ -48,7 +48,8 @@
     "unknown_gate": "Unknown gate {{gate}}",
     "suggestion_not_found": "Suggestion {{id}} not found",
     "line_not_found": "Script block {{id}} not found",
-    "asset_not_found": "Asset {{id}} not found"
+    "asset_not_found": "Asset {{id}} not found",
+    "shot_not_found": "Shot {{id}} not found"
   },
   "toast": {
     "generic": "Notice: {{code}}",
