@@ -16,7 +16,10 @@
     "themeToggleLabel": "Toggle light / dark",
     "skipToContent": "Skip to content",
     "mockBadge": "Mock mode",
-    "mockBadgeTitle": "DRAMA_MOCK is not 0: every model call is faked and free. Set DRAMA_MOCK=0 to call real models."
+    "mockBadgeTitle": "DRAMA_MOCK is not 0: every model call is faked and free. Set DRAMA_MOCK=0 to call real models.",
+    "seriesTitle": "“{{title}}”",
+    "demoBadge": "Demo data",
+    "demoBadgeTitle": "This page shows demo data (Before the Rain Stops, episode 1): endpoints the backend does not implement yet are answered by MSW in the browser. Changes live in memory and reset on reload. Set VITE_DEMO_DATA=0 to turn it off."
   },
   "placeholder": {
     "comingSoon": "This page is built in a later milestone ({{milestone}}).",
@@ -28,7 +31,9 @@
     "job_not_found": "Job {{id}} not found",
     "job_invalid_state": "The job is \"{{state}}\"; this action is not allowed",
     "mock_only": "Only available in mock mode",
-    "unknown_component": "Unknown component {{id}}"
+    "unknown_component": "Unknown component {{id}}",
+    "bad_response": "The response from {{path}} does not match the API contract",
+    "series_not_found": "Series {{id}} not found"
   },
   "toast": {
     "generic": "Notice: {{code}}"

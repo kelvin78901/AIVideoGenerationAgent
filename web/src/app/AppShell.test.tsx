@@ -1,8 +1,11 @@
 import { act, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
 
 import { AppRoutes } from "@/app/routes";
 import i18n from "@/i18n";
+import { series } from "@/mocks/fixtures/demo/series";
+import { server } from "@/mocks/node";
 import { useUiStore } from "@/stores/ui";
 import { renderAt } from "@/test/render";
 
@@ -84,5 +87,20 @@ describe("AppShell", () => {
     expect(screen.getByTestId("gpu-status")).toHaveTextContent("本地 GPU：运行中 1 · 排队 2");
     expect(screen.getByText("$8.94")).toBeInTheDocument();
     expect(screen.getByText(/预算 \$15\.00/)).toBeInTheDocument();
+  });
+
+  it("shows the demo-data badge once the page displays demo responses", async () => {
+    renderAt(<AppRoutes />, "/s/demo/e/1/novel");
+    expect(await screen.findByText("《雨停之前》")).toBeInTheDocument();
+    expect(screen.getByTestId("demo-badge")).toHaveTextContent("示例数据");
+    await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
+    expect(screen.getByTestId("demo-badge")).toHaveTextContent("Demo data");
+  });
+
+  it("hides the demo-data badge when every response is real", async () => {
+    server.use(http.get("*/api/v1/series/:id", () => HttpResponse.json(series)));
+    renderAt(<AppRoutes />, "/s/demo/e/1/novel");
+    expect(await screen.findByText("《雨停之前》")).toBeInTheDocument();
+    expect(screen.queryByTestId("demo-badge")).not.toBeInTheDocument();
   });
 });

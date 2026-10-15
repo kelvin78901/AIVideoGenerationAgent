@@ -38,6 +38,7 @@
   --color-status-pass: var(--status-pass);
   --color-status-fail: var(--status-fail);
   --color-status-warn: var(--status-warn);
+  --color-status-info: var(--status-info);
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);

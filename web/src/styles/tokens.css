@@ -46,6 +46,7 @@
   --status-pass: #0ca30c;
   --status-fail: #d03b3b;
   --status-warn: #b7791f;
+  --status-info: #3563c9;
 
   --font-sans: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
   --font-serif: "Noto Serif SC", "Songti SC", "SimSun", serif;
@@ -93,4 +94,5 @@
   --status-pass: #3cc23c;
   --status-fail: #ee6b6b;
   --status-warn: #e0a440;
+  --status-info: #3d6fd6;
 }

@@ -1,31 +1,34 @@
 import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 
 import { api, post } from "@/api/client";
-import type { Job, ModelCall } from "@/api/types";
+import {
+  HealthSchema,
+  JobSchema,
+  ModelCallSchema,
+  type Job,
+  type ModelCall,
+} from "@/api/schemas/jobs";
 
 export const jobKeys = { all: ["jobs"] as const };
 export const callKeys = { all: ["model-calls"] as const };
 export const healthKeys = { all: ["health"] as const };
 
-export interface Health {
-  status: string;
-  version: string;
-  /** True unless the backend runs with DRAMA_MOCK=0. */
-  mock: boolean;
-}
-
 export function useHealth() {
-  return useQuery({ queryKey: healthKeys.all, queryFn: () => api<Health>("/health") });
+  return useQuery({ queryKey: healthKeys.all, queryFn: () => api("/health", HealthSchema) });
 }
 
 export function useJobs() {
-  return useQuery({ queryKey: jobKeys.all, queryFn: () => api<Job[]>("/jobs?limit=200") });
+  return useQuery({
+    queryKey: jobKeys.all,
+    queryFn: () => api("/jobs?limit=200", z.array(JobSchema)),
+  });
 }
 
 export function useModelCalls() {
   return useQuery({
     queryKey: callKeys.all,
-    queryFn: () => api<ModelCall[]>("/dev/model-calls?limit=200"),
+    queryFn: () => api("/dev/model-calls?limit=200", z.array(ModelCallSchema)),
   });
 }
 
@@ -41,7 +44,8 @@ export function upsertJob(client: QueryClient, job: Job): void {
 export function useLlmTest() {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: (body: { prompt?: string; delay_s?: number }) => post<Job>("/dev/llm-test", body),
+    mutationFn: (body: { prompt?: string; delay_s?: number }) =>
+      post("/dev/llm-test", JobSchema, body),
     onSuccess: (job) => upsertJob(client, job),
   });
 }

@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 
 import { callKeys, jobKeys } from "@/api/hooks/useJobs";
 import { makeQueryClient } from "@/api/queryClient";
-import type { Job } from "@/api/types";
+import type { Job } from "@/api/schemas/jobs";
 import { useEventStream } from "@/api/useEventStream";
 import "@/i18n";
 import { FakeEventSource } from "@/test/fakeEventSource";

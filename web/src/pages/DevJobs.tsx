@@ -4,7 +4,7 @@ import { toast } from "sonner";
 
 import { errorMessage } from "@/api/client";
 import { apiSpend, useJobs, useLlmTest, useModelCalls } from "@/api/hooks/useJobs";
-import type { Job, JobState, ModelCall } from "@/api/types";
+import type { Job, JobState, ModelCall } from "@/api/schemas/jobs";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 

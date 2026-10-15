@@ -1,5 +1,6 @@
 import {
   ChartNoAxesColumn,
+  Database,
   FlaskConical,
   Grid2x2Plus,
   Moon,
@@ -9,12 +10,16 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
+import { useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useParams } from "react-router";
+import { NavLink, Outlet, useLocation, useParams } from "react-router";
 
+import { useSeries } from "@/api/hooks/series";
 import { DEMO_EPISODE, DEMO_SERIES, paths, STEPS } from "@/app/paths";
 import { Button } from "@/components/ui/button";
+import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { useDemoStore } from "@/stores/demo";
 import { useUiStore } from "@/stores/ui";
 
 /** Shown in the spec tag until M1 reads the series' real output_spec. */
@@ -35,8 +40,39 @@ function usd(value: number): string {
   return `$${value.toFixed(2)}`;
 }
 
+/** Shown while the current route has displayed MSW demo data (stores/demo.ts). */
+function DemoBadge() {
+  const { t } = useTranslation();
+  const { pathname } = useLocation();
+  const shown = useDemoStore((s) => s.routes[pathname] === true);
+  if (!shown) return null;
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          data-testid="demo-badge"
+          tabIndex={0}
+          className="inline-flex items-center gap-1 rounded-md bg-status-info px-2 py-0.5 text-xs font-bold tracking-wide text-white"
+        >
+          <Database className="size-3.5" aria-hidden />
+          {t("shell.demoBadge")}
+        </span>
+      </TooltipTrigger>
+      <TooltipContent className="max-w-72">{t("shell.demoBadgeTitle")}</TooltipContent>
+    </Tooltip>
+  );
+}
+
+/** Tells the demo store which route is on screen, before children start fetching. */
+function useTrackRoute(): void {
+  const { pathname } = useLocation();
+  const setRoute = useDemoStore((s) => s.setRoute);
+  useLayoutEffect(() => setRoute(pathname), [pathname, setRoute]);
+}
+
 function TopBar({ series, status }: { series: string; status: ShellStatus }) {
   const { t } = useTranslation();
+  const seriesQuery = useSeries(series);
   const toggleLang = useUiStore((s) => s.toggleLang);
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
@@ -58,7 +94,12 @@ function TopBar({ series, status }: { series: string; status: ShellStatus }) {
           {t("shell.mockBadge")}
         </span>
       ) : null}
-      <div className="text-sm text-topbar-muted">{t("shell.noSeries")}</div>
+      <DemoBadge />
+      <div className="text-sm text-topbar-muted">
+        {seriesQuery.data
+          ? t("shell.seriesTitle", { title: seriesQuery.data.title })
+          : t("shell.noSeries")}
+      </div>
       <NavLink
         to={paths.spec(series)}
         title={t("shell.specTagTitle")}
@@ -149,6 +190,7 @@ export function AppShell({ status = IDLE }: { status?: ShellStatus }) {
   const params = useParams();
   const series = params.series ?? DEMO_SERIES;
   const episode = params.ep ?? DEMO_EPISODE;
+  useTrackRoute();
   return (
     <div className="flex min-h-screen flex-col">
       <a

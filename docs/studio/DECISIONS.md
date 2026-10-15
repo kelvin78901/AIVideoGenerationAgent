@@ -10,6 +10,8 @@
 - **演示事件和真实 SSE 走同一个分发器**（`api/events.ts:dispatchEvent`）：MSW 模拟的运行、安装进度通过它推 `product.updated`、`version.created`、`setup.progress` 等事件，接真实后端时页面代码不改。
 - **界面文字和内容分开**：状态、类别、原因等枚举由接口返回 code，前端翻译；日志和提示句子返回 `code + params`；小说、剧本、提示词、人名等用户内容原样显示，不翻译。
 - **SPEC 9.1 增补的读接口**（9.1 只列了写接口和部分读接口，页面需要）：`GET /series/{id}/episodes`、`GET /episodes/{id}/progress`（导航徽标）、`GET /series/{id}/novel`、`GET /series/{id}/suggestions`、`GET /episodes/{id}/script`、`GET /episodes/{id}/shots` + `PATCH /shots/{id}`、`GET /products?owner=&component=`、`GET /config/components`、`GET /episodes/{id}/timeline` + 片段 / 字幕的 `PATCH`、`GET /episodes/{id}/export/checks` + `POST /episodes/{id}/export`、`GET /sync/board?episode=`。字段以 `web/src/api/schemas/` 为准，M0.5 收尾时同步写进 SPEC 9.1。
+- **依赖版本**：MSW 用 2.14.7 而不是刚发布两周的 3.x；zod 4.6.4、Playwright 1.63.0、d3-scale 4.0.2、d3-shape 3.2.0，全部精确锁定。`msw` 的安装脚本（只是复制 worker 文件）在 `pnpm-workspace.yaml` 里显式禁用，`public/mockServiceWorker.js` 由 `msw init` 生成后进 git，lint 和 prettier 都忽略它。
+- **「示例数据」标记按路由记**：`api()` 收到带 demo 头的响应时，记在当前路由上（壳层用 `useLayoutEffect` 先登记路由，子组件后发请求）。顶栏本身（剧名、规格、花费）也用示例数据，所以 M1 / M8 接上真实接口之前，每个页面都会显示这个标记。
 - **Toast 用 sonner**，不照抄原型的行内提示条（SPEC 16.2 只要求「Toast 反馈每个操作的结果」）。
 - **原型截图**：原型依赖画布运行时，仓库里没有。截图时从 Kelvin 的 artifact「短剧工作台原型」取 `dc-runtime.js` 放在临时目录当 `support.js`，本机渲染后用 Playwright 截；运行时不进仓库，只提交截图。
 - **截图格式**：JPEG、宽 1440 整页，中文亮色 + 中文暗色进 git（`docs/studio/reports/ui/`）；英文截图按需生成，不进 git。原因：控制仓库体积，PNG 整页图太大。

@@ -1,6 +1,8 @@
 import type { TFunction } from "i18next";
+import { z } from "zod";
 
-import type { ApiErrorBody } from "@/api/types";
+import { ApiErrorBodySchema, type ApiErrorBody } from "@/api/schemas/common";
+import { DEMO_HEADER, useDemoStore } from "@/stores/demo";
 
 export const API_BASE = "/api/v1";
 
@@ -22,13 +24,16 @@ export class ApiError extends Error {
   }
 }
 
-function isErrorBody(value: unknown): value is ApiErrorBody {
-  return (
-    typeof value === "object" && value !== null && typeof (value as ApiErrorBody).code === "string"
-  );
-}
-
-export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
+/**
+ * Calls `/api/v1{path}` and validates the JSON response against `schema` (the API contract in
+ * `api/schemas/`). A response that breaks the contract becomes `ApiError("bad_response")`, so a
+ * backend or demo-data mismatch shows up at once instead of as a silently empty page.
+ */
+export async function api<S extends z.ZodType>(
+  path: string,
+  schema: S,
+  init: RequestInit = {},
+): Promise<z.infer<S>> {
   let resp: Response;
   try {
     resp = await fetch(`${API_BASE}${path}`, {
@@ -38,20 +43,42 @@ export async function api<T>(path: string, init: RequestInit = {}): Promise<T> {
   } catch (err) {
     throw new ApiError(0, { code: "network", params: { message: String(err) } });
   }
+  if (resp.headers.get(DEMO_HEADER) === "1") useDemoStore.getState().markDemoResponse();
   const text = await resp.text();
-  const data: unknown = text ? JSON.parse(text) : null;
+  let data: unknown;
+  try {
+    data = text ? JSON.parse(text) : null;
+  } catch {
+    throw new ApiError(resp.status, { code: "bad_response", params: { path, issues: "not JSON" } });
+  }
   if (!resp.ok) {
-    const detail = (data as { detail?: unknown } | null)?.detail;
+    const detail = ApiErrorBodySchema.safeParse((data as { detail?: unknown } | null)?.detail);
     throw new ApiError(
       resp.status,
-      isErrorBody(detail) ? detail : { code: `http_${resp.status}`, params: {} },
+      detail.success ? detail.data : { code: `http_${resp.status}`, params: {} },
     );
   }
-  return data as T;
+  const parsed = schema.safeParse(data);
+  if (!parsed.success) {
+    const issues = z.prettifyError(parsed.error);
+    console.error(`[api] ${path} does not match its schema:\n${issues}`);
+    throw new ApiError(resp.status, { code: "bad_response", params: { path, issues } });
+  }
+  return parsed.data;
 }
 
-export const post = <T>(path: string, body?: unknown) =>
-  api<T>(path, { method: "POST", body: body === undefined ? undefined : JSON.stringify(body) });
+const send =
+  (method: string) =>
+  <S extends z.ZodType>(path: string, schema: S, body?: unknown) =>
+    api(path, schema, {
+      method,
+      body: body === undefined ? undefined : JSON.stringify(body),
+    });
+
+export const post = send("POST");
+export const put = send("PUT");
+export const patch = send("PATCH");
+export const del = send("DELETE");
 
 export function errorMessage(t: TFunction, err: unknown): string {
   if (err instanceof ApiError) {
