@@ -1,0 +1,64 @@
+# Lint + unit/API tests (mock adapters only; no paid API is ever called in CI).
+# Linux runs on every push; Windows runs on pull requests to main and on manual dispatch.
+name: CI
+
+on:
+  push:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}-${{ github.event_name }}
+  cancel-in-progress: true
+
+env:
+  DRAMA_MOCK: "1"
+  COREPACK_ENABLE_DOWNLOAD_PROMPT: "0"
+
+jobs:
+  test:
+    name: test (${{ matrix.os }})
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows only for PRs into main and manual runs (keeps per-push CI fast).
+        os: ${{ fromJSON(github.event_name == 'push' && '["ubuntu-latest"]' || '["ubuntu-latest", "windows-latest"]') }}
+    runs-on: ${{ matrix.os }}
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v7
+
+      # ---------------------------------------------------------------- backend
+      - uses: astral-sh/setup-uv@v10.2.0  # no floating major tag; pin a release
+        with:
+          enable-cache: true
+      - name: Install backend
+        run: uv sync --frozen
+      - name: Ruff
+        run: uv run ruff check . && uv run ruff format --check .
+      - name: Mypy
+        run: uv run mypy
+      - name: Pytest
+        run: uv run pytest -q
+
+      # ---------------------------------------------------------------- frontend
+      - uses: actions/setup-node@v7
+        with:
+          node-version: 24
+      - name: Enable pnpm
+        run: corepack enable pnpm
+      - name: Install frontend
+        run: pnpm -C web install --frozen-lockfile
+      - name: ESLint
+        run: pnpm -C web lint
+      - name: Prettier
+        run: pnpm -C web format:check
+      - name: Typecheck
+        run: pnpm -C web typecheck
+      - name: Vitest + i18n key check
+        run: pnpm -C web test
+      - name: Build
+        run: pnpm -C web build

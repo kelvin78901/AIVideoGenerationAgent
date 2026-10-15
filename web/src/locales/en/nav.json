@@ -1,0 +1,31 @@
+{
+  "stepsLabel": "Production steps",
+  "steps": {
+    "novel": "Novel",
+    "script": "Script",
+    "assets": "Assets",
+    "storyboard": "Storyboard",
+    "generate": "Generate",
+    "post": "Post"
+  },
+  "spec": "Output spec",
+  "models": "Models & fallback",
+  "sync": "Organize & sync",
+  "dashboard": "Dashboard",
+  "devJobs": "Dev · Jobs",
+  "pages": {
+    "setup": "First run · Machine check and setup",
+    "spec": "Output spec",
+    "novel": "Novel · Import and enrich",
+    "script": "Script · Episodes and scriptwriting",
+    "assets": "Assets · Characters, scenes, props, text, voices",
+    "storyboard": "Storyboard · Keyframes and shot settings",
+    "generate": "Generate · Takes and auto QA",
+    "post": "Post · Timeline and export",
+    "models": "Models & fallback · Global defaults",
+    "sync": "Organize & sync",
+    "dashboard": "Dashboard · Cost, time and speed",
+    "devJobs": "Dev · Jobs and model calls",
+    "notFound": "Page not found"
+  }
+}

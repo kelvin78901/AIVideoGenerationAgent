@@ -1,0 +1,43 @@
+{
+  "intro": "Mock 模式下发起一次 LLM 调用，看任务状态实时变化，并检查调用记录。正式界面里没有这一页。",
+  "llmTest": "发起一次 Mock LLM 调用",
+  "llmTestPending": "正在入队…",
+  "queued": "已入队：{{id}}",
+  "jobs": "任务",
+  "calls": "调用记录（model_call）",
+  "empty": "还没有记录",
+  "total": "共 {{count}} 条，已计费 API 花费 {{cost}}",
+  "col": {
+    "id": "ID",
+    "kind": "类型",
+    "queue": "队列",
+    "state": "状态",
+    "attempt": "尝试",
+    "created": "创建",
+    "result": "结果",
+    "time": "时间",
+    "model": "模型",
+    "where": "位置",
+    "status": "结果",
+    "tokens": "输入 / 输出 token",
+    "cost": "花费"
+  },
+  "where": {
+    "local": "本地",
+    "api": "API"
+  },
+  "state": {
+    "queued": "排队中",
+    "waiting_confirm": "等待确认",
+    "running": "运行中",
+    "succeeded": "完成",
+    "failed": "失败",
+    "canceled": "已取消"
+  },
+  "status": {
+    "success": "成功",
+    "error": "失败",
+    "timeout": "超时",
+    "canceled": "已取消"
+  }
+}

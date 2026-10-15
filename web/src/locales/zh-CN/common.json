@@ -1,0 +1,40 @@
+{
+  "app": {
+    "name": "短剧工作台"
+  },
+  "shell": {
+    "noSeries": "未选择剧集",
+    "specTagTitle": "成片规格（点击修改）",
+    "gpu": "本地 GPU：{{status}}",
+    "gpuIdle": "空闲",
+    "gpuBusy": "运行中 {{running}} · 排队 {{queued}}",
+    "spend": "本集 API 花费",
+    "budget": "预算 {{budget}}",
+    "noBudget": "未设预算",
+    "langToggle": "中 / EN",
+    "langToggleLabel": "切换界面语言 / Switch language",
+    "themeToggleLabel": "切换亮色 / 暗色",
+    "skipToContent": "跳到正文",
+    "mockBadge": "Mock 模式",
+    "mockBadgeTitle": "DRAMA_MOCK 不是 0：所有模型调用都是假的，不花钱。设 DRAMA_MOCK=0 才调真实模型。"
+  },
+  "placeholder": {
+    "comingSoon": "这一页在后续里程碑实现（{{milestone}}）。",
+    "prototype": "布局和文案以 {{file}} 为准。"
+  },
+  "error": {
+    "network": "连不上后端：{{message}}",
+    "unknown": "出错了：{{code}}",
+    "job_not_found": "找不到任务 {{id}}",
+    "job_invalid_state": "任务当前状态是「{{state}}」，不能这样操作",
+    "mock_only": "这个操作只在 Mock 模式下可用",
+    "unknown_component": "未知组件 {{id}}"
+  },
+  "toast": {
+    "generic": "通知：{{code}}"
+  },
+  "legacy": {
+    "banner": "旧界面：调用不记账、不受预算限制",
+    "detail": "这是上游 Hermes 界面，M2 之后删除。这里发起的模型调用不经过 router.call()，不写 model_call，也不检查预算。"
+  }
+}

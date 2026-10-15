@@ -1,0 +1,94 @@
+from __future__ import annotations
+
+import io
+from collections.abc import Iterator
+
+import httpx
+import pytest
+import respx
+from fastapi.testclient import TestClient
+from loguru import logger
+
+from drama_series_agent.api.app import create_app
+
+LOCAL = "http://127.0.0.1"
+CLIENT_HEADERS = {"X-Drama-Studio": "1"}  # required on non-GET requests
+
+
+SECRET = "sk-deepseek-REAL-looking-0123456789"
+
+
+@pytest.fixture
+def client() -> Iterator[TestClient]:
+    with TestClient(create_app(), base_url=LOCAL, headers=CLIENT_HEADERS) as c:
+        yield c
+
+
+def _deepseek(client: TestClient) -> dict[str, object]:
+    data = client.get("/api/v1/providers").json()
+    return next(p for p in data["providers"] if p["id"] == "deepseek")
+
+
+def test_list_providers(client: TestClient) -> None:
+    data = client.get("/api/v1/providers").json()
+    ids = [p["id"] for p in data["providers"]]
+    assert ids[:2] == ["deepseek", "moonshot"] and "local_llm" in ids
+    assert data["llm_ui_order"][0] == "deepseek/v4-pro"
+    ds = _deepseek(client)
+    assert ds["has_key"] is False and ds["key_source"] == "none" and ds["needs_key"] is True
+    local = next(p for p in data["providers"] if p["id"] == "local_llm")
+    assert local["needs_key"] is False and local["where"] == "local"
+
+
+def test_set_and_delete_key_never_echoes_it(client: TestClient) -> None:
+    sink = io.StringIO()
+    handler = logger.add(sink, format="{message}")
+    try:
+        resp = client.post("/api/v1/providers/deepseek/key", json={"api_key": SECRET})
+        assert resp.status_code == 200
+        assert resp.json()["has_key"] is True and resp.json()["key_source"] == "keyring"
+        assert SECRET not in resp.text
+        assert SECRET not in client.get("/api/v1/providers").text
+        resp = client.delete("/api/v1/providers/deepseek/key")
+        assert resp.status_code == 200 and resp.json()["has_key"] is False
+    finally:
+        logger.remove(handler)
+    assert SECRET not in sink.getvalue()
+
+
+def test_key_errors(client: TestClient) -> None:
+    assert client.post("/api/v1/providers/nope/key", json={"api_key": "x"}).status_code == 404
+    resp = client.post("/api/v1/providers/local_llm/key", json={"api_key": "x"})
+    assert resp.status_code == 400
+    assert resp.json()["detail"]["code"] == "provider_needs_no_key"
+    assert client.post("/api/v1/providers/deepseek/key", json={"api_key": ""}).status_code == 422
+    assert client.post("/api/v1/providers/deepseek/key", json={"api_key": "   "}).status_code == 422
+
+
+@respx.mock(assert_all_called=False)
+def test_test_connection_ok_and_bad(client: TestClient, respx_mock: respx.MockRouter) -> None:
+    respx_mock.route(host="127.0.0.1").pass_through()
+    route = respx_mock.get("https://api.deepseek.com/v1/models")
+    client.post("/api/v1/providers/deepseek/key", json={"api_key": SECRET})
+    route.mock(return_value=httpx.Response(200, json={"data": [{"id": "deepseek-v4-pro"}]}))
+    resp = client.post("/api/v1/providers/deepseek/test")
+    assert resp.json() == {"ok": True, "detail": None, "models": ["deepseek-v4-pro"]}
+    assert route.calls.last.request.headers["authorization"] == f"Bearer {SECRET}"
+    assert SECRET not in resp.text
+
+    route.mock(return_value=httpx.Response(401))
+    assert client.post("/api/v1/providers/deepseek/test").json()["detail"] == "auth_failed"
+
+    client.delete("/api/v1/providers/deepseek/key")
+    assert client.post("/api/v1/providers/deepseek/test").json()["detail"] == "missing_key"
+    assert client.post("/api/v1/providers/custom/test").status_code == 400
+
+
+def test_real_mode_uses_openai_compat_for_llms(client: TestClient) -> None:
+    from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
+
+    registry = client.app.state.studio.registry  # type: ignore[attr-defined]
+    registry.mock = False
+    registry._adapters.clear()
+    assert isinstance(registry.get("deepseek/v4-pro"), OpenAICompatAdapter)
+    assert isinstance(registry.get("local/qwen3.6-27b"), OpenAICompatAdapter)

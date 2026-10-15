@@ -1,0 +1,69 @@
+"""FastAPI application factory for AI Drama Studio.
+
+Mounts the upstream drama-series-agent routes under ``/api`` unchanged and the studio
+routes under ``/api/v1``.
+"""
+
+from __future__ import annotations
+
+from collections.abc import AsyncIterator
+from contextlib import asynccontextmanager
+from typing import Annotated, Any
+
+from fastapi import APIRouter, Depends, FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
+from drama_series_agent import __version__
+from drama_series_agent.api import sse
+from drama_series_agent.api.routes import dev, jobs, providers
+from drama_series_agent.api.security import CLIENT_HEADER, LocalOnlyGuard
+from drama_series_agent.api.state import StudioState, get_state
+from drama_series_agent.core.secrets import install_log_redaction
+
+# The Vite dev server is the only browser origin allowed to call the backend.
+ALLOWED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"]
+
+
+def _v1_router() -> APIRouter:
+    router = APIRouter(prefix="/api/v1")
+
+    @router.get("/health")
+    async def health(state: Annotated[StudioState, Depends(get_state)]) -> dict[str, Any]:
+        # `mock` drives the front end's "Mock 模式" badge.
+        return {"status": "ok", "version": __version__, "mock": state.registry.mock}
+
+    router.include_router(sse.router)
+    router.include_router(jobs.router)
+    router.include_router(dev.router)
+    router.include_router(providers.router)
+    return router
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI) -> AsyncIterator[None]:
+    install_log_redaction()
+    state = await StudioState.start()
+    app.state.studio = state
+    await state.run()
+    try:
+        yield
+    finally:
+        await state.stop()
+
+
+def create_app() -> FastAPI:
+    from drama_series_agent.api.routers.series import router as upstream_router
+
+    app = FastAPI(title="AI Drama Studio", version=__version__, lifespan=lifespan)
+    # Added first = runs inside CORS, so preflight requests are answered by CORS untouched.
+    app.add_middleware(LocalOnlyGuard, allowed_origins=ALLOWED_ORIGINS)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=ALLOWED_ORIGINS,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["content-type", CLIENT_HEADER, "last-event-id"],
+    )
+    app.include_router(upstream_router, prefix="/api")
+    app.include_router(_v1_router())
+    return app

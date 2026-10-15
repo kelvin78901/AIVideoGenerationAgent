@@ -1,0 +1,40 @@
+{
+  "app": {
+    "name": "AI Drama Studio"
+  },
+  "shell": {
+    "noSeries": "No series selected",
+    "specTagTitle": "Output spec (click to change)",
+    "gpu": "Local GPU: {{status}}",
+    "gpuIdle": "idle",
+    "gpuBusy": "{{running}} running · {{queued}} queued",
+    "spend": "Episode API spend",
+    "budget": "budget {{budget}}",
+    "noBudget": "no budget set",
+    "langToggle": "中 / EN",
+    "langToggleLabel": "切换界面语言 / Switch language",
+    "themeToggleLabel": "Toggle light / dark",
+    "skipToContent": "Skip to content",
+    "mockBadge": "Mock mode",
+    "mockBadgeTitle": "DRAMA_MOCK is not 0: every model call is faked and free. Set DRAMA_MOCK=0 to call real models."
+  },
+  "placeholder": {
+    "comingSoon": "This page is built in a later milestone ({{milestone}}).",
+    "prototype": "Layout and copy follow {{file}}."
+  },
+  "error": {
+    "network": "Cannot reach the backend: {{message}}",
+    "unknown": "Something went wrong: {{code}}",
+    "job_not_found": "Job {{id}} not found",
+    "job_invalid_state": "The job is \"{{state}}\"; this action is not allowed",
+    "mock_only": "Only available in mock mode",
+    "unknown_component": "Unknown component {{id}}"
+  },
+  "toast": {
+    "generic": "Notice: {{code}}"
+  },
+  "legacy": {
+    "banner": "Legacy UI: calls are not logged and not budget-limited",
+    "detail": "This is the upstream Hermes UI, removed after M2. Model calls started here bypass router.call(): no model_call rows, no budget checks."
+  }
+}

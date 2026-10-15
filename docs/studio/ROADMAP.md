@@ -18,21 +18,21 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 
 ## M0 地基（约 1 周）
 
-- [ ] 以 drama-series-agent 为初始代码；保留 `LICENSE`，新增 `NOTICE`
-- [ ] 通读上游，写 `docs/studio/UPSTREAM_NOTES.md`（模块地图、数据文件、H3 runner、失效传播、续跑）
-- [ ] uv 项目结构、ruff、mypy、pytest；前端 pnpm、eslint、Vitest
-- [ ] GitHub Actions：lint + 单测，Windows 和 Linux 各跑一遍
-- [ ] `core`：配置加载（`config/*.yaml` + 数据库覆盖）、SQLite + Alembic、按内容哈希的文件存储、SSE 事件总线、持久化任务队列（重启后续跑）
-- [ ] `modelhub`：适配器协议、注册表（读 `providers.yaml`）、`router.call()`、`model_call` 记账、各类 Mock 适配器
-- [ ] `OpenAICompatAdapter` + 「测试连接」（`GET /models`）
-- [ ] 密钥存 keyring，API 只返回“是否已填”
-- [ ] 前端：设计 token + shadcn/ui 基础组件、AppShell（顶栏、导航、中英切换、规格标签占位）、i18n 词表和 key 一致性检查、TanStack Query + SSE hook
+- [x] 以 drama-series-agent 为初始代码；保留 `LICENSE`，新增 `NOTICE`
+- [x] 通读上游，写 `docs/studio/UPSTREAM_NOTES.md`（模块地图、数据文件、H3 runner、失效传播、续跑）
+- [x] uv 项目结构、ruff、mypy、pytest；前端 pnpm、eslint、Vitest
+- [x] GitHub Actions：lint + 单测，Windows 和 Linux 各跑一遍
+- [x] `core`：配置加载（`config/*.yaml` + 数据库覆盖）、SQLite + Alembic、按内容哈希的文件存储、SSE 事件总线、持久化任务队列（重启后续跑）
+- [x] `modelhub`：适配器协议、注册表（读 `providers.yaml`）、`router.call()`、`model_call` 记账、各类 Mock 适配器
+- [x] `OpenAICompatAdapter` + 「测试连接」（`GET /models`）
+- [x] 密钥存 keyring，API 只返回“是否已填”
+- [x] 前端：设计 token + shadcn/ui 基础组件、AppShell（顶栏、导航、中英切换、规格标签占位）、i18n 词表和 key 一致性检查、TanStack Query + SSE hook
 
 **验收**
-- [ ] `uv run pytest` 和前端测试全绿，CI 通过
-- [ ] 打开前端能切中英文，导航能到各页（页面可以是空壳）
-- [ ] Mock 模式下发起一次 LLM 调用：前端实时看到任务状态变化，`model_call` 多一行
-- [ ] 任务排队时杀掉后端再启动，任务继续执行
+- [x] `uv run pytest` 和前端测试全绿，CI 通过
+- [x] 打开前端能切中英文，导航能到各页（页面可以是空壳）
+- [x] Mock 模式下发起一次 LLM 调用：前端实时看到任务状态变化，`model_call` 多一行
+- [x] 任务排队时杀掉后端再启动，任务继续执行
 
 ## M1 首次启动 + 成片规格（约 1 周）
 
@@ -61,6 +61,7 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 - [ ] 闸门：小说确认、剧本确认；失效传播 + ImpactDialog
 - [ ] 模型与兜底页：四个预设、全局默认、密钥、兜底方式、备选顺序
 - [ ] 预算：单次上限、超限进 `waiting_confirm`
+- [ ] 新页面做完后删除 `web/src/legacy/`（上游 Hermes 界面）和 `/legacy` 路由
 
 **验收**
 - [ ] 用示例小说《雨停之前》跑到第 1 集剧本确认
