@@ -125,6 +125,14 @@ export const generateModels: ModelOption[] = [
   },
   { key: "local/paraformer", display: "Paraformer（本地）", where: "local", price: null },
   { key: "elevenlabs/scribe", display: "ElevenLabs Scribe", where: "api", price: null },
+  // Models page only: 3D 场景 (API only, v1 placeholder) and 结构控制 (local only).
+  { key: "worldlabs/marble", display: "World Labs Marble", where: "api", price: null },
+  {
+    key: "comfy/h3-fun-controlnet",
+    display: "H3 Fun ControlNet（本地）",
+    where: "local",
+    price: null,
+  },
   {
     key: "google/gemini-3.1-flash-lite",
     display: "Gemini 3.1 Flash-Lite",

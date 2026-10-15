@@ -24,6 +24,12 @@ export const EpisodeSchema = z.object({
 });
 export type Episode = z.infer<typeof EpisodeSchema>;
 
+/** `PATCH /episodes/{id}`: the fields the UI edits so far. */
+export const EpisodePatchSchema = z.object({
+  budget_usd: z.number().nonnegative().nullable().optional(),
+});
+export type EpisodePatch = z.infer<typeof EpisodePatchSchema>;
+
 export const STEP_IDS = ["novel", "script", "assets", "storyboard", "generate", "post"] as const;
 export const StepIdSchema = z.enum(STEP_IDS);
 export type StepId = z.infer<typeof StepIdSchema>;

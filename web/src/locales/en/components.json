@@ -84,7 +84,8 @@
     "modeHint": {
       "local": "Local models only; no API cost.",
       "api": "Calls the API; billed per call.",
-      "hybrid": "Drafts and reruns run locally; the API makes the final version when you adopt."
+      "hybrid": "Drafts and reruns run locally; the API makes the final version when you adopt.",
+      "off": "This step does not run now (no local version under All local, or the step is only a placeholder so far)."
     },
     "api": "API service",
     "local": "Local model",

@@ -23,7 +23,7 @@ describe("AppShell", () => {
   it("renders every SPEC 16.1 route", () => {
     const cases: [string, string][] = [
       ["/setup", "先看看这台电脑能跑什么"],
-      ["/models", "模型与兜底 · 全局默认"],
+      ["/models", "模型与兜底"],
       ["/s/demo/spec", "成片规格"],
       ["/s/demo/sync", "素材整理与同步"],
       ["/s/demo/dashboard", "数据看板 · 花费、耗时与速度"],

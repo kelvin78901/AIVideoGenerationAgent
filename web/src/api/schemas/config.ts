@@ -10,6 +10,10 @@ import { ModelOptionSchema } from "@/api/schemas/models";
 export const RunModeSchema = z.enum(["local", "api", "hybrid"]);
 export type RunLocation = z.infer<typeof RunModeSchema>;
 
+/** A component's mode: a run location, or `off` (skipped, e.g. no local version under 全本地). */
+export const ConfigModeSchema = z.enum([...RunModeSchema.options, "off"]);
+export type ConfigMode = z.infer<typeof ConfigModeSchema>;
+
 export const FallbackTriggerSchema = z.enum(["error", "timeout", "qa_fail"]);
 export type FallbackTrigger = z.infer<typeof FallbackTriggerSchema>;
 
@@ -27,7 +31,7 @@ export const FallbackSchema = z.object({
 export type Fallback = z.infer<typeof FallbackSchema>;
 
 export const ComponentConfigSchema = z.object({
-  mode: RunModeSchema,
+  mode: ConfigModeSchema,
   api_model: z.string().nullable(),
   local_model: z.string().nullable(),
   fallback: FallbackSchema,
@@ -92,3 +96,15 @@ export const ComponentCatalogSchema = z.object({
   local_runtime_ok: z.boolean(),
 });
 export type ComponentCatalog = z.infer<typeof ComponentCatalogSchema>;
+
+/** The four one-click presets (SPEC 7.2; components.yaml `presets`). */
+export const PresetIdSchema = z.enum(["quality", "balanced", "cheap", "local"]);
+export type PresetId = z.infer<typeof PresetIdSchema>;
+
+/** `GET / PUT /config/defaults`: the active preset and how fallbacks behave everywhere. */
+export const ConfigDefaultsSchema = z.object({
+  preset: PresetIdSchema,
+  /** `after` = fall back and say so afterwards; `ask` = pause and ask first (SPEC 7.5). */
+  fallback_notify: z.enum(["after", "ask"]),
+});
+export type ConfigDefaults = z.infer<typeof ConfigDefaultsSchema>;

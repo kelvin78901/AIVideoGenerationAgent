@@ -2,8 +2,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import { z } from "zod";
 
-import { api, put } from "@/api/client";
-import { EpisodeProgressSchema, EpisodeSchema, type Episode } from "@/api/schemas/episodes";
+import { api, patch, put } from "@/api/client";
+import {
+  EpisodeProgressSchema,
+  EpisodeSchema,
+  type Episode,
+  type EpisodePatch,
+} from "@/api/schemas/episodes";
 import { MetricsSummarySchema, type MetricsScope } from "@/api/schemas/metrics";
 import { SeriesSchema } from "@/api/schemas/series";
 import {
@@ -109,5 +114,18 @@ export function useSaveSpec(seriesId: string) {
   return useMutation({
     mutationFn: (patch: SpecPatch) => put(`/series/${enc(seriesId)}/spec`, OutputSpecSchema, patch),
     onSuccess: (spec) => client.setQueryData(seriesKeys.spec(seriesId), spec),
+  });
+}
+
+/** `PATCH /episodes/{id}` (the budget, from the Models page); the top bar follows. */
+export function useUpdateEpisode(episodeId: string | undefined) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: EpisodePatch) =>
+      patch(`/episodes/${enc(episodeId ?? "")}`, EpisodeSchema, body),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: ["series"] });
+      void client.invalidateQueries({ queryKey: ["metrics"] });
+    },
   });
 }

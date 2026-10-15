@@ -57,7 +57,12 @@
     "setup_busy": "正在检测或安装，等它结束再试",
     "nothing_selected": "还没勾选要安装的项",
     "setup_item_not_found": "找不到安装项 {{id}}",
-    "setup_item_state": "{{id}} 现在不能这样操作"
+    "setup_item_state": "{{id}} 现在不能这样操作",
+    "provider_not_found": "找不到服务 {{id}}",
+    "provider_needs_no_key": "{{id}} 不需要密钥",
+    "keyring_unavailable": "系统钥匙串不可用：{{reason}}",
+    "empty_key": "密钥不能为空",
+    "base_url_missing": "{{id}} 还没有接口地址"
   },
   "toast": {
     "generic": "通知：{{code}}",

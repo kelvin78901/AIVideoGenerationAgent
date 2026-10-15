@@ -1,25 +1,32 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 
-import { api, put } from "@/api/client";
+import { api, del, post, put } from "@/api/client";
 import { productKeys } from "@/api/hooks/products";
 import { useHealth } from "@/api/hooks/useJobs";
 import {
   ComponentCatalogSchema,
+  ConfigDefaultsSchema,
+  type ConfigDefaults,
   ResolvedConfigSchema,
   type ComponentCatalog,
   type OverrideRequest,
   type ResolvedConfig,
 } from "@/api/schemas/config";
 import type { ModelOption } from "@/api/schemas/models";
-import { ProvidersSchema } from "@/api/schemas/providers";
+import { ProviderSchema, ProvidersSchema } from "@/api/schemas/providers";
 
 export const configKeys = {
   catalog: ["config", "components"] as const,
   resolved: (component: string, item: string | null) =>
     ["config", "resolve", component, item ?? ""] as const,
   all: ["config"] as const,
+  resolvedAll: ["config", "resolve"] as const,
+  defaults: ["config", "defaults"] as const,
   providers: ["providers"] as const,
 };
+
+const enc = encodeURIComponent;
 
 export function useComponentCatalog() {
   return useQuery({
@@ -36,6 +43,51 @@ export function useResolvedConfig(component: string | undefined, item: string | 
     queryKey: configKeys.resolved(component ?? "", item),
     queryFn: () => api(`/config/resolve?${q.toString()}`, ResolvedConfigSchema),
     enabled: !!component,
+  });
+}
+
+/** Component-level configs of many components at once (the Models page table). */
+export function useResolvedConfigs(components: readonly string[]) {
+  return useQueries({
+    queries: components.map((component) => ({
+      queryKey: configKeys.resolved(component, null),
+      queryFn: () => api(`/config/resolve?component=${enc(component)}`, ResolvedConfigSchema),
+    })),
+  });
+}
+
+/** The active preset and fallback policy (`GET /config/defaults`). */
+export function useConfigDefaults() {
+  return useQuery({
+    queryKey: configKeys.defaults,
+    queryFn: () => api("/config/defaults", ConfigDefaultsSchema),
+  });
+}
+
+/** A new preset re-resolves every component that has not been changed by hand. */
+export function useSetConfigDefaults() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: Partial<ConfigDefaults>) =>
+      put("/config/defaults", ConfigDefaultsSchema, patch),
+    onSuccess: (defaults) => {
+      client.setQueryData(configKeys.defaults, defaults);
+      void client.invalidateQueries({ queryKey: configKeys.resolvedAll });
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
+  });
+}
+
+/** 「恢复成预设」: drops the component's override so it follows the preset again. */
+export function useResetOverride(component: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () =>
+      del(`/config/override?scope=component&component_id=${enc(component)}`, ResolvedConfigSchema),
+    onSuccess: (resolved) => {
+      client.setQueryData(configKeys.resolved(component, null), resolved);
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
   });
 }
 
@@ -101,3 +153,30 @@ export function useComponentModels(component: string, item: string | null = null
   const resolved = useResolvedConfig(component, item);
   return componentModels(catalog.data, component, resolved.data);
 }
+
+function useProviderMutation<V>(fn: (vars: V) => Promise<z.infer<typeof ProviderSchema>>) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: () => void client.invalidateQueries({ queryKey: configKeys.providers }),
+  });
+}
+
+/** Keys are write-only: the response only says whether one is set (M0 `/providers`). */
+export const useSaveProviderKey = (id: string) =>
+  useProviderMutation((apiKey: string) =>
+    post(`/providers/${enc(id)}/key`, ProviderSchema, { api_key: apiKey }),
+  );
+
+export const useDeleteProviderKey = (id: string) =>
+  useProviderMutation(() => del(`/providers/${enc(id)}/key`, ProviderSchema));
+
+export const ProviderTestSchema = z.object({
+  ok: z.boolean(),
+  detail: z.string().nullable(),
+  models: z.array(z.string()),
+});
+
+/** 「测试连接」: lists the provider's models with the stored key. */
+export const useTestProvider = (id: string) =>
+  useMutation({ mutationFn: () => post(`/providers/${enc(id)}/test`, ProviderTestSchema) });

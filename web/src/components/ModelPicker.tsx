@@ -15,6 +15,7 @@ import {
   type ComponentConfig,
   type ConfigField,
   type ConfigSource,
+  type ConfigMode,
   type RunLocation,
 } from "@/api/schemas/config";
 import type { ModelOption } from "@/api/schemas/models";
@@ -37,8 +38,9 @@ const MODES: RunLocation[] = ["local", "api", "hybrid"];
 
 type Role = "main" | "final" | "draft" | "fallback" | "unused" | "none";
 
-function roleOf(has: boolean, mode: RunLocation, side: "api" | "local", fallback: boolean): Role {
+function roleOf(has: boolean, mode: ConfigMode, side: "api" | "local", fallback: boolean): Role {
   if (!has) return "none";
+  if (mode === "off") return "unused";
   if (mode === side) return "main";
   if (mode === "hybrid") return side === "api" ? "final" : "draft";
   return fallback ? "fallback" : "unused";

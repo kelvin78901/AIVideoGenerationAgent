@@ -24,7 +24,7 @@ pnpm -C web shots:prototype --runtime <path/to/dc-runtime.js> [--only Main,Spec]
 | 04 分镜 `/s/demo/e/1/storyboard` | [Storyboard](prototype/Storyboard.jpg) | [亮色](storyboard.light.jpg) | [暗色](storyboard.dark.jpg) | 站位图真的能拖（也能用方向键），位置存进镜头的 `blocking`；机位也是可拖的一项，不再按景别自动摆；参考素材的「未锁定」按素材页的实际锁定状态显示；「添加参考」从已锁定素材里选；确认镜头时顺带采纳当前关键帧；1-09 的尾帧接 1-08（原型如此，ROADMAP 里只举了 1-08 接 1-06） |
 | 05 生成 `/s/demo/e/1/generate` | [Generate](prototype/Generate.jpg) | [亮色](generate.light.jpg) | [暗色](generate.dark.jpg) | 本地队列卡的数字取真实 `/jobs`（示例里是「空闲」），下面一行「正在跑 1-05 T1」取示例产物；默认打开第一个「待挑选」的镜头（1-04）；候选卡多了键盘选中框和打分（← → / 1–5 / A / 空格，原型只写在说明里）；「取消采纳」走单独接口；排队中的镜头不能「再出一条」（原型里能点）；等尾帧的镜头点「再出一条」会提示先采纳上游镜头；1-06 空状态写「台词会先用锁定音色配好」（原型是「画外音」，按声音做法推出）；播放和局部修复只弹提示（示例里没有视频文件和蒙版工具），2K 精修调接口返回任务 |
 | 06 后期 `/s/demo/e/1/post` | [Post](prototype/Post.jpg) | [亮色](post.light.jpg) | [暗色](post.dark.jpg) | 音量按片段存（原型是整页一个值）；播放按真实时间走（原型是 2 倍速）；默认选中第一个没采纳的片段，播放头放在它中间（00:12，原型是 00:11）；「换一条候选」跳到生成页并打开那个镜头；雨声标「视频原生音频」（原型写「H3 原生音频」）；字幕改了会标「已改，和剧本不同」；导出按钮调接口后弹提示（示例里不真的导出）；导航「后期」按进度显示「未开始」（原型在本页写「进行中」）；配乐 RunBar 的预计花费是 Mock 的按次估价（原型写「订阅内」） |
-| 模型与兜底 `/models` | [Models](prototype/Models.jpg) | 待做 | 待做 | |
+| 模型与兜底 `/models` | [Models](prototype/Models.jpg) | [亮色](models.light.jpg) | [暗色](models.dark.jpg) | 19 个组件（多了素材分析、音效，照 components.yaml 的顺序）；3D 场景在「均衡」下是「这一步不跑」（components.yaml `mode: off`，原型算成 API）；密钥 chips 来自真实 `/providers`，只有写作类服务，而且都显示「未配置」（原型列了 13 家、一半已配置）；点 chip 弹出密钥窗口（原型只有提示条）；兜底目标和备选顺序用各组件已有的示例配置（和 Inspector 一致），和原型的个别默认值不同；提示用 toast |
 | 素材整理与同步 `/s/demo/sync` | [Sync](prototype/Sync.jpg) | 待做 | 待做 | |
 | 数据看板 `/s/demo/dashboard` | [Dashboard](prototype/Dashboard.jpg) | 待做 | 待做 | |
 

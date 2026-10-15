@@ -1,5 +1,6 @@
 import { http } from "msw";
 
+import { EpisodePatchSchema } from "@/api/schemas/episodes";
 import { getDb } from "@/mocks/db";
 import { lockedAssetCount } from "@/mocks/handlers/assets";
 import { adoptedTakeCount } from "@/mocks/handlers/generate";
@@ -21,6 +22,21 @@ export const seriesHandlers = [
   http.get(v1("/series/:id/spec"), ({ params }) => {
     const spec = getDb().specs[String(params.id)];
     return spec ? demoJson(spec) : demoError(404, "series_not_found", { id: params.id });
+  }),
+
+  // Only the budget for now (Models page 本集 API 预算); SPEC 9.1 `PATCH /episodes/{id}`.
+  http.patch(v1("/episodes/:id"), async ({ params, request }) => {
+    const db = getDb();
+    const ep = db.episodes.find((e) => e.id === String(params.id));
+    if (!ep) return demoError(404, "episode_not_found", { id: params.id });
+    const body = EpisodePatchSchema.safeParse(await request.json());
+    if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
+    if (body.data.budget_usd !== undefined) {
+      ep.budget_usd = body.data.budget_usd;
+      // The demo summary is episode 1's; the top bar reads its budget.
+      if (ep.idx === 1) db.summary.episode.budget_usd = body.data.budget_usd;
+    }
+    return demoJson(ep);
   }),
 
   http.get(v1("/episodes/:id/progress"), ({ params }) => {

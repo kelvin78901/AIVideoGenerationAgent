@@ -7,6 +7,7 @@ import enComponents from "@/locales/en/components.json";
 import enDev from "@/locales/en/dev.json";
 import enEnums from "@/locales/en/enums.json";
 import enGenerate from "@/locales/en/generate.json";
+import enModels from "@/locales/en/models.json";
 import enNav from "@/locales/en/nav.json";
 import enNovel from "@/locales/en/novel.json";
 import enPost from "@/locales/en/post.json";
@@ -20,6 +21,7 @@ import zhComponents from "@/locales/zh-CN/components.json";
 import zhDev from "@/locales/zh-CN/dev.json";
 import zhEnums from "@/locales/zh-CN/enums.json";
 import zhGenerate from "@/locales/zh-CN/generate.json";
+import zhModels from "@/locales/zh-CN/models.json";
 import zhNav from "@/locales/zh-CN/nav.json";
 import zhNovel from "@/locales/zh-CN/novel.json";
 import zhPost from "@/locales/zh-CN/post.json";
@@ -43,6 +45,7 @@ export const resources = {
     post: zhPost,
     spec: zhSpec,
     setup: zhSetup,
+    models: zhModels,
     dev: zhDev,
   },
   en: {
@@ -58,6 +61,7 @@ export const resources = {
     post: enPost,
     spec: enSpec,
     setup: enSetup,
+    models: enModels,
     dev: enDev,
   },
 } as const;
