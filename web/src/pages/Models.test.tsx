@@ -58,6 +58,18 @@ describe("ModelsPage", () => {
     );
   });
 
+  it("does not claim a GPU or connected services when that data is missing", async () => {
+    const missing = () => HttpResponse.json({ code: "not_found", params: {} }, { status: 404 });
+    server.use(
+      http.get("*/api/v1/config/components", missing),
+      http.get("*/api/v1/setup/profile", missing),
+    );
+    renderModels();
+    expect(
+      await screen.findByText("本地：未知 · ComfyUI 未知 · 推理服务 未知"),
+    ).toBeInTheDocument();
+  });
+
   it("presets re-route every component; 全本地 skips what has no local version", async () => {
     const user = userEvent.setup();
     renderModels();

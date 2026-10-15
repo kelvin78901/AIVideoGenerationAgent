@@ -5,6 +5,7 @@
   "query": {
     "loading": "Loading",
     "failed": "Could not load",
+    "blocked": "Nothing to show: the data this depends on did not load",
     "retry": "Retry"
   },
   "cost": {

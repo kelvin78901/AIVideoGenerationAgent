@@ -30,6 +30,7 @@
   "error": {
     "network": "连不上后端：{{message}}",
     "unknown": "出错了：{{code}}",
+    "http_404": "后端没有这个接口或数据（404）",
     "job_not_found": "找不到任务 {{id}}",
     "job_invalid_state": "任务当前状态是「{{state}}」，不能这样操作",
     "mock_only": "这个操作只在 Mock 模式下可用",

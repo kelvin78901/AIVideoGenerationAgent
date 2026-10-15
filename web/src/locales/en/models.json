@@ -30,6 +30,7 @@
     "noGpu": "no usable GPU",
     "connected": "connected",
     "disconnected": "not reachable",
+    "statusUnknown": "unknown",
     "rescan": "Scan this machine again and install what is missing",
     "keySet": "set",
     "keyMissing": "not set",

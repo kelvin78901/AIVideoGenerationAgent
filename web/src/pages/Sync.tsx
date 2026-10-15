@@ -80,7 +80,7 @@ export default function SyncPage() {
       >
         <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1.5">
           <h2 id="board-title" className="text-base font-bold">
-            {t("board.title", { n: first?.idx ?? 1 })}
+            {first ? t("board.title", { n: first.idx }) : t("board.titleNoEpisode")}
           </h2>
           <span className="text-xs text-muted-foreground">{t("board.hint")}</span>
         </div>

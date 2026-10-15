@@ -136,7 +136,9 @@ function TopBar({ status }: { status: ShellStatus }) {
         </span>
         <span data-testid="spend">
           {t("shell.spend")}{" "}
-          <b className="font-medium text-topbar-foreground">{formatUsd(spent ?? 0)}</b>
+          <b className="font-medium text-topbar-foreground">
+            {spent != null ? formatUsd(spent) : "—"}
+          </b>
           {" / "}
           {budget != null ? t("shell.budget", { budget: formatUsd(budget) }) : t("shell.noBudget")}
         </span>

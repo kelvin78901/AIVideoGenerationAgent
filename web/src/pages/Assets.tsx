@@ -134,30 +134,32 @@ export default function AssetsPage() {
         }
       />
 
-      <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3">
-        <span className="text-sm font-medium tabular-nums">{t("progress", { done, total })}</span>
-        <Progress
-          value={total ? (done / total) * 100 : 0}
-          aria-label={t("progress", { done, total })}
-          className="w-40"
-        />
-        <span className="text-xs text-muted-foreground">{t("analyzed", { summary })}</span>
-        <Button
-          variant="outline"
-          size="sm"
-          className="ml-auto"
-          disabled={analyze.isPending}
-          onClick={() =>
-            analyze.mutate(undefined, {
-              onSuccess: (r) =>
-                toast.info(r.added || r.changed ? t("reanalyzedChanged", r) : t("reanalyzed")),
-              onError,
-            })
-          }
-        >
-          {t("reanalyze")}
-        </Button>
-      </div>
+      {assets.data ? (
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3">
+          <span className="text-sm font-medium tabular-nums">{t("progress", { done, total })}</span>
+          <Progress
+            value={total ? (done / total) * 100 : 0}
+            aria-label={t("progress", { done, total })}
+            className="w-40"
+          />
+          <span className="text-xs text-muted-foreground">{t("analyzed", { summary })}</span>
+          <Button
+            variant="outline"
+            size="sm"
+            className="ml-auto"
+            disabled={analyze.isPending}
+            onClick={() =>
+              analyze.mutate(undefined, {
+                onSuccess: (r) =>
+                  toast.info(r.added || r.changed ? t("reanalyzedChanged", r) : t("reanalyzed")),
+                onError,
+              })
+            }
+          >
+            {t("reanalyze")}
+          </Button>
+        </div>
+      ) : null}
 
       {product.data && selected ? (
         <RunBar

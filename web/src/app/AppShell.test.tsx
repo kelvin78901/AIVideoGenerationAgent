@@ -67,6 +67,18 @@ describe("AppShell", () => {
     );
   });
 
+  it("does not show a spend of $0 when the summary is missing", async () => {
+    server.use(
+      http.get("*/api/v1/metrics/summary", () =>
+        HttpResponse.json({ code: "not_found", params: {} }, { status: 404 }),
+      ),
+    );
+    renderAt(<AppRoutes />, "/s/demo/e/1/novel");
+    await waitFor(() =>
+      expect(screen.getByTestId("spend")).toHaveTextContent("本集 API 花费 — / 预算 $15"),
+    );
+  });
+
   it("shows step badges from the episode progress", async () => {
     renderAt(<AppRoutes />, "/s/demo/e/1/novel");
     await waitFor(() => expect(screen.getAllByTestId("step-badge")).toHaveLength(6));

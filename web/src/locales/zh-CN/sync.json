@@ -43,6 +43,7 @@
   },
   "board": {
     "title": "第 {{n}} 集素材板（在 ComfyUI 画布里的样子）",
+    "titleNoEpisode": "素材板（在 ComfyUI 画布里的样子）",
     "hint": "点任意节点看它对应的文件和版本；右下角是“拿工作台的镜头接着做，再存回来”的示例",
     "label": "素材板节点",
     "node": "{{title}}，{{caption}}",

@@ -118,7 +118,14 @@ function Services({ localOk }: { localOk: boolean | undefined }) {
   const providers = useProviders();
   const [openId, setOpenId] = useState<string | null>(null);
   const gpu = profile.data?.machine.gpu;
-  const conn = t(localOk === false ? "services.disconnected" : "services.connected");
+  // Unknown (still loading or failed) is never shown as connected / no GPU.
+  const conn = t(
+    localOk === undefined
+      ? "services.statusUnknown"
+      : localOk
+        ? "services.connected"
+        : "services.disconnected",
+  );
   const list = (providers.data?.providers ?? []).filter((p) => p.needs_key);
   const open = list.find((p) => p.id === openId) ?? null;
 
@@ -133,7 +140,9 @@ function Services({ localOk }: { localOk: boolean | undefined }) {
       <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-[13px] leading-relaxed">
         <span>
           {t("services.local", {
-            gpu: gpu ? `${gpu.name} ${gpu.vram_gb}GB` : t("services.noGpu"),
+            gpu: gpu
+              ? `${gpu.name} ${gpu.vram_gb}GB`
+              : t(profile.data ? "services.noGpu" : "services.statusUnknown"),
             comfy: conn,
             llm: conn,
           })}

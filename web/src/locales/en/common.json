@@ -30,6 +30,7 @@
   "error": {
     "network": "Cannot reach the backend: {{message}}",
     "unknown": "Something went wrong: {{code}}",
+    "http_404": "Not found on the backend (404)",
     "job_not_found": "Job {{id}} not found",
     "job_invalid_state": "The job is \"{{state}}\"; this action is not allowed",
     "mock_only": "Only available in mock mode",

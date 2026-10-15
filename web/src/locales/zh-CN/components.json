@@ -5,6 +5,7 @@
   "query": {
     "loading": "正在加载",
     "failed": "加载失败",
+    "blocked": "没有可显示的内容：它依赖的数据没加载到",
     "retry": "重试"
   },
   "cost": {

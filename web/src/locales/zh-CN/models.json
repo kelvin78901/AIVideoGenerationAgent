@@ -30,6 +30,7 @@
     "noGpu": "没有可用的显卡",
     "connected": "已连接",
     "disconnected": "没连上",
+    "statusUnknown": "未知",
     "rescan": "重新检测主机、补装缺少的组件",
     "keySet": "已配置",
     "keyMissing": "未配置",

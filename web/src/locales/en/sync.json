@@ -43,6 +43,7 @@
   },
   "board": {
     "title": "Episode {{n}} asset board (as it looks in ComfyUI)",
+    "titleNoEpisode": "Asset board (as it looks in ComfyUI)",
     "hint": "Click any node to see its file and version; bottom right is an example of taking a shot from the studio, working on it and saving it back",
     "label": "Board nodes",
     "node": "{{title}}, {{caption}}",
