@@ -1,0 +1,23 @@
+{
+  "where": {
+    "local": "Local",
+    "api": "API"
+  },
+  "versionStatus": {
+    "draft": "Draft",
+    "adopted": "Adopted",
+    "locked": "Locked"
+  },
+  "origin": {
+    "first": "First version",
+    "run": "Generated",
+    "rerun": "Rerun",
+    "prompt_rerun": "Rerun with edited prompt",
+    "switch": "Switched model",
+    "edit": "Edited by hand",
+    "fallback": "Automatic fallback",
+    "import": "Imported",
+    "auto_qa_rerun": "Rerun after failed QA",
+    "comfy_ingest": "Saved back from ComfyUI"
+  }
+}

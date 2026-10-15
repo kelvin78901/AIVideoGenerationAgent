@@ -17,6 +17,10 @@
 - **Toast 用 sonner**，不照抄原型的行内提示条（SPEC 16.2 只要求「Toast 反馈每个操作的结果」）。
 - **原型截图**：原型依赖画布运行时，仓库里没有。截图时从 Kelvin 的 artifact「短剧工作台原型」取 `dc-runtime.js` 放在临时目录当 `support.js`，本机渲染后用 Playwright 截；运行时不进仓库，只提交截图。
 - **截图格式**：JPEG、宽 1440 整页，中文亮色 + 中文暗色进 git（`docs/studio/reports/ui/`）；英文截图按需生成，不进 git。原因：控制仓库体积，PNG 整页图太大。
+- **产物接口补充（M0.5 第 4 步，SPEC 4.2 / 9.1 没写的部分）**：`GET /products/{id}` 除版本列表外还返回 `prompt`（下次运行用的意图层 / 编译层 / 是否手改 / 编译时的目标模型）、`estimate`（按当前路由重跑一次的预计花费和耗时，按钮上显示）、`running`（正在跑的任务 id 和模型，刷新后也能显示「正在用 X 生成…」）。新增 `PUT /products/{id}/prompt`（「只保存」，`compiled: null` 表示自动编译）、`POST /products/{id}/compile`（意图层改动时预览编译层，前端 300 ms 防抖）、`POST /products/{id}/unlock`（素材页的解锁；锁定仍是 `/lock`）。版本的 `note` 只放用户写的备注，「初版 / 重跑 / 改提示词后重跑 / 不满意换一个」由前端按 `origin`、`n` 和父版本的提示词推出来（`lib/versions.ts:originLabel`）。
+- **手改过的编译层什么时候保留**：普通「重跑」沿用已保存的手改编译层；「不满意换一个」总是按目标模型重新编译（SPEC 7.4「按目标模型重新编译」），手改不跟过去。
+- **示例里的运行不发 `job.updated`**：MSW 的 `POST /products/{id}/run` 返回一个 Job，但不推到任务列表——`/jobs` 是真实后端的，混进假任务会让顶栏 GPU 状态和开发面板失真。
+- **示例时间按本机时区的钟点生成**（`fixtures/demo/products.ts:demoAt`）：界面按看的人所在时区显示时间，示例数据要在任何时区都显示原型里的 09:41 / 10:02 / 10:05。
 
 ## 2026-10-14 · M0 合并前补充（Kelvin 审阅后）
 

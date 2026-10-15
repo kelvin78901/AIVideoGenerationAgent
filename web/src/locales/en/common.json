@@ -36,10 +36,18 @@
     "unknown_component": "Unknown component {{id}}",
     "bad_response": "The response from {{path}} does not match the API contract",
     "series_not_found": "Series {{id}} not found",
-    "episode_not_found": "Episode {{id}} not found"
+    "episode_not_found": "Episode {{id}} not found",
+    "product_not_found": "Output {{id}} not found",
+    "version_not_found": "Version {{id}} not found",
+    "product_busy": "This step is still generating; try again when it finishes",
+    "product_locked": "Locked: reopen this step before adopting a different version",
+    "nothing_adopted": "Nothing adopted yet, so there is nothing to lock",
+    "unknown_model": "Unknown model {{key}}",
+    "invalid_request": "Invalid request: {{issues}}"
   },
   "toast": {
-    "generic": "Notice: {{code}}"
+    "generic": "Notice: {{code}}",
+    "version_created": "Generated v{{n}} ({{model}}). The previous version is still in the history; adopt this one if you like it."
   },
   "legacy": {
     "banner": "Legacy UI: calls are not logged and not budget-limited",

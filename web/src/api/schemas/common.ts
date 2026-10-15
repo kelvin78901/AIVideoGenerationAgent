@@ -21,3 +21,20 @@ export const MessageSchema = z.object({
   params: z.record(z.string(), z.union([z.string(), z.number()])).default({}),
 });
 export type Message = z.infer<typeof MessageSchema>;
+
+/**
+ * A model's list price (providers.yaml). LLMs are priced per million tokens in / out; media
+ * models per image, per second of video or per call. CNY prices are shown as ¥.
+ */
+export const CurrencySchema = z.enum(["USD", "CNY"]);
+export type Currency = z.infer<typeof CurrencySchema>;
+
+export const PriceSchema = z.union([
+  z.object({ unit: z.literal("mtok"), in: z.number(), out: z.number(), currency: CurrencySchema }),
+  z.object({
+    unit: z.enum(["image", "second", "call"]),
+    amount: z.number(),
+    currency: CurrencySchema,
+  }),
+]);
+export type Price = z.infer<typeof PriceSchema>;

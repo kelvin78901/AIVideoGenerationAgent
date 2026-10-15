@@ -6,5 +6,56 @@
     "loading": "Loading",
     "failed": "Could not load",
     "retry": "Retry"
+  },
+  "cost": {
+    "free": "No API cost",
+    "freeShort": "Free",
+    "metered": "Pay as you go",
+    "estimate": "Est. ≈{{amount}}",
+    "approx": "≈{{amount}}",
+    "seconds": "~{{n}} s",
+    "minutes": "~{{n}} min",
+    "perMtok": "{{in}} / {{out}} per M tokens",
+    "perImage": "{{amount}} / image",
+    "perSecond": "{{amount}} / s",
+    "perCall": "{{amount}} / call"
+  },
+  "runBar": {
+    "product": "Current output · {{what}}",
+    "noVersion": "No version yet",
+    "running": "Generating with {{model}}…",
+    "editPrompt": "Edit prompt",
+    "rerun": "Rerun",
+    "more": "One more take",
+    "switch": "Try another model",
+    "history": "History {{count}}"
+  },
+  "switchMenu": {
+    "label": "Rerun with another model",
+    "intro": "Rerun this step with another model. The current version stays in the history.",
+    "footer": "Set the fallback order in Models & fallback"
+  },
+  "versions": {
+    "intro": "All versions of {{name}}, newest first. Only the adopted version is used by the next step.",
+    "current": "Current",
+    "setCurrent": "Make current",
+    "adopt": "Adopt this version",
+    "lockedHint": "Locked: reopen this step before adopting a different version.",
+    "adopted": "v{{n}} adopted; the next step will use it.",
+    "empty": "No version yet"
+  },
+  "prompt": {
+    "title": "{{name}} · Prompt",
+    "lead": "Describe what you want in your own words. It is compiled with the context and the story bible into the prompt sent to the model.",
+    "intent": "Your request (intent layer)",
+    "showCompiled": "View / edit the compiled prompt (advanced)",
+    "hideCompiled": "Hide compiled layer",
+    "preview": "Compiled prompt (preview)",
+    "compiled": "Compiled layer (edit directly; it stops following the intent)",
+    "overridden": "Compiled layer edited by hand",
+    "restore": "Compile automatically again",
+    "saveRun": "Save and rerun",
+    "saveOnly": "Save only",
+    "saved": "Prompt saved; it applies to the next run."
   }
 }

@@ -71,7 +71,17 @@
       "popover": "打开浮层",
       "popoverText": "浮层内容。",
       "switch": "开关",
-      "checkbox": "复选框"
-    }
+      "checkbox": "复选框",
+      "what": "补全建议 · 4 条",
+      "whatExtract": "设定卡 · 人物 2 · 地点 3 · 道具 4",
+      "enrich": "小说补全",
+      "extract": "设定提取",
+      "lock": "锁定已采纳的版本",
+      "unlock": "解锁",
+      "switchMenu": "单独的换模型菜单",
+      "picked": "选了 {{model}}"
+    },
+    "products": "产物与版本（示例库，操作刷新后复原）",
+    "cost": "花费标记"
   }
 }

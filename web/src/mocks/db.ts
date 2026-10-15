@@ -5,6 +5,7 @@
 import { episodes, progress } from "@/mocks/fixtures/demo/episodes";
 import { summary } from "@/mocks/fixtures/demo/metrics";
 import { series } from "@/mocks/fixtures/demo/series";
+import { products } from "@/mocks/fixtures/demo/products";
 import { profile } from "@/mocks/fixtures/demo/setup";
 import { spec } from "@/mocks/fixtures/demo/spec";
 
@@ -16,6 +17,7 @@ function createDb() {
     specs: { [spec.series_id]: spec },
     summary,
     profile,
+    products: Object.fromEntries(products.map((p) => [p.id, p])),
   });
 }
 

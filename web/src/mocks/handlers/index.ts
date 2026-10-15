@@ -13,9 +13,22 @@
  * | GET /episodes/{id}/progress      | M2             |
  * | GET /metrics/summary             | M8             |
  * | GET /setup/profile               | M1             |
+ * | GET /products, GET /products/{id} | M2             |
+ * | POST /products/{id}/run          | M2             |
+ * | POST /versions/{id}/set-current  | M2             |
+ * | POST /versions/{id}/adopt        | M2             |
+ * | POST /products/{id}/lock, unlock | M2             |
+ * | PUT /products/{id}/prompt        | M2             |
+ * | POST /products/{id}/compile      | M2             |
  */
 import { metricsHandlers } from "@/mocks/handlers/metrics";
+import { productHandlers } from "@/mocks/handlers/products";
 import { seriesHandlers } from "@/mocks/handlers/series";
 import { setupHandlers } from "@/mocks/handlers/setup";
 
-export const handlers = [...seriesHandlers, ...metricsHandlers, ...setupHandlers];
+export const handlers = [
+  ...seriesHandlers,
+  ...metricsHandlers,
+  ...setupHandlers,
+  ...productHandlers,
+];

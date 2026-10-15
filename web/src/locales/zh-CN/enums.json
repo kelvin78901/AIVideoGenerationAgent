@@ -1,0 +1,23 @@
+{
+  "where": {
+    "local": "本地",
+    "api": "API"
+  },
+  "versionStatus": {
+    "draft": "草稿",
+    "adopted": "已采纳",
+    "locked": "已锁定"
+  },
+  "origin": {
+    "first": "初版",
+    "run": "生成",
+    "rerun": "重跑",
+    "prompt_rerun": "改提示词后重跑",
+    "switch": "不满意换一个",
+    "edit": "手动修改",
+    "fallback": "自动兜底",
+    "import": "导入",
+    "auto_qa_rerun": "质检不过自动重跑",
+    "comfy_ingest": "从 ComfyUI 存回"
+  }
+}

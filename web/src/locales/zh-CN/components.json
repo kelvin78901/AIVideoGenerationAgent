@@ -6,5 +6,56 @@
     "loading": "正在加载",
     "failed": "加载失败",
     "retry": "重试"
+  },
+  "cost": {
+    "free": "无 API 费用",
+    "freeShort": "免费",
+    "metered": "按量计费",
+    "estimate": "预计 ≈{{amount}}",
+    "approx": "≈{{amount}}",
+    "seconds": "约 {{n}} 秒",
+    "minutes": "约 {{n}} 分钟",
+    "perMtok": "{{in}} / {{out}} 每百万 token",
+    "perImage": "{{amount}} / 张",
+    "perSecond": "{{amount}} / 秒",
+    "perCall": "{{amount}} / 次"
+  },
+  "runBar": {
+    "product": "当前产物 · {{what}}",
+    "noVersion": "还没有版本",
+    "running": "正在用 {{model}} 生成…",
+    "editPrompt": "改提示词",
+    "rerun": "重跑",
+    "more": "再出一条",
+    "switch": "不满意换一个",
+    "history": "历史 {{count}}"
+  },
+  "switchMenu": {
+    "label": "换一个模型重跑",
+    "intro": "换一个模型重跑这一步。当前版本会保留在历史里。",
+    "footer": "备选顺序在「模型与兜底」里调整"
+  },
+  "versions": {
+    "intro": "{{name}} 的全部版本，新的在上。只有「采纳」的版本会被下一步使用。",
+    "current": "当前",
+    "setCurrent": "设为当前",
+    "adopt": "采纳这一版",
+    "lockedHint": "已锁定：先在这一步重新打开，才能换采纳的版本。",
+    "adopted": "v{{n}} 已采纳，下一步会用这一版。",
+    "empty": "还没有版本"
+  },
+  "prompt": {
+    "title": "{{name}} · 提示词",
+    "lead": "用自己的话写要求。系统会把它和上下文、设定卡一起编译成发给模型的提示词。",
+    "intent": "你的要求（意图层）",
+    "showCompiled": "查看 / 修改编译后的提示词（高级）",
+    "hideCompiled": "收起编译层",
+    "preview": "编译后的提示词（预览）",
+    "compiled": "编译层（直接改；改过后不再自动编译）",
+    "overridden": "已手动修改编译层",
+    "restore": "恢复自动编译",
+    "saveRun": "保存并重跑",
+    "saveOnly": "只保存",
+    "saved": "提示词已保存，下次运行生效。"
   }
 }

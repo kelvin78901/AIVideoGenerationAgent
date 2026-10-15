@@ -71,7 +71,17 @@
       "popover": "Open popover",
       "popoverText": "Popover content.",
       "switch": "Switch",
-      "checkbox": "Checkbox"
-    }
+      "checkbox": "Checkbox",
+      "what": "Suggestions · 4",
+      "whatExtract": "Story bible · 2 characters · 3 locations · 4 props",
+      "enrich": "Novel enrichment",
+      "extract": "Story bible extraction",
+      "lock": "Lock the adopted version",
+      "unlock": "Unlock",
+      "switchMenu": "Standalone model menu",
+      "picked": "Picked {{model}}"
+    },
+    "products": "Outputs and versions (demo store; resets on reload)",
+    "cost": "Cost labels"
   }
 }

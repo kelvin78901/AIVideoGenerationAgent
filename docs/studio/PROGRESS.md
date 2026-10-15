@@ -15,13 +15,14 @@
 | 0 | 开分支 `m0.5-ui`；计划存档 `plans/M0.5.md`；ROADMAP 加 M0.5（M1–M9 的界面条目注明「接真实接口、删 MSW handler」）；DECISIONS 记 M0.5 的工程决定 | 0444149 | 仅文档 |
 | 1 | 依赖（msw 2.14.7、zod 4.6.4、@playwright/test 1.63.0、d3-scale/shape）；`api/schemas/`（common、jobs、series；`api/types.ts` 并入 `schemas/jobs.ts`）；`api(path, schema)` 运行时校验 → `bad_response`；`api/events.ts` 统一分发（SSE + `injectEvent`）；`web/src/mocks/`（http、db、events、browser、node、handlers 注册表 + `GET /series/{id}`、fixtures）；`app/demo.ts`（`VITE_DEMO_DATA`）；`stores/demo.ts` + 顶栏「示例数据」标记和剧名；`test/render.tsx` 带 QueryClient + Tooltip | b55ca38 | vitest 30 passed；lint、tsc、prettier、build 通过；**本机 Chromium 实测**：标记出现、worker 接管后 `/dev/jobs` 的任务仍经 SSE 实时变成「完成」 |
 | 2 | `web/playwright.config.ts`（自起 Mock 后端 8765 + Vite 5183，视口 1440）、`e2e/`（pages、fixtures、smoke、shots）、`pnpm e2e` / `pnpm shots` / `pnpm shots:prototype`；`scripts/prototype-shots.ts` + 11 张原型截图（`docs/studio/reports/ui/prototype/`）；对照表骨架 `reports/ui/README.md`；后端 `DRAMA_WEB_ORIGINS`；**修 M0 的 SSE 断开弄坏连接池的 bug**（见 DECISIONS） | 0951287 | pytest 118 passed；vitest 30 passed；Playwright 冒烟 13 passed（连跑 6 轮无 500）；lint、tsc、prettier 通过 |
-| 3 | tokens（`--tone-*` 五种状态色、`--highlight`、`--media*`，亮 / 暗分别调）；shadcn 补 tabs、dialog、popover、switch、checkbox、radio-group（`RadioCard`）、toggle-group、slider、progress、form（Label / Input / Textarea）、card、table、collapsible；`components/` 下 StatusBadge、PageHeader、SegmentedControl、Chip、MediaThumb、EmptyState、QueryState（`Skeleton` 带 `data-loading`）；`lib/format.ts`、`lib/tone.ts`；schemas episodes / spec / metrics / setup；fixtures + handlers（剧集、分集、进度、规格、`metrics/summary`、`setup/profile`）；hooks `useRouteEpisode` 等；**顶栏接数据**（剧名 · 集名、规格标签、GPU 名、本集花费 / 预算）、**导航徽标**；`/dev/components` 陈列页；新命名空间 `components` | 本提交 | vitest 32 passed；lint、tsc、prettier 通过；本机 Chromium 看了陈列页亮 / 暗 |
+| 3 | tokens（`--tone-*` 五种状态色、`--highlight`、`--media*`，亮 / 暗分别调）；shadcn 补 tabs、dialog、popover、switch、checkbox、radio-group（`RadioCard`）、toggle-group、slider、progress、form（Label / Input / Textarea）、card、table、collapsible；`components/` 下 StatusBadge、PageHeader、SegmentedControl、Chip、MediaThumb、EmptyState、QueryState（`Skeleton` 带 `data-loading`）；`lib/format.ts`、`lib/tone.ts`；schemas episodes / spec / metrics / setup；fixtures + handlers（剧集、分集、进度、规格、`metrics/summary`、`setup/profile`）；hooks `useRouteEpisode` 等；**顶栏接数据**（剧名 · 集名、规格标签、GPU 名、本集花费 / 预算）、**导航徽标**；`/dev/components` 陈列页；新命名空间 `components` | 2561512 | vitest 32 passed；lint、tsc、prettier 通过；本机 Chromium 看了陈列页亮 / 暗 |
+| 4 | `schemas/products.ts`（product / version / prompt / estimate / run 请求，字段照 SPEC 4.2 + 补充见 DECISIONS）、`schemas/models.ts`、`common.ts` 加 `PriceSchema`；示例库 products（enrich v1 本地 09:41 草稿、v2 DeepSeek 10:02 已采纳；extract v1 已采纳）、17 个写作模型目录、提示词编译；handler：run（1.4 秒后追加版本，发 `version.created` / `product.updated` / toast）、set-current、adopt（只能一个）、lock / unlock、prompt、compile；`api/hooks/products.ts`；组件 `CostBadge`、`ModelSwitchMenu`、`RunBar`、`VersionHistory`、`PromptEditor`（+ `useRunAction`、`lib/versions.ts`、`lib/cost.ts`）；新命名空间 `enums`；陈列页加两组产物 | 本提交 | vitest 51 passed（新增 19）；lint、tsc、prettier、i18n 通过；Playwright 冒烟 13 passed；本机 Chromium 看了陈列页亮 / 暗、重跑中、换模型菜单 |
 
 ## 下一步
 
-- **第 4 步 产物与版本**：`api/schemas/products.ts`（product、version、run 请求；字段照 SPEC 4.2）；示例库加 products / versions（先放小说页的 enrich、extract 两个产物，数据见 `prototype/Main.dc.html` 底部：enrich v1 Qwen3.6-27B 本地 09:41 草稿、v2 DeepSeek V4 Pro API 10:02 已采纳；extract v1 本地 10:05 已采纳）；`POST /products/{id}/run` 约 1.4 秒后追加版本并经 `emitDemoEvent` 发 `version.created`（`api/events.ts` 的 `invalidates` 表加 products 键）；`components/` 下 CostBadge、RunBar、ModelSwitchMenu、VersionHistory、PromptEditor，放进 `/dev/components`。
-- 组件用的模型列表（15 个 LLM + 本地）要从 `/config/components`（MSW，第 5 步）来；第 4 步的 ModelSwitchMenu 先吃 props（`options: {key, display, where, price_label}`），第 5 步接 hook。
-- **约定**：页面数据没到时用 `QueryState` / `Skeleton`（带 `data-loading`）；状态色用 `StatusBadge` 或 `lib/tone.ts`；钱用 `formatUsd`。
+- **第 5 步 Inspector + ModelPicker + ImpactDialog + GateButton**（计划「小步细节」第 5 节）：schema `config`（组件定义、可选模型、resolve 带每个字段的来源、覆盖、预设）、`impact`（preview / apply）、`gates`；`GET /config/components` 的 MSW handler 用 `fixtures/demo/models.ts` 的模型目录（第 4 步已建）；`stores/inspector.ts`（组件 chips + 运行设置 / 提示词 / 历史三个标签，RunBar 的 `onEditPrompt` / `onOpenHistory` 接到这里）；Inspector 的「运行设置」底部也放 `ModelSwitchMenu`（`side="top" align="start"`）。
+- `/dev/components` 现在从 `mocks/fixtures/demo/models` 直接取模型名（只有开发页这样）；第 5 步改用 `/config/components` 的 hook。
+- **约定**：页面数据没到时用 `QueryState` / `Skeleton`（带 `data-loading`）；状态色用 `StatusBadge` 或 `lib/tone.ts`；钱用 `formatUsd` / `CostBadge`；版本状态、来源用 `lib/versions.ts`；四个按钮的运行一律走 `useRunAction`（出错 toast）。
 - 截图：`pnpm -C web shots -g <page>`；原型截图已全部生成。原型摘要：读 `docs/studio/prototype/<Page>.dc.html` 底部的 `class Component`，或看 `reports/ui/prototype/<Page>.jpg`。
 
 ## 没提交的改动
@@ -31,6 +32,8 @@
 ## 踩过的坑 / 临时绕过
 
 - Kelvin 本机常开着 `start.ps1`（5173 前端 + 8000 后端，Mock 模式），Vite 会热更新，可以直接拿来做浏览器核对；不要往里发真实（非 Mock）调用。
+- 示例里的运行延迟在 `mocks/events.ts:demoTiming.runMs`，测试里改成 20 ms（见 `components/products.test.tsx`）；测试要挂 `useEventStream()`（`FakeEventSource`）才收得到 `version.created`。
+- Playwright 冒烟收尾时后端会打印 aiosqlite「Task was destroyed but it is pending」，不影响结果，还没查（后端本步没改）。
 - MSW 在 jsdom 里能拦相对路径的 fetch；handler 路径写 `*/api/v1/...`（`mocks/http.ts:v1()`）。
 
 - **本机 PowerShell 执行策略禁止 `-File` 跑脚本**：钩子、状态栏、`start.ps1` 都要 `powershell -NoProfile -ExecutionPolicy Bypass -File …`。

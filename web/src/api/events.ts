@@ -7,6 +7,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
 import { toast } from "sonner";
 
+import { productKeys } from "@/api/hooks/products";
 import { callKeys, upsertJob } from "@/api/hooks/useJobs";
 import { JobSchema } from "@/api/schemas/jobs";
 
@@ -43,6 +44,8 @@ export function onEvent(type: EventType, fn: Listener): () => void {
 /** Cache keys refetched when an event of that type arrives. Extended as resources are added. */
 const invalidates: Partial<Record<EventType, readonly (readonly unknown[])[]>> = {
   "cost.updated": [callKeys.all],
+  "product.updated": [productKeys.all],
+  "version.created": [productKeys.all],
 };
 
 export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType, data: unknown) {

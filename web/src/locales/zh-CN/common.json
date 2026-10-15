@@ -36,10 +36,18 @@
     "unknown_component": "未知组件 {{id}}",
     "bad_response": "接口返回的数据和约定不符：{{path}}",
     "series_not_found": "找不到剧集 {{id}}",
-    "episode_not_found": "找不到分集 {{id}}"
+    "episode_not_found": "找不到分集 {{id}}",
+    "product_not_found": "找不到产物 {{id}}",
+    "version_not_found": "找不到版本 {{id}}",
+    "product_busy": "这一步正在生成，等它跑完再试",
+    "product_locked": "已锁定：先重新打开这一步，才能换采纳的版本",
+    "nothing_adopted": "还没有采纳的版本，不能锁定",
+    "unknown_model": "未知模型 {{key}}",
+    "invalid_request": "请求内容不对：{{issues}}"
   },
   "toast": {
-    "generic": "通知：{{code}}"
+    "generic": "通知：{{code}}",
+    "version_created": "已生成 v{{n}}（{{model}}）。上一版还在历史里，满意就点「采纳」。"
   },
   "legacy": {
     "banner": "旧界面：调用不记账、不受预算限制",

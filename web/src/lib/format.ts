@@ -2,11 +2,27 @@
 
 /** "$8.94"; whole amounts drop the cents ("$15") unless `cents` is set. */
 export function formatUsd(value: number, { cents = false }: { cents?: boolean } = {}): string {
+  return formatMoney(value, "USD", { cents });
+}
+
+/** Like `formatUsd`, for list prices that providers quote in CNY ("¥6"). */
+export function formatMoney(
+  value: number,
+  currency: "USD" | "CNY",
+  { cents = false }: { cents?: boolean } = {},
+): string {
   const whole = Number.isInteger(value) && !cents;
-  return `$${value.toLocaleString("en-US", {
+  const digits = value.toLocaleString("en-US", {
     minimumFractionDigits: whole ? 0 : 2,
     maximumFractionDigits: whole ? 0 : 2,
-  })}`;
+  });
+  return `${currency === "CNY" ? "¥" : "$"}${digits}`;
+}
+
+/** Wall-clock time of an ISO timestamp in the viewer's time zone: "09:41". */
+export function formatTime(iso: string): string {
+  const d = new Date(iso);
+  return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
 /** Seconds as a clock: 34 → "0:34", 70 → "1:10", 11.5 → "0:11". */
