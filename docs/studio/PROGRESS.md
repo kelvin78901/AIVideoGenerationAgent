@@ -13,13 +13,15 @@
 | 步 | 做了什么 | 提交 | 测试 |
 | --- | --- | --- | --- |
 | 0 | 开分支 `m0.5-ui`；计划存档 `plans/M0.5.md`；ROADMAP 加 M0.5（M1–M9 的界面条目注明「接真实接口、删 MSW handler」）；DECISIONS 记 M0.5 的工程决定 | 0444149 | 仅文档 |
-| 1 | 依赖（msw 2.14.7、zod 4.6.4、@playwright/test 1.63.0、d3-scale/shape）；`api/schemas/`（common、jobs、series；`api/types.ts` 并入 `schemas/jobs.ts`）；`api(path, schema)` 运行时校验 → `bad_response`；`api/events.ts` 统一分发（SSE + `injectEvent`）；`web/src/mocks/`（http、db、events、browser、node、handlers 注册表 + `GET /series/{id}`、fixtures）；`app/demo.ts`（`VITE_DEMO_DATA`）；`stores/demo.ts` + 顶栏「示例数据」标记和剧名；`test/render.tsx` 带 QueryClient + Tooltip | 本提交 | vitest 30 passed；lint、tsc、prettier、build 通过；**本机 Chromium 实测**：标记出现、worker 接管后 `/dev/jobs` 的任务仍经 SSE 实时变成「完成」 |
+| 1 | 依赖（msw 2.14.7、zod 4.6.4、@playwright/test 1.63.0、d3-scale/shape）；`api/schemas/`（common、jobs、series；`api/types.ts` 并入 `schemas/jobs.ts`）；`api(path, schema)` 运行时校验 → `bad_response`；`api/events.ts` 统一分发（SSE + `injectEvent`）；`web/src/mocks/`（http、db、events、browser、node、handlers 注册表 + `GET /series/{id}`、fixtures）；`app/demo.ts`（`VITE_DEMO_DATA`）；`stores/demo.ts` + 顶栏「示例数据」标记和剧名；`test/render.tsx` 带 QueryClient + Tooltip | b55ca38 | vitest 30 passed；lint、tsc、prettier、build 通过；**本机 Chromium 实测**：标记出现、worker 接管后 `/dev/jobs` 的任务仍经 SSE 实时变成「完成」 |
+| 2 | `web/playwright.config.ts`（自起 Mock 后端 8765 + Vite 5183，视口 1440）、`e2e/`（pages、fixtures、smoke、shots）、`pnpm e2e` / `pnpm shots` / `pnpm shots:prototype`；`scripts/prototype-shots.ts` + 11 张原型截图（`docs/studio/reports/ui/prototype/`）；对照表骨架 `reports/ui/README.md`；后端 `DRAMA_WEB_ORIGINS`；**修 M0 的 SSE 断开弄坏连接池的 bug**（见 DECISIONS） | 本提交 | pytest 118 passed；vitest 30 passed；Playwright 冒烟 13 passed（连跑 6 轮无 500）；lint、tsc、prettier 通过 |
 
 ## 下一步
 
-- **第 2 步 Playwright + 原型截图**：`web/playwright.config.ts`（webServer 起后端 + Vite，独立端口）。后端要先支持额外的前端源：`api/app.py` 的 `ALLOWED_ORIGINS` 写死了 5173，Playwright 用别的端口时 `LocalOnlyGuard` 会拒绝 POST（403 `origin_not_allowed`）→ 加环境变量（只接受回环地址）+ pytest。Chromium 已装（`pnpm exec playwright install chromium`）。
-- 原型截图（第 2 步）：运行时从 artifact「短剧工作台原型」（claude.ai/artifact/WL4RfL4RmT73kSrNWEPCrr）的 `artifact-type/dc-runtime.js` 取，放 scratchpad 当 `support.js`，不进仓库。
-- 原型逐页摘要（布局、交互、示例数字）在本会话的子代理报告里，`/clear` 后需要时直接读 `docs/studio/prototype/<Page>.dc.html` 底部的 `class Component`。
+- **第 3 步 token + 基础小组件 + AppShell 接数据**：补 `web/src/styles/tokens.css`（状态底色、媒体底色、字号 / 间距梯度）；用 shadcn 补 tabs、dialog、popover、switch 等；`components/` 下的 PageHeader、StatusBadge、SegmentedControl、ChipToggle、MediaThumb、EmptyState；fixtures + handlers：剧集、分集、进度（导航徽标）、规格、`metrics/summary`、`setup/profile`；顶栏接数据；`/dev/components` 陈列页。
+- **加载状态约定**：页面数据没到时渲染带 `data-loading` 的骨架，Playwright 的 `openPage()` 等到页面上没有 `[data-loading]` 再断言 / 截图。
+- 截图：`pnpm -C web shots -g <page>`，每页做完截亮 / 暗两张，填进 `docs/studio/reports/ui/README.md`。原型截图已全部生成，不用再跑（运行时在 scratchpad：`.../scratchpad/proto/support.js`，`/clear` 后要重新从 artifact 下载）。
+- 原型逐页摘要（布局、交互、示例数字）：`/clear` 后直接读 `docs/studio/prototype/<Page>.dc.html` 底部的 `class Component`，或看 `reports/ui/prototype/<Page>.jpg`。
 
 ## 没提交的改动
 
