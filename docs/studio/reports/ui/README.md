@@ -17,7 +17,7 @@ pnpm -C web shots:prototype --runtime <path/to/dc-runtime.js> [--only Main,Spec]
 | 页面 | 原型 | 实现 · 亮色 | 实现 · 暗色 | 有意的差异 |
 | --- | --- | --- | --- | --- |
 | 00 首次启动 `/setup` | [Setup](prototype/Setup.jpg) | 待做 | 待做 | |
-| 00b 成片规格 `/s/demo/spec` | [Spec](prototype/Spec.jpg) | 待做 | 待做 | |
+| 00b 成片规格 `/s/demo/spec` | [Spec](prototype/Spec.jpg) | [亮色](spec.light.jpg) | [暗色](spec.dark.jpg) | 锁定标记写「第 1 集已有 9 个镜头」（原型「9 张关键帧」，示例库里只有 7 个镜头有自己的关键帧，另外 2 个接尾帧）；改画幅后的三个选项走共用的 ImpactDialog（提示由组件统一给，不是原型那两句）；规格改动先放草稿，「保存规格」才写入，规格没改时提示「没有改动」；交付分辨率用单选卡片（带圆点）；遮挡区和字幕位置的开关不保存（只影响这一页的预览） |
 | 01 小说 `/s/demo/e/1/novel` | [Main](prototype/Main.jpg) | [亮色](novel.light.jpg) | [暗色](novel.dark.jpg) | 「导入 .txt / .docx」置灰（导入在 M2 接后端，原型里这个按钮也没有行为）；闸门按钮放在页头右侧，确认后旁边显示「已确认 · 重新打开」；模型名不带「（本地）」后缀（运行位置有单独的标记）；API 单价统一写「每百万 token」，原型里的「闲时半价」等备注没放（要等 providers.yaml 的 note 进接口） |
 | 02 剧本 `/s/demo/e/1/script` | [Script](prototype/Script.jpg) | [亮色](script.light.jpg) | [暗色](script.dark.jpg) | 分集卡是链接，点了切到那一集的路由（顶栏集名跟着变），不是页内切换；影响范围在保存前预览，弹窗打开时还没写进剧本，选「撤销」什么都不改；左侧原文按当前已采纳的补写拼出（示例里只采纳了 1 条，原型里是 4 条全采纳后的文字）；默认选中第一段动作而不是第 3 段 |
 | 03 素材 `/s/demo/e/1/assets` | [Assets](prototype/Assets.jpg) | [亮色](assets.light.jpg) | [暗色](assets.dark.jpg) | 解锁先弹出影响范围（原型只有提示条）；画面文字改「做法」或改字后，模型直出的候选要重跑才会重新 OCR（后期贴字的立即全部一致）；试听只是 2.5 秒的播放状态，M3 有音频后再接真声音；候选图是按种子着色的占位画面；「已锁定 7 / 13」和导航的 7/13 都按实际锁定数算 |

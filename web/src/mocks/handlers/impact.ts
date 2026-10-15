@@ -7,6 +7,7 @@ import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { impactPreviews } from "@/mocks/fixtures/demo/impacts";
 import { applyAssetUnlock, assetUnlockPreview } from "@/mocks/handlers/assets";
 import { applyScriptChange } from "@/mocks/handlers/script";
+import { applySpecChange } from "@/mocks/handlers/spec";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 let seq = 0;
@@ -40,6 +41,8 @@ export const impactHandlers = [
     if (impact.change.kind === "line_edit" || impact.change.kind === "scene_edit")
       applyScriptChange(impact.change);
     if (impact.change.kind === "asset_unlock") applyAssetUnlock(impact.change.target_id);
+    if (impact.change.kind === "spec_aspect")
+      applySpecChange(impact.change.target_id, impact.change.patch);
     // Mark (and for rerun, queue) the affected products: the nav shows 「待更新 N」.
     const steps = getDb().progress[EP1]?.steps;
     for (const [step, n] of Object.entries(impact.stale) as [StepId, number][]) {

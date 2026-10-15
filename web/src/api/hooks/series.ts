@@ -1,13 +1,19 @@
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import { z } from "zod";
 
-import { api } from "@/api/client";
+import { api, put } from "@/api/client";
 import { EpisodeProgressSchema, EpisodeSchema, type Episode } from "@/api/schemas/episodes";
 import { MetricsSummarySchema, type MetricsScope } from "@/api/schemas/metrics";
 import { SeriesSchema } from "@/api/schemas/series";
 import { MachineProfileSchema } from "@/api/schemas/setup";
-import { OutputSpecSchema } from "@/api/schemas/spec";
+import {
+  CompatSchema,
+  OutputSpecSchema,
+  SpecPresetsSchema,
+  type Aspect,
+  type SpecPatch,
+} from "@/api/schemas/spec";
 import { DEMO_EPISODE, DEMO_SERIES } from "@/app/paths";
 
 const enc = encodeURIComponent;
@@ -16,6 +22,8 @@ export const seriesKeys = {
   detail: (id: string) => ["series", id] as const,
   episodes: (id: string) => ["series", id, "episodes"] as const,
   spec: (id: string) => ["series", id, "spec"] as const,
+  compat: (id: string, aspect: string) => ["series", id, "spec", "compat", aspect] as const,
+  presets: ["spec", "presets"] as const,
   progress: (episodeId: string) => ["episodes", episodeId, "progress"] as const,
   summary: (scope: MetricsScope, id: string) => ["metrics", "summary", scope, id] as const,
   profile: ["setup", "profile"] as const,
@@ -83,5 +91,32 @@ export function useMachineProfile() {
   return useQuery({
     queryKey: seriesKeys.profile,
     queryFn: () => api("/setup/profile", MachineProfileSchema),
+  });
+}
+
+/** Platform presets and the sizes of every aspect (SPEC 13.1). */
+export function useSpecPresets() {
+  return useQuery({
+    queryKey: seriesKeys.presets,
+    queryFn: () => api("/spec/presets", SpecPresetsSchema),
+    staleTime: Infinity,
+  });
+}
+
+/** Which models on the current route make `aspect` natively (SPEC 13.3). */
+export function useSpecCompat(seriesId: string, aspect: Aspect | undefined) {
+  return useQuery({
+    queryKey: seriesKeys.compat(seriesId, aspect ?? ""),
+    queryFn: () =>
+      api(`/series/${enc(seriesId)}/spec/compat?aspect=${enc(aspect ?? "")}`, CompatSchema),
+    enabled: !!aspect,
+  });
+}
+
+export function useSaveSpec(seriesId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (patch: SpecPatch) => put(`/series/${enc(seriesId)}/spec`, OutputSpecSchema, patch),
+    onSuccess: (spec) => client.setQueryData(seriesKeys.spec(seriesId), spec),
   });
 }

@@ -43,6 +43,8 @@
  * | GET /episodes/{id}/timeline      | M7             |
  * | PATCH /clips/{id}, /subtitles/{id} | M7           |
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
+ * | PUT /series/{id}/spec, GET /spec/presets | M1     |
+ * | GET /series/{id}/spec/compat     | M1             |
  */
 import { assetHandlers } from "@/mocks/handlers/assets";
 import { configHandlers } from "@/mocks/handlers/config";
@@ -55,6 +57,7 @@ import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
 import { scriptHandlers } from "@/mocks/handlers/script";
 import { shotHandlers } from "@/mocks/handlers/shots";
+import { specHandlers } from "@/mocks/handlers/spec";
 import { seriesHandlers } from "@/mocks/handlers/series";
 import { setupHandlers } from "@/mocks/handlers/setup";
 
@@ -72,4 +75,5 @@ export const handlers = [
   ...shotHandlers,
   ...generateHandlers,
   ...postHandlers,
+  ...specHandlers,
 ];

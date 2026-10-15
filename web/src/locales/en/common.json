@@ -52,7 +52,8 @@
     "shot_not_found": "Shot {{id}} not found",
     "upstream_not_adopted": "Waiting for {{id}} to be adopted: this shot starts from its last frame",
     "clip_not_found": "Clip {{id}} not found",
-    "subtitle_not_found": "Subtitle {{id}} not found"
+    "subtitle_not_found": "Subtitle {{id}} not found",
+    "spec_locked": "The aspect is locked ({{aspect}}): review the impact before changing it"
   },
   "toast": {
     "generic": "Notice: {{code}}",
