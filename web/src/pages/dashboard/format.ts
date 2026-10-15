@@ -7,18 +7,37 @@ import { formatTime, formatUsd } from "@/lib/format";
 /** Params that carry USD amounts; they are formatted "$3.04". */
 const MONEY = new Set(["cost", "voice", "images", "price"]);
 
+export type MessagePrefix =
+  | "insight"
+  | "spend.item"
+  | "shots.note"
+  | "shots.take"
+  | "speed.note"
+  | "apis.usage"
+  | "apis.note"
+  | "local.note";
+
 /**
  * Renders `dashboard.<prefix>.<code>`. `component*` params are components.yaml ids and are
- * translated through `enums:component`; money params are formatted as USD.
+ * translated through `enums:component`; `issues` is a comma list of QA issue codes
+ * (`enums:qaIssue`); money params are formatted as USD.
  */
 export function useDashboardMessage() {
   const { t } = useTranslation("dashboard");
   const { t: te } = useTranslation("enums");
-  return (prefix: "insight" | "spend.item", m: Message): string => {
+  return (prefix: MessagePrefix, m: Message): string => {
     const params = Object.fromEntries(
       Object.entries(m.params).map(([k, v]) => {
         if (k.startsWith("component") && typeof v === "string")
           return [k, te(`component.${v}` as "component.enrich", { defaultValue: v })];
+        if (k === "issues" && typeof v === "string")
+          return [
+            k,
+            v
+              .split(",")
+              .map((c) => te(`qaIssue.${c}` as "qaIssue.face_mismatch", { defaultValue: c }))
+              .join(t("listSep")),
+          ];
         if (MONEY.has(k) && typeof v === "number") return [k, formatUsd(v, { cents: true })];
         return [k, v];
       }),

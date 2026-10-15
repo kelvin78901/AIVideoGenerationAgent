@@ -13,6 +13,8 @@
  * | GET /episodes/{id}/progress      | M2             |
  * | GET /metrics/summary             | M8             |
  * | GET /metrics/kpis, spend-series, calls-series | M8 |
+ * | GET /metrics/shots, components, speed, apis    | M8 |
+ * | GET /metrics/local-models, qa, episodes, export.csv | M8 |
  * | GET /setup/profile               | M1             |
  * | GET /products, GET /products/{id} | M2             |
  * | POST /products/{id}/run          | M2             |

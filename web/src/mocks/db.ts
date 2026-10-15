@@ -11,6 +11,15 @@ import { componentDefs } from "@/mocks/fixtures/demo/config";
 import { assetProducts, assets } from "@/mocks/fixtures/demo/assets";
 import { EP1, episodes, progress } from "@/mocks/fixtures/demo/episodes";
 import { calls, kpis, spend, summary } from "@/mocks/fixtures/demo/metrics";
+import {
+  apiMetrics,
+  componentMetrics,
+  episodeMetrics,
+  localModelMetrics,
+  qaMetrics,
+  shotMetrics,
+  speedMetrics,
+} from "@/mocks/fixtures/demo/metricsDetail";
 import { bible, novel, suggestions } from "@/mocks/fixtures/demo/novel";
 import { scripts } from "@/mocks/fixtures/demo/script";
 import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
@@ -30,7 +39,18 @@ function createDb() {
     specs: { [spec.series_id]: spec },
     summary,
     /** Dashboard series (read-only in the demo). */
-    metrics: { kpis, spend, calls },
+    metrics: {
+      kpis,
+      spend,
+      calls,
+      shots: shotMetrics,
+      components: componentMetrics,
+      speed: speedMetrics,
+      apis: apiMetrics,
+      localModels: localModelMetrics,
+      qa: qaMetrics,
+      episodes: episodeMetrics,
+    },
     profile,
     /** Demo-only: which sample machine the setup page scans, and the running scan / install. */
     setup: { machine: "pc" as DemoMachine, run: 0, pumping: false, installed: [] as string[] },

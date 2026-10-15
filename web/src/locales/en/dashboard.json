@@ -136,5 +136,171 @@
     "table": {
       "failed": "Failed"
     }
+  },
+  "listSep": ", ",
+  "export": {
+    "button": "Export CSV",
+    "done": "Exported calls.csv: one row per call (time, kind, shot, model, local / API, duration, usage, cost, result)."
+  },
+  "shots": {
+    "title": "Time and money per shot",
+    "subtitle": "Grouped by scene; bar length is accumulated compute time (minutes). Click a row for details",
+    "stage": {
+      "kf": "Keyframe",
+      "vid": "Video generation",
+      "post": "QA and upscaling"
+    },
+    "status": {
+      "adopted": "Adopted",
+      "picking": "To pick",
+      "generating": "Generating",
+      "queued": "Queued",
+      "waiting": "Waiting"
+    },
+    "col": {
+      "shot": "Shot",
+      "compute": "Compute time (0–{{max}} min)",
+      "total": "Total",
+      "takes": "Takes",
+      "cost": "Cost",
+      "status": "Status"
+    },
+    "scene": "Scene {{scene}} · {{title}}",
+    "sceneSum": "{{n}} shots · {{adopted}} adopted · {{minutes}} min · {{cost}}",
+    "minutes": "{{n}} min",
+    "waiting": "Waits for {{shot}} to be adopted (needs its last frame)",
+    "split": "Keyframe {{kf}} min · video {{vid}} min · QA and upscaling {{post}} min · cost {{cost}} · {{takes}} takes",
+    "noteSep": "; ",
+    "noteEnd": ".",
+    "note": {
+      "kf_draft_final": "keyframe drafted locally, final by {{model}}",
+      "vid_draft_final": "video drafted locally, final by {{model}}",
+      "upscaled": "{{model}} upscaling {{minutes}} min",
+      "draft_failed_final_passed": "local draft failed QA ({{issues}}), API final passed",
+      "ocr_failed_final_exact": "OCR read the local draft as “{{read}}”, failed; API final matches exactly",
+      "generating": "local {{model}} is making take {{n}}, running for {{minutes}} min",
+      "kf_done_queued": "keyframe done locally, waiting for the local queue",
+      "waits_tail": "starts from the last frame of {{shot}}, so it waits for {{shot}} to be adopted"
+    },
+    "take": {
+      "local_failed": "{{take}} local {{minutes}} min (failed: {{issues}})",
+      "auto_rerun": "auto rerun {{take}} local {{minutes}} min",
+      "timeout_fallback": "{{take}} local timed out after {{minutes}} min, fell back to {{model}} {{fallback_minutes}} min",
+      "switch_failed": "switched to {{model}} for {{take}} {{minutes}} min (failed: {{issues}})"
+    }
+  },
+  "components": {
+    "title": "Compute time per component (minutes)",
+    "subtitle": "Local {{local}} min, waiting on APIs {{api}} min",
+    "local": "Local",
+    "api": "API",
+    "aria": "{{name}}: local {{local}} min, API {{api}} min",
+    "col": {
+      "name": "Component",
+      "total": "Total"
+    }
+  },
+  "speed": {
+    "title": "Compute seconds per second of footage",
+    "subtitle": "Dot is the median, line runs fastest to slowest; further left is faster",
+    "free": "no API cost",
+    "median": "Median {{n}} s",
+    "example": "{{s}} s ≈ {{m}} min",
+    "unit": "s per output s",
+    "aria": "{{model}} ({{where}}): median {{median}} s, fastest {{min}}, slowest {{max}}",
+    "modelWhere": "{{model}} ({{where}})",
+    "seconds": "{{n}} s",
+    "samples": "{{n}}",
+    "col": {
+      "model": "Model",
+      "median": "Median",
+      "min": "Fastest",
+      "max": "Slowest",
+      "samples": "Samples"
+    },
+    "note": {
+      "timeout_fallback": "The slowest local {{model}} run timed out (no result after {{minutes}} min) and fell back to the API."
+    }
+  },
+  "apis": {
+    "title": "Calls and cost per API",
+    "subtitle": "Most expensive first; latency is the median time from request to result",
+    "col": {
+      "api": "API",
+      "kind": "Kind",
+      "calls": "Calls",
+      "rate": "Success",
+      "latency": "Median latency",
+      "usage": "Usage · price",
+      "cost": "Cost (share of episode)"
+    },
+    "total": "Total",
+    "latencyS": "{{s}} s",
+    "latencyMs": "{{m}} min {{s}} s",
+    "usage": {
+      "voice": "{{designs}} voice design + {{chars}} chars",
+      "images_split": "{{n}} images ({{ref}} reference, {{kf}} keyframes)",
+      "video_seconds": "{{s}} s of video",
+      "images_for": "{{n}} images ({{component}})",
+      "tokens": "in {{in}}k / out {{out}}k tokens"
+    },
+    "note": {
+      "rate_limited": "{{n}} rate limit (429), retried automatically"
+    }
+  },
+  "local": {
+    "title": "Local models: run time and VRAM",
+    "subtitle": "A full VRAM bar is {{total}} GB; only one large model is loaded at a time",
+    "col": {
+      "model": "Model",
+      "use": "Used for",
+      "runs": "Runs",
+      "time": "Total time",
+      "vram": "VRAM peak"
+    },
+    "gb": "{{n}} GB",
+    "vramAria": "{{model}} VRAM peak {{peak}} GB of {{total}} GB",
+    "note": {
+      "vram_tight": "{{model}} peaks at {{peak}} GB, only {{left}} GB below {{total}} GB; a 15 s shot or 8 reference images may run out of VRAM, and the fallback rule will catch it."
+    }
+  },
+  "qa": {
+    "title": "Auto QA",
+    "subtitle": "{{n}} video takes so far in this episode",
+    "aria": "{{passed}} passed, {{failed}} failed",
+    "passed": "Passed {{n}}",
+    "failed": "Failed {{n}}",
+    "why": "Why takes failed (a take can have several issues)",
+    "issue": {
+      "face_mismatch": "Face mismatch",
+      "finger_fusion": "Malformed fingers",
+      "color_off": "Colour off the description",
+      "light_missing": "Lighting off the description",
+      "text_mismatch": "On-screen text typo"
+    }
+  },
+  "episodes": {
+    "title": "By episode",
+    "subtitle": "Episodes not started are estimated from length and current routes; reused assets make later episodes cheaper",
+    "col": {
+      "episode": "Episode",
+      "stage": "Stage",
+      "len": "Footage (adopted / length)",
+      "spent": "Spent",
+      "projected": "Projected total",
+      "compute": "Compute time"
+    },
+    "name": "Ep. {{n}} “{{title}}”",
+    "stage": {
+      "in_progress": "In progress",
+      "script_pending": "No script yet",
+      "not_started": "Not started",
+      "done": "Done"
+    },
+    "len": "{{adopted}} / {{total}} s",
+    "lenEstimated": "{{adopted}} / ~{{total}} s",
+    "projected": "~{{v}}",
+    "projectedReuse": "~{{v}} (assets reused)",
+    "total": "Whole series"
   }
 }

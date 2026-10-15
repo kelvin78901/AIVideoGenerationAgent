@@ -136,5 +136,171 @@
     "table": {
       "failed": "失败"
     }
+  },
+  "listSep": "、",
+  "export": {
+    "button": "导出 CSV",
+    "done": "已导出 calls.csv：每次调用一行（时间、类别、镜头、模型、本地 / API、耗时、用量、花费、结果）。"
+  },
+  "shots": {
+    "title": "每个镜头花了多少时间和钱",
+    "subtitle": "按场分组；条的长度是累计计算时长（分钟），点一行看明细",
+    "stage": {
+      "kf": "关键帧",
+      "vid": "视频生成",
+      "post": "质检与精修"
+    },
+    "status": {
+      "adopted": "已采纳",
+      "picking": "待挑选",
+      "generating": "生成中",
+      "queued": "排队",
+      "waiting": "等待"
+    },
+    "col": {
+      "shot": "镜头",
+      "compute": "计算时长（0–{{max}} 分钟）",
+      "total": "合计",
+      "takes": "候选",
+      "cost": "花费",
+      "status": "状态"
+    },
+    "scene": "场 {{scene}} · {{title}}",
+    "sceneSum": "{{n}} 个镜头 · 已采纳 {{adopted}} · {{minutes}} 分钟 · {{cost}}",
+    "minutes": "{{n}} 分",
+    "waiting": "等 {{shot}} 采纳，要它的尾帧",
+    "split": "关键帧 {{kf}} 分 · 视频生成 {{vid}} 分 · 质检与精修 {{post}} 分 · 花费 {{cost}} · 候选 {{takes}} 条",
+    "noteSep": "；",
+    "noteEnd": "。",
+    "note": {
+      "kf_draft_final": "关键帧本地出草稿，{{model}} 出终版",
+      "vid_draft_final": "视频本地草稿后用 {{model}} 出终版",
+      "upscaled": "{{model}} 精修 {{minutes}} 分钟",
+      "draft_failed_final_passed": "本地草稿质检没过（{{issues}}），API 终版通过",
+      "ocr_failed_final_exact": "本地草稿 OCR 读成「{{read}}」，没过；API 终版逐字一致",
+      "generating": "本地 {{model}} 正在出第 {{n}} 条，已经跑了 {{minutes}} 分钟",
+      "kf_done_queued": "关键帧本地出完，等本地队列",
+      "waits_tail": "首帧接 {{shot}} 的尾帧，所以要等 {{shot}} 采纳"
+    },
+    "take": {
+      "local_failed": "{{take}} 本地 {{minutes}} 分钟（{{issues}}没过）",
+      "auto_rerun": "自动重跑 {{take}} 本地 {{minutes}} 分钟",
+      "timeout_fallback": "{{take}} 本地 {{minutes}} 分钟超时，兜底到 {{model}} {{fallback_minutes}} 分钟",
+      "switch_failed": "换 {{model}} 出 {{take}} {{minutes}} 分钟（{{issues}}没过）"
+    }
+  },
+  "components": {
+    "title": "各组件累计计算时长（分钟）",
+    "subtitle": "本地 {{local}} 分钟，等 API {{api}} 分钟",
+    "local": "本地",
+    "api": "API",
+    "aria": "{{name}}：本地 {{local}} 分钟，API {{api}} 分钟",
+    "col": {
+      "name": "组件",
+      "total": "合计"
+    }
+  },
+  "speed": {
+    "title": "出 1 秒成片要算多少秒",
+    "subtitle": "点是中位数，横线是最快到最慢；越靠左越快",
+    "free": "不计费",
+    "median": "中位 {{n}} 秒",
+    "example": "{{s}} 秒约 {{m}} 分钟",
+    "unit": "秒 / 每秒成片",
+    "aria": "{{model}}（{{where}}）：中位 {{median}} 秒，最快 {{min}}，最慢 {{max}}",
+    "modelWhere": "{{model}}（{{where}}）",
+    "seconds": "{{n}} 秒",
+    "samples": "{{n}} 条",
+    "col": {
+      "model": "模型",
+      "median": "中位",
+      "min": "最快",
+      "max": "最慢",
+      "samples": "样本"
+    },
+    "note": {
+      "timeout_fallback": "本地 {{model}} 最慢的一条是超时（{{minutes}} 分钟没出结果），已按兜底规则改用 API。"
+    }
+  },
+  "apis": {
+    "title": "各 API 的调用和花费",
+    "subtitle": "按花费从高到低；耗时是单次调用从发出到拿到结果的中位数",
+    "col": {
+      "api": "API",
+      "kind": "类别",
+      "calls": "调用",
+      "rate": "成功率",
+      "latency": "中位耗时",
+      "usage": "用量 · 单价",
+      "cost": "花费（占本集）"
+    },
+    "total": "合计",
+    "latencyS": "{{s}} 秒",
+    "latencyMs": "{{m}} 分 {{s}} 秒",
+    "usage": {
+      "voice": "音色设计 {{designs}} 个 + {{chars}} 字",
+      "images_split": "{{n}} 张（参考图 {{ref}}、关键帧 {{kf}}）",
+      "video_seconds": "视频 {{s}} 秒",
+      "images_for": "{{n}} 张（{{component}}）",
+      "tokens": "输入 {{in}}k / 输出 {{out}}k token"
+    },
+    "note": {
+      "rate_limited": "{{n}} 次 429 限流，已自动重试"
+    }
+  },
+  "local": {
+    "title": "本地模型：跑了多久、占多少显存",
+    "subtitle": "显存条的满格是 {{total}} GB；同一时间只加载一个大模型",
+    "col": {
+      "model": "模型",
+      "use": "用在",
+      "runs": "次数",
+      "time": "累计时长",
+      "vram": "显存峰值"
+    },
+    "gb": "{{n}} GB",
+    "vramAria": "{{model}} 显存峰值 {{peak}} GB，共 {{total}} GB",
+    "note": {
+      "vram_tight": "{{model}} 峰值 {{peak}} GB，离 {{total}} GB 只差 {{left}} GB；15 秒长镜头或 8 张参考图时可能爆显存，兜底规则会接住。"
+    }
+  },
+  "qa": {
+    "title": "自动质检",
+    "subtitle": "本集已出 {{n}} 条视频候选",
+    "aria": "通过 {{passed}} 条，未过 {{failed}} 条",
+    "passed": "通过 {{n}}",
+    "failed": "未过 {{n}}",
+    "why": "没过的原因（一条可能有几项）",
+    "issue": {
+      "face_mismatch": "人脸不一致",
+      "finger_fusion": "手指畸形",
+      "color_off": "颜色和描述不符",
+      "light_missing": "灯光和描述不符",
+      "text_mismatch": "画面文字错字"
+    }
+  },
+  "episodes": {
+    "title": "按集汇总",
+    "subtitle": "没开始的集按时长和当前路由估算；素材复用，后面的集更便宜",
+    "col": {
+      "episode": "集",
+      "stage": "状态",
+      "len": "成片（已采纳 / 总长）",
+      "spent": "已花",
+      "projected": "预计总花费",
+      "compute": "累计计算时长"
+    },
+    "name": "第 {{n}} 集《{{title}}》",
+    "stage": {
+      "in_progress": "进行中",
+      "script_pending": "剧本未生成",
+      "not_started": "未开始",
+      "done": "已完成"
+    },
+    "len": "{{adopted}} / {{total}} 秒",
+    "lenEstimated": "{{adopted}} / 约 {{total}} 秒",
+    "projected": "约 {{v}}",
+    "projectedReuse": "约 {{v}}（素材复用）",
+    "total": "全剧合计"
   }
 }

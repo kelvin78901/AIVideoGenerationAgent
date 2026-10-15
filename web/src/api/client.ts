@@ -91,3 +91,23 @@ export function errorMessage(t: TFunction, err: unknown): string {
   }
   return t("error.unknown", { code: String(err) });
 }
+
+/** Fetches a file (CSV export …) as a Blob; errors are `ApiError`s like `api()`. */
+export async function apiBlob(path: string): Promise<Blob> {
+  let resp: Response;
+  try {
+    resp = await fetch(`${API_BASE}${path}`, { headers: CLIENT_HEADERS });
+  } catch (err) {
+    throw new ApiError(0, { code: "network", params: { message: String(err) } });
+  }
+  if (resp.headers.get(DEMO_HEADER) === "1") useDemoStore.getState().markDemoResponse();
+  if (!resp.ok) {
+    const body: unknown = await resp.json().catch(() => null);
+    const detail = ApiErrorBodySchema.safeParse((body as { detail?: unknown } | null)?.detail);
+    throw new ApiError(
+      resp.status,
+      detail.success ? detail.data : { code: `http_${resp.status}`, params: {} },
+    );
+  }
+  return resp.blob();
+}

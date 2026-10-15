@@ -3,6 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router";
 
 import { niceTicks } from "@/components/charts/scale";
+import { Toaster } from "@/components/ui/sonner";
 import DashboardPage from "@/pages/Dashboard";
 import { backend } from "@/test/backend";
 import { renderAt } from "@/test/render";
@@ -147,5 +148,121 @@ describe("niceTicks", () => {
     expect(niceTicks(15)).toEqual({ ticks: [0, 5, 10, 15], top: 15 });
     expect(niceTicks(45)).toEqual({ ticks: [0, 20, 40, 60], top: 60 });
     expect(niceTicks(0)).toEqual({ ticks: [0, 1], top: 1 });
+  });
+});
+
+describe("DashboardPage · lower half", () => {
+  it("groups shots by scene and shows the clicked shot's details", async () => {
+    renderDashboard();
+    const shots = await screen.findByRole("region", { name: "每个镜头花了多少时间和钱" });
+    expect(shots).toHaveTextContent("场 1 · 楼道5 个镜头 · 已采纳 3 · 108 分钟 · $4.02");
+    expect(shots).toHaveTextContent("场 2 · 出租屋4 个镜头 · 已采纳 0 · 7 分钟 · $0.00");
+    // 1-04 (the shot waiting for a pick) is open by default.
+    expect(readout(shots)).toContain(
+      "1-04 林晚：……周屿？ · 关键帧 4 分 · 视频生成 31 分 · 质检与精修 3 分 · 花费 $1.96 · 候选 4 条",
+    );
+    expect(readout(shots)).toContain(
+      "T1 本地 7.5 分钟（人脸、手指没过） → 自动重跑 T2 本地 7.5 分钟 → T3 本地 10 分钟超时，兜底到 H3 API 1 分钟 → 换 Seedance 2.5 出 T4 3 分钟（灯光没过）。",
+    );
+    expect(within(shots).getByRole("button", { name: /^1-08/ })).toHaveTextContent(
+      "等 1-06 采纳，要它的尾帧",
+    );
+    await userEvent.click(within(shots).getByRole("button", { name: /^1-02/ }));
+    expect(readout(shots)).toContain("本地草稿质检没过（颜色），API 终版通过。");
+
+    await userEvent.click(within(shots).getByRole("radio", { name: "表" }));
+    const rows = within(within(shots).getByRole("table")).getAllByRole("row").slice(1);
+    expect(rows).toHaveLength(9);
+    expect(rows[3]).toHaveTextContent("1-044313384$1.96待挑选");
+  });
+
+  it("shows components, speed, APIs, local models, QA and episodes", async () => {
+    renderDashboard();
+    const comps = await screen.findByRole("region", { name: "各组件累计计算时长（分钟）" });
+    expect(comps).toHaveTextContent("本地 132 分钟，等 API 44 分钟");
+    expect(
+      within(comps).getByRole("img", { name: "视频生成：本地 51 分钟，API 12 分钟" }),
+    ).toBeInTheDocument();
+
+    const speed = card("出 1 秒成片要算多少秒");
+    expect(
+      within(speed).getByRole("img", {
+        name: "MiniMax H3（本地）：中位 112 秒，最快 98，最慢 150",
+      }),
+    ).toBeInTheDocument();
+    expect(speed).toHaveTextContent("中位 112 秒4 秒约 7.5 分钟");
+    expect(speed).toHaveTextContent("API · $0.41 / 秒");
+
+    const apis = card("各 API 的调用和花费");
+    const apiRows = within(apis).getAllByRole("row");
+    expect(apiRows[1]).toHaveTextContent("MiniMax Speech 2.8 HD");
+    expect(apiRows[1]).toHaveTextContent("$3.04 34%");
+    expect(apiRows[4]).toHaveTextContent("1 次 429 限流，已自动重试");
+    expect(apiRows[4]).toHaveTextContent("80.0%");
+    expect(apiRows[3]).toHaveTextContent("3 分 10 秒");
+    expect(apiRows.at(-1)).toHaveTextContent("合计4297.6%$8.94");
+
+    const local = card("本地模型：跑了多久、占多少显存");
+    expect(
+      within(local).getByRole("img", { name: "MiniMax H3 显存峰值 29.6 GB，共 32 GB" }),
+    ).toBeInTheDocument();
+    expect(local).toHaveTextContent("Qwen3.6-27B小说补全、设定提取、剧本化49 分钟18.9 GB");
+
+    const qa = card("自动质检");
+    expect(within(qa).getByRole("img", { name: "通过 6 条，未过 4 条" })).toBeInTheDocument();
+    expect(qa).toHaveTextContent("通过 6未过 4自动重跑 1 · 自动兜底 1 · 手动换模型 1");
+
+    const episodes = card("按集汇总");
+    const epRows = within(episodes).getAllByRole("row");
+    expect(epRows[1]).toHaveTextContent(
+      "第 1 集《红伞》进行中10 / 34 秒$8.94约 $13.352 小时 56 分",
+    );
+    expect(epRows[2]).toHaveTextContent("约 $7.10（素材复用）");
+    expect(epRows.at(-1)).toHaveTextContent("全剧合计10 / 约 184 秒$8.94约 $28.052 小时 56 分");
+  });
+
+  it("keeps bars thin and every chart on one axis (SPEC 11.3)", async () => {
+    renderDashboard();
+    await screen.findByRole("region", { name: "按集汇总" });
+    await screen.findByRole("region", { name: "每个镜头花了多少时间和钱" });
+    await screen.findByRole("region", { name: "各 API 的调用和花费" });
+    await screen.findByRole("region", { name: "自动质检" });
+    const bars = document.querySelectorAll<HTMLElement>("[data-hbar] [data-segment]");
+    expect(bars.length).toBeGreaterThan(30);
+    for (const b of bars) expect(parseFloat(b.style.height)).toBeLessThanOrEqual(24);
+    for (const name of ["每个镜头花了多少时间和钱", "各组件累计计算时长（分钟）"]) {
+      // Two or more series → a legend.
+      expect(within(card(name)).getAllByRole("list")[0]).toBeInTheDocument();
+    }
+  });
+
+  it("exports the calls as CSV", async () => {
+    const created: Blob[] = [];
+    const { createObjectURL, revokeObjectURL } = URL;
+    URL.createObjectURL = (b: Blob) => {
+      created.push(b);
+      return "blob:calls";
+    };
+    URL.revokeObjectURL = () => undefined;
+    const click = vi.spyOn(HTMLAnchorElement.prototype, "click").mockImplementation(() => {});
+    renderAt(
+      <>
+        <Routes>
+          <Route path="/s/:series/dashboard" element={<DashboardPage />} />
+        </Routes>
+        <Toaster />
+      </>,
+      "/s/demo/dashboard",
+    );
+    await screen.findByRole("region", { name: "预算" });
+    await userEvent.click(screen.getByRole("button", { name: "导出 CSV" }));
+    expect(await screen.findByText(/已导出 calls\.csv/)).toBeInTheDocument();
+    expect(click).toHaveBeenCalled();
+    const lines = (await (created[0] ?? new Blob()).text()).trim().split("\n");
+    expect(lines[0]).toBe("time,kind,shot,model,where,duration_s,usage,cost_usd,result");
+    expect(lines).toHaveLength(43);
+    expect(lines.filter((l) => l.endsWith(",rate_limited"))).toHaveLength(1);
+    click.mockRestore();
+    Object.assign(URL, { createObjectURL, revokeObjectURL });
   });
 });
