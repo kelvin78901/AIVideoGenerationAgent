@@ -2,6 +2,18 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-14 · M0.5 界面先行
+
+- **新增里程碑 M0.5**（Kelvin 要求）：在 M1 之前把 11 个页面按原型做完，用示例数据跑。之后各里程碑只接后端、删掉对应的 MSW handler，界面不重写。分支 `m0.5-ui` 从 `m0-foundation` 切出（M0 的 PR 还没合并），M0 合并后 rebase 到 main 再开 PR。
+- **接口契约用 zod**：`web/src/api/schemas/` 里每个接口一个 schema，TS 类型从 schema 推出；`api()` 在运行时校验响应，不符合时抛 `ApiError(code="bad_response")`。字段用 snake_case，和后端一致。原因：MSW 示例数据和以后的真实后端必须遵守同一份契约，字段对不上要马上暴露，而不是页面悄悄显示空白。
+- **MSW 默认开启**（dev 和 build 都开），`VITE_DEMO_DATA=0` 关闭；`onUnhandledRequest: "bypass"`，没有 handler 的请求照常走 Vite 代理到后端。MSW 的每个响应带 `x-drama-demo: 1`，用过示例数据的路由在顶栏显示「示例数据」。示例库只在内存里，刷新页面就复原。全部 handler 删完后删掉 `web/src/mocks/`。
+- **演示事件和真实 SSE 走同一个分发器**（`api/events.ts:dispatchEvent`）：MSW 模拟的运行、安装进度通过它推 `product.updated`、`version.created`、`setup.progress` 等事件，接真实后端时页面代码不改。
+- **界面文字和内容分开**：状态、类别、原因等枚举由接口返回 code，前端翻译；日志和提示句子返回 `code + params`；小说、剧本、提示词、人名等用户内容原样显示，不翻译。
+- **SPEC 9.1 增补的读接口**（9.1 只列了写接口和部分读接口，页面需要）：`GET /series/{id}/episodes`、`GET /episodes/{id}/progress`（导航徽标）、`GET /series/{id}/novel`、`GET /series/{id}/suggestions`、`GET /episodes/{id}/script`、`GET /episodes/{id}/shots` + `PATCH /shots/{id}`、`GET /products?owner=&component=`、`GET /config/components`、`GET /episodes/{id}/timeline` + 片段 / 字幕的 `PATCH`、`GET /episodes/{id}/export/checks` + `POST /episodes/{id}/export`、`GET /sync/board?episode=`。字段以 `web/src/api/schemas/` 为准，M0.5 收尾时同步写进 SPEC 9.1。
+- **Toast 用 sonner**，不照抄原型的行内提示条（SPEC 16.2 只要求「Toast 反馈每个操作的结果」）。
+- **原型截图**：原型依赖画布运行时，仓库里没有。截图时从 Kelvin 的 artifact「短剧工作台原型」取 `dc-runtime.js` 放在临时目录当 `support.js`，本机渲染后用 Playwright 截；运行时不进仓库，只提交截图。
+- **截图格式**：JPEG、宽 1440 整页，中文亮色 + 中文暗色进 git（`docs/studio/reports/ui/`）；英文截图按需生成，不进 git。原因：控制仓库体积，PNG 整页图太大。
+
 ## 2026-10-14 · M0 合并前补充（Kelvin 审阅后）
 
 - **本机接口防护**（`api/security.py:LocalOnlyGuard`，对上游 `/api` 和新 `/api/v1` 都生效）：Host 头只接受 `127.0.0.1` / `localhost` / `[::1]`（否则 421 `host_not_allowed`，防 DNS 重绑定）；所有非 GET 请求必须带 `X-Drama-Studio: 1`（否则 403 `missing_client_header`），带了 `Origin` 的必须是本机前端（否则 403 `origin_not_allowed`）。不带 Origin 的非浏览器客户端（脚本、将来的 ComfyUI 节点包）加上这个头即可。CORS 只放行 `content-type`、`x-drama-studio`、`last-event-id` 三个请求头。
