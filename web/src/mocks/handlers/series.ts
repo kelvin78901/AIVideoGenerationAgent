@@ -8,20 +8,10 @@ import { confirmedShotCount } from "@/mocks/handlers/shots";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 export const seriesHandlers = [
-  http.get(v1("/series/:id"), ({ params }) => {
-    const series = getDb().series[String(params.id)];
-    return series ? demoJson(series) : demoError(404, "series_not_found", { id: params.id });
-  }),
-
   http.get(v1("/series/:id/episodes"), ({ params }) => {
     const id = String(params.id);
     if (!getDb().series[id]) return demoError(404, "series_not_found", { id });
     return demoJson(getDb().episodes.filter((e) => e.series_id === id));
-  }),
-
-  http.get(v1("/series/:id/spec"), ({ params }) => {
-    const spec = getDb().specs[String(params.id)];
-    return spec ? demoJson(spec) : demoError(404, "series_not_found", { id: params.id });
   }),
 
   // Only the budget for now (Models page 本集 API 预算); SPEC 9.1 `PATCH /episodes/{id}`.

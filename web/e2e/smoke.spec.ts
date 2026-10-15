@@ -31,3 +31,26 @@ test("real jobs still update live over SSE behind the demo worker", async ({ pag
     timeout: 20_000,
   });
 });
+
+test("a locked spec changes aspect through the impact dialog and keeps it after reload", async ({
+  page,
+}) => {
+  const errors = trackConsoleErrors(page);
+  await setUi(page, {});
+  const tag = (text: string) => page.getByRole("link", { name: text });
+  const change = async (platform: RegExp, aspect: string) => {
+    await page.getByRole("button", { name: platform }).click();
+    await page.getByRole("button", { name: "改，并标记待更新" }).click();
+    await expect(page.getByText(/会影响已经做好的部分/)).toHaveCount(0);
+    // Written to the real backend (MSW's /impact/apply calls PUT …/spec?confirmed_impact=).
+    await page.reload();
+    await expect(page.locator("[data-loading]")).toHaveCount(0, { timeout: 15_000 });
+    await expect(tag(aspect)).toBeVisible();
+  };
+  await openPage(page, "/s/demo/spec");
+  await expect(tag("9:16 · 1080×1920 · 24 fps")).toBeVisible();
+  await change(/横屏平台/, "16:9 · 1920×1080 · 24 fps");
+  // Back to 9:16 so later tests see the demo spec.
+  await change(/国内短剧平台/, "9:16 · 1080×1920 · 24 fps");
+  expect(errors).toEqual([]);
+});

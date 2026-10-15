@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 
 import { api } from "@/api/client";
 import { onEvent } from "@/api/events";
-import { useSeries } from "@/api/hooks/series";
+import { useEpisodes } from "@/api/hooks/series";
 import { HealthSchema } from "@/api/schemas/jobs";
 import { useEventStream } from "@/api/useEventStream";
 import { emitDemoEvent } from "@/mocks/events";
@@ -21,14 +21,14 @@ function wrapper({ children }: { children: ReactNode }) {
 describe("demo data (MSW)", () => {
   it("answers unimplemented endpoints with demo data and the demo header", async () => {
     useDemoStore.getState().setRoute("/s/demo/e/1/novel");
-    const { result } = renderHook(() => useSeries("demo"), { wrapper });
+    const { result } = renderHook(() => useEpisodes("demo"), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.title).toBe("雨停之前");
+    expect(result.current.data?.[0]?.title).toBe("红伞");
     expect(useDemoStore.getState().routes["/s/demo/e/1/novel"]).toBe(true);
   });
 
   it("returns translated errors for unknown ids", async () => {
-    const { result } = renderHook(() => useSeries("nope"), { wrapper });
+    const { result } = renderHook(() => useEpisodes("nope"), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toMatchObject({ status: 404, code: "series_not_found" });
   });

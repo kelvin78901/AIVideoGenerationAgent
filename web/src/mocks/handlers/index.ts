@@ -5,11 +5,12 @@
  * When a milestone implements an endpoint, delete its handler here; when this list is empty,
  * delete `src/mocks/` (DECISIONS 2026-10-14 · M0.5).
  *
+ * Implemented and removed: GET /series/{id}, GET / PUT /series/{id}/spec,
+ * GET /series/{id}/spec/compat, GET /spec/presets (M1).
+ *
  * | Endpoint                         | Implemented in |
  * | -------------------------------- | -------------- |
- * | GET /series/{id}                 | M1             |
  * | GET /series/{id}/episodes        | M2             |
- * | GET /series/{id}/spec            | M1             |
  * | GET /episodes/{id}/progress      | M2             |
  * | GET /metrics/summary             | M8             |
  * | GET /metrics/kpis, spend-series, calls-series | M8 |
@@ -46,8 +47,6 @@
  * | GET /episodes/{id}/timeline      | M7             |
  * | PATCH /clips/{id}, /subtitles/{id} | M7           |
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
- * | PUT /series/{id}/spec, GET /spec/presets | M1     |
- * | GET /series/{id}/spec/compat     | M1             |
  * | POST /setup/scan, /setup/install | M1             |
  * | POST /setup/items/{id}/retry, skip | M1           |
  * | POST /demo/setup/machine (demo only, no backend) | — |
@@ -67,7 +66,6 @@ import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
 import { scriptHandlers } from "@/mocks/handlers/script";
 import { shotHandlers } from "@/mocks/handlers/shots";
-import { specHandlers } from "@/mocks/handlers/spec";
 import { syncHandlers } from "@/mocks/handlers/sync";
 import { seriesHandlers } from "@/mocks/handlers/series";
 import { setupHandlers } from "@/mocks/handlers/setup";
@@ -86,6 +84,5 @@ export const handlers = [
   ...shotHandlers,
   ...generateHandlers,
   ...postHandlers,
-  ...specHandlers,
   ...syncHandlers,
 ];

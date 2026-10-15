@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-15 · M1 成片规格页接真实接口（第 3 步）
+
+- **MSW 的 `/impact/apply` 用普通 `put()` 写规格，不用 `bypass()`**：`PUT /series/{id}/spec` 的 handler 已经删了，请求在浏览器里自然落到真实后端；测试里则落到 `test/backend.ts` 的假后端。`bypass()` 会连测试的假后端一起跳过，单测里就没法走。后端返回的错误原样转成 demo 错误。
+- **同步页「镜头」节点的尺寸读真实规格**：`/sync/board` 的 demo handler 先 `GET /series/demo/spec`，后端不通时用示例数据。MSW 的内存库不再存规格（删了 `specs`）。
+- **`test/backend.ts` 加剧集和规格的假后端**：`fake.series` / `fake.spec` 每次 `backend()` 重置，测试直接读写；尺寸和兼容表是 `spec/dims.py`、`spec/compat.py` 的测试副本。AppShell 测试也挂上 `backend()`（顶栏读剧集和规格）。
+- **冒烟加一条**：真实浏览器里锁定规格改 16:9 →「改，并标记待更新」→ 刷新后顶栏仍是 16:9，再改回 9:16。
+
 ## 2026-10-15 · M1 兼容表（第 2 步）
 
 - **兼容表的行由 `config/spec.yaml` 的 `compat_stages` 定**：每行 = 一个组件的某个角色（`api_model` / `local_model` / `fallback` / `alt` = 备选里第一个不是主用的），按解析后的路由取模型，所以 Inspector 改了模型表格跟着变；组件 `mode: off` 或角色为空就不出这一行。原型的 7 行照这个规则得出，5 种画幅下和 MSW 版逐行一致。

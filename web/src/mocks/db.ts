@@ -27,7 +27,6 @@ import { series } from "@/mocks/fixtures/demo/series";
 import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtures/demo/post";
 import { products } from "@/mocks/fixtures/demo/products";
 import { profile, type DemoMachine } from "@/mocks/fixtures/demo/setup";
-import { spec } from "@/mocks/fixtures/demo/spec";
 import { syncLog, syncRules, syncTargets } from "@/mocks/fixtures/demo/sync";
 import { generateLog, generateRules, takeProducts } from "@/mocks/fixtures/demo/takes";
 
@@ -36,7 +35,6 @@ function createDb() {
     series: { [series.id]: series },
     episodes,
     progress,
-    specs: { [spec.series_id]: spec },
     summary,
     /** Dashboard series (read-only in the demo). */
     metrics: {

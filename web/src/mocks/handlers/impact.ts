@@ -1,5 +1,6 @@
 import { http } from "msw";
 
+import { ApiError, put } from "@/api/client";
 import type { StepId } from "@/api/schemas/episodes";
 import { ApplyImpactRequestSchema, ImpactChangeSchema } from "@/api/schemas/impact";
 import { getDb } from "@/mocks/db";
@@ -7,7 +8,7 @@ import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { impactPreviews } from "@/mocks/fixtures/demo/impacts";
 import { applyAssetUnlock, assetUnlockPreview } from "@/mocks/handlers/assets";
 import { applyScriptChange } from "@/mocks/handlers/script";
-import { applySpecChange } from "@/mocks/handlers/spec";
+import { OutputSpecSchema } from "@/api/schemas/spec";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 let seq = 0;
@@ -38,11 +39,20 @@ export const impactHandlers = [
     const { action } = body.data;
     // Undo drops the previewed change; nothing was written yet.
     if (action === "undo") return demoJson({ action, stale: {}, job_ids: [] });
+    // The spec lives in the real backend (M1); this demo impact only confirms the change.
+    if (impact.change.kind === "spec_aspect") {
+      const id = encodeURIComponent(impact.change.target_id);
+      const path = `/series/${id}/spec?confirmed_impact=${encodeURIComponent(impact.id)}`;
+      try {
+        await put(path, OutputSpecSchema, impact.change.patch);
+      } catch (err) {
+        if (err instanceof ApiError) return demoError(err.status, err.code, err.params);
+        throw err;
+      }
+    }
     if (impact.change.kind === "line_edit" || impact.change.kind === "scene_edit")
       applyScriptChange(impact.change);
     if (impact.change.kind === "asset_unlock") applyAssetUnlock(impact.change.target_id);
-    if (impact.change.kind === "spec_aspect")
-      applySpecChange(impact.change.target_id, impact.change.patch);
     // Mark (and for rerun, queue) the affected products: the nav shows 「待更新 N」.
     const steps = getDb().progress[EP1]?.steps;
     for (const [step, n] of Object.entries(impact.stale) as [StepId, number][]) {

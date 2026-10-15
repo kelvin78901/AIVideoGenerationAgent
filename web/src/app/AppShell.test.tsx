@@ -7,10 +7,12 @@ import i18n from "@/i18n";
 import { series } from "@/mocks/fixtures/demo/series";
 import { server } from "@/mocks/node";
 import { useUiStore } from "@/stores/ui";
+import { backend } from "@/test/backend";
 import { renderAt } from "@/test/render";
 
 beforeEach(() => {
   act(() => useUiStore.setState({ lang: "zh-CN", theme: "light" }));
+  backend();
 });
 
 describe("AppShell", () => {
