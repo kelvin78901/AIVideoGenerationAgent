@@ -12,6 +12,7 @@
  * | GET /series/{id}/spec            | M1             |
  * | GET /episodes/{id}/progress      | M2             |
  * | GET /metrics/summary             | M8             |
+ * | GET /metrics/kpis, spend-series, calls-series | M8 |
  * | GET /setup/profile               | M1             |
  * | GET /products, GET /products/{id} | M2             |
  * | POST /products/{id}/run          | M2             |

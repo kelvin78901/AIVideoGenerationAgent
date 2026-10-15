@@ -73,11 +73,15 @@ describe("RunBar", () => {
   });
 
   it("rerun appends v3 with the same model and origin=rerun", async () => {
+    // Long enough that the running state is still on screen when a loaded runner looks for it.
+    demoTiming.runMs = 300;
     const user = userEvent.setup();
     renderAt(<Harness />);
     await user.click(await screen.findByRole("button", { name: /^重跑/ }));
     expect(await screen.findByText("正在用 DeepSeek V4 Pro 生成…")).toBeInTheDocument();
-    expect(await screen.findByRole("button", { name: "历史 3" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: "历史 3" }, { timeout: 3000 }),
+    ).toBeInTheDocument();
     const v3 = at(enrich().versions, 2);
     expect(v3).toMatchObject({ n: 3, origin: "rerun", model_key: "deepseek/v4-pro" });
     expect(enrich().current_version_id).toBe(v3.id);

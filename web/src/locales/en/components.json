@@ -185,5 +185,10 @@
       "dialogue_count": "Script · {{count}} lines",
       "episode": "Episode {{episode}}"
     }
+  },
+  "chart": {
+    "view": "View",
+    "chart": "Chart",
+    "table": "Table"
   }
 }

@@ -1,0 +1,140 @@
+{
+  "title": "数据看板",
+  "lead": "钱花在哪、时间花在哪、哪个模型又快又便宜。每次调用都记了时间、模型、用量和花费，这里按集、场、镜头、组件汇总。数据更新于 {{time}}。",
+  "scope": {
+    "label": "范围",
+    "episode": "第 {{n}} 集",
+    "series": "全剧",
+    "noteEpisode": "第 {{n}} 集《{{title}}》 · 场 {{from}}–{{to}} · {{shots}} 个镜头",
+    "noteSeriesOne": "全剧 {{episodes}} 集，目前只有第 {{n}} 集在跑，下面的图都是第 {{n}} 集的数据",
+    "noteSeries": "全剧 {{episodes}} 集"
+  },
+  "budget": {
+    "region": "预算",
+    "label": {
+      "episode": "本集已花（API）",
+      "series": "全剧已花（API）"
+    },
+    "of": {
+      "episode": "预计本集 {{projected}} · 预算 {{budget}}",
+      "series": "预计全剧 {{projected}} · 预算 {{budget}}"
+    },
+    "ofNoBudget": {
+      "episode": "预计本集 {{projected}} · 没设预算",
+      "series": "预计全剧 {{projected}} · 没设预算"
+    },
+    "aria": {
+      "episode": "已花 {{spent}}，预计本集 {{projected}}，预算 {{budget}}",
+      "series": "已花 {{spent}}，预计全剧 {{projected}}，预算 {{budget}}"
+    },
+    "ariaNoBudget": "已花 {{spent}}，预计 {{projected}}，没设预算",
+    "spent": "已花 {{v}}",
+    "remain": "预计还要 {{v}}",
+    "budget": "预算 {{v}}",
+    "within": "预计在预算内，剩 {{v}}",
+    "over": "预计超出预算 {{v}}"
+  },
+  "insights": {
+    "title": "值得注意"
+  },
+  "insight": {
+    "one_off_assets": "一次性素材占了大头：音色设计 {{voice}}、参考图和画面文字 {{images}}，合计占已花的 {{share}}%。第 2 集起直接复用，不再花这笔钱。",
+    "slowest_shot": "最耗时的是视频生成。{{shot}} 一个镜头就算了 {{minutes}} 分钟：本地超时一次，又换了一次模型。",
+    "pricey_model": "{{model}} 每秒 {{price}}，是 {{vs}} 的 {{ratio}} 倍；在 {{shot}} 用过一次，质检没过。"
+  },
+  "kpi": {
+    "region": "关键指标",
+    "none": "—",
+    "adopted": {
+      "label": "已采纳成片",
+      "value": "{{n}} 秒",
+      "sub": "共 {{total}} 秒 · {{shots}} 个镜头采纳了 {{adopted}} 个"
+    },
+    "costPerSecond": {
+      "label": "每秒成片成本",
+      "sub": "素材摊薄后，预计做完本集约 {{v}} / 秒",
+      "empty": "还没有采纳的镜头"
+    },
+    "gpu": {
+      "label": "本地 GPU 运行",
+      "sub": "另外等 API {{wait}} · 显存峰值 {{vram}} GB",
+      "subNoVram": "另外等 API {{wait}}"
+    },
+    "calls": {
+      "label": "API 调用",
+      "value": "{{n}} 次",
+      "sub": "成功 {{ok}} 次（{{rate}}）",
+      "subRetried": "成功 {{ok}} 次（{{rate}}）· {{n}} 次限流已重试"
+    },
+    "qa": {
+      "label": "质检通过",
+      "value": "{{passed}} / {{total}} 条",
+      "sub": "自动重跑 {{reruns}} · 自动兜底 {{fallbacks}} · 手动换模型 {{manual}}"
+    },
+    "adopt": {
+      "label": "镜头从开始到采纳",
+      "value": "中位 {{d}}",
+      "sub": "最慢的 {{shot}} 已用 {{d}}，还没采纳",
+      "allDone": "开始过的镜头都已采纳"
+    }
+  },
+  "duration": {
+    "hm": "{{h}} 小时 {{m}} 分",
+    "m": "{{m}} 分钟"
+  },
+  "kind": {
+    "text": "文本",
+    "image": "图像",
+    "av": "音视频"
+  },
+  "table": {
+    "time": "时段"
+  },
+  "readout": {
+    "latest": "（最近一段）"
+  },
+  "spend": {
+    "title": "累计 API 花费（美元）",
+    "subtitle": "今天 {{start}} 到现在；虚线按剩余镜头和当前路由估算",
+    "now": "现在 {{v}}",
+    "projected": "预计 {{v}}",
+    "budget": "预算 {{v}}",
+    "strip": "{{range}}，新增 {{add}}，累计 {{cum}}",
+    "readout": "新增 {{add}}，累计 {{cum}}。{{items}}",
+    "sep": " · ",
+    "table": {
+      "add": "新增",
+      "cum": "累计",
+      "items": "花在哪"
+    },
+    "item": {
+      "local_draft": "只跑了本地：{{component}}草稿",
+      "components_model": "{{component}}、{{component2}}（{{model}}）",
+      "component_model": "{{component}}（{{model}}）",
+      "switched": "{{component}}换成 {{model}}",
+      "component": "{{component}}",
+      "voice_design": "音色设计 {{cost}}",
+      "images_cost": "{{component}} {{n}} 张 {{cost}}",
+      "text_cost": "文本 {{cost}}",
+      "preview_cost": "试听 {{cost}}",
+      "videos_cost": "视频 {{from}}–{{to}} {{cost}}",
+      "video_cost": "视频 {{shot}} {{cost}}",
+      "fallback": "{{shot}} 本地超时，兜底到 {{model}} {{cost}}",
+      "rate_limited": "{{n}} 次 429 限流已自动重试",
+      "switch_take": "{{shot}} 换 {{model}} 出 {{take}} {{cost}}"
+    }
+  },
+  "calls": {
+    "title": "API 调用次数（每 {{m}} 分钟）",
+    "subtitle": "共 {{n}} 次，成功 {{ok}} 次；悬停看这一段花了多少",
+    "legend": "{{kind}} {{n}} 次 · {{cost}}",
+    "kindCount": "{{kind}} {{n}} 次",
+    "failedCount": "失败 {{n}} 次",
+    "failed": "失败 {{n}}",
+    "column": "{{range}}：{{counts}}",
+    "readout": "{{counts}}，花了 {{cost}}",
+    "table": {
+      "failed": "失败"
+    }
+  }
+}

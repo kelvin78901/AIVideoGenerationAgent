@@ -10,7 +10,7 @@ import type { SyncRun } from "@/api/schemas/sync";
 import { componentDefs } from "@/mocks/fixtures/demo/config";
 import { assetProducts, assets } from "@/mocks/fixtures/demo/assets";
 import { EP1, episodes, progress } from "@/mocks/fixtures/demo/episodes";
-import { summary } from "@/mocks/fixtures/demo/metrics";
+import { calls, kpis, spend, summary } from "@/mocks/fixtures/demo/metrics";
 import { bible, novel, suggestions } from "@/mocks/fixtures/demo/novel";
 import { scripts } from "@/mocks/fixtures/demo/script";
 import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
@@ -29,6 +29,8 @@ function createDb() {
     progress,
     specs: { [spec.series_id]: spec },
     summary,
+    /** Dashboard series (read-only in the demo). */
+    metrics: { kpis, spend, calls },
     profile,
     /** Demo-only: which sample machine the setup page scans, and the running scan / install. */
     setup: { machine: "pc" as DemoMachine, run: 0, pumping: false, installed: [] as string[] },

@@ -43,6 +43,10 @@
   --chart-seq-1: #86b6ef;
   --chart-seq-2: #2a78d6;
   --chart-seq-3: #104281;
+  /* Chart furniture: hairline grid, crosshair, meter track (a light step of the sequential ramp). */
+  --chart-grid: #ecece8;
+  --chart-crosshair: #898781;
+  --chart-track: #e8eefb;
   --status-pass: #0ca30c;
   --status-fail: #d03b3b;
   --status-warn: #b7791f;
@@ -112,12 +116,17 @@
   --sidebar-accent-foreground: #bccdf7;
   --sidebar-border: #2a2b31;
 
-  --chart-1: #5b9ae6;
-  --chart-2: #f2875a;
-  --chart-3: #36c996;
-  --chart-seq-1: #284f7f;
-  --chart-seq-2: #4f8fdc;
-  --chart-seq-3: #a9cbf3;
+  /* Validated for the dark card (dataviz validator: OKLCH L 0.48–0.67, CVD ΔE ≥ 8, ≥ 3:1). */
+  --chart-1: #3987e5;
+  --chart-2: #d95926;
+  --chart-3: #199e70;
+  /* Sequential flips in dark: more = lighter; no darker than step 550 so it clears the card. */
+  --chart-seq-1: #1c5cab;
+  --chart-seq-2: #3987e5;
+  --chart-seq-3: #9ec5f4;
+  --chart-grid: #2a2b31;
+  --chart-crosshair: #7d7e83;
+  --chart-track: #1f2a45;
   --status-pass: #3cc23c;
   --status-fail: #ee6b6b;
   --status-warn: #e0a440;

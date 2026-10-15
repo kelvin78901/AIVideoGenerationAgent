@@ -185,5 +185,10 @@
       "dialogue_count": "剧本 台词 {{count}} 句",
       "episode": "第 {{episode}} 集"
     }
+  },
+  "chart": {
+    "view": "显示方式",
+    "chart": "图",
+    "table": "表"
   }
 }

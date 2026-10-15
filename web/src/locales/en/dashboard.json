@@ -1,0 +1,140 @@
+{
+  "title": "Dashboard",
+  "lead": "Where the money and the time go, and which models are fast and cheap. Every call records its time, model, usage and cost; this page sums them by episode, scene, shot and component. Updated at {{time}}.",
+  "scope": {
+    "label": "Scope",
+    "episode": "Episode {{n}}",
+    "series": "Whole series",
+    "noteEpisode": "Episode {{n}} “{{title}}” · scenes {{from}}–{{to}} · {{shots}} shots",
+    "noteSeriesOne": "{{episodes}} episodes; only episode {{n}} is in production, so the charts below show episode {{n}}",
+    "noteSeries": "{{episodes}} episodes"
+  },
+  "budget": {
+    "region": "Budget",
+    "label": {
+      "episode": "Spent on this episode (API)",
+      "series": "Spent on the series (API)"
+    },
+    "of": {
+      "episode": "Projected {{projected}} for the episode · budget {{budget}}",
+      "series": "Projected {{projected}} for the series · budget {{budget}}"
+    },
+    "ofNoBudget": {
+      "episode": "Projected {{projected}} for the episode · no budget set",
+      "series": "Projected {{projected}} for the series · no budget set"
+    },
+    "aria": {
+      "episode": "Spent {{spent}}, projected {{projected}} for the episode, budget {{budget}}",
+      "series": "Spent {{spent}}, projected {{projected}} for the series, budget {{budget}}"
+    },
+    "ariaNoBudget": "Spent {{spent}}, projected {{projected}}, no budget set",
+    "spent": "Spent {{v}}",
+    "remain": "Still to spend {{v}}",
+    "budget": "Budget {{v}}",
+    "within": "Projected within budget, {{v}} to spare",
+    "over": "Projected over budget by {{v}}"
+  },
+  "insights": {
+    "title": "Worth noting"
+  },
+  "insight": {
+    "one_off_assets": "One-off assets are the bulk of it: voice design {{voice}}, reference images and on-screen text {{images}}, {{share}}% of the spend together. From episode 2 on they are reused at no cost.",
+    "slowest_shot": "Video generation takes the longest. Shot {{shot}} alone took {{minutes}} minutes: one local timeout, then a model switch.",
+    "pricey_model": "{{model}} costs {{price}} per second, {{ratio}}× {{vs}}; used once on {{shot}} and failed QA."
+  },
+  "kpi": {
+    "region": "Key figures",
+    "none": "—",
+    "adopted": {
+      "label": "Adopted footage",
+      "value": "{{n}} s",
+      "sub": "of {{total}} s · {{adopted}} of {{shots}} shots adopted"
+    },
+    "costPerSecond": {
+      "label": "Cost per finished second",
+      "sub": "With assets spread out, about {{v}} / s once the episode is done",
+      "empty": "No shots adopted yet"
+    },
+    "gpu": {
+      "label": "Local GPU time",
+      "sub": "Plus {{wait}} waiting on APIs · VRAM peak {{vram}} GB",
+      "subNoVram": "Plus {{wait}} waiting on APIs"
+    },
+    "calls": {
+      "label": "API calls",
+      "value": "{{n}}",
+      "sub": "{{ok}} succeeded ({{rate}})",
+      "subRetried": "{{ok}} succeeded ({{rate}}) · {{n}} rate limit retried"
+    },
+    "qa": {
+      "label": "QA passed",
+      "value": "{{passed}} / {{total}}",
+      "sub": "Auto rerun {{reruns}} · auto fallback {{fallbacks}} · manual switch {{manual}}"
+    },
+    "adopt": {
+      "label": "Shot start to adoption, median",
+      "value": "{{d}}",
+      "sub": "Slowest: {{shot}}, {{d}} so far, not adopted yet",
+      "allDone": "Every started shot is adopted"
+    }
+  },
+  "duration": {
+    "hm": "{{h}} h {{m}} min",
+    "m": "{{m}} min"
+  },
+  "kind": {
+    "text": "Text",
+    "image": "Image",
+    "av": "Audio / video"
+  },
+  "table": {
+    "time": "Time"
+  },
+  "readout": {
+    "latest": " (latest)"
+  },
+  "spend": {
+    "title": "Cumulative API spend (USD)",
+    "subtitle": "Today from {{start}} to now; the dashed line estimates the remaining shots on the current routes",
+    "now": "Now {{v}}",
+    "projected": "Projected {{v}}",
+    "budget": "Budget {{v}}",
+    "strip": "{{range}}: +{{add}}, total {{cum}}",
+    "readout": "+{{add}}, total {{cum}}. {{items}}",
+    "sep": " · ",
+    "table": {
+      "add": "Added",
+      "cum": "Total",
+      "items": "Spent on"
+    },
+    "item": {
+      "local_draft": "Local only: {{component}} draft",
+      "components_model": "{{component}}, {{component2}} ({{model}})",
+      "component_model": "{{component}} ({{model}})",
+      "switched": "{{component}} switched to {{model}}",
+      "component": "{{component}}",
+      "voice_design": "Voice design {{cost}}",
+      "images_cost": "{{component}} ×{{n}} {{cost}}",
+      "text_cost": "Text {{cost}}",
+      "preview_cost": "Previews {{cost}}",
+      "videos_cost": "Video {{from}}–{{to}} {{cost}}",
+      "video_cost": "Video {{shot}} {{cost}}",
+      "fallback": "{{shot}} timed out locally, fell back to {{model}} {{cost}}",
+      "rate_limited": "{{n}} rate limit (429) retried automatically",
+      "switch_take": "{{shot}} switched to {{model}} for {{take}} {{cost}}"
+    }
+  },
+  "calls": {
+    "title": "API calls (per {{m}} minutes)",
+    "subtitle": "{{n}} in total, {{ok}} succeeded; hover to see what each slot cost",
+    "legend": "{{kind}} {{n}} · {{cost}}",
+    "kindCount": "{{kind}} {{n}}",
+    "failedCount": "failed {{n}}",
+    "failed": "Failed {{n}}",
+    "column": "{{range}}: {{counts}}",
+    "readout": "{{counts}}, cost {{cost}}",
+    "table": {
+      "failed": "Failed"
+    }
+  }
+}

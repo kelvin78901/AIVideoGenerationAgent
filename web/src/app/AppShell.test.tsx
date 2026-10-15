@@ -26,7 +26,7 @@ describe("AppShell", () => {
       ["/models", "模型与兜底"],
       ["/s/demo/spec", "成片规格"],
       ["/s/demo/sync", "素材整理与同步"],
-      ["/s/demo/dashboard", "数据看板 · 花费、耗时与速度"],
+      ["/s/demo/dashboard", "数据看板"],
       ["/s/demo/e/1/novel", "小说"],
       ["/s/demo/e/1/script", "剧本"],
       ["/s/demo/e/1/assets", "素材"],

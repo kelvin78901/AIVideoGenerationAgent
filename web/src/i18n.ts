@@ -4,6 +4,7 @@ import { initReactI18next } from "react-i18next";
 import enAssets from "@/locales/en/assets.json";
 import enCommon from "@/locales/en/common.json";
 import enComponents from "@/locales/en/components.json";
+import enDashboard from "@/locales/en/dashboard.json";
 import enDev from "@/locales/en/dev.json";
 import enEnums from "@/locales/en/enums.json";
 import enGenerate from "@/locales/en/generate.json";
@@ -19,6 +20,7 @@ import enSync from "@/locales/en/sync.json";
 import zhAssets from "@/locales/zh-CN/assets.json";
 import zhCommon from "@/locales/zh-CN/common.json";
 import zhComponents from "@/locales/zh-CN/components.json";
+import zhDashboard from "@/locales/zh-CN/dashboard.json";
 import zhDev from "@/locales/zh-CN/dev.json";
 import zhEnums from "@/locales/zh-CN/enums.json";
 import zhGenerate from "@/locales/zh-CN/generate.json";
@@ -49,6 +51,7 @@ export const resources = {
     setup: zhSetup,
     models: zhModels,
     sync: zhSync,
+    dashboard: zhDashboard,
     dev: zhDev,
   },
   en: {
@@ -66,6 +69,7 @@ export const resources = {
     setup: enSetup,
     models: enModels,
     sync: enSync,
+    dashboard: enDashboard,
     dev: enDev,
   },
 } as const;

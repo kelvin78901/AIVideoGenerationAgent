@@ -26,7 +26,7 @@ pnpm -C web shots:prototype --runtime <path/to/dc-runtime.js> [--only Main,Spec]
 | 06 后期 `/s/demo/e/1/post` | [Post](prototype/Post.jpg) | [亮色](post.light.jpg) | [暗色](post.dark.jpg) | 音量按片段存（原型是整页一个值）；播放按真实时间走（原型是 2 倍速）；默认选中第一个没采纳的片段，播放头放在它中间（00:12，原型是 00:11）；「换一条候选」跳到生成页并打开那个镜头；雨声标「视频原生音频」（原型写「H3 原生音频」）；字幕改了会标「已改，和剧本不同」；导出按钮调接口后弹提示（示例里不真的导出）；导航「后期」按进度显示「未开始」（原型在本页写「进行中」）；配乐 RunBar 的预计花费是 Mock 的按次估价（原型写「订阅内」） |
 | 模型与兜底 `/models` | [Models](prototype/Models.jpg) | [亮色](models.light.jpg) | [暗色](models.dark.jpg) | 19 个组件（多了素材分析、音效，照 components.yaml 的顺序）；3D 场景在「均衡」下是「这一步不跑」（components.yaml `mode: off`，原型算成 API）；密钥 chips 来自真实 `/providers`，只有写作类服务，而且都显示「未配置」（原型列了 13 家、一半已配置）；点 chip 弹出密钥窗口（原型只有提示条）；兜底目标和备选顺序用各组件已有的示例配置（和 Inspector 一致），和原型的个别默认值不同；提示用 toast |
 | 素材整理与同步 `/s/demo/sync` | [Sync](prototype/Sync.jpg) | [亮色](sync.light.jpg) | [暗色](sync.dark.jpg) | 同步完成的提示只说文件数和新增数（原型列出新增的是哪几个）；「在 ComfyUI 里打开素材板」是真链接（原型只弹提示）；提示用 toast |
-| 数据看板 `/s/demo/dashboard` | [Dashboard](prototype/Dashboard.jpg) | 待做 | 待做 | |
+| 数据看板 `/s/demo/dashboard` | [Dashboard](prototype/Dashboard.jpg) | [亮色](dashboard.light.jpg) | [暗色](dashboard.dark.jpg) | **第 16 步只做了上半部分**（预算、值得注意、KPI、累计花费、调用次数），镜头 / 组件 / 速度 / API / 本地模型 / 质检 / 按集和导出 CSV 在第 17 步；全剧的预计和剩余写到分（$28.05、剩 $16.95，原型写「约 $28.1」「剩 $16.9」）；「花在哪」的环节名用组件名（「分集规划」「参考图生成」，原型是「分集」「参考图」），各项之间统一用「 · 」；「现在 $8.94」放在点的右下方，不压在线上；失败标记用描边的警示图标 + 「失败 1」；悬停用键盘聚焦也能触发 |
 
 ## 全局差异（所有页面）
 
