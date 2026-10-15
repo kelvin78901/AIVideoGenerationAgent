@@ -136,10 +136,33 @@ class ComponentsConfig(_Loose):
         raise KeyError(f"unknown component: {component_id}")
 
 
+# --------------------------------------------------------------------------- spec.yaml
+
+
+class PlatformPreset(_Loose):
+    id: str
+    aspect: str | None = None
+    delivery: str | None = None
+
+
+class SafeArea(_Loose):
+    zones: list[dict[str, Any]] = Field(default_factory=list)
+    subtitle: dict[str, float] = Field(default_factory=dict)
+
+
+class SpecConfig(_Loose):
+    """Output-spec presets (SPEC 13.1). Sizes are not here: only ``spec/dims.py`` computes them."""
+
+    platforms: list[PlatformPreset] = Field(default_factory=list)
+    defaults: dict[str, Any] = Field(default_factory=dict)
+    safe_areas: dict[str, SafeArea] = Field(default_factory=dict)
+
+
 @dataclass(frozen=True)
 class StudioConfig:
     providers: ProvidersConfig
     components: ComponentsConfig
+    spec: SpecConfig
 
 
 class _Yaml12BoolLoader(yaml.SafeLoader):
@@ -174,6 +197,7 @@ def load_config(directory: Path | None = None) -> StudioConfig:
     return StudioConfig(
         providers=ProvidersConfig.model_validate(_read_yaml(base / "providers.yaml")),
         components=ComponentsConfig.model_validate(_read_yaml(base / "components.yaml")),
+        spec=SpecConfig.model_validate(_read_yaml(base / "spec.yaml")),
     )
 
 

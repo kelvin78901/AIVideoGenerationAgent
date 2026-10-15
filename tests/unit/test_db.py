@@ -17,6 +17,8 @@ from drama_series_agent.core.overrides import put_override, resolve_component
 from drama_series_agent.core.paths import database_path
 
 M0_TABLES = {"job", "model_call", "config_override", "provider_account", "custom_model", "event"}
+M1_TABLES = {"series", "output_spec"}
+ALL_TABLES = M0_TABLES | M1_TABLES
 
 
 def _tables(path: Path) -> set[str]:
@@ -28,11 +30,13 @@ def _tables(path: Path) -> set[str]:
 def test_migrate_up_and_down(tmp_path: Path) -> None:
     db = tmp_path / "t.db"
     migrate(db)
+    assert _tables(db) == ALL_TABLES
+    downgrade(db, "0001")
     assert _tables(db) == M0_TABLES
     downgrade(db, "base")
     assert _tables(db) == set()
     migrate(db)
-    assert _tables(db) == M0_TABLES
+    assert _tables(db) == ALL_TABLES
 
 
 def test_models_match_migrations(tmp_path: Path) -> None:

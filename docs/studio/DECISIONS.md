@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-15 · M1 剧集和成片规格（第 1 步）
+
+- **`config/spec.yaml` 进 `StudioConfig.spec`**：平台预设、新剧集默认规格、平台遮挡区比例都在这里；尺寸不进配置，只由 `spec/dims.py` 算（短边 1080 / 1440 / 768，21:9 2K 封顶 2976×1248）。取偶数用「四舍五入」而不是 Python 的银行家舍入，和前端 `Math.round` 一致（9:16 草稿 768×1366）。
+- **`GET /spec/presets` 多返回 `safe_areas`**：前端 schema 不认识的字段会被 zod 去掉，现在不影响页面；成片规格页的预览仍用前端那份同样的数字，分镜 / 关键帧叠参考线时改读接口。
+- **表名 `output_spec`，模型类叫 `OutputSpecRow`**：和 API 形状 `spec/schema.py:OutputSpec`（带 `audio`、`dims`）区分。`series_id` 外键到 `series`，级联删除。
+- **示例剧集只在 Mock 下、库里一个剧集都没有时建**（`StudioState.start()` 调 `seed_demo()`），所以测试里每个 `TestClient` 都有 `demo`。时间存 UTC，接口返回 `…Z`。
+
 ## 2026-10-15 · M1 计划（Kelvin 已定）
 
 - **ComfyUI 先用已有的**：扫描时先找正在运行的 127.0.0.1:8188 和常见目录，找到就用它（节点、权重装进它里面，用它自己的 Python）；找不到才装到 `~/.drama-studio/ComfyUI`。安装设置里能手动改路径。

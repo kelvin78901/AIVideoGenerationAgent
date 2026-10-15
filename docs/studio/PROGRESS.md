@@ -12,11 +12,12 @@
 
 | 步 | 做了什么 | 提交 | 测试 |
 | --- | --- | --- | --- |
-| 0 | 开分支；计划存档 `plans/M1.md`；ROADMAP 加 M1 计划链接和「环境与安装」入口一项；DECISIONS 记 M1 的决定 | 本提交 | 仅文档 |
+| 0 | 开分支；计划存档 `plans/M1.md`；ROADMAP 加 M1 计划链接和「环境与安装」入口一项；DECISIONS 记 M1 的决定 | 3703675 | 仅文档 |
+| 1 | 表 `series`、`output_spec` + 迁移 `0002`；`spec/dims.py`、`spec/schema.py`；`config/spec.yaml`（进 `StudioConfig.spec`）；`GET /series/{id}`、`GET/PUT /series/{id}/spec`（409 `spec_locked`、`confirmed_impact`）、`GET /spec/presets`（含 `safe_areas`）；`studio/demo.py:seed_demo()` Mock 启动时执行 | 本提交 | pytest 142 通过；ruff、mypy 通过 |
 
 ## 下一步
 
-- **第 1 步 剧集和成片规格（后端）**：表 `series`、`output_spec` + 迁移 `0002`；`spec/dims.py`（照 `web/src/mocks/handlers/spec.ts:dimsOf`）；`config/spec.yaml`（平台预设、安全区）；`api/routes/series.py`、`spec.py`；`studio/demo.py:seed_demo()`（数据照 `web/src/mocks/fixtures/demo/series.ts`、`spec.ts`），Mock 启动时执行。从 `core/models_db.py` 和 `core/migrations/versions/0001_m0_core.py` 开始看。
+- **第 2 步 兼容表（后端）**：`spec/compat.py`，对 `components.yaml` 当前路由（预设 + 覆盖）里每个模型按 `providers.yaml` 的 `caps` 判 native / convert / unsupported 和 `how`；行结构和示例数字照 `web/src/mocks/handlers/spec.ts:compatRows`；接口 `GET /series/{id}/spec/compat?aspect=` 加进 `api/routes/spec.py`。从 `config/providers.yaml` 的 `media_models[].caps` 和 `core/config.py:resolve()` 开始看。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -39,6 +40,7 @@
 
 - **本机 PowerShell 执行策略禁止 `-File` 跑脚本**：钩子、状态栏、`start.ps1` 都要 `powershell -NoProfile -ExecutionPolicy Bypass -File …`。
 - 写接口（非 GET）要带 `X-Drama-Studio: 1`，Host 必须是 127.0.0.1 / localhost；`TestClient` 要用 `base_url="http://127.0.0.1"`。
+- **Kelvin 开着 `start.ps1` 时 `uv run` 会失败**（同步要替换正被占用的 `.venv/Scripts/drama-studio.exe`）：一律 `uv run --no-sync …`。
 - Windows 上 `python` 不在 PATH（会跳到应用商店），一律 `uv run python`。
 - pnpm：`corepack enable --install-directory ~/bin pnpm`；命令前加 `COREPACK_ENABLE_DOWNLOAD_PROMPT=0` 避免首次下载提示。
 - Windows PowerShell 5.1：`.ps1` 必须存成 UTF-8 带 BOM，否则中文乱码。

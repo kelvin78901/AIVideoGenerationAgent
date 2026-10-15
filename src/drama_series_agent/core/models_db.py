@@ -186,3 +186,39 @@ class Event(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+# --------------------------------------------------------------------------- M1: series, spec
+
+
+class Series(SQLModel, table=True):
+    __tablename__ = "series"
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    slug: str = Field(unique=True)
+    title: str
+    ui_lang: str = "zh-CN"
+    settings_json: dict[str, Any] = _json(dict)
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class OutputSpecRow(SQLModel, table=True):
+    """One output spec per series (SPEC 4.1, 13). Sizes are derived, never stored."""
+
+    __tablename__ = "output_spec"
+
+    series_id: str = Field(primary_key=True, foreign_key="series.id", ondelete="CASCADE")
+    platform: str  # cn / intl / wide / custom
+    aspect: str  # 9:16 / 16:9 / 3:4 / 1:1 / 21:9
+    delivery: str  # 1080p / 2k
+    fps: int  # 24 / 25 / 30
+    episode_len: str  # short / mid / long / xl
+    subtitles: str  # burn / srt / both
+    audio_json: dict[str, Any] = _json(dict)  # sample_rate, lufs, peak_dbtp
+    codec: str = "h264"
+    ai_mark: bool = True
+    derive: str | None = None  # the second aspect made at export time
+    # Set when the first keyframe is adopted; afterwards an aspect change needs an impact preview.
+    locked_at: datetime | None = _ts()

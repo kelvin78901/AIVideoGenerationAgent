@@ -60,6 +60,10 @@ class StudioState:
         from drama_series_agent.api.handlers import register_handlers
 
         register_handlers(state)
+        if registry.mock:
+            from drama_series_agent.studio.demo import seed_demo
+
+            await seed_demo(db)
         return state
 
     async def run(self) -> None:
