@@ -8,7 +8,14 @@
  * | Endpoint                         | Implemented in |
  * | -------------------------------- | -------------- |
  * | GET /series/{id}                 | M1             |
+ * | GET /series/{id}/episodes        | M2             |
+ * | GET /series/{id}/spec            | M1             |
+ * | GET /episodes/{id}/progress      | M2             |
+ * | GET /metrics/summary             | M8             |
+ * | GET /setup/profile               | M1             |
  */
+import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { seriesHandlers } from "@/mocks/handlers/series";
+import { setupHandlers } from "@/mocks/handlers/setup";
 
-export const handlers = [...seriesHandlers];
+export const handlers = [...seriesHandlers, ...metricsHandlers, ...setupHandlers];

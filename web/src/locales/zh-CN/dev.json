@@ -39,5 +39,39 @@
     "error": "失败",
     "timeout": "超时",
     "canceled": "已取消"
+  },
+  "showcase": {
+    "intro": "共用组件的各种状态，方便对照和截图。正式界面里没有这一页。",
+    "tones": "状态标记",
+    "segmented": "分段选择",
+    "chips": "选择片",
+    "media": "媒体画面",
+    "empty": "空状态",
+    "loading": "加载与出错",
+    "primitives": "基础控件",
+    "sample": {
+      "pass": "通过",
+      "fail": "未过",
+      "warn": "待更新",
+      "info": "已采纳",
+      "neutral": "草稿",
+      "local": "本地",
+      "api": "API",
+      "hybrid": "混合",
+      "noLocal": "这台机器跑不了本地模型",
+      "option": "选项 {{n}}",
+      "shot": "镜头 {{id}}",
+      "emptyTitle": "还没有关键帧",
+      "emptyText": "在右侧选「关键帧」组件后点「重跑」。",
+      "input": "输入框",
+      "dialog": "打开对话框",
+      "dialogTitle": "对话框标题",
+      "dialogText": "对话框正文。",
+      "close": "关闭",
+      "popover": "打开浮层",
+      "popoverText": "浮层内容。",
+      "switch": "开关",
+      "checkbox": "复选框"
+    }
   }
 }

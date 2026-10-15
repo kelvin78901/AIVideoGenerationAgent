@@ -1,0 +1,10 @@
+{
+  "pageHeader": {
+    "step": "步骤 {{n}} / {{total}}"
+  },
+  "query": {
+    "loading": "正在加载",
+    "failed": "加载失败",
+    "retry": "重试"
+  }
+}

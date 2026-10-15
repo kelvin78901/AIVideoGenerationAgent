@@ -39,5 +39,39 @@
     "error": "Error",
     "timeout": "Timeout",
     "canceled": "Canceled"
+  },
+  "showcase": {
+    "intro": "Every state of the shared components, for review and screenshots. Not part of the real UI.",
+    "tones": "Status badges",
+    "segmented": "Segmented control",
+    "chips": "Chips",
+    "media": "Media frames",
+    "empty": "Empty state",
+    "loading": "Loading and errors",
+    "primitives": "Primitives",
+    "sample": {
+      "pass": "Passed",
+      "fail": "Failed",
+      "warn": "To update",
+      "info": "Adopted",
+      "neutral": "Draft",
+      "local": "Local",
+      "api": "API",
+      "hybrid": "Hybrid",
+      "noLocal": "This machine cannot run local models",
+      "option": "Option {{n}}",
+      "shot": "Shot {{id}}",
+      "emptyTitle": "No keyframe yet",
+      "emptyText": "Pick the Keyframe component on the right and click Rerun.",
+      "input": "Input",
+      "dialog": "Open dialog",
+      "dialogTitle": "Dialog title",
+      "dialogText": "Dialog body.",
+      "close": "Close",
+      "popover": "Open popover",
+      "popoverText": "Popover content.",
+      "switch": "Switch",
+      "checkbox": "Checkbox"
+    }
   }
 }

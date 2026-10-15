@@ -1,0 +1,10 @@
+{
+  "pageHeader": {
+    "step": "Step {{n}} / {{total}}"
+  },
+  "query": {
+    "loading": "Loading",
+    "failed": "Could not load",
+    "retry": "Retry"
+  }
+}

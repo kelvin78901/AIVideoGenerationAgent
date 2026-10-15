@@ -1,4 +1,4 @@
-import { act, screen } from "@testing-library/react";
+import { act, screen, waitFor } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 
@@ -42,20 +42,44 @@ describe("AppShell", () => {
     }
   });
 
-  it("keeps the series in nav links and the spec tag", () => {
-    renderAt(<AppRoutes />, "/s/rain/e/2/script");
+  it("keeps the series and episode in nav links; spec tag comes from the series spec", async () => {
+    renderAt(<AppRoutes />, "/s/demo/e/2/script");
     expect(screen.getByRole("link", { name: /03\s*素材/ })).toHaveAttribute(
       "href",
-      "/s/rain/e/2/assets",
+      "/s/demo/e/2/assets",
     );
-    expect(screen.getByRole("link", { name: "9:16 · 1080×1920 · 24 fps" })).toHaveAttribute(
+    expect(await screen.findByRole("link", { name: "9:16 · 1080×1920 · 24 fps" })).toHaveAttribute(
       "href",
-      "/s/rain/spec",
+      "/s/demo/spec",
     );
     expect(screen.getByRole("link", { name: "数据看板" })).toHaveAttribute(
       "href",
-      "/s/rain/dashboard",
+      "/s/demo/dashboard",
     );
+  });
+
+  it("shows series, episode, spend and budget from the API", async () => {
+    renderAt(<AppRoutes />, "/s/demo/e/1/novel");
+    expect(await screen.findByText(/第 1 集《红伞》/)).toBeInTheDocument();
+    expect(screen.getByTestId("shell-title")).toHaveTextContent("《雨停之前》 · 第 1 集《红伞》");
+    await waitFor(() =>
+      expect(screen.getByTestId("spend")).toHaveTextContent("本集 API 花费 $8.94 / 预算 $15"),
+    );
+  });
+
+  it("shows step badges from the episode progress", async () => {
+    renderAt(<AppRoutes />, "/s/demo/e/1/novel");
+    await waitFor(() => expect(screen.getAllByTestId("step-badge")).toHaveLength(6));
+    expect(screen.getAllByTestId("step-badge").map((b) => b.textContent)).toEqual([
+      "已确认",
+      "已确认",
+      "7/13",
+      "3/9",
+      "3/9",
+      "未开始",
+    ]);
+    await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
+    expect(screen.getAllByTestId("step-badge")[5]).toHaveTextContent("Not started");
   });
 
   it("switches language from the top bar", async () => {
@@ -65,11 +89,11 @@ describe("AppShell", () => {
     expect(document.documentElement.lang).toBe("en");
     expect(screen.getByRole("heading", { name: "Novel · Import and enrich" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Production steps" })).toBeInTheDocument();
-    expect(screen.getByText("Local GPU: idle")).toBeInTheDocument();
+    expect(screen.getByTestId("gpu-status")).toHaveTextContent(/^Local GPU: .*idle$/);
   });
 
   it("shows the Mock badge only in mock mode, in both languages", async () => {
-    const idle = { gpuRunning: 0, gpuQueued: 0, spentUsd: null, budgetUsd: null };
+    const idle = { gpuRunning: 0, gpuQueued: 0 };
     const { unmount } = renderAt(<AppRoutes status={{ ...idle, mock: false }} />, "/models");
     expect(screen.queryByTestId("mock-badge")).not.toBeInTheDocument();
     unmount();
@@ -79,26 +103,29 @@ describe("AppShell", () => {
     expect(screen.getByTestId("mock-badge")).toHaveTextContent("Mock mode");
   });
 
-  it("shows GPU activity and spend", () => {
-    renderAt(
-      <AppRoutes status={{ gpuRunning: 1, gpuQueued: 2, spentUsd: 8.94, budgetUsd: 15 }} />,
-      "/models",
-    );
+  it("shows the GPU name from the machine profile and live GPU activity", async () => {
+    renderAt(<AppRoutes status={{ gpuRunning: 1, gpuQueued: 2 }} />, "/models");
     expect(screen.getByTestId("gpu-status")).toHaveTextContent("本地 GPU：运行中 1 · 排队 2");
-    expect(screen.getByText("$8.94")).toBeInTheDocument();
-    expect(screen.getByText(/预算 \$15\.00/)).toBeInTheDocument();
+    await waitFor(() =>
+      expect(screen.getByTestId("gpu-status")).toHaveTextContent(
+        "本地 GPU：RTX 5090 32GB · 运行中 1 · 排队 2",
+      ),
+    );
   });
 
   it("shows the demo-data badge once the page displays demo responses", async () => {
     renderAt(<AppRoutes />, "/s/demo/e/1/novel");
-    expect(await screen.findByText("《雨停之前》")).toBeInTheDocument();
-    expect(screen.getByTestId("demo-badge")).toHaveTextContent("示例数据");
+    expect(await screen.findByTestId("demo-badge")).toHaveTextContent("示例数据");
     await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
     expect(screen.getByTestId("demo-badge")).toHaveTextContent("Demo data");
   });
 
   it("hides the demo-data badge when every response is real", async () => {
-    server.use(http.get("*/api/v1/series/:id", () => HttpResponse.json(series)));
+    // A real backend answering everything (here: only the series, without the demo header).
+    server.use(
+      http.get("*/api/v1/series/:id", () => HttpResponse.json(series)),
+      http.get("*/api/v1/*", () => HttpResponse.json(null, { status: 404 })),
+    );
     renderAt(<AppRoutes />, "/s/demo/e/1/novel");
     expect(await screen.findByText("《雨停之前》")).toBeInTheDocument();
     expect(screen.queryByTestId("demo-badge")).not.toBeInTheDocument();

@@ -39,6 +39,25 @@
   --color-status-fail: var(--status-fail);
   --color-status-warn: var(--status-warn);
   --color-status-info: var(--status-info);
+  --color-tone-pass-bg: var(--tone-pass-bg);
+  --color-tone-pass-fg: var(--tone-pass-fg);
+  --color-tone-pass-border: var(--tone-pass-border);
+  --color-tone-fail-bg: var(--tone-fail-bg);
+  --color-tone-fail-fg: var(--tone-fail-fg);
+  --color-tone-fail-border: var(--tone-fail-border);
+  --color-tone-warn-bg: var(--tone-warn-bg);
+  --color-tone-warn-fg: var(--tone-warn-fg);
+  --color-tone-warn-border: var(--tone-warn-border);
+  --color-tone-info-bg: var(--tone-info-bg);
+  --color-tone-info-fg: var(--tone-info-fg);
+  --color-tone-info-border: var(--tone-info-border);
+  --color-tone-neutral-bg: var(--tone-neutral-bg);
+  --color-tone-neutral-fg: var(--tone-neutral-fg);
+  --color-tone-neutral-border: var(--tone-neutral-border);
+  --color-highlight: var(--highlight);
+  --color-media: var(--media);
+  --color-media-foreground: var(--media-foreground);
+  --color-media-muted: var(--media-muted);
 
   --radius-sm: calc(var(--radius) - 2px);
   --radius-md: var(--radius);

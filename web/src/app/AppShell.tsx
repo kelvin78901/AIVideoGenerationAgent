@@ -12,33 +12,34 @@ import {
 } from "lucide-react";
 import { useLayoutEffect } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation, useParams } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
 
-import { useSeries } from "@/api/hooks/series";
-import { DEMO_EPISODE, DEMO_SERIES, paths, STEPS } from "@/app/paths";
+import {
+  useEpisodeProgress,
+  useMachineProfile,
+  useMetricsSummary,
+  useOutputSpec,
+  useRouteEpisode,
+  useSeries,
+} from "@/api/hooks/series";
+import type { StepProgress } from "@/api/schemas/episodes";
+import { paths, STEPS } from "@/app/paths";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { formatSpecTag, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { useDemoStore } from "@/stores/demo";
 import { useUiStore } from "@/stores/ui";
 
-/** Shown in the spec tag until M1 reads the series' real output_spec. */
-const DEFAULT_SPEC_TAG = "9:16 · 1080×1920 · 24 fps";
-
+/** Live backend state the shell shows; the rest of the top bar comes from API hooks. */
 export interface ShellStatus {
   gpuRunning: number;
   gpuQueued: number;
-  spentUsd: number | null;
-  budgetUsd: number | null;
   /** Backend runs mock adapters (DRAMA_MOCK != 0); null until /health answers. */
   mock?: boolean | null;
 }
 
-const IDLE: ShellStatus = { gpuRunning: 0, gpuQueued: 0, spentUsd: null, budgetUsd: null };
-
-function usd(value: number): string {
-  return `$${value.toFixed(2)}`;
-}
+const IDLE: ShellStatus = { gpuRunning: 0, gpuQueued: 0 };
 
 /** Shown while the current route has displayed MSW demo data (stores/demo.ts). */
 function DemoBadge() {
@@ -70,16 +71,25 @@ function useTrackRoute(): void {
   useLayoutEffect(() => setRoute(pathname), [pathname, setRoute]);
 }
 
-function TopBar({ series, status }: { series: string; status: ShellStatus }) {
+function TopBar({ status }: { status: ShellStatus }) {
   const { t } = useTranslation();
-  const seriesQuery = useSeries(series);
+  const { seriesId, episode } = useRouteEpisode();
+  const series = useSeries(seriesId);
+  const spec = useOutputSpec(seriesId);
+  const summary = useMetricsSummary("episode", episode?.id);
+  const profile = useMachineProfile();
   const toggleLang = useUiStore((s) => s.toggleLang);
   const theme = useUiStore((s) => s.theme);
   const setTheme = useUiStore((s) => s.setTheme);
+
   const busy = status.gpuRunning + status.gpuQueued > 0;
-  const gpu = busy
+  const gpuState = busy
     ? t("shell.gpuBusy", { running: status.gpuRunning, queued: status.gpuQueued })
     : t("shell.gpuIdle");
+  const gpu = profile.data?.machine.gpu;
+  const specData = spec.data;
+  const spent = summary.data?.spent_usd;
+  const budget = summary.data?.budget_usd ?? episode?.budget_usd ?? null;
 
   return (
     <header className="flex flex-wrap items-center gap-x-5 gap-y-2 bg-topbar px-5 py-2.5 text-topbar-foreground">
@@ -95,26 +105,40 @@ function TopBar({ series, status }: { series: string; status: ShellStatus }) {
         </span>
       ) : null}
       <DemoBadge />
-      <div className="text-sm text-topbar-muted">
-        {seriesQuery.data
-          ? t("shell.seriesTitle", { title: seriesQuery.data.title })
-          : t("shell.noSeries")}
+      <div className="text-sm text-topbar-muted" data-testid="shell-title">
+        {series.data ? t("shell.seriesTitle", { title: series.data.title }) : t("shell.noSeries")}
+        {series.data && episode ? (
+          <>
+            {" · "}
+            {t("shell.episodeTitle", { n: episode.idx, title: episode.title })}
+          </>
+        ) : null}
       </div>
-      <NavLink
-        to={paths.spec(series)}
-        title={t("shell.specTagTitle")}
-        className="inline-flex min-h-7 items-center rounded-full border border-topbar-border px-2.5 font-mono text-xs hover:bg-white/10"
-      >
-        {DEFAULT_SPEC_TAG}
-      </NavLink>
+      {specData ? (
+        <NavLink
+          to={paths.spec(seriesId)}
+          title={t("shell.specTagTitle")}
+          className="inline-flex min-h-7 items-center rounded-full border border-topbar-border px-2.5 font-mono text-xs hover:bg-white/10"
+        >
+          {formatSpecTag(
+            specData.aspect,
+            specData.dims.delivery.w,
+            specData.dims.delivery.h,
+            specData.fps,
+          )}
+        </NavLink>
+      ) : null}
       <div className="ml-auto flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[13px] text-topbar-muted">
-        <span data-testid="gpu-status">{t("shell.gpu", { status: gpu })}</span>
-        <span>
-          {t("shell.spend")} <b className="font-medium text-white">{usd(status.spentUsd ?? 0)}</b>
+        <span data-testid="gpu-status">
+          {gpu
+            ? t("shell.gpuNamed", { name: gpu.name, vram: gpu.vram_gb, status: gpuState })
+            : t("shell.gpu", { status: gpuState })}
+        </span>
+        <span data-testid="spend">
+          {t("shell.spend")}{" "}
+          <b className="font-medium text-topbar-foreground">{formatUsd(spent ?? 0)}</b>
           {" / "}
-          {status.budgetUsd != null
-            ? t("shell.budget", { budget: usd(status.budgetUsd) })
-            : t("shell.noBudget")}
+          {budget != null ? t("shell.budget", { budget: formatUsd(budget) }) : t("shell.noBudget")}
         </span>
         <Button
           variant="ghost"
@@ -154,8 +178,38 @@ function ToolLink({ to, icon: Icon, label }: { to: string; icon: LucideIcon; lab
   );
 }
 
-function SideNav({ series, episode }: { series: string; episode: string }) {
+/** 已确认 / 7/13 / 未开始 / 待更新 N, as in the prototype's left nav. */
+function StepBadge({ progress }: { progress: StepProgress | undefined }) {
   const { t } = useTranslation("nav");
+  if (!progress) return null;
+  let text: string;
+  let tone = "bg-tone-neutral-bg text-tone-neutral-fg";
+  if (progress.stale > 0) {
+    text = t("badge.stale", { count: progress.stale });
+    tone = "bg-tone-warn-bg text-tone-warn-fg";
+  } else if (progress.state === "confirmed") {
+    text = t("badge.confirmed");
+    tone = "bg-tone-info-bg text-tone-info-fg";
+  } else if (progress.done != null && progress.total != null) {
+    text = `${progress.done}/${progress.total}`;
+  } else {
+    text = progress.state === "not_started" ? t("badge.notStarted") : t("badge.inProgress");
+  }
+  return (
+    <span
+      className={cn("ml-auto rounded px-1.5 py-px font-mono text-[11px] font-normal", tone)}
+      data-testid="step-badge"
+    >
+      {text}
+    </span>
+  );
+}
+
+function SideNav() {
+  const { t } = useTranslation("nav");
+  const { seriesId, episodeIdx, episode } = useRouteEpisode();
+  const progress = useEpisodeProgress(episode?.id);
+  const episodeKey = String(episodeIdx);
   return (
     <nav
       aria-label={t("stepsLabel")}
@@ -163,21 +217,23 @@ function SideNav({ series, episode }: { series: string; episode: string }) {
     >
       <div className="px-2.5 pb-1.5 text-xs text-muted-foreground">{t("stepsLabel")}</div>
       {STEPS.map((step, i) => (
-        <NavLink key={step} to={paths.step(series, episode, step)} className={navItem}>
+        <NavLink key={step} to={paths.step(seriesId, episodeKey, step)} className={navItem}>
           <span className="w-5 font-mono text-xs text-muted-foreground">
             {String(i + 1).padStart(2, "0")}
           </span>
           <span>{t(`steps.${step}`)}</span>
+          <StepBadge progress={progress.data?.steps[step]} />
         </NavLink>
       ))}
       <div className="my-2 h-px bg-sidebar-border" />
-      <ToolLink to={paths.spec(series)} icon={Smartphone} label={t("spec")} />
+      <ToolLink to={paths.spec(seriesId)} icon={Smartphone} label={t("spec")} />
       <ToolLink to={paths.models()} icon={SlidersHorizontal} label={t("models")} />
-      <ToolLink to={paths.sync(series)} icon={Grid2x2Plus} label={t("sync")} />
-      <ToolLink to={paths.dashboard(series)} icon={ChartNoAxesColumn} label={t("dashboard")} />
+      <ToolLink to={paths.sync(seriesId)} icon={Grid2x2Plus} label={t("sync")} />
+      <ToolLink to={paths.dashboard(seriesId)} icon={ChartNoAxesColumn} label={t("dashboard")} />
       {import.meta.env.DEV ? (
         <>
           <div className="mt-auto" />
+          <ToolLink to={paths.devComponents()} icon={Wrench} label={t("devComponents")} />
           <ToolLink to={paths.devJobs()} icon={Wrench} label={t("devJobs")} />
         </>
       ) : null}
@@ -187,9 +243,6 @@ function SideNav({ series, episode }: { series: string; episode: string }) {
 
 export function AppShell({ status = IDLE }: { status?: ShellStatus }) {
   const { t } = useTranslation();
-  const params = useParams();
-  const series = params.series ?? DEMO_SERIES;
-  const episode = params.ep ?? DEMO_EPISODE;
   useTrackRoute();
   return (
     <div className="flex min-h-screen flex-col">
@@ -199,9 +252,9 @@ export function AppShell({ status = IDLE }: { status?: ShellStatus }) {
       >
         {t("shell.skipToContent")}
       </a>
-      <TopBar series={series} status={status} />
+      <TopBar status={status} />
       <div className="flex flex-1">
-        <SideNav series={series} episode={episode} />
+        <SideNav />
         <main id="main" className="min-w-0 flex-1">
           <Outlet />
         </main>

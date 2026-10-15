@@ -2,7 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { BrowserRouter } from "react-router";
 
-import { apiSpend, gpuStatus, useHealth, useJobs, useModelCalls } from "@/api/hooks/useJobs";
+import { gpuStatus, useHealth, useJobs } from "@/api/hooks/useJobs";
 import { makeQueryClient } from "@/api/queryClient";
 import { useEventStream } from "@/api/useEventStream";
 import { AppRoutes } from "@/app/routes";
@@ -17,11 +17,10 @@ function useThemeClass(): void {
   }, [theme]);
 }
 
-/** Routes plus the live data the shell shows (GPU queue, API spend), kept fresh over SSE. */
+/** Routes plus the live backend state the shell shows (GPU queue, mock mode), kept fresh over SSE. */
 export function LiveRoutes() {
   useEventStream();
   const jobs = useJobs();
-  const calls = useModelCalls();
   const health = useHealth();
   const gpu = gpuStatus(jobs.data);
   return (
@@ -29,8 +28,6 @@ export function LiveRoutes() {
       status={{
         gpuRunning: gpu.running,
         gpuQueued: gpu.queued,
-        spentUsd: calls.data ? apiSpend(calls.data) : null,
-        budgetUsd: null,
         mock: health.data?.mock ?? null,
       }}
     />

@@ -26,6 +26,14 @@
     "sync": "Organize & sync",
     "dashboard": "Dashboard · Cost, time and speed",
     "devJobs": "Dev · Jobs and model calls",
-    "notFound": "Page not found"
-  }
+    "notFound": "Page not found",
+    "devComponents": "Dev · Shared components"
+  },
+  "badge": {
+    "confirmed": "Confirmed",
+    "inProgress": "In progress",
+    "notStarted": "Not started",
+    "stale": "{{count}} to update"
+  },
+  "devComponents": "Dev · Components"
 }
