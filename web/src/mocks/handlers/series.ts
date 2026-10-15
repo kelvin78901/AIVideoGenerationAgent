@@ -2,6 +2,7 @@ import { http } from "msw";
 
 import { getDb } from "@/mocks/db";
 import { lockedAssetCount } from "@/mocks/handlers/assets";
+import { adoptedTakeCount } from "@/mocks/handlers/generate";
 import { confirmedShotCount } from "@/mocks/handlers/shots";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
@@ -32,6 +33,9 @@ export const seriesHandlers = [
       // 分镜 3/9 is the number of confirmed shots.
       const board = progress.steps.storyboard;
       if (board.state !== "not_started") Object.assign(board, confirmedShotCount(id));
+      // 生成 3/9 is the number of shots with an adopted take.
+      const gen = progress.steps.generate;
+      if (gen.state !== "not_started") Object.assign(gen, adoptedTakeCount(id));
       return demoJson(progress);
     }
     if (!getDb().episodes.some((e) => e.id === id))

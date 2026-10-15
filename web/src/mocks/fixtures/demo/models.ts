@@ -75,7 +75,52 @@ export const mediaModels: ModelOption[] = [
   { key: "local/qwen3-tts", display: "Qwen3-TTS", where: "local", price: null },
 ];
 
-export const allModels: ModelOption[] = [...llmModels, ...mediaModels];
+const perSecond = (amount: number) => ({ unit: "second", amount, currency: "USD" }) as const;
+
+/**
+ * Generate step (prototype Generate.dc.html): video, 2K finishing, lip-sync and QA models.
+ * Per-minute list prices are shown per second (Seedance 2.5: $24.60 / min ≈ $0.41 / s);
+ * H3 Regenerate-2K is $0.05 / s out + $0.05 / s in.
+ */
+export const generateModels: ModelOption[] = [
+  { key: "comfy/h3", display: "MiniMax H3（本地）", where: "local", price: null },
+  { key: "comfy/wan-2.2", display: "Wan 2.2（本地）", where: "local", price: null },
+  { key: "comfy/ltx", display: "LTX-2.3（本地）", where: "local", price: null },
+  { key: "minimax/h3-api", display: "MiniMax H3 API", where: "api", price: perSecond(0.08) },
+  { key: "volc/seedance-2.5", display: "Seedance 2.5", where: "api", price: perSecond(0.41) },
+  { key: "kling/kling-3.0", display: "Kling 3.0", where: "api", price: null },
+  { key: "google/veo-3.1", display: "Veo 3.1", where: "api", price: null },
+  { key: "comfy/seedvr2", display: "SeedVR2（本地）", where: "local", price: null },
+  { key: "comfy/flashvsr", display: "FlashVSR（本地）", where: "local", price: null },
+  {
+    key: "minimax/h3-regenerate-2k",
+    display: "H3 Regenerate-2K",
+    where: "api",
+    price: perSecond(0.1),
+  },
+  {
+    key: "topaz/starlight-precise-2.5",
+    display: "Topaz Starlight",
+    where: "api",
+    price: perSecond(0.12),
+  },
+  { key: "local/latentsync", display: "LatentSync（本地）", where: "local", price: null },
+  {
+    key: "sync/lipsync-2-pro",
+    display: "sync lipsync-2-pro",
+    where: "api",
+    price: perSecond(0.075),
+  },
+  { key: "local/qwen3-vl-32b", display: "Qwen3-VL-32B（本地）", where: "local", price: null },
+  {
+    key: "google/gemini-3.1-flash-lite",
+    display: "Gemini 3.1 Flash-Lite",
+    where: "api",
+    price: mtok(0.25, 1.5),
+  },
+];
+
+export const allModels: ModelOption[] = [...llmModels, ...mediaModels, ...generateModels];
 
 export function modelByKey(key: string): ModelOption | undefined {
   return allModels.find((m) => m.key === key);

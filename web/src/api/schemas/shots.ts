@@ -60,6 +60,8 @@ export const ShotSchema = z.object({
   tail_note: z.string().nullable(),
   blocking: z.array(BlockingItemSchema),
   keyframe_product_id: z.string().nullable(),
+  /** Video takes (slot=video): each version is one take on the candidate wall. */
+  video_product_id: z.string().nullable(),
   /** Picked keyframe candidate (0-based) in the current version. */
   keyframe_pick: z.number().int().nonnegative(),
   confirmed: z.boolean(),

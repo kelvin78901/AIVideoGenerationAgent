@@ -4,10 +4,11 @@
  */
 import type { ComponentConfig } from "@/api/schemas/config";
 import type { GateDecision } from "@/api/schemas/gates";
+import type { GenerateLogEntry, GenerateRules } from "@/api/schemas/generate";
 import type { Impact } from "@/api/schemas/impact";
 import { componentDefs, presetConfigs } from "@/mocks/fixtures/demo/config";
 import { assetProducts, assets } from "@/mocks/fixtures/demo/assets";
-import { episodes, progress } from "@/mocks/fixtures/demo/episodes";
+import { EP1, episodes, progress } from "@/mocks/fixtures/demo/episodes";
 import { summary } from "@/mocks/fixtures/demo/metrics";
 import { bible, novel, suggestions } from "@/mocks/fixtures/demo/novel";
 import { scripts } from "@/mocks/fixtures/demo/script";
@@ -16,6 +17,7 @@ import { series } from "@/mocks/fixtures/demo/series";
 import { products } from "@/mocks/fixtures/demo/products";
 import { profile } from "@/mocks/fixtures/demo/setup";
 import { spec } from "@/mocks/fixtures/demo/spec";
+import { generateLog, generateRules, takeProducts } from "@/mocks/fixtures/demo/takes";
 
 function createDb() {
   return structuredClone({
@@ -26,7 +28,7 @@ function createDb() {
     summary,
     profile,
     products: Object.fromEntries(
-      [...products, ...assetProducts, ...shotProducts].map((p) => [p.id, p]),
+      [...products, ...assetProducts, ...shotProducts, ...takeProducts].map((p) => [p.id, p]),
     ),
     assets,
     config: {
@@ -42,6 +44,8 @@ function createDb() {
     bible,
     scripts,
     shots,
+    generateRules: { [series.id]: generateRules } as Record<string, GenerateRules>,
+    generateLog: { [EP1]: generateLog } as Record<string, GenerateLogEntry[]>,
     impacts: new Map<string, Impact>(),
     gates: [] as GateDecision[],
   });

@@ -103,5 +103,12 @@
     "native": "原生同步",
     "tts": "先配音再对口型",
     "none": "无人声"
+  },
+  "qaIssue": {
+    "face_mismatch": "人脸",
+    "finger_fusion": "手指",
+    "color_off": "颜色",
+    "light_missing": "灯光",
+    "text_mismatch": "文字"
   }
 }

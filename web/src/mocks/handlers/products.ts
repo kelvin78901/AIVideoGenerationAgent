@@ -5,6 +5,7 @@ import {
   CompileRequestSchema,
   RunRequestSchema,
   SavePromptRequestSchema,
+  VersionPatchSchema,
   type Product,
   type ProductVersion,
 } from "@/api/schemas/products";
@@ -17,6 +18,7 @@ import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
 import { keyframeCandidates } from "@/mocks/fixtures/demo/shots";
 import { assetPayload } from "@/mocks/handlers/assets";
 import { resolveConfig } from "@/mocks/handlers/config";
+import { demoTakeQa, logTake, shotOf, waitingOn } from "@/mocks/handlers/generate";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 const notFound = (id: unknown) => demoError(404, "product_not_found", { id });
@@ -39,6 +41,12 @@ function settle(p: Product): void {
   p.status = p.locked_hash ? "locked" : p.adopted_version_id ? "adopted" : "ready";
 }
 
+/** Cost units of one run: seconds for a video take, candidates for images (demoCost). */
+function costUnits(p: Product): number {
+  if (p.slot === "video") return shotOf(p)?.duration_s ?? 4;
+  return p.slot === "keyframe" ? 3 : 4;
+}
+
 function demoJob(p: Product, modelKey: string, mode: string): Job {
   const local = modelByKey(modelKey)?.where === "local";
   return {
@@ -56,7 +64,7 @@ function demoJob(p: Product, modelKey: string, mode: string): Job {
     result: null,
     error: null,
     depends_on: [],
-    est_cost_usd: demoCost(modelKey),
+    est_cost_usd: demoCost(modelKey, costUnits(p)),
     fallback_from_job_id: null,
     created_at: new Date().toISOString(),
     started_at: null,
@@ -88,7 +96,7 @@ function withEstimate(p: Product): Product {
   p.estimate = {
     model_key: model,
     where: modelByKey(model)?.where ?? "api",
-    cost_usd: demoCost(model, p.slot === "keyframe" ? 3 : 4),
+    cost_usd: demoCost(model, costUnits(p)),
     seconds: p.estimate?.seconds ?? null,
   };
   return p;
@@ -117,6 +125,14 @@ function finishRun(
       payload: assetPayload(p) ?? (p.slot === "keyframe" ? keyframeCandidates() : parent?.payload),
     });
     version.job_id = run.jobId;
+    const shot = p.slot === "video" ? shotOf(p) : undefined;
+    if (shot) {
+      Object.assign(version, demoTakeQa(shot, version.n), {
+        payload: { duration_s: shot.duration_s, resolution: "768p" },
+        cost_usd: demoCost(run.model, shot.duration_s),
+      });
+      logTake(shot, version);
+    }
     p.versions.push(version);
     created.push(version);
   }
@@ -168,6 +184,10 @@ export const productHandlers = [
     const body = RunRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     if (p.running) return demoError(409, "product_busy", { id: p.id });
+    // A continuous shot starts from the last frame of a shot that has no adopted take yet.
+    const shot = shotOf(p);
+    const tail = p.slot === "video" && shot ? waitingOn(shot) : undefined;
+    if (tail) return demoError(409, "upstream_not_adopted", { id: tail.label });
 
     const req = body.data;
     // 重跑 uses the configured route; 不满意换一个 moves on from the version on screen.
@@ -221,6 +241,26 @@ export const productHandlers = [
     p.current_version_id = version.id;
     settle(p);
     return demoJson(p);
+  }),
+
+  // 取消采纳 (候选墙): nothing downstream uses this product until another version is adopted.
+  http.post(v1("/products/:id/unadopt"), ({ params }) => {
+    const p = getDb().products[String(params.id)];
+    if (!p) return notFound(params.id);
+    if (p.locked_hash) return demoError(409, "product_locked", { id: p.id });
+    p.adopted_version_id = null;
+    settle(p);
+    return demoJson(p);
+  }),
+
+  // 数字键打分 on the candidate wall.
+  http.patch(v1("/versions/:id"), async ({ params, request }) => {
+    const found = findVersion(String(params.id));
+    if (!found) return demoError(404, "version_not_found", { id: params.id });
+    const body = VersionPatchSchema.safeParse(await request.json());
+    if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
+    Object.assign(found.version, body.data);
+    return demoJson(found.product);
   }),
 
   http.post(v1("/products/:id/lock"), ({ params }) => {

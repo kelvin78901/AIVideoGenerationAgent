@@ -25,6 +25,7 @@
     "product": "当前产物 · {{what}}",
     "noVersion": "还没有版本",
     "running": "正在用 {{model}} 生成…",
+    "queued": "排队中 · {{model}}",
     "editPrompt": "改提示词",
     "rerun": "重跑",
     "more": "再出一条",

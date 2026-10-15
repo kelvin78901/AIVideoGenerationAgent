@@ -1,0 +1,125 @@
+{
+  "title": "Generate",
+  "lead": "Each shot gets a few takes, auto QA scores them, and you just pick. Rerun or switch models when you are not happy — older takes are kept.",
+  "comfy": "Arrange in the ComfyUI canvas",
+  "gate": "Go to post",
+  "cards": {
+    "label": "Queues and QA",
+    "local": "Local queue · {{gpu}}",
+    "localNoGpu": "Local queue",
+    "idle": "Idle",
+    "busy": "Running {{running}} · queued {{queued}}",
+    "runningTake": "Running {{id}} T{{n}} ({{model}})",
+    "nothingRunning": "No shot is generating",
+    "api": "API queue",
+    "apiLine": "{{status}} · {{spent}} spent this episode",
+    "apiBusy": "Running {{count}}",
+    "shotCap": "Per-shot cap {{cap}}; above it you are asked first",
+    "qa": "Auto QA (this episode)",
+    "qaLine": "Passed {{pass}} · failed {{fail}}",
+    "qaMeta": "Auto reruns {{rerun}} · auto fallbacks {{fallback}}",
+    "dashboard": "Open the dashboard"
+  },
+  "pills": {
+    "label": "Shots",
+    "item": "{{id}} {{status}}"
+  },
+  "status": {
+    "adopted": "Adopted",
+    "picking": "To pick",
+    "running": "Generating",
+    "queued": "Queued",
+    "waiting": "Waiting",
+    "not_started": "Not started"
+  },
+  "what": {
+    "vid": "Shot {{id}} video takes",
+    "up": "2K finishing queue · {{count}}",
+    "lip": "Lip-sync repair · {{count}}",
+    "qa": "QA model"
+  },
+  "wall": {
+    "label": "Takes",
+    "title": "Takes for shot {{id}}",
+    "take": "T{{n}}",
+    "takeLabel": "Take T{{n}}",
+    "play": "Play T{{n}}",
+    "recommended": "Recommended",
+    "adopted": "Adopted",
+    "meta": "{{seconds}}s · {{res}}",
+    "qa": "Auto QA",
+    "pass": "Pass",
+    "fail": "Fail",
+    "failN": "{{count}} failed",
+    "na": "N/A",
+    "noIssue": "No issues",
+    "exact": "Exact match",
+    "adopt": "Adopt",
+    "unadopt": "Unadopt",
+    "fix": "Fix a region",
+    "upscale": "2K finish · {{cost}}",
+    "upLocal": "local",
+    "generating": "New take generating",
+    "rating": "{{n}} / 5",
+    "keys": "← → switch takes · Space play · 1–5 rate · A adopt"
+  },
+  "qa": {
+    "face": "Face match",
+    "lipsync": "Lip sync",
+    "asr": "Dialogue (ASR)",
+    "ocr": "On-screen text",
+    "vlm": "Picture check"
+  },
+  "note": {
+    "switch": "Tried another model",
+    "auto_rerun": "Automatic rerun",
+    "rerun_after_fail": "Failed QA, rerun automatically",
+    "hybrid_final": "Hybrid mode final",
+    "fallback_timeout": "Local timed out, fell back to API",
+    "fallback_error": "Error, fell back automatically",
+    "fallback_qa_fail": "Failed QA repeatedly, fell back"
+  },
+  "empty": {
+    "running": "{{model}} is making take {{n}}. It is checked automatically and then shows up here.",
+    "queued": "Position {{pos}} in the local queue.",
+    "queuedDub": "The lines are voiced with the locked voice first, then the picture is generated.",
+    "queuedText": "On-screen text is added in post, so this take has no lettering.",
+    "waiting": "Waiting for {{id}} to be adopted: this shot starts from the last frame of {{id}}.",
+    "none": "No takes yet. Click “One more take” to start."
+  },
+  "toast": {
+    "adopted": "{{id}}: adopted T{{n}}.",
+    "adoptedWarn": "{{id}}: adopted T{{n}} (note: {{fails}} QA checks failed; you chose to keep it).",
+    "unblocked": "{{id}} can be generated now.",
+    "unadopted": "Unadopted {{id}} T{{n}}.",
+    "play": "Playing {{id}} T{{n}} (the demo data has no video files).",
+    "fix": "Circle the area to fix in the picture; only that region is redrawn (local H3 + mask inpainting).",
+    "upLocal": "Sent {{id}} T{{n}} to 2K finishing ({{model}}); runs locally, no charge.",
+    "upApi": "Sent {{id}} T{{n}} to 2K finishing ({{model}}), est. {{cost}}.",
+    "rated": "{{id}} T{{n}}: {{stars}} / 5"
+  },
+  "rules": {
+    "title": "Auto rules",
+    "takesBefore": "Start each shot with",
+    "takesAfter": "takes",
+    "retryBefore": "When QA fails, rerun automatically up to",
+    "retryAfter": "times, then switch models per the fallback settings",
+    "capBefore": "When a shot would cost more than $",
+    "capAfter": "stop and ask me",
+    "thresholds": "QA thresholds: face match ≥ {{face}} (against the locked reference) · lip-sync confidence ≥ {{sync}} · dialogue character error rate ≤ {{cer}} · on-screen text must match exactly (OCR) · the vision model checks for defects and whether the picture matches the description."
+  },
+  "log": {
+    "title": "Run log",
+    "empty": "Nothing yet.",
+    "cost": " · {{amount}}",
+    "issueSep": ", ",
+    "started": "Started · {{model}}",
+    "take_pass": "{{model}} made T{{take}}{{cost}} · QA passed",
+    "take_fail": "{{model}} made T{{take}}{{cost}} · {{fails}} failed",
+    "take_fail_rerun": "{{model}} made T{{take}} · {{fails}} failed ({{issues}}) → rerun automatically",
+    "switch_pass": "You tried another model → {{model}} made T{{take}}{{cost}} · QA passed",
+    "switch_fail": "You tried another model → {{model}} made T{{take}}{{cost}} · {{fails}} failed",
+    "fallback_timeout": "Local job ran over {{minutes}} min → fell back to {{model}}",
+    "fallback_error": "Local job failed → fell back to {{model}}"
+  }
+}

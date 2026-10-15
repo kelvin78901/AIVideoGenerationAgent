@@ -103,5 +103,12 @@
     "native": "Native sync",
     "tts": "Voice first, then lip-sync",
     "none": "No voice"
+  },
+  "qaIssue": {
+    "face_mismatch": "face",
+    "finger_fusion": "fingers",
+    "color_off": "colour",
+    "light_missing": "lighting",
+    "text_mismatch": "text"
   }
 }

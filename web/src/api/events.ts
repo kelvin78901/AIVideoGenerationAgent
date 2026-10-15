@@ -7,6 +7,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
 import { toast } from "sonner";
 
+import { generateKeys } from "@/api/hooks/generate";
 import { productKeys } from "@/api/hooks/products";
 import { callKeys, upsertJob } from "@/api/hooks/useJobs";
 import { JobSchema } from "@/api/schemas/jobs";
@@ -46,7 +47,8 @@ const invalidates: Partial<Record<EventType, readonly (readonly unknown[])[]>> =
   "cost.updated": [callKeys.all],
   // Products feed series-level views (episode script status, suggestions, bible).
   "product.updated": [productKeys.all, ["series"]],
-  "version.created": [productKeys.all],
+  // A new take also adds a line to the generate step's run log.
+  "version.created": [productKeys.all, generateKeys.logs],
 };
 
 export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType, data: unknown) {

@@ -22,7 +22,7 @@ pnpm -C web shots:prototype --runtime <path/to/dc-runtime.js> [--only Main,Spec]
 | 02 剧本 `/s/demo/e/1/script` | [Script](prototype/Script.jpg) | [亮色](script.light.jpg) | [暗色](script.dark.jpg) | 分集卡是链接，点了切到那一集的路由（顶栏集名跟着变），不是页内切换；影响范围在保存前预览，弹窗打开时还没写进剧本，选「撤销」什么都不改；左侧原文按当前已采纳的补写拼出（示例里只采纳了 1 条，原型里是 4 条全采纳后的文字）；默认选中第一段动作而不是第 3 段 |
 | 03 素材 `/s/demo/e/1/assets` | [Assets](prototype/Assets.jpg) | [亮色](assets.light.jpg) | [暗色](assets.dark.jpg) | 解锁先弹出影响范围（原型只有提示条）；画面文字改「做法」或改字后，模型直出的候选要重跑才会重新 OCR（后期贴字的立即全部一致）；试听只是 2.5 秒的播放状态，M3 有音频后再接真声音；候选图是按种子着色的占位画面；「已锁定 7 / 13」和导航的 7/13 都按实际锁定数算 |
 | 04 分镜 `/s/demo/e/1/storyboard` | [Storyboard](prototype/Storyboard.jpg) | [亮色](storyboard.light.jpg) | [暗色](storyboard.dark.jpg) | 站位图真的能拖（也能用方向键），位置存进镜头的 `blocking`；机位也是可拖的一项，不再按景别自动摆；参考素材的「未锁定」按素材页的实际锁定状态显示；「添加参考」从已锁定素材里选；确认镜头时顺带采纳当前关键帧；1-09 的尾帧接 1-08（原型如此，ROADMAP 里只举了 1-08 接 1-06） |
-| 05 生成 `/s/demo/e/1/generate` | [Generate](prototype/Generate.jpg) | 待做 | 待做 | |
+| 05 生成 `/s/demo/e/1/generate` | [Generate](prototype/Generate.jpg) | [亮色](generate.light.jpg) | [暗色](generate.dark.jpg) | 本地队列卡的数字取真实 `/jobs`（示例里是「空闲」），下面一行「正在跑 1-05 T1」取示例产物；默认打开第一个「待挑选」的镜头（1-04）；候选卡多了键盘选中框和打分（← → / 1–5 / A / 空格，原型只写在说明里）；「取消采纳」走单独接口；排队中的镜头不能「再出一条」（原型里能点）；等尾帧的镜头点「再出一条」会提示先采纳上游镜头；1-06 空状态写「台词会先用锁定音色配好」（原型是「画外音」，按声音做法推出）；播放和局部修复只弹提示（示例里没有视频文件和蒙版工具），2K 精修调接口返回任务 |
 | 06 后期 `/s/demo/e/1/post` | [Post](prototype/Post.jpg) | 待做 | 待做 | |
 | 模型与兜底 `/models` | [Models](prototype/Models.jpg) | 待做 | 待做 | |
 | 素材整理与同步 `/s/demo/sync` | [Sync](prototype/Sync.jpg) | 待做 | 待做 | |

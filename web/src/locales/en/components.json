@@ -25,6 +25,7 @@
     "product": "Current output · {{what}}",
     "noVersion": "No version yet",
     "running": "Generating with {{model}}…",
+    "queued": "Queued · {{model}}",
     "editPrompt": "Edit prompt",
     "rerun": "Rerun",
     "more": "One more take",

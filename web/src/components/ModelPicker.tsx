@@ -28,6 +28,7 @@ import { RadioCard, RadioGroup } from "@/components/ui/radio-group";
 import { Switch } from "@/components/ui/switch";
 import { Button } from "@/components/ui/button";
 import { modelName } from "@/lib/versions";
+import { primaryModelKey } from "@/lib/config";
 import { cn } from "@/lib/utils";
 
 /** API services shown before 「更多供应商」 (prototype: the first 6). */
@@ -204,8 +205,7 @@ function PickerForm({
   });
 
   const all = [...localModels, ...apiModels];
-  const primary =
-    values.mode === "api" ? values.api_model : (values.local_model ?? values.api_model);
+  const primary = primaryModelKey(values);
   const others = all.filter((m) => m.key !== primary);
   const fb = values.fallback;
   const target = fb.to && fb.to !== primary ? modelName(all, fb.to) : t("picker.fallbackNext");

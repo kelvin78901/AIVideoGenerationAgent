@@ -49,7 +49,8 @@
     "suggestion_not_found": "找不到这条建议 {{id}}",
     "line_not_found": "找不到这段剧本 {{id}}",
     "asset_not_found": "找不到素材 {{id}}",
-    "shot_not_found": "找不到镜头 {{id}}"
+    "shot_not_found": "找不到镜头 {{id}}",
+    "upstream_not_adopted": "等 {{id}} 采纳：这个镜头的首帧要用 {{id}} 的最后一帧"
   },
   "toast": {
     "generic": "通知：{{code}}",

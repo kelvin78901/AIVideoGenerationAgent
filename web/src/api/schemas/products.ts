@@ -66,6 +66,47 @@ export const VersionFileSchema = z.object({
 });
 export type VersionFile = z.infer<typeof VersionFileSchema>;
 
+/**
+ * Auto QA of a video take (SPEC 5 `qa`, components.yaml thresholds): face similarity to the
+ * locked reference, SyncNet confidence, ASR character error rate, OCR of on-screen text, and
+ * the vision model's look at the picture.
+ */
+export const QaMetricSchema = z.enum(["face", "lipsync", "asr", "ocr", "vlm"]);
+export type QaMetric = z.infer<typeof QaMetricSchema>;
+
+/** What the vision model or OCR found; the UI translates `enums:qaIssue.<code>`. */
+export const QaIssueSchema = z.enum([
+  "face_mismatch",
+  "finger_fusion",
+  "color_off",
+  "light_missing",
+  "text_mismatch",
+]);
+export type QaIssue = z.infer<typeof QaIssueSchema>;
+
+export const QaCheckSchema = z.object({
+  metric: QaMetricSchema,
+  /** Score (face 0–1, lipsync confidence, asr error ratio); null for ocr / vlm and n/a. */
+  value: z.number().nullable(),
+  /** OCR: the characters read off the picture (content). */
+  text: z.string().nullable(),
+  issue: QaIssueSchema.nullable(),
+  /** null = does not apply to this shot (no dialogue, no on-screen text …). */
+  ok: z.boolean().nullable(),
+});
+export type QaCheck = z.infer<typeof QaCheckSchema>;
+
+export const QaResultSchema = z.object({
+  checks: z.array(QaCheckSchema),
+  /** Total used to recommend a take: the highest passing score (SPEC 4.2). */
+  score: z.number(),
+});
+export type QaResult = z.infer<typeof QaResultSchema>;
+
+/** Why a version came from a fallback (`model_call.fallback_reason`). */
+export const FallbackReasonSchema = z.enum(["error", "timeout", "qa_fail"]);
+export type FallbackReason = z.infer<typeof FallbackReasonSchema>;
+
 export const ProductVersionSchema = z.object({
   id: z.string(),
   product_id: z.string(),
@@ -84,8 +125,14 @@ export const ProductVersionSchema = z.object({
   where: WhereSchema.nullable(),
   seed: z.number().int().nullable(),
   params: z.record(z.string(), z.unknown()),
-  qa: z.record(z.string(), z.unknown()).nullable(),
+  qa: QaResultSchema.nullable(),
   qa_pass: z.boolean().nullable(),
+  /** origin=fallback: what triggered it. */
+  fallback_reason: FallbackReasonSchema.nullable(),
+  /** Hybrid mode: a free local draft or the API final made before adopting (SPEC 7.3). */
+  stage: z.enum(["draft", "final"]).nullable(),
+  /** The user's 1–5 score on the take wall (number keys); null = not rated. */
+  rating: z.number().int().min(1).max(5).nullable(),
   /** Billed API cost; 0 for local runs. */
   cost_usd: z.number(),
   job_id: z.string().nullable(),
@@ -164,6 +211,10 @@ export const CompileRequestSchema = z.object({
 });
 export const CompileResultSchema = z.object({ compiled: z.string(), model_key: z.string() });
 export type CompileResult = z.infer<typeof CompileResultSchema>;
+
+/** `PATCH /versions/{id}` */
+export const VersionPatchSchema = z.object({ rating: z.number().int().min(1).max(5).nullable() });
+export type VersionPatch = z.infer<typeof VersionPatchSchema>;
 
 /** Payload of the `version.created` event. */
 export const VersionCreatedEventSchema = z.object({

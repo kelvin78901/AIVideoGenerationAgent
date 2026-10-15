@@ -2,10 +2,11 @@ import { http, HttpResponse } from "msw";
 
 import { server } from "@/mocks/node";
 
-/** Real backend endpoints the picker reads: live mode, DeepSeek without a key. */
+/** Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list. */
 export function backend({ mock = true }: { mock?: boolean } = {}) {
   server.use(
     http.get("*/api/v1/health", () => HttpResponse.json({ status: "ok", version: "0", mock })),
+    http.get("*/api/v1/jobs", () => HttpResponse.json([])),
     http.get("*/api/v1/providers", () =>
       HttpResponse.json({
         providers: [

@@ -49,7 +49,8 @@
     "suggestion_not_found": "Suggestion {{id}} not found",
     "line_not_found": "Script block {{id}} not found",
     "asset_not_found": "Asset {{id}} not found",
-    "shot_not_found": "Shot {{id}} not found"
+    "shot_not_found": "Shot {{id}} not found",
+    "upstream_not_adopted": "Waiting for {{id}} to be adopted: this shot starts from its last frame"
   },
   "toast": {
     "generic": "Notice: {{code}}",

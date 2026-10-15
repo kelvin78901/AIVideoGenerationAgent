@@ -12,6 +12,8 @@ import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 export const PRODUCT_PLAN = "demo-p-plan-e1";
 export const shotId = (label: string) => `demo-shot-${label}`;
 const kfProductId = (label: string) => `demo-p-kf-${label}`;
+/** Video takes for the shot (fixtures/demo/takes.ts). */
+export const videoProductId = (label: string) => `demo-p-vid-${label}`;
 
 const CAMERA: Record<Framing, [number, number]> = {
   wide: [0.5, 0.92],
@@ -247,6 +249,7 @@ export const shots: Shot[] = seeds.map((s, i) => ({
   tail_note: s.tail_note ?? null,
   blocking: blocking(s.scene === 2 && s.label !== "1-09", s.framing),
   keyframe_product_id: kfProductId(s.label),
+  video_product_id: videoProductId(s.label),
   keyframe_pick: 0,
   confirmed: s.confirmed ?? false,
 }));

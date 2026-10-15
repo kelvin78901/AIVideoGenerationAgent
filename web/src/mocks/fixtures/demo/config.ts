@@ -44,6 +44,29 @@ export const componentDefs: ComponentDef[] = [
     ["minimax/speech-2.8-hd", "elevenlabs/v3"],
     ["local/indextts2", "local/cosyvoice", "local/qwen3-tts"],
   ),
+  // Generate step (prototype Generate.dc.html Inspector).
+  media(
+    "vid",
+    "generate",
+    "video",
+    ["minimax/h3-api", "volc/seedance-2.5", "kling/kling-3.0", "google/veo-3.1"],
+    ["comfy/h3", "comfy/wan-2.2", "comfy/ltx"],
+  ),
+  media(
+    "up",
+    "generate",
+    "upscale",
+    ["minimax/h3-regenerate-2k", "topaz/starlight-precise-2.5"],
+    ["comfy/seedvr2", "comfy/flashvsr"],
+  ),
+  media("lip", "generate", "lipsync", ["sync/lipsync-2-pro"], ["local/latentsync"]),
+  media(
+    "qa",
+    "generate",
+    "vlm",
+    ["google/gemini-3.6-flash", "google/gemini-3.1-flash-lite"],
+    ["local/qwen3-vl-32b"],
+  ),
 ];
 
 /** 「不满意换一个」: the fallback target first, then the other models (local first). */
@@ -109,6 +132,26 @@ export const presetConfigs: Record<string, ComponentConfig> = {
     1,
   ),
   voice: route("voice", "api", "minimax/speech-2.8-hd", "local/indextts2", "local/indextts2", 3),
+  // Prototype Generate.dc.html: 视频 混合 (本地 H3 草稿, H3 API 终版), $2; 精修 本地 SeedVR2, $1;
+  // 口型 API sync, $0.5; 质检 本地 Qwen3-VL, $0.2.
+  vid: route("vid", "hybrid", "minimax/h3-api", "comfy/h3", "minimax/h3-api", 2),
+  up: route(
+    "up",
+    "local",
+    "minimax/h3-regenerate-2k",
+    "comfy/seedvr2",
+    "minimax/h3-regenerate-2k",
+    1,
+  ),
+  lip: route("lip", "api", "sync/lipsync-2-pro", "local/latentsync", "local/latentsync", 0.5),
+  qa: route(
+    "qa",
+    "local",
+    "google/gemini-3.6-flash",
+    "local/qwen3-vl-32b",
+    "google/gemini-3.6-flash",
+    0.2,
+  ),
 };
 
 /** A media component's route; 「不满意换一个」 order = fallback target, then its other models. */
