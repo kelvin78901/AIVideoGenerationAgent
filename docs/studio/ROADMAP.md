@@ -55,12 +55,15 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 
 ## M1 首次启动 + 成片规格（约 1 周）
 
+计划：[`plans/M1.md`](plans/M1.md)。
+
 - [ ] `setup-manifest.yaml` 解析、各类检测器、只读扫描 → `machine_profile`
 - [ ] 安装器：按依赖顺序执行、SSE 实时日志、每步重试 / 跳过、`installed_item` 记录、镜像（自动 / 官方 / 国内）
 - [ ] Setup 页（对照 `prototype/Setup.dc.html`，中英文完整）（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [ ] `output_spec` 表、`spec/dims.py`、`spec/compat.py`、平台预设
 - [ ] Spec 页（对照 `prototype/Spec.dc.html`）：平台、画幅、分辨率、帧率、每集时长、字幕、安全区预览、模型兼容表（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [ ] 顶栏规格标签接真实数据
+- [ ] 左侧导航常驻「环境与安装」入口（Kelvin 2026-10-15 要求）：随时重新检测、补装，徽标显示缺几项
 
 **验收**
 - [ ] 在 Kelvin 的 Windows + RTX 5090 上真实扫描，结果和实际一致

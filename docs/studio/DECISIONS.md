@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-15 · M1 计划（Kelvin 已定）
+
+- **ComfyUI 先用已有的**：扫描时先找正在运行的 127.0.0.1:8188 和常见目录，找到就用它（节点、权重装进它里面，用它自己的 Python）；找不到才装到 `~/.drama-studio/ComfyUI`。安装设置里能手动改路径。
+- **清单只补运行环境和节点**：Python、uv、PyTorch、FFmpeg、Git、ComfyUI 和各节点在 M1 补齐真实地址、锁定版本；模型权重只检测，安装显示「等 P0 实测确定版本」，到对应里程碑再补。
+- **导航加「环境与安装 / Environment」**：放工具区第一个（「成片规格」上面），徽标显示「缺 N 项」，就绪时不显示。原型里没有这个入口。
+- **Mock 下检测和安装都是模拟的**：`DRAMA_MOCK=1` 时用原型里的示例机器（PC / Mac 可切），什么都不装；`DRAMA_SETUP=real`（或 `DRAMA_MOCK=0`）才真实扫描、真实安装。
+- **示例剧集进真实数据库**：Mock 启动时库里没有剧集就建 `demo`（《雨停之前》，规格已锁定），这样删掉 `/series`、`/spec` 的 MSW handler 后其他页面照常能用；M2 的 `drama-studio demo` 在它上面扩展。
+- **锁定后改画幅**：后端 `PUT /series/{id}/spec` 遇到已锁定又改画幅返回 409 `spec_locked`；影响范围在 M4 之前仍由 MSW 给，MSW 的 `/impact/apply` 收到 `spec_aspect` 时调真实的 `PUT …/spec?confirmed_impact=<id>` 写入（M1 只检查不为空，M2 有真的影响范围后校验 id）。
+- **首次启动跳转**：只有打开 `/` 而且从没扫描过时跳到 `/setup`，直接打开的页面不跳。
+
 ## 2026-10-15 · M0.5 收尾
 
 - **依赖的数据没加载到时不再永远转圈**：很多查询的 key 要用上游结果（例如分集 id 来自 `/series`），上游失败时它们一直是 disabled，`QueryState` 原来会一直显示骨架。现在「没有请求在跑、而且有查询失败」时，disabled 的查询显示中性提示「没有可显示的内容：它依赖的数据没加载到」，「重试」重跑所有失败的查询（`components/QueryState.tsx:useUpstreamFailed`）。正常加载时没有失败的查询，所以不会闪一下。

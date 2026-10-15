@@ -4,14 +4,19 @@
 
 ## 当前
 
-- 里程碑：**M0.5 界面先行 —— 已完成**，PR #2（`m0.5-ui` → main）等 Kelvin 审阅合并。报告 [`reports/M0.5.md`](reports/M0.5.md)（含逐步记录，就是 PR 描述）；计划 [`plans/M0.5.md`](plans/M0.5.md) 全部勾完。
-- 分支 `m0.5-ui` 已 rebase 到 main（M0 的 PR #1 已合并）并 push；PR 上 Linux + Windows CI 都通过。
-- 下一个里程碑：M1 首次启动 + 成片规格（还没出计划）。
+- 里程碑：**M1 首次启动 + 成片规格**（M0.5 已合并，报告 [`reports/M0.5.md`](reports/M0.5.md)）
+- 计划：[`docs/studio/plans/M1.md`](plans/M1.md)（已批准 2026-10-15；Kelvin 的四个决定见 DECISIONS「2026-10-15 · M1 计划」）
+- 分支：`m1-setup-spec`（从 main 切出；每步提交后 push；不推 main；做完开 PR）
+
+## 已完成的小步
+
+| 步 | 做了什么 | 提交 | 测试 |
+| --- | --- | --- | --- |
+| 0 | 开分支；计划存档 `plans/M1.md`；ROADMAP 加 M1 计划链接和「环境与安装」入口一项；DECISIONS 记 M1 的决定 | 本提交 | 仅文档 |
 
 ## 下一步
 
-1. 等 Kelvin 看 PR #2。要改的话在 `m0.5-ui` 上小步提交、push；报告改了就用 `gh pr edit 2 --body-file` 同步 PR 描述（末尾带 Claude Code 署名行）。
-2. PR #2 合并后用 `/milestone` 出 M1 计划（M1 的界面条目是「接真实接口、删掉对应 MSW handler」），新分支从 main 切。
+- **第 1 步 剧集和成片规格（后端）**：表 `series`、`output_spec` + 迁移 `0002`；`spec/dims.py`（照 `web/src/mocks/handlers/spec.ts:dimsOf`）；`config/spec.yaml`（平台预设、安全区）；`api/routes/series.py`、`spec.py`；`studio/demo.py:seed_demo()`（数据照 `web/src/mocks/fixtures/demo/series.ts`、`spec.ts`），Mock 启动时执行。从 `core/models_db.py` 和 `core/migrations/versions/0001_m0_core.py` 开始看。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
