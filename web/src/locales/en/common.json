@@ -45,7 +45,8 @@
     "unknown_model": "Unknown model {{key}}",
     "invalid_request": "Invalid request: {{issues}}",
     "impact_not_found": "Impact {{id}} not found; it may have been handled already",
-    "unknown_gate": "Unknown gate {{gate}}"
+    "unknown_gate": "Unknown gate {{gate}}",
+    "suggestion_not_found": "Suggestion {{id}} not found"
   },
   "toast": {
     "generic": "Notice: {{code}}",

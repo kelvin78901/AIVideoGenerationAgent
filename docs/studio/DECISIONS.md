@@ -26,6 +26,9 @@
 - **影响范围**：`POST /impact/preview` 返回 `lines`（每行 `code + params + cost_usd + optional`，前端用 `components:impact.line.<code>` 翻译）、`unaffected`、`rerun_cost_usd`、`stale`（每一步会标几个「待更新」）。`POST /impact/apply {impact_id, action}`；`undo` 只是丢掉这次预览，页面在回调里自己恢复编辑前的内容。
 - **闸门**：`POST /gates/{gate}/confirm|reopen` 的请求体是 `{scope_id: <episode id>}`，确认状态不单独提供读接口，用 `GET /episodes/{id}/progress` 里对应步骤的 `state`（`takes` → 生成、`export` → 后期）。确认后的按钮仍然能直接去下一步，旁边有「重新打开」。
 - **密钥提示只在真实模式显示**：模型选择器里「未填密钥」取真实后端 `/providers` 的 `has_key`，但 `/health` 说是 Mock 模式时不显示——Mock 不需要密钥，满屏提示只会干扰。
+- **小说页的接口（M0.5 第 6 步）**：`GET /series/{id}/novel`（段落带字符偏移）、`GET /series/{id}/suggestions`、`GET /series/{id}/bible`；建议的决定是 `POST /suggestions/{id}/accept|reject|reset|rewrite`（SPEC 只列了 accept / reject / rewrite；「撤销采纳」和「恢复」都回到未决定，所以加了 `reset`），外加 `POST /series/{id}/suggestions/accept-all`（「全部采纳」，跳过已忽略的）。建议的 `kind` 在 SPEC 的 motive / timeline / consistency / gap 之外加上补全组件的四类（appearance / lighting / inner_to_action / cliffhanger，原型的外貌 / 光线 / 心理外化 / 卡点）。重写后 `status=rewritten`，`rewrite_instruction` 和 `rewritten_by` 保留（采纳后也显示「已按要求重写」）；已采纳的建议重写后仍是已采纳。字数 = 原文 + 已采纳补写，前端算。
+- **步骤页布局 `StepLayout`**：工作区 + 右侧整列 Inspector（宽 360 / 400），窄屏时 Inspector 排到下面。没用 sticky：Inspector 本身比视口高，sticky 会把下半截藏起来。
+- **「导入 .txt / .docx」在 M0.5 置灰并说明原因**：原型里这个按钮没有行为，导入要后端（`POST /series/{id}/novel`，M2）。做一个假的导入只会让示例数据前后不一致。
 
 ## 2026-10-14 · M0 合并前补充（Kelvin 审阅后）
 

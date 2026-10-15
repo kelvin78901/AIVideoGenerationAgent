@@ -52,7 +52,7 @@ export function RunBar({
         className,
       )}
     >
-      <div className="mr-auto flex min-w-0 flex-col gap-0.5">
+      <div className="flex min-w-48 flex-1 flex-col gap-0.5">
         <div className="text-xs text-muted-foreground">{t("runBar.product", { what })}</div>
         {cur ? (
           <div className="text-sm font-medium">

@@ -1,6 +1,5 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import { http, HttpResponse } from "msw";
 import { useEffect } from "react";
 import { Route, Routes } from "react-router";
 
@@ -13,8 +12,8 @@ import { Inspector } from "@/components/Inspector";
 import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { PRODUCT_ENRICH, PRODUCT_EXTRACT } from "@/mocks/fixtures/demo/products";
-import { server } from "@/mocks/node";
 import { useInspectorStore } from "@/stores/inspector";
+import { backend } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
 
@@ -26,41 +25,6 @@ const NOVEL = [
   { id: "enrich", productId: PRODUCT_ENRICH },
   { id: "extract", productId: PRODUCT_EXTRACT },
 ];
-
-/** Real backend endpoints the picker reads: live mode, DeepSeek without a key. */
-function backend({ mock = true }: { mock?: boolean } = {}) {
-  server.use(
-    http.get("*/api/v1/health", () => HttpResponse.json({ status: "ok", version: "0", mock })),
-    http.get("*/api/v1/providers", () =>
-      HttpResponse.json({
-        providers: [
-          {
-            id: "deepseek",
-            name: "DeepSeek",
-            where: "api",
-            base_url: null,
-            docs: null,
-            verify: true,
-            needs_key: true,
-            has_key: false,
-            key_source: "none",
-            enabled: true,
-            models: [
-              {
-                key: "deepseek/v4-pro",
-                display: "x",
-                model_id: null,
-                price: null,
-                json_mode: true,
-              },
-            ],
-          },
-        ],
-        llm_ui_order: [],
-      }),
-    ),
-  );
-}
 
 function override(component = "enrich") {
   return getDb().config.component[component];

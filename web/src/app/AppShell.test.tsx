@@ -16,7 +16,7 @@ beforeEach(() => {
 describe("AppShell", () => {
   it("redirects / to the first step of the demo episode", () => {
     renderAt(<AppRoutes />, "/");
-    expect(screen.getByRole("heading", { name: "小说 · 导入与补全" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "小说" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /01\s*小说/ })).toHaveAttribute("aria-current", "page");
   });
 
@@ -27,7 +27,7 @@ describe("AppShell", () => {
       ["/s/demo/spec", "成片规格"],
       ["/s/demo/sync", "素材整理与同步"],
       ["/s/demo/dashboard", "数据看板 · 花费、耗时与速度"],
-      ["/s/demo/e/1/novel", "小说 · 导入与补全"],
+      ["/s/demo/e/1/novel", "小说"],
       ["/s/demo/e/1/script", "剧本 · 分集与剧本化"],
       ["/s/demo/e/1/assets", "素材 · 角色、场景、道具、文字、音色"],
       ["/s/demo/e/1/storyboard", "分镜 · 关键帧与镜头设定"],
@@ -87,7 +87,7 @@ describe("AppShell", () => {
     await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
     expect(i18n.language).toBe("en");
     expect(document.documentElement.lang).toBe("en");
-    expect(screen.getByRole("heading", { name: "Novel · Import and enrich" })).toBeInTheDocument();
+    expect(screen.getByRole("heading", { level: 1, name: "Novel" })).toBeInTheDocument();
     expect(screen.getByRole("navigation", { name: "Production steps" })).toBeInTheDocument();
     expect(screen.getByTestId("gpu-status")).toHaveTextContent(/^Local GPU: .*idle$/);
   });

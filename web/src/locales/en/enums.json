@@ -44,5 +44,15 @@
   "componentDesc": {
     "enrich": "Finds what the camera cannot show in the source text and suggests additions, without changing the plot.",
     "extract": "Pulls characters, locations, props and the timeline out of the text for the script and asset steps."
+  },
+  "suggestionKind": {
+    "appearance": "Appearance",
+    "lighting": "Lighting",
+    "inner_to_action": "Inner to visible",
+    "cliffhanger": "Cliffhanger",
+    "motive": "Motive",
+    "timeline": "Timeline",
+    "consistency": "Consistency",
+    "gap": "Gap"
   }
 }

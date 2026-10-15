@@ -1,0 +1,61 @@
+{
+  "title": "Novel",
+  "lead": "Paste or import your novel. AI only fills in what the camera cannot show and never changes the plot; you decide on every suggestion.",
+  "import": "Import .txt / .docx",
+  "importHint": "Import is wired to the backend in M2; the demo uses the opening of “Before the Rain Stops”.",
+  "gate": "Confirm the text, write the script",
+  "what": {
+    "enrich": "Suggestions · {{count}}",
+    "extract": "Story bible · {{characters}} characters · {{locations}} locations · {{props}} props"
+  },
+  "source": {
+    "title": "Source text",
+    "meta": "{{chars}} characters · {{paras}} paragraphs",
+    "views": "View",
+    "view": {
+      "orig": "Original",
+      "after": "With additions",
+      "diff": "Compare"
+    },
+    "diffHint": "Highlighted text marked “+” is an adopted addition.",
+    "addedMark": "+",
+    "added": "Adopted addition: "
+  },
+  "suggestions": {
+    "title": "Suggestions",
+    "count": "{{accepted}} / {{total}} adopted",
+    "acceptAll": "Adopt all",
+    "para": "Paragraph {{n}}",
+    "rewritten": "Rewritten on request",
+    "status": {
+      "pending": "Undecided",
+      "accepted": "Adopted",
+      "rejected": "Ignored",
+      "rewritten": "Undecided"
+    },
+    "accept": "Adopt",
+    "unaccept": "Undo adopt",
+    "rewrite": "Ask for a rewrite",
+    "collapse": "Close",
+    "ignore": "Ignore",
+    "restore": "Restore",
+    "rewriteLabel": "Tell the AI how to change this one",
+    "rewritePlaceholder": "E.g. no trench coat; she wears a work jacket today",
+    "rewriteSubmit": "Rewrite this one",
+    "rewriteDone": "The suggestion for paragraph {{n}} was rewritten as asked ({{model}}).",
+    "acceptAllDone": "Adopted every suggestion that was not ignored.",
+    "empty": "No suggestions yet. Click Rerun above to let the AI look for gaps."
+  },
+  "bible": {
+    "title": "Extracted story bible",
+    "lead": "From the text and adopted additions; used by the script and asset steps",
+    "link": "View in Assets",
+    "kind": {
+      "character": "Characters",
+      "location": "Locations",
+      "prop": "Props",
+      "event": "Timeline"
+    },
+    "empty": "None yet"
+  }
+}

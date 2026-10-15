@@ -1,0 +1,61 @@
+{
+  "title": "小说",
+  "lead": "粘贴或导入你的小说。AI 只补镜头拍不出来的部分，不改剧情；每条建议都由你决定要不要。",
+  "import": "导入 .txt / .docx",
+  "importHint": "导入在 M2 接上后端；示例里先用《雨停之前》的开头。",
+  "gate": "确认原文，生成剧本",
+  "what": {
+    "enrich": "补全建议 · {{count}} 条",
+    "extract": "设定卡 · 人物 {{characters}} · 地点 {{locations}} · 道具 {{props}}"
+  },
+  "source": {
+    "title": "原文",
+    "meta": "{{chars}} 字 · {{paras}} 段",
+    "views": "显示方式",
+    "view": {
+      "orig": "原文",
+      "after": "采纳后",
+      "diff": "对比"
+    },
+    "diffHint": "蓝底带「＋」的是已采纳的补写。",
+    "addedMark": "＋",
+    "added": "已采纳的补写："
+  },
+  "suggestions": {
+    "title": "补全建议",
+    "count": "已采纳 {{accepted}} / {{total}}",
+    "acceptAll": "全部采纳",
+    "para": "第 {{n}} 段",
+    "rewritten": "已按要求重写",
+    "status": {
+      "pending": "待定",
+      "accepted": "已采纳",
+      "rejected": "已忽略",
+      "rewritten": "待定"
+    },
+    "accept": "采纳",
+    "unaccept": "撤销采纳",
+    "rewrite": "改写要求",
+    "collapse": "收起",
+    "ignore": "忽略",
+    "restore": "恢复",
+    "rewriteLabel": "告诉 AI 这一条怎么改",
+    "rewritePlaceholder": "比如：别写风衣，她今天穿的是工装外套",
+    "rewriteSubmit": "按要求重写这一条",
+    "rewriteDone": "第 {{n}} 段的这条建议已按你的要求重写（{{model}}）。",
+    "acceptAllDone": "已采纳全部未忽略的建议。",
+    "empty": "还没有补全建议。点上面的「重跑」让 AI 找一遍。"
+  },
+  "bible": {
+    "title": "提取到的设定",
+    "lead": "来自原文和已采纳的补写，交给剧本和素材两步使用",
+    "link": "在素材里查看",
+    "kind": {
+      "character": "人物",
+      "location": "地点",
+      "prop": "道具",
+      "event": "时间线"
+    },
+    "empty": "还没有"
+  }
+}

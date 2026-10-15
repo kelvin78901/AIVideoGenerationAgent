@@ -25,11 +25,17 @@
  * | PUT /config/override             | M2             |
  * | POST /impact/preview, apply      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
+ * | GET /series/{id}/novel           | M2             |
+ * | GET /series/{id}/suggestions     | M2             |
+ * | POST /series/{id}/suggestions/accept-all | M2     |
+ * | POST /suggestions/{id}/accept, reject, reset, rewrite | M2 |
+ * | GET /series/{id}/bible           | M2             |
  */
 import { configHandlers } from "@/mocks/handlers/config";
 import { gateHandlers } from "@/mocks/handlers/gates";
 import { impactHandlers } from "@/mocks/handlers/impact";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
+import { novelHandlers } from "@/mocks/handlers/novel";
 import { productHandlers } from "@/mocks/handlers/products";
 import { seriesHandlers } from "@/mocks/handlers/series";
 import { setupHandlers } from "@/mocks/handlers/setup";
@@ -42,4 +48,5 @@ export const handlers = [
   ...configHandlers,
   ...impactHandlers,
   ...gateHandlers,
+  ...novelHandlers,
 ];

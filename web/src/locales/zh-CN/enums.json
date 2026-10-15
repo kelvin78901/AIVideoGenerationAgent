@@ -44,5 +44,15 @@
   "componentDesc": {
     "enrich": "找出原文里镜头拍不出来的缺口，给出补写建议，不改剧情。",
     "extract": "从原文抽出人物、地点、道具和时间线，交给剧本和素材两步使用。"
+  },
+  "suggestionKind": {
+    "appearance": "外貌",
+    "lighting": "光线",
+    "inner_to_action": "心理外化",
+    "cliffhanger": "卡点",
+    "motive": "动机",
+    "timeline": "时间线",
+    "consistency": "前后一致",
+    "gap": "缺口"
   }
 }

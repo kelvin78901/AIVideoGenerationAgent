@@ -8,6 +8,7 @@ import type { Impact } from "@/api/schemas/impact";
 import { componentDefs, presetConfigs } from "@/mocks/fixtures/demo/config";
 import { episodes, progress } from "@/mocks/fixtures/demo/episodes";
 import { summary } from "@/mocks/fixtures/demo/metrics";
+import { bible, novel, suggestions } from "@/mocks/fixtures/demo/novel";
 import { series } from "@/mocks/fixtures/demo/series";
 import { products } from "@/mocks/fixtures/demo/products";
 import { profile } from "@/mocks/fixtures/demo/setup";
@@ -30,6 +31,9 @@ function createDb() {
       /** `<component>|<item>` → override. */
       item: {} as Record<string, Partial<ComponentConfig>>,
     },
+    novel,
+    suggestions,
+    bible,
     impacts: new Map<string, Impact>(),
     gates: [] as GateDecision[],
   });
