@@ -1,7 +1,16 @@
-# 首次启动的检测与安装清单（M1 时拷到 config/setup-manifest.yaml）。
-# 字段说明见 SPEC 第 12.1 节。条目和原型 Setup.dc.html 的 PC / Mac 两套一致。
+# 首次启动的检测与安装清单（SPEC 12.1，解析见 src/drama_series_agent/setup/manifest.py）。
+# 条目和原型 Setup.dc.html 的 PC / Mac 两套一致，另加 SPEC 12.1 的 uv、node_dramastudio、eagle、resolve。
 # url / ref / sha256 写 TODO 的要在实现时补上并锁定版本；verify: true 的检测方式需要实测确认。
 # {comfy} = ComfyUI 根目录，{envs} = ~/.drama-studio/envs，{models} = 模型目录（用户可改）
+#
+# 每项除 SPEC 12.1 的字段外还可以有：
+#   fix:        检测状态 → 建议（setup:fix.<code>），写 code 或 {code, params}；不写时按类型给默认
+#   if_missing: 没找到时的状态，默认 required → missing、否则 optional
+#   installable: false   有安装步骤但暂时不能装
+#   macos / windows / linux:  这个平台上覆盖 required、name、variant、fix、if_missing、installable；
+#                             写 `optional` 等于 {required: false}
+# 依赖的项在这个平台上不是必需的，依赖它的项也不是必需的（例如 Mac 上 ComfyUI 可选，节点也可选）。
+# 需要 CUDA 的项在没有 CUDA 的机器上显示「跳过」。
 
 version: 1
 mirrors:
@@ -12,7 +21,7 @@ mirrors:
 items:
   # ---------- 系统（只检测） ----------
   - { id: os,     group: sys, name: { zh: 操作系统, en: Operating system }, detect: { type: platform } }
-  - { id: gpu,    group: sys, name: { zh: 显卡, en: GPU }, detect: { type: nvml, fallback: apple_silicon }, note: "没有 CUDA 时把视频、关键帧、超分默认切到 API" }
+  - { id: gpu,    group: sys, name: { zh: 显卡, en: GPU }, detect: { type: nvml, fallback: apple_silicon }, fix: { warn: no_cuda_video_api }, note: "没有 CUDA 时把视频、关键帧、超分默认切到 API" }
   - { id: driver, group: sys, name: { zh: 显卡驱动, en: GPU driver }, platforms: [windows, linux], detect: { type: nvml, field: cuda_driver_version }, require: { cuda: ">=13.0" } }
   - { id: ram,    group: sys, name: { zh: 内存, en: Memory }, detect: { type: platform, field: ram } }
   - { id: disk,   group: sys, name: { zh: 磁盘空间, en: Disk space }, detect: { type: platform, field: disk_free, path: "{models}" }, require: { free_gb: ">=200" } }
@@ -22,7 +31,7 @@ items:
     group: rt
     name: { zh: Python, en: Python }
     required: true
-    detect: { type: command, cmd: "uv python find 3.12", version_regex: "(\\d+\\.\\d+)" }
+    detect: { type: command, cmd: "uv python find 3.12", version_regex: "(3\\.\\d+)" }
     install: [ { type: script, run: "uv python install 3.12" } ]
   - id: uv
     group: rt
@@ -37,6 +46,8 @@ items:
     depends_on: [python, uv]
     detect: { type: py_import, env: comfy, module: torch, check: "torch.version.cuda", verify: true }
     require: { cuda_build: "13.0", note: "NVFP4 量化需要 CUDA 13.0 版" }
+    fix: { old: { code: torch_cuda, params: { cuda: "13.0" } } }
+    macos: { fix: { missing: install_torch_mps } }
     install:
       - { type: uv_pip, env: comfy, packages: [torch, torchvision, torchaudio], index_url: "PyTorch CUDA 13.0 源 TODO", platforms: [windows, linux] }
       - { type: uv_pip, env: comfy, packages: [torch, torchvision, torchaudio], platforms: [macos], note: "MPS 版" }
@@ -57,9 +68,12 @@ items:
   - id: comfy
     group: comfy
     name: { zh: ComfyUI, en: ComfyUI }
-    required: true            # macOS 上 optional：只用于本地出图
+    required: true
     depends_on: [git, torch]
-    detect: { type: http, url: "http://127.0.0.1:8188/system_stats", or: { type: file, path: "{comfy}/main.py" } }
+    # 先找正在跑的实例（/system_stats 的 argv 里有路径），再找常见目录，最后用设置里的路径。
+    detect: { type: comfy, url: "http://127.0.0.1:8188", verify: true }
+    require: { version: ">=0.4.0", note: "含 H3 原生节点的最低版本 TODO（第 8 步核对）" }
+    macos: { required: false, fix: { optional: comfy_images_only } }
     install:
       - { type: git_clone, url: https://github.com/comfyanonymous/ComfyUI, ref: TODO, dest: "{comfy}" }
       - { type: uv_pip, env: comfy, requirements: "{comfy}/requirements.txt" }
@@ -85,6 +99,7 @@ items:
     required: true
     depends_on: [comfy]
     detect: { type: comfy_node, dir: ComfyUI-SeedVR2_VideoUpscaler, verify: true }
+    fix: { skip: unsupported_upscale_api }
     install: [ { type: git_clone, url: https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler, ref: TODO, dest: "{comfy}/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
   - id: node_flashvsr
     group: comfy
@@ -92,6 +107,7 @@ items:
     requires_cuda: true
     depends_on: [comfy]
     detect: { type: comfy_node, dir: TODO }
+    fix: { skip: unsupported_upscale_api }
     install: [ { type: git_clone, url: TODO, ref: TODO, dest: "{comfy}/custom_nodes/" } ]
     docs: https://www.runcomfy.com/comfyui-nodes/ComfyUI-FlashVSR
   - id: node_ctrl
@@ -100,6 +116,7 @@ items:
     requires_cuda: true
     depends_on: [comfy]
     detect: { type: comfy_node, classes: TODO }
+    fix: { optional: ctrl_later }
     install: [ { type: script, run: TODO } ]
     docs: https://docs.comfy.org/tutorials/video/minimax/minimax-h3-fun-controlnet
   - id: sage
@@ -108,6 +125,7 @@ items:
     requires_cuda: true
     depends_on: [torch]
     detect: { type: py_import, env: comfy, module: sageattention }
+    fix: { optional: sage_build }
     install: [ { type: uv_pip, env: comfy, packages: [sageattention], note: "Windows 可能需要预编译 wheel，失败只记录不阻塞" } ]
   - id: node_dramastudio
     group: comfy
@@ -120,14 +138,14 @@ items:
   # ---------- 模型权重（断点续传 + sha256） ----------
   - { id: w_h3,  group: w, name: { zh: "MiniMax H3 权重（int8）", en: "MiniMax H3 weights (int8)" }, requires_cuda: true, required: true, detect: { type: file, path: "{models}/TODO", sha256: TODO }, install: [ { type: download, hf_repo: MiniMaxAI/MiniMax-H3, files: TODO, dest: "{comfy}/models/TODO" } ] }
   - { id: w_te,  group: w, name: { zh: "Qwen3-VL-32B 文本编码器（NVFP4）", en: "Qwen3-VL-32B text encoder (NVFP4)" }, requires_cuda: true, required: true, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_img, group: w, name: { zh: Qwen-Image-Edit, en: Qwen-Image-Edit }, required: true, macos: optional, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_sr,  group: w, name: { zh: SeedVR2 权重, en: SeedVR2 weights }, requires_cuda: true, required: true, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_tts, group: w, name: { zh: IndexTTS2, en: IndexTTS2 }, required: true, macos: optional, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, macos: { variant: MLX, required: true }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
+  - { id: w_img, group: w, name: { zh: Qwen-Image-Edit, en: Qwen-Image-Edit }, required: true, macos: { required: false, fix: { optional: mac_image_slow } }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_sr,  group: w, name: { zh: SeedVR2 权重, en: SeedVR2 weights }, requires_cuda: true, required: true, fix: { skip: unsupported_upscale_api }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_tts, group: w, name: { zh: IndexTTS2, en: IndexTTS2 }, required: true, macos: { required: false, name: { zh: 本地配音模型, en: Local voice model }, fix: { optional: mac_voice_slow } }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, fix: { optional: llm_optional }, macos: { variant: MLX, required: true, name: { zh: "Qwen3.6-27B（MLX 版）", en: "Qwen3.6-27B (MLX)" }, fix: { missing: download_local_writing } }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
 
   # ---------- 网络与服务 ----------
-  - { id: hf,      group: svc, name: { zh: 模型下载网络, en: Model download network }, detect: { type: http, speedtest: [hf, pypi, github] } }
-  - { id: llmsrv,  group: svc, name: { zh: 本地 LLM 服务, en: Local LLM server }, detect: { type: service, urls: ["http://127.0.0.1:11434/v1/models", "http://127.0.0.1:8080/v1/models"] }, install: [ { type: pkg, winget: Ollama.Ollama, brew: ollama } ] }
-  - { id: keys,    group: svc, name: { zh: API 密钥, en: API keys }, detect: { type: keyring, names_from: providers.yaml } }
-  - { id: eagle,   group: svc, name: { zh: Eagle 素材库（可选）, en: Eagle library (optional) }, detect: { type: http, url: "http://localhost:41595/api/application/info", verify: true }, install: [] }
-  - { id: resolve, group: svc, name: { zh: 达芬奇 Resolve（可选）, en: DaVinci Resolve (optional) }, detect: { type: resolve, fields: [version, edition] }, install: [], note: "免费版 21.1 起不支持外部 Python 脚本，同步改走文件夹 + FCPXML" }
+  - { id: hf,      group: svc, name: { zh: 模型下载网络, en: Model download network }, detect: { type: http, speedtest: [hf, pypi, github], max_latency_ms: 1500, verify: true }, fix: { warn: pick_mirror } }
+  - { id: llmsrv,  group: svc, name: { zh: 本地 LLM 服务, en: Local LLM server }, detect: { type: service, urls: ["http://127.0.0.1:11434/v1/models", "http://127.0.0.1:8080/v1/models"] }, fix: { optional: install_llm_server }, macos: { required: true, fix: { missing: install_ollama_mlx } }, install: [ { type: pkg, winget: Ollama.Ollama, brew: ollama } ] }
+  - { id: keys,    group: svc, name: { zh: API 密钥, en: API keys }, detect: { type: keyring, names_from: providers.yaml }, fix: { optional: keys_later }, macos: { if_missing: warn, fix: { warn: keys_video_api } } }
+  - { id: eagle,   group: svc, name: { zh: Eagle 素材库（可选）, en: Eagle library (optional) }, detect: { type: http, url: "http://localhost:41595/api/application/info", verify: true }, fix: { optional: eagle_later }, install: [] }
+  - { id: resolve, group: svc, name: { zh: 达芬奇 Resolve（可选）, en: DaVinci Resolve (optional) }, detect: { type: resolve, fields: [version, edition], verify: true }, fix: { optional: resolve_later }, install: [], note: "免费版 21.1 起不支持外部 Python 脚本，同步改走文件夹 + FCPXML" }

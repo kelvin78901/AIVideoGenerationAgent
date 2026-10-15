@@ -19,7 +19,11 @@
 
 ## 下一步
 
-- **第 4 步 清单和检测（后端）**：`setup/manifest.py`（pydantic，按平台过滤，依赖成环 / id 重复报错）、`setup/probe.py`（Real / Fake，Fake 读 `tests/fixtures/setup/{pc,mac}.yaml`，内容照 `web/src/mocks/fixtures/demo/setup.ts`）、`setup/detectors.py`；表 `machine_profile`、`installed_item` + 迁移 `0003`；`setup.scan` 任务；`POST /setup/scan`、`GET /setup/profile`（加 `simulated`）、`POST /dev/setup/machine`。从 `config/setup-manifest.yaml`、`web/src/api/schemas/setup.ts`、`web/src/mocks/handlers/setup.ts` 开始看。这一步较大，可以拆成「清单 + Probe + 检测器」和「表 + 任务 + 接口」两次提交。
+- **第 4 步 清单和检测（后端）进行中**，拆两次提交：
+  - **4a（本提交，WIP，未勾）**：已写 `setup/manifest.py`（解析、平台覆盖 `macos:`、`fix` / `if_missing`、依赖成环 / 重复 id 校验、依赖非必需则非必需）、`setup/probe.py`（Real / Fake）、`setup/detectors.py`（12 种检测器 + `finish()` 定状态）；清单加了 `fix`、`macos` 覆盖，`comfy` 检测改成 `type: comfy`（定位：运行中 → 常见目录 → 设置路径），`require.version >=0.4.0` 待第 8 步核对；加依赖 `nvidia-ml-py`。
+  - **4a 还差**：① `ruff check src/drama_series_agent/setup` 剩 7 处（SIM105、ASYNC240 → 用 `asyncio.to_thread`、一行过长）；② mypy 的 files 列表可能没包含 `setup/`，核对；③ 写 `tests/fixtures/setup/{pc,mac}.yaml`（格式见 `FakeProbe`：host / gpu / default_dir / disks / commands / http / files / texts / python / secrets / resolve）和 `tests/unit/test_manifest.py`、`test_detectors.py`；④ 新文案 code 加进 `web/src/locales/{zh-CN,en}/setup.json`：found `no_gpu`、`check_failed`、`running`、`not_running`、`reachable`、`site_slow`、`keys_set`、`resolve_free`、`resolve_studio`；fix `update_driver`、`disk_low`、`eagle_later`、`resolve_later`；⑤ DECISIONS 记：扫描按清单全列（Kelvin 2026-10-15 选定）、`comfy` 检测类型、扫描不算 sha256、`fix` / `macos` 覆盖字段。
+  - **期望计数**（Kelvin 定：按清单全列）：PC 29 行 = 通过 9 / 缺少 9 / 需更新 2 / 可选 8 / 注意 1；Mac 28 行（无 driver）= 通过 6 / 注意 3 / 缺少 4 / 可选 7 / 跳过 8。PC 夹具：comfy 在 `D:/ComfyUI`（system_stats argv、版本 0.3.40），venv 里 torch cuda 12.8，有 VHS 节点目录，HF 延迟 2600 ms。
+  - **4b**：表 `machine_profile`、`installed_item` + 迁移 `0003`；`setup.scan` 任务；`POST /setup/scan`、`GET /setup/profile`（`simulated`）、`POST /dev/setup/machine`；推荐预设。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
