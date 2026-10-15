@@ -48,6 +48,10 @@
  * | POST /setup/scan, /setup/install | M1             |
  * | POST /setup/items/{id}/retry, skip | M1           |
  * | POST /demo/setup/machine (demo only, no backend) | — |
+ * | GET, PUT /config/defaults, DELETE /config/override | M2 |
+ * | PATCH /episodes/{id}             | M2             |
+ * | GET, PUT /sync/targets, POST /sync/targets/{id}/detect | M9 |
+ * | POST /sync/run, GET /sync/log, GET /sync/board | M9 |
  */
 import { assetHandlers } from "@/mocks/handlers/assets";
 import { configHandlers } from "@/mocks/handlers/config";
@@ -61,6 +65,7 @@ import { productHandlers } from "@/mocks/handlers/products";
 import { scriptHandlers } from "@/mocks/handlers/script";
 import { shotHandlers } from "@/mocks/handlers/shots";
 import { specHandlers } from "@/mocks/handlers/spec";
+import { syncHandlers } from "@/mocks/handlers/sync";
 import { seriesHandlers } from "@/mocks/handlers/series";
 import { setupHandlers } from "@/mocks/handlers/setup";
 
@@ -79,4 +84,5 @@ export const handlers = [
   ...generateHandlers,
   ...postHandlers,
   ...specHandlers,
+  ...syncHandlers,
 ];

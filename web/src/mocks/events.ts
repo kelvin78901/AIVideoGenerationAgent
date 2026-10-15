@@ -11,6 +11,8 @@ export const demoTiming = {
   setupScanMs: 110,
   /** Install: one progress step per tick (prototype: 120 ms; +10 % for downloads, +34 % otherwise). */
   setupTickMs: 120,
+  /** 「立即同步」: one file per tick (prototype: 90 ms, 24 files). */
+  syncTickMs: 90,
 };
 
 export function emitDemoEvent(type: EventType, data: unknown, delayMs = 0): void {

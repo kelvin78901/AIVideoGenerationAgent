@@ -1,0 +1,143 @@
+{
+  "eyebrow": "Whole series · Automatic",
+  "title": "Asset sync",
+  "lead": "Character images, sets, keyframes, videos and voices are sorted by episode, scene and shot and pushed to the ComfyUI canvas and the tools you already use, to view, arrange and keep working. New images and videos made in ComfyUI can be saved back into the same history.",
+  "openComfy": "Open the board in ComfyUI",
+  "syncNow": "Sync now",
+  "syncing": "Syncing {{done}} / {{total}}",
+  "targets": {
+    "title": "Where to sync",
+    "direction": {
+      "two_way": "Two-way",
+      "one_way": "One-way"
+    },
+    "name": {
+      "comfy": "ComfyUI canvas",
+      "folder": "Local folder",
+      "eagle": "Eagle library",
+      "resolve": "DaVinci Resolve"
+    },
+    "what": {
+      "comfy": "Each episode gets an asset board workflow in ComfyUI's workflow list (Drama / {{series}}). Assets are laid out in groups, ready to wire into your own generation workflows.",
+      "folder": "Folders by episode, scene and shot, file names with the version; a .json next to each file records the prompt, model, cost and QA score.",
+      "eagle": "Folders by series, episode and asset type, tagged automatically (character, set, status, model), with the prompt as the annotation. Good for filtering by tag.",
+      "resolve": "The free edition gets a sorted folder and a timeline (FCPXML) instead: drag the folder into the media pool and make bins from folders. Studio can create bins, write metadata and markers automatically."
+    },
+    "switchOn": "{{name}}: syncing",
+    "switchOff": "{{name}}: not syncing",
+    "mode": {
+      "label": "How to sync to Resolve",
+      "fcpxml": "Folder + FCPXML (free)",
+      "api": "Create bins (needs Studio)"
+    },
+    "redetect": "Detect again",
+    "missing": "{{name}} not found: install and open it, then click Detect again."
+  },
+  "status": {
+    "comfy_ok": "Connected to {{host}} · {{pack}} nodes installed",
+    "folder_ok": "{{path}} · {{free}} free",
+    "eagle_missing": "Eagle not found (paid app; install and open it first)",
+    "eagle_no_response": "Still no Eagle (nothing answers on port {{port}})",
+    "resolve_free": "Free edition {{version}} found: no external scripting",
+    "resolve_needs_studio": "This machine has the free edition of Resolve; creating bins needs Studio. Use folder + FCPXML for now."
+  },
+  "board": {
+    "title": "Episode {{n}} asset board (as it looks in ComfyUI)",
+    "hint": "Click any node to see its file and version; bottom right is an example of taking a shot from the studio, working on it and saving it back",
+    "label": "Board nodes",
+    "node": "{{title}}, {{caption}}",
+    "group": {
+      "cast": "Characters and voices",
+      "world": "Sets · props · on-screen text",
+      "scene": "Scene {{n}} · {{heading}} ({{shots}} shots)",
+      "workflow": "Your workflow · continue {{shot}} and save it back"
+    },
+    "caption": {
+      "locked": "Locked v{{n}}",
+      "filled_after_lock": "Filled in after lock",
+      "adopted": "Adopted v{{n}}",
+      "picking": "To pick · {{count}} takes",
+      "generating": "Generating",
+      "keyframe_pending": "Keyframe v{{n}} to adopt",
+      "queued": "Queued",
+      "waiting_for": "Waits for {{shot}}"
+    },
+    "fact": {
+      "file": "File",
+      "model": "Model",
+      "used_in": "Used in",
+      "source": "Source",
+      "note": "Note",
+      "status": "Status",
+      "cost": "Cost",
+      "qa": "QA",
+      "upscale": "2K",
+      "variants": "Variants",
+      "check": "Check",
+      "role": "Does",
+      "size": "Size",
+      "never": "Never"
+    }
+  },
+  "rules": {
+    "title": "Sync rules",
+    "when": {
+      "label": "When to sync",
+      "adopt": "On adopt or lock (recommended)",
+      "every": "On every generation",
+      "manual": "Manual only"
+    },
+    "kinds": {
+      "label": "What to sync",
+      "character": "Characters",
+      "scene": "Sets",
+      "prop": "Props",
+      "text": "On-screen text",
+      "voice": "Voices",
+      "keyframe": "Keyframes",
+      "video_adopted": "Video (adopted)",
+      "video_all": "Video (all takes)",
+      "dub": "Dialogue audio"
+    },
+    "org": {
+      "label": "How to organise",
+      "shot": "Episode → scene → shot",
+      "type": "By asset type"
+    },
+    "extras": {
+      "label": "Information that goes along",
+      "prompt": "Prompt (intent)",
+      "model_cost": "Model and cost",
+      "qa": "QA score",
+      "note": "In ComfyUI as a note next to the node; in Eagle as annotation and tags; in folders as a .json with the same name next to each file."
+    },
+    "preview": "Where files go"
+  },
+  "log": {
+    "title": "Sync log",
+    "empty": "Nothing synced yet.",
+    "to": "→ {{list}}",
+    "what": {
+      "ingest": "Saved back from ComfyUI: {{shot}} keyframe v{{n}} ({{model}} inpaint)",
+      "upscaled": "2K finishing done for {{from}} to {{to}} ({{model}}, local)",
+      "adopted": "{{shot}} video v{{n}} adopted",
+      "locked": "Assets locked: {{names}}",
+      "manual": "Manual sync: {{files}} files, {{added}} new"
+    },
+    "target": {
+      "comfy": "ComfyUI board",
+      "folder": "local folder",
+      "eagle": "Eagle library",
+      "resolve": "Resolve folder",
+      "eagle_missing": "Eagle not found, skipped",
+      "history": "in {{shot}}'s history, waiting for you to adopt",
+      "resolve_replaced": "Resolve folder (replaces the 768p version)"
+    }
+  },
+  "mapping": {
+    "title": "How the two sides relate",
+    "canvas": "Moving, regrouping or deleting nodes in ComfyUI only changes the canvas, never the studio's data.",
+    "saveBack": "Images, videos and audio from the Save to studio node arrive as new candidates for that shot or asset, get QA'd automatically and wait in the history for you to adopt.",
+    "later": "Later: dragging a node into another group becomes a tag in the studio."
+  }
+}

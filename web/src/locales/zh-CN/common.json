@@ -62,11 +62,16 @@
     "provider_needs_no_key": "{{id}} 不需要密钥",
     "keyring_unavailable": "系统钥匙串不可用：{{reason}}",
     "empty_key": "密钥不能为空",
-    "base_url_missing": "{{id}} 还没有接口地址"
+    "base_url_missing": "{{id}} 还没有接口地址",
+    "sync_target_not_found": "找不到同步目标 {{id}}",
+    "sync_target_missing": "没检测到 {{id}}，不能开启",
+    "sync_mode_unavailable": "{{id}} 现在不能用这种方式同步",
+    "sync_busy": "正在同步，等这一轮结束再试"
   },
   "toast": {
     "generic": "通知：{{code}}",
-    "version_created": "已生成 v{{n}}（{{model}}）。上一版还在历史里，满意就点「采纳」。"
+    "version_created": "已生成 v{{n}}（{{model}}）。上一版还在历史里，满意就点「采纳」。",
+    "sync_done": "同步完成：检查了 {{files}} 个文件，新增 {{added}} 个，其余没有变化。"
   },
   "legacy": {
     "banner": "旧界面：调用不记账、不受预算限制",

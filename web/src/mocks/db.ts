@@ -6,6 +6,7 @@ import type { ComponentConfig, ConfigDefaults } from "@/api/schemas/config";
 import type { GateDecision } from "@/api/schemas/gates";
 import type { GenerateLogEntry, GenerateRules } from "@/api/schemas/generate";
 import type { Impact } from "@/api/schemas/impact";
+import type { SyncRun } from "@/api/schemas/sync";
 import { componentDefs } from "@/mocks/fixtures/demo/config";
 import { assetProducts, assets } from "@/mocks/fixtures/demo/assets";
 import { EP1, episodes, progress } from "@/mocks/fixtures/demo/episodes";
@@ -18,6 +19,7 @@ import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtu
 import { products } from "@/mocks/fixtures/demo/products";
 import { profile, type DemoMachine } from "@/mocks/fixtures/demo/setup";
 import { spec } from "@/mocks/fixtures/demo/spec";
+import { syncLog, syncRules, syncTargets } from "@/mocks/fixtures/demo/sync";
 import { generateLog, generateRules, takeProducts } from "@/mocks/fixtures/demo/takes";
 
 function createDb() {
@@ -58,6 +60,14 @@ function createDb() {
       clips: {} as Record<string, Partial<ClipSettings>>,
       audio,
       subtitles,
+    },
+    /** Sync settings, the log and the manual run in progress. */
+    sync: {
+      targets: syncTargets,
+      rules: syncRules,
+      log: syncLog,
+      run: null as SyncRun | null,
+      runs: 0,
     },
     impacts: new Map<string, Impact>(),
     gates: [] as GateDecision[],

@@ -62,11 +62,16 @@
     "provider_needs_no_key": "{{id}} does not need a key",
     "keyring_unavailable": "System keychain unavailable: {{reason}}",
     "empty_key": "The key cannot be empty",
-    "base_url_missing": "{{id}} has no endpoint URL yet"
+    "base_url_missing": "{{id}} has no endpoint URL yet",
+    "sync_target_not_found": "Sync target {{id}} not found",
+    "sync_target_missing": "{{id}} not found, so it cannot be turned on",
+    "sync_mode_unavailable": "{{id}} cannot sync this way here",
+    "sync_busy": "A sync is running. Try again when it finishes"
   },
   "toast": {
     "generic": "Notice: {{code}}",
-    "version_created": "Generated v{{n}} ({{model}}). The previous version is still in the history; adopt this one if you like it."
+    "version_created": "Generated v{{n}} ({{model}}). The previous version is still in the history; adopt this one if you like it.",
+    "sync_done": "Sync done: {{files}} files checked, {{added}} new, the rest unchanged."
   },
   "legacy": {
     "banner": "Legacy UI: calls are not logged and not budget-limited",

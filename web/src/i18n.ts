@@ -15,6 +15,7 @@ import enScript from "@/locales/en/script.json";
 import enSetup from "@/locales/en/setup.json";
 import enSpec from "@/locales/en/spec.json";
 import enStoryboard from "@/locales/en/storyboard.json";
+import enSync from "@/locales/en/sync.json";
 import zhAssets from "@/locales/zh-CN/assets.json";
 import zhCommon from "@/locales/zh-CN/common.json";
 import zhComponents from "@/locales/zh-CN/components.json";
@@ -29,6 +30,7 @@ import zhScript from "@/locales/zh-CN/script.json";
 import zhSetup from "@/locales/zh-CN/setup.json";
 import zhSpec from "@/locales/zh-CN/spec.json";
 import zhStoryboard from "@/locales/zh-CN/storyboard.json";
+import zhSync from "@/locales/zh-CN/sync.json";
 import { useUiStore, type Lang } from "@/stores/ui";
 
 export const resources = {
@@ -46,6 +48,7 @@ export const resources = {
     spec: zhSpec,
     setup: zhSetup,
     models: zhModels,
+    sync: zhSync,
     dev: zhDev,
   },
   en: {
@@ -62,6 +65,7 @@ export const resources = {
     spec: enSpec,
     setup: enSetup,
     models: enModels,
+    sync: enSync,
     dev: enDev,
   },
 } as const;

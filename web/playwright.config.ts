@@ -20,7 +20,12 @@ const envFile = join(home, "empty.env"); // never read the developer's real .env
 writeFileSync(envFile, "");
 
 // The prototype artboards are 1440 px wide; the device preset alone would give 1280 × 720.
-const desktop = { ...devices["Desktop Chrome"], viewport: { width: 1440, height: 900 } };
+// Demo timestamps are Beijing time (+08:00); pin the zone so screenshots match the prototype.
+const desktop = {
+  ...devices["Desktop Chrome"],
+  viewport: { width: 1440, height: 900 },
+  timezoneId: "Asia/Shanghai",
+};
 
 export default defineConfig({
   testDir: "e2e",
