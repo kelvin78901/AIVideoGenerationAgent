@@ -38,20 +38,20 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 
 > 11 个页面按原型做成可点击的 React 页面，用《雨停之前》第 1 集示例数据跑起来。还没实现的 `/api/v1` 接口由 MSW 在浏览器里返回示例数据，已实现的（jobs、providers 等）直接走后端。**M1 起各里程碑的界面条目改为「接真实接口、删掉对应的 MSW handler」，界面不重写。** 计划：[`plans/M0.5.md`](plans/M0.5.md)。
 
-- [ ] 接口契约：SPEC 9.1 的接口写成 zod schema + TS 类型，响应在运行时校验；补齐 9.1 缺的读接口（记进 SPEC 和 DECISIONS）
-- [ ] MSW：未实现的接口返回示例数据，带 `x-drama-demo` 头；顶栏「示例数据」标记；演示事件和真实 SSE 走同一个分发器
-- [ ] 共用组件正式版：RunBar、Inspector、ModelPicker、PromptEditor、VersionHistory、ImpactDialog、GateButton、CostBadge（`/dev/components` 陈列）
-- [ ] 制作步骤 6 页：小说、剧本、素材、分镜、生成、后期
-- [ ] 全局页 5 页：成片规格、首次启动、模型与兜底、素材整理与同步、数据看板
-- [ ] Playwright：冒烟测试进 CI；每页亮 / 暗截图，和原型并排对照（`docs/studio/reports/ui/`）
+- [x] 接口契约：SPEC 9.1 的接口写成 zod schema + TS 类型，响应在运行时校验；补齐 9.1 缺的读接口（记进 SPEC 和 DECISIONS）
+- [x] MSW：未实现的接口返回示例数据，带 `x-drama-demo` 头；顶栏「示例数据」标记；演示事件和真实 SSE 走同一个分发器
+- [x] 共用组件正式版：RunBar、Inspector、ModelPicker、PromptEditor、VersionHistory、ImpactDialog、GateButton、CostBadge（`/dev/components` 陈列）
+- [x] 制作步骤 6 页：小说、剧本、素材、分镜、生成、后期
+- [x] 全局页 5 页：成片规格、首次启动、模型与兜底、素材整理与同步、数据看板
+- [x] Playwright：冒烟测试进 CI；每页亮 / 暗截图，和原型并排对照（`docs/studio/reports/ui/`）
 
 **验收**
-- [ ] 11 页都能打开、能点，原型里的交互都能用；数字和原型一致（本集 $8.94 / 预计 $13.35 / 预算 $15、42 次调用 1 次失败、9 个镜头 34 秒、素材 7/13、分镜 3/9、采纳 3/9、质检 6/10）
-- [ ] 中英切换后所有界面文字都变（示例内容除外）；亮色、暗色都检查过
-- [ ] 页面不写死数据：`VITE_DEMO_DATA=0` 时显示加载失败或空状态，不出现假数据
-- [ ] 8 个共用组件都是正式版：有 Vitest 测试，在 `/dev/components` 能看到各种状态
-- [ ] `pnpm test`、lint、typecheck、`uv run pytest` 全绿；Playwright 冒烟进 CI，CI 通过
-- [ ] 截图和原型的对照表写进里程碑报告
+- [x] 11 页都能打开、能点，原型里的交互都能用；数字和原型一致（本集 $8.94 / 预计 $13.35 / 预算 $15、42 次调用 1 次失败、9 个镜头 34 秒、素材 7/13、分镜 3/9、采纳 3/9、质检 6/10）
+- [x] 中英切换后所有界面文字都变（示例内容除外）；亮色、暗色都检查过
+- [x] 页面不写死数据：`VITE_DEMO_DATA=0` 时显示加载失败或空状态，不出现假数据
+- [x] 8 个共用组件都是正式版：有 Vitest 测试，在 `/dev/components` 能看到各种状态
+- [x] `pnpm test`、lint、typecheck、`uv run pytest` 全绿；Playwright 冒烟进 CI，CI 通过
+- [x] 截图和原型的对照表写进里程碑报告
 
 ## M1 首次启动 + 成片规格（约 1 周）
 
