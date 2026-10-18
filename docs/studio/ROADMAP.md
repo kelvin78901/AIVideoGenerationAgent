@@ -58,7 +58,7 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 计划：[`plans/M1.md`](plans/M1.md)。
 
 - [x] `setup-manifest.yaml` 解析、各类检测器、只读扫描 → `machine_profile`
-- [ ] 安装器：按依赖顺序执行、SSE 实时日志、每步重试 / 跳过、`installed_item` 记录、镜像（自动 / 官方 / 国内）
+- [x] 安装器：按依赖顺序执行、SSE 实时日志、每步重试 / 跳过、`installed_item` 记录、镜像（自动 / 官方 / 国内）
 - [ ] Setup 页（对照 `prototype/Setup.dc.html`，中英文完整）（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [x] `output_spec` 表、`spec/dims.py`、`spec/compat.py`、平台预设
 - [x] Spec 页（对照 `prototype/Spec.dc.html`）：平台、画幅、分辨率、帧率、每集时长、字幕、安全区预览、模型兼容表（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）

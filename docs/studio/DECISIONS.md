@@ -2,6 +2,17 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 真实安装步骤（第 5b 步）
+
+- **每一步都幂等，装之前先再检测一次**：`RealRunner` 先重跑这一项的检测器，已经「通过」就直接算装好（日志 `already`，比如扫描后用户自己装了）；各步骤再各自跳过已经做完的部分，所以重试和重启续跑只补缺的。
+- **Python 包只进两个地方**：`~/.drama-studio/envs/<name>`，或者找到的 ComfyUI 自己的解释器（`env: comfy` 时优先用它，Kelvin 2026-10-15 定）。没有 venv 先 `uv venv --python 3.12`。测试把清单里三个平台的每一项都跑一遍（命令只记录不执行），断言 uv 命令全都指向 `envs`，也没有直接调 `pip` / `python`。
+- **git_clone**：`--filter=blob:none` 克隆后 checkout 锁定的 ref；已经在这个 ref 就跳过，不在就 `fetch --depth 1` + checkout；目标文件夹已有别的文件、又不是仓库时报 `dest_not_empty`，不覆盖用户的东西。后面步骤的 `{dest}` 指上一步克隆 / 下载 / 复制的位置。
+- **download**：写到 `.part`，再次下载用 `Range` 接着下，服务器不支持就从头下；sha256 不对就删掉 `.part` 报 `sha256_mismatch`；`hf_repo` + `files` 拼成 `<hf>/<repo>/resolve/<revision>/<file>`。
+- **镜像**：「自动」按扫描时测的各站点延迟，每个站点单独判，超过 1500 ms 或不通就用国内；国内 PyPI 用清华源；步骤自带 `index_url`（PyTorch 的 CUDA 源）时不改；清单里国内 GitHub 镜像还是 TODO，暂时一律走官方。
+- **pkg**：winget `--exact --silent --accept-*`，「已经装了」的退出码算成功；brew 直接装；apt 用 `sudo -n`（不弹密码，提权已在安装前确认过；Linux 上要先在终端 `sudo -v`，Linux 不是主力平台，先这样）。`script` 不经 shell，按空格拆开，命令必须在 PATH 里。
+- **清单里还是 TODO 的值**让这一项以 `manifest_todo` 失败（第 8 步补齐之前，PyTorch、ComfyUI、各节点和权重都会停在这里）；子进程输出逐行发 `setup.log`（`output`，单行截到 500 字）。
+- **CI 两个修复**：Linux 的 mypy 不认识 `subprocess.CREATE_NO_WINDOW`（只在 Windows 存在；第 4a 步起 CI 一直卡在 mypy，后面的 pytest 没跑），本地改动 `setup/` 后加跑 `mypy --platform linux`；runner 上 corepack 默认的 pnpm 升到 12.14.0，在仓库根目录调 `pnpm -C web` 时和 `web/package.json` 锁的 12.11.2 不符，CI 先 `corepack install -g` 锁定的版本。
+
 ## 2026-10-18 · M1 安装流程（第 5a 步）
 
 - **一次安装 = 一个 `setup.install` 任务**（cpu 队列）：按依赖拓扑排好的顺序（存进 `install.items`）一项一项装，装好写 `installed_item`。重试时如果任务还在跑，只把这一项排回队列，由它接着装；任务已经结束就新开一个。重试不再问一遍确认。

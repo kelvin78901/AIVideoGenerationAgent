@@ -122,7 +122,16 @@
     "dependency_failed": "{{item}}, which it needs, did not install",
     "dependency_missing": "It needs {{item}}: tick that too",
     "interrupted": "The install was interrupted; retry it",
-    "internal": "Installer error: {{message}}"
+    "internal": "Installer error: {{message}}",
+    "manifest_todo": "How to install this is not settled yet ({{field}})",
+    "command_not_found": "Command not found: {{command}}",
+    "step_failed": "The {{step}} step failed (exit code {{exit}}); see the log",
+    "not_installable": "This item has no install steps",
+    "dest_not_empty": "The target folder already has other files: {{path}}",
+    "download_failed": "Downloading {{file}} failed ({{status}}); retry to resume",
+    "sha256_mismatch": "{{file}} failed its checksum and was deleted; retry it",
+    "no_package": "No {{manager}} package is set for this item",
+    "source_missing": "Nothing to copy at {{path}}"
   },
   "confirmReason": {
     "admin": "{{item}} needs administrator rights to install",
@@ -167,7 +176,9 @@
     "finish": "All finished.",
     "skip_dep": "Skipped {{item}}: {{dep}}, which it needs, is not installed",
     "confirm": "Waiting for your go-ahead",
-    "cancel": "Install canceled"
+    "cancel": "Install canceled",
+    "already": "Already installed: {{item}}",
+    "output": "{{text}}"
   },
   "done": {
     "title": "Ready",

@@ -15,6 +15,7 @@ from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import MachineProfileRow
 from drama_series_agent.setup.installer import INSTALL_JOB, FakeRunner
 from drama_series_agent.setup.manifest import Manifest, load_manifest
+from drama_series_agent.setup.steps import RealRunner
 
 LOCAL = "http://127.0.0.1"
 CLIENT_HEADERS = {"X-Drama-Studio": "1"}
@@ -319,3 +320,9 @@ def test_an_install_that_died_stops_queueing(client: TestClient) -> None:
     }
     assert client.post(f"{V1}/setup/items/torch/retry").status_code == 200
     assert _states(_wait(client, "done"))["torch"] == "done"
+
+
+def test_real_machine_gets_the_real_runner(client: TestClient) -> None:
+    setup = _state(client).setup
+    assert isinstance(setup.runner_for(MachineProfileRow(id="demo", machine="pc")), FakeRunner)
+    assert isinstance(setup.runner_for(MachineProfileRow(id="local")), RealRunner)

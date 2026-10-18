@@ -122,7 +122,16 @@
     "dependency_failed": "它依赖的 {{item}} 没装好",
     "dependency_missing": "缺少它依赖的 {{item}}，把它也勾上再装",
     "interrupted": "安装中断了，可以重试",
-    "internal": "安装器出错了：{{message}}"
+    "internal": "安装器出错了：{{message}}",
+    "manifest_todo": "安装方式还没定下来（{{field}}）",
+    "command_not_found": "找不到命令 {{command}}",
+    "step_failed": "{{step}} 这一步失败了（退出码 {{exit}}），详情看日志",
+    "not_installable": "这一项没有安装步骤",
+    "dest_not_empty": "目标文件夹里已经有别的东西：{{path}}",
+    "download_failed": "下载 {{file}} 失败（{{status}}），可以重试，会接着下",
+    "sha256_mismatch": "{{file}} 校验不对，已删掉，可以重试",
+    "no_package": "{{manager}} 里没有配这个包",
+    "source_missing": "找不到要复制的 {{path}}"
   },
   "confirmReason": {
     "admin": "{{item}} 要用管理员权限安装",
@@ -167,7 +176,9 @@
     "finish": "全部结束。",
     "skip_dep": "已跳过：{{item}}（它依赖的 {{dep}} 没装好）",
     "confirm": "等你确认后开始安装",
-    "cancel": "已取消安装"
+    "cancel": "已取消安装",
+    "already": "已经装好了：{{item}}",
+    "output": "{{text}}"
   },
   "done": {
     "title": "准备好了",

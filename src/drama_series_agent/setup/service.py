@@ -69,6 +69,7 @@ from drama_series_agent.setup.schema import (
     item_of,
     machine_of,
 )
+from drama_series_agent.setup.steps import RealRunner
 
 SCAN_JOB = "setup.scan"
 PROFILE_LOCAL = "local"
@@ -129,11 +130,6 @@ class _Superseded(Exception):
     """A newer scan, install or reset took over the profile; the job stops writing."""
 
 
-class _NoRealRunner:
-    async def install(self, item: Item, env: InstallEnv, log: Any, progress: Any) -> Installed:
-        raise InstallError("internal", message="real installs are not wired yet")
-
-
 def _blocker(
     item: Item, states: dict[str, SetupItem], installed: set[str]
 ) -> tuple[str, str] | None:
@@ -190,7 +186,21 @@ class SetupService:
             return self._runner(row)
         if row.id == PROFILE_DEMO:
             return FakeRunner()
-        return _NoRealRunner()
+        return RealRunner(
+            mirrors=self._manifest().mirrors, transport=self._transport, already=self._already_ok
+        )
+
+    async def _already_ok(self, item: Item, env: InstallEnv) -> bool:
+        """Installed by hand since the scan? Ask its detector again, on the real machine."""
+        manifest = self._manifest()
+        ctx = await ScanContext.create(
+            RealProbe(self._transport),
+            manifest.for_platform(env.os),
+            mirrors=manifest.mirrors,
+            envs=env.envs,
+            models=env.models,
+        )
+        return (await detect_item(item, ctx)).status == "ok"
 
     async def profile(self) -> MachineProfile:
         async with self._lock:
