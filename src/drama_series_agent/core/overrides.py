@@ -7,6 +7,7 @@ from typing import Any, cast
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.core.capabilities import Capabilities
 from drama_series_agent.core.config import Layer, Override, Resolved, StudioConfig, resolve
 from drama_series_agent.core.models_db import ConfigOverride, utcnow
 
@@ -59,5 +60,7 @@ async def resolve_component(
     *,
     item: str | None = None,
     config: StudioConfig | None = None,
+    caps: Capabilities | None = None,
 ) -> Resolved:
-    return resolve(component_id, await load_overrides(session), item=item, config=config)
+    overrides = await load_overrides(session)
+    return resolve(component_id, overrides, item=item, config=config, caps=caps)

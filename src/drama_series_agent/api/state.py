@@ -44,14 +44,15 @@ class StudioState:
         store = BlobStore()
         registry = Registry.from_config(get_config())
         jobs = JobQueue(db, bus)
+        setup = SetupService(db, bus, jobs)
         state = cls(
             db=db,
             bus=bus,
             jobs=jobs,
             store=store,
             registry=registry,
-            router=Router(db, bus, registry, store=store),
-            setup=SetupService(db, bus, jobs),
+            router=Router(db, bus, registry, store=store, capabilities=setup.capabilities),
+            setup=setup,
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:

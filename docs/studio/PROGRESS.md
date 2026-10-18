@@ -5,7 +5,7 @@
 ## 当前
 
 - 里程碑：**M1 首次启动 + 成片规格**（M0.5 已合并，报告 [`reports/M0.5.md`](reports/M0.5.md)）
-- 计划：[`docs/studio/plans/M1.md`](plans/M1.md)（已批准 2026-10-15；Kelvin 的四个决定见 DECISIONS「2026-10-15 · M1 计划」；2026-10-18 按 SPEC 6.4 追加 4c、5c、7b，剩下的顺序 **6 → 4c → 5c → 7 → 7b → 8 → 9**）
+- 计划：[`docs/studio/plans/M1.md`](plans/M1.md)（已批准 2026-10-15；Kelvin 的四个决定见 DECISIONS「2026-10-15 · M1 计划」；2026-10-18 按 SPEC 6.4 追加 4c、5c、7b，剩下的顺序 **4c → 5c → 7 → 7b → 8 → 9**（6 已做完））
 - 分支：`m1-setup-spec`（从 main 切出；每步提交后 push；不推 main；做完开 PR）
 
 ## 已完成的小步
@@ -20,11 +20,12 @@
 | 4b | 表 `machine_profile`、`installed_item` + 迁移 `0003`；`setup/schema.py`、`setup/service.py`（`SetupService`：档案、`setup.scan` 任务、`run` 令牌、示例机器切换）；`GET /setup/profile`（`simulated`）、`POST /setup/scan`（202）、`POST /dev/setup/machine`；清单加 `recommend:`；勾 ROADMAP 第 1、4、5、6 项（第 1–3 步当时漏勾） | 46ba9fa | pytest 222（setup 接口 10 个）；ruff、mypy 通过；临时后端 8771 上 curl 走通 |
 | 5a | `setup/installer.py`（`FakeRunner`、`install_order`、`confirm_reasons`、`InstallError`）；`SetupService` 加 `setup.install` 任务、依赖跳过、重试 / 跳过、确认 / 取消、重启续跑；`POST /setup/install`、`/setup/install/confirm|cancel`、`/setup/items/{id}/retry|skip`；清单加 `size_gb`、pkg 的 `admin`；新文案；e2e `Backend` 挪进 `tests/e2e/conftest.py` | e239238 | pytest 238（安装接口 11、installer 4、e2e 续跑 1）；ruff、mypy、i18n 通过 |
 | 5b | `setup/steps.py`：`RealRunner`（7 种步骤、幂等、装前先检测、镜像、`.part` 续传 + sha256）替掉临时 runner；新文案 error 9 个、log 2 个；另修 CI：Linux mypy（ad8cf79）、corepack 的 pnpm 版本（0ba5732）；勾 ROADMAP 安装器一项 | 5ab627c | pytest 261（steps 22）；ruff、mypy（含 `--platform linux`）通过；CI（Linux）全绿 |
+| 6 | `core/capabilities.py`（`Capabilities`、`restrict`）；`providers.yaml` 本地模型加 `needs` / `requires_cuda`；`resolve(caps=)` + `Resolved.unavailable`；档案存 `found`（扫描结束写、装好追加），`SetupService.capabilities()` 接进 `Router` 和兼容表；勾验收第 3 条；DECISIONS 记第 6 步 | 本提交 | pytest 273（capabilities 单元 9、接口 3）；ruff、mypy（含 `--platform linux`）通过 |
 
 ## 下一步
 
-- **第 6 步 能力过滤和推荐（后端）**：`providers.yaml` 的本地模型加 `needs: [清单项 id…]` 和 `requires_cuda`；新文件 `core/capabilities.py`：按 `machine_profile`（`SetupService` 的 `local` / `demo` 档案）和 `installed_item` 算出哪些本地模型可用；`resolve()` 遇到本地跑不了的组件把 `local` / `hybrid` 降成 `api`。测试：Mac 扫描后视频、关键帧、超分的生效方式是 `api`（验收第 3 条）；5090 装好后保持 hybrid / local。从 `core/config.py:resolve()` 和 `config/providers.yaml` 的本地模型开始看。
-  - **4c 的线索**：Kelvin 用的是 **ComfyUI Desktop，端口 8188**（2026-10-18 答复，和后端 8000 不冲突）。Desktop 的目录和便携版不一样，可能是程序代码（含 `main.py`）在安装目录里，`custom_nodes`、`models`、`.venv` 在安装时选的数据目录里。现在的定位按 `main.py` 所在目录找 `custom_nodes` 和 Python，对 Desktop 很可能不对，4c 要分开「代码目录」和「数据目录」。本机没有 `%APPDATA%\ComfyUI`，当时 ComfyUI 也没开（`/system_stats` 读不到），开工 4c 前请 Kelvin 打开 ComfyUI Desktop，再只读看 argv 和目录。
+- **第 4c 步 识别已装的 ComfyUI（后端，只读，SPEC 6.4.1）**：按计划 4c 那一节做（`.git` 直接读文件、`pyproject.toml` 版本、`/object_info` 按包归类、端口、模型文件、表 `comfy_env` + 迁移 `0004`、`GET /comfy/env`、夹具和 `RealProbe` 不写文件的测试）。从 `setup/detectors.py` 的 ComfyUI 定位和 `setup/probe.py` 开始看。
+  - **线索**：Kelvin 用的是 **ComfyUI Desktop，端口 8188**（2026-10-18 答复，和后端 8000 不冲突）。Desktop 的目录和便携版不一样，可能是程序代码（含 `main.py`）在安装目录里，`custom_nodes`、`models`、`.venv` 在安装时选的数据目录里。现在的定位按 `main.py` 所在目录找 `custom_nodes` 和 Python，对 Desktop 很可能不对，4c 要分开「代码目录」和「数据目录」。本机没有 `%APPDATA%\ComfyUI`，当时 ComfyUI 也没开（`/system_stats` 读不到），**开工 4c 前请 Kelvin 打开 ComfyUI Desktop**，再只读看 argv 和目录。
   - 收尾时 SPEC 9.1 要补：`POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm`。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -47,6 +48,7 @@
 - Playwright 冒烟收尾时后端会打印 aiosqlite「Task was destroyed but it is pending」，不影响结果，还没查（后端本步没改）。
 - MSW 在 jsdom 里能拦相对路径的 fetch；handler 路径写 `*/api/v1/...`（`mocks/http.ts:v1()`）。
 
+- **能力过滤在 Mock 下也生效**：扫描示例机器后路由会变（PC 示例装好之前视频、关键帧、超分走 API，兼容表没有 `video_draft` 行；没扫描过不过滤）。第 7 步 Setup 页接真实接口后，e2e 里如果先扫描再看成片规格页，兼容表的预期要跟着改。
 - **改 `setup/` 这类带平台分支的代码后加跑 `python -m mypy --platform linux`**：CI 是 Linux，Windows 上的 mypy 看不出 `subprocess.CREATE_NO_WINDOW` 这类只在 Windows 有的名字。
 - **本机应用控制策略拦 `.venv/Scripts` 里 uv 生成的入口 exe**（`pytest.exe`、`mypy.exe` 报 os error 4551，`ruff` 不受影响）：一律 `uv run --no-sync python -m pytest` / `python -m mypy`。
 - **本机 PowerShell 执行策略禁止 `-File` 跑脚本**：钩子、状态栏、`start.ps1` 都要 `powershell -NoProfile -ExecutionPolicy Bypass -File …`。

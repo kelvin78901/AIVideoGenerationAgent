@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 能力过滤（第 6 步）
+
+- **本地模型写明自己要什么**：`providers.yaml` 的本地模型（含本地 LLM 服务的两个）加 `needs`（清单项 id）和 `requires_cuda`。H3 要 ComfyUI + H3 节点 + 两份权重 + CUDA，ControlNet 再加 Fun ControlNet 节点；SeedVR2 / FlashVSR 要各自的节点（SeedVR2 还要权重）+ CUDA；Qwen-Image-Edit 要 ComfyUI + 权重，不要求 CUDA（Mac 上 ComfyUI 能出图，只是慢）；本地 LLM 和 Qwen3-VL 要本地 LLM 服务（Qwen3.6-27B 还要 `w_llm`）。清单里还没有对应项的（CosyVoice、Whisper 等）不写 `needs`，视为能跑，跑时失败照常兜底；LatentSync、InfiniteTalk 只标 CUDA。测试检查每个 `needs` 都是清单里的 id。
+- **「有」怎么算**：最近一次扫描里状态为通过、需更新、注意的项，加上之后装好的项（和安装器判断依赖的规则一致：ComfyUI 版本旧也算有，H3 节点有单独的检测项）。存在档案的 `found` 里：扫描结束时写，每装好一项追加一项，重新扫描期间沿用上一次的结果，切换示例机器时清空。**从没扫描过时不过滤**：不知道机器情况，就按配置走。
+- **怎么绕开**（`core/capabilities.py:restrict`，在 `resolve()` 合并完各层覆盖之后做，所以用户手选的本地模型也会被绕开）：`local_model` 置空；`local` / `hybrid` 改成 `api`，没有 API 模型的（结构控制）改成 `off`；`fallback.to` 是跑不了的本地模型时置空（路由器接着按 `alt_order` 找）；`alt_order` 里也去掉。不自动换另一个本地模型顶上，免得悄悄换了模型。
+- **来源不变**：`sources` 仍标原来那一级；另给 `Resolved.unavailable`（模型 → 缺什么：`cuda` 或清单项 id），M2 的「模型与兜底」页用它说明「本机跑不了」（前端契约里已有 `ComponentDef.unavailable`）。
+- **用在哪**：`router.settings()`（每次模型调用）和兼容表（`/series/{id}/spec/compat` 按这台机器实际会走的路由判断）。Mock 模式下扫描示例机器同样生效：扫描 PC 示例后、装好之前，视频、关键帧、超分都走 API。
+- **原因**：SPEC 7.3、12.2-1「跑不了的本地选项隐藏」。验收第 3 条（Mac 上视频、关键帧、超分走 API）由能力过滤直接得出，推荐预设里不用另写规则。
+
 ## 2026-10-18 · ComfyUI 与工作流库（Kelvin 定）
 
 - **背景**：Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作流。设计写进 SPEC 6.4（原「ComfyUI」扩成「ComfyUI 与工作流库」），ROADMAP 的 M1、M5 加了对应条目。

@@ -133,8 +133,8 @@ llm_providers:
     key_name: null
     where: local
     models:
-      - { key: local/qwen3.6-27b,   display: Qwen3.6-27B（本地）,   model_id: null, price: { in: 0, out: 0, currency: USD } }
-      - { key: local/qwen3-30b-a3b, display: Qwen3-30B-A3B（本地）, model_id: null, price: { in: 0, out: 0, currency: USD } }
+      - { key: local/qwen3.6-27b,   display: Qwen3.6-27B（本地）,   model_id: null, price: { in: 0, out: 0, currency: USD }, needs: [llmsrv, w_llm] }
+      - { key: local/qwen3-30b-a3b, display: Qwen3-30B-A3B（本地）, model_id: null, price: { in: 0, out: 0, currency: USD }, needs: [llmsrv] }
 
 # 写作类组件在模型选择器里的顺序；前 6 个直接显示，其余收进「更多供应商」
 llm_ui_order:
@@ -189,22 +189,25 @@ media_models:
   - { key: worldlabs/marble, kind: world, display: World Labs Marble, unit: world, price: 1.2, currency: USD, enabled_by_default: false }
 
 # 本地模型（价格 0，记时长和显存）
+# needs: 跑它要有的清单项（config/setup-manifest.yaml 的 id）；requires_cuda: 要 NVIDIA 显卡。
+# 扫描后缺任何一项，resolve() 就绕开它（local / hybrid 改走 API，见 core/capabilities.py）。
+# 没写 needs 的（清单里还没有对应项）视为能跑，跑时失败照常兜底。
 local_models:
-  - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3_i2v, caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440 } }
-  - { key: comfy/h3-fun-controlnet, kind: video,   display: H3 Fun ControlNet（本地）, runtime: comfyui, workflow: h3_controlnet }
-  - { key: comfy/wan-2.2,           kind: video,   display: Wan 2.2（本地）,          runtime: comfyui }
-  - { key: comfy/ltx,               kind: video,   display: LTX（本地）,              runtime: comfyui, verify: true }
-  - { key: comfy/qwen-image-edit,   kind: image,   display: Qwen-Image-Edit（本地）,  runtime: comfyui }
-  - { key: comfy/qwen-image,        kind: image,   display: Qwen-Image（本地）,       runtime: comfyui }
-  - { key: comfy/flux2-dev,         kind: image,   display: FLUX.2 dev（本地）,       runtime: comfyui }
-  - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui }
-  - { key: comfy/flashvsr,          kind: upscale, display: FlashVSR（本地）,         runtime: comfyui }
-  - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python }
+  - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3_i2v, caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440 }, needs: [comfy, node_h3, w_h3, w_te], requires_cuda: true }
+  - { key: comfy/h3-fun-controlnet, kind: video,   display: H3 Fun ControlNet（本地）, runtime: comfyui, workflow: h3_controlnet, needs: [comfy, node_h3, node_ctrl, w_h3, w_te], requires_cuda: true }
+  - { key: comfy/wan-2.2,           kind: video,   display: Wan 2.2（本地）,          runtime: comfyui, needs: [comfy], requires_cuda: true }
+  - { key: comfy/ltx,               kind: video,   display: LTX（本地）,              runtime: comfyui, verify: true, needs: [comfy], requires_cuda: true }
+  - { key: comfy/qwen-image-edit,   kind: image,   display: Qwen-Image-Edit（本地）,  runtime: comfyui, needs: [comfy, w_img] }
+  - { key: comfy/qwen-image,        kind: image,   display: Qwen-Image（本地）,       runtime: comfyui, needs: [comfy] }
+  - { key: comfy/flux2-dev,         kind: image,   display: FLUX.2 dev（本地）,       runtime: comfyui, needs: [comfy] }
+  - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui, needs: [comfy, node_seedvr2, w_sr], requires_cuda: true }
+  - { key: comfy/flashvsr,          kind: upscale, display: FlashVSR（本地）,         runtime: comfyui, needs: [comfy, node_flashvsr], requires_cuda: true }
+  - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python, needs: [w_tts] }
   - { key: local/cosyvoice,         kind: tts,     display: CosyVoice（本地）,        runtime: python }
   - { key: local/qwen3-tts,         kind: tts,     display: Qwen3-TTS（本地试听）,     runtime: python }
-  - { key: local/latentsync,        kind: lipsync, display: LatentSync（本地）,       runtime: python }
-  - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python }
-  - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server }
+  - { key: local/latentsync,        kind: lipsync, display: LatentSync（本地）,       runtime: python, requires_cuda: true }
+  - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python, requires_cuda: true }
+  - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server, needs: [llmsrv] }
   - { key: local/ace-step,          kind: music,   display: ACE-Step（本地）,         runtime: python }
   - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python }
   - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }

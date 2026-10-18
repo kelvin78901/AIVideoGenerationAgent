@@ -62,18 +62,22 @@ async def put_spec(
 
 @router.get("/series/{series_id}/spec/compat")
 async def get_compat(series_id: str, state: State, aspect: Aspect | None = None) -> Compat:
-    """The compatibility table for ``aspect`` (default: the spec's), at the spec's delivery tier."""
+    """The compatibility table for ``aspect`` (default: the spec's), at the spec's delivery tier.
+
+    Judged on the route this machine will really take: local models it cannot run are off it.
+    """
     async with state.db.session() as session:
         row = await session.get(OutputSpecRow, series_id)
         if row is None:
             raise ApiError(404, "series_not_found", id=series_id)
         overrides = await load_overrides(session)
     cfg = get_config()
+    caps = await state.setup.capabilities()
     current: Aspect = row.aspect  # type: ignore[assignment]
     delivery: Delivery = row.delivery  # type: ignore[assignment]
     return compat_table(
         aspect or current,
         delivery,
-        lambda comp: resolve(comp, overrides, config=cfg).values,
+        lambda comp: resolve(comp, overrides, config=cfg, caps=caps).values,
         cfg,
     )

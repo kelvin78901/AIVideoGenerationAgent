@@ -7,7 +7,9 @@ picks explicitly; otherwise Mock mode means fake.
 A scan is a ``setup.scan`` job on the cpu queue. It rewrites the profile item by item and
 publishes ``setup.progress`` after each one. Every scan or reset draws a new ``run`` token; a
 job whose token is no longer the profile's stops without writing, so a rescan or a machine
-switch never mixes two scans. All profile writes go through one lock.
+switch never mixes two scans. All profile writes go through one lock. What the last finished
+scan found (plus what installed since) tells the router which local models can run here
+(``capabilities()``, SPEC 7.3).
 
 An install is a ``setup.install`` job: it takes the queued items one at a time in dependency
 order (the order ``POST /setup/install`` stored), skips those whose dependency did not make
@@ -30,6 +32,7 @@ import httpx
 from loguru import logger
 from sqlmodel import col, delete, select
 
+from drama_series_agent.core.capabilities import FOUND_STATUSES, Capabilities
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.jobs import TERMINAL, JobContext, JobQueue, JobStateError
@@ -206,6 +209,18 @@ class SetupService:
         async with self._lock:
             row, data = await self._current()
             return self._public(row, data)
+
+    async def capabilities(self) -> Capabilities | None:
+        """What this machine can run locally (core/capabilities.py); None before the first scan.
+
+        Reads the stored row without the lock: every write replaces it whole.
+        """
+        loaded = await self._load(self.profile_id)
+        data = loaded[1] if loaded is not None else None
+        if data is None or data.found is None:
+            return None
+        gpu = data.machine.gpu
+        return Capabilities.of(cuda=gpu is not None and gpu.backend == "cuda", found=data.found)
 
     async def installed(self, profile_id: str | None = None) -> set[str]:
         pid = profile_id or self.profile_id
@@ -401,6 +416,7 @@ class SetupService:
         def finish(d: ProfileData) -> None:
             d.phase = "scanned"
             d.recommendation = Recommendation(preset=rec.preset, reason=rec.reason) if rec else None
+            d.found = [x.id for x in d.items if x.status in FOUND_STATUSES]
 
         if not await self._write(pid, run, finish, scanned_at=utcnow()):
             return superseded
@@ -523,6 +539,8 @@ class SetupService:
             x.install = change(x.install)
             if record is not None:
                 await self._record(pid, item_id, record)
+                if data.found is not None and item_id not in data.found:
+                    data.found.append(item_id)
             await self._save(pid, data)
             if log is not None:
                 await self._log(log[0], log[1], **log[2])

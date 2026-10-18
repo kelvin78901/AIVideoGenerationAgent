@@ -77,6 +77,9 @@ class ProfileData(BaseModel):
     recommendation: Recommendation | None = None
     # What the detectors saw beyond the status (paths, versions, latencies); not in the API.
     facts: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    # Item ids this machine has: set when a scan finishes, extended by each finished install,
+    # kept while a rescan runs. None before the first scan. Feeds core/capabilities.py.
+    found: list[str] | None = None
     # Bumped by every scan / reset; a job whose token is stale stops writing.
     run: str | None = None
     job_id: str | None = None

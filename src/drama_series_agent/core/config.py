@@ -12,7 +12,7 @@ from __future__ import annotations
 import copy
 import re
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -20,6 +20,7 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
+from drama_series_agent.core.capabilities import Capabilities, restrict
 from drama_series_agent.core.paths import config_dir
 
 Layer = Literal["factory", "project", "component", "item"]
@@ -49,6 +50,9 @@ class LlmModel(_Loose):
     offpeak: dict[str, Any] | None = None
     json_mode: bool = False
     verify: bool = False
+    # Local models only (core/capabilities.py): setup-manifest item ids it needs, and CUDA.
+    needs: list[str] = Field(default_factory=list)
+    requires_cuda: bool = False
 
 
 class LlmProvider(_Loose):
@@ -80,6 +84,9 @@ class LocalModel(_Loose):
     workflow: str | None = None
     caps: dict[str, Any] = Field(default_factory=dict)
     verify: bool = False
+    # What this machine must have to run it (core/capabilities.py): setup-manifest item ids.
+    needs: list[str] = Field(default_factory=list)
+    requires_cuda: bool = False
 
 
 class ProvidersConfig(_Loose):
@@ -265,6 +272,9 @@ class Override:
 class Resolved:
     values: dict[str, Any]
     sources: dict[str, Layer]  # dotted field path → layer, e.g. "fallback.to" → "item"
+    # Local models taken off the route because this machine cannot run them → what each lacks
+    # ("cuda" or setup item ids). ``values`` already route around them; ``sources`` are unchanged.
+    unavailable: dict[str, list[str]] = field(default_factory=dict)
 
 
 def _flatten(data: Mapping[str, Any], prefix: str = "") -> dict[str, Any]:
@@ -296,8 +306,13 @@ def resolve(
     *,
     item: str | None = None,
     config: StudioConfig | None = None,
+    caps: Capabilities | None = None,
 ) -> Resolved:
-    """Merge factory defaults with the overrides that apply to ``component_id`` / ``item``."""
+    """Merge factory defaults with the overrides that apply to ``component_id`` / ``item``.
+
+    With ``caps`` (this machine, after a scan), local models it cannot run are routed around
+    last, so a hand-picked local model is dropped too (SPEC 7.3).
+    """
     cfg = config or get_config()
     comp = cfg.components.component(component_id)
     values = copy.deepcopy(factory_settings(comp, cfg.components.fallback_defaults))
@@ -315,4 +330,5 @@ def resolve(
         for path, value in _flatten(ov.data).items():
             _set_path(values, path, value)
             sources[path] = ov.scope
-    return Resolved(values=values, sources=sources)
+    unavailable = restrict(values, cfg.providers, caps) if caps is not None else {}
+    return Resolved(values=values, sources=sources, unavailable=unavailable)
