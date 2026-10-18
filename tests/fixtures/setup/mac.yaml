@@ -1,5 +1,5 @@
 # The Mac M4 Pro from the prototype (Setup.dc.html). Read by setup/probe.py:FakeProbe.
-# Expected scan: ok 6 / warn 3 / missing 4 / optional 7 / skip 8 (28 rows; no driver row).
+# Expected scan: ok 6 / warn 3 / missing 4 / optional 8 / skip 8 (29 rows; no driver row).
 
 host: { os: macos, os_name: macOS, bits: 64, arch: arm64, ram_gb: 48, home: /Users/demo }
 gpu: { name: Apple M4 Pro, vram_gb: 48, backend: mps }

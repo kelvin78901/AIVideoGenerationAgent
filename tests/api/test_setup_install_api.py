@@ -77,6 +77,14 @@ def _install(client: TestClient, items: list[str], **kw: Any) -> Any:
     return client.post(INSTALL, json=body)
 
 
+def _go(client: TestClient, items: list[str], **kw: Any) -> Any:
+    """Install and approve what it asks (on the PC: the change list for its own ComfyUI)."""
+    resp = _install(client, items, **kw)
+    if resp.status_code == 202 and resp.json()["install"]["confirm"]:
+        assert client.post(f"{V1}/setup/install/confirm").status_code == 200
+    return resp
+
+
 def _states(p: dict[str, Any]) -> dict[str, str]:
     return {x["id"]: x["install"]["state"] for x in p["items"] if x["install"]}
 
@@ -97,9 +105,29 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
     assert resp.status_code == 202
     started = resp.json()
     assert started["phase"] == "installing"
-    assert started["install"]["mirror"] == "auto" and started["install"]["confirm"] == []
+    assert started["install"]["mirror"] == "auto"
     assert sorted(started["install"]["items"]) == sorted(PC_INSTALLABLE)
     assert set(_states(started).values()) == {"queued"}
+    # D:\ComfyUI is the user's own: everything that changes it is listed for approval.
+    touching = [x["id"] for x in started["items"] if x["touches_comfy"] and x["install"]]
+    assert touching == [
+        "torch", "comfy", "node_h3", "node_seedvr2", "node_flashvsr", "node_ctrl", "sage",
+        "node_dramastudio", "w_h3",
+    ]  # fmt: skip
+    changes = started["install"]["confirm"]
+    assert [c["params"]["item"] for c in changes] == [
+        i for i in started["install"]["items"] if i in touching
+    ]
+    assert changes[0] == {
+        "code": "comfy_change",
+        "params": {
+            "item": "torch",
+            "action": "update",
+            "from": "2.7.1+cu128",
+            "source": "torch torchvision torchaudio",
+        },
+    }
+    assert client.post(f"{V1}/setup/install/confirm").status_code == 200
 
     done = _wait(client, "done")
     states = _states(done)
@@ -116,6 +144,12 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
 
     logs = _logs(client)
     assert logs[0] == ("info", "mirror", {"mirror": "auto", "dir": "D:\\DramaStudio"})
+    # One snapshot, before the first change to ComfyUI (PyTorch, which goes into its Python).
+    codes = [code for _, code, _ in logs]
+    assert codes.count("snapshot") == 1
+    first = next(i for i, (_, c, p) in enumerate(logs) if c == "start" and p["item"] == "torch")
+    assert codes.index("snapshot") == first + 1  # after "start", before any of its steps
+    assert codes.index("snapshot") < codes.index("done")
     assert ("warn", "fail_optional", {"item": "sage"}) in logs
     assert logs[-1] == ("ok", "finish", {})
     starts = [p["item"] for _, code, p in logs if code == "start"]
@@ -126,11 +160,11 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
 
 def test_rescan_only_reports_the_difference(client: TestClient) -> None:
     _scan(client)
-    _install(client, PC_INSTALLABLE)
+    _go(client, PC_INSTALLABLE)
     _wait(client, "done")
     after = _scan(client)
     by_id = {x["id"]: x for x in after["items"]}
-    assert Counter(x["status"] for x in after["items"]) == {"ok": 24, "optional": 4, "warn": 1}
+    assert Counter(x["status"] for x in after["items"]) == {"ok": 25, "optional": 4, "warn": 1}
     assert by_id["ffmpeg"]["found"] == {"code": "installed", "params": {}}
     assert by_id["sage"]["status"] == "optional" and by_id["sage"]["installable"]
     assert all(x["install"] is None for x in after["items"])
@@ -138,7 +172,7 @@ def test_rescan_only_reports_the_difference(client: TestClient) -> None:
 
 def test_retry_and_skip(client: TestClient) -> None:
     _scan(client)
-    _install(client, ["ffmpeg", "sage"])
+    _go(client, ["ffmpeg", "sage"])
     _wait(client, "done")
 
     resp = client.post(f"{V1}/setup/items/sage/retry")
@@ -168,7 +202,7 @@ def test_retry_and_skip(client: TestClient) -> None:
 def test_skip_a_queued_item(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     _scan(client)
     monkeypatch.setenv("DRAMA_SETUP_FAKE_TICK_MS", "40")
-    _install(client, ["ffmpeg", "w_h3", "w_tts"])
+    _go(client, ["ffmpeg", "w_h3", "w_tts"])
     assert client.post(f"{V1}/setup/items/w_tts/skip").status_code == 200
     monkeypatch.setenv("DRAMA_SETUP_FAKE_TICK_MS", "0")
     states = _states(_wait(client, "done"))
@@ -204,7 +238,7 @@ def test_an_old_dependency_still_counts(client: TestClient) -> None:
     # PC: ComfyUI is installed but old. Its update failing does not block the H3 nodes.
     _scan(client)
     _state(client).setup._runner = lambda row: FakeRunner(failing="comfy")
-    _install(client, ["comfy", "node_h3"])
+    _go(client, ["comfy", "node_h3"])
     assert _states(_wait(client, "done")) == {"comfy": "failed", "node_h3": "done"}
 
 
@@ -237,7 +271,16 @@ def test_large_download_waits_for_a_yes(client: TestClient) -> None:
     p = resp.json()
     assert p["phase"] == "installing"
     assert p["install"]["confirm"] == [
-        {"code": "large_download", "params": {"item": "w_h3", "gb": 24.0}}
+        {
+            "code": "comfy_change",
+            "params": {
+                "item": "w_h3",
+                "action": "install",
+                "source": "MiniMaxAI/MiniMax-H3",
+                "gb": 24.0,
+            },
+        },
+        {"code": "large_download", "params": {"item": "w_h3", "gb": 24.0}},
     ]
     time.sleep(0.2)
     assert set(_states(client.get(PROFILE).json()).values()) == {"queued"}  # nothing ran

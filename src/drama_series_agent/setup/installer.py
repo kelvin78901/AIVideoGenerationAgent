@@ -15,7 +15,7 @@ from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
 from drama_series_agent.setup.detectors import msg
-from drama_series_agent.setup.manifest import OS, Item, Message, topo_order
+from drama_series_agent.setup.manifest import OS, TODO, Item, Message, topo_order
 
 INSTALL_JOB = "setup.install"
 LARGE_DOWNLOAD_GB = 10.0  # SPEC 12.2-5
@@ -114,3 +114,29 @@ def confirm_reasons(items: list[Item], os: OS) -> list[Message]:
         if downloads and (x.size_gb or 0) > LARGE_DOWNLOAD_GB:
             reasons.append(msg("large_download", item=x.id, gb=x.size_gb))
     return reasons
+
+
+def _first(item: Item, keys: tuple[str, ...]) -> str | None:
+    for step in item.install:
+        extra = step.model_extra or {}
+        for key in keys:
+            value = extra.get(key)
+            if isinstance(value, str) and value and TODO not in value:
+                return value
+            if isinstance(value, list) and value and key == "packages":
+                return " ".join(str(v) for v in value)
+    return None
+
+
+def comfy_change(item: Item, *, status: str, version: str | None) -> Message:
+    """One line of the change list for the user's own ComfyUI (SPEC 6.4.1): what, from which
+    version to which, from where, how big. Unknown parts are left out."""
+    params: dict[str, Any] = {"item": item.id, "action": "update" if status == "old" else "install"}
+    target = _first(item, ("ref", "version"))
+    source = _first(item, ("url", "hf_repo", "packages", "requirements", "from"))
+    for key, value in (("from", version), ("to", target), ("source", source)):
+        if value:
+            params[key] = value
+    if item.size_gb:
+        params["gb"] = item.size_gb
+    return msg("comfy_change", **params)

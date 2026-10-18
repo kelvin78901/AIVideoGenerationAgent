@@ -277,3 +277,24 @@ class ComfyEnvRow(SQLModel, table=True):
     captured_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+class ComfySnapshotRow(SQLModel, table=True):
+    """A ComfyUI-Manager snapshot of the user's ComfyUI, taken before we changed it (SPEC 6.4.1).
+
+    ``profile_id`` keeps Mock's sample machines apart from this computer, as in
+    ``machine_profile``.
+    """
+
+    __tablename__ = "comfy_snapshot"
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    profile_id: str = Field(index=True)
+    manager_name: str  # the snapshot's name in ComfyUI-Manager
+    env_hash: str | None = None  # comfy_env as of the last scan
+    reason: str  # install / manual
+    changes_json: list[dict[str, Any]] = _json(list)  # the change list the user approved
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+    restored_at: datetime | None = _ts()

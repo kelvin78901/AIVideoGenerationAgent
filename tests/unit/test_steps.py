@@ -6,7 +6,7 @@ import hashlib
 import json
 import re
 from pathlib import Path
-from typing import Any
+from typing import Any, get_args
 
 import httpx
 import pytest
@@ -15,6 +15,7 @@ from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.setup.installer import InstallEnv, InstallError
 from drama_series_agent.setup.manifest import OS, Item, load_manifest
 from drama_series_agent.setup.pathutil import join
+from drama_series_agent.setup.snapshots import SnapshotFailure
 from drama_series_agent.setup.steps import WINGET_ALREADY_INSTALLED, RealRunner, _python_in
 
 MIRRORS = load_manifest().mirrors
@@ -378,10 +379,11 @@ def test_install_codes_are_in_the_word_list(lang: str) -> None:
     text = "\n".join(p.read_text(encoding="utf-8") for p in src.glob("*.py"))
     errors = set(re.findall(r'InstallError\(\s*"(\w+)"', text))
     errors |= {"dependency_failed", "dependency_missing", "interrupted", "internal", "no_wheel"}
+    errors |= {f"snapshot_{r}" for r in get_args(SnapshotFailure)}  # built from the reason
     assert errors - set(words["error"]) == set()
     logs = set(re.findall(r'_log\(\s*"\w+",\s*"(\w+)"', text))
     logs |= set(re.findall(r'await log\(\s*"\w+",\s*"(\w+)"', text))
     logs |= {"start", "done", "fail", "fail_optional"}
     assert logs and logs - set(words["log"]) == set()
-    reasons = {"admin", "large_download"}
+    reasons = {"admin", "large_download", "comfy_change"}
     assert reasons - set(words["confirmReason"]) == set()

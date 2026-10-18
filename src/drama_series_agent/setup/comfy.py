@@ -402,6 +402,21 @@ async def node_packs(probe: Probe, root: str | None, object_info: dict[str, Any]
     return sorted(packs, key=lambda p: p.name.lower())
 
 
+async def find_manager(probe: Probe, host: HostInfo, inst: ComfyInstall) -> Manager | None:
+    """ComfyUI-Manager in this ComfyUI: the pip package, or the custom node."""
+    dists = await installed_dists(probe, inst.python, host) if inst.python else {}
+    packs: list[NodePack] = []
+    entries = await probe.list_dir(join(inst.root, "custom_nodes")) if inst.root else None
+    for e in entries or []:
+        if e.is_dir and e.name.lower() == "comfyui-manager":
+            folder = join(inst.root or "", "custom_nodes", e.name)
+            git = await read_git(probe, folder)
+            version = await pyproject_version(probe, folder)
+            commit = git.commit if git else None
+            packs.append(NodePack(name=e.name, source="manual", version=version, commit=commit))
+    return _manager(inst, dists, packs)
+
+
 def _manager(inst: ComfyInstall, dists: dict[str, str], packs: list[NodePack]) -> Manager | None:
     if version := dists.get("comfyui_manager"):
         args = list(inst.argv) or (inst.desktop.launch_args.split() if inst.desktop else [])

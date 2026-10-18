@@ -47,6 +47,9 @@ def test_install_resumes_after_backend_is_killed(backend: Backend) -> None:
     resp = httpx.post(f"{backend.base}/setup/install", json=body, headers=HEADERS, timeout=5)
     assert resp.status_code == 202
     order = resp.json()["install"]["items"]
+    assert resp.json()["install"]["confirm"]  # the change list for the PC's own ComfyUI
+    resp = httpx.post(f"{backend.base}/setup/install/confirm", headers=HEADERS, timeout=5)
+    assert resp.status_code == 200
 
     # Two items done, the third one half way.
     p = _wait(backend, lambda p: Counter(_states(p).values())["done"] >= 2)
@@ -71,6 +74,9 @@ def test_install_resumes_after_backend_is_killed(backend: Backend) -> None:
         rows = conn.execute("select item_id, installed_at from installed_item").fetchall()
     installed_at = {r[0]: datetime.fromisoformat(r[1]).replace(tzinfo=None) for r in rows}
     assert finished and all(installed_at[i] < killed_at for i in finished)
+    # The snapshot was taken once, before the first change; the resumed run reused it.
+    with sqlite3.connect(backend.home / "studio.db") as conn:
+        assert conn.execute("select count(*) from comfy_snapshot").fetchone() == (1,)
     rescan = httpx.post(f"{backend.base}/setup/scan", headers=HEADERS, timeout=5)
     assert rescan.status_code == 202
     after = _wait(backend, lambda p: p["phase"] == "scanned")

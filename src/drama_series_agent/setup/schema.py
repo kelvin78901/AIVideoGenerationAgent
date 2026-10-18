@@ -44,6 +44,9 @@ class SetupItem(BaseModel):
     fix: Message | None
     required: bool
     installable: bool
+    # Installing it changes the user's own ComfyUI (SPEC 6.4.1): not ticked by default, listed
+    # for approval, and a ComfyUI-Manager snapshot is taken first.
+    touches_comfy: bool = False
     install: ItemInstall | None = None
 
 
@@ -60,6 +63,11 @@ class InstallInfo(InstallRequest):
 
     # What the user has to approve before it starts (SPEC 12.2-5); empty once approved.
     confirm: list[Message] = Field(default_factory=list)
+    # The changes to the user's ComfyUI (``comfy_change``), kept after approval for the snapshot.
+    changes: list[Message] = Field(default_factory=list)
+    # The comfy_snapshot taken before the first of those changes, or why none could be.
+    snapshot: str | None = None
+    snapshot_error: Message | None = None
 
 
 class Recommendation(BaseModel):
@@ -108,6 +116,25 @@ class ComfyEnvOut(ComfyEnvInfo):
     captured_at: datetime
 
 
+class ComfySnapshot(BaseModel):
+    """``GET /comfy/snapshots``: one ComfyUI-Manager snapshot, newest first."""
+
+    id: str
+    manager_name: str
+    env_hash: str | None
+    reason: Literal["install", "manual"]
+    changes: list[Message]  # what the install that took it was about to change
+    created_at: datetime
+    restored_at: datetime | None
+
+
+class Restored(BaseModel):
+    """``POST /comfy/snapshots/{id}/restore``: Manager applies it when ComfyUI next starts."""
+
+    snapshot: ComfySnapshot
+    restart_required: bool = True
+
+
 class ComfyView(BaseModel):
     """``GET /comfy/env``: the ComfyUI the last finished scan found; both null when none."""
 
@@ -146,7 +173,7 @@ def checking(item: Item) -> SetupItem:
     )
 
 
-def item_of(item: Item, d: Detection) -> SetupItem:
+def item_of(item: Item, d: Detection, *, touches_comfy: bool = False) -> SetupItem:
     return SetupItem(
         id=item.id,
         group=item.group,
@@ -156,4 +183,5 @@ def item_of(item: Item, d: Detection) -> SetupItem:
         fix=d.fix,
         required=item.required,
         installable=d.installable,
+        touches_comfy=touches_comfy,
     )

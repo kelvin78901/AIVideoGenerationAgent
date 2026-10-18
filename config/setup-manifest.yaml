@@ -9,6 +9,9 @@
 #   installable: false   有安装步骤但暂时不能装
 #   size_gb:    下载体积；超过 10 GB 的安装前先确认（SPEC 12.2-5）
 #   pkg 步骤的 admin: [winget, apt]   这些包管理器装它要管理员权限（默认只有 apt），安装前先确认
+#   snapshot_first: false   改用户已装的 ComfyUI 时不用先存快照（只有 ComfyUI-Manager 本身，快照靠它存）
+# comfy 组的项、安装步骤写进 {comfy} 或 env: comfy 的项会改用户已装的 ComfyUI：安装前列改动清单确认，动手前先用
+# ComfyUI-Manager 存快照（SPEC 6.4.1）。ComfyUI 是我们装的（~/.drama-studio/ComfyUI）时不算。
 #   macos / windows / linux:  这个平台上覆盖 required、name、variant、fix、if_missing、installable；
 #                             写 `optional` 等于 {required: false}
 # 依赖的项在这个平台上不是必需的，依赖它的项也不是必需的（例如 Mac 上 ComfyUI 可选，节点也可选）。
@@ -84,6 +87,15 @@ items:
     install:
       - { type: git_clone, url: https://github.com/comfyanonymous/ComfyUI, ref: TODO, dest: "{comfy}" }
       - { type: uv_pip, env: comfy, requirements: "{comfy}/requirements.txt" }
+  - id: comfy_manager
+    group: comfy
+    name: { zh: ComfyUI-Manager（快照和回滚）, en: ComfyUI-Manager (snapshots and rollback) }
+    depends_on: [comfy]
+    detect: { type: comfy_manager }   # pip 包 comfyui_manager（--enable-manager）或 custom_nodes/ComfyUI-Manager
+    snapshot_first: false
+    install:
+      - { type: git_clone, url: https://github.com/Comfy-Org/ComfyUI-Manager, ref: TODO, dest: "{comfy}/custom_nodes/comfyui-manager" }
+      - { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" }
   - id: node_h3
     group: comfy
     name: { zh: MiniMax H3 节点, en: MiniMax H3 nodes }

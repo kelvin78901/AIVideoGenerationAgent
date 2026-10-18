@@ -15,7 +15,10 @@ An install is a ``setup.install`` job: it takes the queued items one at a time i
 order (the order ``POST /setup/install`` stored), skips those whose dependency did not make
 it, and records what succeeded in ``installed_item``. Retrying an item while the job runs just
 queues it again; after the job has finished it starts a new one. An install that needs elevation
-or a big download waits for the user (``waiting_confirm``, SPEC 12.2-5).
+or a big download waits for the user (``waiting_confirm``, SPEC 12.2-5), and so does one that
+changes the user's own ComfyUI (SPEC 6.4.1): the change list is shown first, and a
+ComfyUI-Manager snapshot is taken right before the first change. Without a snapshot those items
+do not run.
 """
 
 from __future__ import annotations
@@ -31,7 +34,7 @@ from typing import Any, Literal
 import httpx
 from loguru import logger
 from sqlalchemy.exc import IntegrityError
-from sqlmodel import col, delete, select
+from sqlmodel import col, delete, desc, select
 
 from drama_series_agent.core.capabilities import FOUND_STATUSES, Capabilities
 from drama_series_agent.core.db import Database
@@ -39,6 +42,7 @@ from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.jobs import TERMINAL, JobContext, JobQueue, JobStateError
 from drama_series_agent.core.models_db import (
     ComfyEnvRow,
+    ComfySnapshotRow,
     InstalledItem,
     MachineProfileRow,
     new_id,
@@ -61,14 +65,16 @@ from drama_series_agent.setup.installer import (
     InstallError,
     ItemRunner,
     LogLevel,
+    comfy_change,
     confirm_reasons,
     install_order,
 )
 from drama_series_agent.setup.manifest import Item, Manifest, load_manifest
-from drama_series_agent.setup.pathutil import dirname, join
+from drama_series_agent.setup.pathutil import dirname, join, same_path
 from drama_series_agent.setup.probe import FakeProbe, HostInfo, Probe, RealProbe
 from drama_series_agent.setup.schema import (
     ComfyEnvOut,
+    ComfySnapshot,
     ComfyView,
     InstallInfo,
     InstallRequest,
@@ -76,14 +82,23 @@ from drama_series_agent.setup.schema import (
     MachineProfile,
     ProfileData,
     Recommendation,
+    Restored,
     SetupItem,
     checking,
     item_of,
     machine_of,
 )
+from drama_series_agent.setup.snapshots import (
+    FakeSnapshots,
+    ManagerSnapshots,
+    SnapshotError,
+    SnapshotFailure,
+    Snapshots,
+)
 from drama_series_agent.setup.steps import RealRunner
 
 SCAN_JOB = "setup.scan"
+MANAGER = "comfy_manager"  # the manifest item that takes the snapshots
 PROFILE_LOCAL = "local"
 PROFILE_DEMO = "demo"
 DemoMachine = Literal["pc", "mac"]
@@ -138,6 +153,20 @@ class ItemState(ItemNotFound):
     """The item's install is not in a state that allows this (retry / skip)."""
 
 
+class NoComfy(Exception):
+    """The last scan found no ComfyUI of the user's to snapshot."""
+
+
+class SnapshotNotFound(Exception):
+    pass
+
+
+class SnapshotFailed(Exception):
+    def __init__(self, reason: SnapshotFailure) -> None:
+        super().__init__(reason)
+        self.reason = reason
+
+
 class _Superseded(Exception):
     """A newer scan, install or reset took over the profile; the job stops writing."""
 
@@ -171,6 +200,7 @@ class SetupService:
         manifest: Callable[[], Manifest] = load_manifest,
         transport: httpx.AsyncBaseTransport | None = None,
         runner: Callable[[MachineProfileRow], ItemRunner] | None = None,
+        snapshots: Callable[[MachineProfileRow, ProfileData], Snapshots] | None = None,
     ) -> None:
         self.db = db
         self.bus = bus
@@ -178,6 +208,7 @@ class SetupService:
         self._manifest = manifest
         self._transport = transport
         self._runner = runner
+        self._snapshots = snapshots
         self._lock = asyncio.Lock()
         jobs.register(SCAN_JOB, self._scan_job)
         jobs.register(INSTALL_JOB, self._install_job)
@@ -201,6 +232,14 @@ class SetupService:
         return RealRunner(
             mirrors=self._manifest().mirrors, transport=self._transport, already=self._already_ok
         )
+
+    def snapshots_for(self, row: MachineProfileRow, data: ProfileData) -> Snapshots:
+        if self._snapshots is not None:
+            return self._snapshots(row, data)
+        if row.id == PROFILE_DEMO:
+            return FakeSnapshots()
+        url = (data.comfy.url if data.comfy else None) or data.facts.get("comfy", {}).get("url")
+        return ManagerSnapshots(url or "http://127.0.0.1:8188", self._transport)
 
     async def _already_ok(self, item: Item, env: InstallEnv) -> bool:
         """Installed by hand since the scan? Ask its detector again, on the real machine."""
@@ -288,13 +327,31 @@ class SetupService:
                 raise SetupBusy
             items = self._manifest().for_platform(data.machine.os)
             by_id = {x.id: x for x in items}
+            states = {x.id: x for x in data.items}
             installable = {x.id for x in data.items if x.installable and x.id in by_id}
-            order = install_order(items, [i for i in req.items if i in installable])
+            selected = [i for i in req.items if i in installable]
+            # Changing the user's ComfyUI needs a snapshot, so ComfyUI-Manager comes first.
+            if any(states[i].touches_comfy for i in selected) and MANAGER in installable:
+                selected.append(MANAGER)
+            order = install_order(items, selected)
             if not order:
                 raise NothingSelected
-            reasons = confirm_reasons([by_id[i] for i in order], data.machine.os)
+            if MANAGER in order:
+                order.insert(0, order.pop(order.index(MANAGER)))  # the found ComfyUI is its dep
+            changes = [
+                comfy_change(
+                    by_id[i],
+                    status=states[i].status,
+                    version=data.facts.get(i, {}).get("version"),
+                )
+                for i in order
+                if states[i].touches_comfy
+            ]
+            reasons = changes + confirm_reasons([by_id[i] for i in order], data.machine.os)
             data.phase = "installing"
-            data.install = InstallInfo(items=order, mirror=req.mirror, dir=req.dir, confirm=reasons)
+            data.install = InstallInfo(
+                items=order, mirror=req.mirror, dir=req.dir, confirm=reasons, changes=changes
+            )
             for x in data.items:
                 x.install = ItemInstall(state="queued") if x.id in order else None
             await self._enqueue(row.id, data, INSTALL_JOB, wait=bool(reasons))
@@ -344,6 +401,8 @@ class SetupService:
             if x.install.state not in ("failed", "skipped"):
                 raise ItemState(item_id)
             x.install = ItemInstall(state="queued")
+            if data.install is not None:
+                data.install.snapshot_error = None  # e.g. ComfyUI is open now: try again
             if data.phase == "installing":
                 await self._save(row.id, data)  # the running job picks it up
             else:
@@ -419,6 +478,10 @@ class SetupService:
         # Silent: start_scan already announced the phase (a restarted job lands here again).
         if not await self._write(pid, run, reset, publish=False):
             return superseded
+        # The user's own ComfyUI, as opposed to none or the one we installed (SPEC 6.4.1).
+        inst = await scan.comfy()
+        ours = join(dirname(scan.vars["envs"]), "ComfyUI")
+        theirs = inst is not None and (inst.root is None or not same_path(inst.root, ours))
         step = fake_step_s() if probe.simulated else 0.0
         counts: Counter[str] = Counter()
         for i, x in enumerate(items):
@@ -428,7 +491,7 @@ class SetupService:
             if x.id in installed and det.status != "ok":
                 det = Detection(status="ok", found=msg("installed"), fix=None, installable=False)
             counts[det.status] += 1
-            public = item_of(x, det)
+            public = item_of(x, det, touches_comfy=theirs and x.touches_comfy)
             facts = {**det.facts, **({"version": det.version} if det.version else {})}
 
             def put(
@@ -510,16 +573,21 @@ class SetupService:
             runner = self.runner_for(row)
             items = {x.id: x for x in self._manifest().for_platform(data.machine.os)}
             env = await self._install_env(row, data)
-            while (item := await self._next_item(pid, run, items)) is not None:
-                await self._install_one(pid, run, item, runner, env)
+            while (nxt := await self._next_item(pid, run, items)) is not None:
+                item, touches = nxt
+                snapshot = row if touches and item.snapshot_first else None
+                await self._install_one(pid, run, item, runner, env, snapshot_for=snapshot)
             done = await self._load_run(pid, run)
         except _Superseded:
             return {"superseded": True}
         states = Counter(x.install.state for x in done.items if x.install is not None)
         return {"states": dict(states)}
 
-    async def _next_item(self, pid: str, run: str, items: dict[str, Item]) -> Item | None:
-        """Mark the next queued item running and return it; None (and phase done) when none."""
+    async def _next_item(
+        self, pid: str, run: str, items: dict[str, Item]
+    ) -> tuple[Item, bool] | None:
+        """Mark the next queued item running; return it and whether it changes the user's
+        ComfyUI. None (and phase done) when nothing is left."""
         async with self._lock:
             data = await self._load_run(pid, run)
             assert data.install is not None
@@ -545,7 +613,7 @@ class SetupService:
                 await self._save(pid, data)
                 await self._log("info", "start", item=item_id)
                 await self._progress(data, x.model_dump(mode="json"))
-                return item
+                return item, x.touches_comfy
             data.phase = "done"
             await self._save(pid, data)
             await self._log("ok", "finish")
@@ -553,8 +621,17 @@ class SetupService:
             return None
 
     async def _install_one(
-        self, pid: str, run: str, item: Item, runner: ItemRunner, env: InstallEnv
+        self,
+        pid: str,
+        run: str,
+        item: Item,
+        runner: ItemRunner,
+        env: InstallEnv,
+        *,
+        snapshot_for: MachineProfileRow | None = None,
     ) -> None:
+        """Install one item; with ``snapshot_for``, only after a snapshot of the user's ComfyUI."""
+
         async def progress(pct: float) -> None:
             pct = max(0.0, min(99.0, round(pct)))
             await self._update_item(pid, run, item.id, lambda i: i.model_copy(update={"pct": pct}))
@@ -564,6 +641,8 @@ class SetupService:
 
         error: Any = None
         try:
+            if snapshot_for is not None:
+                await self._ensure_snapshot(pid, run, snapshot_for)
             result = await runner.install(item, env, log, progress)
         except InstallError as exc:
             error = exc.message()
@@ -590,6 +669,122 @@ class SetupService:
             log=("ok", "done", {"item": item.id}),
             record=result,
         )
+
+    async def _ensure_snapshot(self, pid: str, run: str, row: MachineProfileRow) -> None:
+        """One snapshot per install run, before its first change to the user's ComfyUI.
+
+        Raises ``InstallError(snapshot_<reason>)`` when none can be taken; the reason is kept
+        for the run, so the other items fail fast (a retry clears it).
+        """
+        async with self._lock:
+            data = await self._load_run(pid, run)
+            info = data.install
+            assert info is not None
+            if info.snapshot is not None:
+                return
+            if info.snapshot_error is not None:
+                raise InstallError(info.snapshot_error.code)
+            manager = next((x for x in data.items if x.id == MANAGER), None)
+            just_installed = (
+                manager is not None
+                and manager.install is not None
+                and (manager.install.state == "done")
+            )
+        reason: SnapshotFailure | None = "restart" if just_installed else None
+        name: str | None = None
+        if reason is None:
+            try:
+                name = await self.snapshots_for(row, data).save()
+            except SnapshotError as exc:
+                reason = exc.reason
+        async with self._lock:
+            data = await self._load_run(pid, run)
+            assert data.install is not None
+            if name is not None:
+                snap = await self._add_snapshot(pid, name, data, "install", data.install.changes)
+                data.install.snapshot = snap.id
+                await self._save(pid, data)
+                await self._log("ok", "snapshot", name=name)
+                return
+            assert reason is not None
+            data.install.snapshot_error = msg(f"snapshot_{reason}")
+            await self._save(pid, data)
+            await self._log("warn", "snapshot_failed", reason=reason)
+        raise InstallError(f"snapshot_{reason}")
+
+    async def _add_snapshot(
+        self, pid: str, name: str, data: ProfileData, reason: str, changes: list[Any]
+    ) -> ComfySnapshotRow:
+        row = ComfySnapshotRow(
+            profile_id=pid,
+            manager_name=name,
+            env_hash=data.comfy.env_hash if data.comfy else None,
+            reason=reason,
+            changes_json=[m.model_dump(mode="json") for m in changes],
+        )
+        async with self.db.session() as s:
+            s.add(row)
+            await s.commit()
+            await s.refresh(row)
+        return row
+
+    @staticmethod
+    def _snapshot_of(row: ComfySnapshotRow) -> ComfySnapshot:
+        return ComfySnapshot.model_validate(
+            {
+                "id": row.id,
+                "manager_name": row.manager_name,
+                "env_hash": row.env_hash,
+                "reason": row.reason,
+                "changes": row.changes_json,
+                "created_at": row.created_at,
+                "restored_at": row.restored_at,
+            }
+        )
+
+    async def snapshots(self) -> list[ComfySnapshot]:
+        async with self.db.session() as s:
+            rows = await s.exec(
+                select(ComfySnapshotRow)
+                .where(col(ComfySnapshotRow.profile_id) == self.profile_id)
+                .order_by(desc(col(ComfySnapshotRow.created_at)))
+            )
+            return [self._snapshot_of(r) for r in rows.all()]
+
+    async def take_snapshot(self) -> ComfySnapshot:
+        """A snapshot on request (reason ``manual``)."""
+        loaded = await self._load(self.profile_id)
+        if loaded is None or loaded[1].comfy is None:
+            raise NoComfy
+        row, data = loaded
+        try:
+            name = await self.snapshots_for(row, data).save()
+        except SnapshotError as exc:
+            raise SnapshotFailed(exc.reason) from None
+        return self._snapshot_of(await self._add_snapshot(row.id, name, data, "manual", []))
+
+    async def restore_snapshot(self, snapshot_id: str) -> Restored:
+        """Ask ComfyUI-Manager to restore it; it takes effect when ComfyUI next starts."""
+        loaded = await self._load(self.profile_id)
+        async with self.db.session() as s:
+            snap = await s.get(ComfySnapshotRow, snapshot_id)
+        if loaded is None or snap is None or snap.profile_id != self.profile_id:
+            raise SnapshotNotFound
+        row, data = loaded
+        if data.phase == "installing":
+            raise SetupBusy
+        try:
+            await self.snapshots_for(row, data).restore(snap.manager_name)
+        except SnapshotError as exc:
+            raise SnapshotFailed(exc.reason) from None
+        async with self.db.session() as s:
+            stored = await s.get(ComfySnapshotRow, snapshot_id)
+            assert stored is not None
+            stored.restored_at = utcnow()
+            s.add(stored)
+            await s.commit()
+            await s.refresh(stored)
+        return Restored(snapshot=self._snapshot_of(stored))
 
     async def _update_item(
         self,

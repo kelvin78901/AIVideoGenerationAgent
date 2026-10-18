@@ -27,6 +27,7 @@ DetectType = Literal[
     "py_import",
     "file",
     "comfy",
+    "comfy_manager",
     "comfy_node",
     "http",
     "service",
@@ -145,6 +146,9 @@ class Item(_Loose):
     installable: bool | None = None
     install: list[Step] = Field(default_factory=list)
     size_gb: float | None = None  # download size; over 10 GB asks first (SPEC 12.2-5)
+    # Changing the user's own ComfyUI takes a ComfyUI-Manager snapshot first (SPEC 6.4.1);
+    # false for ComfyUI-Manager itself, which is what takes them.
+    snapshot_first: bool = True
     variant: str | None = None
     windows: PlatformOverride | None = None
     macos: PlatformOverride | None = None
@@ -154,6 +158,20 @@ class Item(_Loose):
     def can_install(self) -> bool:
         """Has install steps here and is not switched off (``installable: false``)."""
         return bool(self.install) and self.installable is not False
+
+    @property
+    def touches_comfy(self) -> bool:
+        """Its install changes ComfyUI: ComfyUI and its nodes (group ``comfy``), or a step that
+        writes into ComfyUI's folder or its Python (``{comfy}``, ``env: comfy``)."""
+        if self.group == "comfy" and self.install:
+            return True
+        for step in self.install:
+            extra = step.model_extra or {}
+            if extra.get("env") == "comfy":
+                return True
+            if any(isinstance(v, str) and "{comfy}" in v for v in extra.values()):
+                return True
+        return False
 
     def on(self, os: OS) -> Item | None:
         """This item as ``os`` sees it, or None when it does not apply there."""

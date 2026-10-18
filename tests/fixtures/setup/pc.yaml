@@ -1,8 +1,9 @@
 # Kelvin's PC from the prototype (Setup.dc.html): Windows 11 + RTX 5090.
 # Read by setup/probe.py:FakeProbe (Mock mode and tests). Paths use "/"; "\" also matches.
-# Expected scan: ok 9 / missing 9 / old 2 / optional 8 / warn 1 (29 rows).
+# Expected scan: ok 10 / missing 9 / old 2 / optional 8 / warn 1 (30 rows).
 # Its ComfyUI (D:\ComfyUI, running) has two node packs, VideoHelperSuite (git clone) and
-# KJNodes (from the Registry), an extra_model_paths.yaml and three model files (step 4c).
+# KJNodes (from the Registry), an extra_model_paths.yaml and three model files (step 4c), and
+# ComfyUI-Manager 4 (the pip package, --enable-manager) for snapshots (step 5c).
 
 host: { os: windows, os_name: Windows 11, bits: 64, arch: amd64, ram_gb: 63.7, home: "C:/Users/kelvin" }
 gpu: { name: NVIDIA RTX 5090, vram_gb: 31.8, backend: cuda, cuda_driver: "13.0" }
@@ -24,7 +25,7 @@ http:
         comfyui_version: 0.3.40
         python_version: "3.12.9"
         pytorch_version: 2.7.1+cu128
-        argv: ['D:\ComfyUI\main.py', "--listen", "127.0.0.1"]
+        argv: ['D:\ComfyUI\main.py', "--listen", "127.0.0.1", "--enable-manager"]
       devices: [{ name: "cuda:0 NVIDIA GeForce RTX 5090 : cudaMallocAsync", type: cuda }]
   "http://127.0.0.1:8188/object_info":
     ms: 40
@@ -48,6 +49,7 @@ files:
   - D:/ComfyUI/main.py
   - D:/ComfyUI/venv/Scripts/python.exe
   - D:/ComfyUI/venv/Lib/site-packages/torch-2.7.1+cu128.dist-info/METADATA
+  - D:/ComfyUI/venv/Lib/site-packages/comfyui_manager-4.2.2.dist-info/METADATA
   - D:/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/__init__.py
   - D:/ComfyUI/custom_nodes/ComfyUI-KJNodes/__init__.py
   - D:/ComfyUI/custom_nodes/websocket_image_save.py

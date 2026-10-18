@@ -131,11 +131,17 @@
     "download_failed": "Downloading {{file}} failed ({{status}}); retry to resume",
     "sha256_mismatch": "{{file}} failed its checksum and was deleted; retry it",
     "no_package": "No {{manager}} package is set for this item",
-    "source_missing": "Nothing to copy at {{path}}"
+    "source_missing": "Nothing to copy at {{path}}",
+    "snapshot_not_running": "ComfyUI isn't running, so no snapshot could be taken and nothing was changed. Open ComfyUI and retry.",
+    "snapshot_no_manager": "This ComfyUI has no ComfyUI-Manager 4, so no snapshot could be taken and nothing was changed. Install ComfyUI-Manager first.",
+    "snapshot_forbidden": "ComfyUI-Manager's security level doesn't allow this (set it to normal or lower).",
+    "snapshot_restart": "ComfyUI-Manager was just installed. Restart ComfyUI and retry.",
+    "snapshot_failed": "The snapshot failed, so ComfyUI was left as it was."
   },
   "confirmReason": {
     "admin": "{{item}} needs administrator rights to install",
-    "large_download": "{{item}} downloads about {{gb}} GB"
+    "large_download": "{{item}} downloads about {{gb}} GB",
+    "comfy_change": "{{item}} changes your ComfyUI (a snapshot is taken first)"
   },
   "none": "—",
   "pick": "Install",
@@ -178,7 +184,9 @@
     "confirm": "Waiting for your go-ahead",
     "cancel": "Install canceled",
     "already": "Already installed: {{item}}",
-    "output": "{{text}}"
+    "output": "{{text}}",
+    "snapshot": "Saved a ComfyUI snapshot: {{name}}",
+    "snapshot_failed": "Couldn't take a ComfyUI snapshot; items that change ComfyUI are skipped this time"
   },
   "done": {
     "title": "Ready",

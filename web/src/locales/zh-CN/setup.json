@@ -131,11 +131,17 @@
     "download_failed": "下载 {{file}} 失败（{{status}}），可以重试，会接着下",
     "sha256_mismatch": "{{file}} 校验不对，已删掉，可以重试",
     "no_package": "{{manager}} 里没有配这个包",
-    "source_missing": "找不到要复制的 {{path}}"
+    "source_missing": "找不到要复制的 {{path}}",
+    "snapshot_not_running": "ComfyUI 没在运行，存不了快照，所以没有动它。打开 ComfyUI 后重试",
+    "snapshot_no_manager": "这份 ComfyUI 没有 ComfyUI-Manager 4，存不了快照，所以没有动它。先装 ComfyUI-Manager",
+    "snapshot_forbidden": "ComfyUI-Manager 的安全级别不允许这样做（要设成 normal 或更低）",
+    "snapshot_restart": "ComfyUI-Manager 刚装好，重启 ComfyUI 后重试",
+    "snapshot_failed": "快照没存成，所以没有动 ComfyUI"
   },
   "confirmReason": {
     "admin": "{{item}} 要用管理员权限安装",
-    "large_download": "{{item}} 要下载约 {{gb}} GB"
+    "large_download": "{{item}} 要下载约 {{gb}} GB",
+    "comfy_change": "{{item}} 会改动你的 ComfyUI（动手前先存快照）"
   },
   "none": "—",
   "pick": "安装",
@@ -178,7 +184,9 @@
     "confirm": "等你确认后开始安装",
     "cancel": "已取消安装",
     "already": "已经装好了：{{item}}",
-    "output": "{{text}}"
+    "output": "{{text}}",
+    "snapshot": "已存 ComfyUI 快照：{{name}}",
+    "snapshot_failed": "存不了 ComfyUI 快照，会改动 ComfyUI 的项这次不装"
   },
   "done": {
     "title": "准备好了",

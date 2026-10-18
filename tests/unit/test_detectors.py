@@ -79,6 +79,7 @@ PC: dict[str, Row] = {
     "ffmpeg": _r("missing", "not_found", "install_named", x_name="FFmpeg"),
     "git": _r("ok", "installed"),
     "comfy": _r("old", "outdated", "update_latest"),
+    "comfy_manager": _r("ok", "version", f_version="4.2.2"),
     "node_h3": _r("missing", "not_found", "install_nodes"),
     "node_vhs": _r("ok", "installed"),
     "node_seedvr2": _r("missing", "not_found", "install_nodes"),
@@ -110,6 +111,7 @@ MAC: dict[str, Row] = {
     "ffmpeg": _r("missing", "not_found", "install_named", x_name="FFmpeg"),
     "git": _r("ok", "installed"),
     "comfy": _r("optional", "not_found", "comfy_images_only"),
+    "comfy_manager": _r("optional", "not_found", "install_nodes"),
     "node_h3": _r("skip", "needs_cuda", "unsupported_skip"),
     "node_vhs": _r("optional", "not_found", "install_nodes"),
     "node_seedvr2": _r("skip", "needs_cuda", "unsupported_upscale_api"),
@@ -137,7 +139,7 @@ MAC: dict[str, Row] = {
 async def test_pc_scan() -> None:
     result = await scan("pc")
     assert rows(result) == PC
-    assert counts(result) == {"ok": 9, "missing": 9, "old": 2, "optional": 8, "warn": 1}
+    assert counts(result) == {"ok": 10, "missing": 9, "old": 2, "optional": 8, "warn": 1}
 
 
 async def test_pc_flags_match_the_prototype() -> None:
@@ -166,7 +168,7 @@ async def test_pc_facts() -> None:
 async def test_mac_scan() -> None:
     result = await scan("mac")
     assert rows(result) == MAC
-    assert counts(result) == {"ok": 6, "warn": 3, "missing": 4, "optional": 7, "skip": 8}
+    assert counts(result) == {"ok": 6, "warn": 3, "missing": 4, "optional": 8, "skip": 8}
     assert "driver" not in result
     assert result["w_llm"][0].name.en == "Qwen3.6-27B (MLX)"
     assert result["w_llm"][1].installable

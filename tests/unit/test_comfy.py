@@ -58,7 +58,8 @@ async def test_the_pc_sample_running() -> None:
         "3.12.9",
         "2.7.1+cu128",
     )
-    assert scan.manager is None
+    assert scan.manager is not None
+    assert scan.manager.model_dump() == {"source": "pip", "version": "4.2.2", "enabled": True}
 
     packs = {p.name: p for p in env.node_packs}
     assert list(packs) == ["ComfyUI-KJNodes", "ComfyUI-VideoHelperSuite", "websocket_image_save"]

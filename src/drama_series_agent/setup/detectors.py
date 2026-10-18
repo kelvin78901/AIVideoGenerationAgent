@@ -20,6 +20,7 @@ from drama_series_agent.setup.comfy import (
     ComfyInstall,
     argv_port,
     desktop_installs,
+    find_manager,
     flag_values,
     kind_of,
     main_script,
@@ -406,6 +407,15 @@ async def _comfy(item: Item, ctx: ScanContext) -> Outcome:
     return Outcome("present", found, version=inst.version, facts=facts)
 
 
+async def _comfy_manager(item: Item, ctx: ScanContext) -> Outcome:
+    inst = await ctx.comfy()
+    manager = await find_manager(ctx.probe, ctx.host, inst) if inst is not None else None
+    if manager is None:
+        return Outcome("absent", NOT_FOUND)
+    found = msg("version", version=manager.version) if manager.version else msg("installed")
+    return Outcome("present", found, version=manager.version, facts={"source": manager.source})
+
+
 async def _comfy_node(item: Item, ctx: ScanContext) -> Outcome:
     inst = await ctx.comfy()
     if inst is None:
@@ -501,6 +511,7 @@ DETECTORS: dict[str, Detector] = {
     "py_import": _py_import,
     "file": _file,
     "comfy": _comfy,
+    "comfy_manager": _comfy_manager,
     "comfy_node": _comfy_node,
     "http": _http,
     "service": _service,
@@ -519,7 +530,7 @@ def _default_fix(item: Item, status: Status) -> Message | None:
     if status in ("missing", "optional"):
         if not item.can_install:
             return None
-        if item.detect.type == "comfy_node":
+        if item.detect.type in ("comfy_node", "comfy_manager"):
             return msg("install_nodes")
         if item.group == "w":
             return msg("download")

@@ -111,6 +111,7 @@ def test_the_5090_keeps_hybrid_and_local_once_set_up(
 
     body = {"items": PC_INSTALLABLE, "mirror": "auto", "dir": "D:\\DramaStudio"}
     client.post(f"{V1}/setup/install", json=body)
+    client.post(f"{V1}/setup/install/confirm")  # the change list for D:\\ComfyUI
     _wait(client, "done")  # SageAttention fails; nothing routes through it
     assert _modes(client) == {"vid": "hybrid", "kf": "hybrid", "up": "local"}
     assert _route(client, "ctrl").values["mode"] == "local"

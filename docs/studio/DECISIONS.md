@@ -2,6 +2,17 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 改已装 ComfyUI 前先确认，快照和回滚（第 5c 步）
+
+- **Manager 的接口按本机装的 comfyui_manager 4.2.2 源码核对**（`glob/manager_server.py`；官方文档只讲界面和 cm-cli，没写 HTTP 接口）：`GET /v2/snapshot/getlist` → `{"items": [...]}`；`POST /v2/snapshot/save` 不带请求体（表单类 Content-Type 会被拒，防 CSRF），返回 200 但不给名字，所以名字取存之前和之后 `getlist` 多出来的那个；`POST /v2/snapshot/restore?target=<名字>` 只是安排好，下次 ComfyUI 启动时才恢复；恢复要 Manager 的安全级别是 normal 或更低（本机监听时，默认 normal 可以），否则 403。Manager 4 以前的版本（custom node，`/snapshot/*`）不支持，报 `snapshot_no_manager`。
+- **用 Manager 的快照，不用 Desktop 自己的**：SPEC 定的是 Manager；它对便携版、git 版、Desktop 都一样能用；Desktop 2 的快照（`.launcher/snapshots`）只有 Desktop 自己的界面能用，没有给我们调的接口。
+- **哪些项算改用户的 ComfyUI**（`Item.touches_comfy`）：comfy 组里有安装步骤的项，或者安装步骤写进 `{comfy}`、`env: comfy` 的项（PyTorch 装进它的 Python、权重放进它的模型目录）。只有扫描找到的 ComfyUI 不是我们装的那份（`~/.drama-studio/ComfyUI`）时才算。每一项的 `touches_comfy` 随档案返回，第 7 步前端用它把这些项默认不勾。
+- **改动清单**：`install.confirm` 里先列 `comfy_change`（item、`action` 为 install 或 update、`from`、`to`、`source`、`gb`），后面才是提权和大下载。不知道的字段直接不写，因为前端的 Message 参数不能为 null。清单另存一份在 `install.changes`，存快照时记进 `comfy_snapshot`。
+- **快照什么时候存**：在第一个会改 ComfyUI 的项开始执行之前（它的 `start` 日志之后、第一步之前），不是整次安装开始前，所以排在前面、不碰 ComfyUI 的项照常先装。一次安装只存一份，重启续跑时沿用这一份。存不成时，会改 ComfyUI 的项都失败（`snapshot_not_running` / `no_manager` / `forbidden` / `restart` / `failed`），其他项照常装；失败原因在这次安装里沿用，重试时清掉再存一次。存快照要 ComfyUI 开着（Manager 的接口在 ComfyUI 里面）。
+- **没装 Manager 时**：清单加了一项 `comfy_manager`（检测 pip 包或 custom node；安装从官方仓库 git clone，ref 第 8 步锁定）。勾了会改 ComfyUI 的项时自动带上它并排在最前面；它自己不用先存快照（`snapshot_first: false`）。刚装好的 Manager 要等 ComfyUI 重启后才加载，所以这一次后面的项都报 `snapshot_restart`，重启 ComfyUI 后重试就行。PC 示例机器补了 Manager 4（pip 包），这样 Mock 下能走完整个流程。清单行数变成 PC 30 行（通过 10），Mac 29 行（可选 8）。
+- **`comfy_snapshot`**（迁移 `0005`）比 SPEC 多一列 `profile_id`，把示例机器和本机分开；`reason` 是 install 或 manual。
+- **接口**：`GET /comfy/snapshots`；`POST /comfy/snapshots`（手动存一份，201）；`POST /comfy/snapshots/{id}/restore` → `{snapshot, restart_required: true}`。出错时：404 `comfy_snapshot_not_found`；409 `comfy_not_found`、`comfy_snapshot_failed {reason}`；安装进行中不能回滚，409 `setup_busy`。平台不替用户重启他的 ComfyUI，只提示。
+
 ## 2026-10-18 · M1 识别已装的 ComfyUI（第 4c 步）
 
 - **Comfy Desktop 2**（Kelvin 本机，只读看过目录和日志）：安装记录在 `%APPDATA%\Comfy Desktop\installations.json`（每项有 `installPath`、ComfyUI 版本和 commit、Python、PyTorch、`launchArgs`）。程序、`.venv`、`custom_nodes` 都在 `<installPath>\ComfyUI` 里，模型放在共享目录，由 Desktop 生成的 `instance-model-paths\<id>.yaml` 指过去。它启动 ComfyUI 时 `main.py` 是相对路径，所以运行中的实例靠 argv 里的 `--extra-model-paths-config` 对上是哪一份安装。定位顺序：运行中的实例 → Desktop 的安装记录 → 常见目录 → 设置里的路径。macOS / Linux 上 Desktop 设置目录的位置是按 Electron 惯例推的，没核对。第一代 Desktop（程序和数据分两个目录、默认端口 8000）没有专门处理，只靠常见目录找。
