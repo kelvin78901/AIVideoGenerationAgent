@@ -24,6 +24,7 @@
 ## 下一步
 
 - **第 6 步 能力过滤和推荐（后端）**：`providers.yaml` 的本地模型加 `needs: [清单项 id…]` 和 `requires_cuda`；新文件 `core/capabilities.py`：按 `machine_profile`（`SetupService` 的 `local` / `demo` 档案）和 `installed_item` 算出哪些本地模型可用；`resolve()` 遇到本地跑不了的组件把 `local` / `hybrid` 降成 `api`。测试：Mac 扫描后视频、关键帧、超分的生效方式是 `api`（验收第 3 条）；5090 装好后保持 hybrid / local。从 `core/config.py:resolve()` 和 `config/providers.yaml` 的本地模型开始看。
+  - **4c 的线索**：Kelvin 用的是 **ComfyUI Desktop，端口 8188**（2026-10-18 答复，和后端 8000 不冲突）。Desktop 的目录和便携版不一样，可能是程序代码（含 `main.py`）在安装目录里，`custom_nodes`、`models`、`.venv` 在安装时选的数据目录里。现在的定位按 `main.py` 所在目录找 `custom_nodes` 和 Python，对 Desktop 很可能不对，4c 要分开「代码目录」和「数据目录」。本机没有 `%APPDATA%\ComfyUI`，当时 ComfyUI 也没开（`/system_stats` 读不到），开工 4c 前请 Kelvin 打开 ComfyUI Desktop，再只读看 argv 和目录。
   - 收尾时 SPEC 9.1 要补：`POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm`。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -59,6 +60,5 @@
 
 ## 等 Kelvin 的事
 
-- **ComfyUI 端口**：Kelvin 装的是 Desktop 版、便携版还是 git 克隆？跑在哪个端口？（Desktop 默认端口可能是 8000，和后端冲突；4c 要用到）
 - **重启 `start.ps1`**：本机 8000 的后端是旧代码（没开 `--reload`），重启后自动迁移到 `0003`（剧集、规格、机器档案）并建示例剧集。首次启动页在第 7 步之前仍用 MSW 示例数据，后端的 `/setup/*` 可以用 `curl` 或 `/docs` 先看。
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。
