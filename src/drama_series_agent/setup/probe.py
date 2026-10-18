@@ -122,6 +122,12 @@ print(json.dumps({"version": str(v) if v else None, "cuda": cuda}))
 
 _LOOPBACK = {"127.0.0.1", "localhost", "::1"}
 
+# No console window flashing up for each command on Windows.
+if sys.platform == "win32":
+    NO_WINDOW = subprocess.CREATE_NO_WINDOW
+else:
+    NO_WINDOW = 0
+
 
 def _host_os() -> OS:
     if sys.platform == "win32":
@@ -282,7 +288,7 @@ class RealProbe:
         return await self._exec([exe, *argv[1:]], timeout_s)
 
     async def _exec(self, argv: list[str], timeout_s: float) -> CommandResult | None:
-        flags = subprocess.CREATE_NO_WINDOW if sys.platform == "win32" else 0
+        flags = NO_WINDOW
         try:
             proc = await asyncio.create_subprocess_exec(
                 *argv,
