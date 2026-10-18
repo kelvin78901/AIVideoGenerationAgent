@@ -29,7 +29,7 @@
 | 包管理 | uv（`pyproject.toml` + `uv.lock`） | 本地模型的运行环境也用 uv 建，独立于项目环境 |
 | 任务 | 自研 asyncio 任务队列，任务持久化在 SQLite | 不引入 Celery / Redis；单机够用 |
 | 推送 | SSE（`/api/v1/events`） | 前端用 EventSource；断线自动重连并按 `last_event_id` 补发 |
-| 本地生成 | ComfyUI（HTTP + WebSocket API） | 工作流模板放 `workflows/`，见 6.4 |
+| 本地生成 | ComfyUI（HTTP + WebSocket API） | 默认用用户已装的 ComfyUI；工作流库见 6.4（平台推荐的放仓库 `workflows/`，用户导入的放 `~/.drama-studio/workflows/`） |
 | 本地 LLM | Ollama 或 llama.cpp server 的 OpenAI 兼容接口 | 和云端 LLM 共用一个适配器 |
 | 媒体 | FFmpeg / ffprobe（子进程）、pyloudnorm、OpenTimelineIO | 时间线导出 FCPXML 和 OTIO |
 | GPU 采样 | pynvml（NVIDIA），macOS 跳过 | 记录本地任务显存峰值 |
@@ -62,7 +62,7 @@ src/drama_series_agent/
   sync/        board.py  comfy_board.py  ingest.py  folder.py  eagle.py  resolve.py   (外部同步，第 14 节)
   api/         app.py  routes/<resource>.py  sse.py
 config/        providers.yaml  components.yaml  setup-manifest.yaml  qa.yaml
-workflows/     <name>.json  <name>.bindings.yaml        (含上游 selfhost/)
+workflows/     <slug>/workflow.api.json  <slug>/workflow.yaml   平台推荐档的工作流（含上游 selfhost/ 的 H3），见 6.4
 integrations/comfyui-dramastudio/   ComfyUI 自定义节点包（第 14.2 节），单独安装到 ComfyUI/custom_nodes
 web/src/
   app/         routes.tsx  AppShell.tsx
@@ -107,7 +107,7 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 | 表 | 关键字段 |
 | --- | --- |
 | `product` | id, series_id, owner_type（series / episode / scene / shot / asset / line）, owner_id, slot（bible / suggestions / episodes / script / asset_list / ref_image / text_image / voice / line_audio / shot_plan / keyframe / video / upscale / lipsync / qa / music / subtitles / cut）, component_id, current_version_id, adopted_version_id, locked_hash, status（empty / queued / running / ready / stale / adopted / locked / failed） |
-| `product_version` | id, product_id, n, origin（run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest）, parent_version_id, payload_json, files[]（role, path, sha256, mime, duration_s, w, h）, content_hash, intent, compiled, compiled_overridden, model_key, where（local / api）, seed, params_json, qa_json, qa_pass, cost_usd, job_id, created_at, note |
+| `product_version` | id, product_id, n, origin（run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest）, parent_version_id, payload_json, files[]（role, path, sha256, mime, duration_s, w, h）, content_hash, intent, compiled, compiled_overridden, model_key, where（local / api）, seed, params_json, qa_json, qa_pass, cost_usd, job_id, created_at, note；本地 ComfyUI 生成的另有 workflow_id, workflow_sha256, comfy_env_hash（6.4.5） |
 | `dependency` | product_id, upstream_product_id, upstream_hash（构建时上游已采纳版本的 content_hash） |
 | `gate_decision` | id, gate（novel / script / assets / storyboard / takes / export）, scope_id, product_hashes_json, decided_at, action（confirm / reopen） |
 
@@ -129,6 +129,9 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 | `budget` | scope（call / shot / episode / series）, scope_id, limit_usd |
 | `machine_profile` | id, scanned_at, json（第 12 节的检测结果） |
 | `installed_item` | item_id, version, paths[], installed_at（用于卸载和重新检测） |
+| `comfy_env` | hash, comfyui_version, python, torch, node_packs_json（每个节点包：名称、来源、git commit 或 Registry 版本、提供的节点类）, captured_at（识别到变化就新存一份，6.4.1） |
+| `comfy_snapshot` | id, manager_name（ComfyUI-Manager 里的快照名）, env_hash, reason, changes_json（这次要做的改动清单）, created_at, restored_at |
+| `comfy_workflow` | id, slug, model_key, name, tier（recommended / mine / unverified）, source（repo / user）, dir, file_sha256, bindings_json, deps_json, caps_json, check_json（最近一次体检）, trial_json（最近一次试跑）, created_at, updated_at（6.4.2） |
 | `sync_target` | id, kind（comfy / folder / eagle / resolve）, enabled, config_json（路径、端口、模式）, status_json（最近一次检测结果） |
 | `sync_item` | target_id, version_id, external_ref（文件路径、Eagle item id、画布节点 id）, content_hash, synced_at, status |
 
@@ -213,12 +216,84 @@ class ModelAdapter(Protocol):
 
 图像（Nano Banana Pro、GPT Image 2、Seedream 5.0）、视频（MiniMax H3 API 含 Regenerate-2K 和 Context-IR、Seedance 2.5、Gemini Omni Flash、Wan 3.0、Kling）、配音（MiniMax Speech 2.8 HD 含音色设计、ElevenLabs）、口型（sync lipsync-2-pro）、超分（Topaz Starlight）、配乐（ElevenLabs Music）、3D（World Labs Marble，v1 只占位）。各写一个适配器；长任务用厂商的异步任务接口轮询，轮询间隔指数退避。
 
-### 6.4 ComfyUI
+### 6.4 ComfyUI 与工作流库
 
-- 工作流模板：`workflows/<name>.json`（ComfyUI API 格式）+ `<name>.bindings.yaml`（语义参数 → 节点 ID 和字段，例如 `prompt: {node: "12", field: "text"}`）。上游 `workflows/selfhost/` 的 H3 工作流直接纳入。
-- 调用：上传输入（`/upload/image`），提交 `/prompt`，用 WebSocket 收进度，`/history/{id}` 取结果，`/view` 下载产物。
-- 本地 GPU 队列并发 1；调度器按“同一模型”分组连续执行，切换大模型前调 `/free` 释放显存（PLAN：同一套模型的镜头连续跑，不再每镜卸载）。
-- 本地任务超时（默认 10 分钟，可配）视为失败，进入兜底流程。
+Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作流。平台默认用这份已有的 ComfyUI，并把每个工作流登记成一个本地模型（2026-10-18 Kelvin 定，见 DECISIONS 同日条目）。
+
+#### 6.4.1 用哪个 ComfyUI
+
+- **默认用用户已装的那份**。定位顺序同第 12 节：正在运行的实例 → 常见目录 → 设置里的路径；找到就用它和它自己的 Python。机器上一份都没有时，按第 12 节装到 `~/.drama-studio/ComfyUI`。
+- **识别只读**（M1；环境存 `comfy_env`，模型文件清单存 `machine_profile`）：
+  - 路径、端口（`/system_stats` 的 argv 里的 `--port`；没在跑时按常见端口试）、ComfyUI 版本、它用的 Python 和 PyTorch 版本；
+  - 节点包：`custom_nodes/` 下每个包的来源和版本。git 装的读 `.git` 里的 HEAD commit 和远端地址（直接读文件，不跑 git 命令）；从 Registry 装的读 `pyproject.toml` 的版本号和 Manager 留下的记录。ComfyUI 在跑时再用 `/object_info` 记下每个包提供哪些节点类；
+  - 模型文件：按 ComfyUI 的模型目录（含 `extra_model_paths.yaml` 里配的）列出各类文件的路径和大小，ComfyUI 在跑时用 `/models`、`/models/{folder}`。不算哈希（同 12.2）。
+- **改动前先问**：对这份 ComfyUI 的任何安装或升级（升级 ComfyUI 本身、装或升级节点包、往它的 Python 里装包、往它的模型目录里放文件），都先列出改动清单：每一项做什么、从哪个版本到哪个版本、来源、大小。用户确认后才动手。这些项不随「必需项默认勾上」自动勾选。
+- **快照和回滚**：动手前用 ComfyUI-Manager 存一份快照（ComfyUI 版本、每个节点包的 commit 或版本、pip 包），在 `comfy_snapshot` 记下原因和改动清单。界面上可以一键回滚到任意一份快照；回滚要重启 ComfyUI 才生效，平台不替用户重启他自己的 ComfyUI，只提示。没装 Manager 时，「安装 ComfyUI-Manager」作为清单第一项一起问。
+- **平台自管的另一份 ComfyUI**（和已有的那份并存，用 `extra_model_paths.yaml` 共享模型）留作以后的选项，现在不做。
+
+#### 6.4.2 工作流就是本地模型
+
+每个工作流登记为一个本地模型（key `comfy/<slug>`，`kind` 按服务的组件定），由四部分组成：
+
+| 部分 | 内容 |
+| --- | --- |
+| 工作流文件 | ComfyUI 的 API 格式 JSON（`workflow.api.json`），登记时算 sha256 |
+| 绑定 | 语义槽位 → 节点和字段。**按节点标题**（API 格式里的 `_meta.title`）找节点，不按节点编号，所以在 ComfyUI 里重排、增删别的节点不影响；被绑定的节点标题在工作流里必须唯一。用 DramaStudio 输入 / 输出节点的工作流不用写绑定（6.4.3） |
+| 依赖 | 节点包（名称、来源、git commit 或 Registry 版本）、模型文件（目录类别、文件名，可选 sha256 和下载地址） |
+| 能力 | 服务的组件（关键帧、视频、超分、口型……）、画幅、时长、参考图数、显存需求。字段和 `providers.yaml` 的 `caps` 一致，所以成片规格的兼容表（13.3）和能力过滤（7.3）照常用 |
+
+- **文件布局**：平台推荐的放仓库 `workflows/<slug>/`（`workflow.api.json` + `workflow.yaml`，后者写绑定、依赖、能力），上游 `workflows/selfhost/` 的 H3 工作流改成这个格式纳入；用户导入的放 `~/.drama-studio/workflows/<slug>/`。`comfy_workflow` 表登记它们，记档位、体检和试跑结果、文件哈希。
+- **登记后出现在对应组件的 ModelPicker 本地模型列表里**。路由、兜底、记账、质检的规则都不变：它就是一个 `where=local` 的模型，照样走 `router.call()`、GPU 队列和 `model_call`。
+- `providers.yaml` 里现有的 `comfy/*` 本地模型（H3、SeedVR2、FlashVSR、Qwen-Image-Edit……）以后都由工作流库提供：有对应的推荐档工作流才算可用。
+
+#### 6.4.3 对接方式
+
+- **首选：DramaStudio 输入 / 输出节点**（节点包 `integrations/comfyui-dramastudio` 的一部分，M5 先做；14.2 的镜头、素材、存回节点仍在 M9）：
+  - 输入：首帧（IMAGE）、参考图（IMAGE，按序号 1、2、3… 各一个节点）、提示词（STRING，正向 / 反向）、台词音频（AUDIO）、尺寸（宽、高）、帧率、时长（秒）、种子；
+  - 输出：视频、图片、音频；
+  - 平台只认这些节点：提交时按节点类型填值，按节点类型取结果，不用写绑定。节点在画布里有默认值，用户在 ComfyUI 里能直接手动跑。
+- **兼容：普通工作流**（官方和社区的，没有 DramaStudio 节点）：导入时自动猜绑定，例如 `LoadImage` → 首帧、正向 `CLIPTextEncode` → 提示词、采样器的 `seed` → 种子、`EmptyLatent*` 的宽高 → 尺寸、`SaveVideo` / `VHS_VideoCombine` → 视频输出。猜的结果在绑定页逐项给用户确认，没确认完不能登记。
+- **调用流程**：上传输入（`/upload/image` 等）→ 提交 `/prompt` → 用 WebSocket 收进度 → 从 `/history/{id}` 找输出节点的产物 → `/view` 下载。宽高、帧率、时长一律从成片规格（第 13 节）和镜头读出来填进对应槽位。
+
+#### 6.4.4 导入体检和分档
+
+导入（拖进 JSON 文件，或从 ComfyUI 的工作流列表里选）后自动体检：
+
+1. **查缺**：用 `/object_info` 找出工作流里不存在的节点类，查 ComfyUI-Manager / Registry 的节点映射，对应到节点包和版本；把加载器节点引用的模型文件名和 `/object_info` 给的可选文件列表比对，找出缺的模型。
+2. **问了再装**：列出要装的节点包（含版本）和模型（含大小），走 6.4.1 的「改动前先问 + 快照」，确认后按版本安装。
+3. **试跑**：用示例输入（示例项目里的首帧、参考图、提示词、台词音频，草稿档尺寸，最短时长）跑一次，结果给用户看。
+
+分三档：
+
+| 档 | 条件 | 能怎么用 |
+| --- | --- | --- |
+| 平台推荐 | 随仓库提供，节点包和模型锁定版本，平台测过 | 进预设、自动路由、兜底 |
+| 我的工作流 | 用户导入，试跑通过 | 同上 |
+| 未验证 | 导入了但还没试跑通过（或文件变了、体检坏了） | 只能在 ModelPicker 里手动选；不进预设、兜底和「不满意换一个」的自动顺序 |
+
+#### 6.4.5 可复现
+
+- 本地 ComfyUI 生成的每个 `product_version` 和 `model_call` 都记下 `workflow_id`、`workflow_sha256`、`comfy_env_hash`。`comfy_env` 按哈希存当时的 ComfyUI 版本和全部节点包版本，所以任何一版都查得到是用哪份工作流、哪套节点跑出来的。
+- 工作流文件变了（哈希不同）就降为「未验证」，重新试跑通过后回到原来的档。
+- 每次装或升级节点包后，自动把所有已登记的工作流体检一遍：先做静态检查（节点类、被绑定节点的标题和字段、模型文件都还在）；用到了变动节点包的推荐档和「我的」档工作流，再在 GPU 队列里排一次低优先级试跑。有坏的就提示，并给出「回滚到这次安装前的快照」。
+
+#### 6.4.6 界面
+
+「模型与兜底」页加「工作流库」区域。原型里没有这一块，按 M0.5 的界面风格设计，做完截图给 Kelvin 看。
+
+- 列表：名称、服务的组件、档位、体检状态（缺几个节点包 / 模型）、上次试跑、文件是否变过；
+- 导入：拖进 JSON，或从 ComfyUI 的工作流列表里选；
+- 绑定：槽位 ↔ 节点标题和字段，自动猜的标出来等确认；
+- 体检：缺的节点包和模型清单、安装（弹 6.4.1 的改动清单）、快照和回滚；
+- 试跑：示例输入、结果预览，通过后改档；
+- 分档：手动降为未验证，或升为「我的工作流」（要先试跑通过）。
+
+先用示例数据做出来（M1，MSW 返回），M5 再接后端。
+
+#### 6.4.7 运行
+
+- 本地 GPU 队列并发 1；调度器按“同一工作流”分组连续执行，切换大模型前调 `/free` 释放显存（PLAN：同一套模型的镜头连续跑，不再每镜卸载）。
+- 本地任务超时（默认 10 分钟，可配）视为失败，进入兜底流程；取消时调 `/interrupt`（第 9 节）。
 
 ### 6.5 本地工具类模型
 
@@ -259,7 +334,7 @@ per_call_cap_usd: 0.50
 
 ### 7.3 能力过滤
 
-模型选择器只列出满足当前镜头需求和成片规格的模型（参考图数量、时长、是否音频驱动、是否需要控制视频、画幅、分辨率）。需要 ControlNet 的镜头只显示本地模型。机器档案（第 12 节）里跑不了的本地模型隐藏。
+模型选择器只列出满足当前镜头需求和成片规格的模型（参考图数量、时长、是否音频驱动、是否需要控制视频、画幅、分辨率）。需要 ControlNet 的镜头只显示本地模型。机器档案（第 12 节）里跑不了的本地模型隐藏。工作流库里「未验证」档的工作流只能手动选，不进预设、兜底和「不满意换一个」的自动顺序（6.4.4）。
 
 ### 7.4 按钮语义
 
@@ -322,6 +397,7 @@ per_call_cap_usd: 0.50
 | 看板 | `GET /metrics/summary`⁺（顶栏花费），`GET /metrics/kpis\|spend-series\|calls-series\|shots\|components\|speed\|apis\|local-models\|qa\|episodes`⁺，`GET /metrics/export.csv`⁺（第 11 节） |
 | 同步 | `GET/PUT /sync/targets`，`POST /sync/targets/{id}/detect`⁺，`POST /sync/run`，`GET /sync/log`，`GET /sync/board?episode=`⁺（ComfyUI 素材板），`POST /ingest`（ComfyUI 节点存回，第 14.2 节） |
 | 首次启动 | `POST /setup/scan`，`GET /setup/profile`，`POST /setup/install` `{items, mirror, dir}`，`POST /setup/items/{id}/retry\|skip` |
+| ComfyUI 与工作流库（计划，6.4） | M1：`GET /comfy/env`（识别结果：路径、端口、版本、节点包、模型文件），`GET/POST /comfy/snapshots`，`POST /comfy/snapshots/{id}/restore`；M5：`GET /workflows`，`POST /workflows/import`，`GET/PATCH /workflows/{id}`（含改档），`PUT /workflows/{id}/bindings`，`POST /workflows/{id}/check`，`POST /workflows/{id}/trial` → job，`POST /workflows/check-all` |
 | 事件 | `GET /events`（SSE） |
 
 ## 10. 调用记录（埋点）
@@ -337,6 +413,7 @@ per_call_cap_usd: 0.50
 | 花费 | unit_prices_json（当时的单价快照）, cost_usd, billed（失败是否计费） |
 | 本地资源 | vram_peak_mb, gpu_util_avg（pynvml 每秒采样） |
 | 结果 | status（success / error / timeout / canceled）, error_code（如 429）, qa_scores_json, qa_pass |
+| 复现 | workflow_id, workflow_sha256, comfy_env_hash（本地 ComfyUI 调用才有，6.4.5） |
 
 - 花费按当时单价现算并存快照；以后改价，历史花费不变。
 - 预算检查、看板、CSV 导出都只读这张表。
@@ -413,6 +490,7 @@ per_call_cap_usd: 0.50
 3. **安装**：用户勾选（必需项默认勾上）→ 按依赖顺序执行，日志经 SSE 实时显示，每步可重试或跳过；装过的东西写 `installed_item`，卸载能清干净；重新检测只补差异。
 4. **镜像**：自动（测速选择）/ 官方 / 国内镜像（Hugging Face、PyPI、GitHub 代理）。
 5. **安全**：不动系统 Python；所有 Python 依赖装进 `~/.drama-studio/envs/<name>`（uv）；单项下载超过 10 GB 先确认。
+6. **已装的 ComfyUI**：按 6.4.1 只读识别；对它的任何改动（ComfyUI 和节点的安装、升级，往它的 Python 和模型目录里放东西）都单独列改动清单确认，动手前用 ComfyUI-Manager 存快照，可一键回滚。
 
 ## 13. 成片规格
 
@@ -433,7 +511,7 @@ per_call_cap_usd: 0.50
 ### 13.2 谁读规格
 
 - 关键帧组件：按画幅和尺寸出图；模型不支持该画幅时，按 `compat` 的处理方式（出最接近的画幅再外扩或裁切、出小图再超分）。
-- 视频组件：画幅、分辨率、帧率作为请求参数；本地 ComfyUI 工作流通过 bindings 注入宽高。
+- 视频组件：画幅、分辨率、帧率作为请求参数；本地 ComfyUI 工作流通过「尺寸 / 帧率 / 时长」输入节点或绑定注入（6.4.3）。
 - 提示词编译：把画幅写进编译层（如“竖屏 9:16 构图”）。
 - 分镜和关键帧页：叠安全区参考线（平台按钮、标题和进度条会挡住的地方，比例按平台预设，可在设置里调）。
 - 后期：超分目标、导出预设、字幕位置、帧率转换（25 fps 重采样，30 fps 用本地插帧）。
@@ -463,7 +541,7 @@ per_call_cap_usd: 0.50
   - 节点：图片用 `LoadImage`，视频用 `LoadVideo`，音频用 `LoadAudio`；文件复制（或硬链接）到 `ComfyUI/input/drama/<剧名>/E01/…`，节点里引用相对路径；
   - 每组一个便签节点（`MarkdownNote`），写场次信息、提示词、模型、花费、质检分；
   - 通过 ComfyUI 的 userdata 接口写到 `workflows/短剧/<剧名>/第1集-素材板.json`，出现在 ComfyUI 的工作流列表里。每次同步整张重写；用户自己的工作流不碰。
-- **节点包 `integrations/comfyui-dramastudio`**（Python 节点 + 少量前端扩展），首次启动的安装清单里加一项：
+- **节点包 `integrations/comfyui-dramastudio`**（Python 节点 + 少量前端扩展），首次启动的安装清单里加一项。工作流用的输入 / 输出节点见 6.4.3（M5 先做），下面三个节点在 M9：
   - `DramaStudio ▸ 镜头`：下拉选剧 / 集 / 镜头，输出已锁定的关键帧（IMAGE）、台词音频（AUDIO）、参考图（IMAGE 批）、编译后的提示词（STRING）、宽、高、帧率、时长；
   - `DramaStudio ▸ 素材`：按资产 ID 输出锁定的参考图或音色样本；
   - `DramaStudio ▸ 存回工作台`：输入 IMAGE / VIDEO / AUDIO + 目标（镜头或资产、slot），把结果 POST 到后端 `POST /api/v1/ingest`，生成 origin=`comfy_ingest` 的新 version（只是候选），自动跑质检，写一行 `model_call`（where=local，花费 0，记耗时）；
@@ -502,7 +580,7 @@ per_call_cap_usd: 0.50
 | `/s/:series/e/:ep/storyboard` | Storyboard.dc.html | 04 分镜 · 关键帧与镜头设定 |
 | `/s/:series/e/:ep/generate` | Generate.dc.html | 05 生成 · 候选墙与自动质检 |
 | `/s/:series/e/:ep/post` | Post.dc.html | 06 后期 · 时间线与导出 |
-| `/models` | Models.dc.html | 模型与兜底 · 全局默认、预设、密钥 |
+| `/models` | Models.dc.html | 模型与兜底 · 全局默认、预设、密钥、工作流库（6.4.6，原型里没有这一块） |
 | `/s/:series/sync` | Sync.dc.html | 素材整理与同步 |
 | `/s/:series/dashboard` | Dashboard.dc.html | 数据看板 |
 
@@ -546,3 +624,5 @@ per_call_cap_usd: 0.50
 - 上游的 HTTP 框架、状态文件格式与本文冲突时，以本文为准，但保留对上游 CLI 的兼容导出。
 - 各厂商 2026 年新模型的确切 model_id、请求格式：以官方文档为准，`seed/providers.yaml` 里标了 `verify: true` 的都要核对。
 - H3 音频驱动（模式 A）的参数、ControlNet 与身份参考同时使用、中文文字渲染：等 P0 实测结论，之前按 PLAN 写的方式实现并保留开关。
+- ComfyUI-Manager 的快照和节点映射接口（独立安装的 Manager 和 ComfyUI 内置的新版 Manager 路径不同）、Registry 装的节点包记录在哪：实现时按当时的官方文档核对。
+- ComfyUI Desktop 默认端口可能是 8000，和本平台后端的默认端口相同（待核对）：识别时要试这个端口；真冲突时平台后端换端口。

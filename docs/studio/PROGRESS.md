@@ -59,5 +59,6 @@
 
 ## 等 Kelvin 的事
 
+- **M1 计划要按 SPEC 6.4（ComfyUI 与工作流库，2026-10-18）补步骤**，Kelvin 同意前不改 `plans/M1.md`、不开工这几项。提议：4c 识别已装 ComfyUI（端口、节点包版本、模型文件，`comfy_env`、`GET /comfy/env`）；5c 改它之前列改动清单确认 + ComfyUI-Manager 快照 / 回滚（`comfy_snapshot`、`/comfy/snapshots`）；第 7 步加改动清单弹窗和回滚按钮；新 7b「工作流库」示例数据界面（先给 Kelvin 看截图）。顺序建议 6 → 4c → 5c → 7 → 7b → 8 → 9。另有两点是按理解写进 SPEC 的，见 DECISIONS 同日条目：没有 ComfyUI 时仍装到 `~/.drama-studio/ComfyUI`；工作流库示例界面放 M1。
 - **重启 `start.ps1`**：本机 8000 的后端是旧代码（没开 `--reload`），重启后自动迁移到 `0003`（剧集、规格、机器档案）并建示例剧集。首次启动页在第 7 步之前仍用 MSW 示例数据，后端的 `/setup/*` 可以用 `curl` 或 `/docs` 先看。
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。
