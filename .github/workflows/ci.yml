@@ -49,7 +49,11 @@ jobs:
         with:
           node-version: 24
       - name: Enable pnpm
-        run: corepack enable pnpm
+        # Make web/package.json's pinned pnpm corepack's default too: steps call `pnpm -C web`
+        # from the repo root, where corepack would otherwise pick its own newest version.
+        run: |
+          corepack enable pnpm
+          corepack install -g "$(node -p "require('./web/package.json').packageManager")"
       - name: Install frontend
         run: pnpm -C web install --frozen-lockfile
       - name: ESLint
