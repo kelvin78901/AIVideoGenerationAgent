@@ -1,6 +1,8 @@
 # Kelvin's PC from the prototype (Setup.dc.html): Windows 11 + RTX 5090.
 # Read by setup/probe.py:FakeProbe (Mock mode and tests). Paths use "/"; "\" also matches.
 # Expected scan: ok 9 / missing 9 / old 2 / optional 8 / warn 1 (29 rows).
+# Its ComfyUI (D:\ComfyUI, running) has two node packs, VideoHelperSuite (git clone) and
+# KJNodes (from the Registry), an extra_model_paths.yaml and three model files (step 4c).
 
 host: { os: windows, os_name: Windows 11, bits: 64, arch: amd64, ram_gb: 63.7, home: "C:/Users/kelvin" }
 gpu: { name: NVIDIA RTX 5090, vram_gb: 31.8, backend: cuda, cuda_driver: "13.0" }
@@ -21,9 +23,22 @@ http:
         os: nt
         comfyui_version: 0.3.40
         python_version: "3.12.9"
+        pytorch_version: 2.7.1+cu128
         argv: ['D:\ComfyUI\main.py', "--listen", "127.0.0.1"]
       devices: [{ name: "cuda:0 NVIDIA GeForce RTX 5090 : cudaMallocAsync", type: cuda }]
-  "http://127.0.0.1:8188/object_info": { ms: 40, body: { KSampler: {}, VHS_VideoCombine: {} } }
+  "http://127.0.0.1:8188/object_info":
+    ms: 40
+    body:
+      KSampler: { python_module: nodes }
+      VHS_VideoCombine: { python_module: custom_nodes.ComfyUI-VideoHelperSuite }
+      VHS_LoadVideo: { python_module: custom_nodes.ComfyUI-VideoHelperSuite }
+      ImageResizeKJ: { python_module: custom_nodes.ComfyUI-KJNodes }
+      GetImageSizeAndCount: { python_module: custom_nodes.ComfyUI-KJNodes }
+  "http://127.0.0.1:8188/models": { ms: 3, body: [checkpoints, loras, vae, upscale_models] }
+  "http://127.0.0.1:8188/models/checkpoints": { ms: 3, body: [sd_xl_base_1.0.safetensors] }
+  "http://127.0.0.1:8188/models/loras": { ms: 3, body: ['rain\rain_style.safetensors'] }
+  "http://127.0.0.1:8188/models/vae": { ms: 3, body: [ae.safetensors] }
+  "http://127.0.0.1:8188/models/upscale_models": { ms: 3, body: [] }
   "https://huggingface.co": { ms: 2600 }
   "https://pypi.org/simple": { ms: 180 }
   "https://github.com": { ms: 240 }
@@ -32,7 +47,43 @@ http:
 files:
   - D:/ComfyUI/main.py
   - D:/ComfyUI/venv/Scripts/python.exe
+  - D:/ComfyUI/venv/Lib/site-packages/torch-2.7.1+cu128.dist-info/METADATA
   - D:/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/__init__.py
+  - D:/ComfyUI/custom_nodes/ComfyUI-KJNodes/__init__.py
+  - D:/ComfyUI/custom_nodes/websocket_image_save.py
+
+texts:
+  D:/ComfyUI/venv/pyvenv.cfg: "home = C:\\Python312\nversion = 3.12.9\n"
+  D:/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/.git/HEAD: "ref: refs/heads/main\n"
+  D:/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/.git/packed-refs: |
+    # pack-refs with: peeled fully-peeled sorted
+    8a3f6c1e9b2d4f70a5c8e1b3d6f9a2c4e7b0d1f3 refs/heads/main
+  D:/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/.git/config: |
+    [core]
+      repositoryformatversion = 0
+    [remote "origin"]
+      url = https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite
+      fetch = +refs/heads/*:refs/remotes/origin/*
+  D:/ComfyUI/custom_nodes/ComfyUI-VideoHelperSuite/pyproject.toml: |
+    [project]
+    name = "comfyui-videohelpersuite"
+    version = "1.7.9"
+  D:/ComfyUI/custom_nodes/ComfyUI-KJNodes/pyproject.toml: |
+    [project]
+    name = "comfyui-kjnodes"
+    version = "1.2.6"
+  D:/ComfyUI/custom_nodes/ComfyUI-KJNodes/.tracking: "nodes/image_nodes.py\n__init__.py\n"
+  D:/ComfyUI/extra_model_paths.yaml: |
+    comfyui:
+      base_path: D:/AI/models
+      checkpoints: checkpoints/
+      loras: loras/
+
+sizes:   # bytes
+  D:/ComfyUI/models/checkpoints/sd_xl_base_1.0.safetensors: 6938078334
+  D:/ComfyUI/models/checkpoints/put_checkpoints_here: 0
+  D:/ComfyUI/models/vae/ae.safetensors: 335304388
+  D:/AI/models/loras/rain/rain_style.safetensors: 228456789
 
 python:
   D:/ComfyUI/venv/Scripts/python.exe:

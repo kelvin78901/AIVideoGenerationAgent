@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from drama_series_agent.setup.comfy import ComfyEnvInfo, ComfyScan
 from drama_series_agent.setup.detectors import Detection
 from drama_series_agent.setup.manifest import OS, Group, Item, Localized, Message, Status
 from drama_series_agent.setup.probe import GpuInfo, HostInfo
@@ -80,6 +81,9 @@ class ProfileData(BaseModel):
     # Item ids this machine has: set when a scan finishes, extended by each finished install,
     # kept while a rescan runs. None before the first scan. Feeds core/capabilities.py.
     found: list[str] | None = None
+    # The ComfyUI the last finished scan found (SPEC 6.4.1): where it is, its model files and
+    # the hash of its environment in ``comfy_env``. Kept while a rescan runs.
+    comfy: ComfyScan | None = None
     # Bumped by every scan / reset; a job whose token is stale stops writing.
     run: str | None = None
     job_id: str | None = None
@@ -97,6 +101,20 @@ class MachineProfile(BaseModel):
     recommendation: Recommendation | None
     # True with Mock's sample machines: the page then shows the 示例机器 switch.
     simulated: bool
+
+
+class ComfyEnvOut(ComfyEnvInfo):
+    hash: str
+    captured_at: datetime
+
+
+class ComfyView(BaseModel):
+    """``GET /comfy/env``: the ComfyUI the last finished scan found; both null when none."""
+
+    scanned_at: datetime | None
+    simulated: bool
+    comfy: ComfyScan | None  # where it is, its model folders and files
+    env: ComfyEnvOut | None  # versions and node packs
 
 
 def short_gpu_name(name: str) -> str:

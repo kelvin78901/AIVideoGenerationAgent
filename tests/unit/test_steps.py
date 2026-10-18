@@ -12,9 +12,9 @@ import httpx
 import pytest
 
 from drama_series_agent.core.paths import REPO_ROOT
-from drama_series_agent.setup.detectors import join
 from drama_series_agent.setup.installer import InstallEnv, InstallError
 from drama_series_agent.setup.manifest import OS, Item, load_manifest
+from drama_series_agent.setup.pathutil import join
 from drama_series_agent.setup.steps import WINGET_ALREADY_INSTALLED, RealRunner, _python_in
 
 MIRRORS = load_manifest().mirrors

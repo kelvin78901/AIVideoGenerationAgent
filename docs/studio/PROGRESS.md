@@ -5,7 +5,7 @@
 ## 当前
 
 - 里程碑：**M1 首次启动 + 成片规格**（M0.5 已合并，报告 [`reports/M0.5.md`](reports/M0.5.md)）
-- 计划：[`docs/studio/plans/M1.md`](plans/M1.md)（已批准 2026-10-15；Kelvin 的四个决定见 DECISIONS「2026-10-15 · M1 计划」；2026-10-18 按 SPEC 6.4 追加 4c、5c、7b，剩下的顺序 **4c → 5c → 7 → 7b → 8 → 9**（6 已做完））
+- 计划：[`docs/studio/plans/M1.md`](plans/M1.md)（已批准 2026-10-15；Kelvin 的四个决定见 DECISIONS「2026-10-15 · M1 计划」；2026-10-18 按 SPEC 6.4 追加 4c、5c、7b，剩下的顺序 **5c → 7 → 7b → 8 → 9**（6、4c 已做完））
 - 分支：`m1-setup-spec`（从 main 切出；每步提交后 push；不推 main；做完开 PR）
 
 ## 已完成的小步
@@ -20,13 +20,16 @@
 | 4b | 表 `machine_profile`、`installed_item` + 迁移 `0003`；`setup/schema.py`、`setup/service.py`（`SetupService`：档案、`setup.scan` 任务、`run` 令牌、示例机器切换）；`GET /setup/profile`（`simulated`）、`POST /setup/scan`（202）、`POST /dev/setup/machine`；清单加 `recommend:`；勾 ROADMAP 第 1、4、5、6 项（第 1–3 步当时漏勾） | 46ba9fa | pytest 222（setup 接口 10 个）；ruff、mypy 通过；临时后端 8771 上 curl 走通 |
 | 5a | `setup/installer.py`（`FakeRunner`、`install_order`、`confirm_reasons`、`InstallError`）；`SetupService` 加 `setup.install` 任务、依赖跳过、重试 / 跳过、确认 / 取消、重启续跑；`POST /setup/install`、`/setup/install/confirm|cancel`、`/setup/items/{id}/retry|skip`；清单加 `size_gb`、pkg 的 `admin`；新文案；e2e `Backend` 挪进 `tests/e2e/conftest.py` | e239238 | pytest 238（安装接口 11、installer 4、e2e 续跑 1）；ruff、mypy、i18n 通过 |
 | 5b | `setup/steps.py`：`RealRunner`（7 种步骤、幂等、装前先检测、镜像、`.part` 续传 + sha256）替掉临时 runner；新文案 error 9 个、log 2 个；另修 CI：Linux mypy（ad8cf79）、corepack 的 pnpm 版本（0ba5732）；勾 ROADMAP 安装器一项 | 5ab627c | pytest 261（steps 22）；ruff、mypy（含 `--platform linux`）通过；CI（Linux）全绿 |
-| 6 | `core/capabilities.py`（`Capabilities`、`restrict`）；`providers.yaml` 本地模型加 `needs` / `requires_cuda`；`resolve(caps=)` + `Resolved.unavailable`；档案存 `found`（扫描结束写、装好追加），`SetupService.capabilities()` 接进 `Router` 和兼容表；勾验收第 3 条；DECISIONS 记第 6 步 | 本提交 | pytest 273（capabilities 单元 9、接口 3）；ruff、mypy（含 `--platform linux`）通过 |
+| 6 | `core/capabilities.py`（`Capabilities`、`restrict`）；`providers.yaml` 本地模型加 `needs` / `requires_cuda`；`resolve(caps=)` + `Resolved.unavailable`；档案存 `found`（扫描结束写、装好追加），`SetupService.capabilities()` 接进 `Router` 和兼容表；勾验收第 3 条；DECISIONS 记第 6 步 | c13867e | pytest 273（capabilities 单元 9、接口 3）；ruff、mypy（含 `--platform linux`）通过 |
+| 4c | `setup/comfy.py`（Desktop 2 安装记录、argv 对安装、节点包 git / Registry / 手动、Python / PyTorch / Manager 版本、模型目录和文件、`identify()`）；`setup/pathutil.py`；探针加只读 `list_dir`，Fake 加 `sizes`；试端口 8188、8000；表 `comfy_env` + 迁移 `0004`；档案存 `comfy`；`GET /comfy/env`；PC 夹具补两个节点包、`extra_model_paths.yaml`、模型文件；勾 ROADMAP 一项；DECISIONS 记 4c | 本提交 | pytest 285（comfy 单元 9、接口 3；RealProbe 在临时目录按 Desktop 2 布局读，前后文件快照一致）；ruff、mypy（含 `--platform linux`）通过；本机只读试跑结果和手查一致 |
 
 ## 下一步
 
-- **第 4c 步 识别已装的 ComfyUI（后端，只读，SPEC 6.4.1）**：按计划 4c 那一节做（`.git` 直接读文件、`pyproject.toml` 版本、`/object_info` 按包归类、端口、模型文件、表 `comfy_env` + 迁移 `0004`、`GET /comfy/env`、夹具和 `RealProbe` 不写文件的测试）。从 `setup/detectors.py` 的 ComfyUI 定位和 `setup/probe.py` 开始看。
-  - **线索**：Kelvin 用的是 **ComfyUI Desktop，端口 8188**（2026-10-18 答复，和后端 8000 不冲突）。Desktop 的目录和便携版不一样，可能是程序代码（含 `main.py`）在安装目录里，`custom_nodes`、`models`、`.venv` 在安装时选的数据目录里。现在的定位按 `main.py` 所在目录找 `custom_nodes` 和 Python，对 Desktop 很可能不对，4c 要分开「代码目录」和「数据目录」。本机没有 `%APPDATA%\ComfyUI`，当时 ComfyUI 也没开（`/system_stats` 读不到），**开工 4c 前请 Kelvin 打开 ComfyUI Desktop**，再只读看 argv 和目录。
-  - 收尾时 SPEC 9.1 要补：`POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm`。
+- **第 5c 步 改已装 ComfyUI 前先确认，快照和回滚（后端，SPEC 6.4.1）**：按计划 5c 那一节做。从 `setup/installer.py:confirm_reasons`、`setup/manifest.py` 的 `Item`、`setup/comfy.py` 开始看。
+  - **先核对再写**：Kelvin 用的是 **Comfy Desktop 2**（ComfyUI 0.41.2，Manager 是 pip 包 `comfyui_manager` 4.2.2，`--enable-manager`）。Desktop 2 自己会存快照（`<installPath>\.launcher\snapshots\*.json`，内容有 ComfyUI ref / commit、`customNodes`、`pipPackages`）。Manager 4 的快照接口（保存、列出、恢复）按官方文档 / 仓库核对后记 DECISIONS；用 Manager 还是 Desktop 自己的快照，要在 DECISIONS 里写清楚原因。「没装 Manager 就把装 Manager 列为第一项」：Desktop 2 已经带了，不用装。
+  - 迁移用 `0005_comfy_snapshot`（不是计划写的 `0004`，原因见 DECISIONS 4c）。
+  - 本机 ComfyUI 没开时也能做（Fake 下模拟快照和回滚）；要在真机上核对 Manager 接口时再请 Kelvin 打开 ComfyUI Desktop。
+  - 收尾时 SPEC 要补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm`、`GET /comfy/env` 的返回结构；第 4 节 `comfy_env` 多的 `comfyui_commit` 列。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -62,5 +65,5 @@
 
 ## 等 Kelvin 的事
 
-- **重启 `start.ps1`**：本机 8000 的后端是旧代码（没开 `--reload`），重启后自动迁移到 `0003`（剧集、规格、机器档案）并建示例剧集。首次启动页在第 7 步之前仍用 MSW 示例数据，后端的 `/setup/*` 可以用 `curl` 或 `/docs` 先看。
+- **重启 `start.ps1`**：本机 8000 的后端是旧代码（没开 `--reload`），重启后自动迁移到 `0004`（剧集、规格、机器档案、ComfyUI 环境）并建示例剧集。首次启动页在第 7 步之前仍用 MSW 示例数据，后端的 `/setup/*`、`/comfy/env` 可以用 `curl` 或 `/docs` 先看。
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。

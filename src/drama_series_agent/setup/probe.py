@@ -91,6 +91,13 @@ class AppInfo:
     edition: Literal["free", "studio"]
 
 
+@dataclass(frozen=True)
+class DirEntry:
+    name: str
+    is_dir: bool
+    size: int | None  # bytes, files only
+
+
 class Probe(Protocol):
     simulated: bool
 
@@ -102,6 +109,7 @@ class Probe(Protocol):
     async def http_get(self, url: str, timeout_s: float = 3.0) -> HttpResult | None: ...
     async def exists(self, path: str) -> bool: ...
     async def read_text(self, path: str) -> str | None: ...
+    async def list_dir(self, path: str) -> list[DirEntry] | None: ...
     async def py_module(self, python: str, module: str) -> PyModule | None: ...
     async def has_secret(self, name: str) -> bool: ...
     async def resolve_app(self) -> AppInfo | None: ...
@@ -335,6 +343,9 @@ class RealProbe:
     async def read_text(self, path: str) -> str | None:
         return await asyncio.to_thread(_read_head, path)
 
+    async def list_dir(self, path: str) -> list[DirEntry] | None:
+        return await asyncio.to_thread(_list_dir, path)
+
     async def py_module(self, python: str, module: str) -> PyModule | None:
         # Importing torch takes a while on a cold start.
         res = await self._exec([python, "-c", _PY_MODULE_SCRIPT, module], timeout_s=90)
@@ -388,6 +399,23 @@ def _read_head(path: str) -> str | None:
         return None
 
 
+def _list_dir(path: str) -> list[DirEntry] | None:
+    """One level, sorted by name; entries that vanish or cannot be read are left out."""
+    out: list[DirEntry] = []
+    try:
+        with os.scandir(Path(path).expanduser()) as it:
+            for e in it:
+                try:
+                    is_dir = e.is_dir()
+                    size = None if is_dir else e.stat().st_size
+                except OSError:
+                    continue
+                out.append(DirEntry(name=e.name, is_dir=is_dir, size=size))
+    except OSError:
+        return None
+    return sorted(out, key=lambda d: d.name)
+
+
 def _disk_usage(path: str) -> DiskInfo | None:
     """Free space of the volume ``path`` would be on (its nearest existing parent)."""
     p = Path(path).expanduser()
@@ -429,9 +457,14 @@ class FakeProbe:
 
     def __init__(self, data: dict[str, Any]) -> None:
         self.data = data
+        # A file is listed in ``files``, or has text (``texts``) or a size in bytes (``sizes``).
         self.files = {_norm(p) for p in data.get("files", [])}
         self.texts = {_norm(p): t for p, t in (data.get("texts") or {}).items()}
+        self.sizes = {_norm(p): int(n) for p, n in (data.get("sizes") or {}).items()}
         self.python = {_norm(p): mods for p, mods in (data.get("python") or {}).items()}
+
+    def _all_files(self) -> set[str]:
+        return self.files | set(self.texts) | set(self.sizes)
 
     @classmethod
     def load(cls, machine: str, directory: Path | None = None) -> FakeProbe:
@@ -471,10 +504,26 @@ class FakeProbe:
 
     async def exists(self, path: str) -> bool:
         p = _norm(path)
-        return p in self.files or any(f.startswith(p + "/") for f in self.files)
+        files = self._all_files()
+        return p in files or any(f.startswith(p + "/") for f in files)
 
     async def read_text(self, path: str) -> str | None:
         return self.texts.get(_norm(path))
+
+    async def list_dir(self, path: str) -> list[DirEntry] | None:
+        p = _norm(path)
+        entries: dict[str, DirEntry] = {}
+        for f in self._all_files():
+            if not f.startswith(p + "/"):
+                continue
+            head, _, tail = f[len(p) + 1 :].partition("/")
+            if tail:
+                entries[head] = DirEntry(name=head, is_dir=True, size=None)
+            elif head not in entries:
+                size = self.sizes.get(f, len(self.texts.get(f, "").encode()))
+                entries[head] = DirEntry(name=head, is_dir=False, size=size)
+        # Only files are listed in a fixture, so a folder without any is not there at all.
+        return sorted(entries.values(), key=lambda d: d.name) if entries else None
 
     async def py_module(self, python: str, module: str) -> PyModule | None:
         if not await self.exists(python):

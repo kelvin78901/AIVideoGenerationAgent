@@ -2,6 +2,18 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 识别已装的 ComfyUI（第 4c 步）
+
+- **Comfy Desktop 2**（Kelvin 本机，只读看过目录和日志）：安装记录在 `%APPDATA%\Comfy Desktop\installations.json`（每项有 `installPath`、ComfyUI 版本和 commit、Python、PyTorch、`launchArgs`）。程序、`.venv`、`custom_nodes` 都在 `<installPath>\ComfyUI` 里，模型放在共享目录，由 Desktop 生成的 `instance-model-paths\<id>.yaml` 指过去。它启动 ComfyUI 时 `main.py` 是相对路径，所以运行中的实例靠 argv 里的 `--extra-model-paths-config` 对上是哪一份安装。定位顺序：运行中的实例 → Desktop 的安装记录 → 常见目录 → 设置里的路径。macOS / Linux 上 Desktop 设置目录的位置是按 Electron 惯例推的，没核对。第一代 Desktop（程序和数据分两个目录、默认端口 8000）没有专门处理，只靠常见目录找。
+- **端口**：先试清单里的地址（8188），再试 8000。只有 `/system_stats` 返回了 ComfyUI 的 `system`（含版本或 argv）才算找到，所以本机 8000 上的后端不会被误认成 ComfyUI。Kelvin 的 ComfyUI 在 8188，不冲突；真冲突时用 `start.ps1 -Port` 换后端端口，默认值不改。端口取 argv 的 `--port`，没有就取应答的那个地址。
+- **节点包来源**：有 `.git` 是 git（HEAD、loose ref、`packed-refs`、`gitdir:` 指针都直接读文件；远端地址去掉用户名和令牌）；有 ComfyUI-Manager 留下的 `.tracking` 文件是 Registry（这一点没核对 Manager 文档）；都没有是手动放进来的，单个 `.py` 也算；只在 `/object_info` 里出现、目录里没有的记为 unknown。跳过 `.disabled` 目录和 `*.disabled`。版本取 `pyproject.toml` 的 `project.version`。
+- **Python / PyTorch 版本不靠运行解释器**：在跑时取 `/system_stats`；没在跑时读 `pyvenv.cfg` 和 site-packages 里 `*.dist-info` 的目录名；最后才用 Desktop 安装记录里的值。（扫描里的 PyTorch 检测项本来就会单独跑一次 import。）
+- **ComfyUI-Manager**：新版是 pip 包 `comfyui_manager`，`--enable-manager` 启用，Desktop 2 用的就是这种（本机 4.2.2）；旧版是 `custom_nodes/ComfyUI-Manager`。两种都认。**这影响第 5c 步**：Desktop 2 自己会存快照（`<installPath>\.launcher\snapshots\*.json`，开机和更新后各存一份），Manager 4 的快照接口要按官方文档重新核对。
+- **模型文件**：目录是 `models/` 下的各子目录，加上每个用到的 `extra_model_paths.yaml`（argv 指定的、ComfyUI 根目录下的、Desktop 生成的）。在磁盘上最多往下走 4 层、最多记 5000 个文件，只认模型扩展名，超出的标 `models_truncated`。在跑时以 `/models/{folder}` 的清单为准，再到磁盘上对出路径和大小，对不上的路径和大小留空。
+- **`comfy_env`**：哈希只覆盖 ComfyUI 版本、commit、Python、PyTorch 和节点包（含节点类），不含模型文件和路径；同样的环境不重复存。比 SPEC 多一列 `comfyui_commit`。模型清单和位置存在 `machine_profile`（`data_json.comfy`），重新扫描期间保留上一次的结果。
+- **迁移**：`0004` 只建 `comfy_env`，`comfy_snapshot` 放到第 5c 步的 `0005`（计划写的是两张表都在 `0004`）。原因：Kelvin 在两步之间重启 `start.ps1` 时本机库会升到 `0004`，再回头改已经执行过的迁移，他的库里就会少这张表。
+- 路径小工具（`join`、`dirname` 等）挪到 `setup/pathutil.py`，`comfy.py` 和 `detectors.py` 共用，避免循环导入。
+
 ## 2026-10-18 · M1 能力过滤（第 6 步）
 
 - **本地模型写明自己要什么**：`providers.yaml` 的本地模型（含本地 LLM 服务的两个）加 `needs`（清单项 id）和 `requires_cuda`。H3 要 ComfyUI + H3 节点 + 两份权重 + CUDA，ControlNet 再加 Fun ControlNet 节点；SeedVR2 / FlashVSR 要各自的节点（SeedVR2 还要权重）+ CUDA；Qwen-Image-Edit 要 ComfyUI + 权重，不要求 CUDA（Mac 上 ComfyUI 能出图，只是慢）；本地 LLM 和 Qwen3-VL 要本地 LLM 服务（Qwen3.6-27B 还要 `w_llm`）。清单里还没有对应项的（CosyVoice、Whisper 等）不写 `needs`，视为能跑，跑时失败照常兜底；LatentSync、InfiniteTalk 只标 CUDA。测试检查每个 `needs` 都是清单里的 id。

@@ -15,14 +15,12 @@ from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.setup.detectors import (
     ScanContext,
     detect_item,
-    dirname,
-    is_absolute,
-    join,
     meets,
     short_version,
     size_text,
 )
 from drama_series_agent.setup.manifest import Manifest, load_manifest
+from drama_series_agent.setup.pathutil import dirname, is_absolute, join
 from drama_series_agent.setup.probe import FakeProbe, RealProbe
 
 ENVS = {"pc": "C:/Users/kelvin/.drama-studio/envs", "mac": "/Users/demo/.drama-studio/envs"}

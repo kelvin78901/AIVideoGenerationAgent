@@ -257,3 +257,23 @@ class InstalledItem(SQLModel, table=True):
     installed_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+class ComfyEnvRow(SQLModel, table=True):
+    """One ComfyUI environment the scan saw, kept under its content hash (SPEC 6.4.1, 6.4.5).
+
+    A new row only when something changed (version, Python, PyTorch, a node pack), so a take
+    made locally can always say which ComfyUI and nodes made it.
+    """
+
+    __tablename__ = "comfy_env"
+
+    hash: str = Field(primary_key=True)
+    comfyui_version: str | None = None
+    comfyui_commit: str | None = None
+    python: str | None = None
+    torch: str | None = None
+    node_packs_json: list[dict[str, Any]] = _json(list)
+    captured_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

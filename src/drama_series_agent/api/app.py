@@ -17,7 +17,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from drama_series_agent import __version__
 from drama_series_agent.api import sse
-from drama_series_agent.api.routes import dev, jobs, providers, series, setup, spec
+from drama_series_agent.api.routes import comfy, dev, jobs, providers, series, setup, spec
 from drama_series_agent.api.security import CLIENT_HEADER, LocalOnlyGuard
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.secrets import install_log_redaction
@@ -60,6 +60,7 @@ def _v1_router() -> APIRouter:
     router.include_router(series.router)
     router.include_router(spec.router)
     router.include_router(setup.router)
+    router.include_router(comfy.router)
     return router
 
 

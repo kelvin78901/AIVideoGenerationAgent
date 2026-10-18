@@ -17,7 +17,7 @@ from drama_series_agent.core.overrides import put_override, resolve_component
 from drama_series_agent.core.paths import database_path
 
 M0_TABLES = {"job", "model_call", "config_override", "provider_account", "custom_model", "event"}
-M1_TABLES = {"series", "output_spec", "machine_profile", "installed_item"}
+M1_TABLES = {"series", "output_spec", "machine_profile", "installed_item", "comfy_env"}
 ALL_TABLES = M0_TABLES | M1_TABLES
 
 

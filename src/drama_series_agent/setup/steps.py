@@ -24,7 +24,6 @@ from typing import Any, Protocol
 import httpx
 
 from drama_series_agent.core.paths import REPO_ROOT
-from drama_series_agent.setup.detectors import join
 from drama_series_agent.setup.installer import (
     Installed,
     InstallEnv,
@@ -33,6 +32,7 @@ from drama_series_agent.setup.installer import (
     ProgressFn,
 )
 from drama_series_agent.setup.manifest import PKG_MANAGER, TODO, Item, Step
+from drama_series_agent.setup.pathutil import join
 
 LineFn = Callable[[str], Awaitable[None]]
 

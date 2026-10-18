@@ -8,14 +8,24 @@ item's status and fix using the manifest (``required``, ``if_missing``, ``fix``)
 from __future__ import annotations
 
 import re
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from typing import Any, Literal
 
 from loguru import logger
 
 from drama_series_agent.core.config import get_config
+from drama_series_agent.setup.comfy import (
+    COMFY_PORTS,
+    ComfyInstall,
+    argv_port,
+    desktop_installs,
+    flag_values,
+    kind_of,
+    main_script,
+)
 from drama_series_agent.setup.manifest import TODO, Item, Message, Status
+from drama_series_agent.setup.pathutil import dirname, is_absolute, join, same_path
 from drama_series_agent.setup.probe import GpuInfo, HostInfo, Probe
 
 COMFY_URL = "http://127.0.0.1:8188"
@@ -54,14 +64,6 @@ class Detection:
     facts: dict[str, Any] = field(default_factory=dict)
 
 
-@dataclass(frozen=True)
-class ComfyInstall:
-    root: str | None  # None when only the running server was found and its argv was relative
-    version: str | None
-    url: str | None  # set while a server answers
-    python: str | None  # the interpreter ComfyUI runs on (portable, its venv, or ours)
-
-
 # --------------------------------------------------------------------------- helpers
 
 
@@ -98,20 +100,6 @@ def size_text(gb: float) -> str:
     return f"{gb / 1024:.1f} TB" if gb >= 1024 else f"{gb:.0f} GB"
 
 
-def join(base: str, *parts: str) -> str:
-    """Join with the separator ``base`` already uses (``D:\\ComfyUI`` stays backslashed)."""
-    sep = "\\" if "\\" in base and "/" not in base else "/"
-    return sep.join([base.rstrip("/\\"), *(p.strip("/\\") for p in parts)])
-
-
-def dirname(path: str) -> str:
-    return re.split(r"[/\\](?=[^/\\]*$)", path.rstrip("/\\"))[0]
-
-
-def is_absolute(path: str) -> bool:
-    return path.startswith(("/", "\\", "~")) or bool(re.match(r"^[A-Za-z]:[/\\]", path))
-
-
 # --------------------------------------------------------------------------- context
 
 
@@ -128,7 +116,7 @@ class ScanContext:
         mirrors: dict[str, dict[str, Any]],
         variables: dict[str, str],
         comfy_setting: str | None = None,
-        comfy_url: str = COMFY_URL,
+        comfy_urls: Sequence[str] = (COMFY_URL,),
     ) -> None:
         self.probe = probe
         self.host = host
@@ -137,9 +125,9 @@ class ScanContext:
         self.mirrors = mirrors
         self.vars = dict(variables)  # envs, models; comfy once located
         self.comfy_setting = comfy_setting
-        self.comfy_url = comfy_url
+        self.comfy_urls = list(dict.fromkeys(comfy_urls))  # tried in order, duplicates dropped
         self._comfy: ComfyInstall | _Unset | None = UNSET
-        self._object_info: set[str] | None = None
+        self._object_info: dict[str, Any] | None = None
 
     @classmethod
     async def create(
@@ -153,6 +141,7 @@ class ScanContext:
         comfy_setting: str | None = None,
     ) -> ScanContext:
         comfy = next((x for x in items if x.detect.type == "comfy"), None)
+        configured = comfy.detect.url if comfy and comfy.detect.url else COMFY_URL
         return cls(
             probe,
             await probe.host(),
@@ -161,7 +150,7 @@ class ScanContext:
             mirrors=mirrors,
             variables={"envs": envs, "models": models or await probe.default_dir()},
             comfy_setting=comfy_setting,
-            comfy_url=(comfy.detect.url if comfy and comfy.detect.url else COMFY_URL),
+            comfy_urls=[configured, *(f"http://127.0.0.1:{port}" for port in COMFY_PORTS)],
         )
 
     @property
@@ -184,34 +173,61 @@ class ScanContext:
                 self.vars["comfy"] = self._comfy.root
         return self._comfy
 
+    async def _running(self) -> tuple[str, dict[str, Any]] | None:
+        """The first URL that answers like ComfyUI does, with its ``system_stats`` system."""
+        for url in self.comfy_urls:
+            res = await self.probe.http_get(f"{url}/system_stats")
+            if res is None or res.status != 200 or not isinstance(res.body, dict):
+                continue
+            system = res.body.get("system")
+            if isinstance(system, dict) and ("comfyui_version" in system or "argv" in system):
+                return url, system
+        return None
+
     async def _locate_comfy(self) -> ComfyInstall | None:
-        """Running server first (its argv names main.py), then common folders, then the setting."""
+        """Running server first (its argv names main.py), then Comfy Desktop's installations,
+        then common folders, then the setting."""
+        desktops = await desktop_installs(self.probe, self.host)
+        running = await self._running()
+        url, system = running if running else (None, {})
+        argv = tuple(str(a) for a in system.get("argv") or [])
         root: str | None = None
-        version: str | None = None
-        url: str | None = None
-        stats = await self.probe.http_get(f"{self.comfy_url}/system_stats")
-        if stats is not None and stats.status == 200 and isinstance(stats.body, dict):
-            url = self.comfy_url
-            system = stats.body.get("system") or {}
-            version = system.get("comfyui_version")
-            for arg in system.get("argv") or []:
-                arg = str(arg)
-                if arg.replace("\\", "/").endswith("main.py") and is_absolute(arg):
-                    root = dirname(arg)
-                    break
+        main = main_script(argv)
+        if main and is_absolute(main):
+            root = dirname(main)
+        # Desktop starts ComfyUI with a relative main.py and its own model-paths file.
+        configs = flag_values(argv, "--extra-model-paths-config")
+        desktop = next(
+            (d for d in desktops if any(same_path(c, d.model_paths) for c in configs)), None
+        )
+        if root is None and desktop is not None:
+            root = desktop.root
         if root is None:
-            for cand in self._comfy_candidates():
+            for cand in [*(d.root for d in desktops), *self._comfy_candidates()]:
                 if await self.probe.exists(join(cand, "main.py")):
                     root = cand
                     break
         if root is None and url is None:
             return None
+        if desktop is None and root is not None:
+            desktop = next((d for d in desktops if same_path(d.root, root)), None)
+        version = system.get("comfyui_version")
         if root is not None and version is None:
             text = await self.probe.read_text(join(root, "comfyui_version.py"))
             m = re.search(r"__version__\s*=\s*['\"]([^'\"]+)", text or "")
             version = m.group(1) if m else None
+        if version is None and desktop is not None:
+            version = desktop.comfyui_version
         return ComfyInstall(
-            root=root, version=version, url=url, python=await self._comfy_python(root)
+            root=root,
+            version=version,
+            url=url,
+            python=await self._comfy_python(root),
+            port=argv_port(argv) or (int(url.rsplit(":", 1)[1]) if url else None),
+            kind=await kind_of(self.probe, root, desktop),
+            argv=argv,
+            system=system,
+            desktop=desktop,
         )
 
     def _comfy_candidates(self) -> list[str]:
@@ -260,15 +276,15 @@ class ScanContext:
         path = self.env_python_path(env)
         return path if await self.probe.exists(path) else None
 
-    async def object_info(self) -> set[str]:
-        """Node classes the running ComfyUI knows (empty when it is not running)."""
+    async def object_info(self) -> dict[str, Any]:
+        """``/object_info`` of the running ComfyUI: node class → info (empty when not running)."""
         if self._object_info is None:
             inst = await self.comfy()
-            self._object_info = set()
+            self._object_info = {}
             if inst and inst.url:
                 res = await self.probe.http_get(f"{inst.url}/object_info", timeout_s=15)
                 if res is not None and res.status == 200 and isinstance(res.body, dict):
-                    self._object_info = set(res.body)
+                    self._object_info = res.body
         return self._object_info
 
 
@@ -375,7 +391,14 @@ async def _comfy(item: Item, ctx: ScanContext) -> Outcome:
     inst = await ctx.comfy()
     if inst is None:
         return Outcome("absent", NOT_FOUND)
-    facts = {"root": inst.root, "url": inst.url, "python": inst.python, "version": inst.version}
+    facts = {
+        "root": inst.root,
+        "url": inst.url,
+        "port": inst.port,
+        "kind": inst.kind,
+        "python": inst.python,
+        "version": inst.version,
+    }
     need = item.require.get("version")
     if need and meets(inst.version, str(need)) is False:
         return Outcome("old", msg("outdated"), version=inst.version, facts=facts)

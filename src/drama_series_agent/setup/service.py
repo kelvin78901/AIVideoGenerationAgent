@@ -30,21 +30,27 @@ from typing import Any, Literal
 
 import httpx
 from loguru import logger
+from sqlalchemy.exc import IntegrityError
 from sqlmodel import col, delete, select
 
 from drama_series_agent.core.capabilities import FOUND_STATUSES, Capabilities
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.jobs import TERMINAL, JobContext, JobQueue, JobStateError
-from drama_series_agent.core.models_db import InstalledItem, MachineProfileRow, new_id, utcnow
+from drama_series_agent.core.models_db import (
+    ComfyEnvRow,
+    InstalledItem,
+    MachineProfileRow,
+    new_id,
+    utcnow,
+)
 from drama_series_agent.core.paths import drama_home
 from drama_series_agent.modelhub.registry import is_mock_mode
+from drama_series_agent.setup.comfy import ComfyEnvInfo, ComfyScan, NodePack, identify
 from drama_series_agent.setup.detectors import (
     Detection,
     ScanContext,
     detect_item,
-    dirname,
-    join,
     msg,
 )
 from drama_series_agent.setup.installer import (
@@ -59,8 +65,11 @@ from drama_series_agent.setup.installer import (
     install_order,
 )
 from drama_series_agent.setup.manifest import Item, Manifest, load_manifest
+from drama_series_agent.setup.pathutil import dirname, join
 from drama_series_agent.setup.probe import FakeProbe, HostInfo, Probe, RealProbe
 from drama_series_agent.setup.schema import (
+    ComfyEnvOut,
+    ComfyView,
     InstallInfo,
     InstallRequest,
     ItemInstall,
@@ -221,6 +230,32 @@ class SetupService:
             return None
         gpu = data.machine.gpu
         return Capabilities.of(cuda=gpu is not None and gpu.backend == "cuda", found=data.found)
+
+    async def comfy_env(self) -> ComfyView:
+        """The ComfyUI the last finished scan found and its environment (SPEC 6.4.1)."""
+        loaded = await self._load(self.profile_id)
+        row, data = loaded if loaded is not None else (None, None)
+        scan = data.comfy if data is not None else None
+        env: ComfyEnvOut | None = None
+        if scan is not None:
+            async with self.db.session() as s:
+                stored = await s.get(ComfyEnvRow, scan.env_hash)
+            if stored is not None:
+                env = ComfyEnvOut(
+                    hash=stored.hash,
+                    captured_at=stored.captured_at,
+                    comfyui_version=stored.comfyui_version,
+                    comfyui_commit=stored.comfyui_commit,
+                    python=stored.python,
+                    torch=stored.torch,
+                    node_packs=[NodePack.model_validate(p) for p in stored.node_packs_json],
+                )
+        return ComfyView(
+            scanned_at=row.scanned_at if row is not None else None,
+            simulated=self.profile_id == PROFILE_DEMO,
+            comfy=scan,
+            env=env,
+        )
 
     async def installed(self, profile_id: str | None = None) -> set[str]:
         pid = profile_id or self.profile_id
@@ -409,6 +444,7 @@ class SetupService:
 
             if not await self._write(pid, run, put, item=public.model_dump(mode="json")):
                 return superseded
+        comfy = await self._identify(scan)
         rec = manifest.recommendation(
             cuda=scan.has_cuda, vram_gb=scan.gpu.vram_gb if scan.gpu else None
         )
@@ -417,10 +453,44 @@ class SetupService:
             d.phase = "scanned"
             d.recommendation = Recommendation(preset=rec.preset, reason=rec.reason) if rec else None
             d.found = [x.id for x in d.items if x.status in FOUND_STATUSES]
+            d.comfy = comfy
 
         if not await self._write(pid, run, finish, scanned_at=utcnow()):
             return superseded
         return {"items": len(items), "counts": dict(counts)}
+
+    async def _identify(self, scan: ScanContext) -> ComfyScan | None:
+        """Read the ComfyUI the scan found (read-only) and keep its environment by hash."""
+        inst = await scan.comfy()
+        if inst is None:
+            return None
+        try:
+            found = await identify(scan.probe, scan.host, inst, await scan.object_info())
+        except Exception:
+            logger.exception("identifying ComfyUI at {} failed", inst.root or inst.url)
+            return None
+        await self._keep_env(found.scan.env_hash, found.env)
+        return found.scan
+
+    async def _keep_env(self, env_hash: str, env: ComfyEnvInfo) -> None:
+        """A new ``comfy_env`` row only when this environment has not been seen before."""
+        async with self.db.session() as s:
+            if await s.get(ComfyEnvRow, env_hash) is not None:
+                return
+            s.add(
+                ComfyEnvRow(
+                    hash=env_hash,
+                    comfyui_version=env.comfyui_version,
+                    comfyui_commit=env.comfyui_commit,
+                    python=env.python,
+                    torch=env.torch,
+                    node_packs_json=[p.model_dump(mode="json") for p in env.node_packs],
+                )
+            )
+            try:
+                await s.commit()
+            except IntegrityError:  # a scan it replaced stored the same one meanwhile
+                await s.rollback()
 
     # ------------------------------------------------------------------ install job
 
