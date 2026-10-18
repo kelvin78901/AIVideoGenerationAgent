@@ -10,6 +10,7 @@ Paths are plain strings: detectors join them with ``/``, which Windows accepts t
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
 import os
 import plistlib
@@ -237,10 +238,8 @@ class RealProbe:
             logger.opt(exception=True).debug("NVML query failed")
             return None
         finally:
-            try:
+            with contextlib.suppress(Exception):
                 pynvml.nvmlShutdown()
-            except Exception:
-                pass
 
     async def _nvidia_smi(self) -> GpuInfo | None:
         query = await self.run(
@@ -262,14 +261,7 @@ class RealProbe:
         )
 
     async def disk(self, path: str) -> DiskInfo | None:
-        p = Path(path).expanduser()
-        while not p.exists() and p.parent != p:
-            p = p.parent
-        try:
-            usage = shutil.disk_usage(p)
-        except OSError:
-            return None
-        return DiskInfo(drive=p.drive or None, free_gb=usage.free / GB)
+        return await asyncio.to_thread(_disk_usage, path)
 
     async def default_dir(self) -> str:
         """The fixed drive with the most free space on Windows (if not C:), else the home folder."""
@@ -332,14 +324,10 @@ class RealProbe:
         return HttpResult(status=resp.status_code, ms=ms, body=body)
 
     async def exists(self, path: str) -> bool:
-        return Path(path).expanduser().exists()
+        return await asyncio.to_thread(_exists, path)
 
     async def read_text(self, path: str) -> str | None:
-        try:
-            with Path(path).expanduser().open(encoding="utf-8", errors="replace") as fh:
-                return fh.read(65536)
-        except OSError:
-            return None
+        return await asyncio.to_thread(_read_head, path)
 
     async def py_module(self, python: str, module: str) -> PyModule | None:
         # Importing torch takes a while on a cold start.
@@ -359,30 +347,66 @@ class RealProbe:
 
     async def resolve_app(self) -> AppInfo | None:
         if sys.platform == "darwin":
-            base = Path("/Applications/DaVinci Resolve")
-            for app, edition in (
-                ("DaVinci Resolve Studio.app", "studio"),
-                ("DaVinci Resolve.app", "free"),
-            ):
-                plist = base / app / "Contents" / "Info.plist"
-                if plist.is_file():
-                    with plist.open("rb") as fh:
-                        version = str(plistlib.load(fh).get("CFBundleShortVersionString", "?"))
-                    return AppInfo(version=version, edition=edition)  # type: ignore[arg-type]
-            return None
+            return await asyncio.to_thread(_resolve_mac)
         if sys.platform == "win32":
-            exe = Path(r"C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe")
-            if not exe.is_file():
+            if not await asyncio.to_thread(_exists, _RESOLVE_WIN):
                 return None
-            ps = f"(Get-Item '{exe}').VersionInfo | ForEach-Object {{ $_.ProductVersion; $_.ProductName }}"
+            ps = (
+                f"(Get-Item '{_RESOLVE_WIN}').VersionInfo"
+                " | ForEach-Object { $_.ProductVersion; $_.ProductName }"
+            )
             res = await self._exec(["powershell", "-NoProfile", "-Command", ps], timeout_s=20)
             lines = res.out.strip().splitlines() if res and res.code == 0 else []
             version = lines[0].strip() if lines else "?"
             studio = len(lines) > 1 and "studio" in lines[1].lower()
             return AppInfo(version=version, edition="studio" if studio else "free")
-        if Path("/opt/resolve/bin/resolve").is_file():
+        if await asyncio.to_thread(_exists, "/opt/resolve/bin/resolve"):
             return AppInfo(version="?", edition="free")
         return None
+
+
+# Blocking file-system helpers; the async probe runs them in a worker thread.
+
+_RESOLVE_WIN = r"C:\Program Files\Blackmagic Design\DaVinci Resolve\Resolve.exe"
+
+
+def _exists(path: str) -> bool:
+    return Path(path).expanduser().exists()
+
+
+def _read_head(path: str) -> str | None:
+    try:
+        with Path(path).expanduser().open(encoding="utf-8", errors="replace") as fh:
+            return fh.read(65536)
+    except OSError:
+        return None
+
+
+def _disk_usage(path: str) -> DiskInfo | None:
+    """Free space of the volume ``path`` would be on (its nearest existing parent)."""
+    p = Path(path).expanduser()
+    while not p.exists() and p.parent != p:
+        p = p.parent
+    try:
+        usage = shutil.disk_usage(p)
+    except OSError:
+        return None
+    return DiskInfo(drive=p.drive or None, free_gb=usage.free / GB)
+
+
+def _resolve_mac() -> AppInfo | None:
+    base = Path("/Applications/DaVinci Resolve")
+    editions: tuple[tuple[str, Literal["free", "studio"]], ...] = (
+        ("DaVinci Resolve Studio.app", "studio"),
+        ("DaVinci Resolve.app", "free"),
+    )
+    for app, edition in editions:
+        plist = base / app / "Contents" / "Info.plist"
+        if plist.is_file():
+            with plist.open("rb") as fh:
+                version = str(plistlib.load(fh).get("CFBundleShortVersionString", "?"))
+            return AppInfo(version=version, edition=edition)
+    return None
 
 
 # --------------------------------------------------------------------------- fake

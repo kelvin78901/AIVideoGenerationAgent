@@ -19,6 +19,7 @@ from drama_series_agent.setup.manifest import TODO, Item, Message, Status
 from drama_series_agent.setup.probe import GpuInfo, HostInfo, Probe
 
 COMFY_URL = "http://127.0.0.1:8188"
+SITE_NAMES = {"hf": "Hugging Face", "pypi": "PyPI", "github": "GitHub"}
 
 
 def msg(code: str, **params: Any) -> Message:
@@ -98,7 +99,9 @@ def size_text(gb: float) -> str:
 
 
 def join(base: str, *parts: str) -> str:
-    return "/".join([base.rstrip("/\\"), *(p.strip("/\\") for p in parts)])
+    """Join with the separator ``base`` already uses (``D:\\ComfyUI`` stays backslashed)."""
+    sep = "\\" if "\\" in base and "/" not in base else "/"
+    return sep.join([base.rstrip("/\\"), *(p.strip("/\\") for p in parts)])
 
 
 def dirname(path: str) -> str:
@@ -246,9 +249,14 @@ class ScanContext:
         return join(self.vars["envs"], env, "bin", "python")
 
     async def env_python(self, env: str) -> str | None:
+        """The interpreter of ``env``; for ``comfy``, the one the found ComfyUI runs on.
+
+        Without a ComfyUI yet, ``comfy`` is our own env: PyTorch goes in before ComfyUI does.
+        """
         if env == "comfy":
             inst = await self.comfy()
-            return inst.python if inst else None
+            if inst is not None:
+                return inst.python
         path = self.env_python_path(env)
         return path if await self.probe.exists(path) else None
 
@@ -406,7 +414,9 @@ async def _http(item: Item, ctx: ScanContext) -> Outcome:
         if "hf" in slow:
             return Outcome("warn", msg("hf_slow"), facts=facts)
         if slow:
-            return Outcome("warn", msg("site_slow", site=slow[0]), facts=facts)
+            return Outcome(
+                "warn", msg("site_slow", site=SITE_NAMES.get(slow[0], slow[0])), facts=facts
+            )
         return Outcome("present", msg("reachable"), facts=facts)
     url = ctx.expand(d.url)
     res = await ctx.probe.http_get(url) if url else None

@@ -79,7 +79,16 @@
     "outdated": "已装，版本较旧",
     "needs_cuda": "需要 CUDA",
     "hf_slow": "直连 Hugging Face 较慢",
-    "no_keys": "还没填"
+    "no_keys": "还没填",
+    "no_gpu": "没检测到可用的显卡",
+    "check_failed": "检测出错",
+    "running": "正在运行",
+    "not_running": "没在运行",
+    "reachable": "访问顺畅",
+    "site_slow": "直连 {{site}} 较慢",
+    "keys_set": "已填 {{count}} 个",
+    "resolve_free": "{{version}} 免费版",
+    "resolve_studio": "{{version}} Studio 版"
   },
   "fix": {
     "install_named": "安装 {{name}}",
@@ -102,7 +111,11 @@
     "mac_voice_slow": "可在 Mac 上跑，速度较慢",
     "mac_image_slow": "在 Mac 上很慢，建议走 API",
     "install_ollama_mlx": "安装 Ollama（MLX 后端）",
-    "keys_video_api": "视频要走 API，装完后去填"
+    "keys_video_api": "视频要走 API，装完后去填",
+    "update_driver": "更新驱动到支持 CUDA {{cuda}} 的版本",
+    "disk_low": "至少要留 {{gb}} GB，换个盘或清理空间",
+    "eagle_later": "用 Eagle 管理素材时再装",
+    "resolve_later": "用达芬奇做后期时再装"
   },
   "error": {
     "no_wheel": "没有适合这台机器的预编译包，现场编译也没成功"

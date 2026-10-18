@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 清单和检测器（第 4a 步）
+
+- **扫描按清单全列**（Kelvin 2026-10-15 选定）：每台机器显示清单里这个平台的全部项，PC 29 行（通过 9 / 缺少 9 / 需更新 2 / 可选 8 / 注意 1），Mac 28 行（没有驱动；通过 6 / 注意 3 / 缺少 4 / 可选 7 / 跳过 8）。原型的 PC 25 行、Mac 17 行少了 uv、DramaStudio 节点包、Eagle、达芬奇，Mac 上把 SeedVR2 / FlashVSR 并成一行、不列需要 CUDA 的权重；两边共有的项 status 和 found / fix code 一致。需要 CUDA 的项在没有 CUDA 的机器上显示「跳过」，不隐藏。
+- **清单加三个字段**（SPEC 12.1 没有）：`fix`（状态 → 建议 code，可带 params；不写时按类型给默认：节点「安装节点」、权重「下载」、其他「安装 X」、旧版「更新到最新版」）；`if_missing`（没找到时的状态，默认必需 → 缺少、否则可选）；平台覆盖 `macos:` / `windows:` / `linux:`（覆盖 required、name、variant、fix、if_missing、installable，`optional` 是 `{required: false}` 的简写）。依赖的项在这个平台不是必需的，依赖它的项也不是必需的（Mac 上 ComfyUI 可选，节点也跟着可选）。依赖成环、id 重复、依赖不存在都在加载时报错。
+- **新检测类型 `comfy`**：先问正在运行的 `127.0.0.1:8188/system_stats`（argv 里有 `main.py` 的绝对路径就用它；ComfyUI 自己也是这样报的，相对路径就继续往下找），再找常见目录（主目录、文档、各盘根目录和便携版目录、`~/.drama-studio/ComfyUI`），最后用设置里的路径。用它自己的 Python（便携版 `python_embeded`、`venv`、`.venv`），都没有才用我们的 `envs/comfy`；PyTorch 检测用同一个解释器。还没找到 ComfyUI 时，PyTorch 检测我们自己的 `envs/comfy`（PyTorch 比 ComfyUI 先装）。
+- **扫描不算 sha256**：`file` 检测只看文件在不在。几十 GB 的权重算一遍哈希要好几分钟，违背「大约 10 秒」；sha256 在安装器下载完时校验（第 5 步）。
+- **检测器出错不阻塞**：单个检测器抛异常时这一项显示「注意 · 检测出错」，其他项照常检测。API 密钥只数 `providers.yaml` 里 LLM 供应商的 `key_name`（媒体模型和它们共用账号）。网络测速把官方的 HF / PyPI / GitHub 各访问一次，超过 `max_latency_ms` 或不通算慢；HF 慢用原来的「直连 Hugging Face 较慢」，其他站点用新的 `site_slow`。
+- **探针分 `RealProbe` / `FakeProbe`**：检测器只通过 `Probe` 访问机器（跑命令、HTTP、文件、NVML、导入模块、钥匙串、达芬奇版本），`RealProbe` 只读；`FakeProbe` 读 `tests/fixtures/setup/{pc,mac}.yaml`（原型的两台示例机器），Mock 模式和测试都用它。显卡先用 NVML（`nvidia-ml-py`），没有再用 `nvidia-smi`；访问本机服务时不走系统代理。
+
 ## 2026-10-15 · M1 成片规格页接真实接口（第 3 步）
 
 - **MSW 的 `/impact/apply` 用普通 `put()` 写规格，不用 `bypass()`**：`PUT /series/{id}/spec` 的 handler 已经删了，请求在浏览器里自然落到真实后端；测试里则落到 `test/backend.ts` 的假后端。`bypass()` 会连测试的假后端一起跳过，单测里就没法走。后端返回的错误原样转成 demo 错误。

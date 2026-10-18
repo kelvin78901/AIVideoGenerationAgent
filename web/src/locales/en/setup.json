@@ -79,7 +79,16 @@
     "outdated": "Installed, outdated",
     "needs_cuda": "Needs CUDA",
     "hf_slow": "Slow direct link to Hugging Face",
-    "no_keys": "None yet"
+    "no_keys": "None yet",
+    "no_gpu": "No usable GPU found",
+    "check_failed": "Check failed",
+    "running": "Running",
+    "not_running": "Not running",
+    "reachable": "Good connection",
+    "site_slow": "Slow direct link to {{site}}",
+    "keys_set": "{{count}} set",
+    "resolve_free": "{{version}} (free)",
+    "resolve_studio": "{{version}} Studio"
   },
   "fix": {
     "install_named": "Install {{name}}",
@@ -102,7 +111,11 @@
     "mac_voice_slow": "Runs on Mac, slower",
     "mac_image_slow": "Very slow on Mac; API recommended",
     "install_ollama_mlx": "Install Ollama (MLX backend)",
-    "keys_video_api": "Video needs APIs; add keys after setup"
+    "keys_video_api": "Video needs APIs; add keys after setup",
+    "update_driver": "Update the driver to one that supports CUDA {{cuda}}",
+    "disk_low": "Keep at least {{gb}} GB free: pick another drive or clear space",
+    "eagle_later": "Install if you manage assets in Eagle",
+    "resolve_later": "Install if you edit in DaVinci Resolve"
   },
   "error": {
     "no_wheel": "No prebuilt package fits this machine, and building it failed"

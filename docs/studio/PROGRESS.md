@@ -15,15 +15,13 @@
 | 0 | 开分支；计划存档 `plans/M1.md`；ROADMAP 加 M1 计划链接和「环境与安装」入口一项；DECISIONS 记 M1 的决定 | 3703675 | 仅文档 |
 | 1 | 表 `series`、`output_spec` + 迁移 `0002`；`spec/dims.py`、`spec/schema.py`；`config/spec.yaml`（进 `StudioConfig.spec`）；`GET /series/{id}`、`GET/PUT /series/{id}/spec`（409 `spec_locked`、`confirmed_impact`）、`GET /spec/presets`（含 `safe_areas`）；`studio/demo.py:seed_demo()` Mock 启动时执行 | a4aae06 | pytest 142 通过；ruff、mypy 通过 |
 | 2 | `spec/compat.py` + `GET /series/{id}/spec/compat?aspect=`；行由 `spec.yaml:compat_stages` 定、按解析后的路由取模型、按 `caps`（`aspects`、`max_short_edge`）判；`comfy/h3` 等补 caps；新文案 `compat.how.native` | 9b21f0d | pytest 151 通过（5 种画幅和 MSW 逐行一致）；ruff、mypy、web test 通过 |
-| 3 | 删 MSW 的 series / spec / presets / compat handler；`/impact/apply` 的 `spec_aspect` 用 `put()` 写真实后端；同步页尺寸读真实规格；`test/backend.ts` 加 `fake.series` / `fake.spec`；Spec、AppShell、mocks 测试改走它；冒烟加「锁定后改画幅 → 刷新仍保留」；spec 两张截图重截，无变化 | 本提交 | web test 164、lint、typecheck、format 通过；e2e 14 通过；pytest 151 |
+| 3 | 删 MSW 的 series / spec / presets / compat handler；`/impact/apply` 的 `spec_aspect` 用 `put()` 写真实后端；同步页尺寸读真实规格；`test/backend.ts` 加 `fake.series` / `fake.spec`；Spec、AppShell、mocks 测试改走它；冒烟加「锁定后改画幅 → 刷新仍保留」；spec 两张截图重截，无变化 | 24f1a5d | web test 164、lint、typecheck、format 通过；e2e 14 通过；pytest 151 |
+| 4a | `setup/manifest.py`（解析、平台覆盖、`fix` / `if_missing`、成环 / 重复 id 校验）、`setup/probe.py`（Real / Fake）、`setup/detectors.py`（12 种检测器 + `finish()`）；夹具 `tests/fixtures/setup/{pc,mac}.yaml`；新文案 found 9 个、fix 4 个；DECISIONS 记 4a | 本提交 | pytest 211（PC 9/9/2/8/1、Mac 6/3/4/7/8 逐行对照）；ruff、mypy、i18n 通过 |
 
 ## 下一步
 
-- **第 4 步 清单和检测（后端）进行中**，拆两次提交：
-  - **4a（本提交，WIP，未勾）**：已写 `setup/manifest.py`（解析、平台覆盖 `macos:`、`fix` / `if_missing`、依赖成环 / 重复 id 校验、依赖非必需则非必需）、`setup/probe.py`（Real / Fake）、`setup/detectors.py`（12 种检测器 + `finish()` 定状态）；清单加了 `fix`、`macos` 覆盖，`comfy` 检测改成 `type: comfy`（定位：运行中 → 常见目录 → 设置路径），`require.version >=0.4.0` 待第 8 步核对；加依赖 `nvidia-ml-py`。
-  - **4a 还差**：① `ruff check src/drama_series_agent/setup` 剩 7 处（SIM105、ASYNC240 → 用 `asyncio.to_thread`、一行过长）；② mypy 的 files 列表可能没包含 `setup/`，核对；③ 写 `tests/fixtures/setup/{pc,mac}.yaml`（格式见 `FakeProbe`：host / gpu / default_dir / disks / commands / http / files / texts / python / secrets / resolve）和 `tests/unit/test_manifest.py`、`test_detectors.py`；④ 新文案 code 加进 `web/src/locales/{zh-CN,en}/setup.json`：found `no_gpu`、`check_failed`、`running`、`not_running`、`reachable`、`site_slow`、`keys_set`、`resolve_free`、`resolve_studio`；fix `update_driver`、`disk_low`、`eagle_later`、`resolve_later`；⑤ DECISIONS 记：扫描按清单全列（Kelvin 2026-10-15 选定）、`comfy` 检测类型、扫描不算 sha256、`fix` / `macos` 覆盖字段。
-  - **期望计数**（Kelvin 定：按清单全列）：PC 29 行 = 通过 9 / 缺少 9 / 需更新 2 / 可选 8 / 注意 1；Mac 28 行（无 driver）= 通过 6 / 注意 3 / 缺少 4 / 可选 7 / 跳过 8。PC 夹具：comfy 在 `D:/ComfyUI`（system_stats argv、版本 0.3.40），venv 里 torch cuda 12.8，有 VHS 节点目录，HF 延迟 2600 ms。
-  - **4b**：表 `machine_profile`、`installed_item` + 迁移 `0003`；`setup.scan` 任务；`POST /setup/scan`、`GET /setup/profile`（`simulated`）、`POST /dev/setup/machine`；推荐预设。
+- **第 4b 步（第 4 步的后半，做完勾第 4 步）**：表 `machine_profile`、`installed_item` + 迁移 `0003`；`setup/scan.py`：按 `for_platform()` 顺序逐项 `detect_item()`，每项发 `setup.progress`，结束写推荐（5090 → balanced / `local_video`；无 CUDA → balanced / `no_cuda`）；`setup.scan` 任务；`POST /setup/scan`、`GET /setup/profile`（加 `simulated`）、`POST /dev/setup/machine`（只在 Mock）。返回形状照 `web/src/api/schemas/setup.ts`；参考 `web/src/mocks/handlers/setup.ts` 的节奏。
+  - 待定的小事：Fake 机器的 `envs` 路径（建议 `join(host.home, ".drama-studio/envs")`）；`machine.gpu.name` 去掉 `NVIDIA ` / `GeForce ` 前缀（原型顶栏显示 `RTX 5090`）；`DRAMA_SETUP=real` 或 `DRAMA_MOCK=0` 时用 `RealProbe`。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -44,6 +42,7 @@
 - Playwright 冒烟收尾时后端会打印 aiosqlite「Task was destroyed but it is pending」，不影响结果，还没查（后端本步没改）。
 - MSW 在 jsdom 里能拦相对路径的 fetch；handler 路径写 `*/api/v1/...`（`mocks/http.ts:v1()`）。
 
+- **本机应用控制策略拦 `.venv/Scripts` 里 uv 生成的入口 exe**（`pytest.exe`、`mypy.exe` 报 os error 4551，`ruff` 不受影响）：一律 `uv run --no-sync python -m pytest` / `python -m mypy`。
 - **本机 PowerShell 执行策略禁止 `-File` 跑脚本**：钩子、状态栏、`start.ps1` 都要 `powershell -NoProfile -ExecutionPolicy Bypass -File …`。
 - 写接口（非 GET）要带 `X-Drama-Studio: 1`，Host 必须是 127.0.0.1 / localhost；`TestClient` 要用 `base_url="http://127.0.0.1"`。
 - **Kelvin 开着 `start.ps1` 时 `uv run` 会失败**（同步要替换正被占用的 `.venv/Scripts/drama-studio.exe`）：一律 `uv run --no-sync …`。
