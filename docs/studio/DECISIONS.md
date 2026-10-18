@@ -2,6 +2,17 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 安装流程（第 5a 步）
+
+- **一次安装 = 一个 `setup.install` 任务**（cpu 队列）：按依赖拓扑排好的顺序（存进 `install.items`）一项一项装，装好写 `installed_item`。重试时如果任务还在跑，只把这一项排回队列，由它接着装；任务已经结束就新开一个。重试不再问一遍确认。
+- **依赖怎么算满足**：扫描时就在的（包括「需更新」「注意」）算满足，所以 ComfyUI 更新失败不挡 H3 节点；依赖这次装失败或被跳过 → 跳过，原因 `dependency_failed`；没勾选、机器上也没有 → 跳过，原因 `dependency_missing`。日志 `skip_dep`。
+- **安装前确认**（SPEC 12.2-5）：任务队列只能在入队时进 `waiting_confirm`，所以是整次安装等确认；`install.confirm` 列出原因（`setup:confirmReason.admin` / `large_download`）。新增 `POST /setup/install/confirm` 和 `POST /setup/install/cancel`（SPEC 9.1 没有）：不直接让前端调 `/jobs/{id}/confirm|cancel`，因为档案要跟着改、要发事件。取消 = 回到检测结果，什么都没装。
+- **哪些要管理员权限**：清单 `pkg` 步骤的 `admin: [winget, apt]` 写哪些包管理器装它要提权，默认只有 apt（走 sudo）；Git for Windows 装到 Program Files，标了 winget。单项 `size_gb` 超过 10 GB 的下载也要确认（权重的体积等 P0 实测后填）。
+- **重启续跑**：进程被杀后任务照常恢复，正在装的那一项从 0 重来，已经装好的不重装（`tests/e2e/test_setup_resume.py` 用 `installed_at` 验证）。任务彻底失败时，排队中和正在装的项标「失败 · 安装中断了」（`interrupted`），可以重试。
+- **示例机器的节奏**：每步 120 ms（`DRAMA_SETUP_FAKE_TICK_MS`，测试设 0），下载类每步 +10 %、其他 +34 %，SageAttention 到 60 % 报 `no_wheel`，和 MSW 版一致。PC 上全选是 16 项（原型 15 项，多了 DramaStudio 节点包）：15 项成功、1 项失败。
+- **e2e 的 `Backend` 挪进 `tests/e2e/conftest.py`**，`start()` 可以带额外环境变量；两个 e2e 测试共用。
+- 真实机器的安装步骤在第 5b 步接上；在那之前 `local` 档案的安装项都会以 `internal` 失败。
+
 ## 2026-10-18 · M1 机器档案和检测任务（第 4b 步）
 
 - **一台机器一行 `machine_profile`**：`local` 是这台电脑（`RealProbe`），`demo` 是 Mock 的示例机器（`FakeProbe`，`machine` 列记 PC / Mac）。`installed_item` 的主键是 (profile_id, item_id)，所以 Mock 下模拟装过的东西不会混进真实档案。`DRAMA_SETUP=real|fake` 显式指定；不设时 Mock 模式就是 fake。`data_json` 存阶段、各项结果、安装请求、推荐，以及检测器看到的细节（`facts`：路径、版本、延迟），细节不经接口返回，留给安装器和能力过滤用。

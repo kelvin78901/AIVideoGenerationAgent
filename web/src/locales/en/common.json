@@ -59,6 +59,8 @@
     "nothing_selected": "Nothing is ticked to install",
     "setup_item_not_found": "Setup item {{id}} not found",
     "setup_item_state": "{{id}} cannot do that right now",
+    "setup_not_simulated": "Only the sample machines can be switched",
+    "setup_no_confirm": "No install is waiting for confirmation",
     "provider_not_found": "Service {{id}} not found",
     "provider_needs_no_key": "{{id}} does not need a key",
     "keyring_unavailable": "System keychain unavailable: {{reason}}",

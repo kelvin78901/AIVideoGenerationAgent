@@ -118,7 +118,15 @@
     "resolve_later": "Install if you edit in DaVinci Resolve"
   },
   "error": {
-    "no_wheel": "No prebuilt package fits this machine, and building it failed"
+    "no_wheel": "No prebuilt package fits this machine, and building it failed",
+    "dependency_failed": "{{item}}, which it needs, did not install",
+    "dependency_missing": "It needs {{item}}: tick that too",
+    "interrupted": "The install was interrupted; retry it",
+    "internal": "Installer error: {{message}}"
+  },
+  "confirmReason": {
+    "admin": "{{item}} needs administrator rights to install",
+    "large_download": "{{item}} downloads about {{gb}} GB"
   },
   "none": "—",
   "pick": "Install",
@@ -156,7 +164,10 @@
     "fail_optional": "Failed (optional, nothing else affected): {{item}}",
     "retry": "Retry: {{item}}",
     "skip": "Skipped: {{item}}",
-    "finish": "All finished."
+    "finish": "All finished.",
+    "skip_dep": "Skipped {{item}}: {{dep}}, which it needs, is not installed",
+    "confirm": "Waiting for your go-ahead",
+    "cancel": "Install canceled"
   },
   "done": {
     "title": "Ready",

@@ -93,9 +93,23 @@ class Detect(_Loose):
     names_from: str | None = None
 
 
+PkgManager = Literal["winget", "brew", "apt"]
+PKG_MANAGER: dict[OS, PkgManager] = {"windows": "winget", "macos": "brew", "linux": "apt"}
+
+
 class Step(_Loose):
     type: StepType
     platforms: list[OS] | None = None
+    # pkg: the package managers that need elevation for this package (default: apt, via sudo).
+    admin: list[PkgManager] | None = None
+
+    def needs_admin(self, os: OS) -> bool:
+        if self.type != "pkg":
+            return False
+        manager = PKG_MANAGER[os]
+        if not (self.model_extra or {}).get(manager):
+            return False
+        return manager in (self.admin if self.admin is not None else ["apt"])
 
 
 class PlatformOverride(BaseModel):
@@ -130,6 +144,7 @@ class Item(_Loose):
     if_missing: Status | None = None
     installable: bool | None = None
     install: list[Step] = Field(default_factory=list)
+    size_gb: float | None = None  # download size; over 10 GB asks first (SPEC 12.2-5)
     variant: str | None = None
     windows: PlatformOverride | None = None
     macos: PlatformOverride | None = None

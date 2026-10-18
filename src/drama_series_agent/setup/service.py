@@ -8,6 +8,12 @@ A scan is a ``setup.scan`` job on the cpu queue. It rewrites the profile item by
 publishes ``setup.progress`` after each one. Every scan or reset draws a new ``run`` token; a
 job whose token is no longer the profile's stops without writing, so a rescan or a machine
 switch never mixes two scans. All profile writes go through one lock.
+
+An install is a ``setup.install`` job: it takes the queued items one at a time in dependency
+order (the order ``POST /setup/install`` stored), skips those whose dependency did not make
+it, and records what succeeded in ``installed_item``. Retrying an item while the job runs just
+queues it again; after the job has finished it starts a new one. An install that needs elevation
+or a big download waits for the user (``waiting_confirm``, SPEC 12.2-5).
 """
 
 from __future__ import annotations
@@ -21,6 +27,7 @@ from datetime import datetime
 from typing import Any, Literal
 
 import httpx
+from loguru import logger
 from sqlmodel import col, delete, select
 
 from drama_series_agent.core.db import Database
@@ -29,10 +36,31 @@ from drama_series_agent.core.jobs import TERMINAL, JobContext, JobQueue, JobStat
 from drama_series_agent.core.models_db import InstalledItem, MachineProfileRow, new_id, utcnow
 from drama_series_agent.core.paths import drama_home
 from drama_series_agent.modelhub.registry import is_mock_mode
-from drama_series_agent.setup.detectors import Detection, ScanContext, detect_item, join, msg
-from drama_series_agent.setup.manifest import Manifest, load_manifest
-from drama_series_agent.setup.probe import FakeProbe, Probe, RealProbe
+from drama_series_agent.setup.detectors import (
+    Detection,
+    ScanContext,
+    detect_item,
+    dirname,
+    join,
+    msg,
+)
+from drama_series_agent.setup.installer import (
+    INSTALL_JOB,
+    FakeRunner,
+    Installed,
+    InstallEnv,
+    InstallError,
+    ItemRunner,
+    LogLevel,
+    confirm_reasons,
+    install_order,
+)
+from drama_series_agent.setup.manifest import Item, Manifest, load_manifest
+from drama_series_agent.setup.probe import FakeProbe, HostInfo, Probe, RealProbe
 from drama_series_agent.setup.schema import (
+    InstallInfo,
+    InstallRequest,
+    ItemInstall,
     MachineProfile,
     ProfileData,
     Recommendation,
@@ -79,6 +107,52 @@ class NotSimulated(Exception):
     """The sample-machine switch only exists in fake mode."""
 
 
+class NothingSelected(Exception):
+    """None of the requested items can be installed."""
+
+
+class NothingToConfirm(Exception):
+    """No install is waiting for the user's go-ahead."""
+
+
+class ItemNotFound(Exception):
+    def __init__(self, item_id: str) -> None:
+        super().__init__(item_id)
+        self.item_id = item_id
+
+
+class ItemState(ItemNotFound):
+    """The item's install is not in a state that allows this (retry / skip)."""
+
+
+class _Superseded(Exception):
+    """A newer scan, install or reset took over the profile; the job stops writing."""
+
+
+class _NoRealRunner:
+    async def install(self, item: Item, env: InstallEnv, log: Any, progress: Any) -> Installed:
+        raise InstallError("internal", message="real installs are not wired yet")
+
+
+def _blocker(
+    item: Item, states: dict[str, SetupItem], installed: set[str]
+) -> tuple[str, str] | None:
+    """Why ``item`` cannot go ahead: a dependency that is not on this machine and did not install.
+
+    A dependency the scan found (even an old one) counts, so a failed update does not block the
+    items that need it.
+    """
+    for dep in item.depends_on:
+        x = states.get(dep)
+        if x is None or dep in installed or x.status in ("ok", "old", "warn"):
+            continue
+        if x.install is None:
+            return "dependency_missing", dep
+        if x.install.state in ("failed", "skipped"):
+            return "dependency_failed", dep
+    return None
+
+
 class SetupService:
     def __init__(
         self,
@@ -88,14 +162,17 @@ class SetupService:
         *,
         manifest: Callable[[], Manifest] = load_manifest,
         transport: httpx.AsyncBaseTransport | None = None,
+        runner: Callable[[MachineProfileRow], ItemRunner] | None = None,
     ) -> None:
         self.db = db
         self.bus = bus
         self.jobs = jobs
         self._manifest = manifest
         self._transport = transport
+        self._runner = runner
         self._lock = asyncio.Lock()
         jobs.register(SCAN_JOB, self._scan_job)
+        jobs.register(INSTALL_JOB, self._install_job)
 
     # ------------------------------------------------------------------ queries
 
@@ -108,11 +185,16 @@ class SetupService:
             return FakeProbe.load(row.machine or DEFAULT_DEMO_MACHINE)
         return RealProbe(self._transport)
 
+    def runner_for(self, row: MachineProfileRow) -> ItemRunner:
+        if self._runner is not None:
+            return self._runner(row)
+        if row.id == PROFILE_DEMO:
+            return FakeRunner()
+        return _NoRealRunner()
+
     async def profile(self) -> MachineProfile:
         async with self._lock:
-            row, data = await self._get_or_create()
-            if await self._settle(row, data):
-                await self._save(row.id, data)
+            row, data = await self._current()
             return self._public(row, data)
 
     async def installed(self, profile_id: str | None = None) -> set[str]:
@@ -128,20 +210,100 @@ class SetupService:
     async def start_scan(self) -> MachineProfile:
         """Scan again from the top; a scan already running is replaced."""
         async with self._lock:
-            row, data = await self._get_or_create()
+            row, data = await self._current()
             if data.phase == "installing":
                 raise SetupBusy
             await self._cancel(data.job_id)
             host = await self.probe_for(row).host()
             data.phase = "scanning"
             data.items = [checking(x) for x in self._manifest().for_platform(host.os)]
-            data.run = new_id()
-            job = await self.jobs.enqueue(
-                SCAN_JOB, "cpu", {"profile_id": row.id, "run": data.run}, max_attempts=3
-            )
-            data.job_id = job.id
+            await self._enqueue(row.id, data, SCAN_JOB)
+            await self._progress(data, None)
+            return self._public(row, data)
+
+    async def start_install(self, req: InstallRequest) -> MachineProfile:
+        async with self._lock:
+            row, data = await self._current()
+            if data.phase in ("scanning", "installing"):
+                raise SetupBusy
+            items = self._manifest().for_platform(data.machine.os)
+            by_id = {x.id: x for x in items}
+            installable = {x.id for x in data.items if x.installable and x.id in by_id}
+            order = install_order(items, [i for i in req.items if i in installable])
+            if not order:
+                raise NothingSelected
+            reasons = confirm_reasons([by_id[i] for i in order], data.machine.os)
+            data.phase = "installing"
+            data.install = InstallInfo(items=order, mirror=req.mirror, dir=req.dir, confirm=reasons)
+            for x in data.items:
+                x.install = ItemInstall(state="queued") if x.id in order else None
+            await self._enqueue(row.id, data, INSTALL_JOB, wait=bool(reasons))
+            await self._log("info", "mirror", mirror=req.mirror, dir=req.dir)
+            if reasons:
+                await self._log("warn", "confirm")
+            await self._progress(data, None)
+            return self._public(row, data)
+
+    async def confirm_install(self) -> MachineProfile:
+        """The user approved elevation / big downloads: the install job may start."""
+        async with self._lock:
+            row, data = await self._current()
+            if not self._waiting(data) or data.install is None or data.job_id is None:
+                raise NothingToConfirm
+            try:
+                await self.jobs.confirm(data.job_id)
+            except (JobStateError, KeyError):
+                raise NothingToConfirm from None
+            data.install.confirm = []
             await self._save(row.id, data)
             await self._progress(data, None)
+            return self._public(row, data)
+
+    async def cancel_install(self) -> MachineProfile:
+        """The user declined: nothing starts, back to the scan result."""
+        async with self._lock:
+            row, data = await self._current()
+            if not self._waiting(data) or data.install is None:
+                raise NothingToConfirm
+            await self._cancel(data.job_id)
+            data.install.confirm = []
+            data.phase = "scanned"
+            for x in data.items:
+                x.install = None
+            data.run = new_id()
+            await self._save(row.id, data)
+            await self._log("info", "cancel")
+            await self._progress(data, None)
+            return self._public(row, data)
+
+    async def retry(self, item_id: str) -> MachineProfile:
+        async with self._lock:
+            row, data = await self._current()
+            x = self._install_item(data, item_id)
+            assert x.install is not None
+            if x.install.state not in ("failed", "skipped"):
+                raise ItemState(item_id)
+            x.install = ItemInstall(state="queued")
+            if data.phase == "installing":
+                await self._save(row.id, data)  # the running job picks it up
+            else:
+                data.phase = "installing"
+                await self._enqueue(row.id, data, INSTALL_JOB)
+            await self._log("info", "retry", item=item_id)
+            await self._progress(data, x.model_dump(mode="json"))
+            return self._public(row, data)
+
+    async def skip(self, item_id: str) -> MachineProfile:
+        async with self._lock:
+            row, data = await self._current()
+            x = self._install_item(data, item_id)
+            assert x.install is not None
+            if x.install.state not in ("failed", "queued"):
+                raise ItemState(item_id)
+            x.install = x.install.model_copy(update={"state": "skipped"})
+            await self._save(row.id, data)
+            await self._log("info", "skip", item=item_id)
+            await self._progress(data, x.model_dump(mode="json"))
             return self._public(row, data)
 
     async def switch_machine(self, machine: DemoMachine) -> MachineProfile:
@@ -149,7 +311,7 @@ class SetupService:
         async with self._lock:
             if self.profile_id != PROFILE_DEMO:
                 raise NotSimulated
-            row, data = await self._get_or_create()
+            row, data = await self._current()
             await self._cancel(data.job_id)
             row.machine = machine
             fresh = await self._idle(self.probe_for(row))
@@ -177,17 +339,11 @@ class SetupService:
         manifest = self._manifest()
         host = await probe.host()
         items = manifest.for_platform(host.os)
-        # The sample machines have their own home folder; ours is the real one.
-        envs = (
-            join(host.home, ".drama-studio", "envs")
-            if probe.simulated
-            else str(drama_home() / "envs")
-        )
         scan = await ScanContext.create(
             probe,
             items,
             mirrors=manifest.mirrors,
-            envs=envs,
+            envs=self._envs(host, simulated=probe.simulated),
             models=data.install.dir if data.install else None,
         )
         # A sample machine cannot change, so what we installed on it is what counts (SPEC 12.2-3).
@@ -240,7 +396,200 @@ class SetupService:
             return superseded
         return {"items": len(items), "counts": dict(counts)}
 
+    # ------------------------------------------------------------------ install job
+
+    async def _install_job(self, ctx: JobContext) -> dict[str, Any]:
+        pid, run = str(ctx.params["profile_id"]), str(ctx.params["run"])
+        try:
+            async with self._lock:
+                data = await self._load_run(pid, run)
+                # Back after a restart: the item that was running starts over.
+                for x in data.items:
+                    if x.install is not None and x.install.state == "running":
+                        x.install = ItemInstall(state="queued")
+                await self._save(pid, data)
+            loaded = await self._load(pid)
+            assert loaded is not None
+            row = loaded[0]
+            runner = self.runner_for(row)
+            items = {x.id: x for x in self._manifest().for_platform(data.machine.os)}
+            env = await self._install_env(row, data)
+            while (item := await self._next_item(pid, run, items)) is not None:
+                await self._install_one(pid, run, item, runner, env)
+            done = await self._load_run(pid, run)
+        except _Superseded:
+            return {"superseded": True}
+        states = Counter(x.install.state for x in done.items if x.install is not None)
+        return {"states": dict(states)}
+
+    async def _next_item(self, pid: str, run: str, items: dict[str, Item]) -> Item | None:
+        """Mark the next queued item running and return it; None (and phase done) when none."""
+        async with self._lock:
+            data = await self._load_run(pid, run)
+            assert data.install is not None
+            installed = await self.installed(pid)
+            states = {x.id: x for x in data.items}
+            for item_id in data.install.items:
+                x = states.get(item_id)
+                if x is None or x.install is None or x.install.state != "queued":
+                    continue
+                item = items.get(item_id)
+                blocked = (
+                    _blocker(item, states, installed) if item else ("dependency_missing", item_id)
+                )
+                if blocked is not None:
+                    code, dep = blocked
+                    x.install = ItemInstall(state="skipped", error=msg(code, item=dep))
+                    await self._save(pid, data)
+                    await self._log("warn", "skip_dep", item=item_id, dep=dep)
+                    await self._progress(data, x.model_dump(mode="json"))
+                    continue
+                assert item is not None
+                x.install = ItemInstall(state="running")
+                await self._save(pid, data)
+                await self._log("info", "start", item=item_id)
+                await self._progress(data, x.model_dump(mode="json"))
+                return item
+            data.phase = "done"
+            await self._save(pid, data)
+            await self._log("ok", "finish")
+            await self._progress(data, None)
+            return None
+
+    async def _install_one(
+        self, pid: str, run: str, item: Item, runner: ItemRunner, env: InstallEnv
+    ) -> None:
+        async def progress(pct: float) -> None:
+            pct = max(0.0, min(99.0, round(pct)))
+            await self._update_item(pid, run, item.id, lambda i: i.model_copy(update={"pct": pct}))
+
+        async def log(level: LogLevel, code: str, params: dict[str, Any]) -> None:
+            await self._log(level, code, **params)
+
+        error: Any = None
+        try:
+            result = await runner.install(item, env, log, progress)
+        except InstallError as exc:
+            error = exc.message()
+        except (asyncio.CancelledError, _Superseded):
+            raise
+        except Exception as exc:
+            logger.exception("installing {} failed", item.id)
+            error = msg("internal", message=str(exc)[:300])
+        if error is not None:
+            failed = "fail" if item.required else "fail_optional"
+            await self._update_item(
+                pid,
+                run,
+                item.id,
+                lambda i: i.model_copy(update={"state": "failed", "error": error}),
+                log=("warn", failed, {"item": item.id}),
+            )
+            return
+        await self._update_item(
+            pid,
+            run,
+            item.id,
+            lambda i: ItemInstall(state="done", pct=100),
+            log=("ok", "done", {"item": item.id}),
+            record=result,
+        )
+
+    async def _update_item(
+        self,
+        pid: str,
+        run: str,
+        item_id: str,
+        change: Callable[[ItemInstall], ItemInstall],
+        *,
+        log: tuple[LogLevel, str, dict[str, Any]] | None = None,
+        record: Installed | None = None,
+    ) -> None:
+        async with self._lock:
+            data = await self._load_run(pid, run)
+            x = next((i for i in data.items if i.id == item_id), None)
+            if x is None or x.install is None:
+                return
+            x.install = change(x.install)
+            if record is not None:
+                await self._record(pid, item_id, record)
+            await self._save(pid, data)
+            if log is not None:
+                await self._log(log[0], log[1], **log[2])
+            await self._progress(data, x.model_dump(mode="json"))
+
+    async def _record(self, pid: str, item_id: str, result: Installed) -> None:
+        async with self.db.session() as s:
+            row = await s.get(InstalledItem, (pid, item_id))
+            if row is None:
+                row = InstalledItem(profile_id=pid, item_id=item_id)
+            row.version = result.version
+            row.paths_json = list(result.paths)
+            row.installed_at = utcnow()
+            s.add(row)
+            await s.commit()
+
+    async def _install_env(self, row: MachineProfileRow, data: ProfileData) -> InstallEnv:
+        assert data.install is not None
+        probe = self.probe_for(row)
+        host = await probe.host()
+        envs = self._envs(host, simulated=probe.simulated)
+        comfy = data.facts.get("comfy", {})
+        return InstallEnv(
+            os=host.os,
+            mirror=data.install.mirror,
+            models=data.install.dir,
+            envs=envs,
+            comfy=comfy.get("root") or join(dirname(envs), "ComfyUI"),
+            comfy_python=comfy.get("python"),
+            facts=data.facts,
+        )
+
     # ------------------------------------------------------------------ storage
+
+    @staticmethod
+    def _envs(host: HostInfo, *, simulated: bool) -> str:
+        """``~/.drama-studio/envs``; the sample machines have their own home folder."""
+        if simulated:
+            return join(host.home, ".drama-studio", "envs")
+        return str(drama_home() / "envs")
+
+    async def _current(self) -> tuple[MachineProfileRow, ProfileData]:
+        row, data = await self._get_or_create()
+        if await self._settle(row, data):
+            await self._save(row.id, data)
+        return row, data
+
+    async def _load_run(self, pid: str, run: str) -> ProfileData:
+        loaded = await self._load(pid)
+        if loaded is None or loaded[1].run != run:
+            raise _Superseded
+        return loaded[1]
+
+    async def _enqueue(self, pid: str, data: ProfileData, kind: str, *, wait: bool = False) -> None:
+        """Start ``kind`` under a new run token and save the profile (caller holds the lock)."""
+        data.run = new_id()
+        job = await self.jobs.enqueue(
+            kind, "cpu", {"profile_id": pid, "run": data.run}, max_attempts=3, wait_for_confirm=wait
+        )
+        data.job_id = job.id
+        await self._save(pid, data)
+
+    @staticmethod
+    def _waiting(data: ProfileData) -> bool:
+        return data.phase == "installing" and bool(data.install and data.install.confirm)
+
+    @staticmethod
+    def _install_item(data: ProfileData, item_id: str) -> SetupItem:
+        x = next((i for i in data.items if i.id == item_id), None)
+        if x is None or x.install is None:
+            raise ItemNotFound(item_id)
+        return x
+
+    async def _log(self, level: LogLevel, code: str, **params: Any) -> None:
+        await self.bus.publish(
+            EventType.SETUP_LOG, {"level": level, "code": code, "params": params}
+        )
 
     async def _idle(self, probe: Probe) -> ProfileData:
         """Before the first scan: the quick hardware read (top bar), nothing else."""
@@ -305,10 +654,10 @@ class SetupService:
     ) -> bool:
         """Apply ``update`` if ``run`` is still the profile's, then publish the progress."""
         async with self._lock:
-            loaded = await self._load(pid)
-            if loaded is None or loaded[1].run != run:
+            try:
+                data = await self._load_run(pid, run)
+            except _Superseded:
                 return False
-            data = loaded[1]
             update(data)
             await self._save(pid, data, scanned_at=scanned_at)
             if publish:
@@ -324,13 +673,21 @@ class SetupService:
                 await self.jobs.cancel(job_id)
 
     async def _settle(self, row: MachineProfileRow, data: ProfileData) -> bool:
-        """A scan whose job ended without finishing (failed for good): stop showing «checking»."""
-        if data.phase != "scanning":
+        """A scan or install whose job ended without finishing (failed for good, e.g. it kept
+        crashing the process): stop showing «checking» / «queued»."""
+        if data.phase not in ("scanning", "installing"):
             return False
         job = await self.jobs.get(data.job_id) if data.job_id else None
         if job is not None and job.state not in TERMINAL:
             return False
-        if row.scanned_at is None:
+        if data.phase == "installing":
+            data.phase = "done"
+            for x in data.items:
+                if x.install is not None and x.install.state in ("queued", "running"):
+                    x.install = x.install.model_copy(
+                        update={"state": "failed", "error": msg("interrupted")}
+                    )
+        elif row.scanned_at is None:
             data.phase, data.items = "idle", []
         else:
             data.phase = "scanned"

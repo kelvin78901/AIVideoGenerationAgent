@@ -7,6 +7,8 @@
 #   fix:        检测状态 → 建议（setup:fix.<code>），写 code 或 {code, params}；不写时按类型给默认
 #   if_missing: 没找到时的状态，默认 required → missing、否则 optional
 #   installable: false   有安装步骤但暂时不能装
+#   size_gb:    下载体积；超过 10 GB 的安装前先确认（SPEC 12.2-5）
+#   pkg 步骤的 admin: [winget, apt]   这些包管理器装它要管理员权限（默认只有 apt），安装前先确认
 #   macos / windows / linux:  这个平台上覆盖 required、name、variant、fix、if_missing、installable；
 #                             写 `optional` 等于 {required: false}
 # 依赖的项在这个平台上不是必需的，依赖它的项也不是必需的（例如 Mac 上 ComfyUI 可选，节点也可选）。
@@ -67,7 +69,7 @@ items:
     name: { zh: Git, en: Git }
     required: true
     detect: { type: command, cmd: "git --version" }
-    install: [ { type: pkg, winget: Git.Git, brew: git, apt: git } ]
+    install: [ { type: pkg, winget: Git.Git, brew: git, apt: git, admin: [winget, apt] } ]   # Git for Windows 装到 Program Files
 
   # ---------- ComfyUI 与节点 ----------
   - id: comfy

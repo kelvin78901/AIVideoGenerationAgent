@@ -180,11 +180,13 @@ def test_rescan_replaces_a_running_scan(
 
 def test_no_scan_while_installing(client: TestClient) -> None:
     async def installing() -> None:
-        await _state(client).setup.profile()
-        async with _state(client).db.session() as s:
+        state = _state(client)
+        await state.setup.profile()
+        job = await state.jobs.enqueue("unregistered", "cpu", wait_for_confirm=True)
+        async with state.db.session() as s:
             row = await s.get(MachineProfileRow, "demo")
             assert row is not None
-            row.data_json = {**row.data_json, "phase": "installing"}
+            row.data_json = {**row.data_json, "phase": "installing", "job_id": job.id}
             s.add(row)
             await s.commit()
 

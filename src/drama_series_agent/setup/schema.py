@@ -47,9 +47,18 @@ class SetupItem(BaseModel):
 
 
 class InstallRequest(BaseModel):
+    """``POST /setup/install``."""
+
     items: list[str]
     mirror: Mirror
-    dir: str
+    dir: str = Field(min_length=1, max_length=1024)
+
+
+class InstallInfo(InstallRequest):
+    """The last install request: the items it took, in install order."""
+
+    # What the user has to approve before it starts (SPEC 12.2-5); empty once approved.
+    confirm: list[Message] = Field(default_factory=list)
 
 
 class Recommendation(BaseModel):
@@ -64,7 +73,7 @@ class ProfileData(BaseModel):
     machine: Machine
     default_dir: str
     items: list[SetupItem] = Field(default_factory=list)
-    install: InstallRequest | None = None
+    install: InstallInfo | None = None
     recommendation: Recommendation | None = None
     # What the detectors saw beyond the status (paths, versions, latencies); not in the API.
     facts: dict[str, dict[str, Any]] = Field(default_factory=dict)
@@ -80,7 +89,7 @@ class MachineProfile(BaseModel):
     machine: Machine
     phase: Phase
     items: list[SetupItem]
-    install: InstallRequest | None
+    install: InstallInfo | None
     default_dir: str
     recommendation: Recommendation | None
     # True with Mock's sample machines: the page then shows the 示例机器 switch.

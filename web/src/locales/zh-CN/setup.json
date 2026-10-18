@@ -118,7 +118,15 @@
     "resolve_later": "用达芬奇做后期时再装"
   },
   "error": {
-    "no_wheel": "没有适合这台机器的预编译包，现场编译也没成功"
+    "no_wheel": "没有适合这台机器的预编译包，现场编译也没成功",
+    "dependency_failed": "它依赖的 {{item}} 没装好",
+    "dependency_missing": "缺少它依赖的 {{item}}，把它也勾上再装",
+    "interrupted": "安装中断了，可以重试",
+    "internal": "安装器出错了：{{message}}"
+  },
+  "confirmReason": {
+    "admin": "{{item}} 要用管理员权限安装",
+    "large_download": "{{item}} 要下载约 {{gb}} GB"
   },
   "none": "—",
   "pick": "安装",
@@ -156,7 +164,10 @@
     "fail_optional": "失败（可选项，不影响使用）：{{item}}",
     "retry": "重试：{{item}}",
     "skip": "已跳过：{{item}}",
-    "finish": "全部结束。"
+    "finish": "全部结束。",
+    "skip_dep": "已跳过：{{item}}（它依赖的 {{dep}} 没装好）",
+    "confirm": "等你确认后开始安装",
+    "cancel": "已取消安装"
   },
   "done": {
     "title": "准备好了",
