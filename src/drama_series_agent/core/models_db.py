@@ -222,3 +222,38 @@ class OutputSpecRow(SQLModel, table=True):
     derive: str | None = None  # the second aspect made at export time
     # Set when the first keyframe is adopted; afterwards an aspect change needs an impact preview.
     locked_at: datetime | None = _ts()
+
+
+# --------------------------------------------------------------------------- M1: setup
+
+
+class MachineProfileRow(SQLModel, table=True):
+    """The last scan of a machine and the install state (SPEC 12.2).
+
+    ``id`` is ``local`` for this computer, ``demo`` for Mock mode's sample machines (``machine``
+    then says which one), so a simulated install never leaks into the real profile.
+    """
+
+    __tablename__ = "machine_profile"
+
+    id: str = Field(primary_key=True)
+    machine: str | None = None  # demo: pc / mac
+    scanned_at: datetime | None = _ts()
+    data_json: dict[str, Any] = _json(dict)  # phase, items, install, facts, recommendation…
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class InstalledItem(SQLModel, table=True):
+    """What the installer put on this machine, for uninstall and the next scan (SPEC 12.2-3)."""
+
+    __tablename__ = "installed_item"
+
+    profile_id: str = Field(primary_key=True, foreign_key="machine_profile.id", ondelete="CASCADE")
+    item_id: str = Field(primary_key=True)
+    version: str | None = None
+    paths_json: list[str] = _json(list)
+    installed_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

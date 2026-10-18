@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 机器档案和检测任务（第 4b 步）
+
+- **一台机器一行 `machine_profile`**：`local` 是这台电脑（`RealProbe`），`demo` 是 Mock 的示例机器（`FakeProbe`，`machine` 列记 PC / Mac）。`installed_item` 的主键是 (profile_id, item_id)，所以 Mock 下模拟装过的东西不会混进真实档案。`DRAMA_SETUP=real|fake` 显式指定；不设时 Mock 模式就是 fake。`data_json` 存阶段、各项结果、安装请求、推荐，以及检测器看到的细节（`facts`：路径、版本、延迟），细节不经接口返回，留给安装器和能力过滤用。
+- **扫描是 cpu 队列上的 `setup.scan` 任务**：`POST /setup/scan` 先把所有项设成「检测中」并返回 202，任务逐项写库、每项发一条 `setup.progress`（开始和结束各一条 `item: null`）。重新检测会取消正在跑的那次；每次扫描或重置换一个 `run` 令牌，令牌过期的任务不再写库，所以两次扫描不会混在一起。进程重启后任务照常续跑（同一个令牌，从头再扫一遍）。任务彻底失败、档案停在「检测中」时，下次读档案改回「还没检测」或「检测完成」（没出结果的项标「检测出错」）。
+- **示例机器上以 `installed_item` 为准**：示例机器的探针结果是固定的，装过的项重新检测时直接算「已安装」；真实机器以检测结果为准。
+- **示例机器每项间隔 110 ms**（和原型演示一致，`DRAMA_SETUP_FAKE_DELAY_MS` 可改，测试设 0）；真实扫描不加延迟。示例机器的 `envs` 在它自己的主目录下（`C:/Users/kelvin/.drama-studio/envs`、`/Users/demo/.drama-studio/envs`）。
+- **推荐规则放在清单的 `recommend:` 里**（硬规则 7：默认路由不写死在代码里），按顺序取第一条满足的：有 CUDA → 均衡 / `local_video`，否则 → 均衡 / `no_cuda`。
+- **扫描前的档案**：第一次读档案时做一次快速的只读硬件读取（系统、显卡、默认目录）存起来，顶栏和「会检测这些」用它。显卡名去掉 `NVIDIA ` / `GeForce ` 前缀（`RTX 5090`），显存取整。
+- **切换示例机器**（`POST /dev/setup/machine`，只在 fake 模式，否则 403 `setup_not_simulated`）：取消正在跑的扫描、清空示例机器的 `installed_item`、回到「还没检测」，和 MSW 版一致。
+
 ## 2026-10-18 · M1 清单和检测器（第 4a 步）
 
 - **扫描按清单全列**（Kelvin 2026-10-15 选定）：每台机器显示清单里这个平台的全部项，PC 29 行（通过 9 / 缺少 9 / 需更新 2 / 可选 8 / 注意 1），Mac 28 行（没有驱动；通过 6 / 注意 3 / 缺少 4 / 可选 7 / 跳过 8）。原型的 PC 25 行、Mac 17 行少了 uv、DramaStudio 节点包、Eagle、达芬奇，Mac 上把 SeedVR2 / FlashVSR 并成一行、不列需要 CUDA 的权重；两边共有的项 status 和 found / fix code 一致。需要 CUDA 的项在没有 CUDA 的机器上显示「跳过」，不隐藏。

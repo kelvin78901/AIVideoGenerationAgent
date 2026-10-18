@@ -161,9 +161,33 @@ class Item(_Loose):
         return self.model_copy(update=update)
 
 
+class RecommendWhen(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    cuda: bool | None = None
+    min_vram_gb: float | None = None
+
+
+class Recommend(BaseModel):
+    """A preset suggestion (SPEC 12.2-2); the first rule whose ``when`` holds wins."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    when: RecommendWhen = Field(default_factory=RecommendWhen)
+    preset: str
+    reason: Literal["local_video", "no_cuda"]
+
+    def matches(self, *, cuda: bool, vram_gb: float | None) -> bool:
+        w = self.when
+        if w.cuda is not None and w.cuda != cuda:
+            return False
+        return w.min_vram_gb is None or (vram_gb or 0) >= w.min_vram_gb
+
+
 class Manifest(BaseModel):
     version: int = 1
     mirrors: dict[str, dict[str, Any]] = Field(default_factory=dict)
+    recommend: list[Recommend] = Field(default_factory=list)
     items: list[Item]
 
     @field_validator("items")
@@ -186,6 +210,9 @@ class Manifest(BaseModel):
             if x.id == item_id:
                 return x
         raise KeyError(item_id)
+
+    def recommendation(self, *, cuda: bool, vram_gb: float | None) -> Recommend | None:
+        return next((r for r in self.recommend if r.matches(cuda=cuda, vram_gb=vram_gb)), None)
 
     def for_platform(self, os: OS) -> list[Item]:
         """Items for ``os`` in manifest order, overrides applied and dependencies resolved."""

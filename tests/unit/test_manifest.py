@@ -138,3 +138,34 @@ def test_message_from_code() -> None:
 def test_invalid_manifests(items: list[dict[str, Any]], error: str) -> None:
     with pytest.raises(ValueError, match=error):
         Manifest.model_validate({"items": items})
+
+
+def test_recommendation_rules() -> None:
+    m = load_manifest()
+    pc = m.recommendation(cuda=True, vram_gb=32)
+    mac = m.recommendation(cuda=False, vram_gb=48)
+    assert pc is not None and (pc.preset, pc.reason) == ("balanced", "local_video")
+    assert mac is not None and (mac.preset, mac.reason) == ("balanced", "no_cuda")
+
+    rules = Manifest.model_validate(
+        {
+            "recommend": [
+                {
+                    "when": {"cuda": True, "min_vram_gb": 24},
+                    "preset": "local",
+                    "reason": "local_video",
+                },
+                {"when": {"cuda": True}, "preset": "balanced", "reason": "local_video"},
+            ],
+            "items": [_item("a")],
+        }
+    )
+    big, small = (
+        rules.recommendation(cuda=True, vram_gb=32),
+        rules.recommendation(cuda=True, vram_gb=8),
+    )
+    assert big is not None and big.preset == "local"
+    assert small is not None and small.preset == "balanced"
+    assert rules.recommendation(cuda=False, vram_gb=None) is None
+    with pytest.raises(ValueError, match="reason"):
+        Manifest.model_validate({"recommend": [{"preset": "x", "reason": "vibes"}], "items": []})

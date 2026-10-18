@@ -18,6 +18,11 @@ mirrors:
   cn:       { hf: https://hf-mirror.com,  pypi: https://pypi.tuna.tsinghua.edu.cn/simple, github: TODO }
   auto:     { strategy: speedtest }
 
+# 扫描后推荐的路由预设（SPEC 12.2-2）：按顺序取第一条满足 when 的。
+recommend:
+  - { when: { cuda: true }, preset: balanced, reason: local_video }
+  - { preset: balanced, reason: no_cuda }   # 视频、关键帧、超分由能力过滤改走 API（第 6 步）
+
 items:
   # ---------- 系统（只检测） ----------
   - { id: os,     group: sys, name: { zh: 操作系统, en: Operating system }, detect: { type: platform } }
