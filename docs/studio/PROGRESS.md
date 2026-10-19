@@ -23,7 +23,7 @@
 
 ## 下一步
 
-- **第 7 步：小说补全（enrich）+ 修订视图**（计划第 7 步；迁移号顺延成 `0013`：`suggestion`、`suggestion_decision`）。**开始前先问 Kelvin**（见「等 Kelvin 的事」第二条）：补写里新加的外貌、穿着要不要进设定。组件读小说已采纳版本（`NovelService.book()`，段号同第 6 步）+ 设定已采纳版本（冻结的条目 = 不许改的情节），按章分块照 `extract.chunk_book`；建议带原文锚点（段号 → `Book.span`）；有效哈希只算已采纳的建议。接口 `GET /series/{id}/suggestions`、`POST /suggestions/{id}/accept|reject|reset|rewrite`、`POST /series/{id}/suggestions/accept-all`。前端只换数据源（修订视图已有）；删 MSW 补全部分（`handlers/novel.ts`、`fixtures/demo/novel.ts` 的 suggestions）和 enrich 产物，假后端照第 6 步（`test/fakes/` + 后端导出 JSON）；产物列表的合并已经通用，后端多出 enrich 产物后 MSW 那份要删。
+- **第 7 步：小说补全（enrich）+ 修订视图**（计划第 7 步；迁移号顺延成 `0013`：`suggestion`、`suggestion_decision`）。**Kelvin 已定：设定读已采纳的补写**（DECISIONS 2026-10-19 · Kelvin 定）：设定提取的输入加已采纳补写（按段接在原文后，段号不变，意图改回原型那句）、补全对设定只依赖名字和冻结条目的切片（新切片，不循环）。补全组件读小说已采纳版本（`NovelService.book()`，段号同第 6 步）+ 设定已采纳版本（冻结的条目 = 不许改的情节），按章分块照 `extract.chunk_book`；建议带原文锚点（段号 → `Book.span`）；有效哈希只算已采纳的建议。接口 `GET /series/{id}/suggestions`、`POST /suggestions/{id}/accept|reject|reset|rewrite`、`POST /series/{id}/suggestions/accept-all`。前端只换数据源（修订视图已有）；删 MSW 补全部分（`handlers/novel.ts`、`fixtures/demo/novel.ts` 的 suggestions）和 enrich 产物，假后端照第 6 步（`test/fakes/` + 后端导出 JSON）；产物列表的合并已经通用，后端多出 enrich 产物后 MSW 那份要删。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。heredoc 里 Python 字符串的 `\n` 会被写成真换行（第 5 步踩了两次）：要写进代码的 `\n` 用 Edit 工具。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -65,6 +65,5 @@
 
 - **重启后端**：第 1–6 步加了迁移 `0007`–`0012` 和 `/products`、`/config/*`、`/series`、`/series/{id}/novel`、`/series/{id}/bible`、`/bible/*` 接口；不重启的话小说页的设定区会报 404。
 - **第 6 步可以过目**：`docs/studio/reports/ui/novel-bible.light.jpg`（设定卡 + 「可能是同一个」）、`novel-bible-marked.light.jpg`（点「旧小票」切到第三章、标出 3 段）、`novel-bible-edit.light.jpg`（编辑设定）；示例设定见 `tests/fixtures/demo/extract.json`（18 条，周屿的简介改了）。
-- **第 7 步前要定**：设定提取现在只读原文（原型写的是「原文和已采纳的补写」，但补全又读设定，互读会循环，见 DECISIONS 第 6 步 6a 第一条）。补写里新加的外貌、穿着要不要进设定、怎么进？
 - **M2 第 5 步要过目**：示例小说 `tests/fixtures/demo/雨停之前.txt`（3 章约 2400 字，计划写的约 3000 字，要加长就说）；截图 `docs/studio/reports/ui/series-menu.light.jpg`（剧名菜单）、`novel-import.light.jpg`（导入弹窗）、`novel-empty.light.jpg`（新剧集空状态）。之后：第 8 步审节拍看板和情绪曲线的截图；第 13 步真实冒烟要 DeepSeek 密钥。
 - M1 留下的：下次真装大文件（如 Qwen-Image-Edit 31 GB）时看速度、剩余时间准不准，连接数是否停在 1 个。
