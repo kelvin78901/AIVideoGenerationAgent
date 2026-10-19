@@ -13,11 +13,12 @@
 - 0：开分支、存计划、DECISIONS 记 Kelvin 定的四项（7a52479）。
 - 1：表 `product` / `product_version` / `dependency` / `gate_decision`（迁移 `0007`）、`pipeline/products.py`（`ProductService`：只追加、第一次才自动采纳、锁定、`on_adopt` 物化钩子）、`/products`、`/versions` 六个接口、`PipelineError`；事件改成只带 id（前端 zod、MSW 同步改）。pytest 339、Vitest 197 全过（1b44c55）。
 - 2：`core/config.py:preset_settings()`（四个预设、`off`）、`app_setting`（迁移 `0008`）、`modelhub/catalog.py`、`/config/components|resolve|override|defaults`；`components.yaml` 加单次上限和 `sfx`；删 MSW config handler，剩下的示例 handler 用 `mocks/route.ts:demoRoute()`，页面测试用 `test/fakes/config.ts` + `test/data/config.json`。pytest 350、Vitest 197、e2e 17 全过（178c58b）。
-- 3：`pipeline/component.py`（组件协议、`call_json` 校验 + 重试一次 + 缓存）、`pipeline/runs.py`（`product.run` 任务、run / rerun / switch、提示词两层、估价）、`pipeline/invalidation.py`（切片哈希、待更新现算）、`prompts/compiler.py`（Jinja2）、`llm_cache`（迁移 `0009`）、Mock 应答器；接口 `POST /products/{id}/run`、`PUT …/prompt`、`POST …/compile`；依赖 `jinja2`。pytest 357、Vitest 197 全过（本提交）。
+- 3：`pipeline/component.py`（组件协议、`call_json` 校验 + 重试一次 + 缓存）、`pipeline/runs.py`（`product.run` 任务、run / rerun / switch、提示词两层、估价）、`pipeline/invalidation.py`（切片哈希、待更新现算）、`prompts/compiler.py`（Jinja2）、`llm_cache`（迁移 `0009`）、Mock 应答器；接口 `POST /products/{id}/run`、`PUT …/prompt`、`POST …/compile`；依赖 `jinja2`。pytest 357、Vitest 197 全过（1909823；模板被上游 `.gitignore` 的 `templates/` 挡住，c2abc3f 补上）。
+- 4：`modelhub/budget.py`（入队前查单次上限和本集剩余、路由器守卫按确认金额放行）、`job.episode_id` / `confirmed_usd`（迁移 `0010`）、`JobNeedsConfirm`、兜底前先问（`NeedsConfirm`）；前端 `components/ConfirmJobs.tsx`（外壳里的确认弹窗）、RunBar「等你确认」。pytest 363、Vitest 201、e2e 17 全过（本提交）。
 
 ## 下一步
 
-- **第 4 步：预算和确认**。`modelhub/budget.py`：入队前估价（`RunService.start` 已经算出 `estimate`），超过单次上限（解析结果的 `per_call_cap_usd`）或本集剩余预算 → `jobs.enqueue(wait_for_confirm=True)`；`job.confirmed_usd`（迁移 `0010`，编号顺延见 DECISIONS 第 3 步）；路由器的 `BudgetGuard`（`modelhub/router.py` 已有钩子）放行到确认金额；`notify: ask` 的兜底用 `NeedsConfirm`；同步改写建议超限 409 `over_budget`。前端：全局「等你确认」弹窗（读 `/jobs` 里 `waiting_confirm` 的任务，确认走已有的 `POST /jobs/{id}/confirm`）、RunBar 显示「等你确认」。本集已花 = Σ `model_call.cost_usd`（`modelhub/calllog.py:total_cost`）。
+- **第 5 步：剧集和导入小说**（计划第 5 步）。先请 Kelvin 停掉 `start.ps1`，`uv add python-docx`。表 `novel_source`、`chapter`（迁移 `0011`）；`api/routes/series.py` 加 `GET / POST /series`、`PATCH /series/{id}`；新 `api/routes/novel.py`：`POST /series/{id}/novel`（multipart，`python-multipart` 已有）和 `GET /series/{id}/novel?chapter=`（前端契约 `web/src/api/schemas/novel.ts` 要加 `chapters`、`rights_confirmed_at`）；示例小说 `tests/fixtures/demo/雨停之前.txt`（3 章，第 1 章开头 = `web/src/mocks/fixtures/demo/novel.ts` 的 5 段，写完给 Kelvin 过目）。前端：顶栏剧名菜单、新建剧集、导入弹窗、空状态、按章切换；`drama-studio demo [--reset]`（`studio_cli.py`）。这一步比较大，可以拆成 5a 后端 / 5b 前端两次提交。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -50,10 +51,12 @@
 - Windows PowerShell 5.1：`.ps1` 必须存成 UTF-8 带 BOM，否则中文乱码。
 - YAML 1.1 会把 `on:` / `mode: off` 解析成布尔值：`core/config.py` 用只认 true/false 的加载器。
 - SQLite 读回时间会丢时区，用 `models_db.UtcDateTime`。
+- **上游 `.gitignore` 有一行 `templates/`**，会挡住任何叫 templates 的目录；`src/drama_series_agent/prompts/templates/` 已用 `!` 放行，新加别的 templates 目录要留意 `git status`。
+- **改代码前先看 ruff 有没有已经改过行**：`ruff format` 会把长行拆开，之后用 sed 按原行号替换会留下碎片（第 4 步踩过）。
 
 ## 等 Kelvin 的事
 
-- **重启后端**：第 1–3 步加了迁移 `0007`–`0009` 和 `/products`、`/config/*` 接口；前端热更新后模型页已经改读后端的配置，旧后端会报加载失败。
+- **重启后端**：第 1–4 步加了迁移 `0007`–`0010` 和 `/products`、`/config/*` 接口；前端热更新后模型页已经改读后端的配置，旧后端会报加载失败。
 - **第 5 步开始前停掉 `start.ps1`**：要 `uv add python-docx`，后端开着时 uv 换不了 `.venv` 里的文件（第 3 步的 `jinja2` 已装好）。
 - M2 第 5 步：过目示例小说（3 章）、审剧集菜单和导入弹窗的截图；第 8 步：审节拍看板和情绪曲线的截图；第 13 步：真实冒烟要 DeepSeek 密钥。
 - M1 留下的：下次真装大文件（如 Qwen-Image-Edit 31 GB）时看速度、剩余时间准不准，连接数是否停在 1 个。

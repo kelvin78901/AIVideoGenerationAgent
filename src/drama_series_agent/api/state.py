@@ -18,6 +18,7 @@ from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.modelhub.adapters.base import ModelSpec
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
+from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
@@ -40,6 +41,7 @@ class StudioState:
     products: ProductService
     components: ComponentRegistry
     runs: RunService
+    budget: Budget
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -53,7 +55,15 @@ class StudioState:
         registry = Registry.from_config(get_config())
         jobs = JobQueue(db, bus)
         setup = SetupService(db, bus, jobs)
-        router = Router(db, bus, registry, store=store, capabilities=setup.capabilities)
+        router = Router(
+            db,
+            bus,
+            registry,
+            store=store,
+            capabilities=setup.capabilities,
+            budget=BudgetGuardImpl(db),
+        )
+        budget = Budget(db)
         invalidation = Invalidation()
         products = ProductService(db, bus, invalidation)
         components = ComponentRegistry(
@@ -76,7 +86,8 @@ class StudioState:
             setup=setup,
             products=products,
             components=components,
-            runs=RunService(components, products, jobs, bus),
+            runs=RunService(components, products, jobs, bus, budget),
+            budget=budget,
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:

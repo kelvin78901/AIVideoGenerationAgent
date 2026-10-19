@@ -5,6 +5,11 @@ export function formatUsd(value: number, { cents = false }: { cents?: boolean } 
   return formatMoney(value, "USD", { cents });
 }
 
+/** An estimate: small amounts keep their digits ("$0.0042" rather than "$0.00"). */
+export function formatCost(usd: number): string {
+  return usd > 0 && usd < 0.01 ? `$${usd.toFixed(4)}` : formatUsd(usd, { cents: true });
+}
+
 /** Like `formatUsd`, for list prices that providers quote in CNY ("¥6"). */
 export function formatMoney(
   value: number,

@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient, type QueryClient } from "@tansta
 import { z } from "zod";
 
 import { api, post } from "@/api/client";
+import { productKeys } from "@/api/hooks/products";
 import {
   HealthSchema,
   JobSchema,
@@ -40,6 +41,22 @@ export function upsertJob(client: QueryClient, job: Job): void {
     return [job, ...rest].sort((a, b) => b.created_at.localeCompare(a.created_at));
   });
 }
+
+function useJobAction(action: "confirm" | "cancel") {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => post(`/jobs/${id}/${action}`, JobSchema, {}),
+    onSuccess: (job) => {
+      upsertJob(client, job);
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
+  });
+}
+
+/** 「确认，开始运行」 on a run waiting for a yes. */
+export const useConfirmJob = () => useJobAction("confirm");
+/** 「取消这次运行」. */
+export const useCancelJob = () => useJobAction("cancel");
 
 export function useLlmTest() {
   const client = useQueryClient();

@@ -61,6 +61,8 @@ class Job(SQLModel, table=True):
 
     id: str = Field(default_factory=new_id, primary_key=True)
     series_id: str | None = Field(default=None, index=True)
+    # What the spend counts against (episode budget, SPEC 7.6); None for series-level work.
+    episode_id: str | None = Field(default=None, index=True)
     product_id: str | None = Field(default=None, index=True)
     component_id: str | None = None
     kind: str
@@ -74,6 +76,8 @@ class Job(SQLModel, table=True):
     error_json: dict[str, Any] | None = _json()
     depends_on_json: list[str] = _json(list)
     est_cost_usd: float | None = None
+    # What the user agreed to spend when confirming it (waiting_confirm → queued).
+    confirmed_usd: float | None = None
     fallback_from_job_id: str | None = None
     created_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)

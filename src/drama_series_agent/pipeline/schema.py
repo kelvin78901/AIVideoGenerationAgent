@@ -70,6 +70,7 @@ class EstimateOut(BaseModel):
 class RunningOut(BaseModel):
     job_id: str
     model_key: str
+    state: Literal["queued", "waiting_confirm", "running"]
 
 
 class ProductOut(BaseModel):

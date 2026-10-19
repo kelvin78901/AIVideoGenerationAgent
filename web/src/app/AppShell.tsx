@@ -14,6 +14,7 @@ import {
 import { useLayoutEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router";
+import { ConfirmJobs } from "@/components/ConfirmJobs";
 
 import {
   useEpisodeProgress,
@@ -291,6 +292,7 @@ export function AppShell({ status = IDLE }: { status?: ShellStatus }) {
           <Outlet />
         </main>
       </div>
+      <ConfirmJobs />
     </div>
   );
 }

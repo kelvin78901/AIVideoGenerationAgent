@@ -16,6 +16,8 @@ export type JobState = z.infer<typeof JobStateSchema>;
 export const JobSchema = z.object({
   id: z.string(),
   series_id: z.string().nullable(),
+  /** The episode its spending counts against (SPEC 7.6); null for series-level work. */
+  episode_id: z.string().nullable().optional(),
   product_id: z.string().nullable(),
   component_id: z.string().nullable(),
   kind: z.string(),
@@ -29,12 +31,27 @@ export const JobSchema = z.object({
   error: ApiErrorBodySchema.nullable(),
   depends_on: z.array(z.string()),
   est_cost_usd: z.number().nullable(),
+  /** What the user agreed to spend when confirming it. */
+  confirmed_usd: z.number().nullable().optional(),
   fallback_from_job_id: z.string().nullable(),
   created_at: Timestamp,
   started_at: Timestamp.nullable(),
   finished_at: Timestamp.nullable(),
 });
 export type Job = z.infer<typeof JobSchema>;
+
+/**
+ * Why a `product.run` job waits for a yes (`params.confirm`): over the component's per-call
+ * cap, over what is left of the episode budget, or a fallback set to ask first.
+ */
+export const JobConfirmSchema = z.object({
+  reason: z.enum(["per_call", "episode", "fallback"]),
+  estimate_usd: z.number(),
+  limit_usd: z.number().nullable(),
+  failed_model: z.string().optional(),
+  error: z.string().optional(),
+});
+export type JobConfirm = z.infer<typeof JobConfirmSchema>;
 
 export const ModelCallSchema = z.object({
   id: z.number(),

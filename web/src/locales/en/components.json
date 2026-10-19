@@ -31,7 +31,8 @@
     "rerun": "Rerun",
     "more": "One more take",
     "switch": "Try another model",
-    "history": "History {{count}}"
+    "history": "History {{count}}",
+    "waiting": "Waiting for your OK · {{model}}"
   },
   "switchMenu": {
     "label": "Rerun with another model",
@@ -193,5 +194,15 @@
     "view": "View",
     "chart": "Chart",
     "table": "Table"
+  },
+  "confirmJob": {
+    "title": "{{component}} needs your OK to start",
+    "perCall": "On {{model}} this is estimated at {{estimate}}, over this step's per-call cap of {{limit}}.",
+    "episode": "On {{model}} this is estimated at {{estimate}}; only {{limit}} is left of the episode budget.",
+    "fallback": "{{failed}} failed ({{error}}). Switch to {{model}}? Estimated {{estimate}}.",
+    "where": "Caps and fallback behaviour are under",
+    "models": "Models & fallback",
+    "confirm": "Confirm and run ({{estimate}})",
+    "cancel": "Cancel this run"
   }
 }

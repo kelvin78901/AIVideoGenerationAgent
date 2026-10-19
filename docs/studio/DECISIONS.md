@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-19 · M2 第 4 步：预算和确认
+
+- **入队前查一次，调用前再查一次**（`modelhub/budget.py`）：入队时用整个任务的预估比单次上限（解析结果的 `per_call_cap_usd`）和本集剩余，超了任务直接进 `waiting_confirm`，原因写在任务参数 `confirm: {reason: per_call|episode|fallback, estimate_usd, limit_usd}`。每次模型调用前路由器的守卫再查：确认过的任务最多花到确认的金额（已花 + 这次预估），没确认的单次调用不能超过单次上限；超了抛 `budget_exceeded`，不兜底，一分钱不花。所以确认之后主用模型出错、兜底模型更贵时任务失败，而不是悄悄多花。
+- **本集剩余** = 预算 − 已花 − 排队 / 等确认任务的预估 − 运行中任务还没花完的预估（预估 − 已花，不小于 0），不重复算。设定提取、补全、分集规划不属于某一集，只查单次上限。分集表在第 8 步才有，所以本集预算的读取是注入的（`Budget.episode_budget`），现在为空。
+- **任务表加两列**（迁移 `0010`）：`episode_id`（花费算在哪一集）、`confirmed_usd`（确认时记下当时的预估，重启续跑不再问）。
+- **兜底前先问**（`notify: ask`）：路由器在要兜底时抛 `NeedsConfirm`（只对有任务的调用），处理器抛 `JobNeedsConfirm`，队列把任务放回 `waiting_confirm`、合并新参数（兜底模型、原因、预估）、这次不算尝试次数；确认后按兜底模型重跑，记为兜底（`model_call.is_fallback`、版本 `origin=fallback`），并且不再往下兜底（仍是一跳）。
+- **前端**：外壳里常驻 `ConfirmJobs`，读真实 `/jobs` 里第一个等确认的 `product.run`，弹窗说明原因、预计花费和上限，「确认，开始运行」走已有的 `POST /jobs/{id}/confirm`、「取消这次运行」走 `cancel`；弹窗不能点外面关掉。产物的 `running` 多一个 `state`，RunBar 显示「等你确认 · 模型」。小于 $0.01 的预估显示四位小数（`lib/format.ts:formatCost`）。安装任务也会进 `waiting_confirm`，但它们有自己的确认界面，这个弹窗不管。
+- **同步的改写建议**（剧本行 / 场、补全建议的重写，第 7、9 步）还没有接口；到时超过单次上限返回 409 `over_budget {estimate_usd, limit_usd}`，前端确认后带 `confirm_budget: true` 再发，调用时把预估放进 `CallContext.confirmed_usd`（守卫已支持）。文案已加。
+
 ## 2026-10-19 · M2 第 3 步：组件框架、提示词、Mock 应答器
 
 - **迁移编号顺延**：`0009` 是新表 `llm_cache`（计划里 `0009` 写的是第 4 步的 `job.confirmed_usd`），之后各步的迁移号都加一。

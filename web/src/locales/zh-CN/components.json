@@ -31,7 +31,8 @@
     "rerun": "重跑",
     "more": "再出一条",
     "switch": "不满意换一个",
-    "history": "历史 {{count}}"
+    "history": "历史 {{count}}",
+    "waiting": "等你确认 · {{model}}"
   },
   "switchMenu": {
     "label": "换一个模型重跑",
@@ -193,5 +194,15 @@
     "view": "显示方式",
     "chart": "图",
     "table": "表"
+  },
+  "confirmJob": {
+    "title": "「{{component}}」要你点头才会开始",
+    "perCall": "用 {{model}} 预计 {{estimate}}，超过了这一步的单次上限 {{limit}}。",
+    "episode": "用 {{model}} 预计 {{estimate}}，本集预算只剩 {{limit}}。",
+    "fallback": "{{failed}} 出错了（{{error}}）。要改用 {{model}} 吗？预计 {{estimate}}。",
+    "where": "上限和兜底方式在",
+    "models": "模型与兜底",
+    "confirm": "确认，开始运行（{{estimate}}）",
+    "cancel": "取消这次运行"
   }
 }

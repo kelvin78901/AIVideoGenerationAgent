@@ -19,10 +19,17 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.core.config import Resolved
 from drama_series_agent.core.events import EventBus, EventType
-from drama_series_agent.core.jobs import TERMINAL, JobContext, JobError, JobQueue
+from drama_series_agent.core.jobs import (
+    TERMINAL,
+    JobContext,
+    JobError,
+    JobNeedsConfirm,
+    JobQueue,
+)
 from drama_series_agent.core.models_db import Job, Product, ProductVersion, Series
 from drama_series_agent.modelhub.adapters.base import ModelError
-from drama_series_agent.modelhub.router import Router
+from drama_series_agent.modelhub.budget import Budget, cap_of
+from drama_series_agent.modelhub.router import NeedsConfirm, Router
 from drama_series_agent.pipeline.component import (
     Component,
     ComponentError,
@@ -62,11 +69,13 @@ class RunService:
         products: ProductService,
         jobs: JobQueue,
         bus: EventBus,
+        budget: Budget,
     ) -> None:
         self.components = components
         self.products = products
         self.jobs = jobs
         self.bus = bus
+        self.budget = budget
         self.services = components.services
         products.describer = self.describe
         jobs.register(PRODUCT_RUN, self._handle)
@@ -134,7 +143,7 @@ class RunService:
             if comp is None:
                 return prompt, None
             try:
-                est = await comp.estimate(session, product, compiled, model)
+                est = comp.estimate(await comp.inputs(session, product), compiled, model)
             except (LookupError, PipelineError, ComponentError):
                 return prompt, None  # upstream not ready yet: no price to show
         spec = self.services.registry.spec(model)
@@ -194,7 +203,12 @@ class RunService:
         await self.products.set_prompt(p.id, prompt.model_dump())
 
         async with self.services.db.session() as session:
-            estimate = await comp.estimate(session, p, compiled, target)
+            inputs = await comp.inputs(session, p)
+        estimate = comp.estimate(inputs, compiled, target)
+        # Hard rule 6: over the per-call cap or what is left of the episode → ask first.
+        verdict = await self.budget.before_enqueue(
+            estimate.cost_usd, cap=cap_of(settings), episode_id=inputs.episode_id
+        )
         spec = self.services.registry.spec(target)
         queue = "gpu" if spec.where == "local" else f"api:{spec.provider_id}"
         job = await self.jobs.enqueue(
@@ -210,11 +224,14 @@ class RunService:
                 "intent": intent,
                 "compiled": compiled,
                 "compiled_overridden": overridden,
+                **({} if verdict.ok else {"confirm": verdict.params()}),
             },
             series_id=p.series_id,
+            episode_id=inputs.episode_id,
             product_id=p.id,
             component_id=comp.id,
             est_cost_usd=round(estimate.cost_usd, 6),
+            wait_for_confirm=not verdict.ok,
         )
         await self.products.start_run(p.id, job.id)
         return job
@@ -258,6 +275,8 @@ class RunService:
         except asyncio.CancelledError:
             await asyncio.shield(self.products.finish_run(product_id, ok=None))
             raise
+        except NeedsConfirm as exc:
+            raise await self._ask_fallback(product_id, exc) from exc
         except (ComponentError, PipelineError) as exc:
             await self._failed(product_id, exc.code)
             raise JobError(exc.code, dict(exc.params)) from exc
@@ -295,6 +314,7 @@ class RunService:
                 attempt=job.attempt,
                 base_version=base,
                 progress=jctx.progress,
+                fallback_reason=params.get("fallback_reason"),
             )
             draft = await comp.run(ctx, inputs)
             origin = "fallback" if draft.fallback_reason else mode
@@ -312,6 +332,29 @@ class RunService:
             },
         )
         return {"version_id": last.id, "n": last.n, "model_key": last.model_key}
+
+    async def _ask_fallback(self, product_id: str, exc: NeedsConfirm) -> JobNeedsConfirm:
+        """``notify: ask``: the job waits; a yes reruns it on the fallback model."""
+        async with self.services.db.session() as session:
+            p = await require_product(session, product_id)
+            comp = self._component(p.component_id)
+            inputs = await comp.inputs(session, p)
+        compiled = str((p.prompt_json or {}).get("compiled", ""))
+        est = comp.estimate(inputs, compiled, exc.fallback).cost_usd
+        return JobNeedsConfirm(
+            {
+                "model_key": exc.fallback,
+                "fallback_reason": "timeout" if exc.reason == "timeout" else "error",
+                "confirm": {
+                    "reason": "fallback",
+                    "failed_model": exc.failed,
+                    "error": exc.reason,
+                    "estimate_usd": round(est, 4),
+                    "limit_usd": None,
+                },
+            },
+            est_cost_usd=round(est, 6),
+        )
 
     async def _failed(self, product_id: str, code: str) -> None:
         await self.products.finish_run(product_id, ok=False)

@@ -84,6 +84,8 @@ class RunContext:
     attempt: int = 1
     base_version: ProductVersion | None = None
     progress: Progress | None = None
+    # The user agreed to this fallback (``notify: ask``): ``model_key`` is it, logged as one.
+    fallback_reason: str | None = None
 
 
 @dataclass
@@ -248,7 +250,11 @@ class Component(ABC):
         errors = ""
         for _ in range(2):
             routed = await self.services.router.call(
-                self.id, req, self._call_ctx(ctx, episode_id), model=model
+                self.id,
+                req,
+                self._call_ctx(ctx, episode_id),
+                model=model,
+                fallback_reason=ctx.fallback_reason,
             )
             cost += routed.cost_usd
             model = routed.model_key  # a retry stays on the model that answered
@@ -270,11 +276,9 @@ class Component(ABC):
         raw = self.services.store.put_bytes(text.encode("utf-8"))
         raise ComponentError("invalid_output", raw=raw, errors=errors[:500])
 
-    async def estimate(
-        self, session: AsyncSession, product: Product, compiled: str, model: str
-    ) -> Estimate:
-        """What the next run costs on ``model``: one request by default."""
-        inputs = await self.inputs(session, product)
+    def estimate(self, inputs: Inputs, compiled: str, model: str) -> Estimate:
+        """What the next run costs on ``model``: one request by default (an upper bound, as
+        the answer is priced at ``max_tokens``)."""
         messages = self.services.compiler.messages(compiled, inputs.blocks)
         return self.services.registry.get(model).estimate(self.request(messages, None))
 

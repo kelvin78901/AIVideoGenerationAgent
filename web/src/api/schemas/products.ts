@@ -179,7 +179,14 @@ export const ProductSchema = z.object({
   prompt: ProductPromptSchema.nullable(),
   estimate: RunEstimateSchema.nullable(),
   /** The job producing the next version while status is queued / running. */
-  running: z.object({ job_id: z.string(), model_key: z.string() }).nullable(),
+  running: z
+    .object({
+      job_id: z.string(),
+      model_key: z.string(),
+      /** `waiting_confirm`: over a spending limit or an ask-first fallback (ConfirmJobs). */
+      state: z.enum(["queued", "waiting_confirm", "running"]).optional(),
+    })
+    .nullable(),
 });
 export type Product = z.infer<typeof ProductSchema>;
 

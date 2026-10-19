@@ -296,3 +296,99 @@ def test_run_errors(client: TestClient) -> None:
     assert resp.status_code == 422 and _code(resp) == "unknown_model"
     resp = client.post(f"{V1}/products/nope/run", json={"mode": "run"})
     assert resp.status_code == 404 and _code(resp) == "product_not_found"
+
+
+# --------------------------------------------------------------------------- budget (SPEC 7.6)
+
+
+def _cap(client: TestClient, usd: float) -> None:
+    body = {"scope": "component", "scope_id": None, "component_id": "split"}
+    resp = client.put(f"{V1}/config/override", json={**body, "data": {"per_call_cap_usd": usd}})
+    assert resp.status_code == 200
+
+
+def _until_state(client: TestClient, job_id: str, state: str) -> dict[str, Any]:
+    deadline = time.monotonic() + 10
+    while time.monotonic() < deadline:
+        job: dict[str, Any] = client.get(f"{V1}/jobs/{job_id}").json()
+        if job["state"] == state:
+            return job
+        time.sleep(0.02)
+    raise AssertionError(f"job never reached {state}")
+
+
+def test_over_the_cap_waits_for_a_yes(client: TestClient) -> None:
+    pid = _setup(client)
+    _cap(client, 0.00001)
+    resp = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"})
+    job = resp.json()
+    assert job["state"] == "waiting_confirm"
+    confirm = job["params"]["confirm"]
+    assert confirm["reason"] == "per_call" and confirm["limit_usd"] == 0.0
+    assert confirm["estimate_usd"] == pytest.approx(job["est_cost_usd"], abs=1e-4)
+    product = client.get(f"{V1}/products/{pid}").json()
+    assert product["status"] == "queued"
+    assert product["running"]["state"] == "waiting_confirm"
+    assert not [c for c in _rows(client, ModelCall) if c.product_id == pid]  # nothing spent
+
+    confirmed = client.post(f"{V1}/jobs/{job['id']}/confirm").json()
+    assert confirmed["confirmed_usd"] == job["est_cost_usd"]
+    assert _wait(client, job["id"])["state"] == "succeeded"
+    assert client.get(f"{V1}/products/{pid}").json()["status"] == "adopted"
+
+
+def test_a_pricier_fallback_after_a_yes_fails(client: TestClient) -> None:
+    pid = _setup(client)
+    _cap(client, 0.00001)
+    settings = _state(client).registry.mock_settings
+    settings.fail_keys = {"deepseek/v4.1-flash"}  # fallback: Qwen3.7-plus, which costs more
+    job = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"}).json()
+    client.post(f"{V1}/jobs/{job['id']}/confirm")
+    done = _wait(client, job["id"])
+    assert done["state"] == "failed" and done["error"]["code"] == "budget_exceeded"
+    assert not [c for c in _rows(client, ModelCall) if c.model_key == "qwen/qwen3.7-plus"]
+
+
+def test_fallback_asks_first_when_set_to(client: TestClient) -> None:
+    pid = _setup(client)
+    client.put(f"{V1}/config/defaults", json={"fallback_notify": "ask"})
+    _state(client).registry.mock_settings.fail_keys = {"deepseek/v4.1-flash"}
+    job = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"}).json()
+    waiting = _until_state(client, job["id"], "waiting_confirm")
+    assert waiting["params"]["model_key"] == "qwen/qwen3.7-plus"
+    assert waiting["params"]["confirm"]["reason"] == "fallback"
+    assert waiting["params"]["confirm"]["failed_model"] == "deepseek/v4.1-flash"
+    assert client.get(f"{V1}/products/{pid}").json()["running"]["model_key"] == "qwen/qwen3.7-plus"
+
+    client.post(f"{V1}/jobs/{job['id']}/confirm")
+    assert _wait(client, job["id"])["state"] == "succeeded"
+    version = client.get(f"{V1}/products/{pid}").json()["versions"][0]
+    assert (version["origin"], version["fallback_reason"]) == ("fallback", "error")
+    assert version["model_key"] == "qwen/qwen3.7-plus"
+    calls = [c for c in _rows(client, ModelCall) if c.product_id == pid]
+    assert [(c.model_key, c.status, c.is_fallback) for c in calls] == [
+        ("deepseek/v4.1-flash", "error", False),
+        ("qwen/qwen3.7-plus", "success", True),
+    ]
+
+
+def test_episode_budget_counts_reservations(client: TestClient) -> None:
+    """Left = budget − spent − queued / waiting estimates − what running jobs may still spend."""
+    state = _state(client)
+
+    async def scenario() -> tuple[float | None, float | None, Any]:
+        async def budget_of(episode_id: str) -> float | None:
+            return 1.0 if episode_id == "e1" else None
+
+        state.budget.episode_budget = budget_of
+        await state.jobs.enqueue("nothing", "api:x", {}, episode_id="e1", est_cost_usd=0.25,
+                                 wait_for_confirm=True)  # fmt: skip
+        left = await state.budget.left("e1")
+        other = await state.budget.left("e2")
+        verdict = await state.budget.before_enqueue(0.8, cap=None, episode_id="e1")
+        return left, other, verdict
+
+    left, other, verdict = _call(client, scenario)
+    assert left == pytest.approx(0.75) and other is None
+    assert (verdict.ok, verdict.reason) == (False, "episode")
+    assert verdict.limit_usd == pytest.approx(0.75)

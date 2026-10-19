@@ -20,7 +20,11 @@ async def record(db: Database, row: ModelCall) -> ModelCall:
 
 
 async def total_cost(
-    db: Database, *, series_id: str | None = None, episode_id: str | None = None
+    db: Database,
+    *,
+    series_id: str | None = None,
+    episode_id: str | None = None,
+    job_id: str | None = None,
 ) -> float:
     stmt = select(func.coalesce(func.sum(ModelCall.cost_usd), 0.0)).where(
         col(ModelCall.billed).is_(True)
@@ -29,6 +33,8 @@ async def total_cost(
         stmt = stmt.where(ModelCall.series_id == series_id)
     if episode_id is not None:
         stmt = stmt.where(ModelCall.episode_id == episode_id)
+    if job_id is not None:
+        stmt = stmt.where(ModelCall.job_id == job_id)
     async with db.session() as session:
         value = (await session.exec(stmt)).one()
     return float(value)

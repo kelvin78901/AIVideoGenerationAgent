@@ -6,8 +6,9 @@ stores output files by content hash, writes one ``model_call`` row per attempt a
 ``cost.updated``. On error or timeout it falls back once to ``fallback.to`` (or the next model
 in ``alt_order``) when the component allows it.
 
-Budget limits (per call / shot / episode → ``waiting_confirm``) arrive in M2; until then the
-guard only exposes the hook. ``qa_fail`` fallback arrives with QA in M6.
+The budget guard (``modelhub/budget.py``) runs before every attempt. With ``fallback.notify:
+ask`` a call made for a job does not fall back on its own: it raises ``NeedsConfirm`` and the
+job asks the user first. ``qa_fail`` fallback arrives with QA in M6.
 """
 
 from __future__ import annotations
@@ -52,6 +53,17 @@ class BudgetExceeded(ModelError):
         self.estimate_usd = estimate_usd
         self.limit_usd = limit_usd
         self.scope = scope
+
+
+class NeedsConfirm(ModelError):
+    """The call failed and the component wants to be asked before falling back."""
+
+    def __init__(self, failed: str, fallback: str, reason: str) -> None:
+        message = f"{failed} failed ({reason}); ask before {fallback}"
+        super().__init__("fallback_needs_confirm", message)
+        self.failed = failed
+        self.fallback = fallback
+        self.reason = reason
 
 
 class NoBudget:
@@ -155,21 +167,30 @@ class Router:
         model: str | None = None,
         item: str | None = None,
         where: Literal["local", "api"] | None = None,
+        fallback_reason: str | None = None,
     ) -> RoutedResult:
+        """``fallback_reason``: ``model`` is a fallback the user already agreed to (``notify:
+        ask``); it is logged as one and does not fall back again."""
         ctx = ctx or CallContext(component_id=component_id)
         settings = await self.settings(component_id, item)
         key = model or self.primary_model(settings, where)
         self.registry.spec(key)  # unknown models fail fast, without a fallback
         try:
-            return await self._attempt(component_id, key, req, ctx, settings, fallback_reason=None)
+            return await self._attempt(
+                component_id, key, req, ctx, settings, fallback_reason=fallback_reason
+            )
         except BudgetExceeded:
             raise
         except ModelError as exc:
+            if fallback_reason is not None:
+                raise  # one hop only
             trigger = "timeout" if exc.code == "timeout" else "error"
             # One hop only: walking the whole alt_order on a bad day could multiply the spend.
             fallback = self.fallback_model(settings, [key], trigger)
             if fallback is None or fallback not in {s.key for s in self.registry.specs()}:
                 raise
+            if settings.values["fallback"].get("notify") == "ask" and ctx.job_id is not None:
+                raise NeedsConfirm(key, fallback, exc.code) from exc
             return await self._attempt(
                 component_id, fallback, req, ctx, settings, fallback_reason=exc.code
             )

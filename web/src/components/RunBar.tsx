@@ -69,9 +69,14 @@ export function RunBar({
       {busy ? (
         <div role="status" className="flex items-center gap-1.5 text-sm text-primary">
           <Loader2 className="size-4 animate-spin" aria-hidden />
-          {t(product.status === "queued" ? "runBar.queued" : "runBar.running", {
-            model: modelName(models, busyModel),
-          })}
+          {t(
+            product.running?.state === "waiting_confirm"
+              ? "runBar.waiting"
+              : product.status === "queued"
+                ? "runBar.queued"
+                : "runBar.running",
+            { model: modelName(models, busyModel) },
+          )}
         </div>
       ) : null}
       <Button variant="outline" onClick={onEditPrompt}>
