@@ -23,6 +23,8 @@ config.json
 dramas/
 data/cast/
 templates/
+# ...but the prompt templates are code (SPEC 8)
+!src/drama_series_agent/prompts/templates/
 projects/
 dev_memory/
 # Local-only cheat sheet (git/GitHub ops); do not publish
