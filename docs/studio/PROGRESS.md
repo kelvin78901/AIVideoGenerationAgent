@@ -31,7 +31,7 @@
 | 8 | 清单补齐：ComfyUI 锁 v0.42.1、最低 0.35.0；H3 / Fun ControlNet 是 ComfyUI 自带节点（`detect.native_since`，不再是安装项）；Manager 改 `manager_requirements.txt` 装法；VHS、SeedVR2、FlashVSR 锁 commit；PyTorch cu130 源；国内 GitHub 走 gh-proxy；权重 `installable: false` + `weights_pending_p0`；改动清单显示 tag / 短 commit；`scripts/setup_scan_real.py`（只读，本机跑过）；测试不再触网；前端测试数据重新导出、Setup / 冒烟数字跟着改；DECISIONS 记第 8 步 | dd2fcce | pytest 296；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
 | 8b（1/2） | Kelvin 选了 Qwen-Image-Edit-2511 int8、ComfyUI 自带 SeedVR2 + 7B int8、IndexTTS-2.5；五项权重锁 HF revision、填大小和 sha256（共约 110 GB，H3 补两个加速 LoRA）；`node_seedvr2` 改成 ComfyUI 自带（0.28.0 起）；DramaStudio 节点包不可装；download 文件加 `folder:`，放进 ComfyUI 的默认模型目录（`is_default`，Desktop 的共享目录）；新检测 `downloads`；日志 `download`；`setup_scan_real.py` 打印权重目标路径（本机核对过）；前端测试数据重新导出、Setup / 冒烟 / API 测试数字跟着改；DECISIONS 记 8b | e19f60f | pytest 300；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
 | 8b（2/2） | Kelvin 真装：VHS、FlashVSR、四项权重成功；IndexTTS 从仓库挪到默认位置；回滚第一次被 Manager 的 Windows bug 卡住，修复（回滚前建 `.disabled`）后第二次成功，再装回 VHS、FlashVSR；装完复检（`not_detected`）；SageAttention 在 Windows 上改用预编译包 + 按 torch 选的 triton-windows（`by_torch`、`torch_unsupported`）；git 关 detached HEAD 提示；DECISIONS 记真装结果 | dfe9908 | pytest 单元 218、API 84、e2e 2；ruff、mypy（含 linux）；web test 191、lint、format |
-| 8b（收尾） | 用新代码重启后端后装 SageAttention：torch 2.12.1+cu130 配 triton-windows 3.7.1 + sageattention 2.2.0，在 5090 上跑通（和 SDPA 余弦 0.99927）；Kelvin 重启 ComfyUI 后 VHS、FlashVSR、SageAttention 都加载；勾计划 8b、ROADMAP 验收两条 | 本提交 | 仅文档（代码同 dfe9908） |
+| 8b（收尾） | 用新代码重启后端后装 SageAttention：torch 2.12.1+cu130 配 triton-windows 3.7.1 + sageattention 2.2.0，在 5090 上跑通（和 SDPA 余弦 0.99927）；Kelvin 重启 ComfyUI 后 VHS、FlashVSR、SageAttention 都加载；勾计划 8b、ROADMAP 验收两条 | 2204067 | 仅文档（代码同 dfe9908） |
 
 ## 下一步
 
@@ -72,6 +72,5 @@
 
 ## 等 Kelvin 的事
 
-- **开 SageAttention**（Kelvin 同意）：Desktop 完全退出后，把 `%APPDATA%\Comfy Desktop\installations.json` 里 `inst-1792192213598` 的 `launchArgs` 改成 `--enable-manager --use-sage-attention`（先备份），再请 Kelvin 打开 Desktop，核对 `/system_stats` 的 argv 和日志。
-- （2026-10-18 已办：第 8b 步真装、回滚、SageAttention 都做完；真实扫描输出 Kelvin 看过、和我这边一致；8b 的三个版本已选；`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图、第 7b 步设计稿 Kelvin 审核通过；按镜头选工作流 / 拼节点 beta 已定，见 DECISIONS 和 SPEC 6.4.8。）
+- （2026-10-18 已办：第 8b 步真装、回滚、SageAttention 都做完，ComfyUI 已带 `--use-sage-attention` 启动（改的是 Desktop 的 `installations.json`，原文件备份在当时会话的 scratchpad）；真实扫描输出 Kelvin 看过、和我这边一致；8b 的三个版本已选；`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图、第 7b 步设计稿 Kelvin 审核通过；按镜头选工作流 / 拼节点 beta 已定，见 DECISIONS 和 SPEC 6.4.8。）
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。
