@@ -81,12 +81,20 @@
     "workflow_needs_trial": "要先试跑通过",
     "workflow_dramastudio_bindings": "用 DramaStudio 节点的工作流不用绑定",
     "workflow_unknown_node": "工作流里没有标题为「{{title}}」的节点",
-    "workflow_check_failed": "体检没通过：先装好缺的节点包和模型"
+    "workflow_check_failed": "体检没通过：先装好缺的节点包和模型",
+    "invalid_owner": "产物的归属写法不对（应为 类型:id）",
+    "scope_id_required": "单项设置要指明是哪一项",
+    "component_not_ready": "这一步的生成功能还没接上",
+    "component_off": "这一步在当前预设下不跑（没有可用的模型）",
+    "no_model_configured": "这一步还没选模型",
+    "no_alternative": "没有可以换的其他模型，去「运行设置」里加备选",
+    "invalid_output": "模型两次都没按要求的格式回答，原始回答已保存"
   },
   "toast": {
     "generic": "通知：{{code}}",
     "version_created": "已生成 v{{n}}（{{model}}）。上一版还在历史里，满意就点「采纳」。",
-    "sync_done": "同步完成：检查了 {{files}} 个文件，新增 {{added}} 个，其余没有变化。"
+    "sync_done": "同步完成：检查了 {{files}} 个文件，新增 {{added}} 个，其余没有变化。",
+    "run_failed": "生成失败（{{error}}）。之前的版本都还在历史里，可以重跑或换个模型。"
   },
   "legacy": {
     "banner": "旧界面：调用不记账、不受预算限制",

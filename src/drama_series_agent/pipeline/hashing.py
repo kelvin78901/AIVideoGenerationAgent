@@ -18,5 +18,9 @@ def hash_json(value: Any) -> str:
 
 
 def content_hash(payload: dict[str, Any], files: list[dict[str, Any]]) -> str:
-    """A version's hash: its payload plus the content of its files (not their paths)."""
-    return hash_json({"payload": payload, "files": sorted(str(f.get("sha256")) for f in files)})
+    """A version's hash: its payload plus the content of its files (not their paths).
+
+    The prompt that was sent (role ``prompt``) is a record of how it was made, not content.
+    """
+    shas = sorted(str(f.get("sha256")) for f in files if f.get("role") != "prompt")
+    return hash_json({"payload": payload, "files": shas})

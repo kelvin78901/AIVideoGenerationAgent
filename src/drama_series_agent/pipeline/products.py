@@ -5,21 +5,23 @@ Versions are append-only and are the source of truth. ``current`` is what the sc
 Only the first successful version of a product is adopted automatically; later runs only
 become current, so an adopted version is never replaced behind the user's back (hard rule 5).
 Domain tables that mirror the adopted version register a materializer per slot (``on_adopt``).
+
+The display status is worked out on read: a queued / running job first (from the ``job``
+table), then a failed last run, stale (``pipeline/invalidation.py``), locked, adopted, ready.
 """
 
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Sequence
-from dataclasses import dataclass, field
-from datetime import datetime
-from typing import Any
+from typing import TYPE_CHECKING
 
 from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus, EventType
-from drama_series_agent.core.models_db import Dependency, Product, ProductVersion, utcnow
+from drama_series_agent.core.models_db import Dependency, Job, Product, ProductVersion, utcnow
+from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.hashing import content_hash
 from drama_series_agent.pipeline.schema import (
@@ -31,44 +33,26 @@ from drama_series_agent.pipeline.schema import (
     VersionOut,
 )
 
+if TYPE_CHECKING:
+    from drama_series_agent.pipeline.invalidation import Invalidation
+
+__all__ = ["DependencyDraft", "ProductService", "VersionDraft", "product_public", "status_of"]
+
 Materializer = Callable[[AsyncSession, Product, ProductVersion], Awaitable[None]]
+# Fills in what a product shows before its next run: the prompt (a default one if it never
+# ran) and the estimate on the current route (pipeline/runs.py).
+Describer = Callable[[Product], Awaitable[tuple[PromptOut | None, EstimateOut | None]]]
+ACTIVE_JOB_STATES = ("queued", "waiting_confirm", "running")
 
 
-@dataclass
-class DependencyDraft:
-    upstream_product_id: str
-    upstream_hash: str
-    slice: str = ""
-
-
-@dataclass
-class VersionDraft:
-    """What a run or an edit produced; ``append`` turns it into a version."""
-
-    payload: dict[str, Any]
-    files: list[dict[str, Any]] = field(default_factory=list)
-    intent: str | None = None
-    compiled: str | None = None
-    compiled_overridden: bool = False
-    model_key: str | None = None
-    where: str | None = None
-    seed: int | None = None
-    params: dict[str, Any] = field(default_factory=dict)
-    cost_usd: float = 0.0
-    job_id: str | None = None
-    fallback_reason: str | None = None
-    stage: str | None = None
-    note: str | None = None
-    dependencies: list[DependencyDraft] = field(default_factory=list)
-    # The demo seed inserts versions with the ids and times of the MSW fixtures.
-    id: str | None = None
-    created_at: datetime | None = None
-
-
-def status_of(p: Product) -> str:
-    """Display status: run state first, then locked > adopted > ready (SPEC 4.2)."""
-    if p.status in ("queued", "running", "failed"):
-        return p.status
+def status_of(p: Product, *, job: Job | None = None, stale: bool = False) -> str:
+    """Display status: an active job, a failed last run, stale, locked, adopted, ready."""
+    if job is not None and job.state in ACTIVE_JOB_STATES:
+        return "running" if job.state == "running" else "queued"
+    if p.status == "failed":
+        return "failed"
+    if stale:
+        return "stale"
     if p.locked_hash:
         return "locked"
     if p.adopted_version_id:
@@ -109,12 +93,16 @@ def product_public(
     p: Product,
     versions: Sequence[ProductVersion],
     *,
+    job: Job | None = None,
+    stale: bool = False,
+    prompt: PromptOut | None = None,
     estimate: EstimateOut | None = None,
 ) -> ProductOut:
-    prompt = PromptOut.model_validate(p.prompt_json) if p.prompt_json else None
+    if p.prompt_json:
+        prompt = PromptOut.model_validate(p.prompt_json)
     running = None
-    if p.running_job_id:
-        running = RunningOut(job_id=p.running_job_id, model_key=prompt.model_key if prompt else "")
+    if job is not None and job.state in ACTIVE_JOB_STATES:
+        running = RunningOut(job_id=job.id, model_key=str(job.params_json.get("model_key", "")))
     return ProductOut(
         id=p.id,
         series_id=p.series_id,
@@ -125,10 +113,10 @@ def product_public(
         current_version_id=p.current_version_id,
         adopted_version_id=p.adopted_version_id,
         locked_hash=p.locked_hash,
-        status=status_of(p),
+        status=status_of(p, job=job, stale=stale),
         versions=[version_public(v) for v in sorted(versions, key=lambda v: v.n)],
         prompt=prompt,
-        estimate=estimate,
+        estimate=None if running else estimate,
         running=running,
     )
 
@@ -167,10 +155,14 @@ async def versions_of(session: AsyncSession, product_id: str) -> list[ProductVer
 
 
 class ProductService:
-    def __init__(self, db: Database, bus: EventBus) -> None:
+    def __init__(
+        self, db: Database, bus: EventBus, invalidation: Invalidation | None = None
+    ) -> None:
         self._db = db
         self._bus = bus
+        self._invalidation = invalidation
         self._materializers: dict[str, Materializer] = {}
+        self.describer: Describer | None = None
 
     def on_adopt(self, slot: str, materializer: Materializer) -> None:
         """Rebuild the domain rows of ``slot`` from a newly adopted version (same transaction)."""
@@ -181,7 +173,8 @@ class ProductService:
     async def get(self, product_id: str) -> ProductOut:
         async with self._db.session() as session:
             p = await require_product(session, product_id)
-            return product_public(p, await versions_of(session, p.id))
+            versions = await versions_of(session, p.id)
+        return (await self._public(p.series_id, [p], {p.id: versions}))[0]
 
     async def find(
         self, *, owner: str | None = None, component: str | None = None
@@ -201,7 +194,7 @@ class ProductService:
             by_product: dict[str, list[ProductVersion]] = {}
             for v in rows.all():
                 by_product.setdefault(v.product_id, []).append(v)
-        return [product_public(p, by_product.get(p.id, [])) for p in products]
+        return await self._public(None, products, by_product)
 
     # ------------------------------------------------------------------ writes
 
@@ -369,7 +362,75 @@ class ProductService:
         await self._announce(p)
         return await self.get(p.id)
 
+    async def set_prompt(self, product_id: str, prompt: dict[str, object]) -> None:
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+            p.prompt_json = dict(prompt)
+            p.updated_at = utcnow()
+            session.add(p)
+            await session.commit()
+
+    async def start_run(self, product_id: str, job_id: str) -> None:
+        """A job will produce the next version; the product shows it as queued / running."""
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+            p.running_job_id = job_id
+            p.updated_at = utcnow()
+            session.add(p)
+            await session.commit()
+        await self._announce(p)
+
+    async def finish_run(self, product_id: str, *, ok: bool | None) -> None:
+        """The job ended: ``ok`` False marks the run failed, None (canceled) leaves it as was."""
+        async with self._db.session() as session:
+            p = await session.get(Product, product_id)
+            if p is None:
+                return
+            p.running_job_id = None
+            if ok is False:
+                p.status = "failed"
+            elif ok and p.status == "failed":
+                p.status = "ready"
+            p.updated_at = utcnow()
+            session.add(p)
+            await session.commit()
+        await self._announce(p)
+
     # ------------------------------------------------------------------ internals
+
+    async def _public(
+        self,
+        series_id: str | None,
+        products: Sequence[Product],
+        versions: dict[str, list[ProductVersion]],
+    ) -> list[ProductOut]:
+        async with self._db.session() as session:
+            job_ids = [p.running_job_id for p in products if p.running_job_id]
+            jobs = {
+                j.id: j
+                for j in (await session.exec(select(Job).where(col(Job.id).in_(job_ids)))).all()
+            }
+            stale = (
+                await self._invalidation.stale_ids(session, products)
+                if self._invalidation is not None
+                else set()
+            )
+        out = []
+        for p in products:
+            prompt = estimate = None
+            if self.describer is not None:
+                prompt, estimate = await self.describer(p)
+            out.append(
+                product_public(
+                    p,
+                    versions.get(p.id, []),
+                    job=jobs.get(p.running_job_id or ""),
+                    stale=p.id in stale,
+                    prompt=prompt,
+                    estimate=estimate,
+                )
+            )
+        return out
 
     async def _adopt(self, session: AsyncSession, p: Product, v: ProductVersion) -> None:
         p.adopted_version_id = v.id

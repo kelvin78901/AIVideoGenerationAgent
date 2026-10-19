@@ -2,6 +2,19 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-19 · M2 第 3 步：组件框架、提示词、Mock 应答器
+
+- **迁移编号顺延**：`0009` 是新表 `llm_cache`（计划里 `0009` 写的是第 4 步的 `job.confirmed_usd`），之后各步的迁移号都加一。
+- **组件**（`pipeline/component.py`）：`inputs()` 返回标题数据块 + 读了哪些上游切片；默认 `run()` 一次调用：编译层作 system、数据块作 user，`json_mode`，Pydantic 校验；不过就把模型的回答和错误（`prompts/templates/_shared/fix_json.j2`）追加进对话再问一次，换模型兜底后重试留在答出来的那个模型上；第二次还不过任务失败 `invalid_output`，原始回答存 blob，`error.params.raw` 是它的哈希。多次调用的组件（长小说分块）自己覆盖 `run()`，用 `call_json()`。
+- **校验通过的回答按请求缓存**（`llm_cache`，键 = 模型 + 消息 + 种子 + max_tokens + 输出结构）：任务重试或重启续跑不重复花钱；重跑换了种子，不会命中。命中不写 `model_call`（没有调用）。
+- **提示词**：`prompts/compiler.py` 用 Jinja2（`StrictUndefined`），`templates/<component>/<family>.j2`，`family` = 模型 key 的前缀，找不到用 `default.j2`；默认意图层在 `intent.<lang>.txt`，按剧集的 `ui_lang`。实际发出的全文存 blob，作为版本的 `files[]`（role `prompt`），不算进 `content_hash`。模板随包发布（`pyproject.toml` 的 package-data）。
+- **一次运行的提示词**：开始运行时写回产物（PromptEditor 下次显示的就是它），并复制进任务参数，排队期间改提示词不影响这一次。「重跑」沿用手改的编译层；带新意图或「不满意换一个」都按目标模型重新编译（和 M0.5 的约定一致）。「换一个」取 `alt_order` 里屏幕上那一版所用模型的下一个（到头绕回）。
+- **队列**：本地模型进 `gpu`，API 进 `api:<provider_id>`；路由器报的可重试错误（429、5xx）交给队列按 `max_attempts` 重试，其余直接失败。
+- **产物状态读时算**：有排队 / 等确认 / 运行中的任务 → queued / running（从 `job` 表读，取消了的排队任务不会卡住）；上次失败 → failed；然后 stale（`pipeline/invalidation.py` 现算）、locked、adopted、ready、empty。`running` 里的模型取任务参数。
+- **Mock**：`ModelRequest.meta = {component, task}` 不发给厂商；组件的应答器经 `Registry.add_mock_responder()` 登记（`modelhub` 不依赖 `pipeline`）；`MockSettings.bad_json = N` 让接下来 N 次 JSON 回答坏掉，测重试。
+- **流式**：写作类调用带 `stream: true`，增量按字数每秒最多一次推 `job.updated` 的 `progress: {chars}`；RunBar 显示「已生成 N 字」等第 6 步有真组件时再接。
+- **提示**：成功推 `toast` `version_created {n, model}`（model 是显示名），失败推 `run_failed {error}`；新错误码 `component_not_ready`、`component_off`、`no_alternative`、`invalid_output` 等两种语言都有文案。
+
 ## 2026-10-19 · M2 第 2 步：配置接口
 
 - **预设在后端现算**：`core/config.py:preset_settings()` 照搬原型 `presetCfg()`（质量 / 均衡 / 省钱 / 全本地，全本地下没有本地版本的组件 `mode: off`，路由器调用它报 `component_off`）。当前预设和兜底方式存新表 `app_setting`（键 `config.defaults`，迁移 `0008`），`resolve()` 多一个 `defaults` 参数。来源层 `factory` 改名 `preset`，和前端契约一致；解析结果里 `fallback.local_timeout_s` 改名 `timeout_s`（YAML 的键不变）。

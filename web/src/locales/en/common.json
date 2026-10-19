@@ -81,12 +81,20 @@
     "workflow_needs_trial": "Pass a trial first",
     "workflow_dramastudio_bindings": "Workflows with DramaStudio nodes need no bindings",
     "workflow_unknown_node": "No node titled “{{title}}” in this workflow",
-    "workflow_check_failed": "The health check failed: install the missing node packs and models first"
+    "workflow_check_failed": "The health check failed: install the missing node packs and models first",
+    "invalid_owner": "The product owner must look like type:id",
+    "scope_id_required": "An item-level setting needs the item",
+    "component_not_ready": "Generation for this step is not wired up yet",
+    "component_off": "This step is skipped under the current preset (no usable model)",
+    "no_model_configured": "No model is selected for this step yet",
+    "no_alternative": "There is no other model to switch to; add alternatives in Run settings",
+    "invalid_output": "The model twice failed to answer in the required format; its raw answer is kept"
   },
   "toast": {
     "generic": "Notice: {{code}}",
     "version_created": "Generated v{{n}} ({{model}}). The previous version is still in the history; adopt this one if you like it.",
-    "sync_done": "Sync done: {{files}} files checked, {{added}} new, the rest unchanged."
+    "sync_done": "Sync done: {{files}} files checked, {{added}} new, the rest unchanged.",
+    "run_failed": "Generation failed ({{error}}). Earlier versions are still in History; rerun or switch models."
   },
   "legacy": {
     "banner": "Legacy UI: calls are not logged and not budget-limited",

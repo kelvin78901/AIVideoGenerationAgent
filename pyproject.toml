@@ -24,6 +24,7 @@ dependencies = [
   "keyring>=25.7.0",
   "greenlet>=3.5.6",
   "nvidia-ml-py>=13.615.71",
+  "jinja2>=3.1.6",
 ]
 
 [project.optional-dependencies]
@@ -52,7 +53,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-drama_series_agent = ["py.typed"]
+drama_series_agent = ["py.typed", "prompts/templates/**/*"]
 
 # ---------------------------------------------------------------------------
 # Quality tools. New studio code is checked strictly; upstream modules are

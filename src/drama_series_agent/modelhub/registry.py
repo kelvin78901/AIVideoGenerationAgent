@@ -22,7 +22,7 @@ from drama_series_agent.modelhub.adapters.base import (
     ModelSpec,
     Pricing,
 )
-from drama_series_agent.modelhub.adapters.mock import MockAdapter, MockSettings
+from drama_series_agent.modelhub.adapters.mock import MockAdapter, MockSettings, Responder
 from drama_series_agent.modelhub.pricing import pricing_for_llm, pricing_for_media
 
 AdapterFactory = Callable[[ModelSpec], ModelAdapter]
@@ -121,6 +121,10 @@ class Registry:
         """Real adapters register here, e.g. OpenAI-compatible for every ``llm`` spec."""
         self._factories.append((matches, factory))
         self._adapters.clear()
+
+    def add_mock_responder(self, component: str, task: str, responder: Responder) -> None:
+        """What Mock mode answers for (component, task); real adapters never see it."""
+        self.mock_settings.responders[(component, task)] = responder
 
     def add_spec(self, spec: ModelSpec) -> None:
         self._specs[spec.key] = spec

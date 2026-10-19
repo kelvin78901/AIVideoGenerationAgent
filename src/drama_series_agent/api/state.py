@@ -20,7 +20,11 @@ from drama_series_agent.modelhub.adapters.base import ModelSpec
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
+from drama_series_agent.pipeline.component import ComponentRegistry, Services
+from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
+from drama_series_agent.pipeline.runs import RunService
+from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.setup.service import SetupService
 
 
@@ -34,6 +38,8 @@ class StudioState:
     router: Router
     setup: SetupService
     products: ProductService
+    components: ComponentRegistry
+    runs: RunService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -47,15 +53,30 @@ class StudioState:
         registry = Registry.from_config(get_config())
         jobs = JobQueue(db, bus)
         setup = SetupService(db, bus, jobs)
+        router = Router(db, bus, registry, store=store, capabilities=setup.capabilities)
+        invalidation = Invalidation()
+        products = ProductService(db, bus, invalidation)
+        components = ComponentRegistry(
+            Services(
+                db=db,
+                router=router,
+                registry=registry,
+                compiler=PromptCompiler(),
+                store=store,
+                invalidation=invalidation,
+            )
+        )
         state = cls(
             db=db,
             bus=bus,
             jobs=jobs,
             store=store,
             registry=registry,
-            router=Router(db, bus, registry, store=store, capabilities=setup.capabilities),
+            router=router,
             setup=setup,
-            products=ProductService(db, bus),
+            products=products,
+            components=components,
+            runs=RunService(components, products, jobs, bus),
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:

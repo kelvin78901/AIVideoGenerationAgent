@@ -424,3 +424,20 @@ class AppSetting(SQLModel, table=True):
     updated_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+class LlmCache(SQLModel, table=True):
+    """Validated LLM answers by request hash (model, messages, seed …).
+
+    A job that is retried or resumed after a restart reuses the chunks it already paid for;
+    a rerun has a new seed, so it asks again.
+    """
+
+    __tablename__ = "llm_cache"
+
+    key: str = Field(primary_key=True)
+    model_key: str
+    value_json: Any = Field(sa_column=Column(JSON, nullable=False))
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

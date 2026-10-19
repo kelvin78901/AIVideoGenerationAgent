@@ -66,6 +66,9 @@ class ModelRequest(BaseModel):
     # Model-specific knobs (width, height, duration_s, voice, refs, ...). Mock adapters also
     # read ``mock_delay_s`` here.
     params: dict[str, Any] = Field(default_factory=dict)
+    # Who is asking, never sent to a provider: ``component`` and ``task`` (``run``,
+    # ``rewrite_line`` …). Mock mode answers with the responder registered for that pair.
+    meta: dict[str, Any] = Field(default_factory=dict)
 
     def text(self) -> str:
         """All prompt text, for estimates and mocks."""
