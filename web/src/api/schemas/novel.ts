@@ -4,6 +4,8 @@
  */
 import { z } from "zod";
 
+import { Timestamp } from "@/api/schemas/common";
+
 export const SourceSpanSchema = z.object({
   source_id: z.string(),
   start: z.number().int(),
@@ -20,13 +22,64 @@ export const NovelParagraphSchema = z.object({
 });
 export type NovelParagraph = z.infer<typeof NovelParagraphSchema>;
 
-/** `GET /series/{id}/novel` */
+export const NovelChapterSchema = z.object({
+  /** null in an import preview (`dry_run`). */
+  id: z.string().nullable(),
+  /** 0-based. */
+  idx: z.number().int().nonnegative(),
+  /** The heading line; null for text before the first heading or a part of a length split. */
+  title: z.string().nullable(),
+  start: z.number().int(),
+  end: z.number().int(),
+  /** Number of the first paragraph, counted across the book. */
+  para_start: z.number().int().nonnegative(),
+  para_count: z.number().int().nonnegative(),
+  chars: z.number().int().nonnegative(),
+});
+export type NovelChapter = z.infer<typeof NovelChapterSchema>;
+
+export const NovelEncodingSchema = z.enum(["utf-8", "utf-16", "gb18030", "docx"]);
+export const NovelSplitSchema = z.enum(["heading", "length"]);
+
+export const NovelSourceSchema = z.object({
+  id: z.string(),
+  filename: z.string(),
+  sha256: z.string(),
+  encoding: NovelEncodingSchema,
+  split_by: NovelSplitSchema,
+  /** Paragraph characters (headings and blank lines excluded). */
+  chars: z.number().int().nonnegative(),
+  rights_confirmed_at: Timestamp,
+  imported_at: Timestamp,
+});
+export type NovelSource = z.infer<typeof NovelSourceSchema>;
+
+/** `GET /series/{id}/novel?chapter=`: the source in use and one chapter's paragraphs. */
 export const NovelSchema = z.object({
   series_id: z.string(),
-  source: z.object({ id: z.string(), filename: z.string(), sha256: z.string() }),
+  /** null until a novel is imported (the page shows its empty state). */
+  source: NovelSourceSchema.nullable(),
+  chapters: z.array(NovelChapterSchema),
+  /** idx of the chapter whose paragraphs are listed. */
+  chapter: z.number().int().nonnegative().nullable(),
   paragraphs: z.array(NovelParagraphSchema),
 });
 export type Novel = z.infer<typeof NovelSchema>;
+
+/** `POST /series/{id}/novel` (multipart `file`, `rights_confirmed`, `dry_run`). */
+export const NovelImportSchema = z.object({
+  /** Only what was found (the dialog's preview); nothing stored. */
+  dry_run: z.boolean(),
+  /** Same text as the current source: nothing was added. */
+  unchanged: z.boolean(),
+  source_id: z.string().nullable(),
+  filename: z.string(),
+  encoding: NovelEncodingSchema,
+  split_by: NovelSplitSchema,
+  chars: z.number().int().nonnegative(),
+  chapters: z.array(NovelChapterSchema),
+});
+export type NovelImport = z.infer<typeof NovelImportSchema>;
 
 /**
  * What a suggestion fills in. The first four are the enrich component's (prototype tags 外貌 /

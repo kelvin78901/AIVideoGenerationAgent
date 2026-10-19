@@ -23,6 +23,28 @@
     "gpuNamed": "Local GPU: {{name}} {{vram}} GB · {{status}}",
     "episodeTitle": "Ep. {{n}} “{{title}}”"
   },
+  "seriesMenu": {
+    "label": "Switch series or start a new one",
+    "heading": "Series",
+    "new": "New series…",
+    "failed": "Could not load the series list"
+  },
+  "newSeries": {
+    "title": "New series",
+    "lead": "Give it a title first. Next you set the output spec (portrait or landscape, resolution, frame rate), then import the novel.",
+    "name": "Title",
+    "placeholder": "e.g. Before the Rain Stops",
+    "required": "The title cannot be empty",
+    "create": "Create and set the output spec",
+    "cancel": "Cancel",
+    "done": "Created “{{title}}”"
+  },
+  "noSeries": {
+    "title": "Start a series",
+    "lead": "A series starts from a novel: create the series, set the output spec, then import the novel.",
+    "empty": "No series yet",
+    "emptyLead": "Create a series; you will set the output spec and import the novel next."
+  },
   "placeholder": {
     "comingSoon": "This page is built in a later milestone ({{milestone}}).",
     "prototype": "Layout and copy follow {{file}}."
@@ -90,7 +112,13 @@
     "no_alternative": "There is no other model to switch to; add alternatives in Run settings",
     "invalid_output": "The model twice failed to answer in the required format; its raw answer is kept",
     "budget_exceeded": "This call would go over a limit (the per-call cap or the confirmed amount); it stopped before spending",
-    "over_budget": "Estimated ${{estimate_usd}}, over the ${{limit_usd}} limit; it runs once you confirm"
+    "over_budget": "Estimated ${{estimate_usd}}, over the ${{limit_usd}} limit; it runs once you confirm",
+    "rights_not_confirmed": "Tick “I own the adaptation rights” before importing",
+    "unsupported_file": "Only .txt and .docx are supported (this file is {{ext}})",
+    "file_too_large": "The file is larger than {{limit_mb}} MB",
+    "novel_unreadable": "Cannot read the text of this file: save a .txt as UTF-8 or GBK, and check that a .docx is not damaged",
+    "novel_empty": "The file has no text",
+    "chapter_not_found": "There is no chapter {{idx}}"
   },
   "toast": {
     "generic": "Notice: {{code}}",

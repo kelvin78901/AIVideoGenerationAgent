@@ -1,4 +1,4 @@
-import { http } from "msw";
+import { http, passthrough } from "msw";
 
 import type { Suggestion } from "@/api/schemas/novel";
 import { getDb } from "@/mocks/db";
@@ -6,8 +6,8 @@ import { suggestionRewrites } from "@/mocks/fixtures/demo/novel";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 import { demoRoute, primaryModel } from "@/mocks/route";
 
-const seriesGuard = (id: string) =>
-  getDb().series[id] ? null : demoError(404, "series_not_found", { id });
+/** Only the demo series is in the demo data; any other goes to the backend (plan「和 MSW 共存」). */
+const seriesGuard = (id: string) => (getDb().series[id] ? null : passthrough());
 
 function findSuggestion(id: string): Suggestion | undefined {
   return getDb().suggestions.find((s) => s.id === id);
@@ -31,11 +31,6 @@ function decide(action: "accept" | "reject" | "reset") {
 }
 
 export const novelHandlers = [
-  http.get(v1("/series/:id/novel"), ({ params }) => {
-    const id = String(params.id);
-    return seriesGuard(id) ?? demoJson(getDb().novel);
-  }),
-
   http.get(v1("/series/:id/suggestions"), ({ params }) => {
     const id = String(params.id);
     return seriesGuard(id) ?? demoJson(getDb().suggestions.filter((s) => s.series_id === id));

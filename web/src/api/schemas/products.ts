@@ -10,6 +10,8 @@ export const OwnerTypeSchema = z.enum(["series", "episode", "scene", "shot", "as
 export type OwnerType = z.infer<typeof OwnerTypeSchema>;
 
 export const ProductSlotSchema = z.enum([
+  // The imported novel: one `import` version per import (DECISIONS 2026-10-19 · M2 step 5).
+  "novel",
   "bible",
   "suggestions",
   "episodes",

@@ -11,10 +11,9 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { useLayoutEffect, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation } from "react-router";
-import { ConfirmJobs } from "@/components/ConfirmJobs";
+import { NavLink, Outlet, useLocation, useParams } from "react-router";
 
 import {
   useEpisodeProgress,
@@ -26,6 +25,8 @@ import {
 import { useMachineProfile } from "@/api/hooks/setup";
 import type { StepProgress } from "@/api/schemas/episodes";
 import { paths, STEPS } from "@/app/paths";
+import { ConfirmJobs } from "@/components/ConfirmJobs";
+import { SeriesMenu } from "@/components/SeriesMenu";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatSpecTag, formatUsd } from "@/lib/format";
@@ -74,6 +75,15 @@ function useTrackRoute(): void {
   useLayoutEffect(() => setRoute(pathname), [pathname, setRoute]);
 }
 
+/** Remembers the series on screen: `/` and pages outside a series go back to it. */
+function useTrackSeries(): void {
+  const { series } = useParams();
+  const setLastSeries = useUiStore((s) => s.setLastSeries);
+  useEffect(() => {
+    if (series) setLastSeries(series);
+  }, [series, setLastSeries]);
+}
+
 function TopBar({ status }: { status: ShellStatus }) {
   const { t } = useTranslation();
   const { seriesId, episode } = useRouteEpisode();
@@ -108,13 +118,13 @@ function TopBar({ status }: { status: ShellStatus }) {
         </span>
       ) : null}
       <DemoBadge />
-      <div className="text-sm text-topbar-muted" data-testid="shell-title">
-        {series.data ? t("shell.seriesTitle", { title: series.data.title }) : t("shell.noSeries")}
+      <div className="flex items-center text-sm text-topbar-muted" data-testid="shell-title">
+        <SeriesMenu current={series.data} />
         {series.data && episode ? (
-          <>
+          <span className="whitespace-pre">
             {" · "}
             {t("shell.episodeTitle", { n: episode.idx, title: episode.title })}
-          </>
+          </span>
         ) : null}
       </div>
       {specData ? (
@@ -277,6 +287,7 @@ function SideNav() {
 export function AppShell({ status = IDLE }: { status?: ShellStatus }) {
   const { t } = useTranslation();
   useTrackRoute();
+  useTrackSeries();
   return (
     <div className="flex min-h-screen flex-col">
       <a

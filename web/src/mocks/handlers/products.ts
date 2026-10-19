@@ -1,4 +1,4 @@
-import { http } from "msw";
+import { http, passthrough } from "msw";
 
 import type { Job } from "@/api/schemas/jobs";
 import {
@@ -170,6 +170,9 @@ export const productHandlers = [
     const q = new URL(request.url).searchParams;
     const owner = q.get("owner");
     const component = q.get("component");
+    // A series that is not the demo one is the backend's (plan「和 MSW 共存」).
+    const [kind, ownerId] = owner?.split(":") ?? [];
+    if (kind === "series" && ownerId && !getDb().series[ownerId]) return passthrough();
     const list = Object.values(getDb().products).filter(
       (p) =>
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&

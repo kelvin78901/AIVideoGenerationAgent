@@ -9,7 +9,11 @@
  * GET /series/{id}/spec/compat, GET /spec/presets, GET /setup/profile, POST /setup/scan,
  * POST /setup/install, POST /setup/items/{id}/retry|skip, POST /demo/setup/machine (now the
  * backend's POST /dev/setup/machine) (M1). GET /config/components, GET /config/resolve,
- * PUT / DELETE /config/override, GET / PUT /config/defaults (M2).
+ * PUT / DELETE /config/override, GET / PUT /config/defaults, GET /series/{id}/novel (M2).
+ * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
+ *
+ * Handlers that take a series answer only for the demo series; any other series passes through
+ * to the backend (plan M2「和 MSW 共存」).
  *
  * | Endpoint                         | Implemented in |
  * | -------------------------------- | -------------- |
@@ -28,7 +32,6 @@
  * | POST /products/{id}/compile      | M2             |
  * | POST /impact/preview, apply      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | GET /series/{id}/novel           | M2             |
  * | GET /series/{id}/suggestions     | M2             |
  * | POST /series/{id}/suggestions/accept-all | M2     |
  * | POST /suggestions/{id}/accept, reject, reset, rewrite | M2 |

@@ -18,7 +18,7 @@ import {
   shotMetrics,
   speedMetrics,
 } from "@/mocks/fixtures/demo/metricsDetail";
-import { bible, novel, suggestions } from "@/mocks/fixtures/demo/novel";
+import { bible, suggestions } from "@/mocks/fixtures/demo/novel";
 import { scripts } from "@/mocks/fixtures/demo/script";
 import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
 import { series } from "@/mocks/fixtures/demo/series";
@@ -53,7 +53,6 @@ function createDb() {
       ),
     ),
     assets,
-    novel,
     suggestions,
     bible,
     scripts,

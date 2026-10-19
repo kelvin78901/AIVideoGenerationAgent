@@ -11,6 +11,10 @@
 - **编码**：有 BOM 按 BOM，否则先试 UTF-8 再试 GB18030；解出来含 NUL（没 BOM 的 UTF-16）算读不了。.docx 用 `python-docx`。上传上限 30 MB。错误码：`unsupported_file` 415、`file_too_large` 413、`novel_unreadable {reason: encoding|docx}`、`novel_empty`、`rights_not_confirmed` 422。
 - **接口**：`POST /series/{id}/novel` 是 multipart（`file`、`rights_confirmed`、`dry_run`）。`dry_run` 只返回识别结果（编码、章节），不存、不要求确认改编权，导入弹窗的章节预览用它。`GET /series/{id}/novel?chapter=` 默认第一章，只带这一章的段落；没导入过时返回 200 和 `source: null`（页面显示空状态，不当成错误）。
 - **剧集**：`GET /series` 按新建时间倒序；`POST /series {title, ui_lang}` 同时建默认成片规格；slug 取标题里的英文和数字，没有就 `series`，重名加 `-2`；改名不改 slug。
+- **前端**：顶栏剧名是菜单（剧集列表 +「新建剧集…」），新建后到成片规格页，规格页已有的「下一步：导入小说」接着走。`/` 进上次看的剧集（记在浏览器里 `stores/ui` 的 `lastSeries`，不在列表里了就进最新的；一个剧集都没有时显示「开始一部剧」）；不在剧集里的页面（环境与安装、模型）的链接也指向它。导入弹窗选好文件就先发一次 `dry_run` 显示识别结果，确认改编权后再发一次真正导入（文件传两次，小说不大，换来不用在前端重写切章规则）。原文按章取，点另一章的补全建议先切章再定位。产物的 slot 契约加 `novel`。
+- **剧名菜单不是 modal**（`DropdownMenu modal={false}`）：Radix 的 modal 菜单里打开对话框，关掉后 `body` 会留下 `pointer-events: none`，整页点不动。
+- **和 MSW 共存从这一步开始执行**：带剧集 id 的示例 handler（分集列表、补全建议、设定、产物列表）只认示例剧集，别的剧集放行到后端；所以新剧集导入小说后，补全建议和设定两块显示「后端没有这个接口」，到第 6、7 步接上。删了 MSW 的 `GET /series/{id}/novel`；示例数据的段落偏移改从 `test/data/novel.json`（后端导出）取，第 1 段从偏移 8 开始（前面是「第一章　红伞」），补全建议的锚点和剧本行的出处跟着对上。
+- **页面测试用 Node 的 FormData / File**（`test/setup.ts`）：jsdom 的和 Node 的 fetch（undici）互不认识，上传会被发成字符串 `"[object FormData]"`。
 - **示例剧集**：启动时（Mock）只在库里一个剧集都没有时建示例剧集；示例剧集在的话补上它缺的块（现在是小说：`demo-novel`、`demo-src`、`demo-src-ch1..3`）。`drama-studio demo` 不管有没有别的剧集都建；`--reset` 先删掉示例剧集（规格、产物、版本、小说级联删除；`job`、`model_call` 里的记录留着）。示例小说约 2400 字（计划写的约 3000 字），Kelvin 过目时可以再加。
 
 ## 2026-10-19 · M2 第 4 步：预算和确认

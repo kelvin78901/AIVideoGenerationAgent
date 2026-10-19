@@ -3,27 +3,33 @@ import { useTranslation } from "react-i18next";
 import type { Novel, Suggestion } from "@/api/schemas/novel";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { cn } from "@/lib/utils";
-import { charCount } from "@/pages/novel/text";
+import { chapterLabel, charCount } from "@/pages/novel/text";
 
 export type NovelView = "orig" | "after" | "diff";
 
-/** 原文 with the adopted additions: hidden (原文), inline (采纳后) or highlighted (对比). */
+/**
+ * 原文 of one chapter with the adopted additions: hidden (原文), inline (采纳后) or highlighted
+ * (对比). Paragraphs are numbered across the book; a novel with several chapters gets a picker.
+ */
 export function SourceText({
   novel,
   suggestions,
   view,
   onViewChange,
+  onChapterChange,
   focus,
 }: {
   novel: Novel;
   suggestions: Suggestion[];
   view: NovelView;
   onViewChange: (v: NovelView) => void;
+  onChapterChange: (idx: number) => void;
   /** Paragraph highlighted from a suggestion's 「第 N 段」. */
   focus: number | null;
 }) {
   const { t } = useTranslation("novel");
   const accepted = suggestions.filter((s) => s.status === "accepted");
+  const splitBy = novel.source?.split_by ?? "heading";
   return (
     <section
       aria-labelledby="novel-source"
@@ -51,6 +57,29 @@ export function SourceText({
           }))}
         />
       </div>
+      {novel.chapters.length > 1 ? (
+        <div className="flex flex-wrap items-center gap-x-3 gap-y-1.5">
+          <label className="flex items-center gap-2 text-sm">
+            <span className="text-muted-foreground">{t("chapter.label")}</span>
+            <select
+              value={novel.chapter ?? 0}
+              onChange={(e) => onChapterChange(Number(e.target.value))}
+              className="h-8 max-w-72 rounded-md border border-input bg-card px-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-2 focus-visible:ring-ring/40"
+            >
+              {novel.chapters.map((c) => (
+                <option key={c.idx} value={c.idx}>
+                  {t("chapter.option", { title: chapterLabel(t, c, splitBy), chars: c.chars })}
+                </option>
+              ))}
+            </select>
+          </label>
+          {novel.source ? (
+            <span className="text-xs text-muted-foreground tabular-nums">
+              {t("chapter.book", { chapters: novel.chapters.length, chars: novel.source.chars })}
+            </span>
+          ) : null}
+        </div>
+      ) : null}
       {view === "diff" ? (
         <p className="text-xs text-muted-foreground">{t("source.diffHint")}</p>
       ) : null}

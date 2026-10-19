@@ -1,26 +1,59 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { api, post } from "@/api/client";
+import { api, post, postForm } from "@/api/client";
 import {
   BibleEntitySchema,
+  NovelImportSchema,
   NovelSchema,
   SuggestionSchema,
   type Suggestion,
 } from "@/api/schemas/novel";
+import { productKeys } from "@/api/hooks/products";
 
 const enc = encodeURIComponent;
 
 export const novelKeys = {
-  novel: (series: string) => ["series", series, "novel"] as const,
+  /** Every chapter of a series' novel (invalidate this after an import). */
+  novelAll: (series: string) => ["series", series, "novel"] as const,
+  novel: (series: string, chapter: number) => ["series", series, "novel", chapter] as const,
   suggestions: (series: string) => ["series", series, "suggestions"] as const,
   bible: (series: string) => ["series", series, "bible"] as const,
 };
 
-export function useNovel(seriesId: string) {
+/** The novel in use and the paragraphs of one chapter (0-based). */
+export function useNovel(seriesId: string, chapter = 0) {
   return useQuery({
-    queryKey: novelKeys.novel(seriesId),
-    queryFn: () => api(`/series/${enc(seriesId)}/novel`, NovelSchema),
+    queryKey: novelKeys.novel(seriesId, chapter),
+    queryFn: () => api(`/series/${enc(seriesId)}/novel?chapter=${chapter}`, NovelSchema),
+    // Switching chapters keeps the current one on screen until the next arrives.
+    placeholderData: (prev) => (prev?.series_id === seriesId ? prev : undefined),
+  });
+}
+
+export interface ImportRequest {
+  file: File;
+  /** Only report what was found (the preview); nothing is stored. */
+  dryRun: boolean;
+  rightsConfirmed?: boolean;
+}
+
+/** `POST /series/{id}/novel`: preview (`dryRun`) or import; an import refreshes the novel. */
+export function useImportNovel(seriesId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ file, dryRun, rightsConfirmed = false }: ImportRequest) => {
+      const form = new FormData();
+      form.append("file", file);
+      form.append("dry_run", String(dryRun));
+      form.append("rights_confirmed", String(rightsConfirmed));
+      return postForm(`/series/${enc(seriesId)}/novel`, NovelImportSchema, form);
+    },
+    onSuccess: (result) => {
+      if (result.dry_run) return;
+      void client.invalidateQueries({ queryKey: novelKeys.novelAll(seriesId) });
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
   });
 }
 

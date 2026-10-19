@@ -1,4 +1,4 @@
-import { http } from "msw";
+import { http, passthrough } from "msw";
 
 import { EpisodePatchSchema } from "@/api/schemas/episodes";
 import { getDb } from "@/mocks/db";
@@ -8,9 +8,10 @@ import { confirmedShotCount } from "@/mocks/handlers/shots";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 export const seriesHandlers = [
+  // Other series than the demo one go to the backend (plan「和 MSW 共存」).
   http.get(v1("/series/:id/episodes"), ({ params }) => {
     const id = String(params.id);
-    if (!getDb().series[id]) return demoError(404, "series_not_found", { id });
+    if (!getDb().series[id]) return passthrough();
     return demoJson(getDb().episodes.filter((e) => e.series_id === id));
   }),
 

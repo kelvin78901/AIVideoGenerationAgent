@@ -4,12 +4,12 @@
  */
 import type { Scene, Script, ScriptLine } from "@/api/schemas/script";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
-import { novel } from "@/mocks/fixtures/demo/novel";
+import { novel, SOURCE } from "@/mocks/fixtures/demo/novel";
 
 const spans = (paras: number[]) =>
   paras.flatMap((i) => {
     const p = novel.paragraphs[i];
-    return p ? [{ source_id: novel.source.id, start: p.start, end: p.end }] : [];
+    return p ? [{ source_id: SOURCE, start: p.start, end: p.end }] : [];
   });
 
 function scene(id: string, idx: number, heading: string, paras: number[]): Scene {

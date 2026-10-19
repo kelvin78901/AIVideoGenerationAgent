@@ -35,10 +35,13 @@ export async function api<S extends z.ZodType>(
   init: RequestInit = {},
 ): Promise<z.infer<S>> {
   let resp: Response;
+  // A FormData body sets its own multipart Content-Type (with the boundary).
+  const json: Record<string, string> =
+    init.body instanceof FormData ? {} : { "Content-Type": "application/json" };
   try {
     resp = await fetch(`${API_BASE}${path}`, {
       ...init,
-      headers: { "Content-Type": "application/json", ...CLIENT_HEADERS, ...init.headers },
+      headers: { ...json, ...CLIENT_HEADERS, ...init.headers },
     });
   } catch (err) {
     throw new ApiError(0, { code: "network", params: { message: String(err) } });
@@ -76,6 +79,9 @@ const send =
     });
 
 export const post = send("POST");
+/** A multipart POST (file uploads). */
+export const postForm = <S extends z.ZodType>(path: string, schema: S, form: FormData) =>
+  api(path, schema, { method: "POST", body: form });
 export const put = send("PUT");
 export const patch = send("PATCH");
 export const del = send("DELETE");

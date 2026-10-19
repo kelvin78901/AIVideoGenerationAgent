@@ -1,31 +1,18 @@
 /**
- * 《雨停之前》 opening (prototype Main.dc.html `renderVals()`): 5 paragraphs, 4 enrichment
- * suggestions (the first one adopted), and the extracted bible: 2 characters, 3 locations,
- * 4 props, 2 timeline points.
+ * 《雨停之前》: 4 enrichment suggestions on chapter 1 (prototype Main.dc.html `renderVals()`,
+ * the first one adopted) and the extracted bible: 2 characters, 3 locations, 4 props, 2 timeline
+ * points. The novel itself comes from the backend (`tests/fixtures/demo/雨停之前.txt`, seeded in
+ * Mock mode); its chapter 1 as the backend answers it is in `test/data/novel.json`, so the
+ * offsets of these anchors and of the demo script's source spans point at the backend's text.
  */
-import type { BibleEntity, Novel, Suggestion } from "@/api/schemas/novel";
+import { NovelSchema, type BibleEntity, type Suggestion } from "@/api/schemas/novel";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
+import data from "@/test/data/novel.json";
 
-const SOURCE = "demo-src";
+export const SOURCE = "demo-src";
 
-const texts = [
-  "那天雨下得很大。林晚加完班回到老小区，一层一层爬上六楼。",
-  "家门口靠着一把红色的长柄伞，伞柄上贴着一张便利贴。她认得那个字迹。三年了，周屿的字还是歪歪扭扭的，像他这个人一样不靠谱。",
-  "便利贴上只写了一句话：“楼下便利店，等你到十二点。”",
-  "她把伞靠在墙边，进了屋，又出来，又进去。",
-  "最后，她还是拿起了那把伞。",
-];
-
-let offset = 0;
-export const novel: Novel = {
-  series_id: DEMO_SERIES_ID,
-  source: { id: SOURCE, filename: "雨停之前.txt", sha256: "sha256:demo-novel" },
-  paragraphs: texts.map((text, idx) => {
-    const start = offset;
-    offset += text.length + 1;
-    return { idx, text, start, end: start + text.length };
-  }),
-};
+/** `GET /series/demo/novel` (chapter 1 《红伞》: paragraphs 01–05). */
+export const novel = NovelSchema.parse(data.chapters[0]);
 
 function suggestion(
   id: string,

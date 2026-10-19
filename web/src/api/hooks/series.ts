@@ -2,7 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import { z } from "zod";
 
-import { api, patch, put } from "@/api/client";
+import { api, patch, post, put } from "@/api/client";
 import {
   EpisodeProgressSchema,
   EpisodeSchema,
@@ -10,7 +10,7 @@ import {
   type EpisodePatch,
 } from "@/api/schemas/episodes";
 import { MetricsSummarySchema, type MetricsScope } from "@/api/schemas/metrics";
-import { SeriesSchema } from "@/api/schemas/series";
+import { SeriesSchema, type SeriesCreate } from "@/api/schemas/series";
 import {
   CompatSchema,
   OutputSpecSchema,
@@ -19,10 +19,12 @@ import {
   type SpecPatch,
 } from "@/api/schemas/spec";
 import { DEMO_EPISODE, DEMO_SERIES } from "@/app/paths";
+import { useUiStore } from "@/stores/ui";
 
 const enc = encodeURIComponent;
 
 export const seriesKeys = {
+  list: ["series-list"] as const,
   detail: (id: string) => ["series", id] as const,
   episodes: (id: string) => ["series", id, "episodes"] as const,
   spec: (id: string) => ["series", id, "spec"] as const,
@@ -31,6 +33,33 @@ export const seriesKeys = {
   progress: (episodeId: string) => ["episodes", episodeId, "progress"] as const,
   summary: (scope: MetricsScope, id: string) => ["metrics", "summary", scope, id] as const,
 };
+
+/** Newest first (the top bar's series menu). */
+export function useSeriesList() {
+  return useQuery({
+    queryKey: seriesKeys.list,
+    queryFn: () => api("/series", z.array(SeriesSchema)),
+  });
+}
+
+/** `POST /series`: a new series with the default output spec. */
+export function useCreateSeries() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SeriesCreate) => post("/series", SeriesSchema, body),
+    onSuccess: (created) => {
+      client.setQueryData(seriesKeys.detail(created.id), created);
+      void client.invalidateQueries({ queryKey: seriesKeys.list });
+    },
+  });
+}
+
+/** The route's series, else the one opened last, else the demo series. */
+export function useSeriesId(): string {
+  const params = useParams();
+  const last = useUiStore((s) => s.lastSeries);
+  return params.series ?? last ?? DEMO_SERIES;
+}
 
 export function useSeries(id: string) {
   return useQuery({
@@ -46,7 +75,7 @@ export function useEpisodes(seriesId: string) {
   });
 }
 
-/** The route's series and episode: `/s/:series/e/:ep` (falls back to the demo episode). */
+/** The route's series and episode: `/s/:series/e/:ep` (else `useSeriesId()`, episode 1). */
 export function useRouteEpisode(): {
   seriesId: string;
   episodeIdx: number;
@@ -54,7 +83,7 @@ export function useRouteEpisode(): {
   isLoading: boolean;
 } {
   const params = useParams();
-  const seriesId = params.series ?? DEMO_SERIES;
+  const seriesId = useSeriesId();
   const episodeIdx = Number(params.ep ?? DEMO_EPISODE);
   const episodes = useEpisodes(seriesId);
   return {

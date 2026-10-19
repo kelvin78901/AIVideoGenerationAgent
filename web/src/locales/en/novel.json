@@ -2,7 +2,33 @@
   "title": "Novel",
   "lead": "Paste or import your novel. AI only fills in what the camera cannot show and never changes the plot; you decide on every suggestion.",
   "import": "Import .txt / .docx",
-  "importHint": "Import is wired to the backend in M2; the demo uses the opening of “Before the Rain Stops”.",
+  "empty": {
+    "title": "No novel imported yet",
+    "lead": "Import a .txt or .docx. Chapters are found from headings like “Chapter 3”; a text without headings is split by length. Not a word of the text is changed.",
+    "action": "Import a novel"
+  },
+  "importDialog": {
+    "title": "Import a novel",
+    "lead": "Supports .txt (UTF-8 or GBK) and .docx, up to 30 MB. Check what was found before importing.",
+    "drop": "Drop the file here",
+    "pick": "Choose a file",
+    "reading": "Reading…",
+    "found": "Found {{chapters}} chapters · {{chars}} characters",
+    "foundParts": "No chapter headings; split by length into {{chapters}} parts · {{chars}} characters",
+    "encoding": {
+      "utf-8": "UTF-8",
+      "utf-16": "UTF-16",
+      "gb18030": "GBK / GB18030",
+      "docx": "Word document"
+    },
+    "more": "{{count}} more chapters",
+    "replace": "This replaces the current text ({{filename}}): the old one stays in the history, and the bible, suggestions, episodes and scripts all become out of date.",
+    "rights": "I own the adaptation rights to this novel, or have permission",
+    "submit": "Import",
+    "cancel": "Cancel",
+    "done": "Imported {{filename}}: {{chapters}} chapters · {{chars}} characters",
+    "unchanged": "Same text as the current one; nothing changed"
+  },
   "gate": "Confirm the text, write the script",
   "what": {
     "enrich": "Suggestions · {{count}}",
@@ -20,6 +46,14 @@
     "diffHint": "Highlighted text marked “+” is an adopted addition.",
     "addedMark": "+",
     "added": "Adopted addition: "
+  },
+  "chapter": {
+    "label": "Chapter",
+    "untitled": "Front matter",
+    "part": "Part {{n}}",
+    "option": "{{title}} · {{chars}} characters",
+    "book": "{{chapters}} chapters · {{chars}} characters in all",
+    "chars": "{{chars}} characters"
   },
   "suggestions": {
     "title": "Suggestions",

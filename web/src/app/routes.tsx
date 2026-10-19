@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router";
 
+import { useSeriesList } from "@/api/hooks/series";
 import { useMachineProfile } from "@/api/hooks/setup";
 import { AppShell, type ShellStatus } from "@/app/AppShell";
 import { DEMO_EPISODE, DEMO_SERIES, paths } from "@/app/paths";
@@ -10,6 +11,7 @@ import DashboardPage from "@/pages/Dashboard";
 import GeneratePage from "@/pages/Generate";
 import LegacyPage from "@/pages/Legacy";
 import ModelsPage from "@/pages/Models";
+import NoSeriesPage from "@/pages/NoSeries";
 import NotFoundPage from "@/pages/NotFound";
 import NovelPage from "@/pages/Novel";
 import PostPage from "@/pages/Post";
@@ -18,21 +20,24 @@ import SetupPage from "@/pages/Setup";
 import SpecPage from "@/pages/Spec";
 import StoryboardPage from "@/pages/Storyboard";
 import SyncPage from "@/pages/Sync";
+import { useUiStore } from "@/stores/ui";
 
 /**
- * `/` opens the first-run page until a scan has finished (SPEC 16.1), otherwise the demo episode.
- * Deep links never jump; if the profile cannot be read, the workbench opens anyway.
+ * `/` opens the first-run page until a scan has finished (SPEC 16.1), otherwise the series
+ * opened last (else the newest), or a page to start one when there is none. Deep links never
+ * jump; if the profile or the list cannot be read, the workbench opens anyway.
  */
 function HomeRedirect() {
   const profile = useMachineProfile();
+  const list = useSeriesList();
+  const last = useUiStore((s) => s.lastSeries);
   if (profile.isPending) return null;
-  const firstRun = profile.data?.scanned_at === null;
-  return (
-    <Navigate
-      to={firstRun ? paths.setup() : paths.step(DEMO_SERIES, DEMO_EPISODE, "novel")}
-      replace
-    />
-  );
+  if (profile.data?.scanned_at === null) return <Navigate to={paths.setup()} replace />;
+  if (list.isPending) return null;
+  const ids = list.data?.map((s) => s.id) ?? [];
+  if (list.isSuccess && !ids.length) return <NoSeriesPage />;
+  const series = last && ids.includes(last) ? last : (ids[0] ?? last ?? DEMO_SERIES);
+  return <Navigate to={paths.step(series, DEMO_EPISODE, "novel")} replace />;
 }
 
 export function AppRoutes({ status }: { status?: ShellStatus }) {

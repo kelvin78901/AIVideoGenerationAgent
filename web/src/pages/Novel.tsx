@@ -1,5 +1,5 @@
 /** 01 小说 · 导入与补全 (prototype Main.dc.html). */
-import { Upload } from "lucide-react";
+import { BookOpen, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 
@@ -8,6 +8,7 @@ import { useBible, useNovel, useSuggestions } from "@/api/hooks/novel";
 import { useProducts } from "@/api/hooks/products";
 import { useRouteEpisode } from "@/api/hooks/series";
 import { paths } from "@/app/paths";
+import { EmptyState } from "@/components/EmptyState";
 import { GateButton } from "@/components/GateButton";
 import { Inspector } from "@/components/Inspector";
 import { PageHeader } from "@/components/PageHeader";
@@ -15,11 +16,12 @@ import { QueryState, Skeleton } from "@/components/QueryState";
 import { RunBar } from "@/components/RunBar";
 import { StepLayout } from "@/components/StepLayout";
 import { Button } from "@/components/ui/button";
-import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { useInspectorStore } from "@/stores/inspector";
 import { BiblePanel } from "@/pages/novel/BiblePanel";
+import { ImportDialog } from "@/pages/novel/ImportDialog";
 import { SourceText, type NovelView } from "@/pages/novel/SourceText";
 import { SuggestionList } from "@/pages/novel/SuggestionList";
+import { chapterOf } from "@/pages/novel/text";
 
 const COMPONENTS = ["enrich", "extract"] as const;
 
@@ -27,7 +29,8 @@ export default function NovelPage() {
   const { t } = useTranslation("novel");
   const { seriesId, episodeIdx, episode } = useRouteEpisode();
   const products = useProducts({ owner: `series:${seriesId}` });
-  const novel = useNovel(seriesId);
+  const [chapter, setChapter] = useState(0);
+  const novel = useNovel(seriesId, chapter);
   const suggestions = useSuggestions(seriesId);
   const bible = useBible(seriesId);
   const selected = useInspectorStore((s) => s.component) ?? COMPONENTS[0];
@@ -36,8 +39,15 @@ export default function NovelPage() {
   const enrichModels = useComponentModels("enrich");
   const [view, setView] = useState<NovelView>("diff");
   const [focus, setFocus] = useState<number | null>(0);
+  const [importing, setImporting] = useState(false);
 
   useEffect(() => useInspectorStore.getState().reset(), []);
+  // A suggestion in another chapter switches chapters first; scroll once it is on screen.
+  const shown = novel.data?.paragraphs.some((p) => p.idx === focus);
+  useEffect(() => {
+    if (focus != null && shown)
+      document.getElementById(`novel-para-${focus}`)?.scrollIntoView?.({ block: "nearest" });
+  }, [focus, shown]);
 
   const productOf = (component: string) => products.data?.find((p) => p.component_id === component);
   const product = productOf(selected);
@@ -54,8 +64,11 @@ export default function NovelPage() {
 
   const focusPara = (idx: number) => {
     setFocus(idx);
-    document.getElementById(`novel-para-${idx}`)?.scrollIntoView?.({ block: "nearest" });
+    const target = chapterOf(novel.data?.chapters ?? [], idx);
+    if (target && target.idx !== chapter) setChapter(target.idx);
   };
+  const source = novel.data?.source;
+  const empty = novel.data != null && source == null;
 
   return (
     <StepLayout
@@ -69,17 +82,10 @@ export default function NovelPage() {
         lead={t("lead")}
         actions={
           <>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <span tabIndex={0}>
-                  <Button variant="outline" size="lg" disabled>
-                    <Upload aria-hidden />
-                    {t("import")}
-                  </Button>
-                </span>
-              </TooltipTrigger>
-              <TooltipContent>{t("importHint")}</TooltipContent>
-            </Tooltip>
+            <Button variant="outline" size="lg" onClick={() => setImporting(true)}>
+              <Upload aria-hidden />
+              {t("import")}
+            </Button>
             <GateButton
               gate="novel"
               episodeId={episode?.id}
@@ -90,49 +96,78 @@ export default function NovelPage() {
         }
       />
 
-      {product ? (
-        <RunBar
-          product={product}
-          what={what}
-          models={models}
-          onEditPrompt={() => show("prompt", selected)}
-          onOpenHistory={() => show("history", selected)}
+      {empty ? (
+        <EmptyState
+          icon={BookOpen}
+          title={t("empty.title")}
+          description={t("empty.lead")}
+          className="py-14"
+          action={
+            <Button size="lg" onClick={() => setImporting(true)}>
+              <Upload aria-hidden />
+              {t("empty.action")}
+            </Button>
+          }
         />
       ) : (
-        <QueryState query={products} skeleton={<Skeleton className="h-14 w-full" />}>
-          {() => null}
-        </QueryState>
+        <>
+          {product ? (
+            <RunBar
+              product={product}
+              what={what}
+              models={models}
+              onEditPrompt={() => show("prompt", selected)}
+              onOpenHistory={() => show("history", selected)}
+            />
+          ) : (
+            <QueryState query={products} skeleton={<Skeleton className="h-14 w-full" />}>
+              {() => null}
+            </QueryState>
+          )}
+
+          <div className="grid items-start gap-4 xl:grid-cols-2">
+            <QueryState query={novel} skeleton={<Skeleton className="h-96 w-full" />}>
+              {(n) => (
+                <SourceText
+                  novel={n}
+                  suggestions={suggestions.data ?? []}
+                  view={view}
+                  onViewChange={setView}
+                  onChapterChange={setChapter}
+                  focus={focus}
+                />
+              )}
+            </QueryState>
+            <QueryState query={suggestions} skeleton={<Skeleton className="h-96 w-full" />}>
+              {(list) => (
+                <SuggestionList
+                  seriesId={seriesId}
+                  suggestions={list}
+                  models={enrichModels}
+                  onFocus={focusPara}
+                />
+              )}
+            </QueryState>
+          </div>
+
+          <QueryState query={bible} skeleton={<Skeleton className="h-32 w-full" />}>
+            {(entities) => (
+              <BiblePanel entities={entities} assetsPath={paths.step(seriesId, ep, "assets")} />
+            )}
+          </QueryState>
+        </>
       )}
 
-      <div className="grid items-start gap-4 xl:grid-cols-2">
-        <QueryState query={novel} skeleton={<Skeleton className="h-96 w-full" />}>
-          {(n) => (
-            <SourceText
-              novel={n}
-              suggestions={suggestions.data ?? []}
-              view={view}
-              onViewChange={setView}
-              focus={focus}
-            />
-          )}
-        </QueryState>
-        <QueryState query={suggestions} skeleton={<Skeleton className="h-96 w-full" />}>
-          {(list) => (
-            <SuggestionList
-              seriesId={seriesId}
-              suggestions={list}
-              models={enrichModels}
-              onFocus={focusPara}
-            />
-          )}
-        </QueryState>
-      </div>
-
-      <QueryState query={bible} skeleton={<Skeleton className="h-32 w-full" />}>
-        {(entities) => (
-          <BiblePanel entities={entities} assetsPath={paths.step(seriesId, ep, "assets")} />
-        )}
-      </QueryState>
+      <ImportDialog
+        seriesId={seriesId}
+        current={source ?? null}
+        open={importing}
+        onOpenChange={setImporting}
+        onImported={() => {
+          setChapter(0);
+          setFocus(0);
+        }}
+      />
     </StepLayout>
   );
 }
