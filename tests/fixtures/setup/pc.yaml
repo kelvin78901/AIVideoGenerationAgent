@@ -9,6 +9,7 @@ host: { os: windows, os_name: Windows 11, bits: 64, arch: amd64, ram_gb: 63.7, h
 gpu: { name: NVIDIA RTX 5090, vram_gb: 31.8, backend: cuda, cuda_driver: "13.0" }
 default_dir: 'D:\DramaStudio'
 disks: { "C:": 182.4, "D:": 1228.8 }   # free GB
+download_bps: 22000000   # the scan's short download (bytes/s); the sample installs report 25 MB/s
 
 commands:
   "uv python find 3.12": 'C:\Users\kelvin\AppData\Roaming\uv\python\cpython-3.12.9-windows-x86_64-none\python.exe'

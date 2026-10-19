@@ -251,15 +251,44 @@ class RealRunner:
 
     def base(self, env: InstallEnv, site: str) -> str:
         """Where to fetch ``site`` (hf / pypi / github) from, by the user's mirror choice."""
-        official = str(self.mirrors.get("official", {}).get(site, ""))
-        cn = str(self.mirrors.get("cn", {}).get(site) or "")
-        if not cn or TODO in cn or env.mirror == "official":
-            return official
-        if env.mirror == "cn":
-            return cn
-        # Automatic: the scan timed the official sites; a slow or unreachable one goes to cn.
-        latency = env.facts.get("hf", {}).get("latency_ms", {}).get(site)
-        return cn if latency is None or latency > 1500 else official
+        return mirror_base(self.mirrors, env.mirror, env.facts, site)
+
+
+def mirror_base(
+    mirrors: dict[str, dict[str, Any]],
+    mirror: str,
+    facts: dict[str, dict[str, Any]],
+    site: str,
+) -> str:
+    official = str(mirrors.get("official", {}).get(site, ""))
+    cn = str(mirrors.get("cn", {}).get(site) or "")
+    if not cn or TODO in cn or mirror == "official":
+        return official
+    if mirror == "cn":
+        return cn
+    # Automatic: the scan timed the official sites; a slow or unreachable one goes to cn.
+    latency = facts.get("hf", {}).get("latency_ms", {}).get(site)
+    return cn if latency is None or latency > 1500 else official
+
+
+def speed_test_url(
+    items: list[Item], mirrors: dict[str, dict[str, Any]], facts: dict[str, dict[str, Any]]
+) -> str | None:
+    """A weight file the install would fetch (its first 16 MB time the line during a scan), from
+    the site the automatic mirror choice would use."""
+    for item in items:
+        for step in item.install:
+            extra = step.model_extra or {}
+            repo = extra.get("hf_repo")
+            if step.type != "download" or not isinstance(repo, str) or TODO in repo:
+                continue
+            files = step.download_files()
+            if not files or TODO in files[0].path:
+                continue
+            revision = str(extra.get("revision") or "main")
+            hf = mirror_base(mirrors, "auto", facts, "hf").rstrip("/")
+            return f"{hf}/{repo}/resolve/{revision}/{files[0].path}"
+    return None
 
 
 class _StepRun:

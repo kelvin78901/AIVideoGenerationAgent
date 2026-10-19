@@ -21,9 +21,23 @@ from drama_series_agent.setup.manifest import OS, TODO, Item, Message, topo_orde
 
 INSTALL_JOB = "setup.install"
 LARGE_DOWNLOAD_GB = 10.0  # SPEC 12.2-5
-# The demo's pace (mocks/events.ts:demoTiming.setupTickMs) and its failing item.
+# The demo's pace (mocks/events.ts:demoTiming.setupTickMs), its failing item and the download
+# speed it shows.
 FAKE_TICK_MS = 120.0
 FAKE_FAILING_ITEM = "sage"
+FAKE_BPS = 25e6
+# Rough time of each step that is not a download, for the estimates before and during an
+# install (seconds): a node pack's shallow clone, a pip install of a few packages, a package
+# manager. Downloads are timed by the measured speed instead.
+STEP_SECONDS: dict[str, float] = {
+    "uv_venv": 10,
+    "uv_pip": 60,
+    "git_clone": 20,
+    "pkg": 60,
+    "script": 30,
+    "copy": 5,
+    "download": 0,
+}
 
 LogLevel = Literal["info", "ok", "warn"]
 LogFn = Callable[[LogLevel, str, dict[str, Any]], Awaitable[None]]
@@ -93,8 +107,19 @@ def fake_tick_s() -> float:
     return max(ms, 0.0) / 1000
 
 
+def size_bytes(item: Item) -> int | None:
+    """What the item downloads (the manifest's ``size_gb``)."""
+    return round(item.size_gb * 1e9) if item.size_gb else None
+
+
+def work_s(item: Item) -> float:
+    """The item's rough time apart from its downloads (``STEP_SECONDS``)."""
+    return float(sum(STEP_SECONDS.get(s.type, 30) for s in item.install))
+
+
 class FakeRunner:
-    """Installs nothing. Downloads move 10 % a step, the rest 34 %, like the demo."""
+    """Installs nothing. Downloads move 10 % a step, the rest 34 %, like the demo; downloads
+    report bytes at ``FAKE_BPS`` and a moment of checking at the end."""
 
     def __init__(self, failing: str | None = FAKE_FAILING_ITEM) -> None:
         self.failing = failing
@@ -102,6 +127,7 @@ class FakeRunner:
     async def install(
         self, item: Item, env: InstallEnv, log: LogFn, progress: ProgressFn
     ) -> Installed:
+        total = size_bytes(item) if any(s.type == "download" for s in item.install) else None
         step = 10.0 if item.group == "w" else 34.0
         pct = 0.0
         while True:
@@ -113,8 +139,15 @@ class FakeRunner:
                 await progress(60)
                 raise InstallError("no_wheel")
             if pct >= 100:
-                return Installed()
-            await progress(pct)
+                if total is None:
+                    return Installed()
+                await progress(99, Transfer(done=total, total=total, speed=None, verifying=True))
+                return Installed(bps=FAKE_BPS)
+            if total is None:
+                await progress(pct)
+            else:
+                done = round(total * pct / 100)
+                await progress(pct, Transfer(done=done, total=total, speed=FAKE_BPS))
 
 
 def install_order(items: list[Item], selected: list[str]) -> list[str]:

@@ -107,6 +107,7 @@ class Probe(Protocol):
     async def default_dir(self) -> str: ...
     async def run(self, cmd: str) -> CommandResult | None: ...
     async def http_get(self, url: str, timeout_s: float = 3.0) -> HttpResult | None: ...
+    async def download_speed(self, url: str) -> float | None: ...
     async def exists(self, path: str) -> bool: ...
     async def read_text(self, path: str) -> str | None: ...
     async def list_dir(self, path: str) -> list[DirEntry] | None: ...
@@ -337,6 +338,15 @@ class RealProbe:
             body = resp.text[:4096]
         return HttpResult(status=resp.status_code, ms=ms, body=body)
 
+    async def download_speed(self, url: str) -> float | None:
+        """Bytes/s for the first 16 MB of ``url``, kept in memory (nothing is written)."""
+        from drama_series_agent.setup.download import TIMEOUT, measure_speed
+
+        async with httpx.AsyncClient(
+            timeout=TIMEOUT, follow_redirects=True, transport=self._transport
+        ) as client:
+            return await measure_speed(client, url)
+
     async def exists(self, path: str) -> bool:
         return await asyncio.to_thread(_exists, path)
 
@@ -501,6 +511,10 @@ class FakeProbe:
         if res is None or res.get("ms", 0) > timeout_s * 1000:
             return None
         return HttpResult(status=res.get("status", 200), ms=res.get("ms", 1), body=res.get("body"))
+
+    async def download_speed(self, url: str) -> float | None:
+        bps = self.data.get("download_bps")
+        return float(bps) if bps else None
 
     async def exists(self, path: str) -> bool:
         p = _norm(path)

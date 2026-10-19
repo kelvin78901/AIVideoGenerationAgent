@@ -140,6 +140,7 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
     done = _wait(client, "done")
     states = _states(done)
     assert Counter(states.values()) == {"done": 10, "failed": 1}
+    assert done["download_bps"] == 25e6  # what the weights' downloads measured
     sage = next(x for x in done["items"] if x["id"] == "sage")
     assert sage["install"] == {
         "state": "failed",

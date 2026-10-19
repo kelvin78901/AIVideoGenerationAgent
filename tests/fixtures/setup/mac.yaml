@@ -5,6 +5,7 @@ host: { os: macos, os_name: macOS, bits: 64, arch: arm64, ram_gb: 48, home: /Use
 gpu: { name: Apple M4 Pro, vram_gb: 48, backend: mps }
 default_dir: ~/DramaStudio
 disks: { "/": 600 }   # free GB
+download_bps: 12000000   # the scan's short download (bytes/s)
 
 commands:
   "uv python find 3.12": /Users/demo/.local/share/uv/python/cpython-3.12.9-macos-aarch64-none/bin/python3.12

@@ -10,6 +10,7 @@ from pydantic import BaseModel, Field
 
 from drama_series_agent.setup.comfy import ComfyEnvInfo, ComfyScan
 from drama_series_agent.setup.detectors import Detection
+from drama_series_agent.setup.installer import size_bytes, work_s
 from drama_series_agent.setup.manifest import OS, Group, Item, Localized, Message, Status
 from drama_series_agent.setup.probe import GpuInfo, HostInfo
 
@@ -55,6 +56,9 @@ class SetupItem(BaseModel):
     # Installing it changes the user's own ComfyUI (SPEC 6.4.1): not ticked by default, listed
     # for approval, and a ComfyUI-Manager snapshot is taken first.
     touches_comfy: bool = False
+    # For the estimates: what it downloads (bytes) and its rough time apart from that (s).
+    size_bytes: int | None = None
+    work_s: float = 0
     install: ItemInstall | None = None
 
 
@@ -100,6 +104,9 @@ class ProfileData(BaseModel):
     # The ComfyUI the last finished scan found (SPEC 6.4.1): where it is, its model files and
     # the hash of its environment in ``comfy_env``. Kept while a rescan runs.
     comfy: ComfyScan | None = None
+    # Download speed on this machine (bytes/s): the last finished item's downloads, else a short
+    # download during a scan. Kept across scans; times the downloads in the estimates.
+    download_bps: float | None = None
     # Bumped by every scan / reset; a job whose token is stale stops writing.
     run: str | None = None
     job_id: str | None = None
@@ -117,6 +124,7 @@ class MachineProfile(BaseModel):
     recommendation: Recommendation | None
     # True with Mock's sample machines: the page then shows the 示例机器 switch.
     simulated: bool
+    download_bps: float | None
 
 
 class ComfyEnvOut(ComfyEnvInfo):
@@ -178,6 +186,8 @@ def checking(item: Item) -> SetupItem:
         fix=None,
         required=item.required,
         installable=False,
+        size_bytes=size_bytes(item),
+        work_s=work_s(item),
     )
 
 
@@ -192,4 +202,6 @@ def item_of(item: Item, d: Detection, *, touches_comfy: bool = False) -> SetupIt
         required=item.required,
         installable=d.installable,
         touches_comfy=touches_comfy,
+        size_bytes=size_bytes(item),
+        work_s=work_s(item),
     )

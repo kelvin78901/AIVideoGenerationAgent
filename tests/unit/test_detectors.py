@@ -544,6 +544,26 @@ async def test_real_probe_http_unreachable() -> None:
     assert await probe.http_get("http://127.0.0.1:1/") is None
 
 
+async def test_real_probe_download_speed() -> None:
+    """A short download, kept in memory: the first 16 MB (here the server has 2 MB)."""
+    asked: list[str] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        asked.append(request.headers.get("range", ""))
+        return httpx.Response(206, content=b"x" * (2 << 20))
+
+    probe = RealProbe(transport=httpx.MockTransport(handler))
+    bps = await probe.download_speed("https://huggingface.co/o/r/resolve/main/w.safetensors")
+    assert bps is not None and bps > 0
+    assert asked == [f"bytes=0-{(16 << 20) - 1}"]
+
+    def down(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("refused", request=request)
+
+    probe = RealProbe(transport=httpx.MockTransport(down))
+    assert await probe.download_speed("https://huggingface.co/x") is None
+
+
 async def test_real_probe_secrets(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("DRAMA_TEST_PROBE_KEY", raising=False)
     probe = RealProbe()

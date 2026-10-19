@@ -5,11 +5,15 @@ from typing import Any
 import pytest
 
 from drama_series_agent.setup.installer import (
+    FAKE_BPS,
     FakeRunner,
     InstallEnv,
     InstallError,
+    Transfer,
     confirm_reasons,
     install_order,
+    size_bytes,
+    work_s,
 )
 from drama_series_agent.setup.manifest import Item, Manifest, Message, Step, load_manifest
 
@@ -22,11 +26,17 @@ def _no_ticks(monkeypatch: pytest.MonkeyPatch) -> None:
 ENV = InstallEnv(os="windows", mirror="auto", models="D:/M", envs="C:/e", comfy="D:/ComfyUI")
 
 
+transfers: list[Transfer] = []
+
+
 async def _run(runner: FakeRunner, item: Item) -> tuple[list[float], Exception | None]:
     seen: list[float] = []
+    transfers.clear()
 
-    async def progress(pct: float) -> None:
+    async def progress(pct: float, transfer: Transfer | None = None) -> None:
         seen.append(pct)
+        if transfer is not None:
+            transfers.append(transfer)
 
     async def log(level: str, code: str, params: dict[str, Any]) -> None:
         return None
@@ -45,11 +55,23 @@ def _items(os: str = "windows") -> dict[str, Item]:
 async def test_fake_runner_pace() -> None:
     items = _items()
     assert await _run(FakeRunner(), items["ffmpeg"]) == ([34, 68], None)
-    assert (await _run(FakeRunner(), items["w_h3"]))[0] == [10, 20, 30, 40, 50, 60, 70, 80, 90]
+    assert (await _run(FakeRunner(), items["w_h3"]))[0] == [10, 20, 30, 40, 50, 60, 70, 80, 90, 99]
+    # Downloads show bytes at the demo's speed, and a moment of checking at the end.
+    total = 49_300_000_000
+    assert transfers[0] == Transfer(done=total // 10, total=total, speed=FAKE_BPS)
+    assert transfers[-1] == Transfer(done=total, total=total, speed=None, verifying=True)
     seen, err = await _run(FakeRunner(), items["sage"])
     assert seen == [34, 60]
     assert isinstance(err, InstallError) and err.message() == Message(code="no_wheel")
     assert (await _run(FakeRunner(failing=None), items["sage"]))[1] is None
+
+
+def test_what_each_item_costs() -> None:
+    """For the estimates: download size from the manifest, the other steps by rule of thumb."""
+    items = _items()
+    assert (size_bytes(items["w_h3"]), work_s(items["w_h3"])) == (49_300_000_000, 0)
+    assert (size_bytes(items["node_vhs"]), work_s(items["node_vhs"])) == (None, 80)  # clone, pip
+    assert (size_bytes(items["ffmpeg"]), work_s(items["ffmpeg"])) == (None, 60)
 
 
 def test_install_order_puts_dependencies_first() -> None:

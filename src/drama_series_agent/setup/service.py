@@ -97,7 +97,7 @@ from drama_series_agent.setup.snapshots import (
     Snapshots,
     prepare_restore,
 )
-from drama_series_agent.setup.steps import RealRunner
+from drama_series_agent.setup.steps import RealRunner, speed_test_url
 
 SCAN_JOB = "setup.scan"
 MANAGER = "comfy_manager"  # the manifest item that takes the snapshots
@@ -492,6 +492,7 @@ class SetupService:
         theirs = inst is not None and (inst.root is None or not same_path(inst.root, ours))
         step = fake_step_s() if probe.simulated else 0.0
         counts: Counter[str] = Counter()
+        seen: dict[str, dict[str, Any]] = {}
         for i, x in enumerate(items):
             if step:
                 await asyncio.sleep(step)
@@ -501,6 +502,7 @@ class SetupService:
             counts[det.status] += 1
             public = item_of(x, det, touches_comfy=theirs and x.touches_comfy)
             facts = {**det.facts, **({"version": det.version} if det.version else {})}
+            seen[x.id] = facts
 
             def put(
                 d: ProfileData,
@@ -519,12 +521,18 @@ class SetupService:
         rec = manifest.recommendation(
             cuda=scan.has_cuda, vram_gb=scan.gpu.vram_gb if scan.gpu else None
         )
+        # No measured speed yet (no install here so far): time a short download.
+        bps: float | None = None
+        if data.download_bps is None and (url := speed_test_url(items, manifest.mirrors, seen)):
+            bps = await probe.download_speed(url)
 
         def finish(d: ProfileData) -> None:
             d.phase = "scanned"
             d.recommendation = Recommendation(preset=rec.preset, reason=rec.reason) if rec else None
             d.found = [x.id for x in d.items if x.status in FOUND_STATUSES]
             d.comfy = comfy
+            if bps is not None and d.download_bps is None:
+                d.download_bps = round(bps)
 
         if not await self._write(pid, run, finish, scanned_at=utcnow()):
             return superseded
@@ -827,6 +835,8 @@ class SetupService:
                 await self._record(pid, item_id, record)
                 if data.found is not None and item_id not in data.found:
                     data.found.append(item_id)
+                if record.bps:
+                    data.download_bps = round(record.bps)
             await self._save(pid, data)
             if log is not None:
                 await self._log(log[0], log[1], **log[2])
@@ -1026,4 +1036,5 @@ class SetupService:
             default_dir=data.default_dir,
             recommendation=data.recommendation,
             simulated=row.id == PROFILE_DEMO,
+            download_bps=data.download_bps,
         )

@@ -200,7 +200,7 @@ async def measure_speed(
     client: httpx.AsyncClient, url: str, *, nbytes: int = 16 << 20, timeout_s: float = 15.0
 ) -> float | None:
     """Bytes per second for the first ``nbytes`` of ``url`` (kept in memory); None if it fails."""
-    start = time.monotonic()
+    start = time.perf_counter()
     got = 0
     try:
         async with asyncio.timeout(timeout_s):
@@ -211,14 +211,14 @@ async def measure_speed(
                 first: float | None = None
                 async for chunk in resp.aiter_bytes(CHUNK):
                     if first is None:
-                        first = time.monotonic()  # leave out the redirect and the first byte
+                        first = time.perf_counter()  # leave out the redirect and the first byte
                         start = first
                     got += len(chunk)
                     if got >= nbytes:
                         break
     except (httpx.HTTPError, TimeoutError):
         pass
-    elapsed = time.monotonic() - start
+    elapsed = time.perf_counter() - start
     return got / elapsed if got >= (1 << 20) and elapsed > 0 else None
 
 

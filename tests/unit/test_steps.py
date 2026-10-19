@@ -17,7 +17,12 @@ from drama_series_agent.setup.installer import InstallEnv, InstallError, Transfe
 from drama_series_agent.setup.manifest import OS, Detect, Item, Step, load_manifest
 from drama_series_agent.setup.pathutil import join
 from drama_series_agent.setup.snapshots import SnapshotFailure
-from drama_series_agent.setup.steps import WINGET_ALREADY_INSTALLED, RealRunner, _python_in
+from drama_series_agent.setup.steps import (
+    WINGET_ALREADY_INSTALLED,
+    RealRunner,
+    _python_in,
+    speed_test_url,
+)
 
 MIRRORS = load_manifest().mirrors
 KNOWN = {"uv", "git", "winget", "brew", "sudo"}
@@ -525,6 +530,20 @@ async def test_mirror_choice(tmp_path: Path, mirror: str, hf_ms: int | None, hos
     env = _env(tmp_path, mirror=mirror, facts=facts)
     await _install(_dl(), env, transport=httpx.MockTransport(server))
     assert server.requests[0].url.host == host
+
+
+@pytest.mark.parametrize(("hf_ms", "host"), [(300, "huggingface.co"), (2600, "hf-mirror.com")])
+def test_speed_test_url(hf_ms: int, host: str) -> None:
+    """The scan times the first weight file the install would fetch, from the site it would use."""
+    items = load_manifest().for_platform("windows")
+    url = speed_test_url(items, MIRRORS, {"hf": {"latency_ms": {"hf": hf_ms}}})
+    assert url is not None
+    assert url.startswith(f"https://{host}/Comfy-Org/MiniMax-H3/resolve/")
+    assert url.endswith("/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors")
+    assert (
+        speed_test_url([_item({"type": "uv_pip", "env": "x", "packages": ["a"]})], MIRRORS, {})
+        is None
+    )
 
 
 # --------------------------------------------------------------------------- word list

@@ -24,6 +24,7 @@ MACHINE = "/api/v1/dev/setup/machine"
 ITEM_KEYS = {
     "id", "group", "name", "status", "found", "fix", "required", "installable", "install",
     "touches_comfy",  # step 5c; the front end adds it in step 7
+    "size_bytes", "work_s",  # step 8c
 }  # fmt: skip
 
 
@@ -79,6 +80,7 @@ def test_profile_before_the_first_scan(client: TestClient) -> None:
         "default_dir": "D:\\DramaStudio",
         "recommendation": None,
         "simulated": True,
+        "download_bps": None,
     }
 
 
@@ -108,8 +110,12 @@ def test_scan_the_pc(client: TestClient) -> None:
         "required": True,
         "installable": True,
         "touches_comfy": True,  # it goes into D:\ComfyUI's Python
+        "size_bytes": None,
+        "work_s": 60,
         "install": None,
     }
+    # No install here yet: the scan timed a short download.
+    assert p["download_bps"] == 22e6
 
 
 def test_scan_events(client: TestClient) -> None:
@@ -144,6 +150,7 @@ def test_switch_to_the_mac(client: TestClient) -> None:
     assert len(p["items"]) == 29
     assert _counts(p) == {"ok": 6, "warn": 3, "missing": 4, "optional": 8, "skip": 8}
     assert p["recommendation"] == {"preset": "balanced", "reason": "no_cuda"}
+    assert p["download_bps"] == 12e6
     assert client.post(MACHINE, json={"machine": "amiga"}).status_code == 422
 
 
