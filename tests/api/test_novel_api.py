@@ -269,3 +269,126 @@ def test_import_errors(client: TestClient, name: str, data: bytes, status: int, 
     assert (resp.status_code, _code(resp)) == (status, code)
     missing = _upload(client, "nope", DEMO, rights_confirmed="true")
     assert (missing.status_code, _code(missing)) == (404, "series_not_found")
+
+
+# ---------------------------------------------------------------------------- 逐段编辑
+
+
+def _chapter(client: TestClient, idx: int, series: str = "demo") -> dict[str, Any]:
+    data: dict[str, Any] = client.get(f"{V1}/series/{series}/novel", params={"chapter": idx}).json()
+    return data
+
+
+def _edit(client: TestClient, idx: int, title: str | None, paragraphs: list[str]) -> Any:
+    body = {"title": title, "paragraphs": paragraphs}
+    return client.put(f"{V1}/series/demo/novel/chapters/{idx}", json=body)
+
+
+def _texts(chapter: dict[str, Any]) -> list[str]:
+    return [p["text"] for p in chapter["paragraphs"]]
+
+
+def test_editing_a_paragraph_makes_an_adopted_edit_version(client: TestClient) -> None:
+    before = _chapter(client, 0)
+    third = _texts(_chapter(client, 2))
+    paras = _texts(before)
+    paras[1] = paras[1].replace("歪歪扭扭", "七扭八歪")
+    resp = _edit(client, 0, before["chapters"][0]["title"], paras)
+    assert resp.status_code == 200, resp.text
+    after = resp.json()
+    assert after["source"]["id"] != before["source"]["id"]
+    assert after["source"]["encoding"] == "edited"
+    assert after["source"]["filename"] == before["source"]["filename"]
+    assert _texts(after) == paras and [p["idx"] for p in after["paragraphs"]] == [0, 1, 2, 3, 4]
+    # Offsets point into the new text.
+    text = after["paragraphs"][1]
+    assert text["end"] - text["start"] == len(text["text"])
+    product = _novel_product(client, "demo")
+    edit = product["versions"][-1]
+    assert (edit["origin"], edit["parent_version_id"]) == ("edit", "demo-novel-v1")
+    assert product["adopted_version_id"] == product["current_version_id"] == edit["id"]
+    # The other chapters read as before; the same number of characters (歪歪扭扭 → 七扭八歪).
+    assert _texts(_chapter(client, 2)) == third
+    assert after["source"]["chars"] == before["source"]["chars"]
+    # Same text again: nothing new.
+    assert _edit(client, 0, before["chapters"][0]["title"], paras).status_code == 200
+    assert len(_novel_product(client, "demo")["versions"]) == 2
+
+
+def test_inserting_and_deleting_paragraphs_renumbers(client: TestClient) -> None:
+    first = _texts(_chapter(client, 0))
+    second = _chapter(client, 1)
+    assert second["paragraphs"][0]["idx"] == 5
+    # One more paragraph in chapter 1 (a line break also starts one), one fewer later.
+    resp = _edit(
+        client, 0, TITLES[0], [*first[:2], "她站了很久。\n  \n楼下有人按喇叭。", *first[2:]]
+    )
+    assert resp.status_code == 200, resp.text
+    assert len(resp.json()["paragraphs"]) == 7
+    moved = _chapter(client, 1)
+    assert moved["paragraphs"][0]["idx"] == 7 and _texts(moved) == _texts(second)
+    resp = _edit(client, 1, "第二章 十二点 · 改", _texts(moved)[1:])
+    assert resp.status_code == 200, resp.text
+    edited = resp.json()
+    assert edited["chapters"][1]["title"] == "第二章 十二点 · 改"
+    assert edited["chapters"][1]["para_count"] == second["chapters"][1]["para_count"] - 1
+    assert _chapter(client, 2)["paragraphs"][0]["idx"] == edited["chapters"][2]["para_start"]
+    assert len(_novel_product(client, "demo")["versions"]) == 3
+
+
+def test_editing_chapter_3_leaves_what_reads_chapter_1_fresh(client: TestClient) -> None:
+    state = _state(client)
+    novel = _novel_product(client, "demo")
+    chapter0 = novel["versions"][0]["payload"]["chapters"][0]
+
+    async def downstream() -> str:
+        p = await state.products.ensure(
+            series_id="demo", owner_type="series", owner_id="demo", slot="test_chapter",
+            component_id="test",
+        )  # fmt: skip
+        dep = DependencyDraft(novel["id"], slice_hash(chapter0), "chapter:0")
+        await state.products.append(
+            p.id, VersionDraft(payload={}, dependencies=[dep]), origin="run"
+        )
+        return p.id
+
+    pid = client.portal.call(downstream)  # type: ignore[union-attr]
+    last = _texts(_chapter(client, 2))
+    assert _edit(client, 2, TITLES[2], [*last[:-1], "红伞底下，雨停了。"]).status_code == 200
+    statuses = {
+        p["component_id"]: p["status"]
+        for p in client.get(f"{V1}/products", params={"owner": "series:demo"}).json()
+    }
+    assert statuses["test"] == "adopted"  # only read chapter 1
+    assert statuses["extract"] == statuses["enrich"] == "stale"  # read the whole book
+    assert client.get(f"{V1}/products/{pid}").json()["status"] == "adopted"
+
+
+def test_suggestions_follow_an_edit(client: TestClient) -> None:
+    """Paragraph numbers of the suggestions follow the text; an edited paragraph keeps its."""
+    paras = _texts(_chapter(client, 0))
+    paras[0] = paras[0].replace("加完班", "加完夜班")  # s1, s2 are on this paragraph
+    resp = _edit(client, 0, TITLES[0], ["开头多了一段。", *paras])
+    assert resp.status_code == 200, resp.text
+    source = resp.json()["source"]["id"]
+    data = client.get(f"{V1}/series/demo/suggestions").json()
+    assert data["source_id"] == source
+    assert [(s["id"], s["para_idx"]) for s in data["suggestions"]] == [
+        ("s1", 1), ("s2", 1), ("s3", 2), ("s4", 4),
+    ]  # fmt: skip
+    assert all(s["anchor_span"]["source_id"] == source for s in data["suggestions"])
+
+
+def test_edit_errors(client: TestClient) -> None:
+    resp = _edit(client, 0, TITLES[0], ["  ", "\n"])
+    assert (resp.status_code, _code(resp)) == (422, "chapter_empty")
+    assert _code(_edit(client, 9, None, ["一段"])) == "chapter_not_found"
+    resp = client.put(f"{V1}/series/nope/novel/chapters/0", json={"paragraphs": ["一段"]})
+    assert _code(resp) == "series_not_found"
+    sid = _new_series(client)
+    resp = client.put(f"{V1}/series/{sid}/novel/chapters/0", json={"paragraphs": ["一段"]})
+    assert (resp.status_code, _code(resp)) == (404, "novel_not_found")
+    pid = _novel_product(client, "demo")["id"]
+    assert client.post(f"{V1}/products/{pid}/lock").status_code == 200
+    resp = _edit(client, 0, TITLES[0], ["一段"])
+    assert (resp.status_code, _code(resp)) == (409, "product_locked")

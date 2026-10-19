@@ -38,7 +38,8 @@ export const NovelChapterSchema = z.object({
 });
 export type NovelChapter = z.infer<typeof NovelChapterSchema>;
 
-export const NovelEncodingSchema = z.enum(["utf-8", "utf-16", "gb18030", "docx"]);
+/** `edited`: the text after 逐段编辑 (M2 step 7b). */
+export const NovelEncodingSchema = z.enum(["utf-8", "utf-16", "gb18030", "docx", "edited"]);
 export const NovelSplitSchema = z.enum(["heading", "length"]);
 
 export const NovelSourceSchema = z.object({

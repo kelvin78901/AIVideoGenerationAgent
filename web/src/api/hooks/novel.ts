@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, patch, post, postForm } from "@/api/client";
+import { api, patch, post, postForm, put } from "@/api/client";
 import {
   BibleEntitySchema,
   BibleSchema,
@@ -55,6 +55,25 @@ export function useImportNovel(seriesId: string) {
     onSuccess: (result) => {
       if (result.dry_run) return;
       void client.invalidateQueries({ queryKey: novelKeys.novelAll(seriesId) });
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
+  });
+}
+
+/**
+ * 逐段编辑: one chapter's title and paragraphs as the user left them (M2 step 7b). A new novel
+ * version: every chapter, the suggestions (paragraph numbers follow the text), the bible and
+ * the products are refetched.
+ */
+export function useEditChapter(seriesId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ idx, ...body }: { idx: number; title: string | null; paragraphs: string[] }) =>
+      put(`/series/${enc(seriesId)}/novel/chapters/${idx}`, NovelSchema, body),
+    onSuccess: () => {
+      void client.invalidateQueries({ queryKey: novelKeys.novelAll(seriesId) });
+      void client.invalidateQueries({ queryKey: novelKeys.suggestions(seriesId) });
+      void client.invalidateQueries({ queryKey: novelKeys.bible(seriesId) });
       void client.invalidateQueries({ queryKey: productKeys.all });
     },
   });

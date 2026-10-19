@@ -19,7 +19,8 @@
       "utf-8": "UTF-8",
       "utf-16": "UTF-16",
       "gb18030": "GBK / GB18030",
-      "docx": "Word 文档"
+      "docx": "Word 文档",
+      "edited": "手动编辑过"
     },
     "more": "还有 {{count}} 章",
     "replace": "会替换现在的原文（{{filename}}）：旧文本留在历史里，设定、补全、分集、剧本都会变成「待更新」。",
@@ -46,6 +47,22 @@
     "diffHint": "蓝底带「＋」的是已采纳的补写。",
     "addedMark": "＋",
     "added": "已采纳的补写："
+  },
+  "edit": {
+    "para": "改第 {{n}} 段",
+    "insert": "在第 {{n}} 段后插入一段",
+    "delete": "删除第 {{n}} 段",
+    "label": "第 {{n}} 段的文字",
+    "newLabel": "第 {{n}} 段后的新段落",
+    "deleteConfirm": "删除第 {{n}} 段？",
+    "deleteYes": "删除",
+    "save": "保存",
+    "cancel": "取消",
+    "title": "改标题",
+    "titleLabel": "章节标题",
+    "saved": "已保存，出了一个新的小说版本（旧文本留在历史里）。",
+    "downstream": "保存后小说补全、设定提取会变成待更新。",
+    "switchHint": "要改原文，切到「原文」。"
   },
   "chapter": {
     "label": "章节",

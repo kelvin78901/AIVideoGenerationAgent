@@ -53,7 +53,7 @@ from drama_series_agent.pipeline.drafts import VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.suggestions import ops
-from drama_series_agent.suggestions.service import decisions_of
+from drama_series_agent.suggestions.service import anchored, decisions_of
 
 REWRITE_MAX_TOKENS = 400
 DEMO_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "demo" / "enrich.json"
@@ -320,12 +320,8 @@ class EnrichComponent(ChunkedComponent):
             return [], {}
         base = list(adopted.payload_json.get("suggestions") or [])
         decisions = await decisions_of(session, (s["id"] for s in base))
-        old_id = str(adopted.payload_json.get("source_id"))
-        if old_id != book.source.id:
-            old = await self.novel.book_of(session, old_id)
-            paragraphs = {i: book.paragraph(i) for i in book.offsets}
-            base = ops.reanchor(base, old.paragraph if old else None, paragraphs, book.span)
-        return base, decisions
+        source_id = adopted.payload_json.get("source_id")
+        return await anchored(session, self.novel, base, source_id, book), decisions
 
 
 # --------------------------------------------------------------------------- Mock mode

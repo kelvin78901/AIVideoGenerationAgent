@@ -278,11 +278,11 @@ describe("NovelPage", () => {
       expect(entry(/^旧小票/)).toHaveAttribute("aria-pressed", "true");
       // Paragraphs 34, 41 and 42 are in chapter 3: the page switches there.
       expect(await screen.findByRole("option", { name: /第三章/, selected: true })).toBeTruthy();
-      await waitFor(() => expect(document.querySelectorAll("li[data-marked]")).toHaveLength(3));
+      await waitFor(() => expect(document.querySelectorAll("[data-marked]")).toHaveLength(3));
       expect(document.getElementById("novel-para-33")).toHaveAttribute("data-marked");
       expect(screen.getByText("「旧小票」在原文里出现 3 段，已在左边标出。")).toBeInTheDocument();
       await user.click(entry(/^旧小票/));
-      expect(document.querySelectorAll("li[data-marked]")).toHaveLength(0);
+      expect(document.querySelectorAll("[data-marked]")).toHaveLength(0);
     });
 
     it("edits and freezes an entry", async () => {
@@ -371,6 +371,83 @@ describe("NovelPage", () => {
       expect(
         await screen.findByText("还没有提取设定。点上面的「重跑」让 AI 从原文里找一遍。"),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe("逐段编辑", () => {
+    async function original() {
+      const user = userEvent.setup();
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      await user.click(screen.getByRole("radio", { name: "原文" }));
+      return user;
+    }
+
+    it("edits a paragraph and saves the whole chapter", async () => {
+      const user = await original();
+      await user.click(screen.getByRole("button", { name: "改第 2 段" }));
+      const box = screen.getByLabelText("第 2 段的文字");
+      expect(screen.getByText("保存后小说补全、设定提取会变成待更新。")).toBeInTheDocument();
+      await user.clear(box);
+      expect(screen.getByRole("button", { name: "保存" })).toBeDisabled();
+      await user.type(box, "家门口靠着一把红伞。");
+      await user.click(screen.getByRole("button", { name: "保存" }));
+      expect(await screen.findByText("家门口靠着一把红伞。")).toBeInTheDocument();
+      expect(screen.queryByLabelText("第 2 段的文字")).toBeNull();
+      const [sent] = fakeNovel.edits;
+      expect(sent?.idx).toBe(0);
+      expect(sent?.title).toBe("第一章 红伞");
+      expect(sent?.paragraphs).toHaveLength(5);
+      expect(sent?.paragraphs[1]).toBe("家门口靠着一把红伞。");
+      expect(
+        await screen.findByText("已保存，出了一个新的小说版本（旧文本留在历史里）。"),
+      ).toBeInTheDocument();
+    });
+
+    it("inserts and deletes paragraphs", async () => {
+      const user = await original();
+      await user.click(screen.getByRole("button", { name: "在第 1 段后插入一段" }));
+      await user.type(screen.getByLabelText("第 1 段后的新段落"), "楼道里很黑。");
+      await user.click(screen.getByRole("button", { name: "保存" }));
+      expect(await screen.findByText(/· 6 段$/)).toBeInTheDocument();
+      expect(screen.getByText("楼道里很黑。").closest("li")).toHaveTextContent(/^02/);
+      await user.click(screen.getByRole("button", { name: "删除第 6 段" }));
+      const confirm = screen.getByRole("alert");
+      expect(confirm).toHaveTextContent("删除第 6 段？");
+      await user.click(within(confirm).getByRole("button", { name: "删除" }));
+      expect(await screen.findByText(/· 5 段$/)).toBeInTheDocument();
+      expect(screen.queryByText(/^最后，她还是拿起了那把伞/)).toBeNull();
+      expect(fakeNovel.edits.map((e) => e.paragraphs.length)).toEqual([6, 5]);
+    });
+
+    it("retitles the chapter", async () => {
+      const user = await original();
+      await user.click(screen.getByRole("button", { name: "改标题" }));
+      const title = screen.getByLabelText("章节标题");
+      await user.clear(title);
+      await user.type(title, "第一章 一把红伞");
+      await user.click(screen.getByRole("button", { name: "保存" }));
+      expect(await screen.findByRole("option", { name: /^第一章 一把红伞/ })).toBeInTheDocument();
+      expect(fakeNovel.edits[0]).toMatchObject({ idx: 0, title: "第一章 一把红伞" });
+    });
+
+    it("only in 原文: the other views show additions, not the author's text", async () => {
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      expect(screen.getByText("要改原文，切到「原文」。")).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "改第 1 段" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "改标题" })).toBeNull();
+    });
+
+    it("not while the novel is locked", async () => {
+      const novel = fakeBible.products.find((p) => p.slot === "novel");
+      if (novel) novel.locked_hash = "sha256:x";
+      const user = userEvent.setup();
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      await user.click(screen.getByRole("radio", { name: "原文" }));
+      expect(screen.queryByRole("button", { name: "改第 1 段" })).toBeNull();
+      expect(screen.queryByText("要改原文，切到「原文」。")).toBeNull();
     });
   });
 });

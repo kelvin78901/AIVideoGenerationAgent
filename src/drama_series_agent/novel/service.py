@@ -3,9 +3,11 @@
 The novel is a product like the others (slot ``novel``, component ``import``): every import
 appends a version (origin ``import``) and adopts it. So a re-import replaces the text while the
 old one stays in the history, and whatever was built from it turns stale through the slice
-hashes (``chapter:<idx>``, ``chapters``, see ``novel_slicer``) without storing a flag. A
-novel locked by its gate refuses the import (409 ``product_locked``); the impact preview for
-``novel_replace`` comes with the gates.
+hashes (``chapter:<idx>``, ``chapters``, see ``novel_slicer``) without storing a flag. Editing a
+chapter by paragraphs (``edit_chapter``, M2 step 7b) works the same way: a new source with
+encoding ``edited`` and an adopted ``edit`` version; the chapters it did not touch keep their
+hashes. A novel locked by its gate refuses both (409 ``product_locked``); the impact preview
+for ``novel_replace`` / ``novel_edit`` comes with the gates.
 
 Components read the adopted text through ``book()``: chapters and paragraphs numbered across the
 book, which is how prompts cite the novel (``[P12]``) and how answers map back to offsets.
@@ -15,11 +17,11 @@ from __future__ import annotations
 
 import asyncio
 from collections import OrderedDict
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import PurePath
-from typing import Any
+from typing import Any, cast
 
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -34,7 +36,15 @@ from drama_series_agent.core.models_db import (
     utcnow,
 )
 from drama_series_agent.core.storage import BlobStore
-from drama_series_agent.novel.parse import NovelParseError, ParsedNovel, parse_upload
+from drama_series_agent.novel.parse import (
+    NovelParseError,
+    ParsedNovel,
+    SplitBy,
+    clean_paragraphs,
+    clean_title,
+    compose,
+    parse_upload,
+)
 from drama_series_agent.novel.schema import (
     ChapterOut,
     NovelImportOut,
@@ -174,51 +184,11 @@ class NovelService:
                     unchanged=True,
                 )  # fmt: skip
             at = fixed.at if fixed else utcnow()
-            source = NovelSource(
-                series_id=series_id,
-                filename=name,
-                sha256=text_sha,
-                original_sha256=original_sha,
-                encoding=parsed.encoding,
-                split_by=parsed.split_by,
-                chars=parsed.chars,
-                rights_confirmed_at=at,
-                created_at=at,
+            source_id, chapter_ids = await self._add_source(
+                session, series_id, name, parsed, text_sha, original_sha, at, at, fixed
             )
-            if fixed:
-                source.id = fixed.source_id
-            session.add(source)
-            await session.flush()
-            rows = []
-            for c in parsed.chapters:
-                row = Chapter(
-                    source_id=source.id,
-                    idx=c.idx,
-                    title=c.title,
-                    start=c.start,
-                    end=c.end,
-                    para_start=c.para_start,
-                    paras_json=[[s, e] for s, e in c.paras],
-                )
-                if fixed:
-                    row.id = f"{fixed.source_id}-ch{c.idx + 1}"
-                session.add(row)
-                rows.append(row)
-            await session.commit()
-            source_id, chapter_ids = source.id, [r.id for r in rows]
-
-        text = parsed.text
-        payload = {
-            "source_id": source_id,
-            "filename": name,
-            "sha256": text_sha,
-            "chapters": [
-                {"idx": c.idx, "title": c.title, "hash": chapter_hash(text, c.title, c.paras)}
-                for c in parsed.chapters
-            ],
-        }
         draft = VersionDraft(
-            payload=payload,
+            payload=self._payload(source_id, name, text_sha, parsed),
             note=name,
             id=fixed.version_id if fixed else None,
             created_at=fixed.at if fixed else None,
@@ -227,6 +197,61 @@ class NovelService:
         if self.after_import is not None:
             await self.after_import(series_id)
         return import_out(parsed, name, dry_run=False, source_id=source_id, chapter_ids=chapter_ids)
+
+    # ------------------------------------------------------------------ edit
+
+    async def edit_chapter(
+        self, series_id: str, idx: int, title: str | None, paragraphs: Sequence[str]
+    ) -> NovelOut:
+        """逐段编辑: one chapter's title and paragraphs as the user left them (a line break
+        starts a new paragraph, empty ones are dropped) → a new source and an adopted ``edit``
+        version. Nothing changed → nothing is made. Returns the chapter as ``get`` shows it."""
+        paras = clean_paragraphs(paragraphs)
+        if not paras:
+            raise PipelineError(422, "chapter_empty", idx=idx)
+        async with self._db.session() as session:
+            await self._require_series(series_id, session)
+            product = await self._product(session, series_id)
+            source = await self._adopted_source(session, product) if product else None
+            if product is None or source is None:
+                raise PipelineError(404, "novel_not_found", id=series_id)
+            if product.locked_hash:
+                raise PipelineError(409, "product_locked", id=product.id)
+            chapters = await self._chapters(session, source.id)
+        if idx >= len(chapters):
+            raise PipelineError(404, "chapter_not_found", idx=idx)
+        text = await self.text(source.sha256)
+        before = [(c.title, [text[s:e] for s, e in c.paras_json]) for c in chapters]
+        after = list(before)
+        after[idx] = (clean_title(title), paras)
+        if after == before:
+            return await self.get(series_id, idx)
+        edited = compose(after, cast(SplitBy, source.split_by))
+        data = edited.text.encode("utf-8")
+        text_sha = await asyncio.to_thread(self._store.put_bytes, data)
+        async with self._db.session() as session:
+            source_id, _ = await self._add_source(
+                session,
+                series_id,
+                source.filename,
+                edited,
+                text_sha,
+                text_sha,
+                source.rights_confirmed_at,
+                utcnow(),
+            )
+        draft = VersionDraft(
+            payload=self._payload(source_id, source.filename, text_sha, edited),
+            note=source.filename,
+        )
+        await self._products.append(
+            product.id,
+            draft,
+            origin="edit",
+            parent_version_id=product.adopted_version_id,
+            adopt=True,
+        )
+        return await self.get(series_id, idx)
 
     # ------------------------------------------------------------------ read
 
@@ -308,6 +333,68 @@ class NovelService:
         return text
 
     # ------------------------------------------------------------------ internals
+
+    @staticmethod
+    async def _add_source(
+        session: AsyncSession,
+        series_id: str,
+        filename: str,
+        parsed: ParsedNovel,
+        text_sha: str,
+        original_sha: str,
+        rights_at: datetime,
+        at: datetime,
+        fixed: FixedIds | None = None,
+    ) -> tuple[str, list[str]]:
+        """A source row and its chapter rows (committed): (source id, chapter ids)."""
+        source = NovelSource(
+            series_id=series_id,
+            filename=filename,
+            sha256=text_sha,
+            original_sha256=original_sha,
+            encoding=parsed.encoding,
+            split_by=parsed.split_by,
+            chars=parsed.chars,
+            rights_confirmed_at=rights_at,
+            created_at=at,
+        )
+        if fixed:
+            source.id = fixed.source_id
+        session.add(source)
+        await session.flush()
+        rows = []
+        for c in parsed.chapters:
+            row = Chapter(
+                source_id=source.id,
+                idx=c.idx,
+                title=c.title,
+                start=c.start,
+                end=c.end,
+                para_start=c.para_start,
+                paras_json=[[s, e] for s, e in c.paras],
+            )
+            if fixed:
+                row.id = f"{fixed.source_id}-ch{c.idx + 1}"
+            session.add(row)
+            rows.append(row)
+        await session.commit()
+        return source.id, [r.id for r in rows]
+
+    @staticmethod
+    def _payload(
+        source_id: str, filename: str, text_sha: str, parsed: ParsedNovel
+    ) -> dict[str, Any]:
+        """A novel version: the source and each chapter's hash (what the slices read)."""
+        text = parsed.text
+        return {
+            "source_id": source_id,
+            "filename": filename,
+            "sha256": text_sha,
+            "chapters": [
+                {"idx": c.idx, "title": c.title, "hash": chapter_hash(text, c.title, c.paras)}
+                for c in parsed.chapters
+            ],
+        }
 
     @staticmethod
     async def _parse(filename: str, data: bytes) -> ParsedNovel:

@@ -19,7 +19,8 @@
       "utf-8": "UTF-8",
       "utf-16": "UTF-16",
       "gb18030": "GBK / GB18030",
-      "docx": "Word document"
+      "docx": "Word document",
+      "edited": "Edited by hand"
     },
     "more": "{{count}} more chapters",
     "replace": "This replaces the current text ({{filename}}): the old one stays in the history, and the bible, suggestions, episodes and scripts all become out of date.",
@@ -46,6 +47,22 @@
     "diffHint": "Highlighted text marked “+” is an adopted addition.",
     "addedMark": "+",
     "added": "Adopted addition: "
+  },
+  "edit": {
+    "para": "Edit paragraph {{n}}",
+    "insert": "Insert a paragraph after {{n}}",
+    "delete": "Delete paragraph {{n}}",
+    "label": "Text of paragraph {{n}}",
+    "newLabel": "New paragraph after {{n}}",
+    "deleteConfirm": "Delete paragraph {{n}}?",
+    "deleteYes": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "title": "Edit title",
+    "titleLabel": "Chapter title",
+    "saved": "Saved as a new version of the novel (the old text stays in the history).",
+    "downstream": "After saving, enrichment and extraction become out of date.",
+    "switchHint": "Switch to Original to edit the text."
   },
   "chapter": {
     "label": "Chapter",

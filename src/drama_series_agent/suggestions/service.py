@@ -27,7 +27,7 @@ from drama_series_agent.core.models_db import (
     SuggestionDecision,
     utcnow,
 )
-from drama_series_agent.novel.service import NovelService
+from drama_series_agent.novel.service import Book, NovelService
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.suggestions import ops
@@ -100,10 +100,27 @@ async def suggestions_slicer(
     return payload if name == "" else payload.get(name)
 
 
+async def anchored(
+    session: AsyncSession,
+    novel: NovelService,
+    items: list[dict[str, Any]],
+    source_id: str | None,
+    book: Book | None,
+) -> list[dict[str, Any]]:
+    """Suggestions (or additions) made on ``source_id``, moved onto ``book`` when its text is a
+    newer one (an edit or a re-import, ``ops.reanchor``)."""
+    if book is None or source_id == book.source.id:
+        return items
+    old = await novel.book_of(session, str(source_id))
+    paragraphs = {i: book.paragraph(i) for i in book.offsets}
+    return ops.reanchor(items, old.paragraph if old else None, paragraphs, book.span)
+
+
 async def adopted_additions(
-    session: AsyncSession, series_id: str
+    session: AsyncSession, series_id: str, novel: NovelService, book: Book
 ) -> tuple[str, list[dict[str, Any]]] | None:
-    """(product id, accepted additions) of the series' adopted 小说补全; None before one."""
+    """(product id, accepted additions on ``book``'s text) of the series' adopted 小说补全;
+    None before one."""
     p = await enrich_product(session, series_id)
     if p is None or p.adopted_version_id is None:
         return None
@@ -111,7 +128,8 @@ async def adopted_additions(
     if v is None:
         return None
     payload = v.payload_json
-    return p.id, ops.additions(payload, await _payload_decisions(session, payload))
+    accepted = ops.additions(payload, await _payload_decisions(session, payload))
+    return p.id, await anchored(session, novel, accepted, payload.get("source_id"), book)
 
 
 async def materialize(session: AsyncSession, product: Product, version: ProductVersion) -> None:
@@ -170,9 +188,17 @@ class SuggestionService:
             if p is None or v is None:
                 return suggestions_out(series_id, None, {}, product_id=p.id if p else None)
             decisions = await _payload_decisions(session, v.payload_json)
+            # Shown on the novel as it is now (paragraph numbers follow an edit).
+            items = list(v.payload_json.get("suggestions") or [])
+            book = await self._novel.book(session, series_id)
+            source_id = v.payload_json.get("source_id")
+            items = await anchored(session, self._novel, items, source_id, book)
+            payload = {**v.payload_json, "suggestions": items}
+            if book is not None:
+                payload["source_id"] = book.source.id
         return suggestions_out(
             series_id,
-            v.payload_json,
+            payload,
             decisions,
             product_id=p.id,
             version_id=v.id,

@@ -14,6 +14,7 @@ import codecs
 import io
 import re
 import zipfile
+from collections.abc import Sequence
 from dataclasses import dataclass
 from pathlib import PurePath
 from typing import Literal
@@ -64,7 +65,7 @@ class ChapterDraft:
 @dataclass(frozen=True)
 class ParsedNovel:
     text: str
-    encoding: str  # utf-8 / utf-16 / gb18030 / docx
+    encoding: str  # utf-8 / utf-16 / gb18030 / docx, or edited (``compose``)
     split_by: SplitBy
     chapters: tuple[ChapterDraft, ...]
 
@@ -206,3 +207,51 @@ def split_chapters(
         )
         para_start += len(paras)
     return split_by, tuple(chapters)
+
+
+def clean_paragraphs(texts: Sequence[str]) -> list[str]:
+    """What the user typed as a chapter's paragraphs: a line break starts a new paragraph,
+    surrounding whitespace goes, empty ones are dropped."""
+    return [line.strip() for text in texts for line in normalize(text).split("\n") if line.strip()]
+
+
+def clean_title(title: str | None) -> str | None:
+    if title is None:
+        return None
+    return heading_title(normalize(title).replace("\n", " ").strip()) or None
+
+
+def compose(chapters: Sequence[tuple[str | None, Sequence[str]]], split_by: SplitBy) -> ParsedNovel:
+    """An edited novel (M2 step 7b) as a normalized text: each chapter is its title line, a
+    blank line and one line per paragraph; chapters are separated by a blank line. Chapters
+    and paragraphs are taken as given (not parsed again), so a title that does not look like
+    a heading stays a title."""
+    text = ""
+    drafts: list[ChapterDraft] = []
+    para_start = 0
+    for title, paras in chapters:
+        if drafts:
+            text += "\n\n"
+        start = len(text)
+        if title:
+            text += f"{title}\n\n"
+        spans: list[tuple[int, int]] = []
+        for i, para in enumerate(paras):
+            if i:
+                text += "\n"
+            spans.append((len(text), len(text) + len(para)))
+            text += para
+        drafts.append(
+            ChapterDraft(
+                idx=len(drafts),
+                title=title,
+                start=start,
+                end=len(text),
+                para_start=para_start,
+                paras=tuple(spans),
+            )
+        )
+        para_start += len(paras)
+    return ParsedNovel(
+        text=text + "\n", encoding="edited", split_by=split_by, chapters=tuple(drafts)
+    )

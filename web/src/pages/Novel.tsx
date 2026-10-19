@@ -55,6 +55,9 @@ export default function NovelPage() {
 
   const productOf = (component: string) => products.data?.find((p) => p.component_id === component);
   const product = productOf(selected);
+  // The novel can be edited until its gate locks it; an edit turns what was built from it stale.
+  const novelProduct = products.data?.find((p) => p.slot === "novel");
+  const downstream = COMPONENTS.some((c) => productOf(c)?.adopted_version_id);
   const ep = String(episodeIdx);
   const count = (kind: string) => bible.data?.entities.filter((e) => e.kind === kind).length ?? 0;
   const what =
@@ -143,6 +146,7 @@ export default function NovelPage() {
             <QueryState query={novel} skeleton={<Skeleton className="h-96 w-full" />}>
               {(n) => (
                 <SourceText
+                  seriesId={seriesId}
                   novel={n}
                   suggestions={suggestions.data?.suggestions ?? []}
                   view={view}
@@ -150,6 +154,8 @@ export default function NovelPage() {
                   onChapterChange={setChapter}
                   focus={focus}
                   marked={entity?.paras}
+                  editable={novelProduct !== undefined && !novelProduct.locked_hash}
+                  downstream={downstream}
                 />
               )}
             </QueryState>

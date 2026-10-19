@@ -15,6 +15,9 @@ from drama_series_agent.novel.parse import (
     PART_TARGET_CHARS,
     NovelParseError,
     ParsedNovel,
+    clean_paragraphs,
+    clean_title,
+    compose,
     is_heading,
     parse_upload,
 )
@@ -164,3 +167,36 @@ def test_refusals(tmp_path: Path) -> None:
     with pytest.raises(NovelParseError) as exc:
         parse_upload("a.txt", b"x" * (MAX_UPLOAD_BYTES + 1))
     assert _code(exc) == "file_too_large"
+
+
+def _layout(parsed: ParsedNovel) -> list[tuple[str | None, list[str]]]:
+    return [(c.title, [parsed.text[a:b] for a, b in c.paras]) for c in parsed.chapters]
+
+
+def test_compose_reimports_to_the_same_chapters() -> None:
+    demo = parse_upload(DEMO.name, DEMO.read_bytes())
+    edited = compose(_layout(demo), demo.split_by)
+    assert edited.encoding == "edited" and edited.chars == demo.chars
+    assert _layout(parse_upload("x.txt", edited.text.encode("utf-8"))) == _layout(demo)
+    for c in edited.chapters:
+        assert [edited.text[a:b] for a, b in c.paras] == _layout(demo)[c.idx][1]
+        assert c.para_start == demo.chapters[c.idx].para_start
+
+
+def test_compose_keeps_any_title_and_untitled_parts() -> None:
+    edited = compose([(None, ["前言一段"]), ("红伞", ["一", "二"])], "heading")
+    assert [(c.title, c.para_start, len(c.paras)) for c in edited.chapters] == [
+        (None, 0, 1),
+        ("红伞", 1, 2),
+    ]
+    assert edited.text == "前言一段\n\n红伞\n\n一\n二\n"
+
+
+def test_cleaning_what_the_user_typed() -> None:
+    assert clean_paragraphs(["  第一段\u3000", "第二段\r\n\n第三段", "", " \n "]) == [
+        "第一段",
+        "第二段",
+        "第三段",
+    ]
+    assert clean_title("  第一章\u3000 红伞\n") == "第一章 红伞"
+    assert clean_title("   ") is None and clean_title(None) is None

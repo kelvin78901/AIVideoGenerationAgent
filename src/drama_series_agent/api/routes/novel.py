@@ -1,4 +1,5 @@
-"""``/series/{id}/novel``: import a .txt / .docx (SPEC 4.1) and read it chapter by chapter."""
+"""``/series/{id}/novel``: import a .txt / .docx (SPEC 4.1), read it chapter by chapter and
+edit a chapter by paragraphs (M2 step 7b)."""
 
 from __future__ import annotations
 
@@ -8,7 +9,7 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.novel.parse import MAX_UPLOAD_BYTES
-from drama_series_agent.novel.schema import NovelImportOut, NovelOut
+from drama_series_agent.novel.schema import ChapterEditIn, NovelImportOut, NovelOut
 
 router = APIRouter(tags=["novel"])
 
@@ -41,3 +42,10 @@ async def get_novel(
 ) -> NovelOut:
     """The novel in use and the paragraphs of one chapter (``chapter``, 0-based; the first)."""
     return await state.novel.get(series_id, chapter)
+
+
+@router.put("/series/{series_id}/novel/chapters/{idx}")
+async def edit_chapter(series_id: str, idx: int, body: ChapterEditIn, state: State) -> NovelOut:
+    """逐段编辑: the chapter's title and paragraphs as the user left them → a new source and an
+    adopted ``edit`` version (nothing when unchanged); returns that chapter."""
+    return await state.novel.edit_chapter(series_id, idx, body.title, body.paragraphs)

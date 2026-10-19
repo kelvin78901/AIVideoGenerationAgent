@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, Field
 
 from drama_series_agent.novel.parse import ChapterDraft, ParsedNovel
 
@@ -31,6 +31,16 @@ class SourceOut(BaseModel):
     chars: int
     rights_confirmed_at: datetime
     imported_at: datetime
+
+
+class ChapterEditIn(BaseModel):
+    """``PUT /series/{id}/novel/chapters/{idx}``: the chapter as the user left it."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    # None or empty: no title (text before the first heading, a part of a length split).
+    title: str | None = Field(default=None, max_length=200)
+    paragraphs: list[Annotated[str, Field(max_length=20000)]] = Field(max_length=5000)
 
 
 class ParagraphOut(BaseModel):

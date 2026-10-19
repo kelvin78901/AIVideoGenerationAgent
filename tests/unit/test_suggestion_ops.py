@@ -60,14 +60,18 @@ def test_reconcile_keeps_accepted_and_reuses_ids_for_the_same_text() -> None:
 
 
 def test_reanchor_follows_paragraph_text() -> None:
-    base = [_s("a", 1, "lighting", "灯"), _s("b", 3, "gap", "缺")]
-    old = {0: "第一段", 1: "第二段", 2: "第三段", 3: "第四段"}
-    # A paragraph inserted at the top; the fourth one rewritten.
-    new = {0: "新开头", 1: "第一段", 2: "第二段", 3: "第三段", 4: "第四段改了"}
+    base = [_s("a", 1, "lighting", "灯"), _s("b", 3, "gap", "缺"), _s("c", 0, "gap", "无")]
+    old = {0: "第一段", 1: "第二段", 2: "第三段", 3: "楼道的声控灯还是不亮。"}
+    # A paragraph inserted at the top and the last one edited a little: each suggestion follows
+    # its paragraph (the edited one by similarity).
+    new = {0: "新开头", 1: "第一段", 2: "第二段", 3: "第三段", 4: "楼道的声控灯一直不亮。"}
     out = ops.reanchor(base, old.__getitem__, new, lambda i: _span(i, "src2"))
     assert [(s["id"], s["para_idx"], s["anchor_span"]["source_id"]) for s in out] == [
-        ("a", 2, "src2"),
-    ]
+        ("a", 2, "src2"), ("b", 4, "src2"), ("c", 1, "src2"),
+    ]  # fmt: skip
+    # Nothing like it any more: dropped.
+    gone = {0: "完全不同的一段话", 1: "另一段", 2: "又一段", 3: "还有一段"}
+    assert ops.reanchor(base[1:2], old.__getitem__, gone, _span) == []
     assert ops.reanchor(base, None, new, _span) == []
 
 

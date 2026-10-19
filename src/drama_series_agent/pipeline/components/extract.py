@@ -207,13 +207,11 @@ class ExtractComponent(ChunkedComponent):
         inv = self.services.invalidation
         deps = [await inv.dependency(session, book.product_id, "chapters")]
         additions: dict[int, list[str]] = {}
-        enrich = await adopted_additions(session, product.series_id)
+        enrich = await adopted_additions(session, product.series_id, self.novel, book)
         if enrich is not None:
             enrich_id, accepted = enrich
             deps.append(await inv.dependency(session, enrich_id, ADOPTED_SLICE))
-            # Additions anchored in an older text wait until 小说补全 runs on this one.
-            here = [a for a in accepted if a["anchor_span"].get("source_id") == book.source.id]
-            additions = suggestion_ops.by_paragraph(here)
+            additions = suggestion_ops.by_paragraph(accepted)
         base = None
         if product.adopted_version_id:
             adopted = await session.get(ProductVersion, product.adopted_version_id)

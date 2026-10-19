@@ -28,6 +28,7 @@ from __future__ import annotations
 
 import uuid
 from collections.abc import Callable, Iterable, Mapping, Sequence
+from difflib import SequenceMatcher
 from typing import Any
 
 KINDS = (
@@ -35,6 +36,9 @@ KINDS = (
     "consistency", "gap",
 )  # fmt: skip
 STATUSES = ("pending", "accepted", "rejected", "rewritten")
+# An edited paragraph still counts as the same one when this similar (and this close by).
+SIMILAR = 0.6
+WINDOW = 20
 
 Decisions = Mapping[str, Mapping[str, Any]]
 SpanOf = Callable[[int], dict[str, Any] | None]
@@ -116,22 +120,36 @@ def reanchor(
     new_paragraphs: Mapping[int, str],
     span_of: SpanOf,
 ) -> list[dict[str, Any]]:
-    """The adopted version's suggestions moved onto a new text (the novel was edited or
-    replaced): each follows its paragraph's text to the nearest paragraph that still says the
-    same; one whose paragraph is gone is dropped."""
+    """Suggestions moved onto a new text (the novel was edited or replaced): each follows its
+    paragraph's text to the nearest paragraph that still says the same, else to the most
+    similar one nearby (the paragraph was edited); one whose paragraph is gone is dropped."""
     if old_paragraph is None:
         return []
     where: dict[str, list[int]] = {}
-    for idx, text in new_paragraphs.items():
-        where.setdefault(text, []).append(idx)
+    for i, para in new_paragraphs.items():
+        where.setdefault(para, []).append(i)
     out = []
     for s in base:
         old = int(s["para_idx"])
-        hits = where.get(old_paragraph(old), [])
-        if not hits:
-            continue
-        idx = min(hits, key=lambda i: abs(i - old))
-        span = span_of(idx)
-        if span is not None:
+        text = old_paragraph(old)
+        hits = where.get(text, [])
+        idx = min(hits, key=lambda i: abs(i - old)) if hits else _similar(text, old, new_paragraphs)
+        span = span_of(idx) if idx is not None else None
+        if idx is not None and span is not None:
             out.append({**s, "para_idx": idx, "anchor_span": span})
     return out
+
+
+def _similar(text: str, old: int, paragraphs: Mapping[int, str]) -> int | None:
+    best: tuple[float, int, int] | None = None
+    for idx in range(max(0, old - WINDOW), old + WINDOW + 1):
+        other = paragraphs.get(idx)
+        if other is None:
+            continue
+        m = SequenceMatcher(None, text, other, autojunk=False)
+        if m.real_quick_ratio() < SIMILAR or m.quick_ratio() < SIMILAR:
+            continue
+        score = (m.ratio(), -abs(idx - old), idx)
+        if best is None or score > best:
+            best = score
+    return best[2] if best is not None and best[0] >= SIMILAR else None
