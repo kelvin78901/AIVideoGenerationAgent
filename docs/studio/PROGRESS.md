@@ -29,7 +29,7 @@
 | 7b（设计稿） | 工作流库先做出来给 Kelvin 审：`schemas/workflows.ts`、`hooks/workflows.ts`、MSW `handlers/workflows.ts` + 示例 5 个（H3、SeedVR2 推荐；LatentSync 我的；Wan 绑定待确认；Flux Kontext 缺 2 节点包 1 模型）；`pages/models/{WorkflowLibrary,WorkflowDetail,ImportWorkflowDialog}.tsx`、`workflowStatus.ts`；`ConfirmInstall` 加 `snapshotNote`；词表 `workflows.json`、错误码 9 个；审阅图 `reports/ui/workflows/` | d7a45b0 | web test 183、lint、typecheck、format |
 | 7b | Kelvin 审过设计稿；Vitest `pages/models/WorkflowLibrary.test.tsx`（8 条：列表和筛选、推荐档只读、猜的绑定 → 确认 → 试跑 → 升档、装依赖走确认弹窗、从 ComfyUI 列表导入、拖入 JSON、降档、英文）；Models 测试只数组件表的行；冒烟加工作流库一条；重截 models 两张；DECISIONS 记 7b；勾计划 7b、ROADMAP 一项 | 8bd178f | web test 191、lint、typecheck、format；e2e 17 |
 | 8 | 清单补齐：ComfyUI 锁 v0.42.1、最低 0.35.0；H3 / Fun ControlNet 是 ComfyUI 自带节点（`detect.native_since`，不再是安装项）；Manager 改 `manager_requirements.txt` 装法；VHS、SeedVR2、FlashVSR 锁 commit；PyTorch cu130 源；国内 GitHub 走 gh-proxy；权重 `installable: false` + `weights_pending_p0`；改动清单显示 tag / 短 commit；`scripts/setup_scan_real.py`（只读，本机跑过）；测试不再触网；前端测试数据重新导出、Setup / 冒烟数字跟着改；DECISIONS 记第 8 步 | dd2fcce | pytest 296；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
-| 8b（1/2） | Kelvin 选了 Qwen-Image-Edit-2511 int8、ComfyUI 自带 SeedVR2 + 7B int8、IndexTTS-2.5；五项权重锁 HF revision、填大小和 sha256（共约 110 GB，H3 补两个加速 LoRA）；`node_seedvr2` 改成 ComfyUI 自带（0.28.0 起）；DramaStudio 节点包不可装；download 文件加 `folder:`，放进 ComfyUI 的默认模型目录（`is_default`，Desktop 的共享目录）；新检测 `downloads`；日志 `download`；`setup_scan_real.py` 打印权重目标路径（本机核对过）；前端测试数据重新导出、Setup / 冒烟 / API 测试数字跟着改；DECISIONS 记 8b | 本提交 | pytest 300；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
+| 8b（1/2） | Kelvin 选了 Qwen-Image-Edit-2511 int8、ComfyUI 自带 SeedVR2 + 7B int8、IndexTTS-2.5；五项权重锁 HF revision、填大小和 sha256（共约 110 GB，H3 补两个加速 LoRA）；`node_seedvr2` 改成 ComfyUI 自带（0.28.0 起）；DramaStudio 节点包不可装；download 文件加 `folder:`，放进 ComfyUI 的默认模型目录（`is_default`，Desktop 的共享目录）；新检测 `downloads`；日志 `download`；`setup_scan_real.py` 打印权重目标路径（本机核对过）；前端测试数据重新导出、Setup / 冒烟 / API 测试数字跟着改；DECISIONS 记 8b | e19f60f | pytest 300；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
 
 ## 下一步
 
@@ -73,7 +73,7 @@
 - **第 8b 步真装**（ComfyUI 会被改：装 VHS、FlashVSR、SageAttention 到它的 `.venv`，权重放共享模型目录；动手前自动存快照）：
   1. 关掉正在跑的 `start.ps1`（Mock），打开 ComfyUI Desktop（存快照要它在跑）。
   2. PowerShell：`$env:DRAMA_SETUP = "real"; powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1 -SkipInstall`（模型调用仍是 Mock）。
-  3. 「环境与安装」→ 开始检测 → 勾 VideoHelperSuite、FlashVSR、SageAttention 和 5 项权重（本地 LLM 服务不用勾）→ 看改动清单 → 确认 → 安装（约 110 GB，C 盘剩 301 GB）。失败的项不用管，记下提示就行（SageAttention 大概率没有 Python 3.13 的预编译包）。
+  3. 「环境与安装」→ 开始检测 → 勾 VideoHelperSuite、FlashVSR、SageAttention 和 4 项权重：H3、Qwen3-VL-32B 文本编码器、SeedVR2、IndexTTS-2.5（Qwen-Image-Edit 先不装，用到再装；本地 LLM 服务不用勾）→ 看改动清单 → 确认 → 安装（约 79 GB，C 盘剩 301 GB）。失败的项不用管，记下提示就行（SageAttention 大概率没有 Python 3.13 的预编译包）。
   4. 装完点「重新检测」，然后告诉我；之后可以去掉 `DRAMA_SETUP` 照常用 Mock 起。
 - （2026-10-18 已办：真实扫描输出 Kelvin 看过、和我这边一致；8b 的三个版本已选；`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图、第 7b 步设计稿 Kelvin 审核通过；按镜头选工作流 / 拼节点 beta 已定，见 DECISIONS 和 SPEC 6.4.8。）
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。

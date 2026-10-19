@@ -11,6 +11,7 @@
     - 改了第 8 步：不再装社区节点包 numz。`node_seedvr2` 和 H3 一样算「ComfyUI 自带」，不再是安装项。
   - 配音：IndexTTS-2.5（IndexTeam 2026-08 发布，比 2 快，多了语速控制），5.5 GB。
     - 运行环境等配音那个里程碑再装：index-tts 源码、Python 3.10–3.11 的 uv 环境、运行时自动下载的辅助模型。
+- **这次真装不装 Qwen-Image-Edit**（Kelvin 2026-10-18：不是必要的，用到再装）。清单里保留这一项和锁定的版本，以后在「环境与安装」勾上就能装；没装时关键帧按能力过滤走 API。
 - **H3 全套按官方模板补了两个加速 LoRA**：`video_minimax_h3_i2v` / `r2v` 默认引用，各 1.96 GB；Comfy-Org 仓库里的和 lightx2v 原仓库的 sha256 一致。
   - H3 合计 49.3 GB，文本编码器 15.7 GB，五项权重共约 110 GB。
 - **权重锁 revision**：每个 Hugging Face 仓库锁 commit，改动清单显示前 7 位。
