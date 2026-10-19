@@ -305,3 +305,110 @@ class ComfySnapshotRow(SQLModel, table=True):
     restore_state: str | None = None
     restore_diff_json: list[dict[str, Any]] | None = _json()  # what still differs
     restored_at: datetime | None = _ts()  # when a scan found ComfyUI back at this snapshot
+
+
+# --------------------------------------------------------------------------- M2: products
+
+
+class Product(SQLModel, table=True):
+    """A card with the four buttons (改提示词 / 重跑 / 不满意换一个 / 历史), SPEC 4.2.
+
+    Its versions are the source of truth; domain tables (bible, script lines …) mirror the
+    adopted version. ``status`` keeps the run state; locked / adopted / stale are worked out on
+    read (``pipeline/products.py:status_of``).
+    """
+
+    __tablename__ = "product"
+    __table_args__ = (UniqueConstraint("owner_type", "owner_id", "slot"),)
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    owner_type: str  # series / episode / scene / shot / asset / line
+    owner_id: str
+    slot: str  # bible / suggestions / episodes / script / …
+    component_id: str
+    current_version_id: str | None = None  # shown on screen
+    adopted_version_id: str | None = None  # used downstream
+    locked_hash: str | None = None  # content hash when a gate locked it
+    status: str = "empty"  # empty / queued / running / ready / failed
+    # The prompt the next run uses: {intent, compiled, compiled_overridden, model_key}.
+    prompt_json: dict[str, Any] | None = _json()
+    running_job_id: str | None = None
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class ProductVersion(SQLModel, table=True):
+    """One run or edit of a product. Append-only: never updated except ``rating`` / ``note``."""
+
+    __tablename__ = "product_version"
+    __table_args__ = (UniqueConstraint("product_id", "n"),)
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    product_id: str = Field(foreign_key="product.id", ondelete="CASCADE", index=True)
+    n: int  # 1-based, shown as v{n}
+    # run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest
+    origin: str
+    parent_version_id: str | None = None
+    payload_json: dict[str, Any] = _json(dict)
+    files_json: list[dict[str, Any]] = _json(list)  # role, path, sha256, mime, duration_s, w, h
+    content_hash: str
+    intent: str | None = None
+    compiled: str | None = None
+    compiled_overridden: bool = False
+    model_key: str | None = None
+    where: str | None = None  # local / api
+    seed: int | None = None
+    params_json: dict[str, Any] = _json(dict)
+    qa_json: dict[str, Any] | None = _json()
+    qa_pass: bool | None = None
+    fallback_reason: str | None = None  # error / timeout / qa_fail
+    stage: str | None = None  # hybrid mode: draft / final
+    rating: int | None = None
+    cost_usd: float = 0.0
+    job_id: str | None = None
+    note: str | None = None
+    # Local ComfyUI runs (SPEC 6.4.5).
+    workflow_id: str | None = None
+    workflow_sha256: str | None = None
+    comfy_env_hash: str | None = None
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class Dependency(SQLModel, table=True):
+    """What a version was built from: one row per upstream slice it read (SPEC 4.2).
+
+    ``slice`` names the part of the upstream product that went into the prompt (``""`` = all of
+    it, ``episode:<id>`` = one episode's beats …) and ``upstream_hash`` its hash at build time.
+    """
+
+    __tablename__ = "dependency"
+
+    id: int | None = Field(default=None, primary_key=True)
+    version_id: str = Field(foreign_key="product_version.id", ondelete="CASCADE", index=True)
+    product_id: str = Field(index=True)
+    upstream_product_id: str = Field(index=True)
+    slice: str = ""
+    upstream_hash: str
+
+
+class GateDecision(SQLModel, table=True):
+    """A gate confirmed or reopened (SPEC 4.2), with the hashes it locked."""
+
+    __tablename__ = "gate_decision"
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    gate: str  # novel / script / assets / storyboard / takes / export
+    scope_id: str  # series id (novel) or episode id
+    action: str  # confirm / reopen
+    product_hashes_json: dict[str, str] = _json(dict)  # product id → effective hash
+    decided_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

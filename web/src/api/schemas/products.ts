@@ -217,8 +217,20 @@ export type CompileResult = z.infer<typeof CompileResultSchema>;
 export const VersionPatchSchema = z.object({ rating: z.number().int().min(1).max(5).nullable() });
 export type VersionPatch = z.infer<typeof VersionPatchSchema>;
 
-/** Payload of the `version.created` event. */
+/**
+ * Payload of the `version.created` event: just enough to refetch. The version itself (its
+ * payload can be a whole script) is read with `GET /products/{id}`.
+ */
 export const VersionCreatedEventSchema = z.object({
   product_id: z.string(),
-  version: ProductVersionSchema,
+  version_id: z.string(),
+  n: z.number().int().positive(),
+  origin: VersionOriginSchema,
+});
+
+/** Payload of the `product.updated` event. */
+export const ProductUpdatedEventSchema = z.object({
+  product_id: z.string(),
+  series_id: z.string(),
+  status: ProductStatusSchema,
 });

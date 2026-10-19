@@ -20,6 +20,7 @@ from drama_series_agent.modelhub.adapters.base import ModelSpec
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
+from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.setup.service import SetupService
 
 
@@ -32,6 +33,7 @@ class StudioState:
     registry: Registry
     router: Router
     setup: SetupService
+    products: ProductService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -53,6 +55,7 @@ class StudioState:
             registry=registry,
             router=Router(db, bus, registry, store=store, capabilities=setup.capabilities),
             setup=setup,
+            products=ProductService(db, bus),
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:

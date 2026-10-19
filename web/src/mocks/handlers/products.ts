@@ -146,8 +146,15 @@ function finishRun(
     const ep = getDb().episodes.find((e) => e.id === p.owner_id);
     if (ep?.script_status === "none") ep.script_status = "draft";
   }
-  for (const version of created) emitDemoEvent("version.created", { product_id: p.id, version });
-  emitDemoEvent("product.updated", p);
+  for (const v of created) {
+    emitDemoEvent("version.created", {
+      product_id: p.id,
+      version_id: v.id,
+      n: v.n,
+      origin: v.origin,
+    });
+  }
+  emitDemoEvent("product.updated", { product_id: p.id, series_id: p.series_id, status: p.status });
   emitDemoEvent("toast", {
     level: "success",
     code: "version_created",

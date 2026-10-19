@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-19 · M2 第 1 步：产物和版本
+
+- **`dependency` 挂在版本上**：比 SPEC 4.2 多 `version_id` 和 `slice` 两列，一个版本读了上游哪几片就写几行（SPEC 只写了 `product_id`，但同一产物的不同版本依赖的上游不同）。`product_version` 现在就带上 6.4.5 的 `workflow_id`、`workflow_sha256`、`comfy_env_hash`（可空），M5 不用再迁移。
+- **产物的 `status` 只存运行状态**（empty / queued / running / ready / failed），locked / adopted 读的时候按 `locked_hash`、`adopted_version_id` 推出（`pipeline/products.py:status_of`）；stale 第 3 步现算。原因：同一事实不存两份。
+- **自动采纳只在第一次**：`append(adopt=None)` 只有还没采纳过时才采纳；用户手改出的版本 `adopt=True`。被闸门锁定的产物照样能出新版本，但不能采纳（409 `product_locked`）。
+- **事件只带 id**：`version.created` = `{product_id, version_id, n, origin}`，`product.updated` = `{product_id, series_id, status}`。原来的契约要带整个版本，剧本、设定的 payload 很大，每条都要存进 `event` 表；前端本来就只用这两个事件来刷新缓存，没有读内容。前端 zod 和 MSW 一起改。
+- **流水线的错误用 `PipelineError(status, code, **params)`**，app 里统一转成和 `ApiError` 一样的 `{detail: {code, params}}`；服务层不依赖 FastAPI，任务处理器里也能用。
+
 ## 2026-10-19 · M2 计划（Kelvin 已定）
 
 - **示例小说补写到 3 章**（约 3000 字）：第 1 章开头就是原型里的 5 段，第 2、3 章对应《十二点》《旧发圈》；另出一份 .docx 测导入。原因：原来只有 180 字，分不出 3 集，也演示不了拖节拍换集。Kelvin 过目后定稿。

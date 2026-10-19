@@ -20,7 +20,8 @@ M0_TABLES = {"job", "model_call", "config_override", "provider_account", "custom
 M1_TABLES = {
     "series", "output_spec", "machine_profile", "installed_item", "comfy_env", "comfy_snapshot"
 }  # fmt: skip
-ALL_TABLES = M0_TABLES | M1_TABLES
+M2_TABLES = {"product", "product_version", "dependency", "gate_decision"}
+ALL_TABLES = M0_TABLES | M1_TABLES | M2_TABLES
 
 
 def _tables(path: Path) -> set[str]:
@@ -33,6 +34,8 @@ def test_migrate_up_and_down(tmp_path: Path) -> None:
     db = tmp_path / "t.db"
     migrate(db)
     assert _tables(db) == ALL_TABLES
+    downgrade(db, "0006")
+    assert _tables(db) == M0_TABLES | M1_TABLES
     downgrade(db, "0001")
     assert _tables(db) == M0_TABLES
     downgrade(db, "base")
