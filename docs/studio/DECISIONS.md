@@ -13,7 +13,7 @@
 - **导航徽标「缺 N 项」**：必需项里检测结果是「缺少」或「需更新」、而且还没装好的（PC 示例 11、Mac 4）。扫描前、扫描中、全部就绪时都不显示。会改用户 ComfyUI 的必需项也算（缺就是缺，只是不自动勾）。
 - **`/` 的跳转**：profile 的 `scanned_at` 为空（从没扫描完过）才跳 `/setup`；profile 还没读到时先不渲染，读失败就照常进工作台，不把人卡在首次启动页。
 - **切换示例机器也清掉示例档案的快照**：和清掉已装记录一样，「重新开始」要干净；只影响 Mock 的示例档案。
-- **Playwright 起后端改用 `uv run python -m drama_series_agent.studio_cli dev`**：Kelvin 本机的应用控制策略拦 `.venv/Scripts/drama-studio.exe`（os error 4551），用模块方式效果一样，CI 也能跑。
+- **Playwright 和 `start.ps1` 起后端改用 `uv run python -m drama_series_agent.studio_cli dev`**：Kelvin 本机的应用控制策略拦 `.venv/Scripts/drama-studio.exe`（os error 4551），用模块方式效果一样，CI 也能跑。`start.sh`（Mac / Linux）不受影响，没改。
 
 ## 2026-10-18 · M1 改已装 ComfyUI 前先确认，快照和回滚（第 5c 步）
 

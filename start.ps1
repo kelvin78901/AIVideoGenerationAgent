@@ -1,4 +1,4 @@
-# Modified for AI Drama Studio: starts `uv run drama-studio dev` + `pnpm -C web dev` (no pip / npm).
+# Modified for AI Drama Studio: starts the backend (`drama-studio dev`) + `pnpm -C web dev` (no pip / npm).
 # AI Drama Studio launcher (Windows PowerShell)
 # Usage (the execution policy on this machine blocks running .ps1 files directly):
 #   powershell -ExecutionPolicy Bypass -File .\start.ps1                       # backend + web
@@ -76,8 +76,9 @@ try {
             -ArgumentList "/c", "corepack", "pnpm", "-C", "web", "dev" `
             -WorkingDirectory $Root -PassThru -NoNewWindow
     }
-    Write-Host "[Starting] backend (uv run drama-studio dev)"
-    & uv run drama-studio dev --port $Port
+    # `python -m`, not the drama-studio.exe entry point: Windows Application Control may block it.
+    Write-Host "[Starting] backend (uv run python -m drama_series_agent.studio_cli dev)"
+    & uv run python -m drama_series_agent.studio_cli dev --port $Port
 }
 finally {
     if ($webProc -and -not $webProc.HasExited) {
