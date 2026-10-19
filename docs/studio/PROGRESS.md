@@ -65,6 +65,5 @@
 
 ## 等 Kelvin 的事
 
-- **重启后端**（新迁移 `0013`），然后停后端、`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`、再启动：示例剧集换成 3006 字的小说，补全（v1 本地 → v2 DeepSeek，第 1 条已采纳）和设定都从后端来。
 - 之后：第 8 步审节拍看板和情绪曲线的截图；第 13 步真实冒烟要 DeepSeek 密钥。
 - M1 留下的：下次真装大文件（如 Qwen-Image-Edit 31 GB）时看速度、剩余时间准不准，连接数是否停在 1 个。
