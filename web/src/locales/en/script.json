@@ -104,11 +104,13 @@
     "prov": {
       "source": "Novel ¶{{paras}}",
       "ai": "Added by AI",
-      "edited": "Edited"
+      "edited": "Edited",
+      "addition": "Novel ¶{{paras}} · addition"
     },
     "srcLabel": {
       "source": "From paragraph {{paras}} of the novel",
-      "ai": "Not in the novel; the AI added it to make the scene filmable"
+      "ai": "Not in the novel; the AI added it to make the scene filmable",
+      "addition": "From paragraph {{paras}} of the novel and an accepted addition"
     },
     "paraSep": ", ",
     "edit": "Edit",
@@ -132,13 +134,21 @@
     },
     "seconds": "{{n}} s",
     "overlay": "over {{shot}}",
-    "none": "—"
+    "none": "—",
+    "sceneLead": "Scene {{n}}  ",
+    "editLabelDraft": "Edit this block",
+    "saved": "Saved.",
+    "unadopted": "Scriptwriting has a newer result that is not adopted: this is it. Adopt it in History before later steps use it.",
+    "openHistory": "History",
+    "rewriteAnyway": "Rewrite anyway",
+    "shots": "Shots",
+    "shot": "Shot {{label}}",
+    "noShots": "Not in any shot yet",
+    "inNovel": "Show in the novel"
   },
   "other": {
     "title": "{{name}} script",
     "none": "This episode has no script yet. It will reuse the characters, setting and style confirmed for episode 1.",
-    "draft": "A script draft exists (the demo data only spells out episode 1). Before confirming you can edit the prompt or switch models on the right.",
-    "generate": "Generate this episode's script",
-    "regenerate": "Generate this episode again"
+    "generate": "Generate this episode's script"
   }
 }

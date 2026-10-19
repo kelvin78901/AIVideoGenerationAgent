@@ -143,5 +143,15 @@
       "cancel": "Cancel",
       "saved": "Saved “{{name}}”."
     }
+  },
+  "trace": {
+    "button": "Where paragraph {{n}} is in the script",
+    "title": "Paragraph {{n}} in the script",
+    "where": "Episode {{ep}} · scene {{scene}}",
+    "none": "This paragraph is not in the script yet.",
+    "noScript": "Episode {{ep}} has no script yet.",
+    "notPlanned": "The episode plan does not use this paragraph.",
+    "open": "Open the script",
+    "close": "Close"
   }
 }

@@ -49,8 +49,9 @@ export function onEvent(type: EventType, fn: Listener): () => void {
 /** Cache keys refetched when an event of that type arrives. Extended as resources are added. */
 const invalidates: Partial<Record<EventType, readonly (readonly unknown[])[]>> = {
   "cost.updated": [callKeys.all],
-  // Products feed series-level views (episode script status, suggestions, bible).
-  "product.updated": [productKeys.all, ["series"]],
+  // Products feed series-level views (episode script status, suggestions, bible) and episode
+  // ones (the script, the step badges).
+  "product.updated": [productKeys.all, ["series"], ["episodes"]],
   // A new take also adds a line to the generate step's run log.
   "version.created": [productKeys.all, generateKeys.logs],
 };

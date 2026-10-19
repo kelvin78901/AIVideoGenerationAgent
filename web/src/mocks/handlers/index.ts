@@ -12,9 +12,11 @@
  * PUT / DELETE /config/override, GET / PUT /config/defaults, GET /series/{id}/novel,
  * GET /series/{id}/bible, PATCH /bible/{id}, POST /bible/merge, GET /series/{id}/suggestions,
  * POST /series/{id}/suggestions/accept-all, POST /suggestions/{id}/accept|reject|reset|rewrite,
- * PATCH /episodes/{id}, PATCH /beats/{id} (M2). GET /series/{id}/episodes and
- * GET /episodes/{id}/progress are the backend's too; the demo series lays its later-step data
- * over them (shots, script status, gates, the badges after 剧本) until those steps are real.
+ * PATCH /episodes/{id}, PATCH /beats/{id}, GET /episodes/{id}/script, PATCH /lines/{id},
+ * PATCH /scenes/{id}, POST /lines/{id}/rewrite, POST /scenes/{id}/rewrite (M2).
+ * GET /series/{id}/episodes and GET /episodes/{id}/progress are the backend's too; the demo
+ * series lays its later-step data over them (shots, the script gate, the badges after 剧本)
+ * until those steps are real.
  * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
  *
  * Handlers that take a series answer only for the demo series; any other series passes through
@@ -35,8 +37,6 @@
  * | POST /products/{id}/compile      | M2             |
  * | POST /impact/preview, apply      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | GET /episodes/{id}/script        | M2             |
- * | POST /lines/{id}/rewrite, /scenes/{id}/rewrite | M2 |
  * | GET /series/{id}/assets, PATCH /assets/{id} | M3   |
  * | POST /assets/{id}/lock           | M3             |
  * | POST /episodes/{id}/assets/analyze | M3           |
@@ -62,7 +62,6 @@ import { impactHandlers } from "@/mocks/handlers/impact";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
-import { scriptHandlers } from "@/mocks/handlers/script";
 import { shotHandlers } from "@/mocks/handlers/shots";
 import { syncHandlers } from "@/mocks/handlers/sync";
 import { workflowHandlers } from "@/mocks/handlers/workflows";
@@ -74,7 +73,6 @@ export const handlers = [
   ...productHandlers,
   ...impactHandlers,
   ...gateHandlers,
-  ...scriptHandlers,
   ...assetHandlers,
   ...shotHandlers,
   ...generateHandlers,

@@ -1,13 +1,14 @@
 /** 04 分镜 · 关键帧与镜头设定 (prototype Storyboard.dc.html). */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
 import { errorMessage } from "@/api/client";
 import { useAssets } from "@/api/hooks/assets";
 import { useComponentModels } from "@/api/hooks/config";
 import { useProduct, useProducts } from "@/api/hooks/products";
+import { useScript } from "@/api/hooks/script";
 import { useOutputSpec, useRouteEpisode } from "@/api/hooks/series";
 import { usePatchShot, useShots } from "@/api/hooks/shots";
 import type { ShotPatch } from "@/api/schemas/shots";
@@ -18,6 +19,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { QueryState, Skeleton } from "@/components/QueryState";
 import { RunBar } from "@/components/RunBar";
 import { StepLayout } from "@/components/StepLayout";
+import { scriptBlocks, useBlockLead } from "@/pages/script/blocks";
 import { PreviewStrip } from "@/pages/storyboard/PreviewStrip";
 import { ShotCards } from "@/pages/storyboard/ShotCards";
 import { ShotSettings } from "@/pages/storyboard/ShotSettings";
@@ -35,7 +37,15 @@ export default function StoryboardPage() {
   const component = useInspectorStore((s) => s.component) ?? "kf";
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(component);
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const script = useScript(episode?.id);
+  const leadOf = useBlockLead();
+  // A script line's 「镜头 1-04」 links here with `?shot=`; a shot the user picks wins until the
+  // link changes.
+  const [search] = useSearchParams();
+  const linked = search.get("shot");
+  const [picked, setPicked] = useState<{ id: string; link: string | null } | null>(null);
+  const selectedId = picked && picked.link === linked ? picked.id : linked;
+  const setSelectedId = (id: string) => setPicked({ id, link: linked });
 
   useEffect(() => {
     useInspectorStore.getState().reset();
@@ -51,6 +61,9 @@ export default function StoryboardPage() {
   const aspect = spec.data?.aspect ?? "9:16";
   const seconds = list.reduce((n, s) => n + s.duration_s, 0);
   const ep = String(episodeIdx);
+  const lines = (script.data ? scriptBlocks(script.data) : [])
+    .filter((b) => b.kind !== "scene" && shot?.line_ids.includes(b.id))
+    .map((b) => ({ id: b.id, lead: leadOf(b), text: b.text, paras: b.paras }));
 
   const onPatch = (change: ShotPatch) => {
     if (!shot) return;
@@ -142,6 +155,11 @@ export default function StoryboardPage() {
                 assets={assets.data ?? []}
                 aspect={aspect}
                 assetsPath={paths.step(seriesId, ep, "assets")}
+                lines={lines}
+                scriptPath={(id) =>
+                  `${paths.step(seriesId, ep, "script")}?line=${encodeURIComponent(id)}`
+                }
+                novelPath={(idx) => `${paths.step(seriesId, ep, "novel")}?para=${idx}`}
                 busy={patchShot.isPending}
                 onPatch={onPatch}
               />

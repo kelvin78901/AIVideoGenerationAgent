@@ -113,12 +113,24 @@ function FirstFrame({
   );
 }
 
+/** A script line the shot films, as the script page shows it (镜头 → 剧本行 → 原文). */
+export interface ShotLine {
+  id: string;
+  /** 「△ 」 / 「林晚（低声，愣住）：」 */
+  lead: string;
+  text: string;
+  paras: number[];
+}
+
 /** 镜头设定: everything about one shot, saved as you change it. */
 export function ShotSettings({
   shot,
   assets,
   aspect,
   assetsPath,
+  lines,
+  scriptPath,
+  novelPath,
   busy,
   onPatch,
 }: {
@@ -126,6 +138,11 @@ export function ShotSettings({
   assets: Asset[];
   aspect: Aspect;
   assetsPath: string;
+  lines: ShotLine[];
+  /** The script page with this line selected. */
+  scriptPath: (lineId: string) => string;
+  /** The novel page with this paragraph (0-based) in view. */
+  novelPath: (idx: number) => string;
   busy: boolean;
   onPatch: (patch: ShotPatch) => void;
 }) {
@@ -159,6 +176,35 @@ export function ShotSettings({
           {t(shot.confirmed ? "shot.unconfirm" : "shot.confirm")}
         </Button>
       </div>
+
+      <Field label={t("shot.lines")}>
+        {lines.length ? (
+          <ul className="flex flex-col gap-1 text-sm">
+            {lines.map((l) => (
+              <li key={l.id} className="flex flex-wrap items-baseline gap-x-2">
+                <Link
+                  to={scriptPath(l.id)}
+                  aria-label={t("shot.lineLink", { text: l.text })}
+                  className="text-primary underline-offset-4 hover:underline"
+                >
+                  {l.lead}
+                  {l.text}
+                </Link>
+                {l.paras.length ? (
+                  <Link
+                    to={novelPath(l.paras[0] ?? 0)}
+                    className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  >
+                    {t("shot.paras", { paras: l.paras.map((p) => p + 1).join(t("shot.paraSep")) })}
+                  </Link>
+                ) : null}
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-sm text-muted-foreground">{t("shot.noLines")}</p>
+        )}
+      </Field>
 
       <div className="flex flex-col gap-2">
         <div className="flex items-baseline gap-2">

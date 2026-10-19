@@ -2,12 +2,13 @@
 import { BookOpen, Upload } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 
 import { useComponentModels } from "@/api/hooks/config";
 import { useBible, useNovel, useSuggestions } from "@/api/hooks/novel";
 import { useProducts } from "@/api/hooks/products";
 import type { BibleEntity } from "@/api/schemas/novel";
-import { useRouteEpisode } from "@/api/hooks/series";
+import { useEpisodes, useRouteEpisode } from "@/api/hooks/series";
 import { paths } from "@/app/paths";
 import { EmptyState } from "@/components/EmptyState";
 import { GateButton } from "@/components/GateButton";
@@ -20,6 +21,7 @@ import { Button } from "@/components/ui/button";
 import { useInspectorStore } from "@/stores/inspector";
 import { BiblePanel } from "@/pages/novel/BiblePanel";
 import { ImportDialog } from "@/pages/novel/ImportDialog";
+import { ScriptTrace } from "@/pages/novel/ScriptTrace";
 import { SourceText, type NovelView } from "@/pages/novel/SourceText";
 import { SuggestionList } from "@/pages/novel/SuggestionList";
 import { chapterOf } from "@/pages/novel/text";
@@ -34,6 +36,7 @@ export default function NovelPage() {
   const novel = useNovel(seriesId, chapter);
   const suggestions = useSuggestions(seriesId);
   const bible = useBible(seriesId);
+  const episodes = useEpisodes(seriesId);
   const selected = useInspectorStore((s) => s.component) ?? COMPONENTS[0];
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(selected);
@@ -44,6 +47,11 @@ export default function NovelPage() {
   const [target, setTarget] = useState<number | null>(0);
   const [entity, setEntity] = useState<BibleEntity | null>(null);
   const [importing, setImporting] = useState(false);
+  // 「在剧本里」 of one paragraph (段落 → 剧本行).
+  const [traced, setTraced] = useState<number | null>(null);
+  // The script page and a shot link here with `?para=` (0-based).
+  const [search] = useSearchParams();
+  const linked = search.get("para");
 
   useEffect(() => useInspectorStore.getState().reset(), []);
   // A paragraph in another chapter switches chapters first; scroll once it is on screen.
@@ -74,6 +82,17 @@ export default function NovelPage() {
     const shownIn = chapterOf(novel.data?.chapters ?? [], idx);
     if (shownIn && shownIn.idx !== chapter) setChapter(shownIn.idx);
   };
+  // A `?para=` link (once the chapters are known): focus it and open 「在剧本里」.
+  const [seenLink, setSeenLink] = useState<string | null>(null);
+  if (linked !== null && linked !== seenLink && novel.data) {
+    setSeenLink(linked);
+    const idx = Number(linked);
+    if (Number.isInteger(idx) && idx >= 0) {
+      setFocus(idx);
+      setTraced(idx);
+      showPara(idx);
+    }
+  }
   const focusPara = (idx: number) => {
     setFocus(idx);
     showPara(idx);
@@ -156,6 +175,16 @@ export default function NovelPage() {
                   marked={entity?.paras}
                   editable={novelProduct !== undefined && !novelProduct.locked_hash}
                   downstream={downstream}
+                  traced={traced}
+                  onTrace={setTraced}
+                  trace={(idx) => (
+                    <ScriptTrace
+                      seriesId={seriesId}
+                      para={idx}
+                      episodes={episodes.data ?? []}
+                      onClose={() => setTraced(null)}
+                    />
+                  )}
                 />
               )}
             </QueryState>

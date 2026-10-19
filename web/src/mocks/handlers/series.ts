@@ -12,8 +12,9 @@ import { demoJson, v1 } from "@/mocks/http";
 const BLANK = { state: "not_started", done: null, total: null, stale: 0 } as const;
 
 export const seriesHandlers = [
-  // The plan is the backend's (分集规划); the demo series lays its shots, script status and
-  // stage over it (plan「和 MSW 共存」). Other series go to the backend untouched.
+  // The plan and the scripts are the backend's (分集规划, 剧本化); the demo series lays its
+  // shots over them, and 剧本已确认 while the script gate is still the demo's (step 10). Other
+  // series go to the backend untouched (plan「和 MSW 共存」).
   http.get(v1("/series/:id/episodes"), async ({ params, request }) => {
     const id = String(params.id);
     if (!getDb().series[id]) return passthrough();
@@ -22,15 +23,20 @@ export const seriesHandlers = [
     return demoJson(
       real.map((e) => {
         const o = getDb().episodes.find((x) => x.id === e.id);
-        return o
-          ? { ...e, shot_count: o.shot_count, script_status: o.script_status, stage: o.stage }
-          : e;
+        if (!o) return e;
+        const confirmed = getDb().progress[e.id]?.steps.script.state === "confirmed";
+        return {
+          ...e,
+          shot_count: o.shot_count,
+          script_status: confirmed && e.script_status !== "none" ? "confirmed" : e.script_status,
+        };
       }),
     );
   }),
 
   // The backend's badges with the demo's: the gates are still MSW's (小说 is series-wide, so
-  // episode 1's badge holds for every demo episode), and so are the steps after 剧本.
+  // episode 1's badge holds for every demo episode), and so are the steps after 剧本. 待更新
+  // counts stay the backend's.
   http.get(v1("/episodes/:id/progress"), async ({ params, request }) => {
     const id = String(params.id);
     if (!getDb().episodes.some((e) => e.id === id)) return passthrough();
@@ -49,9 +55,10 @@ export const seriesHandlers = [
     const demo = getDb().progress[id];
     if (demo) {
       const { assets, storyboard, generate, post, script } = structuredClone(demo.steps);
-      // 待更新 counts stay the backend's.
       Object.assign(steps, { assets, storyboard, generate, post });
-      steps.script = { ...script, stale: steps.script.stale };
+      // 剧本 is the backend's; 已确认 while the script gate is still the demo's (step 10).
+      if (script.state === "confirmed" && steps.script.state !== "not_started")
+        steps.script = { ...steps.script, state: "confirmed" };
       // 素材 7/13 is the number of locked assets.
       if (steps.assets.state !== "not_started") Object.assign(steps.assets, lockedAssetCount());
       // 分镜 3/9 is the number of confirmed shots.

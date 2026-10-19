@@ -1,10 +1,10 @@
 /**
  * Episodes 1–3 of 《雨停之前》 as the MSW demo still knows them. The plan itself — titles, hooks,
  * cliffhangers, beats, budgets — is the backend's (分集规划, `studio/demo.py`); MSW only adds
- * what its own later-step data says, until those steps move to the backend: shots (M4), the
- * script status and stage (剧本 and its gate, M2 steps 9–10). Episode 1 《红伞》 is the demo.
+ * what its own later-step data says, until those steps move to the backend: shots (M4), and
+ * 剧本已确认 from the demo's script gate (M2 step 10). Episode 1 《红伞》 is the demo.
  */
-import type { Episode, EpisodeProgress } from "@/api/schemas/episodes";
+import type { EpisodeProgress } from "@/api/schemas/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 
 export const EP1 = "demo-e1";
@@ -15,8 +15,6 @@ export interface EpisodeOverlay {
   series_id: string;
   idx: number;
   shot_count: number | null;
-  script_status: Episode["script_status"];
-  stage: Episode["stage"];
 }
 
 export const episodes: EpisodeOverlay[] = [
@@ -25,24 +23,18 @@ export const episodes: EpisodeOverlay[] = [
     series_id: DEMO_SERIES_ID,
     idx: 1,
     shot_count: 9,
-    script_status: "confirmed",
-    stage: "in_progress",
   },
   {
     id: "demo-e2",
     series_id: DEMO_SERIES_ID,
     idx: 2,
     shot_count: null,
-    script_status: "none",
-    stage: "script_pending",
   },
   {
     id: "demo-e3",
     series_id: DEMO_SERIES_ID,
     idx: 3,
     shot_count: null,
-    script_status: "none",
-    stage: "not_started",
   },
 ];
 

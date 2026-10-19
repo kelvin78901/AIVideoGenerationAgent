@@ -2,15 +2,17 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useSearchParams } from "react-router";
 import { toast } from "sonner";
 
-import { errorMessage } from "@/api/client";
+import { ApiError, errorMessage } from "@/api/client";
 import { useComponentModels } from "@/api/hooks/config";
 import { useApplyImpact, useImpactPreview } from "@/api/hooks/impact";
 import { useNovel, useSuggestions } from "@/api/hooks/novel";
 import { useProducts } from "@/api/hooks/products";
-import { scriptKeys, useRewriteBlock, useScript } from "@/api/hooks/script";
+import { scriptKeys, usePatchBlock, useRewriteBlock, useScript } from "@/api/hooks/script";
 import { useEpisodes, useRouteEpisode } from "@/api/hooks/series";
+import { useShots } from "@/api/hooks/shots";
 import type { Episode } from "@/api/schemas/episodes";
 import type { Product } from "@/api/schemas/products";
 import { paths } from "@/app/paths";
@@ -25,9 +27,14 @@ import { StepLayout } from "@/components/StepLayout";
 import { useRunAction } from "@/components/useRunAction";
 import { Button } from "@/components/ui/button";
 import { modelName } from "@/lib/versions";
-import { scriptBlocks, type Block } from "@/pages/script/blocks";
+import { scriptBlocks, useBlockLead, type Block } from "@/pages/script/blocks";
 import { Episodes, type EpisodeView } from "@/pages/script/Episodes";
-import { ScriptScreenplay, ScriptTable } from "@/pages/script/ScriptView";
+import {
+  ScriptScreenplay,
+  ScriptTable,
+  type OverBudget,
+  type ScriptLinks,
+} from "@/pages/script/ScriptView";
 import { useInspectorStore } from "@/stores/inspector";
 
 type View = "script" | "table";
@@ -37,12 +44,11 @@ function GenerateEpisode({ episode, product }: { episode: Episode; product: Prod
   const { t } = useTranslation("script");
   const action = useRunAction(product?.id ?? "");
   const name = t("episodes.name", { n: episode.idx, title: episode.title });
-  const draft = episode.script_status === "draft";
   const busy = action.pending || !!product?.running;
   return (
     <section className="flex flex-col items-start gap-2.5 rounded-lg border bg-card p-5">
       <h2 className="text-base font-bold">{t("other.title", { name })}</h2>
-      <p className="text-sm text-muted-foreground">{t(draft ? "other.draft" : "other.none")}</p>
+      <p className="text-sm text-muted-foreground">{t("other.none")}</p>
       <Button
         disabled={!product || busy}
         onClick={() => {
@@ -50,7 +56,7 @@ function GenerateEpisode({ episode, product }: { episode: Episode; product: Prod
           action.run({ mode: product?.versions.length ? "rerun" : "run" });
         }}
       >
-        {t(draft ? "other.regenerate" : "other.generate")}
+        {t("other.generate")}
       </Button>
     </section>
   );
@@ -60,11 +66,13 @@ export default function ScriptPage() {
   const { t } = useTranslation("script");
   const { t: tc } = useTranslation();
   const client = useQueryClient();
+  const [search] = useSearchParams();
   const { seriesId, episodeIdx, episode } = useRouteEpisode();
   const episodes = useEpisodes(seriesId);
   const novel = useNovel(seriesId);
   const suggestions = useSuggestions(seriesId);
   const script = useScript(episode?.id);
+  const shots = useShots(episode?.id);
   const seriesProducts = useProducts({ owner: `series:${seriesId}` });
   const episodeProducts = useProducts({ owner: `episode:${episode?.id ?? ""}` });
   const selected = useInspectorStore((s) => s.component) ?? "script";
@@ -73,29 +81,41 @@ export default function ScriptPage() {
   const scriptModels = useComponentModels("script");
   const preview = useImpactPreview();
   const apply = useApplyImpact();
+  const patchBlock = usePatchBlock(seriesId);
   const rewrite = useRewriteBlock();
+  const leadOf = useBlockLead();
   const [view, setView] = useState<View>("script");
   const [episodeView, setEpisodeView] = useState<EpisodeView>("cards");
-  const [selectedId, setSelectedId] = useState<string | null>(null);
+  // 「在剧本里」 on the novel page and a shot's lines link here with `?line=`; a block the user
+  // picks wins until the link changes.
+  const linked = search.get("line");
+  const [picked, setPicked] = useState<{ id: string; link: string | null } | null>(null);
+  const selectedId = picked && picked.link === linked ? picked.id : linked;
   const [pending, setPending] = useState<{ block: Block; text: string } | null>(null);
+  const [overBudget, setOverBudget] = useState<OverBudget | null>(null);
 
   useEffect(() => {
     useInspectorStore.getState().reset();
     useInspectorStore.getState().select("script");
   }, []);
+  const loaded = !!script.data;
+  useEffect(() => {
+    if (loaded && linked) document.querySelector(`[data-block="${linked}"]`)?.scrollIntoView?.();
+  }, [loaded, linked]);
 
   const split = seriesProducts.data?.find((p) => p.component_id === "split");
   const scriptProduct = episodeProducts.data?.find((p) => p.component_id === "script");
   const product = selected === "split" ? split : scriptProduct;
   const splitAction = useRunAction(split?.id ?? "");
   const ep = String(episodeIdx);
+  // A confirmed script shows the impact of an edit first; a draft is edited in place.
+  const confirmed = episode?.script_status === "confirmed";
 
-  const blocks =
-    script.data && novel.data
-      ? scriptBlocks(script.data, novel.data.paragraphs).map((b) =>
-          b.id === pending?.block.id ? { ...b, text: pending.text } : b,
-        )
-      : [];
+  const blocks = script.data
+    ? scriptBlocks(script.data).map((b) =>
+        b.id === pending?.block.id ? { ...b, text: pending.text } : b,
+      )
+    : [];
   const paragraphs =
     novel.data?.paragraphs.map(
       (p) =>
@@ -108,6 +128,12 @@ export default function ScriptPage() {
   const activeId = selectedId ?? blocks.find((b) => b.kind !== "scene")?.id ?? null;
   const aiCount = blocks.filter((b) => b.kind !== "scene" && b.line.ai_added).length;
   const sceneCount = blocks.filter((b) => b.kind === "scene").length;
+
+  const links: ScriptLinks = {
+    shotsOf: (b) => (shots.data ?? []).filter((s) => s.line_ids.includes(b.id)),
+    shot: (id) => `${paths.step(seriesId, ep, "storyboard")}?shot=${encodeURIComponent(id)}`,
+    para: (idx) => `${paths.step(seriesId, ep, "novel")}?para=${idx}`,
+  };
 
   const what =
     selected === "split"
@@ -123,9 +149,23 @@ export default function ScriptPage() {
 
   const onError = (err: unknown) => toast.error(errorMessage(tc, err));
 
-  /** A confirmed block changed: preview the impact first; nothing is saved until 标记 / 重跑. */
+  const settle = async () => {
+    await client.invalidateQueries({ queryKey: scriptKeys.script(episode?.id ?? "") });
+    setPending(null);
+    preview.reset();
+  };
+
+  /** A draft is saved right away; a confirmed block previews the impact first (nothing is
+   * saved until 标记 / 重跑). */
   const startChange = (block: Block, text: string) => {
     if (text === block.text) return;
+    if (!confirmed) {
+      patchBlock.mutate(
+        { id: block.id, scene: block.kind === "scene", text },
+        { onSuccess: () => toast.success(t("script.saved")), onError },
+      );
+      return;
+    }
     setPending({ block, text });
     preview.mutate(
       {
@@ -150,18 +190,25 @@ export default function ScriptPage() {
     );
   };
 
-  const settle = async () => {
-    await client.invalidateQueries({ queryKey: scriptKeys.script(episode?.id ?? "") });
-    setPending(null);
-    preview.reset();
+  const startRewrite = (block: Block, model?: string, confirmBudget = false) => {
+    setOverBudget(null);
+    rewrite.mutate(
+      { id: block.id, scene: block.kind === "scene", model, confirm_budget: confirmBudget },
+      {
+        onSuccess: (proposal) => {
+          toast.success(
+            t("script.rewritten", { model: modelName(scriptModels, proposal.model_key) }),
+          );
+          startChange(block, proposal.text);
+        },
+        // Over the per-call cap or the episode's budget: ask first (hard rule 6).
+        onError: (err) =>
+          err instanceof ApiError && err.code === "over_budget"
+            ? setOverBudget({ blockId: block.id, model, message: errorMessage(tc, err) })
+            : onError(err),
+      },
+    );
   };
-
-  const leadOf = (b: Block) =>
-    b.kind === "action"
-      ? t("script.actionMark")
-      : b.kind === "dialogue" || b.kind === "vo"
-        ? t("script.speaker", { who: b.line.character_name ?? "", tone: b.line.tone ?? "" })
-        : "";
 
   return (
     <StepLayout
@@ -218,7 +265,14 @@ export default function ScriptPage() {
           onEditPrompt={() => show("prompt", selected)}
           onOpenHistory={() => show("history", selected)}
         />
-      ) : null}
+      ) : (
+        <QueryState
+          query={selected === "split" ? seriesProducts : episodeProducts}
+          skeleton={<Skeleton className="h-14 w-full" />}
+        >
+          {() => null}
+        </QueryState>
+      )}
 
       {pending && preview.data ? (
         <ImpactDialog
@@ -261,6 +315,22 @@ export default function ScriptPage() {
                   }))}
                 />
               </div>
+              {!s.adopted ? (
+                <div
+                  role="status"
+                  className="flex flex-wrap items-center gap-2 rounded-md border border-tone-warn-border bg-tone-warn-bg px-3 py-2 text-sm text-tone-warn-fg"
+                >
+                  <span>{t("script.unadopted")}</span>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="ml-auto"
+                    onClick={() => show("history", "script")}
+                  >
+                    {t("script.openHistory")}
+                  </Button>
+                </div>
+              ) : null}
               {view === "script" ? (
                 <ScriptScreenplay
                   blocks={blocks}
@@ -268,28 +338,17 @@ export default function ScriptPage() {
                   selectedId={activeId}
                   pendingId={pending?.block.id ?? null}
                   rewritingId={rewrite.isPending ? (rewrite.variables?.id ?? null) : null}
-                  locked={pending !== null}
+                  locked={pending !== null || patchBlock.isPending}
+                  confirmed={confirmed}
                   models={scriptModels}
                   routeModel={scriptProduct?.estimate?.model_key}
-                  onSelect={setSelectedId}
-                  actions={{
-                    onSave: startChange,
-                    onRewrite: (block, model) =>
-                      rewrite.mutate(
-                        { id: block.id, scene: block.kind === "scene", model },
-                        {
-                          onSuccess: (proposal) => {
-                            toast.success(
-                              t("script.rewritten", {
-                                model: modelName(scriptModels, proposal.model_key),
-                              }),
-                            );
-                            startChange(block, proposal.text);
-                          },
-                          onError,
-                        },
-                      ),
+                  overBudget={overBudget}
+                  links={links}
+                  onSelect={(id) => {
+                    setPicked({ id, link: linked });
+                    if (overBudget?.blockId !== id) setOverBudget(null);
                   }}
+                  actions={{ onSave: startChange, onRewrite: startRewrite }}
                 />
               ) : (
                 <ScriptTable

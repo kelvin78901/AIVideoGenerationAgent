@@ -49,6 +49,8 @@ export const ShotSchema = z.object({
   camera_move: CameraMoveSchema,
   duration_s: z.number().positive(),
   duration_source: z.enum(["audio", "manual"]),
+  /** The script lines the shot films (SPEC 4.1 `line_ids`): 镜头 ↔ 剧本行. */
+  line_ids: z.array(z.string()),
   /** 「林晚（低声，愣住）：……周屿？」; null = no dialogue. */
   dialogue: z.string().nullable(),
   /** Ambient sound and effects. */

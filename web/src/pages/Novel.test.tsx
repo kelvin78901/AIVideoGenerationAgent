@@ -14,7 +14,7 @@ import { renderAt } from "@/test/render";
 // The user's own words, typed into the page (content, not UI copy).
 const INSTRUCTION = "别写风衣，她今天穿的是工装外套";
 
-function renderNovel(series = "demo") {
+function renderNovel(series = "demo", query = "") {
   return renderAt(
     <>
       <Routes>
@@ -23,7 +23,7 @@ function renderNovel(series = "demo") {
       </Routes>
       <Toaster />
     </>,
-    `/s/${series}/e/1/novel`,
+    `/s/${series}/e/1/novel${query}`,
   );
 }
 
@@ -52,6 +52,32 @@ beforeEach(() => {
 afterEach(() => vi.unstubAllGlobals());
 
 describe("NovelPage", () => {
+  it("「在剧本里」: the script lines a paragraph went into, each a link to the script", async () => {
+    const user = userEvent.setup();
+    renderNovel();
+    await screen.findByText("177 字 · 5 段");
+    await user.click(screen.getByRole("button", { name: "第 2 段在剧本里的位置" }));
+    const trace = screen.getByRole("region", { name: "第 2 段在剧本里" });
+    const links = await within(trace).findAllByRole("link");
+    expect(links.map((a) => a.getAttribute("href"))).toEqual(
+      ["demo-b3", "demo-b5", "demo-b6", "demo-b10"].map((id) => `/s/demo/e/1/script?line=${id}`),
+    );
+    expect(links[0]).toHaveTextContent("第 1 集 · 场 1△ 门口靠着一把红色长柄伞");
+    expect(links[3]).toHaveTextContent("第 1 集 · 场 2林晚（OS）：三年了。他凭什么。");
+    await user.click(within(trace).getByRole("button", { name: "收起" }));
+    expect(screen.queryByRole("region", { name: "第 2 段在剧本里" })).not.toBeInTheDocument();
+  });
+
+  it("opens at the paragraph a link points at, with 「在剧本里」", async () => {
+    renderNovel("demo", "?para=4");
+    const trace = await screen.findByRole("region", { name: "第 5 段在剧本里" });
+    expect(await within(trace).findByRole("link")).toHaveAttribute(
+      "href",
+      "/s/demo/e/1/script?line=demo-b12",
+    );
+    expect(document.getElementById("novel-para-4")).toHaveAttribute("data-focused");
+  });
+
   it("shows the text with the adopted addition, counts and the bible", async () => {
     renderNovel();
     expect(await screen.findByText("177 字 · 5 段")).toBeInTheDocument();

@@ -19,17 +19,17 @@
 - 7b：`novel/parse.py:compose`（按固定格式拼文本，不再解析）、`NovelService.edit_chapter`（新 source `encoding: edited` + `edit` 版本并采纳，没改的章哈希不变）；接口 `PUT /series/{id}/novel/chapters/{idx}`（`chapter_empty` / `novel_not_found` / `product_locked`）；补全建议按文字跟到新文本（完全相同的最近段，否则附近最像的），`GET /suggestions` 和设定提取读补写都用它；前端「原文」视图逐段改 / 插入 / 删除、改标题（`SourceText`、`useEditChapter`），假后端 `test/fakes/novel.ts` 支持 PUT；截图 `novel-edit.light.jpg`。pytest 456、Vitest 223、e2e 17 全过（0d48ef9）。
 - 8a（后端）：`episode`、`beat`（迁移 `0014`；`episode.budget_usd` 是设置，物化不动它）；`episodes/ops.py`（纯函数：重跑按集号 / 节拍文字沿用 id、改集、改 / 拖节拍、场号区间、切片 `episode:<id>`）、`episodes/service.py`（读已采纳方案、编辑出 `edit` 版本并采纳、进度、物化、本集预算接到 `Budget.episode_budget`）；`pipeline/components/split.py`（原文分块 + 章节摘要 + 设定名字 + 每集时长，跨块同 `ep` 接着写；Mock、`demo_payload`）、模板 `prompts/templates/split/`；`config/spec.yaml:episode_lengths`；接口 `GET /series/{id}/episodes`（每集带 `beats`、`scene_count`）、`PATCH /episodes/{id}`、`PATCH /beats/{id}`（返回整个方案）、`GET /episodes/{id}/progress`；示例种子 `demo-p-split-v1`（`tests/fixtures/demo/split.json`，3 集 22 个节拍，每集 $15）；`test/data/bible.json` 重导（产物列表多了分集规划）。pytest 475、Vitest 223 全过（ce3cc89）。
 - 8b（前端）：zod `BeatSchema`、`EpisodeSchema` 加 `beats` / `scene_count`、`EpisodePatch` 加集名 / 钩子 / 卡点 / 时长、`BeatPatchSchema`；`usePatchBeat`（先按新位置显示，失败退回，`lib/beats.ts:patchBeat`）；剧本页「分集」区 `pages/script/Episodes.tsx`（「卡片 / 节拍看板」切换、没有分集时的空状态、只读 / 未采纳提示）、`BeatBoard.tsx`（原生拖放，落点是叠在卡片上的蓝线）、`EmotionCurve.tsx`（SPEC 11.3）、`PlanDialogs.tsx`（改节拍、改集）；RunBar 没有模型的版本写来源；MSW 分集 / 进度读后端再叠加示例数据、删 `PATCH /episodes/:id` 和 `demo-p-split`、顶栏预算读后端；假后端 `test/fakes/episodes.ts` + `test/data/episodes.json`；截图 `script.*.jpg` 重截、新增 `script-board{,-drag,-edit}`。pytest 475、Vitest 234、e2e 17 全过（625b8b8）。
-- 9a（后端）：`scene`、`script_line`（迁移 `0015`）；`script/ops.py`（纯函数：第 n 场沿用 id、行按文字 / 同场相似度沿用、视图里场号全剧累加且场标题不含场号、改行 / 改场标题标 `edited`）、`script/service.py`（读当前版本、编辑出 `edit` 版本并采纳、重写只给建议、物化）；`pipeline/components/script.py`（只读本集：`episode:<id>` + 段落所在章 `chapter:<idx>` + 新切片 `adopted:<段号>`、`entities:<id>`；补写编号【补写n】→ `sug:<id>` 出处；名字对上设定 id；重写查单次上限和本集剩余；Mock 应答器 run / rewrite_line / rewrite_scene、`demo_payload`）；模板 `prompts/templates/script/`；接口 `GET /episodes/{id}/script`、`PATCH /lines/{id}`、`PATCH /scenes/{id}`（计划外，记 DECISIONS）、`POST /lines|scenes/{id}/rewrite`；分集规划采纳时 / 启动时给每集建剧本产物；分集卡片「场 x–y」有剧本后按实际场数；`ProductService.append_edit` 合并三处重复；示例种子 `demo-p-script-e1..3`、第 1 集 v1 本地 → v2 Kimi 已采纳（`tests/fixtures/demo/script.json`）；导出 `web/src/test/data/script.json`、`episodes.json` 重导。pytest 496、Vitest 234 全过（本提交）。
+- 9a（后端）：`scene`、`script_line`（迁移 `0015`）；`script/ops.py`（纯函数：第 n 场沿用 id、行按文字 / 同场相似度沿用、视图里场号全剧累加且场标题不含场号、改行 / 改场标题标 `edited`）、`script/service.py`（读当前版本、编辑出 `edit` 版本并采纳、重写只给建议、物化）；`pipeline/components/script.py`（只读本集：`episode:<id>` + 段落所在章 `chapter:<idx>` + 新切片 `adopted:<段号>`、`entities:<id>`；补写编号【补写n】→ `sug:<id>` 出处；名字对上设定 id；重写查单次上限和本集剩余；Mock 应答器 run / rewrite_line / rewrite_scene、`demo_payload`）；模板 `prompts/templates/script/`；接口 `GET /episodes/{id}/script`、`PATCH /lines/{id}`、`PATCH /scenes/{id}`（计划外，记 DECISIONS）、`POST /lines|scenes/{id}/rewrite`；分集规划采纳时 / 启动时给每集建剧本产物；分集卡片「场 x–y」有剧本后按实际场数；`ProductService.append_edit` 合并三处重复；示例种子 `demo-p-script-e1..3`、第 1 集 v1 本地 → v2 Kimi 已采纳（`tests/fixtures/demo/script.json`）；导出 `web/src/test/data/script.json`、`episodes.json` 重导。pytest 496、Vitest 234 全过（e0cccfc）。
+- 9b（前端）：zod 场 / 行加 `paras`、`ScriptSchema` 加 `product_id` / `version_id` / `adopted` / `source_id`、场标题不含场号（显示拼「场 N　」）、`ShotSchema.line_ids`；`usePatchBlock`（没确认 → 直接 PATCH）、`useRewriteBlock` 带 `confirm_budget`（超预算在那一段下问「仍然重写」）；三向溯源：剧本行 →「对应镜头」/「来自原文第 N 段」、镜头设定「剧本」栏、小说页点段号「在剧本里」（`pages/novel/ScriptTrace.tsx`），URL 参数 `?line=` / `?shot=` / `?para=`；「未采纳」提示；MSW 删剧本 handler / fixture / 示例剧本产物，`/products?owner=episode:` 合并后端，分集 / 进度只叠加镜头数和演示闸门的「已确认」，影响范围 apply 转发后端 PATCH；`product.updated` 刷新 `["episodes"]`；假后端 `test/fakes/script.ts`；截图 `script.*`、`storyboard.*` 重截，新增 `script-trace`、`novel-trace`、`storyboard-lines`。pytest 496、Vitest 242、e2e 17 全过（本提交）。
 
 
 ## 下一步
 
-- **第 9b 步：剧本页接后端 + 三向溯源**（计划第 9 步前端；后端契约见 DECISIONS「M2 第 9 步 · 9a」）：
-  - zod `script.ts`：场、行加 `paras`（直接用，`pages/script/blocks.ts` 不再拿区间配段落）；`ScriptSchema` 加 `product_id` / `version_id` / `adopted` / `source_id`；场标题不含场号，显示拼「场 N　」（新 i18n key）。显示「未采纳」。
-  - 改行 / 改场标题：剧本没确认 → `PATCH /lines|scenes/{id}`（返回整个剧本，直接替换缓存）；已确认 → 照旧影响预览（第 10 步前还是 MSW：`applyScriptChange` 改成转发到后端 PATCH，像 `spec_aspect` 那样）。重写超上限 409 `over_budget` → 确认后带 `confirm_budget` 再发（照补全重写）。
-  - 三向溯源：小说页点段落看「在剧本里」（用分集的节拍段号找到哪一集 → `useScript` → 引用这段的行）→ 跳剧本页选中那行；剧本行 → 镜头（`ShotSchema` 加 `line_ids`，MSW 示例分镜补上）→ 分镜页选中镜头；镜头 → 剧本行。选中状态走 URL 参数。
-  - MSW：删剧本 handler 和 `fixtures/demo/script.ts`、`demo-p-script-*` 产物、products handler 里「第一次出剧本 → draft」的逻辑；`script_status` / `stage` 叠加**留到第 10 步**（闸门还在 MSW，否则示例第 1 集会显示成草稿）。假后端 `test/fakes/script.ts` + `test/data/script.json`。截图 `script.*` 重截、新增溯源截图。
-- **Kelvin 要重启后端**（新迁移 `0015` 和剧本接口；示例剧集启动时自动补上剧本产物和第 1 集剧本。剧本页在 9b 之前还读 MSW）。
+- **第 10 步：闸门、失效传播、影响范围、自动同步**（计划第 10 步，范围大，建议拆 10a 闸门 + 影响预览 / `mark` / `undo`（后端）、10b「确认并同步」级联重跑（后端）、10c 前端）：
+  - `pipeline/gates.py`：小说、剧本闸门确认 / 重新打开（`gate_decision` 记有效哈希、锁定产物；小说闸门 `scope_id` 前端传集 id，后端换成剧集）；`POST /gates/{gate}/confirm|reopen`。示例种子补上小说闸门和第 1 集剧本闸门「已确认」（现在由 MSW 的 `progress` 叠加，见 `mocks/handlers/series.ts`）。
+  - `POST /impact/preview|apply`，种类见计划；改已确认内容至少一行「已确认的 X 会改成新内容」；示例剧集剧本的下游行（素材、镜头、关键帧）仍由 MSW 叠加（`mocks/fixtures/demo/impacts.ts`）。前端现在的入口：`pages/Script.tsx:startChange`、`mocks/handlers/impact.ts`（apply 时转发后端 PATCH 的那段到时删掉）。
+  - 硬规则 5 改写进 CLAUDE.md（计划「Kelvin 已定」第 6 条）。
+- **Kelvin 要重启后端**（新迁移 `0015` 和剧本接口；示例剧集启动时自动补上剧本产物和第 1 集剧本）。**不重启的话剧本页读不到剧本**（9b 起剧本只在后端）。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。heredoc 里 Python 字符串的 `\n` 会被写成真换行（第 5 步踩了两次）：要写进代码的 `\n` 用 Edit 工具。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -65,10 +65,12 @@
 - **上游 `.gitignore` 有一行 `templates/`**，会挡住任何叫 templates 的目录；`src/drama_series_agent/prompts/templates/` 已用 `!` 放行，新加别的 templates 目录要留意 `git status`。
 - **页面测试里上传文件**：`test/setup.ts` 已把 `FormData` / `File` 换成 Node 的（jsdom 的发出去是 `"[object FormData]"`），假后端里 `await request.formData()` 可以直接用。
 - **Radix 下拉菜单里打开对话框要 `modal={false}`**，否则对话框关掉后 `body` 留着 `pointer-events: none`（jsdom 里表现为后面的测试点不动）。
+- **ESLint `no-irregular-whitespace`**：全角空格（U+3000）在正则、注释里会报错（字符串里不报）——正则写 `\s`，注释别用；**`react-hooks/set-state-in-effect`**：不要在 effect 里同步 URL 参数到 state，在渲染时推出来（见 `Script.tsx` 的 `picked`）。
 - **改代码前先看 ruff 有没有已经改过行**：`ruff format` 会把长行拆开，之后用 sed 按原行号替换会留下碎片（第 4 步踩过）。
 
 ## 等 Kelvin 的事
 
 - **审第 8 步的节拍看板和情绪曲线**：截图 `reports/ui/script-board.light.jpg`（暗色 `.dark`）、`script-board-drag.light.jpg`（拖动中）、`script-board-edit.light.jpg`（改节拍）；重启后端后在 5173 剧本页点「节拍看板」能直接试拖动。
+- **审第 9 步的三向溯源**：`reports/ui/script-trace.light.jpg`（剧本行 → 镜头 / 原文）、`novel-trace.light.jpg`（小说段落「在剧本里」）、`storyboard-lines.light.jpg`（镜头 → 剧本行）；重启后端后在 5173 能点着来回跳。
 - 之后：第 13 步真实冒烟要 DeepSeek 密钥。
 - M1 留下的：下次真装大文件（如 Qwen-Image-Edit 31 GB）时看速度、剩余时间准不准，连接数是否停在 1 个。

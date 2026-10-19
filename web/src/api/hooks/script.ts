@@ -1,7 +1,13 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
-import { api, post } from "@/api/client";
-import { RewriteProposalSchema, ScriptSchema } from "@/api/schemas/script";
+import { api, patch, post } from "@/api/client";
+import { productKeys } from "@/api/hooks/products";
+import { seriesKeys } from "@/api/hooks/series";
+import {
+  RewriteProposalSchema,
+  ScriptSchema,
+  type BlockRewriteRequest,
+} from "@/api/schemas/script";
 
 const enc = encodeURIComponent;
 
@@ -17,12 +23,35 @@ export function useScript(episodeId: string | undefined) {
   });
 }
 
-/** 「重写这一段」 / 「换模型重写」: a proposal; saving goes through the impact preview. */
+/**
+ * 改一行 / 改场景标题 of an unconfirmed script (`PATCH /lines|scenes/{id}`): the answer is the
+ * whole script. A confirmed one goes through the impact preview instead.
+ */
+export function usePatchBlock(seriesId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (b: { id: string; scene: boolean; text: string }) =>
+      b.scene
+        ? patch(`/scenes/${enc(b.id)}`, ScriptSchema, { heading: b.text })
+        : patch(`/lines/${enc(b.id)}`, ScriptSchema, { text: b.text }),
+    onSuccess: (script) => {
+      client.setQueryData(scriptKeys.script(script.episode_id), script);
+      // A new version of 剧本化 (RunBar, history) and the episode's badges.
+      void client.invalidateQueries({ queryKey: productKeys.all });
+      void client.invalidateQueries({ queryKey: seriesKeys.episodes(seriesId) });
+    },
+  });
+}
+
+/**
+ * 「重写这一段」 / 「换模型重写」: a proposal; keeping it is an edit. 409 `over_budget` until the
+ * user agrees (`confirm_budget`).
+ */
 export function useRewriteBlock() {
   return useMutation({
-    mutationFn: (b: { id: string; scene: boolean; model?: string }) =>
-      post(`/${b.scene ? "scenes" : "lines"}/${enc(b.id)}/rewrite`, RewriteProposalSchema, {
-        model: b.model,
-      }),
+    mutationFn: (b: { id: string; scene: boolean } & BlockRewriteRequest) => {
+      const { id, scene, ...body } = b;
+      return post(`/${scene ? "scenes" : "lines"}/${enc(id)}/rewrite`, RewriteProposalSchema, body);
+    },
   });
 }

@@ -139,11 +139,6 @@ function finishRun(
   p.current_version_id = last.id;
   p.running = null;
   settle(p);
-  // A first script for an episode makes it a draft (剧本草稿).
-  if (p.slot === "script" && p.owner_type === "episode") {
-    const ep = getDb().episodes.find((e) => e.id === p.owner_id);
-    if (ep?.script_status === "none") ep.script_status = "draft";
-  }
   for (const v of created) {
     emitDemoEvent("version.created", {
       product_id: p.id,
@@ -170,16 +165,20 @@ export const productHandlers = [
     const q = new URL(request.url).searchParams;
     const owner = q.get("owner");
     const component = q.get("component");
-    // A series that is not the demo one is the backend's (plan「和 MSW 共存」).
+    // A series or an episode that is not the demo's is the backend's (plan「和 MSW 共存」).
     const [kind, ownerId] = owner?.split(":") ?? [];
     if (kind === "series" && ownerId && !getDb().series[ownerId]) return passthrough();
+    if (kind === "episode" && ownerId && !getDb().episodes.some((e) => e.id === ownerId))
+      return passthrough();
     const list = Object.values(getDb().products).filter(
       (p) =>
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&
         (!component || p.component_id === component),
     );
-    // The backend's products of the demo series (the novel, 设定提取) come first.
-    const real = kind === "series" ? await backendJson<Product[]>(request.clone(), []) : [];
+    // The backend's products of the demo series (the novel, 设定提取 …) and of its episodes
+    // (剧本化) come first.
+    const merged = (kind === "series" || kind === "episode") && !!ownerId;
+    const real = merged ? await backendJson<Product[]>(request.clone(), []) : [];
     const demo = await Promise.all(list.map(withEstimate));
     return demoJson([...real, ...demo.filter((p) => !real.some((r) => r.id === p.id))]);
   }),

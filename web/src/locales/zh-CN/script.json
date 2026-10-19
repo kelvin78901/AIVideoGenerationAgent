@@ -104,11 +104,13 @@
     "prov": {
       "source": "原文第 {{paras}} 段",
       "ai": "AI 新增",
-      "edited": "已修改"
+      "edited": "已修改",
+      "addition": "原文第 {{paras}} 段 · 补写"
     },
     "srcLabel": {
       "source": "来自原文第 {{paras}} 段",
-      "ai": "原文没有这句，是 AI 为了可拍加的"
+      "ai": "原文没有这句，是 AI 为了可拍加的",
+      "addition": "来自原文第 {{paras}} 段和已采纳的补写"
     },
     "paraSep": "、",
     "edit": "编辑",
@@ -132,13 +134,21 @@
     },
     "seconds": "{{n}} 秒",
     "overlay": "叠在 {{shot}}",
-    "none": "—"
+    "none": "—",
+    "sceneLead": "场 {{n}}　",
+    "editLabelDraft": "编辑这一段",
+    "saved": "已保存。",
+    "unadopted": "剧本化有一版新结果还没采纳：这里显示的是它，在「历史」里采纳后下游才会用。",
+    "openHistory": "看历史",
+    "rewriteAnyway": "仍然重写",
+    "shots": "对应镜头",
+    "shot": "镜头 {{label}}",
+    "noShots": "还没拆到镜头",
+    "inNovel": "在小说里看"
   },
   "other": {
     "title": "{{name}} 的剧本",
     "none": "这一集的剧本还没生成。会沿用第 1 集确认过的人物、设定和写法。",
-    "draft": "剧本草稿已生成（示例数据只展开第 1 集的内容）。确认前可以先在右侧改提示词或换模型。",
-    "generate": "生成这一集的剧本",
-    "regenerate": "重新生成这一集"
+    "generate": "生成这一集的剧本"
   }
 }

@@ -1,13 +1,13 @@
 import { http } from "msw";
 
-import { ApiError, put } from "@/api/client";
+import { ApiError, patch, put } from "@/api/client";
 import type { StepId } from "@/api/schemas/episodes";
 import { ApplyImpactRequestSchema, ImpactChangeSchema } from "@/api/schemas/impact";
 import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { impactPreviews } from "@/mocks/fixtures/demo/impacts";
 import { applyAssetUnlock, assetUnlockPreview } from "@/mocks/handlers/assets";
-import { applyScriptChange } from "@/mocks/handlers/script";
+import { ScriptSchema } from "@/api/schemas/script";
 import { OutputSpecSchema } from "@/api/schemas/spec";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
@@ -39,19 +39,24 @@ export const impactHandlers = [
     const { action } = body.data;
     // Undo drops the previewed change; nothing was written yet.
     if (action === "undo") return demoJson({ action, stale: {}, job_ids: [] });
-    // The spec lives in the real backend (M1); this demo impact only confirms the change.
-    if (impact.change.kind === "spec_aspect") {
-      const id = encodeURIComponent(impact.change.target_id);
-      const path = `/series/${id}/spec?confirmed_impact=${encodeURIComponent(impact.id)}`;
-      try {
-        await put(path, OutputSpecSchema, impact.change.patch);
-      } catch (err) {
-        if (err instanceof ApiError) return demoError(err.status, err.code, err.params);
-        throw err;
-      }
+    // The spec (M1) and the script (M2 step 9) live in the real backend; this demo impact only
+    // confirms the change and lists what is downstream (step 10 moves it to the backend).
+    const { kind, target_id, patch: change } = impact.change;
+    const id = encodeURIComponent(target_id);
+    try {
+      if (kind === "spec_aspect")
+        await put(
+          `/series/${id}/spec?confirmed_impact=${encodeURIComponent(impact.id)}`,
+          OutputSpecSchema,
+          change,
+        );
+      if (kind === "line_edit") await patch(`/lines/${id}`, ScriptSchema, { text: change.text });
+      if (kind === "scene_edit")
+        await patch(`/scenes/${id}`, ScriptSchema, { heading: change.text });
+    } catch (err) {
+      if (err instanceof ApiError) return demoError(err.status, err.code, err.params);
+      throw err;
     }
-    if (impact.change.kind === "line_edit" || impact.change.kind === "scene_edit")
-      applyScriptChange(impact.change);
     if (impact.change.kind === "asset_unlock") applyAssetUnlock(impact.change.target_id);
     // Mark (and for rerun, queue) the affected products: the nav shows 「待更新 N」.
     const steps = getDb().progress[EP1]?.steps;

@@ -18,11 +18,9 @@ import {
   shotMetrics,
   speedMetrics,
 } from "@/mocks/fixtures/demo/metricsDetail";
-import { scripts } from "@/mocks/fixtures/demo/script";
 import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
 import { series } from "@/mocks/fixtures/demo/series";
 import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtures/demo/post";
-import { products } from "@/mocks/fixtures/demo/products";
 import { syncLog, syncRules, syncTargets } from "@/mocks/fixtures/demo/sync";
 import { generateLog, generateRules, takeProducts } from "@/mocks/fixtures/demo/takes";
 import { comfyWorkflowFiles, workflows } from "@/mocks/fixtures/demo/workflows";
@@ -47,12 +45,9 @@ function createDb() {
       episodes: episodeMetrics,
     },
     products: Object.fromEntries(
-      [...products, ...assetProducts, ...shotProducts, ...takeProducts, ...postProducts].map(
-        (p) => [p.id, p],
-      ),
+      [...assetProducts, ...shotProducts, ...takeProducts, ...postProducts].map((p) => [p.id, p]),
     ),
     assets,
-    scripts,
     shots,
     generateRules: { [series.id]: generateRules } as Record<string, GenerateRules>,
     generateLog: { [EP1]: generateLog } as Record<string, GenerateLogEntry[]>,

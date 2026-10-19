@@ -1,13 +1,13 @@
 /**
- * Products and versions of the demo series' later steps (剧本化). The novel step's — 小说补全 v1
- * Qwen3.6-27B 本地 09:41 草稿 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳, and 设定提取 v1 本地 10:05
- * (prototype Main.dc.html, Inspector「历史」) — and 分集规划 v1 DeepSeek V4.1 Flash 10:08 are the
- * backend's (`studio/demo.py`), merged into the demo's product list by `handlers/products.ts`.
+ * Helpers for the demo's products and versions (assets, shots, takes, post). The novel and
+ * script steps' — 小说补全 v1 Qwen3.6-27B 本地 09:41 → v2 DeepSeek V4 Pro 10:02, 设定提取 v1 本地
+ * 10:05, 分集规划 v1 DeepSeek V4.1 Flash 10:08, 第 1 集剧本化 v1 本地 10:12 → v2 Kimi K2.6 10:20
+ * (prototype Main.dc.html, Inspector「历史」) — are the backend's (`studio/demo.py`), merged into
+ * the demo's product lists by `handlers/products.ts`.
  */
 import type { Product, ProductVersion, VersionOrigin } from "@/api/schemas/products";
 import { modelByKey } from "@/mocks/fixtures/demo/models";
 import { compilePrompt, intents } from "@/mocks/fixtures/demo/prompts";
-import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 
 /** The backend's 小说补全 and 设定提取 products of the demo series (seeded in Mock mode). */
@@ -89,7 +89,6 @@ export function demoVersion(
 }
 
 const LOCAL = "local/qwen3.6-27b";
-const DEEPSEEK = "deepseek/v4-pro";
 
 /** A demo product owned by the series (default) or an episode, with its versions. */
 export function demoProduct(
@@ -131,48 +130,3 @@ export function demoProduct(
     running: null,
   };
 }
-
-const scriptV1 = demoVersion("demo-p-script-e1", "script", {
-  n: 1,
-  origin: "run",
-  model: LOCAL,
-  at: demoAt("10:12"),
-  payload: { scenes: 2, blocks: 12 },
-});
-
-/** Episode N's script product (剧本化), owned by the episode. */
-export const scriptProductId = (episodeId: string) => `demo-p-script-${episodeId.slice(5)}`;
-
-export const products: Product[] = [
-  // 剧本化 for episode 1: v1 本地 10:12 草稿 → v2 Kimi K2.6 10:20（不满意换一个）已采纳.
-  demoProduct(
-    "demo-p-script-e1",
-    "script",
-    "script",
-    [
-      scriptV1,
-      demoVersion("demo-p-script-e1", "script", {
-        n: 2,
-        origin: "switch",
-        model: "moonshot/kimi-k2.6",
-        at: demoAt("10:20"),
-        parent: scriptV1.id,
-        payload: { scenes: 2, blocks: 12 },
-      }),
-    ],
-    90,
-    { type: "episode", id: EP1 },
-  ),
-  // Episodes 2 and 3 have no script yet (「生成这一集的剧本」).
-  ...["demo-e2", "demo-e3"].map((ep) =>
-    demoProduct(
-      scriptProductId(ep),
-      "script",
-      "script",
-      [],
-      90,
-      { type: "episode", id: ep },
-      DEEPSEEK,
-    ),
-  ),
-];

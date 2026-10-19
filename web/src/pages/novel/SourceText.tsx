@@ -1,5 +1,5 @@
 import { Pencil, Plus, Trash2 } from "lucide-react";
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
@@ -30,6 +30,8 @@ type Draft =
  * In 原文 (only there: the other views show additions that are not the author's text) each
  * paragraph can be edited, deleted or followed by a new one, and the chapter retitled; saving
  * sends the whole chapter and makes a new novel version (M2 step 7b).
+ *
+ * A paragraph's number opens 「在剧本里」 under it (`trace`, M2 step 9).
  */
 export function SourceText({
   seriesId,
@@ -42,6 +44,9 @@ export function SourceText({
   marked = [],
   editable = false,
   downstream = false,
+  traced = null,
+  onTrace,
+  trace,
 }: {
   seriesId: string;
   novel: Novel;
@@ -57,6 +62,11 @@ export function SourceText({
   editable?: boolean;
   /** Something adopted was built from the novel (an edit turns it 待更新). */
   downstream?: boolean;
+  /** The paragraph whose 「在剧本里」 is open. */
+  traced?: number | null;
+  onTrace?: (idx: number | null) => void;
+  /** 「在剧本里」 of a paragraph (段落 → 剧本行). */
+  trace?: (idx: number) => ReactNode;
 }) {
   const { t } = useTranslation("novel");
   const { t: tc } = useTranslation();
@@ -225,9 +235,24 @@ export function SourceText({
                   focus === p.idx && "border-tone-info-border bg-tone-info-bg/50",
                 )}
               >
-                <span className="w-5 shrink-0 pt-1 font-mono text-xs text-muted-foreground">
-                  {String(n).padStart(2, "0")}
-                </span>
+                {onTrace ? (
+                  <button
+                    type="button"
+                    aria-label={t("trace.button", { n })}
+                    aria-expanded={traced === p.idx}
+                    onClick={() => onTrace(traced === p.idx ? null : p.idx)}
+                    className={cn(
+                      "-mx-1 h-fit w-7 shrink-0 rounded-sm px-1 pt-1 text-left font-mono text-xs text-muted-foreground outline-none hover:bg-muted hover:text-primary focus-visible:ring-2 focus-visible:ring-ring",
+                      traced === p.idx && "bg-muted text-primary",
+                    )}
+                  >
+                    {String(n).padStart(2, "0")}
+                  </button>
+                ) : (
+                  <span className="w-5 shrink-0 pt-1 font-mono text-xs text-muted-foreground">
+                    {String(n).padStart(2, "0")}
+                  </span>
+                )}
                 {editing ? (
                   editor(t("edit.label", { n }))
                 ) : (
@@ -278,6 +303,7 @@ export function SourceText({
                   </div>
                 ) : null}
               </div>
+              {traced === p.idx && trace ? trace(p.idx) : null}
               {canEdit && draft?.kind === "delete" && draft.at === at ? (
                 <div
                   role="alert"
