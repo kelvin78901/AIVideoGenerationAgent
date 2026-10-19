@@ -63,7 +63,5 @@
 
 ## 等 Kelvin 的事
 
-- **重启后端**：第 1–6 步加了迁移 `0007`–`0012` 和 `/products`、`/config/*`、`/series`、`/series/{id}/novel`、`/series/{id}/bible`、`/bible/*` 接口；不重启的话小说页的设定区会报 404。
-- **第 6 步可以过目**：`docs/studio/reports/ui/novel-bible.light.jpg`（设定卡 + 「可能是同一个」）、`novel-bible-marked.light.jpg`（点「旧小票」切到第三章、标出 3 段）、`novel-bible-edit.light.jpg`（编辑设定）；示例设定见 `tests/fixtures/demo/extract.json`（18 条，周屿的简介改了）。
 - **M2 第 5 步要过目**：示例小说 `tests/fixtures/demo/雨停之前.txt`（3 章约 2400 字，计划写的约 3000 字，要加长就说）；截图 `docs/studio/reports/ui/series-menu.light.jpg`（剧名菜单）、`novel-import.light.jpg`（导入弹窗）、`novel-empty.light.jpg`（新剧集空状态）。之后：第 8 步审节拍看板和情绪曲线的截图；第 13 步真实冒烟要 DeepSeek 密钥。
 - M1 留下的：下次真装大文件（如 Qwen-Image-Edit 31 GB）时看速度、剩余时间准不准，连接数是否停在 1 个。
