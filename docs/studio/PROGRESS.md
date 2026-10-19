@@ -30,12 +30,12 @@
 | 7b | Kelvin 审过设计稿；Vitest `pages/models/WorkflowLibrary.test.tsx`（8 条：列表和筛选、推荐档只读、猜的绑定 → 确认 → 试跑 → 升档、装依赖走确认弹窗、从 ComfyUI 列表导入、拖入 JSON、降档、英文）；Models 测试只数组件表的行；冒烟加工作流库一条；重截 models 两张；DECISIONS 记 7b；勾计划 7b、ROADMAP 一项 | 8bd178f | web test 191、lint、typecheck、format；e2e 17 |
 | 8 | 清单补齐：ComfyUI 锁 v0.42.1、最低 0.35.0；H3 / Fun ControlNet 是 ComfyUI 自带节点（`detect.native_since`，不再是安装项）；Manager 改 `manager_requirements.txt` 装法；VHS、SeedVR2、FlashVSR 锁 commit；PyTorch cu130 源；国内 GitHub 走 gh-proxy；权重 `installable: false` + `weights_pending_p0`；改动清单显示 tag / 短 commit；`scripts/setup_scan_real.py`（只读，本机跑过）；测试不再触网；前端测试数据重新导出、Setup / 冒烟数字跟着改；DECISIONS 记第 8 步 | dd2fcce | pytest 296；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
 | 8b（1/2） | Kelvin 选了 Qwen-Image-Edit-2511 int8、ComfyUI 自带 SeedVR2 + 7B int8、IndexTTS-2.5；五项权重锁 HF revision、填大小和 sha256（共约 110 GB，H3 补两个加速 LoRA）；`node_seedvr2` 改成 ComfyUI 自带（0.28.0 起）；DramaStudio 节点包不可装；download 文件加 `folder:`，放进 ComfyUI 的默认模型目录（`is_default`，Desktop 的共享目录）；新检测 `downloads`；日志 `download`；`setup_scan_real.py` 打印权重目标路径（本机核对过）；前端测试数据重新导出、Setup / 冒烟 / API 测试数字跟着改；DECISIONS 记 8b | e19f60f | pytest 300；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
-| 8b（2/2） | Kelvin 真装：VHS、FlashVSR、四项权重成功；IndexTTS 从仓库挪到默认位置；回滚第一次被 Manager 的 Windows bug 卡住，修复（回滚前建 `.disabled`）后第二次成功，再装回 VHS、FlashVSR；装完复检（`not_detected`）；SageAttention 在 Windows 上改用预编译包 + 按 torch 选的 triton-windows（`by_torch`、`torch_unsupported`）；git 关 detached HEAD 提示；DECISIONS 记真装结果 | 本提交 | pytest 单元 218、API 84、e2e 2；ruff、mypy（含 linux）；web test 191、lint、format |
+| 8b（2/2） | Kelvin 真装：VHS、FlashVSR、四项权重成功；IndexTTS 从仓库挪到默认位置；回滚第一次被 Manager 的 Windows bug 卡住，修复（回滚前建 `.disabled`）后第二次成功，再装回 VHS、FlashVSR；装完复检（`not_detected`）；SageAttention 在 Windows 上改用预编译包 + 按 torch 选的 triton-windows（`by_torch`、`torch_unsupported`）；git 关 detached HEAD 提示；DECISIONS 记真装结果 | dfe9908 | pytest 单元 218、API 84、e2e 2；ruff、mypy（含 linux）；web test 191、lint、format |
+| 8b（收尾） | 用新代码重启后端后装 SageAttention：torch 2.12.1+cu130 配 triton-windows 3.7.1 + sageattention 2.2.0，在 5090 上跑通（和 SDPA 余弦 0.99927）；Kelvin 重启 ComfyUI 后 VHS、FlashVSR、SageAttention 都加载；勾计划 8b、ROADMAP 验收两条 | 本提交 | 仅文档（代码同 dfe9908） |
 
 ## 下一步
 
-- **第 8b 步收尾**：Kelvin 用新代码重启后端（`DRAMA_SETUP=real`）后，在「环境与安装」装 SageAttention（或我用接口装），检查 `import sageattention` 能过；Kelvin 重启 ComfyUI，VHS、FlashVSR、SageAttention 一起加载，再检测一次；然后勾计划 8b 和验收「5090 真实扫描和实际一致」「ComfyUI 识别一致；装前弹改动清单，回滚能回到快照」。
-- **第 8c 步 安装进度、预计用时、多连接下载**（Kelvin 2026-10-18 真装时提出，见 `plans/M1.md` 8c）：8b 收完再做，从 `setup/steps.py:_fetch` 开始。
+- **第 8c 步 安装进度、预计用时、多连接下载**（Kelvin 2026-10-18 真装时提出，见 `plans/M1.md` 8c，含安装位置提示、回滚后核对）：下一步做这个，从 `setup/steps.py:_fetch` 开始。
 - **第 9 步 收尾**：按计划第 9 步做。ROADMAP 勾选（验收「5090 真实扫描和实际一致」「ComfyUI 识别和 Kelvin 机器一致」等 Kelvin 看过 `scripts/setup_scan_real.py` 的输出再勾）；SPEC 补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm|changes|snapshot|snapshot_error`、`GET /comfy/env`、`/comfy/snapshots*`、`GET /comfy/workflows`、`/workflows/{id}/deps*`；第 4 节 `comfy_env` 的 `comfyui_commit`；12.1 清单的 `native_since`、`version`、`installable: false`、download 文件的 `folder:` 和检测 `downloads`（12.1 的 SeedVR2 示例改成 ComfyUI 自带）、`ModelDir.default`；16.1 的 `/` 跳转和导航「环境与安装」；6.4.3 的 `video_in` 槽位。写 `reports/M1.md`（中文，给 Kelvin），跑 CI（Linux；Windows 在开 PR 时跑），`gh pr create -R kelvin78901/AIVideoGenerationAgent --base main`，PR 描述用报告。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -72,6 +72,6 @@
 
 ## 等 Kelvin 的事
 
-- **用新代码重启后端**：关掉现在的 `start.ps1`，在 PowerShell 里 `$env:DRAMA_SETUP = "real"; powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1 -SkipInstall`，告诉我；之后装 SageAttention，再请你重启一次 ComfyUI。
-- （2026-10-18 已办：真实扫描输出 Kelvin 看过、和我这边一致；8b 的三个版本已选；`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图、第 7b 步设计稿 Kelvin 审核通过；按镜头选工作流 / 拼节点 beta 已定，见 DECISIONS 和 SPEC 6.4.8。）
+- **开 SageAttention**（Kelvin 同意）：Desktop 完全退出后，把 `%APPDATA%\Comfy Desktop\installations.json` 里 `inst-1792192213598` 的 `launchArgs` 改成 `--enable-manager --use-sage-attention`（先备份），再请 Kelvin 打开 Desktop，核对 `/system_stats` 的 argv 和日志。
+- （2026-10-18 已办：第 8b 步真装、回滚、SageAttention 都做完；真实扫描输出 Kelvin 看过、和我这边一致；8b 的三个版本已选；`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图、第 7b 步设计稿 Kelvin 审核通过；按镜头选工作流 / 拼节点 beta 已定，见 DECISIONS 和 SPEC 6.4.8。）
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。

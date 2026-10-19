@@ -14,7 +14,9 @@
   - 改 2：Windows 上改装 woct0rdho 的预编译包 `sageattention 2.2.0+cu130torch2.10.0andhigher.post6`（abi3，Python ≥ 3.10），加上 `triton-windows`。
     - triton-windows 的版本要和 PyTorch 自己锁的 triton 一致（`pytorch/.ci/docker/triton_version.txt`：2.12、2.13 → 3.7.1，2.14 → 3.8.0）。
     - 清单新字段 `by_torch`：键是 `<major.minor>+<cuda>`，装的时候问 ComfyUI 的 Python 现在是哪个 PyTorch（同一次安装里可能刚升级过），表里没有就报 `torch_unsupported`。
-  - Kelvin 机器上的 1.0.6 等新装法装上时会被覆盖。
+  - 新装法在 Kelvin 机器上装好：torch 2.12.1+cu130、triton-windows 3.7.1、sageattention 2.2.0；装完复检通过。
+    在 5090（sm_120）上跑了一次 1×8×1024×64 的注意力，和 PyTorch SDPA 的余弦相似度 0.99927（量化注意力，正常）。
+    FlashVSR 启动时认到了它。ComfyUI 自己的模型要用它，得加启动参数 `--use-sage-attention`：Kelvin 同意开，改在 Desktop 的 `installations.json`（`launchArgs`），Desktop 完全退出后再改，不然会被它写回。
 - **安装位置填成了仓库目录**（`C:\dev\drama-studio`，页面默认是 `C:\Users\kelvin\DramaStudio`），IndexTTS 下进了仓库。
   - 已挪到默认位置；用默认位置重新装时，安装器检测到文件已在，记成「已经装好了」，没有重下。
   - 安装位置在程序目录里时要提示，加进第 8c 步。
