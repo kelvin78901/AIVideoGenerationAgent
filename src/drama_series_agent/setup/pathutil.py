@@ -36,3 +36,9 @@ def norm(path: str) -> str:
 
 def same_path(a: str, b: str) -> bool:
     return norm(a) == norm(b)
+
+
+def inside(path: str, folder: str) -> bool:
+    """``path`` is ``folder`` or somewhere under it."""
+    p, f = norm(path), norm(folder).rstrip("/")
+    return p == f or p.startswith(f + "/")

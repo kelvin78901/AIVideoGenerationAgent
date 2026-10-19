@@ -173,6 +173,20 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
     assert _call(client, lambda: _state(client).setup.installed()) == set(PC_INSTALLABLE) - {"sage"}
 
 
+def test_install_location_inside_the_program_folder(client: TestClient) -> None:
+    """IndexTTS once went into the repo (2026-10-18): such a location is logged as a warning."""
+    assert _scan(client)["app_dir"] == "C:\\dev\\drama-studio"
+    _install(client, ["ffmpeg"], dir="c:/Dev/Drama-Studio/models")
+    _wait(client, "done")
+    assert ("warn", "dir_in_app", {"dir": "c:/Dev/Drama-Studio/models"}) in _logs(client)
+    _scan(client)
+    _install(client, ["llmsrv"], dir="C:\\dev\\drama-studio-models")  # only alike
+    _wait(client, "done")
+    assert [x for x in _logs(client) if x[1] == "dir_in_app"] == [
+        ("warn", "dir_in_app", {"dir": "c:/Dev/Drama-Studio/models"})
+    ]
+
+
 def test_rescan_only_reports_the_difference(client: TestClient) -> None:
     _scan(client)
     _go(client, PC_INSTALLABLE)

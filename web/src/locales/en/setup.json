@@ -249,6 +249,7 @@
   "installTitle": "Install settings",
   "dir": "Install location",
   "dirHint": "Model weights go here. Leave plenty of space.",
+  "dirInApp": "This is the program's own folder ({{app}}). Weights here make it very large and may be deleted with it when the program is updated or reinstalled. Pick another place.",
   "mirror": {
     "label": "Download source",
     "name": {
@@ -307,7 +308,8 @@
     "download": "Downloading {{file}} to {{path}}",
     "output": "{{text}}",
     "snapshot": "Saved a ComfyUI snapshot: {{name}}",
-    "snapshot_failed": "Couldn't take a ComfyUI snapshot; items that change ComfyUI are skipped this time"
+    "snapshot_failed": "Couldn't take a ComfyUI snapshot; items that change ComfyUI are skipped this time",
+    "dir_in_app": "Install location is inside the program folder: {{dir}}"
   },
   "done": {
     "title": "Ready",

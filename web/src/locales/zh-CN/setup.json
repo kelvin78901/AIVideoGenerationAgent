@@ -249,6 +249,7 @@
   "installTitle": "安装设置",
   "dir": "安装位置",
   "dirHint": "模型权重放在这里，要留足空间。",
+  "dirInApp": "这是程序所在的文件夹（{{app}}）。模型权重放在这里会让程序文件夹变得很大，更新或重装程序时还可能被一起删掉。建议换一个位置。",
   "mirror": {
     "label": "下载源",
     "name": {
@@ -307,7 +308,8 @@
     "download": "下载 {{file}} → {{path}}",
     "output": "{{text}}",
     "snapshot": "已存 ComfyUI 快照：{{name}}",
-    "snapshot_failed": "存不了 ComfyUI 快照，会改动 ComfyUI 的项这次不装"
+    "snapshot_failed": "存不了 ComfyUI 快照，会改动 ComfyUI 的项这次不装",
+    "dir_in_app": "安装位置在程序文件夹里：{{dir}}"
   },
   "done": {
     "title": "准备好了",

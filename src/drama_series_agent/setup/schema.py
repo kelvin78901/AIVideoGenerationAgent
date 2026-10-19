@@ -93,6 +93,8 @@ class ProfileData(BaseModel):
     phase: Phase = "idle"
     machine: Machine
     default_dir: str
+    # The program's own folder: an install location inside it gets a warning (step 8c).
+    app_dir: str | None = None
     items: list[SetupItem] = Field(default_factory=list)
     install: InstallInfo | None = None
     recommendation: Recommendation | None = None
@@ -121,6 +123,7 @@ class MachineProfile(BaseModel):
     items: list[SetupItem]
     install: InstallInfo | None
     default_dir: str
+    app_dir: str | None
     recommendation: Recommendation | None
     # True with Mock's sample machines: the page then shows the 示例机器 switch.
     simulated: bool

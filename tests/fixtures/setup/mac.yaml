@@ -4,6 +4,7 @@
 host: { os: macos, os_name: macOS, bits: 64, arch: arm64, ram_gb: 48, home: /Users/demo }
 gpu: { name: Apple M4 Pro, vram_gb: 48, backend: mps }
 default_dir: ~/DramaStudio
+app_dir: ~/drama-studio   # where the program lives
 disks: { "/": 600 }   # free GB
 download_bps: 12000000   # the scan's short download (bytes/s)
 

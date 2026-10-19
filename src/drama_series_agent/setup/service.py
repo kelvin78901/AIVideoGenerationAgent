@@ -71,7 +71,7 @@ from drama_series_agent.setup.installer import (
     install_order,
 )
 from drama_series_agent.setup.manifest import Item, Manifest, load_manifest
-from drama_series_agent.setup.pathutil import dirname, join, same_path
+from drama_series_agent.setup.pathutil import dirname, inside, join, same_path
 from drama_series_agent.setup.probe import FakeProbe, HostInfo, Probe, RealProbe
 from drama_series_agent.setup.schema import (
     ComfyEnvOut,
@@ -360,6 +360,8 @@ class SetupService:
                 x.install = ItemInstall(state="queued") if x.id in order else None
             await self._enqueue(row.id, data, INSTALL_JOB, wait=bool(reasons))
             await self._log("info", "mirror", mirror=req.mirror, dir=req.dir)
+            if data.app_dir and inside(req.dir, data.app_dir):
+                await self._log("warn", "dir_in_app", dir=req.dir)
             if reasons:
                 await self._log("warn", "confirm")
             await self._progress(data, None)
@@ -477,9 +479,10 @@ class SetupService:
         installed = await self.installed(pid) if probe.simulated else set()
         machine = machine_of(host, scan.gpu)
         default_dir = await probe.default_dir()
+        app_dir = await probe.app_dir()
 
         def reset(d: ProfileData) -> None:
-            d.machine, d.default_dir = machine, default_dir
+            d.machine, d.default_dir, d.app_dir = machine, default_dir, app_dir
             d.items = [checking(x) for x in items]
             d.facts = {}
 
@@ -922,6 +925,7 @@ class SetupService:
         return ProfileData(
             machine=machine_of(host, await probe.gpu()),
             default_dir=await probe.default_dir(),
+            app_dir=await probe.app_dir(),
             run=new_id(),
         )
 
@@ -1034,6 +1038,7 @@ class SetupService:
             items=data.items,
             install=data.install,
             default_dir=data.default_dir,
+            app_dir=data.app_dir,
             recommendation=data.recommendation,
             simulated=row.id == PROFILE_DEMO,
             download_bps=data.download_bps,

@@ -175,6 +175,19 @@ export const installableIds = (items: SetupItem[]) =>
 
 export const GROUPS: SetupGroup[] = ["sys", "rt", "comfy", "w", "svc"];
 
+/** Paths compared as the backend does (setup/pathutil.py): `/`, case ignored for a drive path. */
+function normPath(path: string): string {
+  const p = path.trim().replace(/\\/g, "/").replace(/\/+$/, "");
+  return /^[A-Za-z]:(\/|$)/.test(p) ? p.toLowerCase() : p;
+}
+
+/** `path` is `folder` or somewhere under it. */
+export function isInside(path: string, folder: string): boolean {
+  const p = normPath(path);
+  const f = normPath(folder);
+  return p === f || p.startsWith(`${f}/`);
+}
+
 /** Manifest names come in both languages; pick the one on screen. */
 export function useItemName() {
   const { i18n } = useTranslation();

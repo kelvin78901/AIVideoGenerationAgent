@@ -119,6 +119,8 @@ export const MachineProfileSchema = z.object({
   install: InstallInfoSchema.nullable(),
   /** Where models go unless the user picks another folder. */
   default_dir: z.string(),
+  /** The program's own folder: an install location inside it gets a warning. */
+  app_dir: z.string().nullable(),
   /** Preset suggested for this hardware (SPEC 12.2); null before the first scan. */
   recommendation: z
     .object({ preset: z.string(), reason: z.enum(["local_video", "no_cuda"]) })

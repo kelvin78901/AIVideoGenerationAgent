@@ -78,6 +78,7 @@ def test_profile_before_the_first_scan(client: TestClient) -> None:
         "items": [],
         "install": None,
         "default_dir": "D:\\DramaStudio",
+        "app_dir": "C:\\dev\\drama-studio",
         "recommendation": None,
         "simulated": True,
         "download_bps": None,

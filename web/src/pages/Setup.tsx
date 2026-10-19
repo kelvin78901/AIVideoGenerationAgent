@@ -46,6 +46,7 @@ import {
   GROUPS,
   estimate,
   installableIds,
+  isInside,
   overallPct,
   requiredIds,
   statusCounts,
@@ -304,7 +305,13 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
                 onChange={(e) => setDir(e.target.value)}
                 className="font-mono text-[13px]"
               />
-              <div className="text-xs text-muted-foreground">{t("dirHint")}</div>
+              {p.app_dir && isInside(chosenDir, p.app_dir) ? (
+                <div className="text-xs leading-relaxed text-tone-warn-fg">
+                  {t("dirInApp", { app: p.app_dir })}
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground">{t("dirHint")}</div>
+              )}
             </div>
             <div className="flex flex-[1_1_320px] flex-col gap-1.5">
               <div className="text-[13px] font-medium">{t("mirror.label")}</div>

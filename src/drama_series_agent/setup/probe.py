@@ -105,6 +105,7 @@ class Probe(Protocol):
     async def gpu(self) -> GpuInfo | None: ...
     async def disk(self, path: str) -> DiskInfo | None: ...
     async def default_dir(self) -> str: ...
+    async def app_dir(self) -> str: ...
     async def run(self, cmd: str) -> CommandResult | None: ...
     async def http_get(self, url: str, timeout_s: float = 3.0) -> HttpResult | None: ...
     async def download_speed(self, url: str) -> float | None: ...
@@ -288,6 +289,12 @@ class RealProbe:
         if best and best[1] != "C:":
             return f"{best[1]}\\DramaStudio"
         return str(Path.home() / "DramaStudio")
+
+    async def app_dir(self) -> str:
+        """Where this program lives: weights do not belong in it."""
+        from drama_series_agent.core.paths import REPO_ROOT
+
+        return str(REPO_ROOT)
 
     async def run(self, cmd: str, timeout_s: float = 20.0) -> CommandResult | None:
         argv = shlex.split(cmd, posix=True)
@@ -501,6 +508,9 @@ class FakeProbe:
 
     async def default_dir(self) -> str:
         return str(self.data["default_dir"])
+
+    async def app_dir(self) -> str:
+        return str(self.data["app_dir"])
 
     async def run(self, cmd: str) -> CommandResult | None:
         out = (self.data.get("commands") or {}).get(cmd)

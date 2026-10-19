@@ -8,6 +8,7 @@
 host: { os: windows, os_name: Windows 11, bits: 64, arch: amd64, ram_gb: 63.7, home: "C:/Users/kelvin" }
 gpu: { name: NVIDIA RTX 5090, vram_gb: 31.8, backend: cuda, cuda_driver: "13.0" }
 default_dir: 'D:\DramaStudio'
+app_dir: 'C:\dev\drama-studio'   # where the program lives (an install location there gets a warning)
 disks: { "C:": 182.4, "D:": 1228.8 }   # free GB
 download_bps: 22000000   # the scan's short download (bytes/s); the sample installs report 25 MB/s
 

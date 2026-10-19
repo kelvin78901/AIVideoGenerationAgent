@@ -19,6 +19,7 @@
       "items": [],
       "install": null,
       "default_dir": "D:\\DramaStudio",
+      "app_dir": "C:\\dev\\drama-studio",
       "recommendation": null,
       "simulated": true,
       "download_bps": null
@@ -727,6 +728,7 @@
       ],
       "install": null,
       "default_dir": "D:\\DramaStudio",
+      "app_dir": "C:\\dev\\drama-studio",
       "recommendation": {
         "preset": "balanced",
         "reason": "local_video"
@@ -965,6 +967,7 @@
       "items": [],
       "install": null,
       "default_dir": "~/DramaStudio",
+      "app_dir": "~/drama-studio",
       "recommendation": null,
       "simulated": true,
       "download_bps": null
@@ -1645,6 +1648,7 @@
       ],
       "install": null,
       "default_dir": "~/DramaStudio",
+      "app_dir": "~/drama-studio",
       "recommendation": {
         "preset": "balanced",
         "reason": "no_cuda"

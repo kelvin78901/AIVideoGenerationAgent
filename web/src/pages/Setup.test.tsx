@@ -140,8 +140,14 @@ describe("SetupPage", () => {
     await user.click(within(mirror).getByRole("radio", { name: "国内镜像" }));
     expect(screen.getByText(/用国内镜像下载 Python 包和模型权重/)).toBeInTheDocument();
     const dir = screen.getByLabelText("安装位置");
+    // Inside the program's own folder: a warning instead of the hint (case and slashes aside).
+    await user.clear(dir);
+    await user.type(dir, "c:/Dev/drama-studio/models");
+    expect(screen.getByText(/这是程序所在的文件夹（C:\\dev\\drama-studio）/)).toBeInTheDocument();
+    expect(screen.queryByText("模型权重放在这里，要留足空间。")).toBeNull();
     await user.clear(dir);
     await user.type(dir, "E:\\Studio");
+    expect(screen.queryByText(/这是程序所在的文件夹/)).toBeNull();
     await user.click(screen.getByRole("button", { name: "安装选中的 2 项" }));
     expect(fakeSetup.profile.install).toMatchObject({ mirror: "cn", dir: "E:\\Studio" });
     expect(await screen.findByText("下载源：国内镜像 · E:\\Studio")).toBeInTheDocument();
