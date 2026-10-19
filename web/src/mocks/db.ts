@@ -18,7 +18,6 @@ import {
   shotMetrics,
   speedMetrics,
 } from "@/mocks/fixtures/demo/metricsDetail";
-import { suggestions } from "@/mocks/fixtures/demo/novel";
 import { scripts } from "@/mocks/fixtures/demo/script";
 import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
 import { series } from "@/mocks/fixtures/demo/series";
@@ -53,7 +52,6 @@ function createDb() {
       ),
     ),
     assets,
-    suggestions,
     scripts,
     shots,
     generateRules: { [series.id]: generateRules } as Record<string, GenerateRules>,

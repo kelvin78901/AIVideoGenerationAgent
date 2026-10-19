@@ -30,6 +30,7 @@ from drama_series_agent.api.routes import (
     series,
     setup,
     spec,
+    suggestions,
 )
 from drama_series_agent.api.security import CLIENT_HEADER, LocalOnlyGuard
 from drama_series_agent.api.state import StudioState, get_state
@@ -74,6 +75,7 @@ def _v1_router() -> APIRouter:
     router.include_router(series.router)
     router.include_router(novel.router)
     router.include_router(bible.router)
+    router.include_router(suggestions.router)
     router.include_router(spec.router)
     router.include_router(setup.router)
     router.include_router(comfy.router)

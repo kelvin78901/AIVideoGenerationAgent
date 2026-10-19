@@ -77,8 +77,11 @@
     "rewritePlaceholder": "比如：别写风衣，她今天穿的是工装外套",
     "rewriteSubmit": "按要求重写这一条",
     "rewriteDone": "第 {{n}} 段的这条建议已按你的要求重写（{{model}}）。",
+    "rewriteAnyway": "确认花费，重写",
     "acceptAllDone": "已采纳全部未忽略的建议。",
-    "empty": "还没有补全建议。点上面的「重跑」让 AI 找一遍。"
+    "empty": "还没有补全建议。点上面的「重跑」让 AI 找一遍。",
+    "unadopted": "未采纳",
+    "unadoptedHint": "这一版还没采纳：设定提取和分集规划仍用之前采纳的那一版里的补写。"
   },
   "bible": {
     "title": "提取到的设定",

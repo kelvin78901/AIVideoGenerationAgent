@@ -33,6 +33,9 @@ from typing import Any
 
 KINDS = ("character", "location", "prop", "event", "relation")
 ID_PREFIX = {"character": "c", "location": "l", "prop": "p", "event": "e", "relation": "r"}
+KIND_LABEL = {
+    "character": "人物", "location": "地点", "prop": "道具", "event": "事件", "relation": "关系",
+}  # fmt: skip
 # Relations are named after the people in them, so they would always look alike.
 JUDGED_KINDS = ("character", "location", "prop", "event")
 MAX_PAIRS = 40
@@ -266,6 +269,33 @@ def suggestions(
             seen.add(sid)
             out.append({"id": sid, "kind": a["kind"], "ids": [a["id"], b["id"]], "reason": reason})
     return out
+
+
+# --------------------------------------------------------------------------- slices
+
+
+def names_of(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """The ``names`` slice that 小说补全 reads: each entry's kind, name and aliases, and the
+    frozen entries in full (additions must not contradict them). Paragraphs and summaries are
+    left out, so extraction running again over the same names leaves the suggestions fresh.
+    (``fixed``, not ``frozen``: that key is a display field the slice hash skips.)"""
+    entities = payload.get("entities") or []
+    return {
+        "names": [
+            {"kind": e["kind"], "name": e["name"], "aliases": list(e.get("aliases") or [])}
+            for e in entities
+        ],
+        "fixed": [
+            {
+                "kind": e["kind"],
+                "name": e["name"],
+                "aliases": list(e.get("aliases") or []),
+                "data": dict(e.get("data") or {}),
+            }
+            for e in entities
+            if e.get("frozen")
+        ],
+    }
 
 
 # --------------------------------------------------------------------------- edits

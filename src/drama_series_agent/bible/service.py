@@ -85,6 +85,16 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
             session.add(row)
 
 
+async def bible_slicer(
+    session: AsyncSession, product: Product, version: ProductVersion, name: str
+) -> Any:
+    """``names``: what 小说补全 reads (``merge.names_of``); other slices are payload keys."""
+    payload = version.payload_json
+    if name == "names":
+        return ops.names_of(payload)
+    return payload if name == "" else payload.get(name)
+
+
 class BibleService:
     def __init__(self, db: Database, products: ProductService, novel: NovelService) -> None:
         self._db = db

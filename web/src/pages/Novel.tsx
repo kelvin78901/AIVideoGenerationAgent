@@ -59,7 +59,7 @@ export default function NovelPage() {
   const count = (kind: string) => bible.data?.entities.filter((e) => e.kind === kind).length ?? 0;
   const what =
     selected === "enrich"
-      ? t("what.enrich", { count: suggestions.data?.length ?? 0 })
+      ? t("what.enrich", { count: suggestions.data?.suggestions.length ?? 0 })
       : t("what.extract", {
           characters: count("character"),
           locations: count("location"),
@@ -144,7 +144,7 @@ export default function NovelPage() {
               {(n) => (
                 <SourceText
                   novel={n}
-                  suggestions={suggestions.data ?? []}
+                  suggestions={suggestions.data?.suggestions ?? []}
                   view={view}
                   onViewChange={setView}
                   onChapterChange={setChapter}
@@ -154,10 +154,11 @@ export default function NovelPage() {
               )}
             </QueryState>
             <QueryState query={suggestions} skeleton={<Skeleton className="h-96 w-full" />}>
-              {(list) => (
+              {(data) => (
                 <SuggestionList
                   seriesId={seriesId}
-                  suggestions={list}
+                  suggestions={data.suggestions}
+                  adopted={data.adopted}
                   models={enrichModels}
                   onFocus={focusPara}
                 />

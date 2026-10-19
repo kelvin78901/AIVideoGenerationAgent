@@ -1,8 +1,8 @@
 /**
- * Products and versions for the novel step (prototype Main.dc.html, Inspector「历史」):
- * 小说补全 v1 Qwen3.6-27B 本地 09:41 草稿 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳.
- * 设定提取 (v1 Qwen3.6-27B 本地 10:05) is the backend's (`studio/demo.py`), merged into the
- * demo's product list by `handlers/products.ts`.
+ * Products and versions of the demo series' later steps (分集规划, 剧本化). The novel step's —
+ * 小说补全 v1 Qwen3.6-27B 本地 09:41 草稿 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳, and 设定提取
+ * v1 本地 10:05 (prototype Main.dc.html, Inspector「历史」) — are the backend's (`studio/demo.py`),
+ * merged into the demo's product list by `handlers/products.ts`.
  */
 import type { Product, ProductVersion, VersionOrigin } from "@/api/schemas/products";
 import { modelByKey } from "@/mocks/fixtures/demo/models";
@@ -10,8 +10,8 @@ import { compilePrompt, intents } from "@/mocks/fixtures/demo/prompts";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 
+/** The backend's 小说补全 and 设定提取 products of the demo series (seeded in Mock mode). */
 export const PRODUCT_ENRICH = "demo-p-enrich";
-/** The backend's 设定提取 product of the demo series (seeded in Mock mode). */
 export const PRODUCT_EXTRACT = "demo-p-extract";
 export const PRODUCT_SPLIT = "demo-p-split";
 
@@ -92,7 +92,8 @@ export function demoVersion(
 const LOCAL = "local/qwen3.6-27b";
 const DEEPSEEK = "deepseek/v4-pro";
 
-function novelProduct(
+/** A demo product owned by the series (default) or an episode, with its versions. */
+export function demoProduct(
   id: string,
   componentId: string,
   slot: Product["slot"],
@@ -132,14 +133,6 @@ function novelProduct(
   };
 }
 
-const enrichV1 = demoVersion(PRODUCT_ENRICH, "enrich", {
-  n: 1,
-  origin: "run",
-  model: LOCAL,
-  at: demoAt("09:41"),
-  payload: { suggestions: 4 },
-});
-
 const scriptV1 = demoVersion("demo-p-script-e1", "script", {
   n: 1,
   origin: "run",
@@ -152,24 +145,7 @@ const scriptV1 = demoVersion("demo-p-script-e1", "script", {
 export const scriptProductId = (episodeId: string) => `demo-p-script-${episodeId.slice(5)}`;
 
 export const products: Product[] = [
-  novelProduct(
-    PRODUCT_ENRICH,
-    "enrich",
-    "suggestions",
-    [
-      enrichV1,
-      demoVersion(PRODUCT_ENRICH, "enrich", {
-        n: 2,
-        origin: "switch",
-        model: DEEPSEEK,
-        at: demoAt("10:02"),
-        parent: enrichV1.id,
-        payload: { suggestions: 4 },
-      }),
-    ],
-    40,
-  ),
-  novelProduct(
+  demoProduct(
     PRODUCT_SPLIT,
     "split",
     "episodes",
@@ -185,7 +161,7 @@ export const products: Product[] = [
     30,
   ),
   // 剧本化 for episode 1: v1 本地 10:12 草稿 → v2 Kimi K2.6 10:20（不满意换一个）已采纳.
-  novelProduct(
+  demoProduct(
     "demo-p-script-e1",
     "script",
     "script",
@@ -205,7 +181,7 @@ export const products: Product[] = [
   ),
   // Episodes 2 and 3 have no script yet (「生成这一集的剧本」).
   ...["demo-e2", "demo-e3"].map((ep) =>
-    novelProduct(
+    demoProduct(
       scriptProductId(ep),
       "script",
       "script",

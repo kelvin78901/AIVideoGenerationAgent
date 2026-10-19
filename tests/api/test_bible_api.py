@@ -21,7 +21,7 @@ from drama_series_agent.bible.service import bible_product, materialize
 from drama_series_agent.core.models_db import BibleEntity, Dependency, ModelCall, ProductVersion
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.modelhub.adapters.mock import estimate_tokens
-from drama_series_agent.pipeline.components.extract import chunk_book, render_chunk
+from drama_series_agent.pipeline.components.chunks import chunk_book, render_chunk
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"

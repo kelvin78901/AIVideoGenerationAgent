@@ -97,10 +97,10 @@ describe("ModelPicker", () => {
     await waitFor(() =>
       expect(screen.getAllByTestId("config-source")[1]).toHaveTextContent("组件"),
     );
-    // The rerun estimate follows the new route.
+    // The rerun estimate follows the new route (the backend prices it on read).
     await user.click(screen.getByRole("radio", { name: "本地" }));
     await waitFor(() => expect(override()?.mode).toBe("local"));
-    expect(await screen.findByText(/无 API 费用 · 约 40 秒/)).toBeInTheDocument();
+    expect(await screen.findByText(/^无 API 费用 · /)).toBeInTheDocument();
   });
 
   it("toggles fallback, its triggers and its target", async () => {

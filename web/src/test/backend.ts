@@ -16,6 +16,7 @@ import { server } from "@/mocks/node";
 import { bibleHandlers, fakeBackendFetch, resetFakeBible } from "@/test/fakes/bible";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { novelHandlers, resetFakeNovel } from "@/test/fakes/novel";
+import { resetFakeSuggestions, suggestionHandlers } from "@/test/fakes/suggestions";
 import { resetFakeSetup, setupHandlers } from "@/test/setupBackend";
 
 type Dims = { w: number; h: number };
@@ -159,13 +160,15 @@ function seriesHandlers() {
     http.get("*/api/v1/spec/presets", () => HttpResponse.json(presets)),
     ...novelHandlers(known),
     ...bibleHandlers(known),
+    ...suggestionHandlers(known),
   ];
 }
 
 /**
  * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, the
- * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`) and bible
- * with its products (`test/fakes/bible.ts`), and the PC sample machine before its first scan
+ * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`), bible
+ * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), and the
+ * PC sample machine before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
  */
 export function backend({ mock = true }: { mock?: boolean } = {}) {
@@ -175,6 +178,7 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   fake.specs = {};
   resetFakeNovel();
   resetFakeBible();
+  resetFakeSuggestions();
   setBackendFetch(fakeBackendFetch);
   resetFakeSetup();
   resetFakeConfig();

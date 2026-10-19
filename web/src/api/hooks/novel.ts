@@ -1,5 +1,4 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { z } from "zod";
 
 import { api, patch, post, postForm } from "@/api/client";
 import {
@@ -8,9 +7,10 @@ import {
   NovelImportSchema,
   NovelSchema,
   SuggestionSchema,
+  SuggestionsSchema,
   type BibleMergeRequest,
   type BiblePatch,
-  type Suggestion,
+  type Suggestions,
 } from "@/api/schemas/novel";
 import { productKeys } from "@/api/hooks/products";
 
@@ -63,7 +63,7 @@ export function useImportNovel(seriesId: string) {
 export function useSuggestions(seriesId: string) {
   return useQuery({
     queryKey: novelKeys.suggestions(seriesId),
-    queryFn: () => api(`/series/${enc(seriesId)}/suggestions`, z.array(SuggestionSchema)),
+    queryFn: () => api(`/series/${enc(seriesId)}/suggestions`, SuggestionsSchema),
   });
 }
 
@@ -111,9 +111,13 @@ export function useMergeBible(seriesId: string) {
 
 export type SuggestionAction =
   | { id: string; action: "accept" | "reject" | "reset" }
-  | { id: string; action: "rewrite"; instruction: string };
+  /** `confirm_budget` after a 409 `over_budget` (the user agreed to the estimate). */
+  | { id: string; action: "rewrite"; instruction: string; confirm_budget?: boolean };
 
-/** 采纳 / 撤销采纳 / 忽略 / 恢复 / 按要求重写: one suggestion, updated in the cached list. */
+/**
+ * 采纳 / 撤销采纳 / 忽略 / 恢复 / 按要求重写: one suggestion, updated in the cached list. What the
+ * bible reads changes with it (it may turn 待更新), so products are refetched too.
+ */
 export function useSuggestionAction(seriesId: string) {
   const client = useQueryClient();
   return useMutation({
@@ -121,20 +125,28 @@ export function useSuggestionAction(seriesId: string) {
       post(
         `/suggestions/${enc(a.id)}/${a.action}`,
         SuggestionSchema,
-        a.action === "rewrite" ? { instruction: a.instruction } : undefined,
+        a.action === "rewrite"
+          ? { instruction: a.instruction, confirm_budget: a.confirm_budget ?? false }
+          : undefined,
       ),
-    onSuccess: (updated) =>
-      client.setQueryData<Suggestion[]>(novelKeys.suggestions(seriesId), (old) =>
-        old?.map((s) => (s.id === updated.id ? updated : s)),
-      ),
+    onSuccess: (updated) => {
+      client.setQueryData<Suggestions>(novelKeys.suggestions(seriesId), (old) =>
+        old
+          ? { ...old, suggestions: old.suggestions.map((s) => (s.id === updated.id ? updated : s)) }
+          : old,
+      );
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
   });
 }
 
 export function useAcceptAllSuggestions(seriesId: string) {
   const client = useQueryClient();
   return useMutation({
-    mutationFn: () =>
-      post(`/series/${enc(seriesId)}/suggestions/accept-all`, z.array(SuggestionSchema)),
-    onSuccess: (list) => client.setQueryData(novelKeys.suggestions(seriesId), list),
+    mutationFn: () => post(`/series/${enc(seriesId)}/suggestions/accept-all`, SuggestionsSchema),
+    onSuccess: (data) => {
+      client.setQueryData(novelKeys.suggestions(seriesId), data);
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
   });
 }

@@ -9,7 +9,10 @@
  * GET /series/{id}/spec/compat, GET /spec/presets, GET /setup/profile, POST /setup/scan,
  * POST /setup/install, POST /setup/items/{id}/retry|skip, POST /demo/setup/machine (now the
  * backend's POST /dev/setup/machine) (M1). GET /config/components, GET /config/resolve,
- * PUT / DELETE /config/override, GET / PUT /config/defaults, GET /series/{id}/novel (M2).
+ * PUT / DELETE /config/override, GET / PUT /config/defaults, GET /series/{id}/novel,
+ * GET /series/{id}/bible, PATCH /bible/{id}, POST /bible/merge, GET /series/{id}/suggestions,
+ * POST /series/{id}/suggestions/accept-all, POST /suggestions/{id}/accept|reject|reset|rewrite
+ * (M2).
  * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
  *
  * Handlers that take a series answer only for the demo series; any other series passes through
@@ -32,10 +35,6 @@
  * | POST /products/{id}/compile      | M2             |
  * | POST /impact/preview, apply      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | GET /series/{id}/suggestions     | M2             |
- * | POST /series/{id}/suggestions/accept-all | M2     |
- * | POST /suggestions/{id}/accept, reject, reset, rewrite | M2 |
- * | GET /series/{id}/bible           | M2             |
  * | GET /episodes/{id}/script        | M2             |
  * | POST /lines/{id}/rewrite, /scenes/{id}/rewrite | M2 |
  * | GET /series/{id}/assets, PATCH /assets/{id} | M3   |
@@ -62,7 +61,6 @@ import { gateHandlers } from "@/mocks/handlers/gates";
 import { generateHandlers } from "@/mocks/handlers/generate";
 import { impactHandlers } from "@/mocks/handlers/impact";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
-import { novelHandlers } from "@/mocks/handlers/novel";
 import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
 import { scriptHandlers } from "@/mocks/handlers/script";
@@ -77,7 +75,6 @@ export const handlers = [
   ...productHandlers,
   ...impactHandlers,
   ...gateHandlers,
-  ...novelHandlers,
   ...scriptHandlers,
   ...assetHandlers,
   ...shotHandlers,

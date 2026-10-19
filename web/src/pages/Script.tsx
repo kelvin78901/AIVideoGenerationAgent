@@ -98,7 +98,7 @@ export default function ScriptPage() {
     novel.data?.paragraphs.map(
       (p) =>
         p.text +
-        (suggestions.data ?? [])
+        (suggestions.data?.suggestions ?? [])
           .filter((s) => s.status === "accepted" && s.para_idx === p.idx)
           .map((s) => s.text)
           .join(""),

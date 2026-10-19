@@ -15,8 +15,11 @@ import {
   type BiblePatch,
 } from "@/api/schemas/novel";
 import { ProductSchema, type Product } from "@/api/schemas/products";
+import { modelByKey } from "@/mocks/fixtures/demo/models";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
+import { primaryModel } from "@/mocks/route";
 import data from "@/test/data/bible.json";
+import { fakeResolve } from "@/test/fakes/config";
 
 const demoBible = BibleSchema.parse(data.bible);
 const demoProducts = data.products.map((p) => ProductSchema.parse(p));
@@ -71,11 +74,23 @@ function merge(ids: string[]): Response | null {
   return null;
 }
 
+/**
+ * The next run's estimate follows the component's route, as the backend computes it on read
+ * (another model of the same kind keeps the exported price; a local one costs nothing).
+ */
+function withRoute(p: Product): Product {
+  const model = primaryModel(fakeResolve(p.component_id, null)?.values ?? null);
+  if (!p.estimate || !model || model === p.estimate.model_key) return p;
+  const where = modelByKey(model)?.where ?? "api";
+  const cost_usd = where === "local" ? 0 : p.estimate.cost_usd;
+  return { ...p, estimate: { ...p.estimate, model_key: model, where, cost_usd } };
+}
+
 /** The fake backend's answer to what the MSW demo merges in (`mocks/backend.ts`). */
 export async function fakeBackendFetch(request: Request): Promise<Response> {
   const url = new URL(request.url);
   if (url.pathname.endsWith("/products") && url.searchParams.get("owner") === "series:demo")
-    return HttpResponse.json(fakeBible.products);
+    return HttpResponse.json(fakeBible.products.map(withRoute));
   return error(404, "http_404");
 }
 
@@ -136,7 +151,7 @@ export function bibleHandlers(known: (id: string) => boolean) {
 
     http.get("*/api/v1/products/:id", ({ params }) => {
       const p = fakeBible.products.find((x: Product) => x.id === params.id);
-      return p ? HttpResponse.json(p) : undefined;
+      return p ? HttpResponse.json(withRoute(p)) : undefined;
     }),
   ];
 }

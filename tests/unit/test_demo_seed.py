@@ -10,11 +10,14 @@ from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.models_db import (
     BibleEntity,
     Chapter,
+    Dependency,
     NovelSource,
     OutputSpecRow,
     Product,
     ProductVersion,
     Series,
+    Suggestion,
+    SuggestionDecision,
 )
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
@@ -23,6 +26,7 @@ from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.studio.demo import DEMO_SERIES_ID, delete_demo, seed_demo
 from drama_series_agent.studio_cli import main
+from drama_series_agent.suggestions import service as suggestions
 
 
 async def _count(db: Database, table: type) -> int:
@@ -86,24 +90,45 @@ async def test_delete_demo_takes_everything_with_it(studio_db: Database) -> None
         assert await _count(studio_db, table) == 0, table.__name__
 
 
-async def test_demo_bible_is_seeded_once(studio_db: Database) -> None:
+async def test_demo_suggestions_and_bible_are_seeded_once(studio_db: Database) -> None:
     products = ProductService(studio_db, EventBus(studio_db))
     products.on_adopt(BIBLE_SLOT, materialize)
+    products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
     novel = NovelService(studio_db, BlobStore(), products)
-    novel.after_import = lambda series_id: products.ensure(  # what the app's hook does
-        series_id=series_id, owner_type="series", owner_id=series_id, slot=BIBLE_SLOT,
-        component_id="extract",
-    )  # type: ignore[assignment,return-value]  # fmt: skip
+
+    async def hook(series_id: str) -> None:  # what the app's hook does
+        for slot, component in ((BIBLE_SLOT, "extract"), ("suggestions", "enrich")):
+            await products.ensure(
+                series_id=series_id, owner_type="series", owner_id=series_id, slot=slot,
+                component_id=component,
+            )  # fmt: skip
+
+    novel.after_import = hook
     for _ in range(2):
         await seed_demo(studio_db, novel=novel, products=products, compiler=PromptCompiler())
     async with studio_db.session() as session:
         product = await session.get(Product, "demo-p-extract")  # not a random id from the hook
         version = await session.get(ProductVersion, "demo-p-extract-v1")
+        enrich = await session.get(Product, "demo-p-enrich")
+        deps = (
+            await session.exec(
+                select(Dependency).where(Dependency.version_id == "demo-p-extract-v1")
+            )
+        ).all()
+        accepted = await session.get(SuggestionDecision, "s1")
     assert product is not None and product.adopted_version_id == "demo-p-extract-v1"
     assert version is not None and version.created_at.isoformat() == "2026-10-14T02:05:00+00:00"
     assert version.payload_json["source_id"] == "demo-src"
-    assert await _count(studio_db, ProductVersion) == 2  # the novel and the bible, once each
+    # 小说补全 v1 → v2 (adopted), read by the bible through its accepted addition.
+    assert enrich is not None and enrich.adopted_version_id == "demo-p-enrich-v2"
+    assert accepted is not None and accepted.status == "accepted"
+    assert {(d.upstream_product_id, d.slice) for d in deps} == {
+        ("demo-novel", "chapters"),
+        ("demo-p-enrich", "adopted"),
+    }
+    assert await _count(studio_db, ProductVersion) == 4  # novel, enrich ×2, bible: once each
     assert await _count(studio_db, BibleEntity) == len(version.payload_json["entities"]) == 18
+    assert await _count(studio_db, Suggestion) == 4
 
 
 def test_demo_command_resets() -> None:

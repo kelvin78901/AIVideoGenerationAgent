@@ -118,6 +118,22 @@ export const SuggestionSchema = z.object({
 });
 export type Suggestion = z.infer<typeof SuggestionSchema>;
 
+/**
+ * `GET /series/{id}/suggestions`: the 小说补全 version on screen (the product's current one) with
+ * the user's decisions; deciding never makes a version.
+ */
+export const SuggestionsSchema = z.object({
+  series_id: z.string(),
+  /** null before the series has a novel. */
+  product_id: z.string().nullable(),
+  version_id: z.string().nullable(),
+  /** false while the version on screen is not the adopted one (「未采纳」). */
+  adopted: z.boolean(),
+  source_id: z.string().nullable(),
+  suggestions: z.array(SuggestionSchema),
+});
+export type Suggestions = z.infer<typeof SuggestionsSchema>;
+
 export const BibleKindSchema = z.enum(["character", "location", "prop", "event", "relation"]);
 export type BibleKind = z.infer<typeof BibleKindSchema>;
 

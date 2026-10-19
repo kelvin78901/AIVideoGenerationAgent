@@ -3,12 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router";
 
 import { Toaster } from "@/components/ui/sonner";
-import { getDb } from "@/mocks/db";
 import NovelPage from "@/pages/Novel";
 import { backend, fake } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { fakeBible } from "@/test/fakes/bible";
 import { fakeNovel } from "@/test/fakes/novel";
+import { fakeSuggestions } from "@/test/fakes/suggestions";
 import { renderAt } from "@/test/render";
 
 // The user's own words, typed into the page (content, not UI copy).
@@ -43,7 +43,7 @@ const novelFile = () => new File(["第一章 红伞\n那天雨下得很大。"],
 
 const card = (para: number, nth = 0) =>
   screen.getAllByRole("article", { name: `第 ${para} 段` })[nth] as HTMLElement;
-const suggestion = (id: string) => getDb().suggestions.find((s) => s.id === id);
+const suggestion = (id: string) => fakeSuggestions.data.suggestions.find((s) => s.id === id);
 
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
@@ -119,6 +119,32 @@ describe("NovelPage", () => {
       rewrite_instruction: INSTRUCTION,
       rewritten_by: "deepseek/v4-pro",
     });
+  });
+
+  it("a rewrite over the per-call cap waits for the user's yes", async () => {
+    fakeSuggestions.overBudget = { estimate_usd: 0.0012, limit_usd: 0.001 };
+    const user = userEvent.setup();
+    renderNovel();
+    await screen.findByText("177 字 · 5 段");
+    const lighting = card(1, 1);
+    await user.click(within(lighting).getByRole("button", { name: "改写要求" }));
+    await user.type(within(lighting).getByLabelText("告诉 AI 这一条怎么改"), "写成灯一闪一闪的");
+    await user.click(within(lighting).getByRole("button", { name: "按要求重写这一条" }));
+    const alert = await within(lighting).findByRole("alert");
+    expect(alert).toHaveTextContent("预计 $0.0012，超过上限 $0.001，确认后才会发出");
+    expect(suggestion("s2")?.rewrite_instruction).toBeNull();
+    await user.click(within(alert).getByRole("button", { name: "确认花费，重写" }));
+    expect(await within(lighting).findByText("已按要求重写")).toBeInTheDocument();
+    expect(fakeSuggestions.requests.map((r) => r.action === "rewrite" && r.confirm_budget)).toEqual(
+      [false, true],
+    );
+  });
+
+  it("marks suggestions that are not adopted yet", async () => {
+    fakeSuggestions.data.adopted = false;
+    renderNovel();
+    expect(await screen.findByText("未采纳")).toBeInTheDocument();
+    expect(screen.getByText(/这一版还没采纳：设定提取和分集规划/)).toBeInTheDocument();
   });
 
   it("「全部采纳」 adopts everything not ignored", async () => {

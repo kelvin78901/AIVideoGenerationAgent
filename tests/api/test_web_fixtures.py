@@ -1,4 +1,5 @@
-"""``web/src/test/data/{setup,config,novel,bible}.json``: what the Mock backend answers.
+"""``web/src/test/data/{setup,config,novel,bible,suggestions}.json``: what the Mock backend
+answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -173,7 +174,7 @@ BIBLE_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "bible.json"
 
 
 def _bible_export(client: TestClient) -> dict[str, Any]:
-    """The demo series' bible and its backend products (the novel, 设定提取).
+    """The demo series' bible and its backend products (the novel, 小说补全, 设定提取).
 
     ``test/fakes/bible.ts`` serves them; the MSW demo merges these products into its list.
     """
@@ -188,3 +189,22 @@ def test_web_bible_fixture_is_current(client: TestClient) -> None:
             f.write(text)
     current = BIBLE_FIXTURE.read_text(encoding="utf-8") if BIBLE_FIXTURE.exists() else ""
     assert current == text, f"{BIBLE_FIXTURE.name} is out of date: see this module's docstring"
+
+
+SUGGESTIONS_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "suggestions.json"
+ENRICH_DEMO = REPO_ROOT / "tests" / "fixtures" / "demo" / "enrich.json"
+
+
+def test_web_suggestions_fixture_is_current(client: TestClient) -> None:
+    """The demo series' 小说补全 suggestions and the rewrites Mock answers
+    (``test/fakes/suggestions.ts``)."""
+    rewrites = json.loads(ENRICH_DEMO.read_text(encoding="utf-8"))["rewrites"]
+    export = {"suggestions": client.get(f"{V1}/series/demo/suggestions").json()}
+    export["rewrites"] = rewrites
+    text = json.dumps(export, ensure_ascii=False, indent=2) + "\n"
+    path = SUGGESTIONS_FIXTURE
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = path.read_text(encoding="utf-8") if path.exists() else ""
+    assert current == text, f"{path.name} is out of date: see this module's docstring"

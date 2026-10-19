@@ -366,6 +366,13 @@ class ProductService:
         await self._announce(p)
         return await self.get(p.id)
 
+    async def announce(self, product_id: str) -> None:
+        """Tell the UI a product changed without a new version (a suggestion was decided:
+        what downstream reads changed, so its status may have)."""
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+        await self._announce(p)
+
     async def set_prompt(self, product_id: str, prompt: dict[str, object]) -> None:
         async with self._db.session() as session:
             p = await require_product(session, product_id)

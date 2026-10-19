@@ -103,8 +103,8 @@ def _product_empty(client: TestClient) -> tuple[str, list[str]]:
             series_id="demo",
             owner_type="series",
             owner_id="demo",
-            slot="suggestions",
-            component_id="enrich",
+            slot="test_empty",
+            component_id="test",
         )
         return p.id
 

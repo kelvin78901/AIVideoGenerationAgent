@@ -207,8 +207,8 @@ def test_downstream_turns_stale_only_when_its_chapter_changes(client: TestClient
 
     async def downstream() -> str:
         p = await state.products.ensure(
-            series_id="demo", owner_type="series", owner_id="demo", slot="suggestions",
-            component_id="enrich",
+            series_id="demo", owner_type="series", owner_id="demo", slot="test_downstream",
+            component_id="test",
         )  # fmt: skip
         dep = DependencyDraft(novel["id"], slice_hash(chapter0), "chapter:0")
         draft = VersionDraft(payload={}, dependencies=[dep])

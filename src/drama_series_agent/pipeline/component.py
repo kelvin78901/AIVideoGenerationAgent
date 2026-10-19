@@ -86,6 +86,8 @@ class RunContext:
     progress: Progress | None = None
     # The user agreed to this fallback (``notify: ask``): ``model_key`` is it, logged as one.
     fallback_reason: str | None = None
+    # A call outside a job the user agreed to pay up to this much for (over the per-call cap).
+    confirmed_usd: float | None = None
 
 
 @dataclass
@@ -310,6 +312,7 @@ class Component(ABC):
             job_id=ctx.job_id,
             attempt=ctx.attempt,
             is_switch=ctx.mode == "switch",
+            confirmed_usd=ctx.confirmed_usd,
             on_delta=on_delta,
         )
 

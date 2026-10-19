@@ -77,8 +77,11 @@
     "rewritePlaceholder": "E.g. no trench coat; she wears a work jacket today",
     "rewriteSubmit": "Rewrite this one",
     "rewriteDone": "The suggestion for paragraph {{n}} was rewritten as asked ({{model}}).",
+    "rewriteAnyway": "Confirm the cost and rewrite",
     "acceptAllDone": "Adopted every suggestion that was not ignored.",
-    "empty": "No suggestions yet. Click Rerun above to let the AI look for gaps."
+    "empty": "No suggestions yet. Click Rerun above to let the AI look for gaps.",
+    "unadopted": "Not adopted",
+    "unadoptedHint": "This version is not adopted yet: extraction and episode planning still use the additions of the adopted one."
   },
   "bible": {
     "title": "Extracted story bible",

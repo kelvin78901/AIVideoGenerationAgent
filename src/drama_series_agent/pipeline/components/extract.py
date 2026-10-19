@@ -1,13 +1,12 @@
-"""设定提取 (SPEC 5 ``extract``): the adopted novel → the story bible (``bible`` product).
+"""设定提取 (SPEC 5 ``extract``): the adopted novel and its adopted additions → the story bible
+(``bible`` product).
 
-The novel goes out in chunks of whole chapters (a chapter longer than a chunk is split by
-paragraphs). A chunk is at most 60% of the smallest context window on the route — the model
-and its fallback — so a long novel never overflows and the fallback can take any chunk.
-Paragraphs are numbered across the book (``[P12]``, 1-based in the prompt as on screen); the
-model only cites numbers and the backend turns them into spans. ``bible.merge`` then groups the
-chunks' answers, keeps the ids and frozen entries of the adopted version, and one more call
-judges the pairs that may still be the same (→ merge suggestions for the user). Each chapter
-also gets a summary, which episode planning reads.
+The novel goes out in chunks (``chunks``), each paragraph followed by the additions the user
+accepted in 小说补全 (M2 plan 计划变更 5); the bible depends on those through the ``adopted`` slice,
+so accepting or undoing one makes it stale. ``bible.merge`` then groups the chunks' answers,
+keeps the ids and frozen entries of the adopted version, and one more call judges the pairs
+that may still be the same (→ merge suggestions for the user). Each chapter also gets a
+summary, which episode planning reads.
 
 Mock mode: the demo novel is answered from ``tests/fixtures/demo/extract.json`` (the demo
 seed's bible is built from the same file); any other novel by simple deterministic rules.
@@ -18,8 +17,6 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Sequence
-from contextlib import suppress
-from dataclasses import dataclass
 from functools import cache
 from typing import Annotated, Any, Literal, cast
 
@@ -27,30 +24,37 @@ from pydantic import BaseModel, BeforeValidator, Field
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.bible import merge as ops
-from drama_series_agent.core.models_db import Chapter, Product, ProductVersion
+from drama_series_agent.core.models_db import Product, ProductVersion
 from drama_series_agent.core.paths import REPO_ROOT
-from drama_series_agent.modelhub.adapters.base import Estimate, ModelError, ModelRequest
-from drama_series_agent.modelhub.adapters.mock import Responder, estimate_tokens
-from drama_series_agent.modelhub.router import Router
+from drama_series_agent.modelhub.adapters.base import Estimate, ModelRequest
+from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.novel.service import Book, NovelService
 from drama_series_agent.pipeline.component import (
     CallResult,
-    Component,
     ComponentError,
     Inputs,
     RunContext,
     Services,
 )
+from drama_series_agent.pipeline.components.chunks import (
+    ADDITION_MARK,
+    Additions,
+    ChunkedComponent,
+    Piece,
+    chunk_book,
+    chunk_paragraphs,
+    is_demo,
+    render_chunk,
+    user_text,
+)
 from drama_series_agent.pipeline.drafts import VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.prompts.compiler import Block
+from drama_series_agent.suggestions import ops as suggestion_ops
+from drama_series_agent.suggestions.service import ADOPTED_SLICE, adopted_additions
 
-CHUNK_SHARE = 0.6
-DEFAULT_CONTEXT = 32768  # a model whose window is not configured
 JUDGE_MAX_TOKENS = 1500
-KIND_LABEL = {"character": "人物", "location": "地点", "prop": "道具", "event": "事件"}
 DEMO_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "demo" / "extract.json"
-DEMO_NOVEL = REPO_ROOT / "tests" / "fixtures" / "demo" / "雨停之前.txt"
 
 # --------------------------------------------------------------------------- model output
 
@@ -117,60 +121,7 @@ class JudgeOut(BaseModel):
     verdicts: list[Verdict] = Field(default_factory=list)
 
 
-# --------------------------------------------------------------------------- chunks
-
-
-@dataclass
-class Piece:
-    """Paragraphs of one chapter in a chunk; ``cont`` = not the chapter's first part."""
-
-    chapter: Chapter
-    paras: list[int]
-    cont: bool = False
-
-    def heading(self) -> str:
-        title = f" {self.chapter.title}" if self.chapter.title else ""
-        return f"[第 {self.chapter.idx + 1} 章]{title}{'（续）' if self.cont else ''}"
-
-
-def _line(book: Book, idx: int) -> str:
-    return f"[P{idx + 1}] {book.paragraph(idx)}"
-
-
-def chunk_book(book: Book, limit: int) -> list[list[Piece]]:
-    """Whole chapters packed in order, each chunk at most ``limit`` tokens (estimated); a
-    chapter over the limit is split by paragraphs. A single huge paragraph is never cut."""
-    parts: list[tuple[Piece, int]] = []
-    for c in book.chapters:
-        head = estimate_tokens(Piece(c, [], True).heading()) + 2
-        piece, cost = Piece(c, []), head
-        for idx in book.paragraphs(c):
-            t = estimate_tokens(_line(book, idx)) + 1
-            if piece.paras and cost + t > limit:
-                parts.append((piece, cost))
-                piece, cost = Piece(c, [], cont=True), head
-            piece.paras.append(idx)
-            cost += t
-        if piece.paras:
-            parts.append((piece, cost))
-    chunks: list[list[Piece]] = []
-    current: list[Piece] = []
-    used = 0
-    for piece, cost in parts:
-        if current and used + cost > limit:
-            chunks.append(current)
-            current, used = [], 0
-        current.append(piece)
-        used += cost
-    if current:
-        chunks.append(current)
-    return chunks
-
-
-def render_chunk(book: Book, chunk: Sequence[Piece]) -> str:
-    return "\n\n".join(
-        "\n".join([piece.heading(), *(_line(book, i) for i in piece.paras)]) for piece in chunk
-    )
+# --------------------------------------------------------------------------- answers
 
 
 def collect(
@@ -208,7 +159,8 @@ def judge_data(book: Book, pairs: Sequence[tuple[dict[str, Any], dict[str, Any]]
 
     lines = ["[待核对]"]
     for n, (a, b) in enumerate(pairs, 1):
-        lines.append(f"{n}. {KIND_LABEL.get(a['kind'], a['kind'])}：{label(a)} ⇄ {label(b)}")
+        kind = ops.KIND_LABEL.get(a["kind"], a["kind"])
+        lines.append(f"{n}. {kind}：{label(a)} ⇄ {label(b)}")
         for e in (a, b):
             if e.get("paras"):
                 text = book.paragraph(e["paras"][0])
@@ -238,7 +190,7 @@ def payload_of(
 # --------------------------------------------------------------------------- the component
 
 
-class ExtractComponent(Component):
+class ExtractComponent(ChunkedComponent):
     id = "extract"
     slot = "bible"
     owner_type = "series"
@@ -252,15 +204,29 @@ class ExtractComponent(Component):
         book = await self.novel.book(session, product.series_id)
         if book is None or book.product_id is None:
             raise PipelineError(409, "upstream_not_ready", slot="novel")
-        dep = await self.services.invalidation.dependency(session, book.product_id, "chapters")
+        inv = self.services.invalidation
+        deps = [await inv.dependency(session, book.product_id, "chapters")]
+        additions: dict[int, list[str]] = {}
+        enrich = await adopted_additions(session, product.series_id)
+        if enrich is not None:
+            enrich_id, accepted = enrich
+            deps.append(await inv.dependency(session, enrich_id, ADOPTED_SLICE))
+            # Additions anchored in an older text wait until 小说补全 runs on this one.
+            here = [a for a in accepted if a["anchor_span"].get("source_id") == book.source.id]
+            additions = suggestion_ops.by_paragraph(here)
         base = None
         if product.adopted_version_id:
             adopted = await session.get(ProductVersion, product.adopted_version_id)
             base = adopted.payload_json if adopted is not None else None
         return Inputs(
             blocks=[],
-            deps=[dep],
-            context={"book": book, "base": base, "chain_context": await self._chain_context()},
+            deps=deps,
+            context={
+                "book": book,
+                "additions": additions,
+                "base": base,
+                "chain_context": await self.chain_context(),
+            },
         )
 
     def output_schema(self) -> type[BaseModel]:
@@ -277,8 +243,9 @@ class ExtractComponent(Component):
         results: list[CallResult] = []
         found: list[ops.Found] = []
         summaries: dict[int, list[str]] = {}
-        for chunk in chunk_book(book, self.chunk_limit(inputs, ctx.model_key)):
-            messages = self._messages(ctx.compiled, book, chunk)
+        additions = inputs.context["additions"]
+        for chunk in chunk_book(book, self.chunk_limit(inputs, ctx.model_key), additions):
+            messages = self._messages(ctx.compiled, book, chunk, additions)
             result = await self.call_json(ctx, messages, ExtractOut)
             results.append(result)
             sent += messages[1:]
@@ -304,10 +271,11 @@ class ExtractComponent(Component):
         """Every chunk plus the judging call (an upper bound: it is skipped when no names
         look alike)."""
         book: Book = inputs.context["book"]
+        additions = inputs.context["additions"]
         adapter = self.services.registry.get(model)
         requests = [
-            self.request(self._messages(compiled, book, chunk), None)
-            for chunk in chunk_book(book, self.chunk_limit(inputs, model))
+            self.request(self._messages(compiled, book, chunk, additions), None)
+            for chunk in chunk_book(book, self.chunk_limit(inputs, model), additions)
         ]
         judge = self._judge_messages(book, [])
         requests.append(self.request(judge, None, "judge", JUDGE_MAX_TOKENS))
@@ -318,14 +286,13 @@ class ExtractComponent(Component):
             priced=all(e.priced for e in estimates),
         )
 
-    def chunk_limit(self, inputs: Inputs, model: str) -> int:
-        window = min(int(inputs.context["chain_context"]), self._context(model))
-        return int(CHUNK_SHARE * window)
-
     # ------------------------------------------------------------------ helpers
 
-    def _messages(self, compiled: str, book: Book, chunk: Sequence[Piece]) -> list[dict[str, Any]]:
-        return self.services.compiler.messages(compiled, [Block("原文", render_chunk(book, chunk))])
+    def _messages(
+        self, compiled: str, book: Book, chunk: Sequence[Piece], additions: Additions | None = None
+    ) -> list[dict[str, Any]]:
+        text = render_chunk(book, chunk, additions)
+        return self.services.compiler.messages(compiled, [Block("原文", text)])
 
     def _judge_messages(
         self, book: Book, pairs: Sequence[tuple[dict[str, Any], dict[str, Any]]]
@@ -336,31 +303,14 @@ class ExtractComponent(Component):
             {"role": "user", "content": judge_data(book, pairs)},
         ]
 
-    def _context(self, model: str) -> int:
-        try:
-            return self.services.registry.spec(model).caps.max_context or DEFAULT_CONTEXT
-        except ModelError:
-            return DEFAULT_CONTEXT
-
-    async def _chain_context(self) -> int:
-        """The smallest window among the route's model and its fallback."""
-        settings = await self.services.router.settings(self.id)
-        chain: list[str] = []
-        with suppress(ModelError):
-            chain.append(Router.primary_model(settings))
-        fallback = settings.values.get("fallback") or {}
-        if fallback.get("enabled") and fallback.get("to"):
-            chain.append(str(fallback["to"]))
-        return min((self._context(m) for m in chain), default=DEFAULT_CONTEXT)
-
 
 # --------------------------------------------------------------------------- Mock mode
 
-_PARA = re.compile(r"^\[P(\d+)\] (.*)$", re.MULTILINE)
 # A chapter's first part (a later part's heading ends with 「（续）」): only that one is
 # summarized, as a model reading the whole chapter would.
 _CHAPTER = re.compile(r"^\[第 (\d+) 章\](?!.*（续）$)", re.MULTILINE)
 _HEADING = re.compile(r"^\[第 \d+ 章\]")
+_PARA = re.compile(r"^\[P(\d+)\] (.*)$", re.MULTILINE)
 _PAIR = re.compile(r"^(\d+)\. [^：\n]+：(.+?) ⇄ (.+)$", re.MULTILINE)
 _HAN1 = re.compile(r"[㐀-鿿]")
 _HAN2 = re.compile(r"[㐀-鿿]{2}")
@@ -381,15 +331,6 @@ def demo_fixture() -> dict[str, Any] | None:
     return data
 
 
-@cache
-def _demo_text() -> str:
-    return DEMO_NOVEL.read_text(encoding="utf-8") if DEMO_NOVEL.is_file() else ""
-
-
-def _user_text(req: ModelRequest) -> str:
-    return "\n".join(str(m.get("content")) for m in req.messages or [] if m.get("role") == "user")
-
-
 def demo_answer(demo: dict[str, Any], paras: set[int], chapters: set[int]) -> dict[str, Any]:
     """The fixture's answer for the paragraphs (1-based) and chapters a chunk holds."""
     entities = []
@@ -404,14 +345,14 @@ def demo_answer(demo: dict[str, Any], paras: set[int], chapters: set[int]) -> di
 
 
 def mock_extract(req: ModelRequest) -> dict[str, Any]:
-    text = _user_text(req)
-    paras = {int(n): t for n, t in _PARA.findall(text)}
+    """The demo novel (with or without its additions) from the fixture, else rules."""
+    text = user_text(req).replace(ADDITION_MARK, "")
+    paras = chunk_paragraphs(user_text(req))
     chapters = {int(n) for n in _CHAPTER.findall(text)}
     demo = demo_fixture()
-    demo_text = _demo_text()
-    if demo and paras and all(t.strip() and t in demo_text for t in paras.values()):
+    if demo and is_demo(paras):
         return demo_answer(demo, set(paras), chapters)
-    return _rules(text, paras)
+    return _rules(text, {int(n): t for n, t in _PARA.findall(text)})
 
 
 def _rules(text: str, paras: dict[int, str]) -> dict[str, Any]:
@@ -474,7 +415,7 @@ def mock_judge(req: ModelRequest) -> dict[str, Any]:
     (or one inside the other) are the same."""
     known = (demo_fixture() or {}).get("judge", [])
     verdicts = []
-    for n, left, right in _PAIR.findall(_user_text(req)):
+    for n, left, right in _PAIR.findall(user_text(req)):
         a, b = _side(left), _side(right)
         fixed = next((j for j in known if {a[0], b[0]} == set(j["names"])), None)
         if fixed is not None:

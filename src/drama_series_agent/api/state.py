@@ -9,7 +9,7 @@ from pathlib import Path
 import httpx
 from fastapi import Request
 
-from drama_series_agent.bible.service import BIBLE_SLOT, BibleService, materialize
+from drama_series_agent.bible.service import BIBLE_SLOT, BibleService, bible_slicer, materialize
 from drama_series_agent.core import secrets
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.db import Database, migrate
@@ -24,12 +24,15 @@ from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
+from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.setup.service import SetupService
+from drama_series_agent.suggestions import service as suggestions_service
+from drama_series_agent.suggestions.service import SUGGESTIONS_SLOT, SuggestionService
 
 
 @dataclass
@@ -47,6 +50,7 @@ class StudioState:
     budget: Budget
     novel: NovelService
     bible: BibleService
+    suggestions: SuggestionService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -71,8 +75,11 @@ class StudioState:
         budget = Budget(db)
         invalidation = Invalidation()
         invalidation.slicer(NOVEL_SLOT, novel_slicer)
+        invalidation.slicer(BIBLE_SLOT, bible_slicer)
+        invalidation.slicer(SUGGESTIONS_SLOT, suggestions_service.suggestions_slicer)
         products = ProductService(db, bus, invalidation)
         products.on_adopt(BIBLE_SLOT, materialize)
+        products.on_adopt(SUGGESTIONS_SLOT, suggestions_service.materialize)
         compiler = PromptCompiler()
         components = ComponentRegistry(
             Services(
@@ -86,6 +93,8 @@ class StudioState:
         )
         novel = NovelService(db, store, products)
         components.add(ExtractComponent(components.services, novel))
+        enrich = EnrichComponent(components.services, novel)
+        components.add(enrich)
         runs = RunService(components, products, jobs, bus, budget)
         novel.after_import = runs.ensure_series_products
         state = cls(
@@ -102,6 +111,7 @@ class StudioState:
             budget=budget,
             novel=novel,
             bible=BibleService(db, products, novel),
+            suggestions=SuggestionService(db, products, novel, enrich),
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:

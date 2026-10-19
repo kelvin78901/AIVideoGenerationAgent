@@ -516,3 +516,47 @@ class BibleEntity(SQLModel, table=True):
     updated_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+class Suggestion(SQLModel, table=True):
+    """One enrichment suggestion (SPEC 4.1), mirroring the adopted ``suggestions`` version.
+
+    Rebuilt on every adopt like ``bible_entity`` (upsert by id, ``retired`` instead of a
+    delete). ``text`` is what the model proposed; a rewrite and the user's decision live in
+    ``suggestion_decision``.
+    """
+
+    __tablename__ = "suggestion"
+
+    id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    version_id: str  # the adopted version this row mirrors
+    kind: str  # appearance / lighting / inner_to_action / cliffhanger / motive / timeline …
+    para_idx: int  # the paragraph (across the book, 0-based) the addition follows
+    anchor_span_json: dict[str, Any] = _json(dict)  # {source_id, start, end}
+    reason: str = ""
+    text: str = ""
+    retired: bool = False
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class SuggestionDecision(SQLModel, table=True):
+    """What the user decided on a suggestion (M2 plan 设计要点「建议的决定不进版本」).
+
+    Keyed by suggestion id, outside the versions: deciding makes no version, and a rerun that
+    keeps the id keeps the decision. No row = pending.
+    """
+
+    __tablename__ = "suggestion_decision"
+
+    suggestion_id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    status: str = "pending"  # pending / accepted / rejected / rewritten
+    text: str | None = None  # the rewrite (「按要求重写」), used instead of the model's text
+    rewrite_instruction: str | None = None
+    rewritten_by: str | None = None  # model key
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
