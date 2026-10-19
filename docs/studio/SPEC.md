@@ -45,7 +45,7 @@
 ```
 src/drama_series_agent/
   (上游已有模块……)
-  core/        config.py  db.py  models_db.py  events.py  jobs.py  storage.py  i18n_codes.py
+  core/        config.py  db.py  models_db.py  events.py  jobs.py  storage.py  i18n_codes.py  capabilities.py
   modelhub/    registry.py  router.py  pricing.py  budget.py  calllog.py
                adapters/  base.py  mock.py  openai_compat.py  comfyui.py
                           minimax.py  google.py  openai_images.py  volcengine.py
@@ -56,12 +56,13 @@ src/drama_series_agent/
                products.py  invalidation.py  gates.py  timing.py  continuity.py
   qa/          face.py  syncnet.py  asr.py  speaker.py  ocr.py  vlm.py
   post/        trim.py  lut.py  mix.py  subtitles.py  export_otio.py  checks.py
-  setup/       manifest.py  detectors.py  installer.py  mirrors.py  profile.py
+  setup/       manifest.py  probe.py  detectors.py  installer.py  steps.py  download.py
+               comfy.py  snapshots.py  service.py  schema.py         (首次启动，第 12 节；已装的 ComfyUI，6.4.1)
   metrics/     queries.py  projection.py  export_csv.py
-  spec/        presets.py  dims.py  compat.py                       (成片规格，第 13 节)
+  spec/        dims.py  compat.py  schema.py                         (成片规格，第 13 节；预设在 config/spec.yaml)
   sync/        board.py  comfy_board.py  ingest.py  folder.py  eagle.py  resolve.py   (外部同步，第 14 节)
   api/         app.py  routes/<resource>.py  sse.py
-config/        providers.yaml  components.yaml  setup-manifest.yaml  qa.yaml
+config/        providers.yaml  components.yaml  setup-manifest.yaml  spec.yaml  qa.yaml
 workflows/     <slug>/workflow.api.json  <slug>/workflow.yaml   平台推荐档的工作流（含上游 selfhost/ 的 H3），见 6.4
 integrations/comfyui-dramastudio/   ComfyUI 自定义节点包（第 14.2 节），单独安装到 ComfyUI/custom_nodes
 web/src/
@@ -127,10 +128,10 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 | `provider_account` | provider_id, has_key, key_ref（keyring 名，不存明文）, base_url_override, enabled |
 | `custom_model` | 用户自己加的 OpenAI 兼容模型：provider_id, model_id, display_name, price_in, price_out, caps_json |
 | `budget` | scope（call / shot / episode / series）, scope_id, limit_usd |
-| `machine_profile` | id, scanned_at, json（第 12 节的检测结果） |
-| `installed_item` | item_id, version, paths[], installed_at（用于卸载和重新检测） |
-| `comfy_env` | hash, comfyui_version, python, torch, node_packs_json（每个节点包：名称、来源、git commit 或 Registry 版本、提供的节点类）, captured_at（识别到变化就新存一份，6.4.1） |
-| `comfy_snapshot` | id, manager_name（ComfyUI-Manager 里的快照名）, env_hash, reason, changes_json（这次要做的改动清单）, created_at, restored_at |
+| `machine_profile` | id, machine（Mock 的示例机器 pc / mac；真实机器为空）, scanned_at, data_json（第 12 节的检测结果：阶段、各项状态、最近一次安装、推荐、`found`、`comfy`、`download_bps`、`app_dir`；结构见 `setup/schema.py:ProfileData`）, updated_at |
+| `installed_item` | profile_id, item_id, version, paths[], installed_at（用于卸载和重新检测） |
+| `comfy_env` | hash, comfyui_version, comfyui_commit, python, torch, node_packs_json（每个节点包：名称、来源、git commit 或 Registry 版本、提供的节点类）, captured_at（识别到变化就新存一份，6.4.1） |
+| `comfy_snapshot` | id, profile_id, manager_name（ComfyUI-Manager 里的快照名）, env_hash, reason（install / manual）, changes_json（这次要做的改动清单）, created_at；最近一次回滚：restore_requested_at, restore_from_hash（请求时的环境哈希）, restore_state（pending / done / incomplete / unchecked）, restore_diff_json（还不一致的地方）, restored_at（扫描核对通过的时间，6.4.1） |
 | `comfy_workflow` | id, slug, model_key, name, tier（recommended / mine / unverified）, source（repo / user）, dir, file_sha256, bindings_json, deps_json, caps_json, check_json（最近一次体检）, trial_json（最近一次试跑）, created_at, updated_at（6.4.2） |
 | `sync_target` | id, kind（comfy / folder / eagle / resolve）, enabled, config_json（路径、端口、模式）, status_json（最近一次检测结果） |
 | `sync_item` | target_id, version_id, external_ref（文件路径、Eagle item id、画布节点 id）, content_hash, synced_at, status |
@@ -228,7 +229,9 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
   - 节点包：`custom_nodes/` 下每个包的来源和版本。git 装的读 `.git` 里的 HEAD commit 和远端地址（直接读文件，不跑 git 命令）；从 Registry 装的读 `pyproject.toml` 的版本号和 Manager 留下的记录。ComfyUI 在跑时再用 `/object_info` 记下每个包提供哪些节点类；
   - 模型文件：按 ComfyUI 的模型目录（含 `extra_model_paths.yaml` 里配的）列出各类文件的路径和大小，ComfyUI 在跑时用 `/models`、`/models/{folder}`。不算哈希（同 12.2）。
 - **改动前先问**：对这份 ComfyUI 的任何安装或升级（升级 ComfyUI 本身、装或升级节点包、往它的 Python 里装包、往它的模型目录里放文件），都先列出改动清单：每一项做什么、从哪个版本到哪个版本、来源、大小。用户确认后才动手。这些项不随「必需项默认勾上」自动勾选。
-- **快照和回滚**：动手前用 ComfyUI-Manager 存一份快照（ComfyUI 版本、每个节点包的 commit 或版本、pip 包），在 `comfy_snapshot` 记下原因和改动清单。界面上可以一键回滚到任意一份快照；回滚要重启 ComfyUI 才生效，平台不替用户重启他自己的 ComfyUI，只提示。没装 Manager 时，「安装 ComfyUI-Manager」作为清单第一项一起问。
+- **快照和回滚**：动手前用 ComfyUI-Manager 存一份快照（ComfyUI 版本、每个节点包的 commit 或版本、pip 包），在 `comfy_snapshot` 记下原因和改动清单。界面上可以一键回滚到任意一份快照；回滚要重启 ComfyUI 才生效，平台不替用户重启他自己的 ComfyUI，只提示。没装 Manager 时，「安装 ComfyUI-Manager」作为清单第一项一起问（ComfyUI 也要装时排在 ComfyUI 后面）。
+  - 快照接口用 Manager 4 的 `/v2/snapshot/*`（按 4.2.2 核对）。存不成快照时，这次安装里改 ComfyUI 的项都不装（`install.snapshot_error`）。触发回滚前先建好 `custom_nodes/.disabled`：Manager 4.2.2 在这个文件夹不存在时会退成「复制再删除」，Windows 上删 git 的只读文件失败，回滚半途中止（DECISIONS 第 8b 步）。
+  - **回滚只是排上**：Manager 下次启动 ComfyUI 时才执行，可能半途失败。所以只记请求时间和当时的环境哈希（`pending`），下一次扫描识别完 ComfyUI 后核对：和快照时一致 → `done`，记 `restored_at`；和请求时一样 → 还没重启，仍是 `pending`；都不是 → `incomplete`，列出差异。只比 Manager 会恢复的东西：ComfyUI 的 commit（没有就比版本）和节点包（多出、少了、版本不同），不比 Python、PyTorch（Manager 不降级 pip 包）。
 - **平台自管的另一份 ComfyUI**（和已有的那份并存，用 `extra_model_paths.yaml` 共享模型）留作以后的选项，现在不做。
 
 #### 6.4.2 工作流就是本地模型
@@ -249,8 +252,9 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 #### 6.4.3 对接方式
 
 - **首选：DramaStudio 输入 / 输出节点**（节点包 `integrations/comfyui-dramastudio` 的一部分，M5 先做；14.2 的镜头、素材、存回节点仍在 M9）：
-  - 输入：首帧（IMAGE）、参考图（IMAGE，按序号 1、2、3… 各一个节点）、提示词（STRING，正向 / 反向）、台词音频（AUDIO）、尺寸（宽、高）、帧率、时长（秒）、种子；
+  - 输入：首帧（IMAGE）、输入视频（VIDEO，超分、口型这类以视频为输入的工作流用）、参考图（IMAGE，按序号 1、2、3… 各一个节点）、提示词（STRING，正向 / 反向）、台词音频（AUDIO）、尺寸（宽、高）、帧率、时长（秒）、种子；
   - 输出：视频、图片、音频；
+  - 绑定里的槽位名：`first_frame`、`video_in`、`ref_image`（带序号）、`prompt`、`negative`、`dialogue_audio`、`width`、`height`、`fps`、`seconds`、`seed`、`video_out`、`image_out`、`audio_out`（前端契约 `web/src/api/schemas/workflows.ts`）；
   - 平台只认这些节点：提交时按节点类型填值，按节点类型取结果，不用写绑定。节点在画布里有默认值，用户在 ComfyUI 里能直接手动跑。
 - **兼容：普通工作流**（官方和社区的，没有 DramaStudio 节点）：导入时自动猜绑定，例如 `LoadImage` → 首帧、正向 `CLIPTextEncode` → 提示词、采样器的 `seed` → 种子、`EmptyLatent*` 的宽高 → 尺寸、`SaveVideo` / `VHS_VideoCombine` → 视频输出。猜的结果在绑定页逐项给用户确认，没确认完不能登记。
 - **调用流程**：上传输入（`/upload/image` 等）→ 提交 `/prompt` → 用 WebSocket 收进度 → 从 `/history/{id}` 找输出节点的产物 → `/view` 下载。宽高、帧率、时长一律从成片规格（第 13 节）和镜头读出来填进对应槽位。
@@ -288,7 +292,7 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 - 试跑：示例输入、结果预览，通过后改档；
 - 分档：手动降为未验证，或升为「我的工作流」（要先试跑通过）。
 
-先用示例数据做出来（M1，MSW 返回），M5 再接后端。
+先用示例数据做出来（M1，MSW 返回），M5 再接后端。M1 已做，Kelvin 审过（审阅图 `reports/ui/workflows/`）：放页面最下面，点一行在下面展开，三个标签「绑定 / 体检 / 试跑」，默认打开最该处理的那个；装依赖复用首次启动页的确认弹窗。改档规则和试跑进度的轮询见 DECISIONS「M1 工作流库界面」。
 
 #### 6.4.7 运行
 
@@ -349,6 +353,13 @@ per_call_cap_usd: 0.50
 
 模型选择器只列出满足当前镜头需求和成片规格的模型（参考图数量、时长、是否音频驱动、是否需要控制视频、画幅、分辨率）。需要 ControlNet 的镜头只显示本地模型。机器档案（第 12 节）里跑不了的本地模型隐藏。工作流库里「未验证」档的工作流只能手动选，不进预设、兜底和「不满意换一个」的自动顺序（6.4.4）。
 
+按机器过滤（M1，`core/capabilities.py`）：
+
+- `providers.yaml` 的本地模型写 `needs`（清单项 id）和 `requires_cuda`。
+- 「有」= 最近一次扫描里状态为通过、需更新、注意的项，加上之后装好的项（档案的 `found`）。从没扫描过不过滤。
+- `restrict()` 在 `resolve()` 合并完各层覆盖之后做（用户手选的本地模型也会被绕开）：`local_model` 置空；`local` / `hybrid` 改成 `api`，没有 API 模型的改成 `off`；兜底和 `alt_order` 里去掉跑不了的本地模型。`Resolved.unavailable` 给出每个模型缺什么（`cuda` 或清单项 id），供界面说明「本机跑不了」。
+- 路由器每次调用和兼容表（13.3）都按过滤后的路由算。Mock 下扫描示例机器同样生效。
+
 ### 7.4 按钮语义
 
 | 按钮 | 行为 |
@@ -392,7 +403,7 @@ per_call_cap_usd: 0.50
 
 ### 9.1 HTTP 接口概览（`/api/v1`）
 
-标 ⁺ 的是 M0.5 做界面时补的接口（页面需要，原表没有）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
+标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面时页面需要，原表没有）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
 
 | 资源 | 接口 |
 | --- | --- |
@@ -409,8 +420,8 @@ per_call_cap_usd: 0.50
 | 配置与模型 | `GET /config/components`⁺（组件目录、可选模型、`local_runtime_ok`），`GET /config/resolve`，`PUT /config/override`，`DELETE /config/override`⁺（恢复成预设），`GET/PUT /config/defaults`⁺（预设、兜底方式），`POST /config/preset`，`GET /providers`，`POST /providers/{id}/key`，`POST /providers/{id}/test`，`POST /custom-models` |
 | 看板 | `GET /metrics/summary`⁺（顶栏花费），`GET /metrics/kpis\|spend-series\|calls-series\|shots\|components\|speed\|apis\|local-models\|qa\|episodes`⁺，`GET /metrics/export.csv`⁺（第 11 节） |
 | 同步 | `GET/PUT /sync/targets`，`POST /sync/targets/{id}/detect`⁺，`POST /sync/run`，`GET /sync/log`，`GET /sync/board?episode=`⁺（ComfyUI 素材板），`POST /ingest`（ComfyUI 节点存回，第 14.2 节） |
-| 首次启动 | `POST /setup/scan`，`GET /setup/profile`，`POST /setup/install` `{items, mirror, dir}`，`POST /setup/items/{id}/retry\|skip` |
-| ComfyUI 与工作流库（计划，6.4） | M1：`GET /comfy/env`（识别结果：路径、端口、版本、节点包、模型文件），`GET/POST /comfy/snapshots`，`POST /comfy/snapshots/{id}/restore`；M5：`GET /workflows`，`POST /workflows/import`，`GET/PATCH /workflows/{id}`（含改档），`PUT /workflows/{id}/bindings`，`POST /workflows/{id}/check`，`POST /workflows/{id}/trial` → job，`POST /workflows/check-all` |
+| 首次启动 | `GET /setup/profile`（`simulated`：Mock 的示例机器；`download_bps`、`app_dir`；每项 `size_bytes`、`work_s`、`touches_comfy`，安装中的 `install`：`pct`、`bytes_done`、`bytes_total`、`speed`、`eta_s`、`verifying`），`POST /setup/scan` → 202，`POST /setup/install` `{items, mirror, dir}` → 202（要用户点头的列在 `install.confirm`，改 ComfyUI 的改动清单 `install.changes`，装前的快照 `install.snapshot` 或 `install.snapshot_error`），`POST /setup/install/confirm\|cancel`⁺，`POST /setup/items/{id}/retry\|skip`，`POST /dev/setup/machine`⁺ `{machine: pc\|mac}`（只在 Mock 下切示例机器，清空扫描和安装；真实模式 403 `setup_not_simulated`） |
+| ComfyUI 与工作流库（6.4） | M1 已实现：`GET /comfy/env`（识别结果：路径、端口、版本、节点包、模型文件），`GET/POST /comfy/snapshots`（每份带最近一次回滚 `restore: {state, requested_at, diff}`），`POST /comfy/snapshots/{id}/restore` → `{snapshot, restart_required}`；M5（M1 先由 MSW 返回示例数据）：`GET /workflows`，`GET /comfy/workflows`⁺（ComfyUI 自己的工作流列表，供导入），`POST /workflows/import`，`GET/PATCH /workflows/{id}`（含改档），`PUT /workflows/{id}/bindings`，`POST /workflows/{id}/check`，`POST /workflows/{id}/deps`⁺（缺的节点包和模型的改动清单），`POST /workflows/{id}/deps/install`⁺（确认后先存快照再装），`POST /workflows/{id}/trial` → job，`POST /workflows/check-all` |
 | 事件 | `GET /events`（SSE） |
 
 ## 10. 调用记录（埋点）
@@ -473,37 +484,78 @@ per_call_cap_usd: 0.50
 
 ### 12.1 清单（manifest）
 
-`config/setup-manifest.yaml`，每项：
+`config/setup-manifest.yaml`（解析见 `setup/manifest.py`；文件头的注释列了全部字段）。三个例子：
 
 ```yaml
-- id: node_seedvr2
+- id: node_vhs                    # 社区节点包：git clone 锁 commit
   group: comfy                    # sys / rt / comfy / w(权重) / svc(网络与服务)
-  name: {zh: "SeedVR2 节点（本地超分）", en: "SeedVR2 nodes (local upscaling)"}
-  platforms: [windows, linux]     # macOS 上显示为“跳过，超分走 API”
-  requires_cuda: true
+  name: {zh: VideoHelperSuite, en: VideoHelperSuite}
   required: false                 # 可选项失败只记录，不阻塞
   depends_on: [comfy]
-  detect: {type: comfy_node, dir: "ComfyUI-SeedVR2_VideoUpscaler"}
+  detect: {type: comfy_node, dir: ComfyUI-VideoHelperSuite}
   install:
-    - {type: git_clone, url: "...", ref: "<pinned commit>", dest: "{comfy}/custom_nodes/..."}
+    - {type: git_clone, url: "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite", ref: "<pinned commit>", dest: "{comfy}/custom_nodes/ComfyUI-VideoHelperSuite"}
     - {type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt"}
-  size_gb: 0.1
+
+- id: node_seedvr2                # ComfyUI 自带的节点：不是安装项，旧版 ComfyUI 提示更新
+  group: comfy
+  name: {zh: "SeedVR2 节点（本地超分）", en: "SeedVR2 nodes (local upscaling)"}
+  requires_cuda: true             # 没有 CUDA 时显示「跳过，超分走 API」
+  required: true
+  depends_on: [comfy]
+  detect: {type: comfy_node, classes: [SeedVR2Preprocess, SeedVR2Conditioning, ...], native_since: "0.28.0"}
+  fix: {missing: {code: update_comfy_native, params: {version: "0.28.0"}}, skip: unsupported_upscale_api}
+  install: []
+
+- id: w_sr                        # 权重：放进 ComfyUI 的模型目录
+  group: w
+  depends_on: [comfy]
+  detect: {type: downloads}       # 下面的文件都在就算装好
+  size_gb: 8.8
+  install:
+    - type: download
+      hf_repo: Comfy-Org/SeedVR2
+      revision: "<pinned revision>"
+      files:
+        - {path: diffusion_models/seedvr2_7b_int8_convrot.safetensors, folder: diffusion_models, sha256: "..."}
+        - {path: vae/seedvr2_ema_vae_fp16.safetensors, folder: vae, sha256: "..."}
 ```
 
-检测器类型：`command`（跑命令 + 正则取版本）、`py_import`（在指定 uv 环境里）、`file`（存在 + 可选 sha256）、`comfy_node`（目录或 `/object_info`）、`nvml`（显卡、显存、驱动支持的 CUDA）、`http`（测速）、`service`（本地 LLM 服务端口）、`keyring`（密钥是否已填）。
+M1 加的字段：
 
-安装步骤类型：`uv_venv`、`uv_pip`、`git_clone`（锁定 commit）、`download`（断点续传、sha256 校验、按镜像改写 URL）、`pkg`（winget / brew / apt，需要管理员权限时先问）、`script`。每一步都要幂等。
+- `detect.native_since`：ComfyUI 自带的节点从哪个版本开始有。ComfyUI 在跑时按 `/object_info` 里的节点类判断，没在跑时按 ComfyUI 版本判断。
+- 安装步骤的 `version`：给改动清单看的版本号（tag）；没写时用 commit 的前 7 位。
+- `installable: false`：有安装步骤但暂时不能装（DramaStudio 节点包、本地 LLM）。
+- `download` 的 `files`：文件名，或 `{path, folder, sha256}`。写了 `folder`（ComfyUI 的模型类别）就放到 ComfyUI 放这类新文件的目录：`extra_model_paths.yaml` 里 `is_default: true` 的那个（识别结果里 `ModelDir.default`，ComfyUI Desktop 的共享模型目录），没有就 `{comfy}/models/<folder>`；没写的放 `dest` 下。检测 `downloads`：这些文件都在（ComfyUI 的文件在它任一模型目录里都算）。
+- `size_gb`（超过 10 GB 先确认，也用于预计用时）；`pkg` 步骤的 `admin: [winget, apt]`（这些包管理器要管理员权限，先确认）；`uv_pip` 的 `by_torch`（按 ComfyUI 的 Python 里现在的 PyTorch 选包，键 `<major.minor>+<cuda>`，表里没有就报 `torch_unsupported`）；`snapshot_first: false`（只有 ComfyUI-Manager 本身）；`fix` / `if_missing`；按平台覆盖的 `windows` / `macos` / `linux`。
+- 顶层 `mirrors`（官方 / 国内：Hugging Face、PyPI、GitHub 代理前缀）和 `recommend`（按顺序取第一条满足 `when` 的预设）。
 
-初始清单见 `seed/setup-manifest.yaml`（按原型的 PC / Mac 两套列出）。另外三项：`node_dramastudio`（我们自己的 ComfyUI 节点包，第 14.2 节）、`eagle`（只检测是否打开）、`resolve`（只检测版本和免费 / Studio）。
+检测器类型：`platform`（系统、内存、磁盘）、`nvml`（显卡、显存、驱动支持的 CUDA）、`command`（跑命令 + 正则取版本）、`py_import`（在指定 uv 环境或 ComfyUI 的 Python 里）、`file`（存在 + 可选 sha256）、`downloads`（见上）、`comfy`（定位 ComfyUI，6.4.1）、`comfy_manager`、`comfy_node`（目录或 `/object_info` 的节点类，`native_since`）、`http`（测速）、`service`（本地 LLM 服务端口）、`service_model`、`keyring`（密钥是否已填）、`resolve`。
+
+安装步骤类型：`uv_venv`、`uv_pip`、`git_clone`（锁定 commit）、`download`（12.2-7）、`pkg`（winget / brew / apt，需要管理员权限时先问）、`script`、`copy`。每一步都要幂等：动手前先检测，已经装好的记成「已经装好了」。
+
+清单按原型的 PC / Mac 两套列出，另外三项：`node_dramastudio`（我们自己的 ComfyUI 节点包，第 14.2 节）、`eagle`（只检测是否打开）、`resolve`（只检测版本和免费 / Studio）。运行环境和节点的地址、版本锁定见 DECISIONS「M1 清单补齐」，权重版本见「第 8b 步」。
 
 ### 12.2 流程
 
 1. **扫描只读**：不改动任何东西，结果存 `machine_profile`，路由据此隐藏跑不了的本地选项。
 2. **推荐**：按硬件给预设（5090 → 均衡；Apple 芯片 → 视频、关键帧、超分走 API）。
 3. **安装**：用户勾选（必需项默认勾上）→ 按依赖顺序执行，日志经 SSE 实时显示，每步可重试或跳过；装过的东西写 `installed_item`，卸载能清干净；重新检测只补差异。
+   - 一次安装是一个 `setup.install` 任务（cpu 队列），后端重启后续跑。依赖的项失败或跳过时，依赖它的项跳过。
+   - 要用户点头的（管理员权限、单项下载超过 10 GB、改已装 ComfyUI 的改动清单）先列在 `install.confirm`，确认（`/setup/install/confirm`）才开始，取消（`/cancel`）什么都不装。
+   - 装完再问一次检测器（只对装完马上就看得到的 `py_import`、`file`、`downloads`）；还检测不到就报 `not_detected`，不算装好。
+   - 安装位置（`dir`）在程序自己的文件夹（`app_dir`）里时，页面给黄色警告，日志写 `dir_in_app`；只提示，不拦。
 4. **镜像**：自动（测速选择）/ 官方 / 国内镜像（Hugging Face、PyPI、GitHub 代理）。
 5. **安全**：不动系统 Python；所有 Python 依赖装进 `~/.drama-studio/envs/<name>`（uv）；单项下载超过 10 GB 先确认。
-6. **已装的 ComfyUI**：按 6.4.1 只读识别；对它的任何改动（ComfyUI 和节点的安装、升级，往它的 Python 和模型目录里放东西）都单独列改动清单确认，动手前用 ComfyUI-Manager 存快照，可一键回滚。
+6. **已装的 ComfyUI**：按 6.4.1 只读识别；对它的任何改动（ComfyUI 和节点的安装、升级，往它的 Python 和模型目录里放东西）都单独列改动清单确认，动手前用 ComfyUI-Manager 存快照，可一键回滚，回滚后由下一次扫描核对。
+7. **下载**（`setup/download.py`）：
+   - 文件按 64 MB 分块写进 `.part`，`<name>.part.json` 记下完成的块，续传和单块重试都靠它；不支持 Range 的服务器退回单连接从头下。一个块连续失败 3 次整项失败，完成的块留着。下完校验 sha256。
+   - 多连接动态分段：每个连接从一个空闲块一直流到文件尾，下一块被别的连接占了就停；新连接从最长的空闲段开始。连接数从 1 个起自适应：每 5 秒看一次总速度，快 10 % 以上就加一个（最多 8 个），否则退回并固定。
+   - Windows 上 `.part` 设成稀疏文件。
+8. **进度和预计用时**：
+   - 后端给：每项 `size_bytes`（清单的 `size_gb`）和 `work_s`（下载以外步骤的经验用时）；档案的 `download_bps`（这台机器的下载速度：最近一次装完的下载项的平均速度，还没有时扫描末尾只读地测第一个权重文件的前 16 MB）；下载中的项每秒最多报一次 `bytes_done`、`bytes_total`、`speed`（最近 5 秒）、`eta_s`、`verifying`。
+   - 前端算：开始前的预计用时（跟着勾选变）、整体进度（按用时加权）、剩余时间。体积用十进制 GB / MB。
+9. **Mock**：`DRAMA_MOCK=1` 时检测和安装都是模拟的（`FakeProbe` 读 `tests/fixtures/setup/{pc,mac}.yaml`，`FakeRunner` 按步推进，SageAttention 在 60 % 报 `no_wheel`），什么都不会装；`simulated: true`，页面显示示例机器切换（`POST /dev/setup/machine`）。设 `DRAMA_SETUP=real`（或 `DRAMA_MOCK=0`）才真的扫描、真的安装。只读核对真实扫描：`scripts/setup_scan_real.py`。
 
 ## 13. 成片规格
 
@@ -532,8 +584,9 @@ per_call_cap_usd: 0.50
 
 ### 13.3 兼容检查和锁定
 
-- `spec/compat.py`：对当前路由里的每个模型，用适配器 `caps`（支持的画幅、最高分辨率、帧率、时长）判定 原生支持 / 需要转换 / 不支持，返回给前端表格；“不支持”的模型在 ModelPicker 里隐藏。
+- `spec/compat.py`：对当前路由里的每个模型，用适配器 `caps`（支持的画幅、最高分辨率、帧率、时长）判定 原生支持 / 需要转换 / 不支持，返回给前端表格；“不支持”的模型在 ModelPicker 里隐藏。路由按这台机器能力过滤后的算（7.3）。
 - 第一张关键帧被采纳时写 `output_spec.locked_at`。锁定后改画幅：用失效传播算出受影响的关键帧和视频（以及按旧画幅出的场景参考图，标为可选），显示数量和预计花费，选项同 ImpactDialog。改分辨率或帧率只影响精修和导出，不触发重做。
+  - 接口：锁定后 `PUT /series/{id}/spec` 改画幅返回 409 `spec_locked`；用户在影响范围里选了处理方式后带 `?confirmed_impact=<impact id>` 再写。M1 只检查这个参数不为空，影响范围由 MSW 示例给（M4 之前）；M2 有真的影响范围后再校验 id。
 - 另出一版：主画幅 9:16 时可选“导出时外扩出 16:9”（另计费，走外扩模型适配器）；主画幅 16:9 时可选“按人物位置自动裁成 9:16”（本地，不花钱）。
 
 ## 14. 素材整理与外部同步
@@ -585,7 +638,7 @@ per_call_cap_usd: 0.50
 
 | 路由 | 原型文件 | 说明 |
 | --- | --- | --- |
-| `/setup` | Setup.dc.html | 首次启动；未完成扫描时自动跳转到这里 |
+| `/setup` | Setup.dc.html | 首次启动 / 环境与安装。只在打开 `/` 而且从没扫描过（`scanned_at` 为空）时跳到这里，直接打开的深链接不跳。左侧导航工具区第一个是常驻入口「环境与安装」（在「成片规格」上面），随时重新检测、补装；徽标「缺 N 项」数必需、缺少或需更新、还没装好的项，就绪时不显示。原型没有的「你的 ComfyUI」面板（识别结果、快照、回滚）和安装确认弹窗也在这页 |
 | `/s/:series/spec` | Spec.dc.html | 00b 成片规格；新建剧集时必经，之后从顶栏规格标签进入 |
 | `/s/:series/e/:ep/novel` | Main.dc.html | 01 小说 · 导入与补全 |
 | `/s/:series/e/:ep/script` | Script.dc.html | 02 剧本 · 分集与剧本化（含影响范围弹窗） |

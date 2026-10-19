@@ -1,7 +1,6 @@
 /**
  * Workflow library (SPEC 6.4.2–6.4.6, 9.1 `/workflows/*`): every ComfyUI workflow is registered as
  * a local model (`comfy/<slug>`). M1 shows it with demo data (MSW); the backend comes in M5.
- * `GET /comfy/workflows` (ComfyUI's own workflow list, to import from) is not in SPEC 9.1 yet.
  */
 import { z } from "zod";
 
