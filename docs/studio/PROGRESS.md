@@ -34,7 +34,7 @@
 ## 下一步
 
 - **第 8b 步（2/2）Kelvin 真装（先做这个，再做第 9 步）**：步骤见下面「等 Kelvin 的事」。Kelvin 装完后：读安装日志和重新检测结果（`scripts/setup_scan_real.py`），核对每个文件在 `ComfyUI-Shared\models` / `C:\Users\kelvin\DramaStudio`；失败项记原因；回滚试一次（ComfyUI 面板「回滚」→ 重启 ComfyUI → 节点包回到装前）；结果写进 DECISIONS 和报告，勾计划 8b 和验收「5090 真实扫描和实际一致」「ComfyUI 识别一致；装前弹改动清单，回滚能回到快照」。
-- **第 8c 步 安装进度和预计用时**（Kelvin 2026-10-18 真装时提出，见 `plans/M1.md` 8c）：8b 收完再做，从 `setup/steps.py:_fetch` 开始。
+- **第 8c 步 安装进度、预计用时、多连接下载**（Kelvin 2026-10-18 真装时提出，见 `plans/M1.md` 8c）：8b 收完再做，从 `setup/steps.py:_fetch` 开始。
 - **第 9 步 收尾**：按计划第 9 步做。ROADMAP 勾选（验收「5090 真实扫描和实际一致」「ComfyUI 识别和 Kelvin 机器一致」等 Kelvin 看过 `scripts/setup_scan_real.py` 的输出再勾）；SPEC 补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm|changes|snapshot|snapshot_error`、`GET /comfy/env`、`/comfy/snapshots*`、`GET /comfy/workflows`、`/workflows/{id}/deps*`；第 4 节 `comfy_env` 的 `comfyui_commit`；12.1 清单的 `native_since`、`version`、`installable: false`、download 文件的 `folder:` 和检测 `downloads`（12.1 的 SeedVR2 示例改成 ComfyUI 自带）、`ModelDir.default`；16.1 的 `/` 跳转和导航「环境与安装」；6.4.3 的 `video_in` 槽位。写 `reports/M1.md`（中文，给 Kelvin），跑 CI（Linux；Windows 在开 PR 时跑），`gh pr create -R kelvin78901/AIVideoGenerationAgent --base main`，PR 描述用报告。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
