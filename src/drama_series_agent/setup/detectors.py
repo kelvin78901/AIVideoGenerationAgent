@@ -18,12 +18,15 @@ from drama_series_agent.core.config import get_config
 from drama_series_agent.setup.comfy import (
     COMFY_PORTS,
     ComfyInstall,
+    ModelDir,
     argv_port,
     desktop_installs,
     find_manager,
     flag_values,
     kind_of,
     main_script,
+    model_candidates,
+    model_dirs,
 )
 from drama_series_agent.setup.manifest import TODO, Item, Message, Status
 from drama_series_agent.setup.pathutil import dirname, is_absolute, join, same_path
@@ -129,6 +132,7 @@ class ScanContext:
         self.comfy_urls = list(dict.fromkeys(comfy_urls))  # tried in order, duplicates dropped
         self._comfy: ComfyInstall | _Unset | None = UNSET
         self._object_info: dict[str, Any] | None = None
+        self._model_dirs: list[ModelDir] | None = None
 
     @classmethod
     async def create(
@@ -173,6 +177,13 @@ class ScanContext:
             if self._comfy is not None and self._comfy.root:
                 self.vars["comfy"] = self._comfy.root
         return self._comfy
+
+    async def model_dirs(self) -> list[ModelDir]:
+        """The found ComfyUI's model folders, ``extra_model_paths`` included (none if not found)."""
+        if self._model_dirs is None:
+            inst = await self.comfy()
+            self._model_dirs = await model_dirs(self.probe, inst) if inst else []
+        return self._model_dirs
 
     async def _running(self) -> tuple[str, dict[str, Any]] | None:
         """The first URL that answers like ComfyUI does, with its ``system_stats`` system."""
@@ -388,6 +399,31 @@ async def _file(item: Item, ctx: ScanContext) -> Outcome:
     return Outcome("absent", NOT_FOUND)
 
 
+async def _downloads(item: Item, ctx: ScanContext) -> Outcome:
+    """Every file the item's download steps write is there. A file for a ComfyUI model folder
+    counts in any folder ComfyUI loads it from (``extra_model_paths`` included). No sha256 here
+    either (see ``_file``)."""
+    files = [(s, f) for s in item.install if s.type == "download" for f in s.download_files()]
+    if not files:
+        return Outcome("absent", NOT_FOUND)
+    found: list[str] = []
+    for step, f in files:
+        if f.folder is not None:
+            await ctx.comfy()
+            root = ctx.vars.get("comfy")
+            places = [
+                join(d, f.name) for d in model_candidates(f.folder, await ctx.model_dirs(), root)
+            ]
+        else:
+            dest = ctx.expand(str((step.model_extra or {}).get("dest") or ""))
+            places = [join(dest, f.path)] if dest else []
+        hit = [p for p in places if await ctx.probe.exists(p)]
+        if not hit:
+            return Outcome("absent", NOT_FOUND)
+        found.append(hit[0])
+    return Outcome("present", msg("installed"), facts={"paths": found})
+
+
 async def _comfy(item: Item, ctx: ScanContext) -> Outcome:
     inst = await ctx.comfy()
     if inst is None:
@@ -515,6 +551,7 @@ DETECTORS: dict[str, Detector] = {
     "command": _command,
     "py_import": _py_import,
     "file": _file,
+    "downloads": _downloads,
     "comfy": _comfy,
     "comfy_manager": _comfy_manager,
     "comfy_node": _comfy_node,

@@ -29,11 +29,12 @@
 | 7b（设计稿） | 工作流库先做出来给 Kelvin 审：`schemas/workflows.ts`、`hooks/workflows.ts`、MSW `handlers/workflows.ts` + 示例 5 个（H3、SeedVR2 推荐；LatentSync 我的；Wan 绑定待确认；Flux Kontext 缺 2 节点包 1 模型）；`pages/models/{WorkflowLibrary,WorkflowDetail,ImportWorkflowDialog}.tsx`、`workflowStatus.ts`；`ConfirmInstall` 加 `snapshotNote`；词表 `workflows.json`、错误码 9 个；审阅图 `reports/ui/workflows/` | d7a45b0 | web test 183、lint、typecheck、format |
 | 7b | Kelvin 审过设计稿；Vitest `pages/models/WorkflowLibrary.test.tsx`（8 条：列表和筛选、推荐档只读、猜的绑定 → 确认 → 试跑 → 升档、装依赖走确认弹窗、从 ComfyUI 列表导入、拖入 JSON、降档、英文）；Models 测试只数组件表的行；冒烟加工作流库一条；重截 models 两张；DECISIONS 记 7b；勾计划 7b、ROADMAP 一项 | 8bd178f | web test 191、lint、typecheck、format；e2e 17 |
 | 8 | 清单补齐：ComfyUI 锁 v0.42.1、最低 0.35.0；H3 / Fun ControlNet 是 ComfyUI 自带节点（`detect.native_since`，不再是安装项）；Manager 改 `manager_requirements.txt` 装法；VHS、SeedVR2、FlashVSR 锁 commit；PyTorch cu130 源；国内 GitHub 走 gh-proxy；权重 `installable: false` + `weights_pending_p0`；改动清单显示 tag / 短 commit；`scripts/setup_scan_real.py`（只读，本机跑过）；测试不再触网；前端测试数据重新导出、Setup / 冒烟数字跟着改；DECISIONS 记第 8 步 | dd2fcce | pytest 296；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
+| 8b（1/2） | Kelvin 选了 Qwen-Image-Edit-2511 int8、ComfyUI 自带 SeedVR2 + 7B int8、IndexTTS-2.5；五项权重锁 HF revision、填大小和 sha256（共约 110 GB，H3 补两个加速 LoRA）；`node_seedvr2` 改成 ComfyUI 自带（0.28.0 起）；DramaStudio 节点包不可装；download 文件加 `folder:`，放进 ComfyUI 的默认模型目录（`is_default`，Desktop 的共享目录）；新检测 `downloads`；日志 `download`；`setup_scan_real.py` 打印权重目标路径（本机核对过）；前端测试数据重新导出、Setup / 冒烟 / API 测试数字跟着改；DECISIONS 记 8b | 本提交 | pytest 300；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
 
 ## 下一步
 
-- **第 8b 步 真实安装（先做这个，再做第 9 步）**：Kelvin 2026-10-18 要在 5090 上真装节点包和权重来测安装功能，计划已加第 8b 步（`plans/M1.md`）、决定记在 DECISIONS 同日。从 `config/setup-manifest.yaml` 和 `src/drama_series_agent/setup/steps.py` 开始。顺序：DramaStudio 节点包先标不可装；从 Hugging Face API（`/api/models/Comfy-Org/MiniMax-H3/tree/main/<folder>`）取 H3 和文本编码器文件的大小和 sha256，填进清单；把 Qwen-Image-Edit、SeedVR2 权重、IndexTTS2 的官方和社区版本列成表问 Kelvin；定好 Desktop 共享模型目录怎么定位；然后让 Kelvin 用 `DRAMA_SETUP=real` 起后端、开着 ComfyUI Desktop，在页面上走一遍。改了清单要 `DRAMA_UPDATE_FIXTURES=1` 重新导出前端测试数据。
-- **第 9 步 收尾**：按计划第 9 步做。ROADMAP 勾选（验收「5090 真实扫描和实际一致」「ComfyUI 识别和 Kelvin 机器一致」等 Kelvin 看过 `scripts/setup_scan_real.py` 的输出再勾）；SPEC 补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm|changes|snapshot|snapshot_error`、`GET /comfy/env`、`/comfy/snapshots*`、`GET /comfy/workflows`、`/workflows/{id}/deps*`；第 4 节 `comfy_env` 的 `comfyui_commit`；12.1 清单的 `native_since`、`version`、`installable: false`；16.1 的 `/` 跳转和导航「环境与安装」；6.4.3 的 `video_in` 槽位。写 `reports/M1.md`（中文，给 Kelvin），跑 CI（Linux；Windows 在开 PR 时跑），`gh pr create -R kelvin78901/AIVideoGenerationAgent --base main`，PR 描述用报告。
+- **第 8b 步（2/2）Kelvin 真装（先做这个，再做第 9 步）**：步骤见下面「等 Kelvin 的事」。Kelvin 装完后：读安装日志和重新检测结果（`scripts/setup_scan_real.py`），核对每个文件在 `ComfyUI-Shared\models` / `C:\Users\kelvin\DramaStudio`；失败项记原因；回滚试一次（ComfyUI 面板「回滚」→ 重启 ComfyUI → 节点包回到装前）；结果写进 DECISIONS 和报告，勾计划 8b 和验收「5090 真实扫描和实际一致」「ComfyUI 识别一致；装前弹改动清单，回滚能回到快照」。
+- **第 9 步 收尾**：按计划第 9 步做。ROADMAP 勾选（验收「5090 真实扫描和实际一致」「ComfyUI 识别和 Kelvin 机器一致」等 Kelvin 看过 `scripts/setup_scan_real.py` 的输出再勾）；SPEC 补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm|changes|snapshot|snapshot_error`、`GET /comfy/env`、`/comfy/snapshots*`、`GET /comfy/workflows`、`/workflows/{id}/deps*`；第 4 节 `comfy_env` 的 `comfyui_commit`；12.1 清单的 `native_since`、`version`、`installable: false`、download 文件的 `folder:` 和检测 `downloads`（12.1 的 SeedVR2 示例改成 ComfyUI 自带）、`ModelDir.default`；16.1 的 `/` 跳转和导航「环境与安装」；6.4.3 的 `video_in` 槽位。写 `reports/M1.md`（中文，给 Kelvin），跑 CI（Linux；Windows 在开 PR 时跑），`gh pr create -R kelvin78901/AIVideoGenerationAgent --base main`，PR 描述用报告。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -56,22 +57,23 @@
 - **单元测试绝不能触网**：`test_steps.py` 的 `_install` 默认离线 transport；别给 RealRunner 的测试传 `transport=None`（清单有真实下载地址，曾真的下了 30 GB 到 pytest 临时目录）。
 - **示例机器切换**：点已选中的那台不会触发切换；e2e 里切 Mac 再切回 PC 要等前一次 `aria-checked` 变了再点。
 - MSW 在 jsdom 里能拦相对路径的 fetch；handler 路径写 `*/api/v1/...`（`mocks/http.ts:v1()`）。
-
 - **能力过滤在 Mock 下也生效**：扫描示例机器后路由会变（PC 示例装好之前视频、关键帧、超分走 API，兼容表没有 `video_draft` 行；没扫描过不过滤）。第 7 步 Setup 页接真实接口后，e2e 里如果先扫描再看成片规格页，兼容表的预期要跟着改。
 - **改 `setup/` 这类带平台分支的代码后加跑 `python -m mypy --platform linux`**：CI 是 Linux，Windows 上的 mypy 看不出 `subprocess.CREATE_NO_WINDOW` 这类只在 Windows 有的名字。
 - **本机应用控制策略拦 `.venv/Scripts` 里 uv 生成的入口 exe**（`pytest.exe`、`mypy.exe`、`drama-studio.exe` 报 os error 4551，`ruff` 不受影响）：一律 `uv run --no-sync python -m pytest` / `python -m mypy`；后端用 `python -m drama_series_agent.studio_cli dev`（`start.ps1`、Playwright 已改）。
 - **本机 PowerShell 执行策略禁止 `-File` 跑脚本**：钩子、状态栏、`start.ps1` 都要 `powershell -NoProfile -ExecutionPolicy Bypass -File …`。
 - 写接口（非 GET）要带 `X-Drama-Studio: 1`，Host 必须是 127.0.0.1 / localhost；`TestClient` 要用 `base_url="http://127.0.0.1"`。
 - **Kelvin 开着 `start.ps1` 时 `uv run` 会失败**（同步要替换正被占用的 `.venv/Scripts/drama-studio.exe`）：一律 `uv run --no-sync …`。
-- Windows 上 `python` 不在 PATH（会跳到应用商店），一律 `uv run python`。
-- pnpm：`corepack enable --install-directory ~/bin pnpm`；命令前加 `COREPACK_ENABLE_DOWNLOAD_PROMPT=0` 避免首次下载提示。
+- Windows 上 `python` 不在 PATH（会跳到应用商店），一律 `uv run python`。pnpm：`corepack enable --install-directory ~/bin pnpm`；命令前加 `COREPACK_ENABLE_DOWNLOAD_PROMPT=0` 避免首次下载提示。
 - Windows PowerShell 5.1：`.ps1` 必须存成 UTF-8 带 BOM，否则中文乱码。
 - YAML 1.1 会把 `on:` / `mode: off` 解析成布尔值：`core/config.py` 用只认 true/false 的加载器。
 - SQLite 读回时间会丢时区，用 `models_db.UtcDateTime`。
 
 ## 等 Kelvin 的事
 
-- **第 8b 步要 Kelvin 挑版本**：Qwen-Image-Edit、SeedVR2 权重、IndexTTS2 用哪个官方 / 社区版本（下个会话列表给你）。
-- **（已看）在 5090 上看一眼真实扫描**：`uv run --no-sync python scripts/setup_scan_real.py`（只读；开着 ComfyUI 跑能多看到节点类和模型文件）。我在本机跑过一次：ComfyUI Desktop 0.41.2、PyTorch 2.12.1+cu130、Manager 4.2.2 都认对了；VHS、SeedVR2、FlashVSR 没装，权重都缺。Kelvin 2026-10-18 跑了，输出和我这边一致；验收在 8b 真装后一起勾。
-- （2026-10-18 已办：`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图、第 7b 步设计稿 Kelvin 审核通过；按镜头选工作流 / 拼节点 beta 已定，见 DECISIONS 和 SPEC 6.4.8。）
+- **第 8b 步真装**（ComfyUI 会被改：装 VHS、FlashVSR、SageAttention 到它的 `.venv`，权重放共享模型目录；动手前自动存快照）：
+  1. 关掉正在跑的 `start.ps1`（Mock），打开 ComfyUI Desktop（存快照要它在跑）。
+  2. PowerShell：`$env:DRAMA_SETUP = "real"; powershell -NoProfile -ExecutionPolicy Bypass -File .\start.ps1 -SkipInstall`（模型调用仍是 Mock）。
+  3. 「环境与安装」→ 开始检测 → 勾 VideoHelperSuite、FlashVSR、SageAttention 和 5 项权重（本地 LLM 服务不用勾）→ 看改动清单 → 确认 → 安装（约 110 GB，C 盘剩 301 GB）。失败的项不用管，记下提示就行（SageAttention 大概率没有 Python 3.13 的预编译包）。
+  4. 装完点「重新检测」，然后告诉我；之后可以去掉 `DRAMA_SETUP` 照常用 Mock 起。
+- （2026-10-18 已办：真实扫描输出 Kelvin 看过、和我这边一致；8b 的三个版本已选；`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图、第 7b 步设计稿 Kelvin 审核通过；按镜头选工作流 / 拼节点 beta 已定，见 DECISIONS 和 SPEC 6.4.8。）
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。

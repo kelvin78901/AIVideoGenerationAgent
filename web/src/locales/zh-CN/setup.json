@@ -117,6 +117,7 @@
     "eagle_later": "用 Eagle 管理素材时再装",
     "resolve_later": "用达芬奇做后期时再装",
     "update_comfy_native": "ComfyUI 自带：把 ComfyUI 更新到 {{version}} 或更新",
+    "dramastudio_pending": "还没发布：随 ComfyUI 对接一起提供",
     "weights_pending_p0": "等 P0 实测确定版本后再装"
   },
   "error": {
@@ -278,6 +279,7 @@
     "confirm": "等你确认后开始安装",
     "cancel": "已取消安装",
     "already": "已经装好了：{{item}}",
+    "download": "下载 {{file}} → {{path}}",
     "output": "{{text}}",
     "snapshot": "已存 ComfyUI 快照：{{name}}",
     "snapshot_failed": "存不了 ComfyUI 快照，会改动 ComfyUI 的项这次不装"

@@ -117,6 +117,7 @@
     "eagle_later": "Install if you manage assets in Eagle",
     "resolve_later": "Install if you edit in DaVinci Resolve",
     "update_comfy_native": "Comes with ComfyUI: update ComfyUI to {{version}} or later",
+    "dramastudio_pending": "Not released yet: comes with the ComfyUI integration",
     "weights_pending_p0": "Install after the P0 tests settle the version"
   },
   "error": {
@@ -278,6 +279,7 @@
     "confirm": "Waiting for your go-ahead",
     "cancel": "Install canceled",
     "already": "Already installed: {{item}}",
+    "download": "Downloading {{file}} to {{path}}",
     "output": "{{text}}",
     "snapshot": "Saved a ComfyUI snapshot: {{name}}",
     "snapshot_failed": "Couldn't take a ComfyUI snapshot; items that change ComfyUI are skipped this time"

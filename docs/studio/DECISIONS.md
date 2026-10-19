@@ -2,6 +2,35 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 第 8b 步：权重版本、SeedVR2 改用 ComfyUI 自带节点、权重放哪
+
+- **Kelvin 选定的版本**（候选、大小、来源在 8b 列给他挑）：
+  - 图像编辑：Qwen-Image-Edit-2511 int8_convrot（Comfy-Org 重打包），按官方模板 `image_qwen_image_edit_2511_int8` 配齐：Qwen2.5-VL-7B fp8 文本编码器、VAE、Lightning 4 步 LoRA，共 31.0 GB。
+    - 没选 2026-10-13 新出的 Qwen-Image 2.1（7B，生成和编辑一体，最多 10 张参考图）：太新，P0 时可以再比。
+  - SeedVR2：用 ComfyUI 自带节点（`comfy_extras/nodes_seedvr.py`，v0.28.0 起，在各 tag 源码上二分查的），权重用 Comfy-Org/SeedVR2 的 7B int8_convrot 和 VAE，共 8.8 GB。
+    - 改了第 8 步：不再装社区节点包 numz。`node_seedvr2` 和 H3 一样算「ComfyUI 自带」，不再是安装项。
+  - 配音：IndexTTS-2.5（IndexTeam 2026-08 发布，比 2 快，多了语速控制），5.5 GB。
+    - 运行环境等配音那个里程碑再装：index-tts 源码、Python 3.10–3.11 的 uv 环境、运行时自动下载的辅助模型。
+- **H3 全套按官方模板补了两个加速 LoRA**：`video_minimax_h3_i2v` / `r2v` 默认引用，各 1.96 GB；Comfy-Org 仓库里的和 lightx2v 原仓库的 sha256 一致。
+  - H3 合计 49.3 GB，文本编码器 15.7 GB，五项权重共约 110 GB。
+- **权重锁 revision**：每个 Hugging Face 仓库锁 commit，改动清单显示前 7 位。
+  - 文件大小和 sha256 取自 HF 接口 `/api/models/<repo>/tree/<rev>`。
+  - 不走 LFS 的小文件（IndexTTS 的配置、分词表）HF 不给 sha256，靠锁定的 revision。
+- **ComfyUI 用的权重放哪**：照 ComfyUI 自己的规则。
+  - `extra_model_paths` 里写了 `is_default: true` 的那组目录排在最前，新文件放那里。ComfyUI Desktop 给每个安装写的 `instance-model-paths/<id>.yaml` 就是这样指向共享目录 `ComfyUI-Shared\models` 的；没有这样的目录就放 `{comfy}/models/<类别>`。
+  - 清单里 download 的文件写 `folder:`（diffusion_models、vae、loras、text_encoders），表示放进 ComfyUI 的这一类目录；`ModelDir` 加 `default`；安装时用扫描时存下的模型目录。
+  - 不写死 Desktop 的路径：用户自己配了别的默认目录也一样对。本机只读扫描核对过：13 个文件都落在 `C:\Users\kelvin\AppData\Local\Comfy-Desktop\ComfyUI-Shared\models\<类别>`（`scripts/setup_scan_real.py` 新加了「weights would go to」一段）。
+- **新检测类型 `downloads`**：这一项下载步骤里的文件都在才算装好，和安装用同一份文件清单。
+  - ComfyUI 的文件在它任一模型目录里（含 extra_model_paths）都算。
+  - 原来的 `file` 只看一个文件、只看 `{comfy}/models`，认不出 Desktop 共享目录里的。
+- **往 ComfyUI 模型目录放文件算改动 ComfyUI**（SPEC 12.2-6）：这类权重进改动清单、默认不勾、动手前先存快照。
+  - Manager 的快照不含模型文件，回滚也不会删已下载的权重；为了规则统一，照样先存。
+  - IndexTTS 不进 ComfyUI，默认勾上。
+- **不走 ComfyUI 的权重放「安装位置」**（Setup 页的 `dir`，即 `{models}`）：IndexTTS 在 `{models}/IndexTTS-2.5`。
+- **DramaStudio 节点包** `installable: false`，提示「还没发布：随 ComfyUI 对接一起提供」（源码 M5 才有）。
+- **下载日志**每个文件多一行 `download`（文件 → 目标路径），真装时能看到每个文件落在哪。
+- **影响（Mock 的示例 PC）**：能装的变成 11 项，默认勾 FFmpeg 和 IndexTTS-2.5；全部装完后导航徽标是「缺 3 项」（H3、SeedVR2 节点要新版 ComfyUI，我们自己的节点包还没发布）。
+
 ## 2026-10-18 · 现在就在 5090 上真装节点包和权重（Kelvin 定）
 
 - 用来测安装功能，计划加第 8b 步。改了 2026-10-15「模型权重只检测，等 P0 实测」的决定：

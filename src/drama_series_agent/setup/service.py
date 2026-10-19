@@ -841,6 +841,7 @@ class SetupService:
             envs=envs,
             comfy=comfy.get("root") or join(dirname(envs), "ComfyUI"),
             comfy_python=comfy.get("python"),
+            model_dirs=list(data.comfy.model_dirs) if data.comfy else [],
             facts=data.facts,
         )
 

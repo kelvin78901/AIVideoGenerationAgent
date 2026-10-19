@@ -15,6 +15,7 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
+from drama_series_agent.setup.comfy import ModelDir
 from drama_series_agent.setup.detectors import msg
 from drama_series_agent.setup.manifest import OS, TODO, Item, Message, topo_order
 
@@ -51,6 +52,9 @@ class InstallEnv:
     envs: str  # ~/.drama-studio/envs
     comfy: str  # ComfyUI root: the one found, else ~/.drama-studio/ComfyUI
     comfy_python: str | None = None  # the interpreter that ComfyUI runs on, when found
+    # ComfyUI's model folders from the last scan (extra_model_paths included): weights for a
+    # ComfyUI folder go to its `default` one (Comfy Desktop's shared models), else {comfy}/models.
+    model_dirs: list[ModelDir] = field(default_factory=list)
     facts: dict[str, dict[str, Any]] = field(default_factory=dict)  # from the last scan
 
 
@@ -134,7 +138,7 @@ def comfy_change(item: Item, *, status: str, version: str | None) -> Message:
     version to which, from where, how big. Unknown parts are left out."""
     params: dict[str, Any] = {"item": item.id, "action": "update" if status == "old" else "install"}
     # A step's readable `version` (a tag) first; a bare commit shows as its short form.
-    target = _first(item, ("version", "ref"))
+    target = _first(item, ("version", "ref", "revision"))
     if target and re.fullmatch(r"[0-9a-f]{40}", target):
         target = target[:7]
     source = _first(item, ("url", "hf_repo", "packages", "requirements", "from"))

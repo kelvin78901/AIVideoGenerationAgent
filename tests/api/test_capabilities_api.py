@@ -23,12 +23,12 @@ V1 = "/api/v1"
 PROFILE = f"{V1}/setup/profile"
 COMPAT = f"{V1}/series/demo/spec/compat"
 PC_INSTALLABLE = [
-    "torch", "ffmpeg", "comfy", "node_seedvr2", "node_flashvsr", "sage", "node_dramastudio",
-    "llmsrv",
+    "torch", "ffmpeg", "comfy", "node_flashvsr", "sage", "w_h3", "w_te", "w_img", "w_sr",
+    "w_tts", "llmsrv",
 ]  # fmt: skip
-# Not offered by the installer: the H3 / ControlNet nodes come with a newer ComfyUI, the weights
-# wait for the P0 tests. The user puts them in place.
-BY_HAND = ["node_h3", "node_ctrl", "w_h3", "w_te", "w_img", "w_sr"]
+# Not offered by the installer: the H3, ControlNet and SeedVR2 nodes come with a newer ComfyUI
+# (the sample has 0.3.40). The user updates ComfyUI.
+BY_HAND = ["node_h3", "node_ctrl", "node_seedvr2"]
 
 
 @pytest.fixture(autouse=True)
@@ -126,11 +126,11 @@ def test_the_5090_keeps_hybrid_and_local_once_set_up(
     assert _modes(client) == {"vid": "api", "kf": "api", "up": "api"}
     assert _route(client, "vid").unavailable["comfy/h3"] == ["node_h3", "w_h3", "w_te"]
 
-    # H3 nodes and weights in place: video and keyframes can run here; upscaling still lacks
-    # its nodes.
+    # The nodes in place, the weights still missing.
     _put_in_place(client, BY_HAND)
     _scan(client)
-    assert _modes(client) == {"vid": "hybrid", "kf": "hybrid", "up": "api"}
+    assert _modes(client) == {"vid": "api", "kf": "api", "up": "api"}
+    assert _route(client, "vid").unavailable["comfy/h3"] == ["w_h3", "w_te"]
 
     # What the installer finishes counts at once, without a rescan.
     body = {"items": PC_INSTALLABLE, "mirror": "auto", "dir": "D:\\DramaStudio"}

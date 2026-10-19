@@ -14,7 +14,6 @@ from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import MachineProfileRow
 from drama_series_agent.setup.installer import INSTALL_JOB, FakeRunner
-from drama_series_agent.setup.manifest import Manifest, load_manifest
 from drama_series_agent.setup.steps import RealRunner
 
 LOCAL = "http://127.0.0.1"
@@ -23,12 +22,12 @@ V1 = "/api/v1"
 PROFILE = f"{V1}/setup/profile"
 INSTALL = f"{V1}/setup/install"
 
-# PC: everything the scan offers (3 missing + 2 old + 3 optional with install steps). The H3
-# and ControlNet nodes come with ComfyUI itself and the weights wait for the P0 tests, so the
-# scan finds them missing but offers no install.
+# PC: everything the scan offers (6 missing + 2 old + 3 optional with install steps). The H3,
+# ControlNet and SeedVR2 nodes come with ComfyUI itself and our own nodes are not out yet, so
+# the scan finds them missing but offers no install.
 PC_INSTALLABLE = [
-    "torch", "ffmpeg", "comfy", "node_seedvr2", "node_flashvsr", "sage", "node_dramastudio",
-    "llmsrv",
+    "torch", "ffmpeg", "comfy", "node_flashvsr", "sage", "w_h3", "w_te", "w_img", "w_sr",
+    "w_tts", "llmsrv",
 ]  # fmt: skip
 
 
@@ -112,12 +111,20 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
     assert set(_states(started).values()) == {"queued"}
     # D:\ComfyUI is the user's own: everything that changes it is listed for approval.
     touching = [x["id"] for x in started["items"] if x["touches_comfy"] and x["install"]]
+    # (the weights for ComfyUI too: they go into its model folders; IndexTTS does not)
     assert touching == [
-        "torch", "comfy", "node_seedvr2", "node_flashvsr", "sage", "node_dramastudio",
+        "torch", "comfy", "node_flashvsr", "sage", "w_h3", "w_te", "w_img", "w_sr",
     ]  # fmt: skip
-    changes = started["install"]["confirm"]
+    confirm = started["install"]["confirm"]
+    changes = [c for c in confirm if c["code"] == "comfy_change"]
     assert [c["params"]["item"] for c in changes] == [
         i for i in started["install"]["items"] if i in touching
+    ]
+    big = [c["params"] for c in confirm if c["code"] == "large_download"]
+    assert big == [
+        {"item": "w_h3", "gb": 49.3},
+        {"item": "w_te", "gb": 15.7},
+        {"item": "w_img", "gb": 31.0},
     ]
     assert changes[0] == {
         "code": "comfy_change",
@@ -132,7 +139,7 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
 
     done = _wait(client, "done")
     states = _states(done)
-    assert Counter(states.values()) == {"done": 7, "failed": 1}
+    assert Counter(states.values()) == {"done": 10, "failed": 1}
     sage = next(x for x in done["items"] if x["id"] == "sage")
     assert sage["install"] == {
         "state": "failed",
@@ -155,7 +162,8 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
     assert logs[-1] == ("ok", "finish", {})
     starts = [p["item"] for _, code, p in logs if code == "start"]
     assert starts == started["install"]["items"]  # dependency order, one at a time
-    assert starts.index("torch") < starts.index("comfy") < starts.index("node_seedvr2")
+    assert starts.index("torch") < starts.index("comfy") < starts.index("node_flashvsr")
+    assert starts.index("comfy") < starts.index("w_h3")
     assert _call(client, lambda: _state(client).setup.installed()) == set(PC_INSTALLABLE) - {"sage"}
 
 
@@ -166,14 +174,15 @@ def test_rescan_only_reports_the_difference(client: TestClient) -> None:
     after = _scan(client)
     by_id = {x["id"]: x for x in after["items"]}
     assert Counter(x["status"] for x in after["items"]) == {
-        "ok": 17,
-        "missing": 6,
+        "ok": 20,
+        "missing": 3,
         "optional": 6,
         "warn": 1,
     }
-    # Still missing: only what the installer does not offer (H3 nodes, weights).
+    # Still missing: only what the installer does not offer (nodes that come with a newer
+    # ComfyUI, our own nodes).
     missing = [x for x in after["items"] if x["status"] == "missing"]
-    assert [x["id"] for x in missing] == ["node_h3", "w_h3", "w_te", "w_img", "w_sr", "w_tts"]
+    assert [x["id"] for x in missing] == ["node_h3", "node_seedvr2", "node_dramastudio"]
     assert not any(x["installable"] for x in missing)
     assert by_id["ffmpeg"]["found"] == {"code": "installed", "params": {}}
     assert by_id["sage"]["status"] == "optional" and by_id["sage"]["installable"]
@@ -212,11 +221,11 @@ def test_retry_and_skip(client: TestClient) -> None:
 def test_skip_a_queued_item(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     _scan(client)
     monkeypatch.setenv("DRAMA_SETUP_FAKE_TICK_MS", "40")
-    _go(client, ["ffmpeg", "node_seedvr2", "llmsrv"])
+    _go(client, ["ffmpeg", "node_flashvsr", "llmsrv"])
     assert client.post(f"{V1}/setup/items/llmsrv/skip").status_code == 200
     monkeypatch.setenv("DRAMA_SETUP_FAKE_TICK_MS", "0")
     states = _states(_wait(client, "done"))
-    assert states == {"ffmpeg": "done", "node_seedvr2": "done", "llmsrv": "skipped"}
+    assert states == {"ffmpeg": "done", "node_flashvsr": "done", "llmsrv": "skipped"}
     starts = [p["item"] for _, code, p in _logs(client) if code == "start"]
     assert "llmsrv" not in starts
 
@@ -248,8 +257,8 @@ def test_an_old_dependency_still_counts(client: TestClient) -> None:
     # PC: ComfyUI is installed but old. Its update failing does not block the nodes that need it.
     _scan(client)
     _state(client).setup._runner = lambda row: FakeRunner(failing="comfy")
-    _go(client, ["comfy", "node_seedvr2"])
-    assert _states(_wait(client, "done")) == {"comfy": "failed", "node_seedvr2": "done"}
+    _go(client, ["comfy", "node_flashvsr"])
+    assert _states(_wait(client, "done")) == {"comfy": "failed", "node_flashvsr": "done"}
 
 
 def test_install_errors(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -266,18 +275,7 @@ def test_install_errors(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> 
     assert client.post(f"{V1}/setup/scan").status_code == 409
 
 
-def _big_h3() -> Manifest:
-    """The H3 weights as they will be once the P0 tests pin them: installable, 24 GB."""
-    data = load_manifest().model_dump()
-    for x in data["items"]:
-        if x["id"] == "w_h3":
-            x["size_gb"] = 24
-            x["installable"] = None
-    return Manifest.model_validate(data)
-
-
 def test_large_download_waits_for_a_yes(client: TestClient) -> None:
-    _state(client).setup._manifest = _big_h3
     _scan(client)
     resp = _install(client, ["ffmpeg", "w_h3"])
     p = resp.json()
@@ -288,11 +286,12 @@ def test_large_download_waits_for_a_yes(client: TestClient) -> None:
             "params": {
                 "item": "w_h3",
                 "action": "install",
+                "to": "e5eb578",  # the pinned Hugging Face revision
                 "source": "Comfy-Org/MiniMax-H3",
-                "gb": 24.0,
+                "gb": 49.3,
             },
         },
-        {"code": "large_download", "params": {"item": "w_h3", "gb": 24.0}},
+        {"code": "large_download", "params": {"item": "w_h3", "gb": 49.3}},
     ]
     time.sleep(0.2)
     assert set(_states(client.get(PROFILE).json()).values()) == {"queued"}  # nothing ran
@@ -308,7 +307,6 @@ def test_large_download_waits_for_a_yes(client: TestClient) -> None:
 
 
 def test_declining_the_confirmation(client: TestClient) -> None:
-    _state(client).setup._manifest = _big_h3
     _scan(client)
     _install(client, ["w_h3"])
     resp = client.post(f"{V1}/setup/install/cancel")

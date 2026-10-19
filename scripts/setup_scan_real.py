@@ -23,9 +23,10 @@ from pathlib import Path
 from typing import Any
 
 from drama_series_agent.core.paths import REPO_ROOT, drama_home
-from drama_series_agent.setup.comfy import identify
+from drama_series_agent.setup.comfy import ModelDir, identify, model_target
 from drama_series_agent.setup.detectors import ScanContext, detect_item
 from drama_series_agent.setup.manifest import Message, load_manifest
+from drama_series_agent.setup.pathutil import join
 from drama_series_agent.setup.probe import RealProbe
 
 
@@ -86,12 +87,30 @@ async def scan(lang: str) -> dict[str, Any]:
         "comfy": None,
     }
     inst = await ctx.comfy()
+    dirs: list[ModelDir] = []
     if inst is not None:
         found = await identify(ctx.probe, ctx.host, inst, await ctx.object_info())
+        dirs = found.scan.model_dirs
         out["comfy"] = {
             "scan": found.scan.model_dump(mode="json"),
             "env": found.env.model_dump(mode="json"),
         }
+    # Where the installer would put each weight file (the install folder at its default).
+    root = ctx.vars.get("comfy") or str(drama_home() / "ComfyUI")
+    out["weights"] = [
+        {
+            "item": item.id,
+            "file": f.name,
+            "target": join(model_target(f.folder, dirs, root), f.name)
+            if f.folder
+            else join(ctx.expand(str((step.model_extra or {}).get("dest"))) or "?", f.path),
+        }
+        for item in items
+        if item.can_install
+        for step in item.install
+        if step.type == "download"
+        for f in step.download_files()
+    ]
     return out
 
 
@@ -106,6 +125,9 @@ def print_report(r: dict[str, Any], lang: str) -> None:
         )
     print("   (* = can be installed from the setup page)")
     print("== counts:", ", ".join(f"{status.get(k, k)} {v}" for k, v in r["counts"].items()))
+    print(f"== weights would go to ({len(r['weights'])} files)")
+    for w in r["weights"]:
+        print(f"   {w['item']:<8} {w['target']}")
     comfy = r["comfy"]
     if comfy is None:
         print("== ComfyUI: not found")
@@ -131,7 +153,8 @@ def print_report(r: dict[str, Any], lang: str) -> None:
         print(f"   {p['name']:<44} {p['source']:<9} {ver:<12} {len(p['classes'])} classes")
     print(f"== model folders ({len(s['model_dirs'])})")
     for d in s["model_dirs"]:
-        print(f"   {d['folder']:<20} {d['path']}")
+        default = "  (default: new files go here)" if d.get("default") else ""
+        print(f"   {d['folder']:<20} {d['path']}{default}")
     more = " (truncated)" if s["models_truncated"] else ""
     print(f"== model files ({len(s['models'])}{more})")
     for m in s["models"]:

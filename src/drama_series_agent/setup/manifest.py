@@ -26,6 +26,7 @@ DetectType = Literal[
     "command",
     "py_import",
     "file",
+    "downloads",
     "comfy",
     "comfy_manager",
     "comfy_node",
@@ -100,11 +101,54 @@ PkgManager = Literal["winget", "brew", "apt"]
 PKG_MANAGER: dict[OS, PkgManager] = {"windows": "winget", "macos": "brew", "linux": "apt"}
 
 
+class DownloadFile(BaseModel):
+    """One file of a ``download`` step: a name or ``{path, folder, sha256}``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    path: str  # in the Hugging Face repo, or the URL's file name; under ``dest`` as is
+    # A ComfyUI model folder (diffusion_models, vae …): the file goes where ComfyUI puts new
+    # files of that folder (``comfy.model_target``) instead of under ``dest``.
+    folder: str | None = None
+    sha256: str | None = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_name(cls, data: Any) -> Any:
+        return {"path": data} if isinstance(data, str) else data
+
+    @property
+    def name(self) -> str:
+        return self.path.rsplit("/", 1)[-1]
+
+
 class Step(_Loose):
     type: StepType
     platforms: list[OS] | None = None
     # pkg: the package managers that need elevation for this package (default: apt, via sudo).
     admin: list[PkgManager] | None = None
+
+    @model_validator(mode="after")
+    def _check_files(self) -> Step:
+        if self.type == "download":
+            self.download_files()  # raises on a malformed entry, at load time
+        return self
+
+    def download_files(self) -> list[DownloadFile]:
+        """A ``download`` step's files, each with its sha256 when the manifest has one (per file,
+        or the step's ``sha256``: one value for a single file, or a name → hash map)."""
+        extra = self.model_extra or {}
+        url = extra.get("url")
+        raw = [str(url).rsplit("/", 1)[-1]] if url else extra.get("files")
+        entries = raw if isinstance(raw, list) else [raw] if raw else []
+        files = [DownloadFile.model_validate(x) for x in entries]
+        sha = extra.get("sha256")
+        for f in files:
+            if f.sha256 is None and isinstance(sha, dict):
+                f.sha256 = sha.get(f.path)
+            elif f.sha256 is None and isinstance(sha, str) and len(files) == 1:
+                f.sha256 = sha
+        return files
 
     def needs_admin(self, os: OS) -> bool:
         if self.type != "pkg":
@@ -164,12 +208,15 @@ class Item(_Loose):
     @property
     def touches_comfy(self) -> bool:
         """Its install changes ComfyUI: ComfyUI and its nodes (group ``comfy``), or a step that
-        writes into ComfyUI's folder or its Python (``{comfy}``, ``env: comfy``)."""
+        writes into ComfyUI's folder, its model folders or its Python (``{comfy}``, a download
+        with ``folder:``, ``env: comfy``)."""
         if self.group == "comfy" and self.install:
             return True
         for step in self.install:
             extra = step.model_extra or {}
             if extra.get("env") == "comfy":
+                return True
+            if step.type == "download" and any(f.folder for f in step.download_files()):
                 return True
             if any(isinstance(v, str) and "{comfy}" in v for v in extra.values()):
                 return True

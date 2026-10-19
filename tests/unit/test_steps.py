@@ -12,8 +12,9 @@ import httpx
 import pytest
 
 from drama_series_agent.core.paths import REPO_ROOT
+from drama_series_agent.setup.comfy import ModelDir
 from drama_series_agent.setup.installer import InstallEnv, InstallError
-from drama_series_agent.setup.manifest import OS, Item, load_manifest
+from drama_series_agent.setup.manifest import OS, Item, Step, load_manifest
 from drama_series_agent.setup.pathutil import join
 from drama_series_agent.setup.snapshots import SnapshotFailure
 from drama_series_agent.setup.steps import WINGET_ALREADY_INSTALLED, RealRunner, _python_in
@@ -154,11 +155,20 @@ async def test_no_python_outside_our_envs(tmp_path: Path, os: OS) -> None:
     env = _env(tmp_path, os=os)
     rec = Recorder(os)
     outcomes: dict[str, str] = {}
+    urls: list[str] = []
+
+    def junk(request: httpx.Request) -> httpx.Response:  # never the real weights
+        urls.append(str(request.url))
+        return httpx.Response(200, content=b"x")
+
+    weights: list[str] = []
     for item in load_manifest().for_platform(os):
-        if not item.can_install:  # the installer never runs them (weights until P0)
+        if not item.can_install:  # the installer never runs them (our nodes, the local LLM)
             continue
+        if item.group == "w":
+            weights.append(item.id)
         try:
-            await _install(item, env, rec)
+            await _install(item, env, rec, transport=httpx.MockTransport(junk))
             outcomes[item.id] = "ok"
         except InstallError as exc:
             outcomes[item.id] = exc.code
@@ -176,6 +186,9 @@ async def test_no_python_outside_our_envs(tmp_path: Path, os: OS) -> None:
     # Step 8 filled in every installable item: none stops at a TODO.
     assert "manifest_todo" not in outcomes.values(), outcomes
     assert outcomes.get("ffmpeg") == "ok"
+    # Weights come from a pinned Hugging Face revision and are checked against their sha256.
+    assert weights and all(outcomes[w] == "sha256_mismatch" for w in weights), outcomes
+    assert all(re.search(r"/resolve/[0-9a-f]{40}/", u) for u in urls), urls
 
 
 # --------------------------------------------------------------------------- git
@@ -355,6 +368,54 @@ async def test_download_errors(tmp_path: Path) -> None:
     with pytest.raises(InstallError) as err:
         await _install(_dl(files="TODO"), _env(tmp_path))
     assert err.value.code == "manifest_todo"
+
+
+async def test_download_into_comfyui_model_folders(tmp_path: Path) -> None:
+    """``folder:`` files go where ComfyUI puts new ones: Desktop's shared models folder (the
+    ``is_default`` one), else ComfyUI's own ``models/<folder>``; no ``dest`` needed."""
+    shared = tmp_path / "Shared" / "models"
+    env = _env(
+        tmp_path,
+        model_dirs=[
+            ModelDir(folder="vae", path=str(shared / "vae"), default=True),
+            ModelDir(folder="loras", path=str(tmp_path / "elsewhere" / "loras")),
+        ],
+    )
+    files = [
+        {"path": "split_files/vae/v.safetensors", "folder": "vae", "sha256": BLOB_SHA},
+        {"path": "loras/l.safetensors", "folder": "loras", "sha256": BLOB_SHA},
+    ]
+    item = _item(
+        {"type": "download", "hf_repo": "o/r", "revision": "a" * 40, "files": files}, group="w"
+    )
+    assert item.touches_comfy
+    server = Server()
+    _, log = await _install(item, env, transport=httpx.MockTransport(server))
+    assert (shared / "vae" / "v.safetensors").read_bytes() == BLOB
+    assert (tmp_path / "ComfyUI" / "models" / "loras" / "l.safetensors").read_bytes() == BLOB
+    assert [str(r.url) for r in server.requests] == [
+        f"https://huggingface.co/o/r/resolve/{'a' * 40}/split_files/vae/v.safetensors",
+        f"https://huggingface.co/o/r/resolve/{'a' * 40}/loras/l.safetensors",
+    ]
+    assert (
+        "info",
+        "download",
+        {"file": "v.safetensors", "path": str(shared / "vae" / "v.safetensors")},
+    ) in log.lines
+
+
+def test_download_files_in_the_manifest() -> None:
+    step = Step.model_validate(
+        {"type": "download", "url": "https://x/a/b.bin", "sha256": "f" * 64, "dest": "{models}"}
+    )
+    assert [(f.path, f.sha256) for f in step.download_files()] == [("b.bin", "f" * 64)]
+    step = Step.model_validate(
+        {"type": "download", "hf_repo": "o/r", "files": ["a", "b"], "sha256": {"b": "e" * 64}}
+    )
+    assert [(f.path, f.sha256) for f in step.download_files()] == [("a", None), ("b", "e" * 64)]
+    assert not _item({**step.model_dump(), "dest": "{models}/x"}, group="w").touches_comfy
+    with pytest.raises(ValueError):
+        Step.model_validate({"type": "download", "files": [{"path": "a", "folderr": "vae"}]})
 
 
 @pytest.mark.parametrize(

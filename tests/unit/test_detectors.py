@@ -82,16 +82,16 @@ PC: dict[str, Row] = {
     "comfy_manager": _r("ok", "version", f_version="4.2.2"),
     "node_h3": _r("missing", "not_found", "update_comfy_native", x_version="0.30.0"),
     "node_vhs": _r("ok", "installed"),
-    "node_seedvr2": _r("missing", "not_found", "install_nodes"),
+    "node_seedvr2": _r("missing", "not_found", "update_comfy_native", x_version="0.28.0"),
     "node_flashvsr": _r("optional", "not_found", "install_nodes"),
     "node_ctrl": _r("optional", "not_found", "update_comfy_native", x_version="0.35.0"),
     "sage": _r("optional", "not_found", "sage_build"),
-    "node_dramastudio": _r("missing", "not_found", "install_nodes"),
-    "w_h3": _r("missing", "not_found", "weights_pending_p0"),
-    "w_te": _r("missing", "not_found", "weights_pending_p0"),
-    "w_img": _r("missing", "not_found", "weights_pending_p0"),
-    "w_sr": _r("missing", "not_found", "weights_pending_p0"),
-    "w_tts": _r("missing", "not_found", "weights_pending_p0"),
+    "node_dramastudio": _r("missing", "not_found", "dramastudio_pending"),
+    "w_h3": _r("missing", "not_found", "download"),
+    "w_te": _r("missing", "not_found", "download"),
+    "w_img": _r("missing", "not_found", "download"),
+    "w_sr": _r("missing", "not_found", "download"),
+    "w_tts": _r("missing", "not_found", "download"),
     "w_llm": _r("optional", "not_found", "llm_optional"),
     "hf": _r("warn", "hf_slow", "pick_mirror"),
     "llmsrv": _r("optional", "not_found", "install_llm_server"),
@@ -118,7 +118,7 @@ MAC: dict[str, Row] = {
     "node_flashvsr": _r("skip", "needs_cuda", "unsupported_upscale_api"),
     "node_ctrl": _r("skip", "needs_cuda", "unsupported_skip"),
     "sage": _r("skip", "needs_cuda", "unsupported_skip"),
-    "node_dramastudio": _r("optional", "not_found", "install_nodes"),
+    "node_dramastudio": _r("optional", "not_found", "dramastudio_pending"),
     "w_h3": _r("skip", "needs_cuda", "unsupported_skip"),
     "w_te": _r("skip", "needs_cuda", "unsupported_skip"),
     "w_img": _r("optional", "not_found", "mac_image_slow"),
@@ -145,14 +145,15 @@ async def test_pc_scan() -> None:
 async def test_pc_flags_match_the_prototype() -> None:
     result = await scan("pc")
     picked = {i for i, (_, d) in result.items() if d.installable}
-    for item_id in ("torch", "ffmpeg", "comfy", "node_seedvr2"):
+    for item_id in ("torch", "ffmpeg", "comfy", "w_h3", "w_te", "w_img", "w_sr", "w_tts"):
         assert result[item_id][0].required and result[item_id][1].installable, item_id
     for item_id in ("node_flashvsr", "sage", "llmsrv"):
         assert not result[item_id][0].required and result[item_id][1].installable, item_id
-    # H3 and its Fun ControlNet come with ComfyUI; weights wait for the P0 tests (step 8).
+    # H3, its Fun ControlNet and SeedVR2 come with ComfyUI; our own nodes are not out yet;
+    # the local LLM waits for the P0 tests (step 8b).
     for item_id in ("hf", "keys", "eagle", "resolve", "os", "git", "node_h3", "node_ctrl"):
         assert item_id not in picked, item_id
-    for item_id in ("w_h3", "w_te", "w_img", "w_sr", "w_tts", "w_llm"):
+    for item_id in ("node_seedvr2", "node_dramastudio", "w_llm"):
         assert item_id not in picked, item_id
 
 
@@ -186,10 +187,10 @@ async def test_mac_skips_everything_that_needs_cuda() -> None:
 
 async def test_rescan_after_install() -> None:
     probe = FakeProbe.load("pc")
-    probe.add_files(
-        "D:/ComfyUI/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler",
-        "D:/ComfyUI/custom_nodes/comfyui-dramastudio/__init__.py",
-    )
+    probe.add_files("D:/ComfyUI/custom_nodes/comfyui-dramastudio/__init__.py")
+    info = probe.data["http"]["http://127.0.0.1:8188/object_info"]["body"]
+    for cls in ("Preprocess", "Conditioning", "PostProcessing", "TemporalChunk", "TemporalMerge"):
+        info[f"SeedVR2{cls}"] = {"python_module": "comfy_extras.nodes_seedvr"}
     probe.data["commands"]["ffmpeg -version"] = "ffmpeg version 8.0-full_build"
     probe.python["D:/ComfyUI/venv/Scripts/python.exe"]["sageattention"] = {"version": "2.2.0"}
     probe.python["D:/ComfyUI/venv/Scripts/python.exe"]["torch"]["cuda"] = "13.0"
@@ -197,6 +198,35 @@ async def test_rescan_after_install() -> None:
     for item_id in ("node_seedvr2", "node_dramastudio", "ffmpeg", "torch"):
         assert result[item_id][0] == "ok", item_id
     assert result["sage"][:3] == ("ok", "version", {"version": "2.2.0"})
+
+
+def _weight_files(item_id: str) -> list[tuple[str | None, str]]:
+    item = next(x for x in load_manifest().items if x.id == item_id)
+    return [(f.folder, f.path) for s in item.install for f in s.download_files()]
+
+
+async def test_weights_count_in_any_model_folder() -> None:
+    """ComfyUI weights count wherever ComfyUI loads them from; the rest under their ``dest``."""
+    probe = FakeProbe.load("pc")
+    probe.texts["D:/ComfyUI/extra_model_paths.yaml"] = (
+        "shared:\n  base_path: E:/Shared/models\n  is_default: true\n"
+        "  diffusion_models: diffusion_models/\n  vae: vae/\n"
+    )
+    seedvr2 = _weight_files("w_sr")
+    assert [folder for folder, _ in seedvr2] == ["diffusion_models", "vae"]
+    (_, model), (_, vae) = seedvr2
+    probe.add_files(f"E:/Shared/models/diffusion_models/{model.rsplit('/', 1)[-1]}")
+    assert rows(await scan("pc", probe))["w_sr"][0] == "missing"  # the VAE is not there yet
+    probe.add_files(f"D:/ComfyUI/models/vae/{vae.rsplit('/', 1)[-1]}")  # ComfyUI's own folder
+    sr = (await scan("pc", probe))["w_sr"][1]
+    assert sr.status == "ok" and len(sr.facts["paths"]) == 2
+
+    tts = _weight_files("w_tts")
+    assert {folder for folder, _ in tts} == {None} and len(tts) > 1
+    probe.add_files(*(f"D:/DramaStudio/IndexTTS-2.5/{path}" for _, path in tts[:-1]))
+    assert rows(await scan("pc", probe))["w_tts"][0] == "missing"
+    probe.add_files(f"D:/DramaStudio/IndexTTS-2.5/{tts[-1][1]}")
+    assert rows(await scan("pc", probe))["w_tts"][0] == "ok"  # under the install folder
 
 
 # --------------------------------------------------------------------------- ComfyUI

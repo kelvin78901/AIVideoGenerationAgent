@@ -24,6 +24,7 @@ from typing import Any, Protocol
 import httpx
 
 from drama_series_agent.core.paths import REPO_ROOT
+from drama_series_agent.setup.comfy import model_target
 from drama_series_agent.setup.installer import (
     Installed,
     InstallEnv,
@@ -283,29 +284,38 @@ class _StepRun:
         return [dest]
 
     async def _download(self) -> list[str]:
-        dest = self.expand(str(self.value("dest")))
-        self.names["dest"] = dest
-        sha = self.value("sha256", required=False)
+        files = self.step.download_files()
+        if not files:
+            raise InstallError("manifest_todo", field="download.files")
+        if any(TODO in f.path or TODO in (f.sha256 or "") for f in files):
+            raise InstallError("manifest_todo", field="download.files")
+        # Files for a ComfyUI model folder go where ComfyUI puts new ones (Desktop's shared
+        # models folder); the rest under `dest`, which is needed only then.
+        dest = (
+            self.expand(str(self.value("dest"))) if any(f.folder is None for f in files) else None
+        )
+        if dest is not None:
+            self.names["dest"] = dest
         if url := self.value("url", required=False):
-            files = [(str(url), str(url).rsplit("/", 1)[-1])]
+            urls = [str(url)]
         else:
             repo = str(self.value("hf_repo"))
             revision = str(self.value("revision", required=False) or "main")
             hf = self.r.base(self.env, "hf").rstrip("/")
-            names = self.value("files")
-            names = [names] if isinstance(names, str) else list(names)
-            files = [(f"{hf}/{repo}/resolve/{revision}/{n}", str(n)) for n in names]
+            urls = [f"{hf}/{repo}/resolve/{revision}/{f.path}" for f in files]
         out: list[str] = []
-        for i, (url_, name) in enumerate(files):
-            expected = (
-                sha.get(name) if isinstance(sha, dict) else (sha if len(files) == 1 else None)
-            )
-            target = Path(dest) / name
+        for i, (url_, f) in enumerate(zip(urls, files, strict=True)):
+            if f.folder is not None:
+                target = Path(model_target(f.folder, self.env.model_dirs, self.env.comfy), f.name)
+            else:
+                assert dest is not None
+                target = Path(dest) / f.path
 
             async def sub(pct: float, i: int = i) -> None:
                 await self.progress((i + pct / 100) / len(files) * 100)
 
-            await _fetch(url_, target, expected, self.r._transport, sub)
+            await self.log("info", "download", {"file": f.name, "path": str(target)})
+            await _fetch(url_, target, f.sha256, self.r._transport, sub)
             out.append(str(target))
         return out
 

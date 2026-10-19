@@ -11,11 +11,14 @@ import httpx
 
 from drama_series_agent.setup.comfy import (
     Identified,
+    ModelDir,
     ModelFile,
     argv_port,
     extra_model_dirs,
     flag_values,
     identify,
+    model_candidates,
+    model_target,
     read_git,
 )
 from drama_series_agent.setup.detectors import ScanContext
@@ -166,18 +169,37 @@ def test_extra_model_paths_files() -> None:
         "  'checkpoints': 'checkpoints/'\n"
         "  'controlnet': |-\n    controlnet/\n    t2i_adapter/\n"
     )
-    got = [(d.folder, d.path) for d in extra_model_dirs(desktop, "C:\\x")]
+    got = [(d.folder, d.path, d.default) for d in extra_model_dirs(desktop, "C:\\x")]
     shared = "C:\\Users\\k\\Comfy-Desktop\\ComfyUI-Shared\\models"
     assert got == [
-        ("checkpoints", f"{shared}\\checkpoints"),
-        ("controlnet", f"{shared}\\controlnet"),
-        ("controlnet", f"{shared}\\t2i_adapter"),
+        ("checkpoints", f"{shared}\\checkpoints", True),
+        ("controlnet", f"{shared}\\controlnet", True),
+        ("controlnet", f"{shared}\\t2i_adapter", True),
     ]
     relative = "a1111:\n  base_path: ../sd\n  loras: models/Lora\n"
-    assert [(d.folder, d.path) for d in extra_model_dirs(relative, "/srv/comfy")] == [
-        ("loras", "/srv/comfy/../sd/models/Lora")
+    assert [(d.folder, d.path, d.default) for d in extra_model_dirs(relative, "/srv/comfy")] == [
+        ("loras", "/srv/comfy/../sd/models/Lora", False)
     ]
     assert extra_model_dirs("not: [valid", "/x") == []
+
+
+def test_where_new_model_files_go() -> None:
+    """Like ComfyUI: the ``is_default`` folder (Desktop's shared models) first, else its own."""
+    dirs = [
+        ModelDir(folder="loras", path="D:/AI/models/loras"),
+        ModelDir(folder="vae", path="C:/Shared/models/vae", default=True),
+        ModelDir(folder="controlnet", path="C:/Shared/models/controlnet", default=True),
+        ModelDir(folder="controlnet", path="C:/Shared/models/t2i_adapter", default=True),
+    ]
+    assert model_target("vae", dirs, "C:/Comfy") == "C:/Shared/models/vae"
+    assert model_target("controlnet", dirs, "C:/Comfy") == "C:/Shared/models/controlnet"
+    assert model_target("loras", dirs, "C:/Comfy") == "C:/Comfy/models/loras"  # not a default
+    assert model_target("diffusion_models", [], "C:/Comfy") == "C:/Comfy/models/diffusion_models"
+    assert model_candidates("loras", dirs, "C:/Comfy") == [
+        "D:/AI/models/loras",
+        "C:/Comfy/models/loras",
+    ]
+    assert model_candidates("vae", dirs, None) == ["C:/Shared/models/vae"]
 
 
 def test_reading_argv() -> None:

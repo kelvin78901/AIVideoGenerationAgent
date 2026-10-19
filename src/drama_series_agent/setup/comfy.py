@@ -195,6 +195,9 @@ class Manager(BaseModel):
 class ModelDir(BaseModel):
     folder: str  # ComfyUI's folder name: checkpoints, loras, vae …
     path: str
+    # From an extra_model_paths section with ``is_default: true``: ComfyUI puts it first, so it
+    # is where new files of that folder go (Comfy Desktop's shared models folder).
+    default: bool = False
 
 
 class ModelFile(BaseModel):
@@ -474,6 +477,7 @@ def extra_model_dirs(text: str, config_dir: str) -> list[ModelDir]:
         if not isinstance(section, dict):
             continue
         base = str(section.get("base_path") or "")
+        default = section.get("is_default") is True
         if base and not is_absolute(base):
             base = join(config_dir, base)  # relative to the file, as ComfyUI reads it
         for key, value in section.items():
@@ -484,7 +488,26 @@ def extra_model_dirs(text: str, config_dir: str) -> list[ModelDir]:
                 if not path:
                     continue
                 full = path.rstrip("/\\") if is_absolute(path) else join(base or config_dir, path)
-                out.append(ModelDir(folder=str(key), path=full))
+                out.append(ModelDir(folder=str(key), path=full, default=default))
+    return out
+
+
+def model_target(folder: str, dirs: Sequence[ModelDir], root: str) -> str:
+    """Where a new file of ComfyUI's model ``folder`` goes, as ComfyUI itself would put it: the
+    first ``is_default`` folder (Comfy Desktop's shared models), else ``<root>/models/<folder>``."""
+    for d in dirs:
+        if d.default and d.folder == folder:
+            return d.path
+    return join(root, "models", folder)
+
+
+def model_candidates(folder: str, dirs: Sequence[ModelDir], root: str | None) -> list[str]:
+    """Every folder ComfyUI loads ``folder`` models from: the configured ones, then its own."""
+    out = [d.path for d in dirs if d.folder == folder]
+    if root:
+        own = join(root, "models", folder)
+        if norm(own) not in {norm(x) for x in out}:
+            out.append(own)
     return out
 
 

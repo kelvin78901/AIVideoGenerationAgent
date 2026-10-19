@@ -1,18 +1,23 @@
 # 首次启动的检测与安装清单（SPEC 12.1，解析见 src/drama_series_agent/setup/manifest.py）。
 # 条目和原型 Setup.dc.html 的 PC / Mac 两套一致，另加 SPEC 12.1 的 uv、node_dramastudio、eagle、resolve。
 # 运行环境和节点的地址、版本 2026-10-18 按官方仓库 / 文档核对并锁定（DECISIONS「M1 清单补齐」）。git_clone 的 ref 是
-# commit（安装器用 rev-parse HEAD 比对，幂等）；version 是给改动清单看的版本号。模型权重等 P0 实测定版本，现在只检测。
-# 还写 TODO 的都是权重的文件名 / 仓库；verify: true（Eagle、Resolve）要在装了它们的机器上实测确认。
-# {comfy} = ComfyUI 根目录，{envs} = ~/.drama-studio/envs，{models} = 模型目录（用户可改）
+# commit（安装器用 rev-parse HEAD 比对，幂等）；version 是给改动清单看的版本号。
+# 权重 2026-10-18 由 Kelvin 选定版本（DECISIONS「第 8b 步」）：Hugging Face 仓库锁 revision，大小和 sha256 取自 HF 接口。
+# 还写 TODO 的只剩本地 LLM；verify: true（Eagle、Resolve）要在装了它们的机器上实测确认。
+# {comfy} = ComfyUI 根目录，{envs} = ~/.drama-studio/envs，{models} = 安装位置（Setup 页用户选的，放不走 ComfyUI 的权重）
 #
 # 每项除 SPEC 12.1 的字段外还可以有：
 #   fix:        检测状态 → 建议（setup:fix.<code>），写 code 或 {code, params}；不写时按类型给默认
 #   if_missing: 没找到时的状态，默认 required → missing、否则 optional
 #   installable: false   有安装步骤但暂时不能装
 #   size_gb:    下载体积；超过 10 GB 的安装前先确认（SPEC 12.2-5）
+#   download 的 files：文件名，或 {path, folder, sha256}。写了 folder（ComfyUI 的模型类别：diffusion_models、vae …）
+#               就放到 ComfyUI 放这类新文件的目录：extra_model_paths 里 is_default 的那个（ComfyUI Desktop 的共享
+#               模型目录），没有就 {comfy}/models/<folder>；没写 folder 的放 dest 下。检测用 detect: { type: downloads }：
+#               这些文件都在（ComfyUI 的文件在它任一模型目录里都算）就是装好了。
 #   pkg 步骤的 admin: [winget, apt]   这些包管理器装它要管理员权限（默认只有 apt），安装前先确认
 #   snapshot_first: false   改用户已装的 ComfyUI 时不用先存快照（只有 ComfyUI-Manager 本身，快照靠它存）
-# comfy 组的项、安装步骤写进 {comfy} 或 env: comfy 的项会改用户已装的 ComfyUI：安装前列改动清单确认，动手前先用
+# comfy 组的项、安装步骤写进 {comfy}、ComfyUI 模型目录（folder）或 env: comfy 的项会改用户已装的 ComfyUI：安装前列改动清单确认，动手前先用
 # ComfyUI-Manager 存快照（SPEC 6.4.1）。ComfyUI 是我们装的（~/.drama-studio/ComfyUI）时不算。
 #   macos / windows / linux:  这个平台上覆盖 required、name、variant、fix、if_missing、installable；
 #                             写 `optional` 等于 {required: false}
@@ -128,9 +133,12 @@ items:
     requires_cuda: true
     required: true
     depends_on: [comfy]
-    detect: { type: comfy_node, dir: ComfyUI-SeedVR2_VideoUpscaler }
-    fix: { skip: unsupported_upscale_api }
-    install: [ { type: git_clone, url: https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler, ref: 5a4bf428f3735cc72ac760d40f372f94dec28422, version: v2.5.23, dest: "{comfy}/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
+    # ComfyUI 自带（comfy_extras/nodes_seedvr.py，v0.28.0 起，按各 tag 源码核对），用官方模板 utility_seedvr2_*；
+    # 不再装社区节点包 numz/ComfyUI-SeedVR2_VideoUpscaler（Kelvin 2026-10-18 选定）
+    detect: { type: comfy_node, classes: [SeedVR2Preprocess, SeedVR2Conditioning, SeedVR2PostProcessing, SeedVR2TemporalChunk, SeedVR2TemporalMerge], native_since: "0.28.0" }
+    fix: { missing: { code: update_comfy_native, params: { version: "0.28.0" } }, skip: unsupported_upscale_api }
+    install: []
+    docs: https://docs.comfy.org/tutorials/utility/video-upscale
   - id: node_flashvsr
     group: comfy
     name: { zh: FlashVSR 节点（快速超分）, en: FlashVSR nodes (fast upscaling) }
@@ -165,15 +173,126 @@ items:
     required: true
     depends_on: [comfy]
     detect: { type: comfy_node, dir: comfyui-dramastudio }
+    # 源码 integrations/comfyui-dramastudio 还没有（输入 / 输出节点 M5，镜头、素材、存回节点 M9）
+    installable: false
+    fix: { missing: dramastudio_pending, optional: dramastudio_pending }
     install: [ { type: copy, from: "integrations/comfyui-dramastudio", dest: "{comfy}/custom_nodes/comfyui-dramastudio" }, { type: script, run: "写入本地令牌和后端地址" } ]
 
-  # ---------- 模型权重（只检测；版本等 P0 实测定，之后补下载地址和 sha256、去掉 installable: false） ----------
-  # H3 的文件名按 docs.comfy.org 的 H3 教程（Comfy-Org/MiniMax-H3）；其他的 TODO 等 P0。
-  - { id: w_h3,  group: w, name: { zh: "MiniMax H3 权重（int8）", en: "MiniMax H3 weights (int8)" }, requires_cuda: true, required: true, installable: false, fix: { missing: weights_pending_p0 }, detect: { type: file, path: "{comfy}/models/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors" }, install: [ { type: download, hf_repo: Comfy-Org/MiniMax-H3, files: [diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors, diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors, vae/minimax_h3_video_vae_int8_convrot.safetensors, vae/minimax_h3_audio_vae_fp32.safetensors], dest: "{comfy}/models" } ] }
-  - { id: w_te,  group: w, name: { zh: "Qwen3-VL-32B 文本编码器（NVFP4）", en: "Qwen3-VL-32B text encoder (NVFP4)" }, requires_cuda: true, required: true, installable: false, fix: { missing: weights_pending_p0 }, detect: { type: file, path: "{comfy}/models/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors" }, install: [ { type: download, hf_repo: Comfy-Org/MiniMax-H3, files: [text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors], dest: "{comfy}/models" } ] }
-  - { id: w_img, group: w, name: { zh: Qwen-Image-Edit, en: Qwen-Image-Edit }, required: true, installable: false, fix: { missing: weights_pending_p0 }, macos: { required: false, fix: { optional: mac_image_slow } }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_sr,  group: w, name: { zh: SeedVR2 权重, en: SeedVR2 weights }, requires_cuda: true, required: true, installable: false, fix: { missing: weights_pending_p0, skip: unsupported_upscale_api }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_tts, group: w, name: { zh: IndexTTS2, en: IndexTTS2 }, required: true, installable: false, fix: { missing: weights_pending_p0 }, macos: { required: false, name: { zh: 本地配音模型, en: Local voice model }, fix: { optional: mac_voice_slow } }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  # ---------- 模型权重（Kelvin 2026-10-18 选定版本；Hugging Face 仓库锁 revision，大小和 sha256 取自 HF 接口） ----------
+  # ComfyUI 用的权重写 folder，放进 ComfyUI 的模型目录（Desktop 是共享模型目录）；按官方模板（Comfy-Org/workflow_templates）配齐。
+  - id: w_h3
+    group: w
+    name: { zh: "MiniMax H3 权重（int8）", en: "MiniMax H3 weights (int8)" }
+    requires_cuda: true
+    required: true
+    depends_on: [comfy]
+    # 官方模板 video_minimax_h3_i2v / r2v 用的全套：fl2va + ref2va（pruned int8_convrot，README：有 cu130 优先 int8）、
+    # 视频 / 音频 VAE、两个加速 LoRA（和 lightx2v/Minimax-h3-Turbo 原文件 sha256 一致）
+    detect: { type: downloads }
+    size_gb: 49.3
+    install:
+      - type: download
+        hf_repo: Comfy-Org/MiniMax-H3
+        revision: e5eb578a89295337b8ff433a035929ce0279e0b6
+        files:
+          - { path: diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors, folder: diffusion_models, sha256: e889202c41dafb67b10d67b97f0d8541508036a6090af23425a5c2615d03c47a }   # 20.97 GB
+          - { path: diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors, folder: diffusion_models, sha256: 9255f52b6677845ad238f20dfaafa94727053694127ab7f255c048f0f9365779 }   # 20.97 GB
+          - { path: vae/minimax_h3_video_vae_int8_convrot.safetensors, folder: vae, sha256: 52a2c8c73583c86e4f41cdcce3a6ad0ea562987bc0bf3d60a0cef5f5c8e60c0e }   # 2.81 GB
+          - { path: vae/minimax_h3_audio_vae_fp32.safetensors, folder: vae, sha256: 8e505d95dd1561d47abd43d4238fd40d9bb1ae9e147ed0a4cba778d76ae4db48 }   # 0.61 GB
+          - { path: loras/minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors, folder: loras, sha256: 2339acdf19bfe123f46b971ea35d367a84adb85de43627e1eceafa5a5b2b111e }   # 1.96 GB
+          - { path: loras/minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors, folder: loras, sha256: 5b9ab5ade15d0775676d01a907268a69a1468dc6033b3b0d3ded5502f3ebb84c }   # 1.96 GB
+  - id: w_te
+    group: w
+    name: { zh: "Qwen3-VL-32B 文本编码器（NVFP4）", en: "Qwen3-VL-32B text encoder (NVFP4)" }
+    requires_cuda: true
+    required: true
+    depends_on: [comfy]
+    detect: { type: downloads }
+    size_gb: 15.7
+    install:
+      - type: download
+        hf_repo: Comfy-Org/MiniMax-H3
+        revision: e5eb578a89295337b8ff433a035929ce0279e0b6
+        files:
+          - { path: text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors, folder: text_encoders, sha256: 35a88d51044231fe332301d7a62aa81e3f2cba62febeb446e2c1e3e0ef76f2c6 }   # 15.69 GB
+  - id: w_img
+    group: w
+    name: { zh: "Qwen-Image-Edit-2511（int8）", en: "Qwen-Image-Edit-2511 (int8)" }
+    required: true
+    depends_on: [comfy]
+    macos: { required: false, fix: { optional: mac_image_slow } }
+    # 官方模板 image_qwen_image_edit_2511_int8：模型、文本编码器 Qwen2.5-VL-7B fp8、VAE、Lightning 4 步 LoRA
+    detect: { type: downloads }
+    size_gb: 31.0
+    install:
+      - type: download
+        hf_repo: Comfy-Org/Qwen-Image-Edit_ComfyUI
+        revision: f68ace85e60b4a02a323e394253731947657b7d2
+        files:
+          - { path: split_files/diffusion_models/qwen_image_edit_2511_int8_convrot.safetensors, folder: diffusion_models, sha256: 11b5af5ac601821d73930c84846c9a158e67177356daf927ce1c8d10f3963829 }   # 20.50 GB
+      - type: download
+        hf_repo: Comfy-Org/Qwen-Image_ComfyUI
+        revision: 1f12b17be14c89b026c51a91d67c32f84bb047bc
+        files:
+          - { path: split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors, folder: text_encoders, sha256: cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4 }   # 9.38 GB
+          - { path: split_files/vae/qwen_image_vae.safetensors, folder: vae, sha256: a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f }   # 0.25 GB
+      - type: download
+        hf_repo: lightx2v/Qwen-Image-Edit-2511-Lightning
+        revision: 107d238d68b8387e32843d0b4a2e24ceb0d3ad86
+        files:
+          - { path: Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors, folder: loras, sha256: 22226e8d05d354bb356627d428809f5afd7819399b077238a2b70a82883a904f }   # 0.85 GB
+  - id: w_sr
+    group: w
+    name: { zh: "SeedVR2 7B 权重（int8）", en: "SeedVR2 7B weights (int8)" }
+    requires_cuda: true
+    required: true
+    depends_on: [comfy]
+    fix: { skip: unsupported_upscale_api }
+    # 给 ComfyUI 自带的 SeedVR2 节点用（官方模板 utility_seedvr2_*）
+    detect: { type: downloads }
+    size_gb: 8.8
+    install:
+      - type: download
+        hf_repo: Comfy-Org/SeedVR2
+        revision: df48879708206a403d2a61acd55578c2e80fd233
+        files:
+          - { path: diffusion_models/seedvr2_7b_int8_convrot.safetensors, folder: diffusion_models, sha256: 5aa0d25fc9d35e449b659d0c9a5dcb22e2a4fa04032101b95a39da42b32c1be6 }   # 8.33 GB
+          - { path: vae/seedvr2_ema_vae_fp16.safetensors, folder: vae, sha256: 20678548f420d98d26f11442d3528f8b8c94e57ee046ef93dbb7633da8612ca1 }   # 0.50 GB
+  - id: w_tts
+    group: w
+    name: { zh: IndexTTS-2.5, en: IndexTTS-2.5 }
+    required: true
+    macos: { required: false, name: { zh: 本地配音模型, en: Local voice model }, fix: { optional: mac_voice_slow } }
+    # 不走 ComfyUI，放安装位置下；运行环境（index-tts 源码、Python 3.10–3.11 的 uv 环境）和它运行时自己下的辅助模型
+    # 等配音那个里程碑再装。小文件（配置、分词表）HF 没有 sha256，靠锁定的 revision。
+    detect: { type: downloads }
+    size_gb: 5.5
+    install:
+      - type: download
+        hf_repo: IndexTeam/IndexTTS-2.5
+        revision: c39ce5ba981572cb187443877ff559dfb246ce63
+        dest: "{models}/IndexTTS-2.5"
+        files:
+          - { path: LICENSE }   # 0.00 GB
+          - { path: codec.pth, sha256: d15cbed16a40f478438c961fb043f68dfa6353bf56c966761315db3433e9722c }   # 0.61 GB
+          - { path: config.yaml }   # 0.00 GB
+          - { path: feat1.pt, sha256: f219cb447d80216ba615666da2ff8d63ac544eee26657f3a7b278692bf7a67c4 }   # 0.00 GB
+          - { path: feat2.pt, sha256: 9c4292e96dee535aea9a6206e9a0c856dd578dde9212acdb16dd3ada4d12bf80 }   # 0.00 GB
+          - { path: gpt.pth, sha256: 43a8f4c30eccdf201958d3b9713511482c19d56dc20b0b1c4ee1e6b080b19d85 }   # 3.26 GB
+          - { path: multilingual_zh_ja_yue_char_del.tiktoken }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/Modelfile }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/added_tokens.json }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/chat_template.jinja }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/config.json }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/generation_config.json }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/merges.txt }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/model.safetensors, sha256: 11293257a8df593c154a8ecd5fc039f3076de35411e35f06d41b471e136f6641 }   # 1.19 GB
+          - { path: qwen0.6bemo4-merge/special_tokens_map.json }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/tokenizer.json, sha256: aeb13307a71acd8fe81861d94ad54ab689df773318809eed3cbe794b4492dae4 }   # 0.01 GB
+          - { path: qwen0.6bemo4-merge/tokenizer_config.json }   # 0.00 GB
+          - { path: qwen0.6bemo4-merge/vocab.json }   # 0.00 GB
+          - { path: s2mel.pth, sha256: 9b1b0003fc189c94cc349758d7ebc25f903b7eb2de4602879959cc64ce816456 }   # 0.41 GB
+          - { path: wav2vec2bert_stats.pt, sha256: c9c176c2b8850ab2e3ba828bbfa969deaf4566ce55db5f2687b8430b87526ad2 }   # 0.00 GB
   - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, installable: false, fix: { optional: llm_optional }, macos: { variant: MLX, required: true, name: { zh: "Qwen3.6-27B（MLX 版）", en: "Qwen3.6-27B (MLX)" }, fix: { missing: weights_pending_p0 } }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
 
   # ---------- 网络与服务 ----------

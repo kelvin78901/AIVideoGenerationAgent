@@ -19,7 +19,7 @@ CLIENT_HEADERS = {"X-Drama-Studio": "1"}
 V1 = "/api/v1"
 PROFILE = f"{V1}/setup/profile"
 SNAPSHOTS = f"{V1}/comfy/snapshots"
-SEEDVR2 = "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler"
+FLASHVSR = "https://github.com/1038lab/ComfyUI-FlashVSR"
 
 
 @pytest.fixture(autouse=True)
@@ -82,10 +82,15 @@ def _failing_snapshots(client: TestClient, reason: SnapshotFailure | None) -> No
 
 def test_a_change_waits_for_approval_and_takes_a_snapshot_first(client: TestClient) -> None:
     _scan(client)
-    started = _install(client, ["ffmpeg", "node_seedvr2"])
+    started = _install(client, ["ffmpeg", "node_flashvsr"])
     change = {
         "code": "comfy_change",
-        "params": {"item": "node_seedvr2", "action": "install", "to": "v2.5.23", "source": SEEDVR2},
+        "params": {
+            "item": "node_flashvsr",
+            "action": "install",
+            "to": "8877fdd",
+            "source": FLASHVSR,
+        },
     }
     assert started["install"]["confirm"] == [change]  # FFmpeg does not touch ComfyUI
     time.sleep(0.1)  # nothing runs before the user says yes
@@ -95,7 +100,7 @@ def test_a_change_waits_for_approval_and_takes_a_snapshot_first(client: TestClie
     done = _wait(client, "done")
     assert {i: x["state"] for i, x in _installs(done).items()} == {
         "ffmpeg": "done",
-        "node_seedvr2": "done",
+        "node_flashvsr": "done",
     }
     snaps = client.get(SNAPSHOTS).json()
     assert len(snaps) == 1
@@ -103,14 +108,14 @@ def test_a_change_waits_for_approval_and_takes_a_snapshot_first(client: TestClie
     assert (snap["reason"], snap["changes"], snap["restored_at"]) == ("install", [change], None)
     assert snap["env_hash"] == client.get(f"{V1}/comfy/env").json()["env"]["hash"]
     assert done["install"]["snapshot"] == snap["id"]
-    # The snapshot comes after FFmpeg (which leaves ComfyUI alone) and before SeedVR2's steps.
+    # The snapshot comes after FFmpeg (which leaves ComfyUI alone) and before FlashVSR's steps.
     order = [(c, p.get("item")) for c, p in _logs(client) if c in ("start", "snapshot", "done")]
     assert order == [
         ("start", "ffmpeg"),
         ("done", "ffmpeg"),
-        ("start", "node_seedvr2"),
+        ("start", "node_flashvsr"),
         ("snapshot", None),
-        ("done", "node_seedvr2"),
+        ("done", "node_flashvsr"),
     ]
 
 
@@ -129,11 +134,11 @@ def test_installs_that_leave_comfyui_alone_need_neither(client: TestClient) -> N
 def test_no_snapshot_no_change(client: TestClient) -> None:
     _scan(client)
     _failing_snapshots(client, "not_running")
-    _install(client, ["ffmpeg", "node_seedvr2", "node_vhs", "sage"])
+    _install(client, ["ffmpeg", "node_flashvsr", "node_vhs", "sage"])
     _confirm(client)
     done = _installs(_wait(client, "done"))
     assert done["ffmpeg"]["state"] == "done"
-    for item in ("node_seedvr2", "sage"):
+    for item in ("node_flashvsr", "sage"):
         assert done[item]["state"] == "failed"
         assert done[item]["error"] == {"code": "snapshot_not_running", "params": {}}
     assert "node_vhs" not in done  # already there: not installable, ignored
@@ -142,8 +147,8 @@ def test_no_snapshot_no_change(client: TestClient) -> None:
 
     # ComfyUI is open now: a retry takes the snapshot and goes ahead.
     _failing_snapshots(client, None)
-    assert client.post(f"{V1}/setup/items/node_seedvr2/retry").status_code == 200
-    assert _installs(_wait(client, "done"))["node_seedvr2"]["state"] == "done"
+    assert client.post(f"{V1}/setup/items/node_flashvsr/retry").status_code == 200
+    assert _installs(_wait(client, "done"))["node_flashvsr"]["state"] == "done"
     assert len(client.get(SNAPSHOTS).json()) == 1
 
 
@@ -160,17 +165,17 @@ def test_without_manager_it_is_installed_first(client: TestClient) -> None:
         True,
         True,
     )
-    started = _install(client, ["node_seedvr2"])
-    assert started["install"]["items"] == ["comfy_manager", "node_seedvr2"]
+    started = _install(client, ["node_flashvsr"])
+    assert started["install"]["items"] == ["comfy_manager", "node_flashvsr"]
     assert [c["params"]["item"] for c in started["install"]["confirm"]] == [
         "comfy_manager",
-        "node_seedvr2",
+        "node_flashvsr",
     ]
     _confirm(client)
     done = _installs(_wait(client, "done"))
     assert done["comfy_manager"]["state"] == "done"  # needs no snapshot: it takes them
     # It only loads when ComfyUI restarts, so nothing else is changed this time.
-    assert done["node_seedvr2"]["error"] == {"code": "snapshot_restart", "params": {}}
+    assert done["node_flashvsr"]["error"] == {"code": "snapshot_restart", "params": {}}
 
 
 def test_without_comfyui_manager_follows_the_comfyui_we_install(client: TestClient) -> None:
