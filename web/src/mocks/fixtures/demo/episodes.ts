@@ -1,54 +1,48 @@
-/** Episodes 1–3 of 《雨停之前》 (prototype Script / Dashboard). Episode 1 《红伞》 is the demo. */
+/**
+ * Episodes 1–3 of 《雨停之前》 as the MSW demo still knows them. The plan itself — titles, hooks,
+ * cliffhangers, beats, budgets — is the backend's (分集规划, `studio/demo.py`); MSW only adds
+ * what its own later-step data says, until those steps move to the backend: shots (M4), the
+ * script status and stage (剧本 and its gate, M2 steps 9–10). Episode 1 《红伞》 is the demo.
+ */
 import type { Episode, EpisodeProgress } from "@/api/schemas/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 
 export const EP1 = "demo-e1";
 
-export const episodes: Episode[] = [
+/** What the demo lays over the backend's episode (`handlers/series.ts`). */
+export interface EpisodeOverlay {
+  id: string;
+  series_id: string;
+  idx: number;
+  shot_count: number | null;
+  script_status: Episode["script_status"];
+  stage: Episode["stage"];
+}
+
+export const episodes: EpisodeOverlay[] = [
   {
     id: EP1,
     series_id: DEMO_SERIES_ID,
     idx: 1,
-    title: "红伞",
-    hook: "门口那把红伞，和三年没见的字迹。",
-    cliffhanger: "她拿起了那把伞",
-    target_seconds: 34,
-    budget_usd: 15,
-    stage: "in_progress",
-    scene_from: 1,
-    scene_to: 2,
     shot_count: 9,
     script_status: "confirmed",
+    stage: "in_progress",
   },
   {
     id: "demo-e2",
     series_id: DEMO_SERIES_ID,
     idx: 2,
-    title: "十二点",
-    hook: "她赶到便利店，离十二点还有四分钟。",
-    cliffhanger: "便利店里没有他",
-    target_seconds: 70,
-    budget_usd: 15,
-    stage: "script_pending",
-    scene_from: 3,
-    scene_to: 4,
     shot_count: null,
     script_status: "none",
+    stage: "script_pending",
   },
   {
     id: "demo-e3",
     series_id: DEMO_SERIES_ID,
     idx: 3,
-    title: "旧发圈",
-    hook: null,
-    cliffhanger: null,
-    target_seconds: 80,
-    budget_usd: 15,
-    stage: "not_started",
-    scene_from: 5,
-    scene_to: 7,
     shot_count: null,
     script_status: "none",
+    stage: "not_started",
   },
 ];
 

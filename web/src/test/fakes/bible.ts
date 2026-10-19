@@ -86,12 +86,11 @@ function withRoute(p: Product): Product {
   return { ...p, estimate: { ...p.estimate, model_key: model, where, cost_usd } };
 }
 
-/** The fake backend's answer to what the MSW demo merges in (`mocks/backend.ts`). */
-export async function fakeBackendFetch(request: Request): Promise<Response> {
-  const url = new URL(request.url);
+/** The fake backend's products of the demo series, which the MSW demo merges in, or null. */
+export function bibleBackendFetch(url: URL): Response | null {
   if (url.pathname.endsWith("/products") && url.searchParams.get("owner") === "series:demo")
     return HttpResponse.json(fakeBible.products.map(withRoute));
-  return error(404, "http_404");
+  return null;
 }
 
 /** `known`: the series the fake backend has. */

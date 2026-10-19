@@ -3,9 +3,11 @@ import { useParams } from "react-router";
 import { z } from "zod";
 
 import { api, patch, post, put } from "@/api/client";
+import { productKeys } from "@/api/hooks/products";
 import {
   EpisodeProgressSchema,
   EpisodeSchema,
+  type BeatPatch,
   type Episode,
   type EpisodePatch,
 } from "@/api/schemas/episodes";
@@ -19,6 +21,7 @@ import {
   type SpecPatch,
 } from "@/api/schemas/spec";
 import { DEMO_EPISODE, DEMO_SERIES } from "@/app/paths";
+import { patchBeat } from "@/lib/beats";
 import { useUiStore } from "@/stores/ui";
 
 const enc = encodeURIComponent;
@@ -146,7 +149,10 @@ export function useSaveSpec(seriesId: string) {
   });
 }
 
-/** `PATCH /episodes/{id}` (the budget, from the Models page); the top bar follows. */
+/**
+ * `PATCH /episodes/{id}`: the budget (Models page; the top bar follows) or the plan's 集名、钩子、
+ * 卡点 (an adopted edit of 分集规划, so its product changes too).
+ */
 export function useUpdateEpisode(episodeId: string | undefined) {
   const client = useQueryClient();
   return useMutation({
@@ -155,6 +161,34 @@ export function useUpdateEpisode(episodeId: string | undefined) {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: ["series"] });
       void client.invalidateQueries({ queryKey: ["metrics"] });
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
+  });
+}
+
+/**
+ * `PATCH /beats/{id}`: 改节拍的文字、情绪, or drag it to another episode / place. The board shows
+ * the change at once and goes back if the backend refuses; afterwards the list is read again
+ * (the demo lays its overlay on it) with the new version of 分集规划.
+ */
+export function usePatchBeat(seriesId: string) {
+  const client = useQueryClient();
+  const key = seriesKeys.episodes(seriesId);
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & BeatPatch) =>
+      patch(`/beats/${enc(id)}`, z.array(EpisodeSchema), body),
+    onMutate: async ({ id, ...body }) => {
+      await client.cancelQueries({ queryKey: key });
+      const before = client.getQueryData<Episode[]>(key);
+      if (before) client.setQueryData(key, patchBeat(before, id, body));
+      return { before };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.before) client.setQueryData(key, ctx.before);
+    },
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: key });
+      void client.invalidateQueries({ queryKey: productKeys.all });
     },
   });
 }

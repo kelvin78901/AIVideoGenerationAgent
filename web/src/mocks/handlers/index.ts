@@ -11,8 +11,10 @@
  * backend's POST /dev/setup/machine) (M1). GET /config/components, GET /config/resolve,
  * PUT / DELETE /config/override, GET / PUT /config/defaults, GET /series/{id}/novel,
  * GET /series/{id}/bible, PATCH /bible/{id}, POST /bible/merge, GET /series/{id}/suggestions,
- * POST /series/{id}/suggestions/accept-all, POST /suggestions/{id}/accept|reject|reset|rewrite
- * (M2).
+ * POST /series/{id}/suggestions/accept-all, POST /suggestions/{id}/accept|reject|reset|rewrite,
+ * PATCH /episodes/{id}, PATCH /beats/{id} (M2). GET /series/{id}/episodes and
+ * GET /episodes/{id}/progress are the backend's too; the demo series lays its later-step data
+ * over them (shots, script status, gates, the badges after 剧本) until those steps are real.
  * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
  *
  * Handlers that take a series answer only for the demo series; any other series passes through
@@ -20,8 +22,6 @@
  *
  * | Endpoint                         | Implemented in |
  * | -------------------------------- | -------------- |
- * | GET /series/{id}/episodes        | M2             |
- * | GET /episodes/{id}/progress      | M2             |
  * | GET /metrics/summary             | M8             |
  * | GET /metrics/kpis, spend-series, calls-series | M8 |
  * | GET /metrics/shots, components, speed, apis    | M8 |
@@ -48,7 +48,6 @@
  * | GET /episodes/{id}/timeline      | M7             |
  * | PATCH /clips/{id}, /subtitles/{id} | M7           |
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
- * | PATCH /episodes/{id}             | M2             |
  * | GET, PUT /sync/targets, POST /sync/targets/{id}/detect | M9 |
  * | POST /sync/run, GET /sync/log, GET /sync/board | M9 |
  * | GET /workflows, GET / PATCH /workflows/{id}, POST /workflows/import | M5 |

@@ -3,12 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 
 import { Toaster } from "@/components/ui/sonner";
-import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { server } from "@/mocks/node";
 import ModelsPage from "@/pages/Models";
 import { backend } from "@/test/backend";
 import { fakeConfig } from "@/test/fakes/config";
+import { fakeEpisodes } from "@/test/fakes/episodes";
 import { renderAt } from "@/test/render";
 
 const renderModels = () =>
@@ -149,8 +149,9 @@ describe("ModelsPage", () => {
     await user.clear(budget);
     await user.type(budget, "20{Enter}");
     expect(await screen.findByText("本集 API 预算改成 $20。")).toBeInTheDocument();
-    expect(getDb().episodes.find((e) => e.id === EP1)?.budget_usd).toBe(20);
-    expect(getDb().summary.episode.budget_usd).toBe(20);
+    // The backend keeps it; the top bar's summary reads it from there.
+    expect(fakeEpisodes.episodePatches).toEqual([{ id: EP1, budget_usd: 20 }]);
+    expect(fakeEpisodes.list.find((e) => e.id === EP1)?.budget_usd).toBe(20);
   });
 
   it("saves a provider key and tests the connection (real backend endpoints)", async () => {

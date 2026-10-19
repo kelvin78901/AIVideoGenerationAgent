@@ -1,8 +1,8 @@
 /**
- * Products and versions of the demo series' later steps (分集规划, 剧本化). The novel step's —
- * 小说补全 v1 Qwen3.6-27B 本地 09:41 草稿 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳, and 设定提取
- * v1 本地 10:05 (prototype Main.dc.html, Inspector「历史」) — are the backend's (`studio/demo.py`),
- * merged into the demo's product list by `handlers/products.ts`.
+ * Products and versions of the demo series' later steps (剧本化). The novel step's — 小说补全 v1
+ * Qwen3.6-27B 本地 09:41 草稿 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳, and 设定提取 v1 本地 10:05
+ * (prototype Main.dc.html, Inspector「历史」) — and 分集规划 v1 DeepSeek V4.1 Flash 10:08 are the
+ * backend's (`studio/demo.py`), merged into the demo's product list by `handlers/products.ts`.
  */
 import type { Product, ProductVersion, VersionOrigin } from "@/api/schemas/products";
 import { modelByKey } from "@/mocks/fixtures/demo/models";
@@ -13,7 +13,6 @@ import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 /** The backend's 小说补全 and 设定提取 products of the demo series (seeded in Mock mode). */
 export const PRODUCT_ENRICH = "demo-p-enrich";
 export const PRODUCT_EXTRACT = "demo-p-extract";
-export const PRODUCT_SPLIT = "demo-p-split";
 
 /**
  * 2026-10-14 at a wall-clock time in the viewer's time zone, so the demo shows the prototype's
@@ -145,21 +144,6 @@ const scriptV1 = demoVersion("demo-p-script-e1", "script", {
 export const scriptProductId = (episodeId: string) => `demo-p-script-${episodeId.slice(5)}`;
 
 export const products: Product[] = [
-  demoProduct(
-    PRODUCT_SPLIT,
-    "split",
-    "episodes",
-    [
-      demoVersion(PRODUCT_SPLIT, "split", {
-        n: 1,
-        origin: "run",
-        model: "deepseek/v4.1-flash",
-        at: demoAt("10:08"),
-        payload: { episodes: 3 },
-      }),
-    ],
-    30,
-  ),
   // 剧本化 for episode 1: v1 本地 10:12 草稿 → v2 Kimi K2.6 10:20（不满意换一个）已采纳.
   demoProduct(
     "demo-p-script-e1",

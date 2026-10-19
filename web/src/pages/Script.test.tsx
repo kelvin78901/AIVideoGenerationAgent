@@ -53,7 +53,10 @@ describe("ScriptPage", () => {
     expect(ep1).toHaveTextContent("场 1–2 · 9 个镜头 · 约 0:34");
     expect(ep1).toHaveTextContent("卡点：她拿起了那把伞");
     expect(ep1).toHaveTextContent("剧本已确认");
-    expect(screen.getByRole("link", { name: /第 3 集/ })).toHaveTextContent("卡点：待定");
+    // The plan is the backend's (分集规划): episode 3 has its cliffhanger too.
+    expect(screen.getByRole("link", { name: /第 3 集/ })).toHaveTextContent(
+      "场 5–7 · 约 1:20卡点：红伞底下，雨还没有停",
+    );
     expect(screen.getByText("当前产物 · 第 1 集剧本 · 场 1–2 · 12 段")).toBeInTheDocument();
     expect(screen.getAllByText("AI 新增")).toHaveLength(2);
     expect(screen.getByText("本集卡点")).toBeInTheDocument();

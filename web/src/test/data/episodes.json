@@ -1,0 +1,851 @@
+{
+  "episodes": [
+    {
+      "id": "demo-e1",
+      "series_id": "demo",
+      "idx": 1,
+      "title": "红伞",
+      "hook": "门口那把红伞，和三年没见的字迹。",
+      "cliffhanger": "她拿起了那把伞",
+      "target_seconds": 34,
+      "scene_count": 2,
+      "budget_usd": 15.0,
+      "stage": "script_pending",
+      "scene_from": 1,
+      "scene_to": 2,
+      "shot_count": null,
+      "script_status": "none",
+      "beats": [
+        {
+          "id": "demo-bt1",
+          "episode_id": "demo-e1",
+          "idx": 1,
+          "text": "雨夜，林晚加完班回老小区，一层层爬上六楼。",
+          "emotion": -0.3,
+          "paras": [
+            0
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 8,
+              "end": 36
+            }
+          ]
+        },
+        {
+          "id": "demo-bt2",
+          "episode_id": "demo-e1",
+          "idx": 2,
+          "text": "门口靠着一把红伞，便利贴上是周屿三年没见的字迹。",
+          "emotion": 0.2,
+          "paras": [
+            1
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 37,
+              "end": 97
+            }
+          ]
+        },
+        {
+          "id": "demo-bt3",
+          "episode_id": "demo-e1",
+          "idx": 3,
+          "text": "便利贴只有一句：楼下便利店，等你到十二点。",
+          "emotion": 0.4,
+          "paras": [
+            2
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 98,
+              "end": 124
+            }
+          ]
+        },
+        {
+          "id": "demo-bt4",
+          "episode_id": "demo-e1",
+          "idx": 4,
+          "text": "她把伞靠回墙边，进屋又出来，来回犹豫。",
+          "emotion": -0.4,
+          "paras": [
+            3
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 125,
+              "end": 145
+            }
+          ]
+        },
+        {
+          "id": "demo-bt5",
+          "episode_id": "demo-e1",
+          "idx": 5,
+          "text": "她还是拿起了那把伞。",
+          "emotion": 0.5,
+          "paras": [
+            4
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 146,
+              "end": 159
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "demo-e2",
+      "series_id": "demo",
+      "idx": 2,
+      "title": "十二点",
+      "hook": "她赶到便利店，离十二点还有四分钟。",
+      "cliffhanger": "便利店里没有他",
+      "target_seconds": 70,
+      "scene_count": 2,
+      "budget_usd": 15.0,
+      "stage": "script_pending",
+      "scene_from": 3,
+      "scene_to": 4,
+      "shot_count": null,
+      "script_status": "none",
+      "beats": [
+        {
+          "id": "demo-bt6",
+          "episode_id": "demo-e2",
+          "idx": 1,
+          "text": "她攥着伞冲下楼，跑到三楼才发现鞋都没换。",
+          "emotion": 0.3,
+          "paras": [
+            5,
+            6
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 170,
+              "end": 225
+            },
+            {
+              "source_id": "demo-src",
+              "start": 226,
+              "end": 263
+            }
+          ]
+        },
+        {
+          "id": "demo-bt7",
+          "episode_id": "demo-e2",
+          "idx": 2,
+          "text": "单元门外撑开红伞，伞柄上那截缠过的铁丝还在。",
+          "emotion": 0.1,
+          "paras": [
+            7,
+            8,
+            9,
+            10,
+            11
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 264,
+              "end": 339
+            },
+            {
+              "source_id": "demo-src",
+              "start": 340,
+              "end": 402
+            },
+            {
+              "source_id": "demo-src",
+              "start": 403,
+              "end": 443
+            },
+            {
+              "source_id": "demo-src",
+              "start": 444,
+              "end": 532
+            },
+            {
+              "source_id": "demo-src",
+              "start": 533,
+              "end": 605
+            }
+          ]
+        },
+        {
+          "id": "demo-bt8",
+          "episode_id": "demo-e2",
+          "idx": 3,
+          "text": "一路狂奔两百米，泥水溅满小腿，差点撞上外卖员。",
+          "emotion": 0.5,
+          "paras": [
+            12,
+            13
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 606,
+              "end": 673
+            },
+            {
+              "source_id": "demo-src",
+              "start": 674,
+              "end": 732
+            }
+          ]
+        },
+        {
+          "id": "demo-bt9",
+          "episode_id": "demo-e2",
+          "idx": 4,
+          "text": "岗亭里的老歌，勾起三年前便利店的那个夏天。",
+          "emotion": 0.1,
+          "paras": [
+            14,
+            15
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 733,
+              "end": 788
+            },
+            {
+              "source_id": "demo-src",
+              "start": 789,
+              "end": 914
+            }
+          ]
+        },
+        {
+          "id": "demo-bt10",
+          "episode_id": "demo-e2",
+          "idx": 5,
+          "text": "推门前看手机：23:56，离十二点还有四分钟。",
+          "emotion": 0.6,
+          "paras": [
+            16,
+            17,
+            18,
+            19,
+            20
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 915,
+              "end": 958
+            },
+            {
+              "source_id": "demo-src",
+              "start": 959,
+              "end": 969
+            },
+            {
+              "source_id": "demo-src",
+              "start": 970,
+              "end": 985
+            },
+            {
+              "source_id": "demo-src",
+              "start": 986,
+              "end": 993
+            },
+            {
+              "source_id": "demo-src",
+              "start": 994,
+              "end": 1048
+            }
+          ]
+        },
+        {
+          "id": "demo-bt11",
+          "episode_id": "demo-e2",
+          "idx": 6,
+          "text": "高脚桌上两杯关东煮，玻璃的水汽上画着伞下两个小人。",
+          "emotion": 0.3,
+          "paras": [
+            21,
+            22,
+            23,
+            24
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 1049,
+              "end": 1133
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1134,
+              "end": 1174
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1175,
+              "end": 1231
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1232,
+              "end": 1306
+            }
+          ]
+        },
+        {
+          "id": "demo-bt12",
+          "episode_id": "demo-e2",
+          "idx": 7,
+          "text": "没开过的那杯已经凉透，店员说那人盯了门口一晚上。",
+          "emotion": -0.2,
+          "paras": [
+            25,
+            26,
+            27
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 1307,
+              "end": 1331
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1332,
+              "end": 1343
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1344,
+              "end": 1394
+            }
+          ]
+        },
+        {
+          "id": "demo-bt13",
+          "episode_id": "demo-e2",
+          "idx": 8,
+          "text": "电子钟跳到 00:00，她把整个店找了一遍。",
+          "emotion": -0.6,
+          "paras": [
+            28,
+            29
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 1395,
+              "end": 1423
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1424,
+              "end": 1460
+            }
+          ]
+        },
+        {
+          "id": "demo-bt14",
+          "episode_id": "demo-e2",
+          "idx": 9,
+          "text": "便利店里没有他。",
+          "emotion": -0.9,
+          "paras": [
+            30
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 1461,
+              "end": 1469
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "demo-e3",
+      "series_id": "demo",
+      "idx": 3,
+      "title": "旧发圈",
+      "hook": "他留下一张三年前的小票：黑色发圈，一个，两块钱。",
+      "cliffhanger": "红伞底下，雨还没有停",
+      "target_seconds": 80,
+      "scene_count": 3,
+      "budget_usd": 15.0,
+      "stage": "script_pending",
+      "scene_from": 5,
+      "scene_to": 7,
+      "shot_count": null,
+      "script_status": "none",
+      "beats": [
+        {
+          "id": "demo-bt15",
+          "episode_id": "demo-e3",
+          "idx": 1,
+          "text": "店员递来他留下的信封，里面是三年前买发圈的小票。",
+          "emotion": -0.3,
+          "paras": [
+            31,
+            32,
+            33
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 1480,
+              "end": 1520
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1521,
+              "end": 1554
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1555,
+              "end": 1617
+            }
+          ]
+        },
+        {
+          "id": "demo-bt16",
+          "episode_id": "demo-e3",
+          "idx": 2,
+          "text": "她握住手腕上的旧发圈，想起毕业那晚他没说完的话。",
+          "emotion": -0.5,
+          "paras": [
+            34,
+            35,
+            36,
+            37,
+            38,
+            39
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 1618,
+              "end": 1664
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1665,
+              "end": 1738
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1739,
+              "end": 1842
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1843,
+              "end": 1876
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1877,
+              "end": 1902
+            },
+            {
+              "source_id": "demo-src",
+              "start": 1903,
+              "end": 2038
+            }
+          ]
+        },
+        {
+          "id": "demo-bt17",
+          "episode_id": "demo-e3",
+          "idx": 3,
+          "text": "小票背面：欠你的那句话，雨停之前说。",
+          "emotion": 0.2,
+          "paras": [
+            40,
+            41,
+            42
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 2039,
+              "end": 2063
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2064,
+              "end": 2079
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2080,
+              "end": 2116
+            }
+          ]
+        },
+        {
+          "id": "demo-bt18",
+          "episode_id": "demo-e3",
+          "idx": 4,
+          "text": "他空着手走进了雨里；马路对面的站台下，站着周屿。",
+          "emotion": 0.4,
+          "paras": [
+            43,
+            44,
+            45,
+            46,
+            47
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 2117,
+              "end": 2159
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2160,
+              "end": 2226
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2227,
+              "end": 2238
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2239,
+              "end": 2289
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2290,
+              "end": 2311
+            }
+          ]
+        },
+        {
+          "id": "demo-bt19",
+          "episode_id": "demo-e3",
+          "idx": 5,
+          "text": "她冲进雨里，末班车开走了，站台下的人还在。",
+          "emotion": 0.6,
+          "paras": [
+            48,
+            49,
+            50
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 2312,
+              "end": 2402
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2403,
+              "end": 2483
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2484,
+              "end": 2493
+            }
+          ]
+        },
+        {
+          "id": "demo-bt20",
+          "episode_id": "demo-e3",
+          "idx": 6,
+          "text": "红伞举过他头顶，三年没说的话一句一句说出口。",
+          "emotion": 0.3,
+          "paras": [
+            51,
+            52,
+            53,
+            54,
+            55,
+            59,
+            60,
+            61,
+            62
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 2494,
+              "end": 2542
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2543,
+              "end": 2611
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2612,
+              "end": 2635
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2636,
+              "end": 2660
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2661,
+              "end": 2706
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2776,
+              "end": 2786
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2787,
+              "end": 2835
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2836,
+              "end": 2843
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2844,
+              "end": 2848
+            }
+          ]
+        },
+        {
+          "id": "demo-bt21",
+          "episode_id": "demo-e3",
+          "idx": 7,
+          "text": "他看见那根发圈；她背过身，让他再扎一次头发。",
+          "emotion": 0.7,
+          "paras": [
+            56,
+            57,
+            58,
+            63,
+            64,
+            65,
+            66,
+            67,
+            68
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 2707,
+              "end": 2752
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2753,
+              "end": 2760
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2761,
+              "end": 2775
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2849,
+              "end": 2893
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2894,
+              "end": 2902
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2903,
+              "end": 2931
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2932,
+              "end": 2956
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2957,
+              "end": 2972
+            },
+            {
+              "source_id": "demo-src",
+              "start": 2973,
+              "end": 3006
+            }
+          ]
+        },
+        {
+          "id": "demo-bt22",
+          "episode_id": "demo-e3",
+          "idx": 8,
+          "text": "红伞底下，雨还没有停。",
+          "emotion": 0.8,
+          "paras": [
+            69,
+            70
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 3007,
+              "end": 3092
+            },
+            {
+              "source_id": "demo-src",
+              "start": 3093,
+              "end": 3104
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "progress": {
+    "demo-e1": {
+      "episode_id": "demo-e1",
+      "steps": {
+        "novel": {
+          "state": "in_progress",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "script": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "assets": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "storyboard": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "generate": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "post": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        }
+      }
+    },
+    "demo-e2": {
+      "episode_id": "demo-e2",
+      "steps": {
+        "novel": {
+          "state": "in_progress",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "script": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "assets": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "storyboard": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "generate": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "post": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        }
+      }
+    },
+    "demo-e3": {
+      "episode_id": "demo-e3",
+      "steps": {
+        "novel": {
+          "state": "in_progress",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "script": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "assets": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "storyboard": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "generate": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        },
+        "post": {
+          "state": "not_started",
+          "done": null,
+          "total": null,
+          "stale": 0
+        }
+      }
+    }
+  }
+}

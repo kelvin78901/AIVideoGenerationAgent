@@ -1,5 +1,5 @@
-"""``web/src/test/data/{setup,config,novel,bible,suggestions}.json``: what the Mock backend
-answers.
+"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes}.json``: what the Mock
+backend answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -203,6 +203,24 @@ def test_web_suggestions_fixture_is_current(client: TestClient) -> None:
     export["rewrites"] = rewrites
     text = json.dumps(export, ensure_ascii=False, indent=2) + "\n"
     path = SUGGESTIONS_FIXTURE
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = path.read_text(encoding="utf-8") if path.exists() else ""
+    assert current == text, f"{path.name} is out of date: see this module's docstring"
+
+
+EPISODES_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "episodes.json"
+
+
+def test_web_episodes_fixture_is_current(client: TestClient) -> None:
+    """The demo series' adopted plan (分集规划) and each episode's step progress
+    (``test/fakes/episodes.ts``)."""
+    episodes = client.get(f"{V1}/series/demo/episodes").json()
+    progress = {e["id"]: client.get(f"{V1}/episodes/{e['id']}/progress").json() for e in episodes}
+    export = {"episodes": episodes, "progress": progress}
+    text = json.dumps(export, ensure_ascii=False, indent=2) + "\n"
+    path = EPISODES_FIXTURE
     if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)

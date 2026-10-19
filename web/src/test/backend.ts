@@ -13,8 +13,9 @@ import { series as demoSeries } from "@/mocks/fixtures/demo/series";
 import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
 import { setBackendFetch } from "@/mocks/backend";
 import { server } from "@/mocks/node";
-import { bibleHandlers, fakeBackendFetch, resetFakeBible } from "@/test/fakes/bible";
+import { bibleBackendFetch, bibleHandlers, resetFakeBible } from "@/test/fakes/bible";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
+import { episodeHandlers, episodesBackendFetch, resetFakeEpisodes } from "@/test/fakes/episodes";
 import { novelHandlers, resetFakeNovel } from "@/test/fakes/novel";
 import { resetFakeSuggestions, suggestionHandlers } from "@/test/fakes/suggestions";
 import { resetFakeSetup, setupHandlers } from "@/test/setupBackend";
@@ -126,10 +127,7 @@ function seriesHandlers() {
     http.get("*/api/v1/series/:id/spec", ({ params }) =>
       known(params.id) ? HttpResponse.json(specOf(params.id)) : error(404, "series_not_found"),
     ),
-    // Series other than the demo have no episodes or products yet (the demo's are MSW's).
-    http.get("*/api/v1/series/:id/episodes", ({ params }) =>
-      params.id !== fake.series.id && known(params.id) ? HttpResponse.json([]) : undefined,
-    ),
+    // Series other than the demo have no products yet (the demo's are MSW's and the backend's).
     http.get("*/api/v1/products", ({ request }) => {
       const owner = new URL(request.url).searchParams.get("owner") ?? "";
       const [kind, id] = owner.split(":");
@@ -161,14 +159,25 @@ function seriesHandlers() {
     ...novelHandlers(known),
     ...bibleHandlers(known),
     ...suggestionHandlers(known),
+    ...episodeHandlers(known),
   ];
+}
+
+/** What the MSW demo merges in from the backend (`mocks/backend.ts`): products, the plan. */
+async function fakeBackendFetch(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  return (
+    bibleBackendFetch(url) ??
+    episodesBackendFetch(url) ??
+    HttpResponse.json({ detail: { code: "http_404", params: {} } }, { status: 404 })
+  );
 }
 
 /**
  * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, the
  * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`), bible
- * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), and the
- * PC sample machine before its first scan
+ * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), the
+ * episode plan (`test/fakes/episodes.ts`), and the PC sample machine before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
  */
 export function backend({ mock = true }: { mock?: boolean } = {}) {
@@ -179,6 +188,7 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeNovel();
   resetFakeBible();
   resetFakeSuggestions();
+  resetFakeEpisodes();
   setBackendFetch(fakeBackendFetch);
   resetFakeSetup();
   resetFakeConfig();

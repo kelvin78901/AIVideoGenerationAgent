@@ -26,7 +26,7 @@ import { useRunAction } from "@/components/useRunAction";
 import { Button } from "@/components/ui/button";
 import { modelName } from "@/lib/versions";
 import { scriptBlocks, type Block } from "@/pages/script/blocks";
-import { EpisodeCards } from "@/pages/script/EpisodeCards";
+import { Episodes, type EpisodeView } from "@/pages/script/Episodes";
 import { ScriptScreenplay, ScriptTable } from "@/pages/script/ScriptView";
 import { useInspectorStore } from "@/stores/inspector";
 
@@ -75,6 +75,7 @@ export default function ScriptPage() {
   const apply = useApplyImpact();
   const rewrite = useRewriteBlock();
   const [view, setView] = useState<View>("script");
+  const [episodeView, setEpisodeView] = useState<EpisodeView>("cards");
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [pending, setPending] = useState<{ block: Block; text: string } | null>(null);
 
@@ -86,6 +87,7 @@ export default function ScriptPage() {
   const split = seriesProducts.data?.find((p) => p.component_id === "split");
   const scriptProduct = episodeProducts.data?.find((p) => p.component_id === "script");
   const product = selected === "split" ? split : scriptProduct;
+  const splitAction = useRunAction(split?.id ?? "");
   const ep = String(episodeIdx);
 
   const blocks =
@@ -187,7 +189,25 @@ export default function ScriptPage() {
       />
 
       <QueryState query={episodes} skeleton={<Skeleton className="h-28 w-full" />}>
-        {(list) => <EpisodeCards episodes={list} seriesId={seriesId} currentIdx={episodeIdx} />}
+        {(list) => (
+          <Episodes
+            seriesId={seriesId}
+            episodes={list}
+            currentIdx={episodeIdx}
+            split={split}
+            view={episodeView}
+            onViewChange={(v) => {
+              setEpisodeView(v);
+              // The board is 分集规划's: its RunBar and Inspector come along.
+              useInspectorStore.getState().select(v === "board" ? "split" : "script");
+            }}
+            onRunSplit={() => {
+              useInspectorStore.getState().select("split");
+              splitAction.run({ mode: split?.versions.length ? "rerun" : "run" });
+            }}
+            onOpenHistory={() => show("history", "split")}
+          />
+        )}
       </QueryState>
 
       {product ? (

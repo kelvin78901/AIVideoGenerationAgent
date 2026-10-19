@@ -20,6 +20,73 @@
       "none": "No script yet",
       "draft": "Script draft",
       "confirmed": "Script confirmed"
+    },
+    "views": "Episode view",
+    "view": {
+      "cards": "Cards",
+      "board": "Beat board"
+    },
+    "empty": {
+      "title": "No episodes yet",
+      "lead": "Episode planning cuts the novel into episodes, each with a hook, a cliffhanger and its beats. Import the novel and run story-bible extraction first.",
+      "run": "Plan the episodes"
+    }
+  },
+  "board": {
+    "lead": "One column per episode. Drag a beat to another episode or place; click a beat to edit its text and emotion.",
+    "meta": "{{count}} beats · about {{clock}}",
+    "hook": "Hook: {{text}}",
+    "hookTbd": "Hook: to be decided",
+    "emotion": "Emotion {{value}}",
+    "editEpisode": "Edit the title, hook and cliffhanger of episode {{n}}",
+    "editBeat": "Edit beat {{n}}-{{idx}}: {{text}}",
+    "dropEnd": "Drop here to put it last",
+    "emptyColumn": "No beats in this episode yet; drag one here",
+    "moved": "Beat moved to episode {{n}}, position {{idx}}.",
+    "saved": "Saved.",
+    "locked": "The episode plan is locked; beats can't be changed.",
+    "busy": "Episode planning is running; edit once it finishes.",
+    "unadopted": "Episode planning has a newer result that isn't adopted: this is the adopted plan, and it changes once you adopt the new one in History.",
+    "openHistory": "History",
+    "beatDialog": {
+      "title": "Edit beat",
+      "lead": "Saving makes and adopts a new version of the episode plan; scripts that use this episode become out of date.",
+      "text": "Beat",
+      "emotion": "Emotion: {{value}}",
+      "emotionLabel": "Emotion (-1 lowest, 1 highest)",
+      "low": "Low",
+      "high": "High",
+      "episode": "Episode",
+      "save": "Save",
+      "cancel": "Cancel"
+    },
+    "episodeDialog": {
+      "title": "Edit episode {{n}}",
+      "lead": "Saving makes and adopts a new version of the episode plan; this episode's script becomes out of date.",
+      "name": "Title",
+      "hook": "Hook (what grabs at the start)",
+      "cliffhanger": "Cliffhanger (where it stops)",
+      "seconds": "Planned length (seconds)",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  },
+  "curve": {
+    "title": "Emotion curve",
+    "subtitle": "One point per beat: -1 lowest, 1 highest; vertical lines separate the episodes",
+    "high": "High",
+    "low": "Low",
+    "episode": "Ep. {{n}}",
+    "readout": "Ep. {{n}} · beat {{idx}}",
+    "readoutText": "{{text}} · emotion {{value}}",
+    "hint": "Hover the curve to read each beat",
+    "point": "Ep. {{n}} beat {{idx}}: {{text}}, emotion {{value}}",
+    "table": "Emotion curve (table)",
+    "col": {
+      "episode": "Ep.",
+      "beat": "Beat",
+      "text": "Text",
+      "emotion": "Emotion"
     }
   },
   "script": {
