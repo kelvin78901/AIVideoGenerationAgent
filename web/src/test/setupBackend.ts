@@ -132,6 +132,7 @@ function newSnapshot(reason: ComfySnapshot["reason"], changes: Message[]): Comfy
     reason,
     changes,
     created_at: NOW,
+    restore: null,
     restored_at: null,
   });
   fakeSetup.snapshots.unshift(snap);
@@ -214,6 +215,12 @@ export function setupHandlers() {
           download_bps: p.download_bps ?? done.download_bps,
         });
         fakeSetup.comfyScanned = true;
+        // The sample ComfyUI never changes: a pending rollback finds it as the snapshot has it.
+        for (const snap of fakeSetup.snapshots)
+          if (snap.restore?.state === "pending") {
+            snap.restore.state = "done";
+            snap.restored_at = NOW;
+          }
         progress();
       });
       return reply(202);
@@ -336,7 +343,8 @@ export function setupHandlers() {
       if (fakeSetup.profile.phase === "installing") return error(409, "setup_busy");
       if (fakeSetup.snapshotFail)
         return error(409, "comfy_snapshot_failed", { reason: fakeSetup.snapshotFail });
-      snap.restored_at = NOW;
+      snap.restore = { state: "pending", requested_at: NOW, diff: [] };
+      snap.restored_at = null;
       return HttpResponse.json({ snapshot: snap, restart_required: true });
     }),
   ];

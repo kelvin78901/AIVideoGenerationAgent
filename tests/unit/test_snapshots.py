@@ -7,11 +7,15 @@ from pathlib import Path
 import httpx
 import pytest
 
+from drama_series_agent.setup.comfy import ComfyEnvInfo, NodePack
+from drama_series_agent.setup.manifest import Message
 from drama_series_agent.setup.snapshots import (
     FakeSnapshots,
     ManagerSnapshots,
     SnapshotError,
+    env_diff,
     prepare_restore,
+    restore_check,
 )
 
 URL = "http://127.0.0.1:8188"
@@ -101,6 +105,44 @@ async def test_fake_snapshots() -> None:
     assert fake.restored == [a]
     with pytest.raises(SnapshotError):
         await FakeSnapshots(fail="not_running").save()
+
+
+def _env(comfy: str = "abcdef0123", **packs: tuple[str | None, str | None]) -> ComfyEnvInfo:
+    return ComfyEnvInfo(
+        comfyui_version="0.3.40",
+        comfyui_commit=comfy,
+        python="3.12.9",
+        torch="2.7.1+cu128",
+        node_packs=[
+            NodePack(name=n, source="git", commit=c, version=v) for n, (c, v) in packs.items()
+        ],
+    )
+
+
+def test_env_diff_is_what_a_rollback_restores() -> None:
+    then = _env(VHS=("4d907be" + "0" * 33, None), KJ=(None, "1.1.0"))
+    now = _env("1234567890", KJ=(None, "1.2.0"), FlashVSR=("8877fdd" + "0" * 33, None)).model_copy(
+        update={"torch": "2.12.1+cu130"}
+    )  # Manager does not downgrade pip packages
+    assert env_diff(now, then) == [
+        Message(code="comfyui", params={"now": "1234567", "then": "abcdef0"}),
+        Message(code="pack_extra", params={"name": "FlashVSR"}),
+        Message(code="pack_missing", params={"name": "VHS"}),
+        Message(code="pack_version", params={"name": "KJ", "now": "1.2.0", "then": "1.1.0"}),
+    ]
+    assert env_diff(then, then) == []
+
+
+def test_restore_check() -> None:
+    then = _env(VHS=("a" * 40, None))
+    after_install = _env(VHS=("a" * 40, None), FlashVSR=("b" * 40, None))
+    # Back at the snapshot: done, whatever it was at the request.
+    assert restore_check("h-then", then, "h-installed", then) == ("done", [])
+    # As at the request: ComfyUI not restarted yet.
+    assert restore_check("h-installed", after_install, "h-installed", then) == ("pending", [])
+    # Changed, not back: what still differs.
+    state, diff = restore_check("h-other", after_install, "h-installed", then)
+    assert state == "incomplete" and [m.code for m in diff] == ["pack_extra"]
 
 
 def test_restore_finds_the_disabled_folder_in_place(tmp_path: Path) -> None:

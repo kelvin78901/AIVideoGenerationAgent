@@ -2,6 +2,18 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-19 · M1 第 8c 步（4/4 后半）：回滚后核对
+
+- **回滚只是排上**：ComfyUI-Manager 下次启动 ComfyUI 时才执行，而且会半途失败（2026-10-18 第一次就是）。所以「回滚」按钮不再马上记 `restored_at`，而是记请求时间和当时的环境哈希，状态 `pending`。
+- **下一次扫描核对**（识别完 ComfyUI 之后），按顺序判断：
+  1. 现在的 ComfyUI 和快照时的一致 → `done`，记 `restored_at`。快照后什么都没改过时，回滚本来就是空操作，也算这一种；示例机器的环境不会变，所以示例里重新检测就会显示「已回滚」。
+  2. 和请求时的环境哈希相同 → 还没重启 ComfyUI，继续 `pending`。
+  3. 都不是 → `incomplete`，列出差异：ComfyUI 的 commit（没有就比版本），多出的、少了的、版本不同的节点包。
+- **只比 Manager 会恢复的东西**：ComfyUI 和节点包。不比 Python、PyTorch，因为 Manager 不降级 pip 包，比了会永远「没完成」。节点包按名字比 commit（没有就比版本），不比加载出的节点类：ComfyUI 没在跑时读不到节点类。
+- **迁移 `0006`**：`comfy_snapshot` 加 `restore_requested_at`、`restore_from_hash`、`restore_state`、`restore_diff_json`。之前的回滚记录标成 `unchecked`（界面写「回滚过（当时没有核对）」），`restored_at` 清空。
+  - 原因：Kelvin 回滚之后又装回了 VHS、FlashVSR，现在的环境和快照本来就不一样，拿来比会误报「没完成」。
+- **接口**：`ComfySnapshot` 加 `restore: {state, requested_at, diff}`；`restored_at` 的意思改成「核对通过的时间」。核对结果写日志 `restore_done` / `restore_incomplete`。
+
 ## 2026-10-19 · M1 第 8c 步（4/4 前半）：安装位置在程序目录里时提示
 
 - 档案加 `app_dir`（程序所在的文件夹：真实机器是仓库根目录 `REPO_ROOT`，示例机器读夹具），扫描时和 `default_dir` 一起写。

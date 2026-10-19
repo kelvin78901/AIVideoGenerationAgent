@@ -230,14 +230,27 @@
     },
     "for": "Taken before: {{items}}",
     "sep": ", ",
-    "restored": "Rollback scheduled: restart ComfyUI to apply",
     "restore": "Roll back",
     "restoreLabel": "Roll back to the snapshot of {{time}}",
+    "state": {
+      "pending": "Rollback scheduled: restart ComfyUI, then Scan again to check it",
+      "done": "Rolled back (checked {{time}})",
+      "incomplete": "Rollback did not finish",
+      "unchecked": "Rolled back earlier (not checked)"
+    },
+    "diffTitle": "Still different from the snapshot:",
+    "incompleteHint": "Roll back once more; if that does not help, fix these node packs in ComfyUI-Manager.",
     "confirmTitle": "Roll back to the snapshot of {{time}}?",
     "confirmBody": "ComfyUI-Manager restores ComfyUI, its node packs and pip packages to that state the next time ComfyUI starts. The studio does not restart your ComfyUI: restart it yourself afterwards.",
     "confirmOk": "Roll back",
     "cancel": "Cancel",
-    "restartToast": "Rollback scheduled: restart ComfyUI to apply"
+    "restartToast": "Rollback scheduled. Restart ComfyUI, then Scan again to check that it worked"
+  },
+  "restoreDiff": {
+    "comfyui": "ComfyUI: now {{now}}, snapshot {{then}}",
+    "pack_extra": "Extra node pack {{name}} (not in the snapshot)",
+    "pack_missing": "Missing node pack {{name}}",
+    "pack_version": "{{name}}: now {{now}}, snapshot {{then}}"
   },
   "snapshotError": {
     "not_running": "ComfyUI is not running: open it and try again",
@@ -309,7 +322,9 @@
     "output": "{{text}}",
     "snapshot": "Saved a ComfyUI snapshot: {{name}}",
     "snapshot_failed": "Couldn't take a ComfyUI snapshot; items that change ComfyUI are skipped this time",
-    "dir_in_app": "Install location is inside the program folder: {{dir}}"
+    "dir_in_app": "Install location is inside the program folder: {{dir}}",
+    "restore_done": "Rollback checked: ComfyUI is back at snapshot {{name}}",
+    "restore_incomplete": "Rollback did not finish: ComfyUI still differs from snapshot {{name}}"
   },
   "done": {
     "title": "Ready",

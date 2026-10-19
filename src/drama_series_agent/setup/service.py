@@ -85,6 +85,7 @@ from drama_series_agent.setup.schema import (
     MachineProfile,
     ProfileData,
     Recommendation,
+    RestoreCheck,
     Restored,
     SetupItem,
     checking,
@@ -98,6 +99,7 @@ from drama_series_agent.setup.snapshots import (
     SnapshotFailure,
     Snapshots,
     prepare_restore,
+    restore_check,
 )
 from drama_series_agent.setup.steps import RealRunner, speed_test_url
 
@@ -524,6 +526,8 @@ class SetupService:
             if not await self._write(pid, run, put, item=public.model_dump(mode="json")):
                 return superseded
         comfy = await self._identify(scan)
+        if comfy is not None:
+            await self._check_restores(pid, comfy.env_hash)
         rec = manifest.recommendation(
             cuda=scan.has_cuda, vram_gb=scan.gpu.vram_gb if scan.gpu else None
         )
@@ -556,6 +560,55 @@ class SetupService:
             return None
         await self._keep_env(found.scan.env_hash, found.env)
         return found.scan
+
+    async def _env(self, env_hash: str | None) -> ComfyEnvInfo | None:
+        if env_hash is None:
+            return None
+        async with self.db.session() as s:
+            row = await s.get(ComfyEnvRow, env_hash)
+        if row is None:
+            return None
+        return ComfyEnvInfo(
+            comfyui_version=row.comfyui_version,
+            comfyui_commit=row.comfyui_commit,
+            python=row.python,
+            torch=row.torch,
+            node_packs=[NodePack.model_validate(p) for p in row.node_packs_json],
+        )
+
+    async def _check_restores(self, pid: str, env_hash: str) -> None:
+        """Rollbacks still pending: is the ComfyUI this scan found back at their snapshot?"""
+        now = await self._env(env_hash)
+        if now is None:
+            return
+        async with self.db.session() as s:
+            rows = await s.exec(
+                select(ComfySnapshotRow)
+                .where(col(ComfySnapshotRow.profile_id) == pid)
+                .where(col(ComfySnapshotRow.restore_state) == "pending")
+            )
+            pending = list(rows.all())
+        for snap in pending:
+            then = await self._env(snap.env_hash)
+            if then is None:
+                continue  # no record of what it was taken of: nothing to compare
+            state, diff = restore_check(env_hash, now, snap.restore_from_hash, then)
+            if state == "pending":
+                continue
+            async with self.db.session() as s:
+                stored = await s.get(ComfySnapshotRow, snap.id)
+                if stored is None:
+                    continue
+                stored.restore_state = state
+                stored.restore_diff_json = [m.model_dump(mode="json") for m in diff]
+                stored.restored_at = utcnow() if state == "done" else None
+                s.add(stored)
+                await s.commit()
+            await self._log(
+                "ok" if state == "done" else "warn",
+                "restore_done" if state == "done" else "restore_incomplete",
+                name=snap.manager_name,
+            )
 
     async def _keep_env(self, env_hash: str, env: ComfyEnvInfo) -> None:
         """A new ``comfy_env`` row only when this environment has not been seen before."""
@@ -770,6 +823,15 @@ class SetupService:
                 "reason": row.reason,
                 "changes": row.changes_json,
                 "created_at": row.created_at,
+                "restore": (
+                    RestoreCheck(
+                        state=row.restore_state,
+                        requested_at=row.restore_requested_at,
+                        diff=row.restore_diff_json or [],
+                    )
+                    if row.restore_state and row.restore_requested_at
+                    else None
+                ),
                 "restored_at": row.restored_at,
             }
         )
@@ -812,10 +874,15 @@ class SetupService:
             await self.snapshots_for(row, data).restore(snap.manager_name)
         except SnapshotError as exc:
             raise SnapshotFailed(exc.reason) from None
+        # Scheduled, not done: the next scan after ComfyUI restarts checks it.
         async with self.db.session() as s:
             stored = await s.get(ComfySnapshotRow, snapshot_id)
             assert stored is not None
-            stored.restored_at = utcnow()
+            stored.restore_requested_at = utcnow()
+            stored.restore_from_hash = data.comfy.env_hash if data.comfy else None
+            stored.restore_state = "pending"
+            stored.restore_diff_json = []
+            stored.restored_at = None
             s.add(stored)
             await s.commit()
             await s.refresh(stored)

@@ -89,8 +89,15 @@ test("first run: / opens 环境与安装; installing into ComfyUI asks first, sn
   await expect(snapshots.getByRole("listitem")).toHaveCount(1);
   await snapshots.getByRole("button", { name: /^回滚到 .* 的快照$/ }).click();
   await page.getByRole("alertdialog").getByRole("button", { name: "回滚", exact: true }).click();
-  await expect(page.getByText("已安排回滚：重启 ComfyUI 后生效")).toBeVisible();
-  await expect(snapshots.getByRole("listitem")).toContainText("已安排回滚，重启 ComfyUI 后生效");
+  await expect(
+    page.getByText("已排上回滚。重启 ComfyUI 后点「重新检测」，核对有没有回滚成功"),
+  ).toBeVisible();
+  await expect(snapshots.getByRole("listitem")).toContainText(
+    "已排上回滚：重启 ComfyUI 后点「重新检测」核对",
+  );
+  // The scan after the restart checks it (the sample ComfyUI is as the snapshot has it).
+  await page.getByRole("button", { name: "重新检测" }).click();
+  await expect(snapshots.getByRole("listitem")).toContainText("核对过）", { timeout: 30_000 });
   expect(errors).toEqual([]);
 
   // Back to a fresh sample PC, so later tests see the first-run page. Each switch has to land

@@ -41,6 +41,34 @@ def test_migrate_up_and_down(tmp_path: Path) -> None:
     assert _tables(db) == ALL_TABLES
 
 
+def test_rollbacks_from_before_the_check_are_unchecked(tmp_path: Path) -> None:
+    """0006: a rollback requested before step 8c was never checked; it is not called done."""
+    db = tmp_path / "t.db"
+    migrate(db, "0005")
+    with sqlite3.connect(db) as conn:
+        conn.execute(
+            "insert into comfy_snapshot (id, profile_id, manager_name, reason, changes_json,"
+            " created_at, restored_at) values ('s1', 'local', 'snap', 'install', '[]',"
+            " '2026-10-18 09:30:00', '2026-10-18 10:00:00'), ('s2', 'local', 'snap2', 'manual',"
+            " '[]', '2026-10-18 11:00:00', null)"
+        )
+    migrate(db)
+    with sqlite3.connect(db) as conn:
+        rows = conn.execute(
+            "select id, restore_state, restore_requested_at, restored_at from comfy_snapshot"
+            " order by id"
+        ).fetchall()
+    assert rows == [
+        ("s1", "unchecked", "2026-10-18 10:00:00", None),
+        ("s2", None, None, None),
+    ]
+    downgrade(db, "0005")
+    with sqlite3.connect(db) as conn:
+        assert conn.execute(
+            "select restored_at from comfy_snapshot where id = 's1'"
+        ).fetchone() == ("2026-10-18 10:00:00",)
+
+
 def test_models_match_migrations(tmp_path: Path) -> None:
     db = tmp_path / "t.db"
     migrate(db)

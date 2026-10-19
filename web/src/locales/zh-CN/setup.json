@@ -230,14 +230,27 @@
     },
     "for": "为这些改动存的：{{items}}",
     "sep": "、",
-    "restored": "已安排回滚，重启 ComfyUI 后生效",
     "restore": "回滚到这里",
     "restoreLabel": "回滚到 {{time}} 的快照",
+    "state": {
+      "pending": "已排上回滚：重启 ComfyUI 后点「重新检测」核对",
+      "done": "已回滚（{{time}} 核对过）",
+      "incomplete": "回滚没完成",
+      "unchecked": "回滚过（当时没有核对）"
+    },
+    "diffTitle": "和快照还不一样的地方：",
+    "incompleteHint": "可以再回滚一次；还不行就在 ComfyUI-Manager 里手动处理这些节点包。",
     "confirmTitle": "回滚到 {{time}} 的快照？",
     "confirmBody": "ComfyUI-Manager 会在 ComfyUI 下次启动时，把 ComfyUI、节点包和 pip 包恢复成那时的样子。平台不会替你重启 ComfyUI，回滚后请自己重启它。",
     "confirmOk": "回滚",
     "cancel": "取消",
-    "restartToast": "已安排回滚：重启 ComfyUI 后生效"
+    "restartToast": "已排上回滚。重启 ComfyUI 后点「重新检测」，核对有没有回滚成功"
+  },
+  "restoreDiff": {
+    "comfyui": "ComfyUI：现在 {{now}}，快照里是 {{then}}",
+    "pack_extra": "多了节点包 {{name}}（快照里没有）",
+    "pack_missing": "少了节点包 {{name}}",
+    "pack_version": "{{name}}：现在 {{now}}，快照里是 {{then}}"
   },
   "snapshotError": {
     "not_running": "ComfyUI 没在运行，打开它后重试",
@@ -309,7 +322,9 @@
     "output": "{{text}}",
     "snapshot": "已存 ComfyUI 快照：{{name}}",
     "snapshot_failed": "存不了 ComfyUI 快照，会改动 ComfyUI 的项这次不装",
-    "dir_in_app": "安装位置在程序文件夹里：{{dir}}"
+    "dir_in_app": "安装位置在程序文件夹里：{{dir}}",
+    "restore_done": "回滚核对通过：ComfyUI 已回到快照 {{name}}",
+    "restore_incomplete": "回滚没完成：ComfyUI 和快照 {{name}} 还有差异"
   },
   "done": {
     "title": "准备好了",

@@ -79,7 +79,19 @@ export const ComfySnapshotSchema = z.object({
   /** What that install was about to change (`setup:confirmReason.comfy_change`). */
   changes: z.array(MessageSchema),
   created_at: Timestamp,
-  /** Set once a rollback to it was requested; it takes effect when ComfyUI restarts. */
+  /**
+   * The last rollback to it. Manager applies it when ComfyUI restarts; the next scan checks it:
+   * pending (ComfyUI unchanged since the request), done (back at the snapshot), incomplete (changed
+   * but not back; `diff`: `setup:restoreDiff.<code>`), unchecked (requested before the check).
+   */
+  restore: z
+    .object({
+      state: z.enum(["pending", "done", "incomplete", "unchecked"]),
+      requested_at: Timestamp,
+      diff: z.array(MessageSchema),
+    })
+    .nullable(),
+  /** When a scan found ComfyUI back at this snapshot. */
   restored_at: Timestamp.nullable(),
 });
 export type ComfySnapshot = z.infer<typeof ComfySnapshotSchema>;

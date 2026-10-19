@@ -1,6 +1,7 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { ComfySnapshotSchema } from "@/api/schemas/comfy";
 import { useEventStream } from "@/api/useEventStream";
 import { Toaster } from "@/components/ui/sonner";
 import SetupPage from "@/pages/Setup";
@@ -289,18 +290,55 @@ describe("SetupPage", () => {
     const ask = await screen.findByRole("alertdialog", { name: /^回滚到 .* 的快照？$/ });
     expect(ask).toHaveTextContent("平台不会替你重启 ComfyUI");
     await user.click(within(ask).getByRole("button", { name: "取消" }));
-    expect(fakeSetup.snapshots[0]?.restored_at).toBeNull();
+    expect(fakeSetup.snapshots[0]?.restore).toBeNull();
 
     await user.click(within(snap).getByRole("button", { name: /^回滚到 .* 的快照$/ }));
     await user.click(
       within(await screen.findByRole("alertdialog")).getByRole("button", { name: "回滚" }),
     );
-    expect(await screen.findByText("已安排回滚：重启 ComfyUI 后生效")).toBeInTheDocument();
+    expect(
+      await screen.findByText("已排上回滚。重启 ComfyUI 后点「重新检测」，核对有没有回滚成功"),
+    ).toBeInTheDocument();
     await waitFor(() =>
       expect(within(panel).getByRole("listitem")).toHaveTextContent(
-        "已安排回滚，重启 ComfyUI 后生效",
+        "已排上回滚：重启 ComfyUI 后点「重新检测」核对",
       ),
     );
+    // The scan after the restart checks it.
+    await user.click(screen.getByRole("button", { name: "重新检测" }));
+    await phaseIs("检测完成");
+    await waitFor(() =>
+      expect(within(panel).getByRole("listitem")).toHaveTextContent(/已回滚（.* 核对过）/),
+    );
+  });
+
+  it("a rollback that did not finish lists what still differs", async () => {
+    resetFakeSetup("pc", { scanned: true });
+    fakeSetup.snapshots = [
+      ComfySnapshotSchema.parse({
+        id: "snap1",
+        manager_name: "2026-10-18_09-31-00_snapshot",
+        env_hash: null,
+        reason: "install",
+        changes: [],
+        created_at: "2026-10-18T09:31:00Z",
+        restore: {
+          state: "incomplete",
+          requested_at: "2026-10-18T10:00:00Z",
+          diff: [
+            { code: "pack_extra", params: { name: "ComfyUI-VideoHelperSuite" } },
+            { code: "pack_version", params: { name: "KJNodes", now: "1.2.0", then: "1.1.0" } },
+          ],
+        },
+        restored_at: null,
+      }),
+    ];
+    renderSetup();
+    const panel = await screen.findByRole("region", { name: "你的 ComfyUI" });
+    const snap = await within(panel).findByRole("listitem", { name: /的快照$/ });
+    expect(snap).toHaveTextContent("回滚没完成");
+    expect(snap).toHaveTextContent("多了节点包 ComfyUI-VideoHelperSuite（快照里没有）");
+    expect(snap).toHaveTextContent("KJNodes：现在 1.2.0，快照里是 1.1.0");
   });
 
   it("leaves ComfyUI alone when no snapshot can be taken", async () => {

@@ -297,4 +297,11 @@ class ComfySnapshotRow(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
-    restored_at: datetime | None = _ts()
+    # A rollback to it: requested (Manager applies it when ComfyUI next starts), then checked by
+    # the first scan that finds ComfyUI changed. State: pending / done / incomplete, or
+    # unchecked for one requested before the check existed (migration 0006).
+    restore_requested_at: datetime | None = _ts()
+    restore_from_hash: str | None = None  # comfy_env when the rollback was requested
+    restore_state: str | None = None
+    restore_diff_json: list[dict[str, Any]] | None = _json()  # what still differs
+    restored_at: datetime | None = _ts()  # when a scan found ComfyUI back at this snapshot

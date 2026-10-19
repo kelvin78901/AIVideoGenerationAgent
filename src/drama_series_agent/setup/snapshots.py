@@ -11,6 +11,10 @@ in comfyui_manager 4.2.2 (``glob/manager_server.py``):
 
 The snapshot holds ComfyUI's commit, every node pack's commit or version and the pip packages.
 ``FakeSnapshots`` stands in on Mock's sample machines and in tests.
+
+A rollback is only scheduled, and Manager can stop halfway (it did on Kelvin's machine), so the
+first scan after it compares the ComfyUI it finds with the one the snapshot was taken of
+(``restore_check``).
 """
 
 from __future__ import annotations
@@ -21,10 +25,59 @@ from typing import Literal, Protocol
 
 import httpx
 
+from drama_series_agent.setup.comfy import ComfyEnvInfo, NodePack
+from drama_series_agent.setup.manifest import Message
+
 # not_running: no ComfyUI answers; no_manager: it has no Manager 4 API (none, or an older one);
 # forbidden: Manager's security level does not allow it; restart: Manager was just installed and
 # only loads when ComfyUI restarts; failed: anything else.
 SnapshotFailure = Literal["not_running", "no_manager", "forbidden", "restart", "failed"]
+
+
+RestoreState = Literal["pending", "done", "incomplete", "unchecked"]
+
+
+def _rev(commit: str | None, version: str | None) -> str:
+    return commit[:7] if commit else version or "?"
+
+
+def env_diff(now: ComfyEnvInfo, then: ComfyEnvInfo) -> list[Message]:
+    """What a rollback to ``then`` restores and ``now`` does not match: ComfyUI's commit (else
+    version) and each node pack's. Python and PyTorch are left out: Manager does not downgrade
+    pip packages."""
+    out: list[Message] = []
+    a = _rev(now.comfyui_commit if then.comfyui_commit else None, now.comfyui_version)
+    b = _rev(then.comfyui_commit, then.comfyui_version)
+    if a != b:
+        out.append(Message(code="comfyui", params={"now": a, "then": b}))
+
+    def packs(env: ComfyEnvInfo) -> dict[str, NodePack]:
+        return {p.name: p for p in env.node_packs}
+
+    mine, theirs = packs(now), packs(then)
+    for name in sorted(mine.keys() - theirs.keys()):
+        out.append(Message(code="pack_extra", params={"name": name}))
+    for name in sorted(theirs.keys() - mine.keys()):
+        out.append(Message(code="pack_missing", params={"name": name}))
+    for name in sorted(mine.keys() & theirs.keys()):
+        x, y = mine[name], theirs[name]
+        a, b = _rev(x.commit, x.version), _rev(y.commit, y.version)
+        if a != b:
+            out.append(Message(code="pack_version", params={"name": name, "now": a, "then": b}))
+    return out
+
+
+def restore_check(
+    now_hash: str, now: ComfyEnvInfo, from_hash: str | None, then: ComfyEnvInfo
+) -> tuple[RestoreState, list[Message]]:
+    """A pending rollback, seen by a scan: back at the snapshot → done; unchanged since the
+    request → still pending (ComfyUI not restarted yet); changed but not back → incomplete."""
+    diff = env_diff(now, then)
+    if not diff:
+        return "done", []
+    if from_hash is not None and now_hash == from_hash:
+        return "pending", []
+    return "incomplete", diff
 
 
 def prepare_restore(comfy_root: str) -> None:

@@ -145,9 +145,20 @@ function SnapshotRow({
           ? t("snapshots.for", { items: items.join(t("snapshots.sep")) })
           : snap.manager_name}
       </span>
-      {snap.restored_at ? (
-        <StatusBadge tone="warn" icon={null}>
-          {t("snapshots.restored")}
+      {snap.restore ? (
+        <StatusBadge
+          tone={
+            snap.restore.state === "done"
+              ? "info"
+              : snap.restore.state === "unchecked"
+                ? "neutral"
+                : "warn"
+          }
+          icon={null}
+        >
+          {t(`snapshots.state.${snap.restore.state}`, {
+            time: formatDateTime(snap.restored_at ?? snap.restore.requested_at),
+          })}
         </StatusBadge>
       ) : null}
       <Button
@@ -160,6 +171,22 @@ function SnapshotRow({
         <RotateCcw aria-hidden />
         {t("snapshots.restore")}
       </Button>
+      {snap.restore?.state === "incomplete" && snap.restore.diff.length ? (
+        <div className="basis-full text-xs leading-relaxed text-tone-warn-fg">
+          {t("snapshots.diffTitle")}
+          <ul className="list-disc pl-5">
+            {snap.restore.diff.map((m, i) => (
+              <li key={i}>
+                {t(`restoreDiff.${m.code}` as "restoreDiff.pack_extra", {
+                  ...m.params,
+                  defaultValue: m.code,
+                })}
+              </li>
+            ))}
+          </ul>
+          {t("snapshots.incompleteHint")}
+        </div>
+      ) : null}
     </li>
   );
 }

@@ -11,6 +11,7 @@ from fastapi.testclient import TestClient
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
+from drama_series_agent.core.models_db import ComfyEnvRow, ComfySnapshotRow
 from drama_series_agent.setup.probe import FakeProbe
 from drama_series_agent.setup.snapshots import FakeSnapshots, SnapshotFailure
 
@@ -37,6 +38,10 @@ def client() -> Iterator[TestClient]:
 def _state(client: TestClient) -> StudioState:
     state: StudioState = client.app.state.studio  # type: ignore[attr-defined]
     return state
+
+
+def _call(client: TestClient, fn: Any) -> Any:
+    return client.portal.call(fn)  # type: ignore[union-attr]
 
 
 def _wait(client: TestClient, phase: str, limit_s: float = 15) -> dict[str, Any]:
@@ -186,6 +191,58 @@ def test_without_comfyui_manager_follows_the_comfyui_we_install(client: TestClie
     assert started["install"]["confirm"] == []
 
 
+def test_a_rollback_is_checked_after_comfyui_restarts(client: TestClient) -> None:
+    """Pending while ComfyUI is as it was at the request; incomplete when it changed but is not
+    back at the snapshot (Manager stopped halfway on Kelvin's machine, 2026-10-18)."""
+    _scan(client)
+    snap = client.post(SNAPSHOTS).json()
+
+    async def taken_before_vhs() -> None:
+        # The snapshot was of a ComfyUI without VideoHelperSuite.
+        async with _state(client).db.session() as s:
+            now = await s.get(ComfyEnvRow, snap["env_hash"])
+            assert now is not None
+            packs = [p for p in now.node_packs_json if p["name"] != "ComfyUI-VideoHelperSuite"]
+            assert len(packs) == len(now.node_packs_json) - 1
+            s.add(
+                ComfyEnvRow(
+                    hash="before-vhs",
+                    comfyui_version=now.comfyui_version,
+                    comfyui_commit=now.comfyui_commit,
+                    python=now.python,
+                    torch=now.torch,
+                    node_packs_json=packs,
+                )
+            )
+            row = await s.get(ComfySnapshotRow, snap["id"])
+            assert row is not None
+            row.env_hash = "before-vhs"
+            s.add(row)
+            await s.commit()
+
+    _call(client, taken_before_vhs)
+    client.post(f"{SNAPSHOTS}/{snap['id']}/restore")
+    _scan(client)  # ComfyUI not restarted yet: VHS still there, as at the request
+    assert client.get(SNAPSHOTS).json()[0]["restore"]["state"] == "pending"
+
+    async def changed_since() -> None:
+        async with _state(client).db.session() as s:
+            row = await s.get(ComfySnapshotRow, snap["id"])
+            assert row is not None
+            row.restore_from_hash = "something-else"
+            s.add(row)
+            await s.commit()
+
+    _call(client, changed_since)
+    _scan(client)  # restarted, but VHS is still there
+    after = client.get(SNAPSHOTS).json()[0]
+    assert after["restore"]["state"] == "incomplete" and after["restored_at"] is None
+    assert after["restore"]["diff"] == [
+        {"code": "pack_extra", "params": {"name": "ComfyUI-VideoHelperSuite"}}
+    ]
+    assert ("restore_incomplete", {"name": snap["manager_name"]}) in _logs(client)
+
+
 def test_rollback(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     _scan(client)
     resp = client.post(SNAPSHOTS)
@@ -197,8 +254,15 @@ def test_rollback(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     assert resp.status_code == 200
     body = resp.json()
     assert body["restart_required"] is True
-    assert body["snapshot"]["id"] == snap["id"] and body["snapshot"]["restored_at"] is not None
-    assert client.get(SNAPSHOTS).json()[0]["restored_at"] == body["snapshot"]["restored_at"]
+    # Scheduled, not done: Manager applies it when ComfyUI restarts.
+    assert body["snapshot"]["id"] == snap["id"] and body["snapshot"]["restored_at"] is None
+    assert body["snapshot"]["restore"]["state"] == "pending"
+    assert client.get(SNAPSHOTS).json()[0]["restore"] == body["snapshot"]["restore"]
+    # The next scan finds ComfyUI as the snapshot has it (nothing changed since): checked.
+    _scan(client)
+    after = client.get(SNAPSHOTS).json()[0]
+    assert after["restore"]["state"] == "done" and after["restored_at"] is not None
+    assert ("restore_done", {"name": snap["manager_name"]}) in _logs(client)
 
     resp = client.post(f"{SNAPSHOTS}/nope/restore")
     assert resp.status_code == 404 and resp.json()["detail"]["code"] == "comfy_snapshot_not_found"

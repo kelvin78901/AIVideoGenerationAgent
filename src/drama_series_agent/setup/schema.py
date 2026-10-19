@@ -135,6 +135,17 @@ class ComfyEnvOut(ComfyEnvInfo):
     captured_at: datetime
 
 
+class RestoreCheck(BaseModel):
+    """A rollback to a snapshot: requested, then checked by the next scan (step 8c)."""
+
+    # pending: ComfyUI has not changed since the request (not restarted yet); done: it is back
+    # at the snapshot; incomplete: it changed but not back (``diff``: what still differs);
+    # unchecked: requested before the check existed.
+    state: Literal["pending", "done", "incomplete", "unchecked"]
+    requested_at: datetime
+    diff: list[Message] = Field(default_factory=list)  # setup:restoreDiff.<code>
+
+
 class ComfySnapshot(BaseModel):
     """``GET /comfy/snapshots``: one ComfyUI-Manager snapshot, newest first."""
 
@@ -144,7 +155,8 @@ class ComfySnapshot(BaseModel):
     reason: Literal["install", "manual"]
     changes: list[Message]  # what the install that took it was about to change
     created_at: datetime
-    restored_at: datetime | None
+    restore: RestoreCheck | None  # the last rollback to it
+    restored_at: datetime | None  # when a scan found ComfyUI back at it
 
 
 class Restored(BaseModel):
