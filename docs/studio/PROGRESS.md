@@ -5,18 +5,20 @@
 ## 当前
 
 - 里程碑：**M1 首次启动 + 成片规格**（M0.5 已合并，报告 [`reports/M0.5.md`](reports/M0.5.md)）
-- 计划：[`docs/studio/plans/M1.md`](plans/M1.md)（已批准 2026-10-15；Kelvin 的四个决定见 DECISIONS「2026-10-15 · M1 计划」；2026-10-18 追加 4c、5c、7b、8b、8c；**只剩第 9 步收尾**）
-- 分支：`m1-setup-spec`（从 main 切出；每步提交后 push；不推 main；做完开 PR）
+- 计划：[`docs/studio/plans/M1.md`](plans/M1.md)（已批准 2026-10-15；Kelvin 的四个决定见 DECISIONS「2026-10-15 · M1 计划」；2026-10-18 追加 4c、5c、7b、8b、8c；**全部做完**）
+- 分支：`m1-setup-spec`（从 main 切出；不推 main）；**PR #3** https://github.com/kelvin78901/AIVideoGenerationAgent/pull/3 （描述 = `reports/M1.md` + 署名），等 Kelvin 审阅合并
 
 ## 已完成的小步
 
-- 第 0–8c 步和 9（1/3）的逐步记录已挪进 [`reports/M1.md`](reports/M1.md)「逐步记录」。
+- 第 0–9 步的逐步记录在 [`reports/M1.md`](reports/M1.md)「逐步记录」。
 - 9（1/3）：SPEC 补 M1 的实际做法、ROADMAP 勾完（865e810）。
-- 9（2/3）：写 `reports/M1.md`；`test_download_into_comfyui_model_folders` 不再比请求顺序（CI 在 2a9dfc7 偶发失败过，大小是并发探测的）；PROGRESS 精简（本提交）。pytest 327；ruff、mypy（含 linux）；web test 197、lint、typecheck、format；e2e 17。
+- 9（2/3）：写 `reports/M1.md`；`test_download_into_comfyui_model_folders` 不再比请求顺序（CI 在 2a9dfc7 偶发失败过，大小是并发探测的）；PROGRESS 精简（29a89c1）。
+- 9（3/3）：开 PR #3；PR 上 CI 全过（Linux pytest 327、Vitest 197、冒烟 17；Windows pytest 327、Vitest 197），结果补进报告和 PR 描述；勾计划第 9 步（本提交）。
 
 ## 下一步
 
-- **第 9 步（3/3）**：确认 Linux CI 绿；`gh pr create -R kelvin78901/AIVideoGenerationAgent --base main --head m1-setup-spec`，标题「M1 首次启动 + 成片规格」，描述用 `reports/M1.md`（末尾加 Claude Code 署名）；看 PR 上的 Windows CI，结果补进报告「PR 上的 CI」；勾计划第 9 步。然后停下，等 Kelvin 看 PR。
+- **等 Kelvin 审 PR #3**。要改就在 `m1-setup-spec` 上接着提交、push，改了报告就 `gh pr edit 3 -R kelvin78901/AIVideoGenerationAgent --body-file <报告 + 署名>` 同步描述。
+- Kelvin 合并后：`git switch main && git pull`，用 `/milestone` 出 M2 计划（M2 小说 → 剧本；`drama-studio demo` 和 `POST /series` 随 M2 做）。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
