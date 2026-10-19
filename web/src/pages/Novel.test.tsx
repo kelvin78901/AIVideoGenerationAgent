@@ -145,30 +145,30 @@ describe("NovelPage", () => {
     const user = userEvent.setup();
     renderNovel();
     await screen.findByText("177 字 · 5 段");
-    expect(screen.getByText("全书 3 章 · 2395 字")).toBeInTheDocument();
+    expect(screen.getByText("全书 3 章 · 3006 字")).toBeInTheDocument();
     const picker = screen.getByRole("combobox", { name: "章节" });
     expect(
       within(picker)
         .getAllByRole("option")
         .map((o) => o.textContent),
-    ).toEqual(["第一章 红伞 · 147 字", "第二章 十二点 · 1017 字", "第三章 旧发圈 · 1231 字"]);
+    ).toEqual(["第一章 红伞 · 147 字", "第二章 十二点 · 1274 字", "第三章 旧发圈 · 1585 字"]);
     await user.selectOptions(picker, "1");
     const first = await screen.findByText(/^楼道的声控灯还是不亮/);
     expect(first.closest("li")).toHaveTextContent(/^06/);
-    expect(screen.getByText("1017 字 · 23 段")).toBeInTheDocument();
+    expect(screen.getByText("1274 字 · 26 段")).toBeInTheDocument();
     expect(screen.queryByText(/^那天雨下得很大/)).toBeNull();
   });
 
   it("a suggestion in another chapter switches to it and highlights the paragraph", async () => {
     const user = userEvent.setup();
     const s4 = suggestion("s4");
-    if (s4) s4.para_idx = 29;
+    if (s4) s4.para_idx = 32;
     renderNovel();
     await screen.findByText("177 字 · 5 段");
-    await user.click(screen.getByRole("button", { name: "第 30 段" }));
+    await user.click(screen.getByRole("button", { name: "第 33 段" }));
     expect(await screen.findByText(/^他从收银台底下摸出一个牛皮纸信封/)).toBeInTheDocument();
     expect(screen.getByRole("combobox", { name: "章节" })).toHaveValue("2");
-    expect(document.getElementById("novel-para-29")).toHaveAttribute("data-focused", "true");
+    expect(document.getElementById("novel-para-32")).toHaveAttribute("data-focused", "true");
   });
 
   it("a new series starts empty and imports a novel: preview, rights, import", async () => {
@@ -178,7 +178,7 @@ describe("NovelPage", () => {
     await user.click(screen.getByRole("button", { name: "导入小说" }));
     const dialog = await screen.findByRole("dialog", { name: "导入小说" });
     await user.upload(within(dialog).getByTestId("novel-file"), novelFile());
-    expect(await within(dialog).findByText("识别到 3 章 · 2395 字")).toBeInTheDocument();
+    expect(await within(dialog).findByText("识别到 3 章 · 3006 字")).toBeInTheDocument();
     expect(within(dialog).getByText("UTF-8")).toBeInTheDocument();
     expect(within(dialog).getByText("第二章 十二点")).toBeInTheDocument();
     // Nothing to replace yet.
@@ -187,7 +187,7 @@ describe("NovelPage", () => {
     expect(submit).toBeDisabled();
     await user.click(within(dialog).getByRole("checkbox", { name: /改编权/ }));
     await user.click(submit);
-    expect(await screen.findByText("已导入 雨停之前.txt：3 章 · 2395 字")).toBeInTheDocument();
+    expect(await screen.findByText("已导入 雨停之前.txt：3 章 · 3006 字")).toBeInTheDocument();
     expect(await screen.findByText(/^那天雨下得很大/)).toBeInTheDocument();
     expect(screen.queryByRole("dialog")).toBeNull();
     expect(fakeNovel.uploads).toEqual([
@@ -250,10 +250,10 @@ describe("NovelPage", () => {
       await screen.findByText("177 字 · 5 段");
       await user.click(entry(/^旧小票/));
       expect(entry(/^旧小票/)).toHaveAttribute("aria-pressed", "true");
-      // Paragraphs 31, 37 and 38 are in chapter 3: the page switches there.
+      // Paragraphs 34, 41 and 42 are in chapter 3: the page switches there.
       expect(await screen.findByRole("option", { name: /第三章/, selected: true })).toBeTruthy();
       await waitFor(() => expect(document.querySelectorAll("li[data-marked]")).toHaveLength(3));
-      expect(document.getElementById("novel-para-30")).toHaveAttribute("data-marked");
+      expect(document.getElementById("novel-para-33")).toHaveAttribute("data-marked");
       expect(screen.getByText("「旧小票」在原文里出现 3 段，已在左边标出。")).toBeInTheDocument();
       await user.click(entry(/^旧小票/));
       expect(document.querySelectorAll("li[data-marked]")).toHaveLength(0);

@@ -29,6 +29,8 @@ FIXTURES = REPO_ROOT / "tests" / "fixtures" / "demo"
 DEMO = (FIXTURES / "雨停之前.txt").read_bytes()
 FIXTURE = json.loads((FIXTURES / "extract.json").read_text(encoding="utf-8"))
 LOCAL_MODEL = "local/qwen3.6-27b"
+# The paragraph (0-based) of the receipt that says 黑色发圈.
+BLACK_HAIRTIE = next(e["paras"][0] - 1 for e in FIXTURE["entities"] if e["id"] == "p-black-hairtie")
 
 
 @pytest.fixture
@@ -192,7 +194,8 @@ def test_a_long_novel_goes_in_chunks(client: TestClient) -> None:
     chunks = _call(client, book_chunks)
     assert len(chunks) > 3
     seen = [i for _, chunk in chunks for piece in chunk for i in piece.paras]
-    assert seen == list(range(64))  # every paragraph once, in order
+    book = chunks[0][0]
+    assert seen == list(range(len(book.offsets)))  # every paragraph once, in order
     for book, chunk in chunks:
         if sum(len(piece.paras) for piece in chunk) > 1:
             assert estimate_tokens(render_chunk(book, chunk)) <= 240
@@ -238,7 +241,7 @@ def test_merge_distinct_and_split(client: TestClient) -> None:
     assert resp.status_code == 200, resp.text
     bible = resp.json()
     hairtie = next(e for e in bible["entities"] if e["id"] == "p-hairtie")
-    assert hairtie["aliases"] == ["黑色发圈"] and 30 in hairtie["paras"]
+    assert hairtie["aliases"] == ["黑色发圈"] and BLACK_HAIRTIE in hairtie["paras"]
     assert "p-black-hairtie" not in {e["id"] for e in bible["entities"]}
     assert bible["merge_suggestions"] == []
     retired = {r.id for r in _rows(client, BibleEntity) if r.retired}

@@ -21,12 +21,15 @@
         "paras": [
           0,
           5,
-          25,
-          30,
-          40,
-          43,
-          47,
-          58
+          15,
+          28,
+          33,
+          39,
+          44,
+          45,
+          48,
+          53,
+          64
         ],
         "source_spans": [
           {
@@ -41,33 +44,48 @@
           },
           {
             "source_id": "demo-src",
-            "start": 1135,
-            "end": 1163
+            "start": 789,
+            "end": 914
           },
           {
             "source_id": "demo-src",
-            "start": 1295,
-            "end": 1357
+            "start": 1395,
+            "end": 1423
           },
           {
             "source_id": "demo-src",
-            "start": 1764,
-            "end": 1775
+            "start": 1555,
+            "end": 1617
           },
           {
             "source_id": "demo-src",
-            "start": 1849,
-            "end": 1939
+            "start": 1903,
+            "end": 2038
           },
           {
             "source_id": "demo-src",
-            "start": 2080,
-            "end": 2103
+            "start": 2160,
+            "end": 2226
           },
           {
             "source_id": "demo-src",
-            "start": 2362,
-            "end": 2370
+            "start": 2227,
+            "end": 2238
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2312,
+            "end": 2402
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2612,
+            "end": 2635
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2894,
+            "end": 2902
           }
         ],
         "frozen": false
@@ -86,14 +104,17 @@
           1,
           7,
           10,
-          33,
-          42,
-          46,
-          48,
-          50,
+          15,
+          24,
+          36,
+          47,
+          51,
+          52,
           54,
-          57,
-          61
+          56,
+          60,
+          63,
+          67
         ],
         "source_spans": [
           {
@@ -113,43 +134,58 @@
           },
           {
             "source_id": "demo-src",
-            "start": 1479,
-            "end": 1582
+            "start": 789,
+            "end": 914
           },
           {
             "source_id": "demo-src",
-            "start": 1827,
-            "end": 1848
+            "start": 1232,
+            "end": 1306
           },
           {
             "source_id": "demo-src",
-            "start": 2031,
-            "end": 2079
+            "start": 1739,
+            "end": 1842
           },
           {
             "source_id": "demo-src",
-            "start": 2104,
-            "end": 2128
+            "start": 2290,
+            "end": 2311
           },
           {
             "source_id": "demo-src",
-            "start": 2175,
-            "end": 2220
+            "start": 2494,
+            "end": 2542
           },
           {
             "source_id": "demo-src",
-            "start": 2255,
-            "end": 2303
+            "start": 2543,
+            "end": 2611
           },
           {
             "source_id": "demo-src",
-            "start": 2317,
-            "end": 2361
+            "start": 2636,
+            "end": 2660
           },
           {
             "source_id": "demo-src",
-            "start": 2425,
-            "end": 2440
+            "start": 2707,
+            "end": 2752
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2787,
+            "end": 2835
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2849,
+            "end": 2893
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2957,
+            "end": 2972
           }
         ],
         "frozen": false
@@ -166,31 +202,31 @@
           "summary": "值夜班 · 戴眼镜的年轻男孩"
         },
         "paras": [
-          18,
-          24,
-          28,
-          39
+          20,
+          27,
+          31,
+          43
         ],
         "source_spans": [
           {
             "source_id": "demo-src",
-            "start": 809,
-            "end": 863
+            "start": 994,
+            "end": 1048
           },
           {
             "source_id": "demo-src",
-            "start": 1084,
-            "end": 1134
+            "start": 1344,
+            "end": 1394
           },
           {
             "source_id": "demo-src",
-            "start": 1220,
-            "end": 1260
+            "start": 1480,
+            "end": 1520
           },
           {
             "source_id": "demo-src",
-            "start": 1721,
-            "end": 1763
+            "start": 2117,
+            "end": 2159
           }
         ],
         "frozen": false
@@ -277,12 +313,13 @@
         "paras": [
           2,
           12,
-          14,
-          19,
-          20,
-          27,
+          15,
+          16,
+          21,
+          22,
           30,
-          43
+          33,
+          48
         ],
         "source_spans": [
           {
@@ -297,33 +334,38 @@
           },
           {
             "source_id": "demo-src",
-            "start": 730,
-            "end": 773
+            "start": 789,
+            "end": 914
           },
           {
             "source_id": "demo-src",
-            "start": 864,
-            "end": 948
+            "start": 915,
+            "end": 958
           },
           {
             "source_id": "demo-src",
-            "start": 949,
-            "end": 989
+            "start": 1049,
+            "end": 1133
           },
           {
             "source_id": "demo-src",
-            "start": 1201,
-            "end": 1209
+            "start": 1134,
+            "end": 1174
           },
           {
             "source_id": "demo-src",
-            "start": 1295,
-            "end": 1357
+            "start": 1461,
+            "end": 1469
           },
           {
             "source_id": "demo-src",
-            "start": 1849,
-            "end": 1939
+            "start": 1555,
+            "end": 1617
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2312,
+            "end": 2402
           }
         ],
         "frozen": false
@@ -338,25 +380,31 @@
           "summary": "便利店马路对面"
         },
         "paras": [
-          41,
-          44,
-          45
+          46,
+          49,
+          50,
+          69
         ],
         "source_spans": [
           {
             "source_id": "demo-src",
-            "start": 1776,
-            "end": 1826
+            "start": 2239,
+            "end": 2289
           },
           {
             "source_id": "demo-src",
-            "start": 1940,
-            "end": 2020
+            "start": 2403,
+            "end": 2483
           },
           {
             "source_id": "demo-src",
-            "start": 2021,
-            "end": 2030
+            "start": 2484,
+            "end": 2493
+          },
+          {
+            "source_id": "demo-src",
+            "start": 3007,
+            "end": 3092
           }
         ],
         "frozen": false
@@ -411,8 +459,11 @@
           9,
           10,
           11,
-          43,
-          63
+          13,
+          44,
+          48,
+          69,
+          70
         ],
         "source_spans": [
           {
@@ -442,13 +493,28 @@
           },
           {
             "source_id": "demo-src",
-            "start": 1849,
-            "end": 1939
+            "start": 674,
+            "end": 732
           },
           {
             "source_id": "demo-src",
-            "start": 2475,
-            "end": 2486
+            "start": 2160,
+            "end": 2226
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2312,
+            "end": 2402
+          },
+          {
+            "source_id": "demo-src",
+            "start": 3007,
+            "end": 3092
+          },
+          {
+            "source_id": "demo-src",
+            "start": 3093,
+            "end": 3104
           }
         ],
         "frozen": false
@@ -463,19 +529,19 @@
           "summary": ""
         },
         "paras": [
-          14,
-          32
+          16,
+          35
         ],
         "source_spans": [
           {
             "source_id": "demo-src",
-            "start": 730,
-            "end": 773
+            "start": 915,
+            "end": 958
           },
           {
             "source_id": "demo-src",
-            "start": 1405,
-            "end": 1478
+            "start": 1665,
+            "end": 1738
           }
         ],
         "frozen": false
@@ -490,25 +556,25 @@
           "summary": "三年前 6 月 17 日 · 背面有周屿的字"
         },
         "paras": [
-          30,
-          36,
-          37
+          33,
+          40,
+          41
         ],
         "source_spans": [
           {
             "source_id": "demo-src",
-            "start": 1295,
-            "end": 1357
+            "start": 1555,
+            "end": 1617
           },
           {
             "source_id": "demo-src",
-            "start": 1643,
-            "end": 1667
+            "start": 2039,
+            "end": 2063
           },
           {
             "source_id": "demo-src",
-            "start": 1668,
-            "end": 1683
+            "start": 2064,
+            "end": 2079
           }
         ],
         "frozen": false
@@ -523,13 +589,13 @@
           "summary": "小票上写的那一根，两块钱"
         },
         "paras": [
-          30
+          33
         ],
         "source_spans": [
           {
             "source_id": "demo-src",
-            "start": 1295,
-            "end": 1357
+            "start": 1555,
+            "end": 1617
           }
         ],
         "frozen": false
@@ -544,37 +610,37 @@
           "summary": "黑色 · 皮筋松了，珠子磨白"
         },
         "paras": [
-          31,
-          32,
-          50,
-          59,
-          61
+          34,
+          35,
+          56,
+          65,
+          67
         ],
         "source_spans": [
           {
             "source_id": "demo-src",
-            "start": 1358,
-            "end": 1404
+            "start": 1618,
+            "end": 1664
           },
           {
             "source_id": "demo-src",
-            "start": 1405,
-            "end": 1478
+            "start": 1665,
+            "end": 1738
           },
           {
             "source_id": "demo-src",
-            "start": 2175,
-            "end": 2220
+            "start": 2707,
+            "end": 2752
           },
           {
             "source_id": "demo-src",
-            "start": 2371,
-            "end": 2399
+            "start": 2903,
+            "end": 2931
           },
           {
             "source_id": "demo-src",
-            "start": 2425,
-            "end": 2440
+            "start": 2957,
+            "end": 2972
           }
         ],
         "frozen": false
@@ -590,7 +656,7 @@
         },
         "paras": [
           0,
-          14
+          16
         ],
         "source_spans": [
           {
@@ -600,8 +666,8 @@
           },
           {
             "source_id": "demo-src",
-            "start": 730,
-            "end": 773
+            "start": 915,
+            "end": 958
           }
         ],
         "frozen": false
@@ -617,8 +683,8 @@
         },
         "paras": [
           2,
-          15,
-          25
+          17,
+          28
         ],
         "source_spans": [
           {
@@ -628,13 +694,13 @@
           },
           {
             "source_id": "demo-src",
-            "start": 774,
-            "end": 784
+            "start": 959,
+            "end": 969
           },
           {
             "source_id": "demo-src",
-            "start": 1135,
-            "end": 1163
+            "start": 1395,
+            "end": 1423
           }
         ],
         "frozen": false
@@ -649,19 +715,19 @@
           "summary": ""
         },
         "paras": [
-          28,
-          43
+          31,
+          48
         ],
         "source_spans": [
           {
             "source_id": "demo-src",
-            "start": 1220,
-            "end": 1260
+            "start": 1480,
+            "end": 1520
           },
           {
             "source_id": "demo-src",
-            "start": 1849,
-            "end": 1939
+            "start": 2312,
+            "end": 2402
           }
         ],
         "frozen": false
@@ -676,25 +742,25 @@
           "summary": ""
         },
         "paras": [
-          33,
-          34,
-          35
+          36,
+          37,
+          38
         ],
         "source_spans": [
           {
             "source_id": "demo-src",
-            "start": 1479,
-            "end": 1582
+            "start": 1739,
+            "end": 1842
           },
           {
             "source_id": "demo-src",
-            "start": 1583,
-            "end": 1616
+            "start": 1843,
+            "end": 1876
           },
           {
             "source_id": "demo-src",
-            "start": 1617,
-            "end": 1642
+            "start": 1877,
+            "end": 1902
           }
         ],
         "frozen": false
@@ -711,8 +777,10 @@
         },
         "paras": [
           10,
-          33,
-          50
+          15,
+          36,
+          39,
+          56
         ],
         "source_spans": [
           {
@@ -722,13 +790,23 @@
           },
           {
             "source_id": "demo-src",
-            "start": 1479,
-            "end": 1582
+            "start": 789,
+            "end": 914
           },
           {
             "source_id": "demo-src",
-            "start": 2175,
-            "end": 2220
+            "start": 1739,
+            "end": 1842
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1903,
+            "end": 2038
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2707,
+            "end": 2752
           }
         ],
         "frozen": false
@@ -782,12 +860,15 @@
                 "paras": [
                   0,
                   5,
-                  25,
-                  30,
-                  40,
-                  43,
-                  47,
-                  58
+                  15,
+                  28,
+                  33,
+                  39,
+                  44,
+                  45,
+                  48,
+                  53,
+                  64
                 ],
                 "source_spans": [
                   {
@@ -802,33 +883,48 @@
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1135,
-                    "end": 1163
+                    "start": 789,
+                    "end": 914
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1295,
-                    "end": 1357
+                    "start": 1395,
+                    "end": 1423
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1764,
-                    "end": 1775
+                    "start": 1555,
+                    "end": 1617
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1849,
-                    "end": 1939
+                    "start": 1903,
+                    "end": 2038
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2080,
-                    "end": 2103
+                    "start": 2160,
+                    "end": 2226
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2362,
-                    "end": 2370
+                    "start": 2227,
+                    "end": 2238
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2312,
+                    "end": 2402
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2612,
+                    "end": 2635
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2894,
+                    "end": 2902
                   }
                 ],
                 "frozen": false
@@ -846,14 +942,17 @@
                   1,
                   7,
                   10,
-                  33,
-                  42,
-                  46,
-                  48,
-                  50,
+                  15,
+                  24,
+                  36,
+                  47,
+                  51,
+                  52,
                   54,
-                  57,
-                  61
+                  56,
+                  60,
+                  63,
+                  67
                 ],
                 "source_spans": [
                   {
@@ -873,43 +972,58 @@
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1479,
-                    "end": 1582
+                    "start": 789,
+                    "end": 914
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1827,
-                    "end": 1848
+                    "start": 1232,
+                    "end": 1306
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2031,
-                    "end": 2079
+                    "start": 1739,
+                    "end": 1842
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2104,
-                    "end": 2128
+                    "start": 2290,
+                    "end": 2311
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2175,
-                    "end": 2220
+                    "start": 2494,
+                    "end": 2542
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2255,
-                    "end": 2303
+                    "start": 2543,
+                    "end": 2611
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2317,
-                    "end": 2361
+                    "start": 2636,
+                    "end": 2660
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2425,
-                    "end": 2440
+                    "start": 2707,
+                    "end": 2752
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2787,
+                    "end": 2835
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2849,
+                    "end": 2893
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2957,
+                    "end": 2972
                   }
                 ],
                 "frozen": false
@@ -925,31 +1039,31 @@
                   "summary": "值夜班 · 戴眼镜的年轻男孩"
                 },
                 "paras": [
-                  18,
-                  24,
-                  28,
-                  39
+                  20,
+                  27,
+                  31,
+                  43
                 ],
                 "source_spans": [
                   {
                     "source_id": "demo-src",
-                    "start": 809,
-                    "end": 863
+                    "start": 994,
+                    "end": 1048
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1084,
-                    "end": 1134
+                    "start": 1344,
+                    "end": 1394
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1220,
-                    "end": 1260
+                    "start": 1480,
+                    "end": 1520
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1721,
-                    "end": 1763
+                    "start": 2117,
+                    "end": 2159
                   }
                 ],
                 "frozen": false
@@ -1033,12 +1147,13 @@
                 "paras": [
                   2,
                   12,
-                  14,
-                  19,
-                  20,
-                  27,
+                  15,
+                  16,
+                  21,
+                  22,
                   30,
-                  43
+                  33,
+                  48
                 ],
                 "source_spans": [
                   {
@@ -1053,33 +1168,38 @@
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 730,
-                    "end": 773
+                    "start": 789,
+                    "end": 914
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 864,
-                    "end": 948
+                    "start": 915,
+                    "end": 958
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 949,
-                    "end": 989
+                    "start": 1049,
+                    "end": 1133
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1201,
-                    "end": 1209
+                    "start": 1134,
+                    "end": 1174
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1295,
-                    "end": 1357
+                    "start": 1461,
+                    "end": 1469
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1849,
-                    "end": 1939
+                    "start": 1555,
+                    "end": 1617
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2312,
+                    "end": 2402
                   }
                 ],
                 "frozen": false
@@ -1093,25 +1213,31 @@
                   "summary": "便利店马路对面"
                 },
                 "paras": [
-                  41,
-                  44,
-                  45
+                  46,
+                  49,
+                  50,
+                  69
                 ],
                 "source_spans": [
                   {
                     "source_id": "demo-src",
-                    "start": 1776,
-                    "end": 1826
+                    "start": 2239,
+                    "end": 2289
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1940,
-                    "end": 2020
+                    "start": 2403,
+                    "end": 2483
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2021,
-                    "end": 2030
+                    "start": 2484,
+                    "end": 2493
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 3007,
+                    "end": 3092
                   }
                 ],
                 "frozen": false
@@ -1164,8 +1290,11 @@
                   9,
                   10,
                   11,
-                  43,
-                  63
+                  13,
+                  44,
+                  48,
+                  69,
+                  70
                 ],
                 "source_spans": [
                   {
@@ -1195,13 +1324,28 @@
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1849,
-                    "end": 1939
+                    "start": 674,
+                    "end": 732
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2475,
-                    "end": 2486
+                    "start": 2160,
+                    "end": 2226
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2312,
+                    "end": 2402
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 3007,
+                    "end": 3092
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 3093,
+                    "end": 3104
                   }
                 ],
                 "frozen": false
@@ -1215,19 +1359,19 @@
                   "summary": ""
                 },
                 "paras": [
-                  14,
-                  32
+                  16,
+                  35
                 ],
                 "source_spans": [
                   {
                     "source_id": "demo-src",
-                    "start": 730,
-                    "end": 773
+                    "start": 915,
+                    "end": 958
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1405,
-                    "end": 1478
+                    "start": 1665,
+                    "end": 1738
                   }
                 ],
                 "frozen": false
@@ -1241,25 +1385,25 @@
                   "summary": "三年前 6 月 17 日 · 背面有周屿的字"
                 },
                 "paras": [
-                  30,
-                  36,
-                  37
+                  33,
+                  40,
+                  41
                 ],
                 "source_spans": [
                   {
                     "source_id": "demo-src",
-                    "start": 1295,
-                    "end": 1357
+                    "start": 1555,
+                    "end": 1617
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1643,
-                    "end": 1667
+                    "start": 2039,
+                    "end": 2063
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1668,
-                    "end": 1683
+                    "start": 2064,
+                    "end": 2079
                   }
                 ],
                 "frozen": false
@@ -1273,13 +1417,13 @@
                   "summary": "小票上写的那一根，两块钱"
                 },
                 "paras": [
-                  30
+                  33
                 ],
                 "source_spans": [
                   {
                     "source_id": "demo-src",
-                    "start": 1295,
-                    "end": 1357
+                    "start": 1555,
+                    "end": 1617
                   }
                 ],
                 "frozen": false
@@ -1293,37 +1437,37 @@
                   "summary": "黑色 · 皮筋松了，珠子磨白"
                 },
                 "paras": [
-                  31,
-                  32,
-                  50,
-                  59,
-                  61
+                  34,
+                  35,
+                  56,
+                  65,
+                  67
                 ],
                 "source_spans": [
                   {
                     "source_id": "demo-src",
-                    "start": 1358,
-                    "end": 1404
+                    "start": 1618,
+                    "end": 1664
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1405,
-                    "end": 1478
+                    "start": 1665,
+                    "end": 1738
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2175,
-                    "end": 2220
+                    "start": 2707,
+                    "end": 2752
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2371,
-                    "end": 2399
+                    "start": 2903,
+                    "end": 2931
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2425,
-                    "end": 2440
+                    "start": 2957,
+                    "end": 2972
                   }
                 ],
                 "frozen": false
@@ -1338,7 +1482,7 @@
                 },
                 "paras": [
                   0,
-                  14
+                  16
                 ],
                 "source_spans": [
                   {
@@ -1348,8 +1492,8 @@
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 730,
-                    "end": 773
+                    "start": 915,
+                    "end": 958
                   }
                 ],
                 "frozen": false
@@ -1364,8 +1508,8 @@
                 },
                 "paras": [
                   2,
-                  15,
-                  25
+                  17,
+                  28
                 ],
                 "source_spans": [
                   {
@@ -1375,13 +1519,13 @@
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 774,
-                    "end": 784
+                    "start": 959,
+                    "end": 969
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1135,
-                    "end": 1163
+                    "start": 1395,
+                    "end": 1423
                   }
                 ],
                 "frozen": false
@@ -1395,19 +1539,19 @@
                   "summary": ""
                 },
                 "paras": [
-                  28,
-                  43
+                  31,
+                  48
                 ],
                 "source_spans": [
                   {
                     "source_id": "demo-src",
-                    "start": 1220,
-                    "end": 1260
+                    "start": 1480,
+                    "end": 1520
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1849,
-                    "end": 1939
+                    "start": 2312,
+                    "end": 2402
                   }
                 ],
                 "frozen": false
@@ -1421,25 +1565,25 @@
                   "summary": ""
                 },
                 "paras": [
-                  33,
-                  34,
-                  35
+                  36,
+                  37,
+                  38
                 ],
                 "source_spans": [
                   {
                     "source_id": "demo-src",
-                    "start": 1479,
-                    "end": 1582
+                    "start": 1739,
+                    "end": 1842
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1583,
-                    "end": 1616
+                    "start": 1843,
+                    "end": 1876
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1617,
-                    "end": 1642
+                    "start": 1877,
+                    "end": 1902
                   }
                 ],
                 "frozen": false
@@ -1455,8 +1599,10 @@
                 },
                 "paras": [
                   10,
-                  33,
-                  50
+                  15,
+                  36,
+                  39,
+                  56
                 ],
                 "source_spans": [
                   {
@@ -1466,13 +1612,23 @@
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 1479,
-                    "end": 1582
+                    "start": 789,
+                    "end": 914
                   },
                   {
                     "source_id": "demo-src",
-                    "start": 2175,
-                    "end": 2220
+                    "start": 1739,
+                    "end": 1842
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1903,
+                    "end": 2038
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2707,
+                    "end": 2752
                   }
                 ],
                 "frozen": false
@@ -1509,7 +1665,7 @@
             "distinct": []
           },
           "files": [],
-          "content_hash": "sha256:2285cde3e72d30dce897af6160036d0daaa3ee475850fbe73195af09b4784af3",
+          "content_hash": "sha256:bb028a6b6707cf43d8bc06d3fdccac58c606b84f6e4fb946d6a5f5e05db93925",
           "intent": "列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文，不要编。",
           "compiled": "你负责从小说里抽取设定（人物、地点、道具、事件、人物关系），交给剧本和素材两步使用。\n\n[规则]\n列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文，不要编。\n- 原文每段前有段号，例如 [P12]。每个条目在 paras 里列出它出现或被提到的段号，只能用原文里给出的段号。\n- 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。\n- 不要编造原文没有的信息；不知道的字段不写。\n- summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。\n- 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。\n\n[输出 JSON]\n{\n  \"entities\": [\n    {\"kind\": \"character | location | prop | event | relation\", \"name\": \"名字\", \"aliases\": [], \"summary\": \"一行简介\", \"details\": {\"age\": \"\", \"occupation\": \"\", \"appearance\": \"\"}, \"paras\": [12, 13]}\n  ],\n  \"chapters\": [{\"chapter\": 1, \"summary\": \"本章摘要\"}]\n}\n\n# 目标模型：local/qwen3.6-27b",
           "compiled_overridden": false,
@@ -1566,7 +1722,7 @@
           "payload": {
             "source_id": "demo-src",
             "filename": "雨停之前.txt",
-            "sha256": "1de6c77d96208a06248e70c83b3a265cb040f961e40e43e43e60ab945bd68f26",
+            "sha256": "c13a63efdd411e75a1cf113816478e218e3f4c7705aa1e6fe71d1b9b9d280947",
             "chapters": [
               {
                 "idx": 0,
@@ -1576,17 +1732,17 @@
               {
                 "idx": 1,
                 "title": "第二章 十二点",
-                "hash": "sha256:38fadba235c4742813769a5ab8c11830e4c291d0e184ca57b135ce76b79f60c1"
+                "hash": "sha256:a5b5849733183024bc507b64a1c98d83ece79f5c203da97a9a40c4edfa83f26a"
               },
               {
                 "idx": 2,
                 "title": "第三章 旧发圈",
-                "hash": "sha256:0466b0141777581c15c1c23661e757788746e388160c6cdc7c5462b9eedbbda6"
+                "hash": "sha256:d5fb3ed792734cc4ca275c238a48687e0ad0daf57973d3178937defce05f322b"
               }
             ]
           },
           "files": [],
-          "content_hash": "sha256:9f027773be400e4d3974f0388d318b2a50368bc44ed373ebb2b5fe12c2270372",
+          "content_hash": "sha256:b657e79533a387b34805a5332f406eaa23fd5056db5595218f2353706ff7ef7c",
           "intent": null,
           "compiled": null,
           "compiled_overridden": false,
