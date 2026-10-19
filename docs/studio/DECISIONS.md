@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · 现在就在 5090 上真装节点包和权重（Kelvin 定）
+
+- 用来测安装功能，计划加第 8b 步。改了 2026-10-15「模型权重只检测，等 P0 实测」的决定：
+  - H3 全套和 Qwen3-VL-32B NVFP4 文本编码器现在就装，用官方文件；
+  - Qwen-Image-Edit、SeedVR2 权重、IndexTTS2 先列出官方和社区版本让 Kelvin 挑；
+  - 本地 LLM 不装。
+- 权重放 ComfyUI Desktop 的共享模型目录（`ComfyUI-Shared\models`），Desktop 升级或重装都不丢。
+
 ## 2026-10-18 · M1 清单补齐（第 8 步）
 
 逐条按官方仓库 / 文档核对（commit 用 `git ls-remote` 取，版本按各 tag 的源码核对）：
