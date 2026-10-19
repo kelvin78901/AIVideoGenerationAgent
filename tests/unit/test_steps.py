@@ -87,6 +87,10 @@ class Log:
         self.pct.append(pct)
 
 
+def _offline(request: httpx.Request) -> httpx.Response:
+    raise AssertionError(f"a unit test reached the network: {request.url}")
+
+
 async def _install(
     item: Item,
     env: InstallEnv,
@@ -96,6 +100,8 @@ async def _install(
 ) -> tuple[Recorder, Log]:
     rec = rec or Recorder(env.os)
     log = Log()
+    # Never the real network: a manifest with real addresses would download for real (tens of GB).
+    transport = transport or httpx.MockTransport(_offline)
     runner = RealRunner(mirrors=MIRRORS, exec_=rec, which=_which, transport=transport, **kw)
     await runner.install(item, env, log.log, log.progress)
     return rec, log
@@ -149,7 +155,7 @@ async def test_no_python_outside_our_envs(tmp_path: Path, os: OS) -> None:
     rec = Recorder(os)
     outcomes: dict[str, str] = {}
     for item in load_manifest().for_platform(os):
-        if not item.install:
+        if not item.can_install:  # the installer never runs them (weights until P0)
             continue
         try:
             await _install(item, env, rec)
@@ -167,8 +173,8 @@ async def test_no_python_outside_our_envs(tmp_path: Path, os: OS) -> None:
         else:
             assert call[1:3] == ["python", "install"], call  # uv-managed, not the system's
     assert not [c for c in rec.calls if c[0] in ("pip", "pip3", "python", "python3")]
-    # Until step 8 fills them in, the TODOs in the manifest stop those items cleanly.
-    assert {"manifest_todo"} <= set(outcomes.values())
+    # Step 8 filled in every installable item: none stops at a TODO.
+    assert "manifest_todo" not in outcomes.values(), outcomes
     assert outcomes.get("ffmpeg") == "ok"
 
 
@@ -187,8 +193,9 @@ async def test_git_clone_then_already_there(tmp_path: Path) -> None:
     item = _item(step, req)
     dest = f"{tmp_path / 'ComfyUI'}/custom_nodes/SeedVR2"
     rec, _ = await _install(item, env)
-    # GitHub has no China mirror in the manifest yet, so the official URL is kept.
-    assert rec.calls[0] == ["git", "clone", "--filter=blob:none", step["url"], dest]
+    # The China mirror is a proxy prefix in front of the official URL.
+    proxied = "https://gh-proxy.com/" + step["url"]
+    assert rec.calls[0] == ["git", "clone", "--filter=blob:none", proxied, dest]
     assert rec.calls[1] == ["git", "-C", dest, "checkout", "--force", "abc123"]
     pip = rec.calls[-1]
     assert pip[pip.index("-r") + 1] == f"{dest}/requirements.txt"  # the clone's {dest}

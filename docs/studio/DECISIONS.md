@@ -2,6 +2,39 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 清单补齐（第 8 步）
+
+逐条按官方仓库 / 文档核对（commit 用 `git ls-remote` 取，版本按各 tag 的源码核对）：
+
+- **ComfyUI**：锁 v0.42.1（`63be2f9`），最低版本 `>=0.35.0`。
+  - H3 原生节点（`MiniMaxH3ImageToVideo`、`MiniMaxH3ReferenceToVideo`，`comfy_extras/nodes_minimax_h3.py`）从 v0.30.0 开始有。
+  - H3 的 Fun ControlNet（`MiniMaxH3FunControlNetApply`）从 v0.35.0 开始有。这两个起始版本是在各 tag 的源码上二分查出来的；后者和 docs.comfy.org 的教程「requires ComfyUI 0.35.0 or later」一致。
+- **H3 节点、Fun ControlNet**：都是 ComfyUI 自带的，没有单独的节点包，所以不再算安装项（`install: []`，提示「ComfyUI 自带：更新到 x 或更新」）。
+  - 检测：ComfyUI 在跑时按 `/object_info` 里的节点类；没在跑时按 ComfyUI 版本（`detect.native_since`，新字段）。
+- **ComfyUI-Manager**：ComfyUI 0.4x 的官方装法是 `pip install -r manager_requirements.txt`（锁 `comfyui_manager==4.2.2`），启动时加 `--enable-manager`。不再 git clone 到 custom_nodes。第 5c 步核对快照接口用的正好是 4.2.2。上游已有 4.3 tag，但 ComfyUI 还没跟进，先不升。`snapshot_no_manager` 的文案改成提示 `--enable-manager`。
+- **节点包**：
+  - VideoHelperSuite 没有发布 tag，锁 2026-10-18 的 main `4d907be`。
+  - SeedVR2 锁 v2.5.23（`5a4bf42`）。
+  - FlashVSR 没有官方节点包，选 1038lab/ComfyUI-FlashVSR（`8877fdd`）：清单原来的 docs 链接指的就是它，作者在 Hugging Face 上的 1038lab/FlashVSR 模型也按它说明。
+- **PyTorch**：源 `https://download.pytorch.org/whl/cu130`。2026-10-18 最新 2.14.1+cu130，有 Python 3.12 的 Windows 包。不锁版本号，和 ComfyUI 自己的 requirements.txt 一样。
+- **uv**：winget `astral-sh.uv` / brew `uv`；官方安装脚本只写在注释里（没有包管理器时手动用）。
+- **国内镜像的 GitHub**：用 `https://gh-proxy.com/https://github.com` 代理前缀（本机测 348 ms，返回的 commit 和官方一致）。kkgithub 连不上，ghfast 能用但慢。它是第三方服务，不能用时选「官方源」。
+- **模型权重**：全部 `installable: false`，提示「等 P0 实测确定版本后再装」。
+  - H3 和它的文本编码器按官方教程写了文件名（Hugging Face 的 Comfy-Org/MiniMax-H3），扫描能认出来。
+  - 其他权重的文件名等 P0。
+  - 影响：Mock 下 PC 示例能装的从 16 项变成 8 项，默认只勾 FFmpeg；导航徽标在全部装完后仍是「缺 6 项」（H3 节点要新版 ComfyUI，权重等 P0）。
+- **`verify: true` 的核对**：在 Kelvin 的 5090 上跑 `scripts/setup_scan_real.py`（只读）：
+  - PyTorch 2.12.1+cu130 判通过；
+  - ComfyUI Desktop 0.41.2（没在跑）的位置、版本、commit、Python 3.13、Manager 4.2.2（pip，已启用）都认对了；
+  - H3 节点和 Fun ControlNet 按版本判已有；
+  - 网络测速通过。
+
+  这三项（PyTorch、ComfyUI、网络）去掉 `verify`；Eagle、Resolve 本机没装，留着等装了的机器实测。
+- **改动清单显示可读的版本**：安装步骤里写了 `version`（tag）就用它；没有就用 commit 的前 7 位。
+- **测试绝不触网**：`tests/unit/test_steps.py` 的 `_install` 默认用离线 transport，碰网络就报错；遍历清单的测试只跑 `can_install` 的项。
+
+  原因：权重有了真实地址后，那条测试真的开始下 H3 权重。本次开发中跑了 4 次，在 pytest 临时目录留下约 30 GB 的 `.part` 文件，已经删掉。
+
 ## 2026-10-18 · 按镜头选工作流；拼节点做 beta（Kelvin 定）
 
 - **自动选工作流只用成熟的**：官方（平台推荐档）或用户导入、确认绑定、试跑通过的（「我的工作流」）。未验证的不参与自动选择。

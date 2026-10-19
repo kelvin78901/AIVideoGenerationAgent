@@ -295,12 +295,14 @@
             "params": {}
           },
           "fix": {
-            "code": "install_nodes",
-            "params": {}
+            "code": "update_comfy_native",
+            "params": {
+              "version": "0.30.0"
+            }
           },
           "required": true,
-          "installable": true,
-          "touches_comfy": true,
+          "installable": false,
+          "touches_comfy": false,
           "install": null
         },
         {
@@ -376,12 +378,14 @@
             "params": {}
           },
           "fix": {
-            "code": "ctrl_later",
-            "params": {}
+            "code": "update_comfy_native",
+            "params": {
+              "version": "0.35.0"
+            }
           },
           "required": false,
-          "installable": true,
-          "touches_comfy": true,
+          "installable": false,
+          "touches_comfy": false,
           "install": null
         },
         {
@@ -439,11 +443,11 @@
             "params": {}
           },
           "fix": {
-            "code": "download",
+            "code": "weights_pending_p0",
             "params": {}
           },
           "required": true,
-          "installable": true,
+          "installable": false,
           "touches_comfy": true,
           "install": null
         },
@@ -460,12 +464,12 @@
             "params": {}
           },
           "fix": {
-            "code": "download",
+            "code": "weights_pending_p0",
             "params": {}
           },
           "required": true,
-          "installable": true,
-          "touches_comfy": false,
+          "installable": false,
+          "touches_comfy": true,
           "install": null
         },
         {
@@ -481,11 +485,11 @@
             "params": {}
           },
           "fix": {
-            "code": "download",
+            "code": "weights_pending_p0",
             "params": {}
           },
           "required": true,
-          "installable": true,
+          "installable": false,
           "touches_comfy": false,
           "install": null
         },
@@ -502,11 +506,11 @@
             "params": {}
           },
           "fix": {
-            "code": "download",
+            "code": "weights_pending_p0",
             "params": {}
           },
           "required": true,
-          "installable": true,
+          "installable": false,
           "touches_comfy": false,
           "install": null
         },
@@ -523,11 +527,11 @@
             "params": {}
           },
           "fix": {
-            "code": "download",
+            "code": "weights_pending_p0",
             "params": {}
           },
           "required": true,
-          "installable": true,
+          "installable": false,
           "touches_comfy": false,
           "install": null
         },
@@ -548,7 +552,7 @@
             "params": {}
           },
           "required": false,
-          "installable": true,
+          "installable": false,
           "touches_comfy": false,
           "install": null
         },
@@ -671,18 +675,10 @@
         "torch",
         "ffmpeg",
         "comfy",
-        "node_h3",
         "node_seedvr2",
         "node_flashvsr",
-        "node_ctrl",
         "sage",
         "node_dramastudio",
-        "w_h3",
-        "w_te",
-        "w_img",
-        "w_sr",
-        "w_tts",
-        "w_llm",
         "llmsrv"
       ],
       "confirm": [
@@ -701,14 +697,8 @@
             "item": "comfy",
             "action": "update",
             "from": "0.3.40",
+            "to": "v0.42.1",
             "source": "https://github.com/comfyanonymous/ComfyUI"
-          }
-        },
-        {
-          "code": "comfy_change",
-          "params": {
-            "item": "node_h3",
-            "action": "install"
           }
         },
         {
@@ -716,6 +706,7 @@
           "params": {
             "item": "node_seedvr2",
             "action": "install",
+            "to": "v2.5.23",
             "source": "https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler"
           }
         },
@@ -723,14 +714,9 @@
           "code": "comfy_change",
           "params": {
             "item": "node_flashvsr",
-            "action": "install"
-          }
-        },
-        {
-          "code": "comfy_change",
-          "params": {
-            "item": "node_ctrl",
-            "action": "install"
+            "action": "install",
+            "to": "8877fdd",
+            "source": "https://github.com/1038lab/ComfyUI-FlashVSR"
           }
         },
         {
@@ -747,14 +733,6 @@
             "item": "node_dramastudio",
             "action": "install",
             "source": "integrations/comfyui-dramastudio"
-          }
-        },
-        {
-          "code": "comfy_change",
-          "params": {
-            "item": "w_h3",
-            "action": "install",
-            "source": "MiniMaxAI/MiniMax-H3"
           }
         }
       ]
@@ -1317,7 +1295,7 @@
             "params": {}
           },
           "required": false,
-          "installable": true,
+          "installable": false,
           "touches_comfy": false,
           "install": null
         },
@@ -1359,7 +1337,7 @@
             "params": {}
           },
           "required": false,
-          "installable": true,
+          "installable": false,
           "touches_comfy": false,
           "install": null
         },
@@ -1376,11 +1354,11 @@
             "params": {}
           },
           "fix": {
-            "code": "download_local_writing",
+            "code": "weights_pending_p0",
             "params": {}
           },
           "required": true,
-          "installable": true,
+          "installable": false,
           "touches_comfy": false,
           "install": null
         },
@@ -1506,9 +1484,6 @@
         "comfy_manager",
         "node_vhs",
         "node_dramastudio",
-        "w_img",
-        "w_tts",
-        "w_llm",
         "llmsrv"
       ],
       "confirm": []

@@ -85,7 +85,7 @@ def test_a_change_waits_for_approval_and_takes_a_snapshot_first(client: TestClie
     started = _install(client, ["ffmpeg", "node_seedvr2"])
     change = {
         "code": "comfy_change",
-        "params": {"item": "node_seedvr2", "action": "install", "source": SEEDVR2},
+        "params": {"item": "node_seedvr2", "action": "install", "to": "v2.5.23", "source": SEEDVR2},
     }
     assert started["install"]["confirm"] == [change]  # FFmpeg does not touch ComfyUI
     time.sleep(0.1)  # nothing runs before the user says yes

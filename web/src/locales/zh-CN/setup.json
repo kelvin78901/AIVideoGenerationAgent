@@ -115,7 +115,9 @@
     "update_driver": "更新驱动到支持 CUDA {{cuda}} 的版本",
     "disk_low": "至少要留 {{gb}} GB，换个盘或清理空间",
     "eagle_later": "用 Eagle 管理素材时再装",
-    "resolve_later": "用达芬奇做后期时再装"
+    "resolve_later": "用达芬奇做后期时再装",
+    "update_comfy_native": "ComfyUI 自带：把 ComfyUI 更新到 {{version}} 或更新",
+    "weights_pending_p0": "等 P0 实测确定版本后再装"
   },
   "error": {
     "no_wheel": "没有适合这台机器的预编译包，现场编译也没成功",
@@ -133,7 +135,7 @@
     "no_package": "{{manager}} 里没有配这个包",
     "source_missing": "找不到要复制的 {{path}}",
     "snapshot_not_running": "ComfyUI 没在运行，存不了快照，所以没有动它。打开 ComfyUI 后重试",
-    "snapshot_no_manager": "这份 ComfyUI 没有 ComfyUI-Manager 4，存不了快照，所以没有动它。先装 ComfyUI-Manager",
+    "snapshot_no_manager": "这份 ComfyUI 没有启用 ComfyUI-Manager 4（装好后启动时要加 --enable-manager），存不了快照，所以没有动它",
     "snapshot_forbidden": "ComfyUI-Manager 的安全级别不允许这样做（要设成 normal 或更低）",
     "snapshot_restart": "ComfyUI-Manager 刚装好，重启 ComfyUI 后重试",
     "snapshot_failed": "快照没存成，所以没有动 ComfyUI"

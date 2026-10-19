@@ -427,7 +427,12 @@ async def _comfy_node(item: Item, ctx: ScanContext) -> Outcome:
         return Outcome("absent", NOT_FOUND)
     if isinstance(d.classes, list) and d.classes:
         known = await ctx.object_info()
-        if all(c in known for c in d.classes):
+        if known:
+            if all(c in known for c in d.classes):
+                return Outcome("present", msg("installed"))
+            return Outcome("absent", NOT_FOUND)
+        # Not running: ComfyUI's own nodes come with its version.
+        if d.native_since and meets(inst.version, f">={d.native_since}"):
             return Outcome("present", msg("installed"))
     return Outcome("absent", NOT_FOUND)
 

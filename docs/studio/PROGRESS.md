@@ -27,12 +27,12 @@
 | 7（2/3） | zod 补字段、`schemas/comfy.ts`、hooks；`test/setupBackend.ts`（假后端，读上面的 JSON）；Setup 页：确认弹窗 `setup/ConfirmInstall.tsx`、「你的 ComfyUI」`setup/ComfyPanel.tsx`（识别结果、快照、回滚）、改 ComfyUI 的项默认不勾；删 MSW setup handler；DECISIONS 记第 7 步 | cdce398 | web test 178 |
 | 7（3/3） | 导航「环境与安装」+「缺 N 项」；`/` 没扫描过跳 `/setup`；弹窗 / 导航不换行；切示例机器清快照（后端）；Playwright 后端改 `python -m`；e2e 加完整流程和导航；全部页面重截（侧栏变了）+ `setup-confirm`、`setup-done` 两张；勾计划第 7 步、ROADMAP 4 项；之后 `start.ps1` 也改 `python -m`（5a86c26） | 5c6e0b9 | pytest 295；web test 183、lint、typecheck、format；e2e 16；ruff、mypy（含 linux） |
 | 7b（设计稿） | 工作流库先做出来给 Kelvin 审：`schemas/workflows.ts`、`hooks/workflows.ts`、MSW `handlers/workflows.ts` + 示例 5 个（H3、SeedVR2 推荐；LatentSync 我的；Wan 绑定待确认；Flux Kontext 缺 2 节点包 1 模型）；`pages/models/{WorkflowLibrary,WorkflowDetail,ImportWorkflowDialog}.tsx`、`workflowStatus.ts`；`ConfirmInstall` 加 `snapshotNote`；词表 `workflows.json`、错误码 9 个；审阅图 `reports/ui/workflows/` | d7a45b0 | web test 183、lint、typecheck、format |
-| 7b | Kelvin 审过设计稿；Vitest `pages/models/WorkflowLibrary.test.tsx`（8 条：列表和筛选、推荐档只读、猜的绑定 → 确认 → 试跑 → 升档、装依赖走确认弹窗、从 ComfyUI 列表导入、拖入 JSON、降档、英文）；Models 测试只数组件表的行；冒烟加工作流库一条；重截 models 两张；DECISIONS 记 7b；勾计划 7b、ROADMAP 一项 | 本提交 | web test 191、lint、typecheck、format；e2e 17 |
+| 7b | Kelvin 审过设计稿；Vitest `pages/models/WorkflowLibrary.test.tsx`（8 条：列表和筛选、推荐档只读、猜的绑定 → 确认 → 试跑 → 升档、装依赖走确认弹窗、从 ComfyUI 列表导入、拖入 JSON、降档、英文）；Models 测试只数组件表的行；冒烟加工作流库一条；重截 models 两张；DECISIONS 记 7b；勾计划 7b、ROADMAP 一项 | 8bd178f | web test 191、lint、typecheck、format；e2e 17 |
+| 8 | 清单补齐：ComfyUI 锁 v0.42.1、最低 0.35.0；H3 / Fun ControlNet 是 ComfyUI 自带节点（`detect.native_since`，不再是安装项）；Manager 改 `manager_requirements.txt` 装法；VHS、SeedVR2、FlashVSR 锁 commit；PyTorch cu130 源；国内 GitHub 走 gh-proxy；权重 `installable: false` + `weights_pending_p0`；改动清单显示 tag / 短 commit；`scripts/setup_scan_real.py`（只读，本机跑过）；测试不再触网；前端测试数据重新导出、Setup / 冒烟数字跟着改；DECISIONS 记第 8 步 | 本提交 | pytest 296；ruff、mypy（含 linux）；web test 191、lint、typecheck、format；e2e 17 |
 
 ## 下一步
 
-- **第 8 步 清单补齐（运行环境和节点）**：按计划第 8 步做。`config/setup-manifest.yaml` 里 Python、uv、PyTorch（CUDA 13.0 源）、FFmpeg、Git、ComfyUI、VHS、SeedVR2、FlashVSR、Fun ControlNet、H3 节点、ComfyUI-Manager 补真实地址、锁定 commit（以官方仓库 / 文档为准，`verify: true` 的逐条核对，记 DECISIONS）；权重项 `installable: false` + 原因 `weights_pending_p0`（中英文案）；改 ComfyUI 的项按 5c 规则走；写只读冒烟脚本 `scripts/setup_scan_real.py`（真实扫描 + 4c 识别结果），给 Kelvin 在 5090 上跑。改了清单后 `DRAMA_UPDATE_FIXTURES=1` 重新导出前端测试数据。
-  - 收尾（第 9 步）SPEC 要补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm|changes|snapshot|snapshot_error`、`GET /comfy/env`、`/comfy/snapshots*` 的返回结构；第 4 节 `comfy_env` 的 `comfyui_commit` 列；16.1 的 `/` 跳转规则和导航「环境与安装」。
+- **第 9 步 收尾**：按计划第 9 步做。ROADMAP 勾选（验收「5090 真实扫描和实际一致」「ComfyUI 识别和 Kelvin 机器一致」等 Kelvin 看过 `scripts/setup_scan_real.py` 的输出再勾）；SPEC 补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm|changes|snapshot|snapshot_error`、`GET /comfy/env`、`/comfy/snapshots*`、`GET /comfy/workflows`、`/workflows/{id}/deps*`；第 4 节 `comfy_env` 的 `comfyui_commit`；12.1 清单的 `native_since`、`version`、`installable: false`；16.1 的 `/` 跳转和导航「环境与安装」；6.4.3 的 `video_in` 槽位。写 `reports/M1.md`（中文，给 Kelvin），跑 CI（Linux；Windows 在开 PR 时跑），`gh pr create -R kelvin78901/AIVideoGenerationAgent --base main`，PR 描述用报告。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -52,6 +52,7 @@
 - 页面里有演示事件驱动的长流程时，用临时的 `e2e/tmp-*-shots.spec.ts`（`--project=shots` 能匹配）在真浏览器里走一遍、截图到 scratchpad，跑完删掉。
 - e2e 偶发过一次失败（2026-10-18，两条 e2e 一起跑，按耗时推断是 M0 的 `test_restart_resume`），之后连跑 17 次没复现，CI 上留意。
 - Playwright 冒烟收尾时后端会打印 aiosqlite「Task was destroyed but it is pending」，不影响结果，还没查（后端本步没改）。
+- **单元测试绝不能触网**：`test_steps.py` 的 `_install` 默认离线 transport；别给 RealRunner 的测试传 `transport=None`（清单有真实下载地址，曾真的下了 30 GB 到 pytest 临时目录）。
 - **示例机器切换**：点已选中的那台不会触发切换；e2e 里切 Mac 再切回 PC 要等前一次 `aria-checked` 变了再点。
 - MSW 在 jsdom 里能拦相对路径的 fetch；handler 路径写 `*/api/v1/...`（`mocks/http.ts:v1()`）。
 
@@ -69,5 +70,6 @@
 
 ## 等 Kelvin 的事
 
+- **在 5090 上看一眼真实扫描**：`uv run --no-sync python scripts/setup_scan_real.py`（只读；开着 ComfyUI 跑能多看到节点类和模型文件）。我在本机跑过一次：ComfyUI Desktop 0.41.2、PyTorch 2.12.1+cu130、Manager 4.2.2 都认对了；VHS、SeedVR2、FlashVSR 没装，权重都缺。和你的实际情况一致的话告诉我，第 9 步勾验收。
 - （2026-10-18 已办：`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图、第 7b 步设计稿 Kelvin 审核通过；按镜头选工作流 / 拼节点 beta 已定，见 DECISIONS 和 SPEC 6.4.8。）
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。

@@ -87,6 +87,8 @@ class Detect(_Loose):
     urls: list[str] = Field(default_factory=list)
     dir: str | None = None
     classes: list[str] | str | None = None
+    # comfy_node: ComfyUI's own nodes, shipped since this version (counts while it is not running)
+    native_since: str | None = None
     speedtest: list[str] = Field(default_factory=list)
     max_latency_ms: int | None = None
     server: str | None = None

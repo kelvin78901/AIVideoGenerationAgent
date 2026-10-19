@@ -15,6 +15,7 @@ from fastapi.testclient import TestClient
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.config import Resolved
+from drama_series_agent.core.models_db import InstalledItem
 
 LOCAL = "http://127.0.0.1"
 CLIENT_HEADERS = {"X-Drama-Studio": "1"}
@@ -22,9 +23,12 @@ V1 = "/api/v1"
 PROFILE = f"{V1}/setup/profile"
 COMPAT = f"{V1}/series/demo/spec/compat"
 PC_INSTALLABLE = [
-    "torch", "ffmpeg", "comfy", "node_h3", "node_seedvr2", "node_flashvsr", "node_ctrl", "sage",
-    "node_dramastudio", "w_h3", "w_te", "w_img", "w_sr", "w_tts", "w_llm", "llmsrv",
+    "torch", "ffmpeg", "comfy", "node_seedvr2", "node_flashvsr", "sage", "node_dramastudio",
+    "llmsrv",
 ]  # fmt: skip
+# Not offered by the installer: the H3 / ControlNet nodes come with a newer ComfyUI, the weights
+# wait for the P0 tests. The user puts them in place.
+BY_HAND = ["node_h3", "node_ctrl", "w_h3", "w_te", "w_img", "w_sr"]
 
 
 @pytest.fixture(autouse=True)
@@ -71,6 +75,19 @@ def _scan(client: TestClient, machine: str = "pc") -> dict[str, Any]:
     return _wait(client, "scanned")
 
 
+def _put_in_place(client: TestClient, item_ids: list[str]) -> None:
+    """As if installed: a rescan of a sample machine counts ``installed_item`` rows as there."""
+    state = _state(client)
+
+    async def put() -> None:
+        async with state.db.session() as s:
+            for item_id in item_ids:
+                s.add(InstalledItem(profile_id=state.setup.profile_id, item_id=item_id))
+            await s.commit()
+
+    client.portal.call(put)  # type: ignore[union-attr]
+
+
 def _stages(client: TestClient) -> list[str]:
     return [row["stage"] for row in client.get(COMPAT).json()["rows"]]
 
@@ -109,6 +126,13 @@ def test_the_5090_keeps_hybrid_and_local_once_set_up(
     assert _modes(client) == {"vid": "api", "kf": "api", "up": "api"}
     assert _route(client, "vid").unavailable["comfy/h3"] == ["node_h3", "w_h3", "w_te"]
 
+    # H3 nodes and weights in place: video and keyframes can run here; upscaling still lacks
+    # its nodes.
+    _put_in_place(client, BY_HAND)
+    _scan(client)
+    assert _modes(client) == {"vid": "hybrid", "kf": "hybrid", "up": "api"}
+
+    # What the installer finishes counts at once, without a rescan.
     body = {"items": PC_INSTALLABLE, "mirror": "auto", "dir": "D:\\DramaStudio"}
     client.post(f"{V1}/setup/install", json=body)
     client.post(f"{V1}/setup/install/confirm")  # the change list for D:\\ComfyUI

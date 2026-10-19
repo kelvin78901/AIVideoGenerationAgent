@@ -80,18 +80,18 @@ PC: dict[str, Row] = {
     "git": _r("ok", "installed"),
     "comfy": _r("old", "outdated", "update_latest"),
     "comfy_manager": _r("ok", "version", f_version="4.2.2"),
-    "node_h3": _r("missing", "not_found", "install_nodes"),
+    "node_h3": _r("missing", "not_found", "update_comfy_native", x_version="0.30.0"),
     "node_vhs": _r("ok", "installed"),
     "node_seedvr2": _r("missing", "not_found", "install_nodes"),
     "node_flashvsr": _r("optional", "not_found", "install_nodes"),
-    "node_ctrl": _r("optional", "not_found", "ctrl_later"),
+    "node_ctrl": _r("optional", "not_found", "update_comfy_native", x_version="0.35.0"),
     "sage": _r("optional", "not_found", "sage_build"),
     "node_dramastudio": _r("missing", "not_found", "install_nodes"),
-    "w_h3": _r("missing", "not_found", "download"),
-    "w_te": _r("missing", "not_found", "download"),
-    "w_img": _r("missing", "not_found", "download"),
-    "w_sr": _r("missing", "not_found", "download"),
-    "w_tts": _r("missing", "not_found", "download"),
+    "w_h3": _r("missing", "not_found", "weights_pending_p0"),
+    "w_te": _r("missing", "not_found", "weights_pending_p0"),
+    "w_img": _r("missing", "not_found", "weights_pending_p0"),
+    "w_sr": _r("missing", "not_found", "weights_pending_p0"),
+    "w_tts": _r("missing", "not_found", "weights_pending_p0"),
     "w_llm": _r("optional", "not_found", "llm_optional"),
     "hf": _r("warn", "hf_slow", "pick_mirror"),
     "llmsrv": _r("optional", "not_found", "install_llm_server"),
@@ -124,7 +124,7 @@ MAC: dict[str, Row] = {
     "w_img": _r("optional", "not_found", "mac_image_slow"),
     "w_sr": _r("skip", "needs_cuda", "unsupported_upscale_api"),
     "w_tts": _r("optional", "not_found", "mac_voice_slow"),
-    "w_llm": _r("missing", "not_found", "download_local_writing"),
+    "w_llm": _r("missing", "not_found", "weights_pending_p0"),
     "hf": _r("warn", "hf_slow", "pick_mirror"),
     "llmsrv": _r("missing", "not_found", "install_ollama_mlx"),
     "keys": _r("warn", "no_keys", "keys_video_api"),
@@ -145,11 +145,14 @@ async def test_pc_scan() -> None:
 async def test_pc_flags_match_the_prototype() -> None:
     result = await scan("pc")
     picked = {i for i, (_, d) in result.items() if d.installable}
-    for item_id in ("torch", "ffmpeg", "comfy", "node_h3", "node_seedvr2", "w_h3", "w_tts"):
+    for item_id in ("torch", "ffmpeg", "comfy", "node_seedvr2"):
         assert result[item_id][0].required and result[item_id][1].installable, item_id
-    for item_id in ("node_flashvsr", "node_ctrl", "sage", "w_llm", "llmsrv"):
+    for item_id in ("node_flashvsr", "sage", "llmsrv"):
         assert not result[item_id][0].required and result[item_id][1].installable, item_id
-    for item_id in ("hf", "keys", "eagle", "resolve", "os", "git"):
+    # H3 and its Fun ControlNet come with ComfyUI; weights wait for the P0 tests (step 8).
+    for item_id in ("hf", "keys", "eagle", "resolve", "os", "git", "node_h3", "node_ctrl"):
+        assert item_id not in picked, item_id
+    for item_id in ("w_h3", "w_te", "w_img", "w_sr", "w_tts", "w_llm"):
         assert item_id not in picked, item_id
 
 
@@ -171,7 +174,7 @@ async def test_mac_scan() -> None:
     assert counts(result) == {"ok": 6, "warn": 3, "missing": 4, "optional": 8, "skip": 8}
     assert "driver" not in result
     assert result["w_llm"][0].name.en == "Qwen3.6-27B (MLX)"
-    assert result["w_llm"][1].installable
+    assert not result["w_llm"][1].installable  # until P0 settles the model
 
 
 async def test_mac_skips_everything_that_needs_cuda() -> None:
@@ -217,11 +220,26 @@ async def test_comfy_relative_argv_falls_back_to_folders() -> None:
 async def test_comfy_not_running_reads_version_file() -> None:
     probe = _pc()
     del probe.data["http"]["http://127.0.0.1:8188/system_stats"]
-    probe.texts["D:/ComfyUI/comfyui_version.py"] = '__version__ = "0.4.2"\n'
+    probe.texts["D:/ComfyUI/comfyui_version.py"] = '__version__ = "0.42.1"\n'
     result = await scan("pc", probe)
     comfy = result["comfy"][1]
-    assert (comfy.status, comfy.version, comfy.facts["url"]) == ("ok", "0.4.2", None)
-    assert rows(result)["comfy"] == _r("ok", "version", f_version="0.4.2")
+    assert (comfy.status, comfy.version, comfy.facts["url"]) == ("ok", "0.42.1", None)
+    assert rows(result)["comfy"] == _r("ok", "version", f_version="0.42.1")
+    # Not running, so no /object_info: ComfyUI's own nodes count by its version.
+    assert result["node_h3"][1].status == "ok"
+    assert result["node_ctrl"][1].status == "ok"
+
+
+async def test_native_nodes_need_a_new_enough_comfyui() -> None:
+    probe = _pc()
+    del probe.data["http"]["http://127.0.0.1:8188/system_stats"]
+    probe.texts["D:/ComfyUI/comfyui_version.py"] = '__version__ = "0.31.0"\n'
+    result = await scan("pc", probe)
+    assert result["comfy"][1].status == "old"  # below 0.35.0
+    assert result["node_h3"][1].status == "ok"  # since 0.30.0
+    assert rows(result)["node_ctrl"] == _r(
+        "optional", "not_found", "update_comfy_native", x_version="0.35.0"
+    )
 
 
 async def test_comfy_portable_build_and_its_python() -> None:

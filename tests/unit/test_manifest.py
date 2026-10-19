@@ -56,7 +56,7 @@ def test_macos_overrides() -> None:
     assert llm.name.en == "Qwen3.6-27B (MLX)"
     # Override fixes are merged over the item's own.
     assert llm.fix["optional"] == Message(code="llm_optional")
-    assert llm.fix["missing"] == Message(code="download_local_writing")
+    assert llm.fix["missing"] == Message(code="weights_pending_p0")
     assert not win["w_llm"].required
 
     assert mac["keys"].if_missing == "warn" and win["keys"].if_missing is None

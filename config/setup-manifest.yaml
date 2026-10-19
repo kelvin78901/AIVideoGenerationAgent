@@ -1,6 +1,8 @@
 # 首次启动的检测与安装清单（SPEC 12.1，解析见 src/drama_series_agent/setup/manifest.py）。
 # 条目和原型 Setup.dc.html 的 PC / Mac 两套一致，另加 SPEC 12.1 的 uv、node_dramastudio、eagle、resolve。
-# url / ref / sha256 写 TODO 的要在实现时补上并锁定版本；verify: true 的检测方式需要实测确认。
+# 运行环境和节点的地址、版本 2026-10-18 按官方仓库 / 文档核对并锁定（DECISIONS「M1 清单补齐」）。git_clone 的 ref 是
+# commit（安装器用 rev-parse HEAD 比对，幂等）；version 是给改动清单看的版本号。模型权重等 P0 实测定版本，现在只检测。
+# 还写 TODO 的都是权重的文件名 / 仓库；verify: true（Eagle、Resolve）要在装了它们的机器上实测确认。
 # {comfy} = ComfyUI 根目录，{envs} = ~/.drama-studio/envs，{models} = 模型目录（用户可改）
 #
 # 每项除 SPEC 12.1 的字段外还可以有：
@@ -20,7 +22,8 @@
 version: 1
 mirrors:
   official: { hf: https://huggingface.co, pypi: https://pypi.org/simple, github: https://github.com }
-  cn:       { hf: https://hf-mirror.com,  pypi: https://pypi.tuna.tsinghua.edu.cn/simple, github: TODO }
+  # github 走代理前缀（第三方服务，2026-10-18 测过能用；不能用时改「官方源」）
+  cn:       { hf: https://hf-mirror.com,  pypi: https://pypi.tuna.tsinghua.edu.cn/simple, github: https://gh-proxy.com/https://github.com }
   auto:     { strategy: speedtest }
 
 # 扫描后推荐的路由预设（SPEC 12.2-2）：按顺序取第一条满足 when 的。
@@ -48,18 +51,22 @@ items:
     name: { zh: uv, en: uv }
     required: true
     detect: { type: command, cmd: "uv --version" }
-    install: [ { type: pkg, winget: astral-sh.uv, brew: uv, script_fallback: "官方安装脚本 TODO" } ]
+    # 没有包管理器时用官方脚本（https://docs.astral.sh/uv/getting-started/installation/）：
+    #   Windows: powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+    #   macOS / Linux: curl -LsSf https://astral.sh/uv/install.sh | sh
+    install: [ { type: pkg, winget: astral-sh.uv, brew: uv } ]
   - id: torch
     group: rt
     name: { zh: PyTorch, en: PyTorch }
     required: true
     depends_on: [python, uv]
-    detect: { type: py_import, env: comfy, module: torch, check: "torch.version.cuda", verify: true }
+    detect: { type: py_import, env: comfy, module: torch, check: "torch.version.cuda" }
     require: { cuda_build: "13.0", note: "NVFP4 量化需要 CUDA 13.0 版" }
     fix: { old: { code: torch_cuda, params: { cuda: "13.0" } } }
     macos: { fix: { missing: install_torch_mps } }
     install:
-      - { type: uv_pip, env: comfy, packages: [torch, torchvision, torchaudio], index_url: "PyTorch CUDA 13.0 源 TODO", platforms: [windows, linux] }
+      # 不锁版本号（和 ComfyUI 的 requirements.txt 一样）；CUDA 13.0 版由源决定，2026-10-18 最新 2.14.1+cu130
+      - { type: uv_pip, env: comfy, packages: [torch, torchvision, torchaudio], index_url: "https://download.pytorch.org/whl/cu130", platforms: [windows, linux] }
       - { type: uv_pip, env: comfy, packages: [torch, torchvision, torchaudio], platforms: [macos], note: "MPS 版" }
   - id: ffmpeg
     group: rt
@@ -81,11 +88,11 @@ items:
     required: true
     depends_on: [git, torch]
     # 先找正在跑的实例（/system_stats 的 argv 里有路径），再找常见目录，最后用设置里的路径。
-    detect: { type: comfy, url: "http://127.0.0.1:8188", verify: true }
-    require: { version: ">=0.4.0", note: "含 H3 原生节点的最低版本 TODO（第 8 步核对）" }
+    detect: { type: comfy, url: "http://127.0.0.1:8188" }
+    require: { version: ">=0.35.0", note: "H3 原生节点 0.30.0 起有，H3 的 Fun ControlNet 0.35.0 起有（按各版本源码核对）" }
     macos: { required: false, fix: { optional: comfy_images_only } }
     install:
-      - { type: git_clone, url: https://github.com/comfyanonymous/ComfyUI, ref: TODO, dest: "{comfy}" }
+      - { type: git_clone, url: https://github.com/comfyanonymous/ComfyUI, ref: 63be2f9b82ad0dac88a7ceaa28a9cf3154125a18, version: v0.42.1, dest: "{comfy}" }
       - { type: uv_pip, env: comfy, requirements: "{comfy}/requirements.txt" }
   - id: comfy_manager
     group: comfy
@@ -93,50 +100,56 @@ items:
     depends_on: [comfy]
     detect: { type: comfy_manager }   # pip 包 comfyui_manager（--enable-manager）或 custom_nodes/ComfyUI-Manager
     snapshot_first: false
+    # ComfyUI 0.4x 的官方装法：pip install -r manager_requirements.txt（锁 comfyui_manager==4.2.2），
+    # 启动时加 --enable-manager（Desktop 自带）。不再 git clone 到 custom_nodes。
     install:
-      - { type: git_clone, url: https://github.com/Comfy-Org/ComfyUI-Manager, ref: TODO, dest: "{comfy}/custom_nodes/comfyui-manager" }
-      - { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" }
+      - { type: uv_pip, env: comfy, requirements: "{comfy}/manager_requirements.txt", version: "4.2.2", source: comfyui_manager }
   - id: node_h3
     group: comfy
     name: { zh: MiniMax H3 节点, en: MiniMax H3 nodes }
     requires_cuda: true
     required: true
     depends_on: [comfy]
-    detect: { type: comfy_node, classes: TODO, verify: true }
-    install: [ { type: script, run: "更新 ComfyUI 到含 H3 原生节点的版本；需要时装官方节点包 TODO" } ]
+    # ComfyUI 自带（comfy_extras/nodes_minimax_h3.py），没有单独的节点包：更新 ComfyUI 就有
+    detect: { type: comfy_node, classes: [MiniMaxH3ImageToVideo, MiniMaxH3ReferenceToVideo], native_since: "0.30.0" }
+    fix: { missing: { code: update_comfy_native, params: { version: "0.30.0" } } }
+    install: []
     docs: https://docs.comfy.org/tutorials/video/minimax/minimax-h3-native
   - id: node_vhs
     group: comfy
     name: { zh: VideoHelperSuite, en: VideoHelperSuite }
     depends_on: [comfy]
     detect: { type: comfy_node, dir: ComfyUI-VideoHelperSuite }
-    install: [ { type: git_clone, url: https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite, ref: TODO, dest: "{comfy}/custom_nodes/ComfyUI-VideoHelperSuite" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
+    # 没有发布 tag，锁 2026-10-18 的 main
+    install: [ { type: git_clone, url: https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite, ref: 4d907bee61e92c2e65af3bd6383a4e4d356126d1, dest: "{comfy}/custom_nodes/ComfyUI-VideoHelperSuite" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
   - id: node_seedvr2
     group: comfy
     name: { zh: SeedVR2 节点（本地超分）, en: SeedVR2 nodes (local upscaling) }
     requires_cuda: true
     required: true
     depends_on: [comfy]
-    detect: { type: comfy_node, dir: ComfyUI-SeedVR2_VideoUpscaler, verify: true }
+    detect: { type: comfy_node, dir: ComfyUI-SeedVR2_VideoUpscaler }
     fix: { skip: unsupported_upscale_api }
-    install: [ { type: git_clone, url: https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler, ref: TODO, dest: "{comfy}/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
+    install: [ { type: git_clone, url: https://github.com/numz/ComfyUI-SeedVR2_VideoUpscaler, ref: 5a4bf428f3735cc72ac760d40f372f94dec28422, version: v2.5.23, dest: "{comfy}/custom_nodes/ComfyUI-SeedVR2_VideoUpscaler" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
   - id: node_flashvsr
     group: comfy
     name: { zh: FlashVSR 节点（快速超分）, en: FlashVSR nodes (fast upscaling) }
     requires_cuda: true
     depends_on: [comfy]
-    detect: { type: comfy_node, dir: TODO }
+    # 没有官方节点包；用 1038lab（AILab）的，和它在 Hugging Face 上的 1038lab/FlashVSR 模型说明一致。没有 tag，锁 2026-10-18 的 main
+    detect: { type: comfy_node, dir: ComfyUI-FlashVSR }
     fix: { skip: unsupported_upscale_api }
-    install: [ { type: git_clone, url: TODO, ref: TODO, dest: "{comfy}/custom_nodes/" } ]
+    install: [ { type: git_clone, url: https://github.com/1038lab/ComfyUI-FlashVSR, ref: 8877fdd593ea93b27353956dc69edf423c561fee, dest: "{comfy}/custom_nodes/ComfyUI-FlashVSR" }, { type: uv_pip, env: comfy, requirements: "{dest}/requirements.txt" } ]
     docs: https://www.runcomfy.com/comfyui-nodes/ComfyUI-FlashVSR
   - id: node_ctrl
     group: comfy
     name: { zh: Fun ControlNet 节点, en: Fun ControlNet nodes }
     requires_cuda: true
     depends_on: [comfy]
-    detect: { type: comfy_node, classes: TODO }
-    fix: { optional: ctrl_later }
-    install: [ { type: script, run: TODO } ]
+    # ComfyUI 自带（MiniMaxH3FunControlNetApply，0.35.0 起）；权重 model_patches/minimax_h3_fun_controlnet_union_pruned_int8_convrot 等 P0
+    detect: { type: comfy_node, classes: [MiniMaxH3FunControlNetApply], native_since: "0.35.0" }
+    fix: { optional: { code: update_comfy_native, params: { version: "0.35.0" } } }
+    install: []
     docs: https://docs.comfy.org/tutorials/video/minimax/minimax-h3-fun-controlnet
   - id: sage
     group: comfy
@@ -154,16 +167,17 @@ items:
     detect: { type: comfy_node, dir: comfyui-dramastudio }
     install: [ { type: copy, from: "integrations/comfyui-dramastudio", dest: "{comfy}/custom_nodes/comfyui-dramastudio" }, { type: script, run: "写入本地令牌和后端地址" } ]
 
-  # ---------- 模型权重（断点续传 + sha256） ----------
-  - { id: w_h3,  group: w, name: { zh: "MiniMax H3 权重（int8）", en: "MiniMax H3 weights (int8)" }, requires_cuda: true, required: true, detect: { type: file, path: "{models}/TODO", sha256: TODO }, install: [ { type: download, hf_repo: MiniMaxAI/MiniMax-H3, files: TODO, dest: "{comfy}/models/TODO" } ] }
-  - { id: w_te,  group: w, name: { zh: "Qwen3-VL-32B 文本编码器（NVFP4）", en: "Qwen3-VL-32B text encoder (NVFP4)" }, requires_cuda: true, required: true, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_img, group: w, name: { zh: Qwen-Image-Edit, en: Qwen-Image-Edit }, required: true, macos: { required: false, fix: { optional: mac_image_slow } }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_sr,  group: w, name: { zh: SeedVR2 权重, en: SeedVR2 weights }, requires_cuda: true, required: true, fix: { skip: unsupported_upscale_api }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_tts, group: w, name: { zh: IndexTTS2, en: IndexTTS2 }, required: true, macos: { required: false, name: { zh: 本地配音模型, en: Local voice model }, fix: { optional: mac_voice_slow } }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
-  - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, fix: { optional: llm_optional }, macos: { variant: MLX, required: true, name: { zh: "Qwen3.6-27B（MLX 版）", en: "Qwen3.6-27B (MLX)" }, fix: { missing: download_local_writing } }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
+  # ---------- 模型权重（只检测；版本等 P0 实测定，之后补下载地址和 sha256、去掉 installable: false） ----------
+  # H3 的文件名按 docs.comfy.org 的 H3 教程（Comfy-Org/MiniMax-H3）；其他的 TODO 等 P0。
+  - { id: w_h3,  group: w, name: { zh: "MiniMax H3 权重（int8）", en: "MiniMax H3 weights (int8)" }, requires_cuda: true, required: true, installable: false, fix: { missing: weights_pending_p0 }, detect: { type: file, path: "{comfy}/models/diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors" }, install: [ { type: download, hf_repo: Comfy-Org/MiniMax-H3, files: [diffusion_models/minimax_h3_fl2va_pruned_int8_convrot.safetensors, diffusion_models/minimax_h3_ref2va_pruned_int8_convrot.safetensors, vae/minimax_h3_video_vae_int8_convrot.safetensors, vae/minimax_h3_audio_vae_fp32.safetensors], dest: "{comfy}/models" } ] }
+  - { id: w_te,  group: w, name: { zh: "Qwen3-VL-32B 文本编码器（NVFP4）", en: "Qwen3-VL-32B text encoder (NVFP4)" }, requires_cuda: true, required: true, installable: false, fix: { missing: weights_pending_p0 }, detect: { type: file, path: "{comfy}/models/text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors" }, install: [ { type: download, hf_repo: Comfy-Org/MiniMax-H3, files: [text_encoders/qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors], dest: "{comfy}/models" } ] }
+  - { id: w_img, group: w, name: { zh: Qwen-Image-Edit, en: Qwen-Image-Edit }, required: true, installable: false, fix: { missing: weights_pending_p0 }, macos: { required: false, fix: { optional: mac_image_slow } }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_sr,  group: w, name: { zh: SeedVR2 权重, en: SeedVR2 weights }, requires_cuda: true, required: true, installable: false, fix: { missing: weights_pending_p0, skip: unsupported_upscale_api }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_tts, group: w, name: { zh: IndexTTS2, en: IndexTTS2 }, required: true, installable: false, fix: { missing: weights_pending_p0 }, macos: { required: false, name: { zh: 本地配音模型, en: Local voice model }, fix: { optional: mac_voice_slow } }, detect: { type: file, path: TODO }, install: [ { type: download, hf_repo: TODO } ] }
+  - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, installable: false, fix: { optional: llm_optional }, macos: { variant: MLX, required: true, name: { zh: "Qwen3.6-27B（MLX 版）", en: "Qwen3.6-27B (MLX)" }, fix: { missing: weights_pending_p0 } }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
 
   # ---------- 网络与服务 ----------
-  - { id: hf,      group: svc, name: { zh: 模型下载网络, en: Model download network }, detect: { type: http, speedtest: [hf, pypi, github], max_latency_ms: 1500, verify: true }, fix: { warn: pick_mirror } }
+  - { id: hf,      group: svc, name: { zh: 模型下载网络, en: Model download network }, detect: { type: http, speedtest: [hf, pypi, github], max_latency_ms: 1500 }, fix: { warn: pick_mirror } }
   - { id: llmsrv,  group: svc, name: { zh: 本地 LLM 服务, en: Local LLM server }, detect: { type: service, urls: ["http://127.0.0.1:11434/v1/models", "http://127.0.0.1:8080/v1/models"] }, fix: { optional: install_llm_server }, macos: { required: true, fix: { missing: install_ollama_mlx } }, install: [ { type: pkg, winget: Ollama.Ollama, brew: ollama } ] }
   - { id: keys,    group: svc, name: { zh: API 密钥, en: API keys }, detect: { type: keyring, names_from: providers.yaml }, fix: { optional: keys_later }, macos: { if_missing: warn, fix: { warn: keys_video_api } } }
   - { id: eagle,   group: svc, name: { zh: Eagle 素材库（可选）, en: Eagle library (optional) }, detect: { type: http, url: "http://localhost:41595/api/application/info", verify: true }, fix: { optional: eagle_later }, install: [] }

@@ -115,7 +115,9 @@
     "update_driver": "Update the driver to one that supports CUDA {{cuda}}",
     "disk_low": "Keep at least {{gb}} GB free: pick another drive or clear space",
     "eagle_later": "Install if you manage assets in Eagle",
-    "resolve_later": "Install if you edit in DaVinci Resolve"
+    "resolve_later": "Install if you edit in DaVinci Resolve",
+    "update_comfy_native": "Comes with ComfyUI: update ComfyUI to {{version}} or later",
+    "weights_pending_p0": "Install after the P0 tests settle the version"
   },
   "error": {
     "no_wheel": "No prebuilt package fits this machine, and building it failed",
@@ -133,7 +135,7 @@
     "no_package": "No {{manager}} package is set for this item",
     "source_missing": "Nothing to copy at {{path}}",
     "snapshot_not_running": "ComfyUI isn't running, so no snapshot could be taken and nothing was changed. Open ComfyUI and retry.",
-    "snapshot_no_manager": "This ComfyUI has no ComfyUI-Manager 4, so no snapshot could be taken and nothing was changed. Install ComfyUI-Manager first.",
+    "snapshot_no_manager": "This ComfyUI has no ComfyUI-Manager 4 enabled (install it and start ComfyUI with --enable-manager), so no snapshot could be taken and nothing was changed",
     "snapshot_forbidden": "ComfyUI-Manager's security level doesn't allow this (set it to normal or lower).",
     "snapshot_restart": "ComfyUI-Manager was just installed. Restart ComfyUI and retry.",
     "snapshot_failed": "The snapshot failed, so ComfyUI was left as it was."

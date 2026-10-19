@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import asyncio
 import os
+import re
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
@@ -132,7 +133,10 @@ def comfy_change(item: Item, *, status: str, version: str | None) -> Message:
     """One line of the change list for the user's own ComfyUI (SPEC 6.4.1): what, from which
     version to which, from where, how big. Unknown parts are left out."""
     params: dict[str, Any] = {"item": item.id, "action": "update" if status == "old" else "install"}
-    target = _first(item, ("ref", "version"))
+    # A step's readable `version` (a tag) first; a bare commit shows as its short form.
+    target = _first(item, ("version", "ref"))
+    if target and re.fullmatch(r"[0-9a-f]{40}", target):
+        target = target[:7]
     source = _first(item, ("url", "hf_repo", "packages", "requirements", "from"))
     for key, value in (("from", version), ("to", target), ("source", source)):
         if value:
