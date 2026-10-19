@@ -145,6 +145,11 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
         "state": "failed",
         "pct": 60,
         "error": {"code": "no_wheel", "params": {}},
+        "bytes_done": None,
+        "bytes_total": None,
+        "speed": None,
+        "eta_s": None,
+        "verifying": False,
     }
     assert {x["install"]["pct"] for x in done["items"] if x["id"] != "sage" and x["install"]} == {
         100

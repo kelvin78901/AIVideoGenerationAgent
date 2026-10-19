@@ -33,6 +33,14 @@ class ItemInstall(BaseModel):
     state: InstallState
     pct: float = 0
     error: Message | None = None
+    # An item with downloads, while it runs: bytes over all its files (the total is the sizes
+    # known so far), the speed over the last few seconds (bytes/s), the time left at that speed,
+    # and whether a finished file's sha256 is being checked.
+    bytes_done: int | None = None
+    bytes_total: int | None = None
+    speed: float | None = None
+    eta_s: float | None = None
+    verifying: bool = False
 
 
 class SetupItem(BaseModel):

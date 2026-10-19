@@ -8,17 +8,22 @@ never into the system Python (SPEC 12.2-5). Commands run without a shell, throug
 ``Exec`` that tests replace; their output is logged line by line (``setup:log.output``).
 
 A manifest value still marked ``TODO`` stops the item with ``manifest_todo``.
+
+An item with downloads reports its progress by bytes over all its files (``setup/download.py``):
+before its first step every file's size is asked for, so the total is right from the start.
 """
 
 from __future__ import annotations
 
 import asyncio
-import hashlib
+import contextlib
 import re
 import shlex
 import shutil
 import sys
+import time
 from collections.abc import Awaitable, Callable
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
 
@@ -26,12 +31,23 @@ import httpx
 
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.setup.comfy import model_target
+from drama_series_agent.setup.download import (
+    BLOCK,
+    TIMEOUT,
+    WINDOW_S,
+    Clock,
+    FileDownload,
+    Meter,
+    Sleep,
+    Tuner,
+)
 from drama_series_agent.setup.installer import (
     Installed,
     InstallEnv,
     InstallError,
     LogFn,
     ProgressFn,
+    Transfer,
 )
 from drama_series_agent.setup.manifest import PKG_MANAGER, TODO, Item, Step
 from drama_series_agent.setup.pathutil import join
@@ -43,7 +59,6 @@ _TORCH = re.compile(r"(?P<minor>\d+\.\d+)\.\d+(?:\+(?P<cuda>\w+))?")
 
 # winget's APPINSTALLER_CLI_ERROR_PACKAGE_ALREADY_INSTALLED (0x8A15002B as a signed int).
 WINGET_ALREADY_INSTALLED = -1978335189
-CHUNK = 1 << 20
 MAX_LINE = 500
 
 
@@ -103,6 +118,23 @@ def _python_in(venv: str, os: str) -> str:
 VERIFY_AFTER = frozenset({"py_import", "file", "downloads"})
 
 
+@dataclass
+class _Fetching:
+    """An item's downloads: one HTTP client, one meter, the files already asked about."""
+
+    client: httpx.AsyncClient
+    meter: Meter
+    files: dict[str, FileDownload]
+
+
+async def _no_log(level: Any, code: str, params: dict[str, Any]) -> None:
+    return None
+
+
+async def _no_progress(pct: float, transfer: Transfer | None = None) -> None:
+    return None
+
+
 class RealRunner:
     """Runs an item's install steps on this machine."""
 
@@ -114,12 +146,23 @@ class RealRunner:
         transport: httpx.AsyncBaseTransport | None = None,
         already: Callable[[Item, InstallEnv], Awaitable[bool]] | None = None,
         which: Callable[[str], str | None] = shutil.which,
+        tuner: Tuner | None = None,
+        clock: Clock = time.monotonic,
+        sleep: Sleep = asyncio.sleep,
+        block: int = BLOCK,
+        window_s: float = WINDOW_S,
     ) -> None:
         self.mirrors = mirrors
         self._exec = exec_
         self._transport = transport
         self._already = already
         self._which = which
+        # One per install run: how many connections suit this line carries over to later files.
+        self.tuner = tuner or Tuner()
+        self._clock = clock
+        self._sleep = sleep
+        self._block = block
+        self._window = window_s
 
     async def install(
         self, item: Item, env: InstallEnv, log: LogFn, progress: ProgressFn
@@ -130,23 +173,79 @@ class RealRunner:
             return Installed()
         if not item.install:
             raise InstallError("not_installable")
+        if not any(s.type == "download" for s in item.install):
+            return await self._steps(item, env, log, progress, None)
+        async with httpx.AsyncClient(
+            transport=self._transport, follow_redirects=True, timeout=TIMEOUT
+        ) as client:
+
+            async def report(t: Transfer) -> None:
+                pct = t.done / t.total * 100 if t.total else 0.0
+                await progress(min(99.0, pct), t)
+
+            fetching = _Fetching(client, Meter(report, clock=self._clock), {})
+            await self._prepare(item, env, fetching)
+            await fetching.meter.tick(force=True)
+            return await self._steps(item, env, log, progress, fetching)
+
+    async def _steps(
+        self,
+        item: Item,
+        env: InstallEnv,
+        log: LogFn,
+        progress: ProgressFn,
+        fetching: _Fetching | None,
+    ) -> Installed:
         paths: list[str] = []
         names: dict[str, str] = {}
         span = 100 / len(item.install)
         for i, step in enumerate(item.install):
+            # With downloads the meter reports by bytes; otherwise each step is an equal share.
+            async def sub(
+                pct: float, transfer: Transfer | None = None, base: float = i * span
+            ) -> None:
+                if fetching is None:
+                    await progress(base + pct * span / 100)
 
-            async def sub(pct: float, base: float = i * span) -> None:
-                await progress(base + pct * span / 100)
-
-            run = _StepRun(self, step, env, names, log, sub)
+            run = _StepRun(self, step, env, names, log, sub, fetching)
             paths += await run.go()
-            await progress((i + 1) * span)
+            if fetching is None:
+                await progress((i + 1) * span)
         # Steps can all succeed and still leave nothing that works (a package that does not
         # import): ask the detector again where its answer holds right away.
         verify = self._already if item.detect.type in VERIFY_AFTER else None
         if verify is not None and not await verify(item, env):
             raise InstallError("not_detected")
-        return Installed(paths=paths)
+        return Installed(paths=paths, bps=fetching.meter.average() if fetching else None)
+
+    async def _prepare(self, item: Item, env: InstallEnv, fetching: _Fetching) -> None:
+        """Every file's size and what of it is here already, before the first step runs. A step
+        that cannot say where its files go yet is left to fail when it runs."""
+        names: dict[str, str] = {}
+        for step in item.install:
+            if step.type != "download":
+                continue
+            run = _StepRun(self, step, env, names, _no_log, _no_progress, fetching)
+            with contextlib.suppress(InstallError):
+                for url, target, sha256 in run.download_plan():
+                    fetching.files[str(target)] = self.file_download(url, target, sha256, fetching)
+        await asyncio.gather(*(f.prepare() for f in fetching.files.values()))
+
+    def file_download(
+        self, url: str, target: Path, sha256: str | None, fetching: _Fetching
+    ) -> FileDownload:
+        return FileDownload(
+            url,
+            target,
+            sha256,
+            client=fetching.client,
+            meter=fetching.meter,
+            tuner=self.tuner,
+            clock=self._clock,
+            sleep=self._sleep,
+            block=self._block,
+            window_s=self._window,
+        )
 
     # ------------------------------------------------------------------ mirrors
 
@@ -174,6 +273,7 @@ class _StepRun:
         names: dict[str, str],
         log: LogFn,
         progress: ProgressFn,
+        fetching: _Fetching | None = None,
     ) -> None:
         self.r = runner
         self.step = step
@@ -181,6 +281,7 @@ class _StepRun:
         self.names = names  # {dest} of an earlier step, for requirements: "{dest}/..."
         self.log = log
         self.progress = progress
+        self.fetching = fetching
         self.extra: dict[str, Any] = dict(step.model_extra or {})
 
     async def go(self) -> list[str]:
@@ -321,7 +422,8 @@ class _StepRun:
         await self.run(["git", "-C", dest, *QUIET_CHECKOUT, "checkout", "--force", ref])
         return [dest]
 
-    async def _download(self) -> list[str]:
+    def download_plan(self) -> list[tuple[str, Path, str | None]]:
+        """(url, target, sha256) of each file of this ``download`` step."""
         files = self.step.download_files()
         if not files:
             raise InstallError("manifest_todo", field="download.files")
@@ -341,19 +443,25 @@ class _StepRun:
             revision = str(self.value("revision", required=False) or "main")
             hf = self.r.base(self.env, "hf").rstrip("/")
             urls = [f"{hf}/{repo}/resolve/{revision}/{f.path}" for f in files]
-        out: list[str] = []
-        for i, (url_, f) in enumerate(zip(urls, files, strict=True)):
+        plan: list[tuple[str, Path, str | None]] = []
+        for url_, f in zip(urls, files, strict=True):
             if f.folder is not None:
                 target = Path(model_target(f.folder, self.env.model_dirs, self.env.comfy), f.name)
             else:
                 assert dest is not None
                 target = Path(dest) / f.path
+            plan.append((url_, target, f.sha256))
+        return plan
 
-            async def sub(pct: float, i: int = i) -> None:
-                await self.progress((i + pct / 100) / len(files) * 100)
-
-            await self.log("info", "download", {"file": f.name, "path": str(target)})
-            await _fetch(url_, target, f.sha256, self.r._transport, sub)
+    async def _download(self) -> list[str]:
+        assert self.fetching is not None  # RealRunner.install sets it up for download items
+        out: list[str] = []
+        for url, target, sha256 in self.download_plan():
+            fd = self.fetching.files.get(str(target)) or self.r.file_download(
+                url, target, sha256, self.fetching
+            )
+            await self.log("info", "download", {"file": target.name, "path": str(target)})
+            await fd.run()
             out.append(str(target))
         return out
 
@@ -392,61 +500,3 @@ class _StepRun:
             raise InstallError("source_missing", path=str(self.value("from")))
         await asyncio.to_thread(shutil.copytree, src, dest, dirs_exist_ok=True)
         return [dest]
-
-
-async def _sha256(path: Path) -> str:
-    def digest() -> str:
-        h = hashlib.sha256()
-        with path.open("rb") as fh:
-            while chunk := fh.read(CHUNK):
-                h.update(chunk)
-        return h.hexdigest()
-
-    return await asyncio.to_thread(digest)
-
-
-async def _fetch(
-    url: str,
-    target: Path,
-    sha256: str | None,
-    transport: httpx.AsyncBaseTransport | None,
-    progress: ProgressFn,
-) -> None:
-    """Download ``url`` to ``target``: resumes a ``.part`` file, checks sha256, then renames."""
-    if await _exists(target) and (sha256 is None or await _sha256(target) == sha256.lower()):
-        return
-    part = target.with_name(target.name + ".part")
-    await asyncio.to_thread(target.parent.mkdir, parents=True, exist_ok=True)
-    have = (await asyncio.to_thread(part.stat)).st_size if await _exists(part) else 0
-    headers = {"Range": f"bytes={have}-"} if have else {}
-    try:
-        async with (
-            httpx.AsyncClient(
-                transport=transport, follow_redirects=True, timeout=httpx.Timeout(30, read=120)
-            ) as client,
-            client.stream("GET", url, headers=headers) as resp,
-        ):
-            if resp.status_code == 416:  # the .part is already complete
-                pass
-            elif resp.status_code not in (200, 206):
-                raise InstallError("download_failed", status=resp.status_code, file=target.name)
-            else:
-                if resp.status_code == 200:
-                    have = 0  # the server ignored the range: start over
-                total = int(resp.headers.get("content-length", 0)) + have
-                mode = "ab" if have else "wb"
-                fh = await asyncio.to_thread(part.open, mode)
-                try:
-                    async for chunk in resp.aiter_bytes(CHUNK):
-                        await asyncio.to_thread(fh.write, chunk)
-                        have += len(chunk)
-                        if total:
-                            await progress(min(99.0, have / total * 100))
-                finally:
-                    await asyncio.to_thread(fh.close)
-    except httpx.HTTPError as exc:
-        raise InstallError("download_failed", status=type(exc).__name__, file=target.name) from None
-    if sha256 is not None and await _sha256(part) != sha256.lower():
-        await asyncio.to_thread(part.unlink)
-        raise InstallError("sha256_mismatch", file=target.name)
-    await asyncio.to_thread(part.replace, target)

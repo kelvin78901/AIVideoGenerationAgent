@@ -13,7 +13,7 @@ import pytest
 
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.setup.comfy import ModelDir
-from drama_series_agent.setup.installer import InstallEnv, InstallError
+from drama_series_agent.setup.installer import InstallEnv, InstallError, Transfer
 from drama_series_agent.setup.manifest import OS, Detect, Item, Step, load_manifest
 from drama_series_agent.setup.pathutil import join
 from drama_series_agent.setup.snapshots import SnapshotFailure
@@ -89,12 +89,15 @@ class Log:
     def __init__(self) -> None:
         self.lines: list[tuple[str, str, dict[str, Any]]] = []
         self.pct: list[float] = []
+        self.transfers: list[Transfer] = []
 
     async def log(self, level: str, code: str, params: dict[str, Any]) -> None:
         self.lines.append((level, code, params))
 
-    async def progress(self, pct: float) -> None:
+    async def progress(self, pct: float, transfer: Transfer | None = None) -> None:
         self.pct.append(pct)
+        if transfer is not None:
+            self.transfers.append(transfer)
 
 
 def _offline(request: httpx.Request) -> httpx.Response:
@@ -378,11 +381,18 @@ class Server:
         self.requests.append(request)
         if self.status != 200:
             return httpx.Response(self.status)
-        m = re.fullmatch(r"bytes=(\d+)-", request.headers.get("range", ""))
+        m = re.fullmatch(r"bytes=(\d+)-(\d*)", request.headers.get("range", ""))
         if m and self.ranges:
             start = int(m.group(1))
-            return httpx.Response(206, content=self.body[start:])
+            end = int(m.group(2)) if m.group(2) else len(self.body) - 1
+            headers = {"content-range": f"bytes {start}-{end}/{len(self.body)}"}
+            return httpx.Response(206, content=self.body[start : end + 1], headers=headers)
         return httpx.Response(200, content=self.body)
+
+    def ranges_asked(self) -> list[str]:
+        """The Range of each download request, leaving out the size probes."""
+        asked = [r.headers.get("range", "") for r in self.requests]
+        return [x for x in asked if x != "bytes=0-0"]
 
 
 def _dl(**kw: Any) -> Item:
@@ -397,22 +407,32 @@ async def test_download_and_check(tmp_path: Path) -> None:
     target = tmp_path / "models" / "h3" / "h3.safetensors"
     assert target.read_bytes() == BLOB
     assert not target.with_name("h3.safetensors.part").exists()
-    assert str(server.requests[0].url) == (
+    assert not target.with_name("h3.safetensors.part.json").exists()
+    assert {str(r.url) for r in server.requests} == {
         "https://huggingface.co/MiniMaxAI/MiniMax-H3/resolve/main/h3.safetensors"
-    )
-    assert log.pct[-1] == 100 and len(log.pct) >= 2
+    }
+    # By bytes: the size is known before the first byte, and the end is 99 % (done is 100).
+    assert log.transfers[0] == Transfer(done=0, total=len(BLOB), speed=None)
+    assert log.transfers[-1].done == len(BLOB) and log.pct[-1] == 99
+    assert any(t.verifying for t in log.transfers)
     # Already there with the right checksum: no request.
+    asked = len(server.requests)
     await _install(_dl(sha256=BLOB_SHA), env, transport=httpx.MockTransport(server))
-    assert len(server.requests) == 1
+    assert len(server.requests) == asked
 
 
 async def test_download_resumes(tmp_path: Path) -> None:
+    """A ``.part`` from the old single-connection download: its full blocks count."""
     part = tmp_path / "models" / "h3" / "h3.safetensors.part"
     part.parent.mkdir(parents=True)
-    part.write_bytes(BLOB[:300_000])
+    part.write_bytes(BLOB[:350_000])
     server = Server()
-    await _install(_dl(sha256=BLOB_SHA), _env(tmp_path), transport=httpx.MockTransport(server))
-    assert server.requests[0].headers["range"] == "bytes=300000-"
+    transport = httpx.MockTransport(server)
+    _, log = await _install(
+        _dl(sha256=BLOB_SHA), _env(tmp_path), transport=transport, block=100_000
+    )
+    assert server.ranges_asked() == [f"bytes=300000-{len(BLOB) - 1}"]
+    assert log.transfers[0].done == 300_000
     assert (tmp_path / "models" / "h3" / "h3.safetensors").read_bytes() == BLOB
 
     # A server that ignores Range: start over instead of appending.
@@ -462,10 +482,12 @@ async def test_download_into_comfyui_model_folders(tmp_path: Path) -> None:
     _, log = await _install(item, env, transport=httpx.MockTransport(server))
     assert (shared / "vae" / "v.safetensors").read_bytes() == BLOB
     assert (tmp_path / "ComfyUI" / "models" / "loras" / "l.safetensors").read_bytes() == BLOB
-    assert [str(r.url) for r in server.requests] == [
+    assert list(dict.fromkeys(str(r.url) for r in server.requests)) == [
         f"https://huggingface.co/o/r/resolve/{'a' * 40}/split_files/vae/v.safetensors",
         f"https://huggingface.co/o/r/resolve/{'a' * 40}/loras/l.safetensors",
     ]
+    # Both sizes were asked for first: the total covers both files from the start.
+    assert log.transfers[0] == Transfer(done=0, total=2 * len(BLOB), speed=None)
     assert (
         "info",
         "download",

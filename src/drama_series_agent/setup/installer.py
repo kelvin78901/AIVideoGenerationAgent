@@ -27,7 +27,20 @@ FAKE_FAILING_ITEM = "sage"
 
 LogLevel = Literal["info", "ok", "warn"]
 LogFn = Callable[[LogLevel, str, dict[str, Any]], Awaitable[None]]
-ProgressFn = Callable[[float], Awaitable[None]]
+
+
+@dataclass(frozen=True)
+class Transfer:
+    """An item's downloads so far, over all its files (``setup/download.py:Meter``)."""
+
+    done: int
+    total: int | None  # the sizes known so far
+    speed: float | None  # bytes per second over the last few seconds
+    verifying: bool = False  # checking a finished file's sha256
+
+
+class ProgressFn(Protocol):
+    async def __call__(self, pct: float, transfer: Transfer | None = None) -> None: ...
 
 
 class InstallError(Exception):
@@ -62,6 +75,7 @@ class InstallEnv:
 class Installed:
     version: str | None = None
     paths: list[str] = field(default_factory=list)
+    bps: float | None = None  # how fast its downloads came, when it had any
 
 
 class ItemRunner(Protocol):

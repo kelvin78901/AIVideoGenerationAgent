@@ -65,6 +65,7 @@ from drama_series_agent.setup.installer import (
     InstallError,
     ItemRunner,
     LogLevel,
+    Transfer,
     comfy_change,
     confirm_reasons,
     install_order,
@@ -639,9 +640,19 @@ class SetupService:
     ) -> None:
         """Install one item; with ``snapshot_for``, only after a snapshot of the user's ComfyUI."""
 
-        async def progress(pct: float) -> None:
-            pct = max(0.0, min(99.0, round(pct)))
-            await self._update_item(pid, run, item.id, lambda i: i.model_copy(update={"pct": pct}))
+        async def progress(pct: float, transfer: Transfer | None = None) -> None:
+            update: dict[str, Any] = {"pct": max(0.0, min(99.0, round(pct, 1)))}
+            if transfer is not None:
+                left = transfer.total - transfer.done if transfer.total is not None else None
+                speed = transfer.speed
+                update |= {
+                    "bytes_done": transfer.done,
+                    "bytes_total": transfer.total,
+                    "speed": round(speed) if speed else None,
+                    "eta_s": round(left / speed) if speed and left is not None else None,
+                    "verifying": transfer.verifying,
+                }
+            await self._update_item(pid, run, item.id, lambda i: i.model_copy(update=update))
 
         async def log(level: LogLevel, code: str, params: dict[str, Any]) -> None:
             await self._log(level, code, **params)
