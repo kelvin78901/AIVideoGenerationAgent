@@ -173,6 +173,14 @@ def test_without_manager_it_is_installed_first(client: TestClient) -> None:
     assert done["node_seedvr2"]["error"] == {"code": "snapshot_restart", "params": {}}
 
 
+def test_without_comfyui_manager_follows_the_comfyui_we_install(client: TestClient) -> None:
+    scanned = _scan(client, "mac")
+    assert not any(x["touches_comfy"] for x in scanned["items"])
+    started = _install(client, ["comfy_manager", "torch", "comfy"])
+    assert started["install"]["items"] == ["torch", "comfy", "comfy_manager"]
+    assert started["install"]["confirm"] == []
+
+
 def test_rollback(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     _scan(client)
     resp = client.post(SNAPSHOTS)

@@ -336,8 +336,10 @@ class SetupService:
             order = install_order(items, selected)
             if not order:
                 raise NothingSelected
-            if MANAGER in order:
-                order.insert(0, order.pop(order.index(MANAGER)))  # the found ComfyUI is its dep
+            # Into the found ComfyUI (its only dependency) Manager goes first, so the snapshot
+            # comes before every other change; into one we install, after that ComfyUI.
+            if MANAGER in order and states[MANAGER].touches_comfy:
+                order.insert(0, order.pop(order.index(MANAGER)))
             changes = [
                 comfy_change(
                     by_id[i],
