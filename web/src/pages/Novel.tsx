@@ -6,6 +6,7 @@ import { useTranslation } from "react-i18next";
 import { useComponentModels } from "@/api/hooks/config";
 import { useBible, useNovel, useSuggestions } from "@/api/hooks/novel";
 import { useProducts } from "@/api/hooks/products";
+import type { BibleEntity } from "@/api/schemas/novel";
 import { useRouteEpisode } from "@/api/hooks/series";
 import { paths } from "@/app/paths";
 import { EmptyState } from "@/components/EmptyState";
@@ -39,20 +40,23 @@ export default function NovelPage() {
   const enrichModels = useComponentModels("enrich");
   const [view, setView] = useState<NovelView>("diff");
   const [focus, setFocus] = useState<number | null>(0);
+  // The paragraph to bring into view (a suggestion's, or the first of a bible entry's).
+  const [target, setTarget] = useState<number | null>(0);
+  const [entity, setEntity] = useState<BibleEntity | null>(null);
   const [importing, setImporting] = useState(false);
 
   useEffect(() => useInspectorStore.getState().reset(), []);
-  // A suggestion in another chapter switches chapters first; scroll once it is on screen.
-  const shown = novel.data?.paragraphs.some((p) => p.idx === focus);
+  // A paragraph in another chapter switches chapters first; scroll once it is on screen.
+  const shown = novel.data?.paragraphs.some((p) => p.idx === target);
   useEffect(() => {
-    if (focus != null && shown)
-      document.getElementById(`novel-para-${focus}`)?.scrollIntoView?.({ block: "nearest" });
-  }, [focus, shown]);
+    if (target != null && shown)
+      document.getElementById(`novel-para-${target}`)?.scrollIntoView?.({ block: "nearest" });
+  }, [target, shown]);
 
   const productOf = (component: string) => products.data?.find((p) => p.component_id === component);
   const product = productOf(selected);
   const ep = String(episodeIdx);
-  const count = (kind: string) => bible.data?.filter((e) => e.kind === kind).length ?? 0;
+  const count = (kind: string) => bible.data?.entities.filter((e) => e.kind === kind).length ?? 0;
   const what =
     selected === "enrich"
       ? t("what.enrich", { count: suggestions.data?.length ?? 0 })
@@ -62,10 +66,20 @@ export default function NovelPage() {
           props: count("prop"),
         });
 
+  const showPara = (idx: number) => {
+    setTarget(idx);
+    const shownIn = chapterOf(novel.data?.chapters ?? [], idx);
+    if (shownIn && shownIn.idx !== chapter) setChapter(shownIn.idx);
+  };
   const focusPara = (idx: number) => {
     setFocus(idx);
-    const target = chapterOf(novel.data?.chapters ?? [], idx);
-    if (target && target.idx !== chapter) setChapter(target.idx);
+    showPara(idx);
+  };
+  const selectEntity = (e: BibleEntity | null) => {
+    setEntity(e);
+    setFocus(null);
+    const first = e?.paras[0];
+    if (first !== undefined) showPara(first);
   };
   const source = novel.data?.source;
   const empty = novel.data != null && source == null;
@@ -135,6 +149,7 @@ export default function NovelPage() {
                   onViewChange={setView}
                   onChapterChange={setChapter}
                   focus={focus}
+                  marked={entity?.paras}
                 />
               )}
             </QueryState>
@@ -151,8 +166,14 @@ export default function NovelPage() {
           </div>
 
           <QueryState query={bible} skeleton={<Skeleton className="h-32 w-full" />}>
-            {(entities) => (
-              <BiblePanel entities={entities} assetsPath={paths.step(seriesId, ep, "assets")} />
+            {(b) => (
+              <BiblePanel
+                seriesId={seriesId}
+                bible={b}
+                assetsPath={paths.step(seriesId, ep, "assets")}
+                selected={entity?.id ?? null}
+                onSelect={selectEntity}
+              />
             )}
           </QueryState>
         </>
@@ -166,6 +187,8 @@ export default function NovelPage() {
         onImported={() => {
           setChapter(0);
           setFocus(0);
+          setTarget(0);
+          setEntity(null);
         }}
       />
     </StepLayout>

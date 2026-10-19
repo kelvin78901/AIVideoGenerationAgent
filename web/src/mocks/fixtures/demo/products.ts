@@ -1,7 +1,8 @@
 /**
  * Products and versions for the novel step (prototype Main.dc.html, Inspector「历史」):
- * 小说补全 v1 Qwen3.6-27B 本地 09:41 草稿 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳；
- * 设定提取 v1 Qwen3.6-27B 本地 10:05 已采纳.
+ * 小说补全 v1 Qwen3.6-27B 本地 09:41 草稿 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳.
+ * 设定提取 (v1 Qwen3.6-27B 本地 10:05) is the backend's (`studio/demo.py`), merged into the
+ * demo's product list by `handlers/products.ts`.
  */
 import type { Product, ProductVersion, VersionOrigin } from "@/api/schemas/products";
 import { modelByKey } from "@/mocks/fixtures/demo/models";
@@ -10,6 +11,7 @@ import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 
 export const PRODUCT_ENRICH = "demo-p-enrich";
+/** The backend's 设定提取 product of the demo series (seeded in Mock mode). */
 export const PRODUCT_EXTRACT = "demo-p-extract";
 export const PRODUCT_SPLIT = "demo-p-split";
 
@@ -166,21 +168,6 @@ export const products: Product[] = [
       }),
     ],
     40,
-  ),
-  novelProduct(
-    PRODUCT_EXTRACT,
-    "extract",
-    "bible",
-    [
-      demoVersion(PRODUCT_EXTRACT, "extract", {
-        n: 1,
-        origin: "run",
-        model: LOCAL,
-        at: demoAt("10:05"),
-        payload: { characters: 2, locations: 3, props: 4 },
-      }),
-    ],
-    60,
   ),
   novelProduct(
     PRODUCT_SPLIT,

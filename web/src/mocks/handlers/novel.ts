@@ -36,11 +36,6 @@ export const novelHandlers = [
     return seriesGuard(id) ?? demoJson(getDb().suggestions.filter((s) => s.series_id === id));
   }),
 
-  http.get(v1("/series/:id/bible"), ({ params }) => {
-    const id = String(params.id);
-    return seriesGuard(id) ?? demoJson(getDb().bible.filter((e) => e.series_id === id));
-  }),
-
   // 「全部采纳」: every suggestion that was not ignored.
   http.post(v1("/series/:id/suggestions/accept-all"), ({ params }) => {
     const id = String(params.id);

@@ -1,4 +1,4 @@
-"""``web/src/test/data/{setup,config,novel}.json``: what the Mock backend answers.
+"""``web/src/test/data/{setup,config,novel,bible}.json``: what the Mock backend answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -167,3 +167,24 @@ def test_web_novel_fixture_is_current(client: TestClient) -> None:
             f.write(text)
     current = NOVEL_FIXTURE.read_text(encoding="utf-8") if NOVEL_FIXTURE.exists() else ""
     assert current == text, f"{NOVEL_FIXTURE.name} is out of date: see this module's docstring"
+
+
+BIBLE_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "bible.json"
+
+
+def _bible_export(client: TestClient) -> dict[str, Any]:
+    """The demo series' bible and its backend products (the novel, 设定提取).
+
+    ``test/fakes/bible.ts`` serves them; the MSW demo merges these products into its list.
+    """
+    products = client.get(f"{V1}/products", params={"owner": "series:demo"}).json()
+    return {"bible": client.get(f"{V1}/series/demo/bible").json(), "products": products}
+
+
+def test_web_bible_fixture_is_current(client: TestClient) -> None:
+    text = json.dumps(_bible_export(client), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(BIBLE_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = BIBLE_FIXTURE.read_text(encoding="utf-8") if BIBLE_FIXTURE.exists() else ""
+    assert current == text, f"{BIBLE_FIXTURE.name} is out of date: see this module's docstring"

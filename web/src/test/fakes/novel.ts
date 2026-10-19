@@ -2,8 +2,8 @@
  * Fake `/series/{id}/novel` for page tests: the demo novel chapter by chapter as the Mock backend
  * answers it, and the import preview of `雨停之前.txt` (`test/data/novel.json`, written by
  * tests/api/test_web_fixtures.py). Importing on another series stores that same novel there.
- * Suggestions and the bible of a series other than the demo are empty, as the backend's are
- * before anything ran.
+ * Suggestions of a series other than the demo are empty, as the backend's are before anything
+ * ran (the bible is `test/fakes/bible.ts`).
  */
 import { http, HttpResponse } from "msw";
 
@@ -88,11 +88,6 @@ export function novelHandlers(known: (id: string) => boolean) {
 
     // The backend's lists for a series nothing has run on yet (the demo's are MSW demo data).
     http.get("*/api/v1/series/:id/suggestions", ({ params }) =>
-      String(params.id) !== DEMO_SERIES_ID && known(String(params.id))
-        ? HttpResponse.json([])
-        : undefined,
-    ),
-    http.get("*/api/v1/series/:id/bible", ({ params }) =>
       String(params.id) !== DEMO_SERIES_ID && known(String(params.id))
         ? HttpResponse.json([])
         : undefined,

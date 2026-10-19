@@ -129,8 +129,48 @@ export const BibleEntitySchema = z.object({
   aliases: z.array(z.string()),
   /** Kind-specific fields; `summary` is the one-line description the novel page shows. */
   data: z.looseObject({ summary: z.string().optional() }),
+  /** Paragraphs (numbered across the book, 0-based) that mention it. */
+  paras: z.array(z.number().int().nonnegative()),
   source_spans: z.array(SourceSpanSchema),
-  /** The user marked it as not to be changed by extraction. */
+  /** The user marked it as not to be changed by extraction (a rerun keeps it as it is). */
   frozen: z.boolean(),
 });
 export type BibleEntity = z.infer<typeof BibleEntitySchema>;
+
+/** 「可能是同一个」: two entries the model judged to be the same, waiting for the user. */
+export const MergeSuggestionSchema = z.object({
+  id: z.string(),
+  kind: BibleKindSchema,
+  ids: z.array(z.string()),
+  /** Model output, shown as is. */
+  reason: z.string(),
+});
+export type MergeSuggestion = z.infer<typeof MergeSuggestionSchema>;
+
+/** `GET /series/{id}/bible`: the 设定提取 version on screen (the product's current one). */
+export const BibleSchema = z.object({
+  series_id: z.string(),
+  /** null before the series has a novel. */
+  product_id: z.string().nullable(),
+  version_id: z.string().nullable(),
+  /** false while the version on screen is not the adopted one (「未采纳」). */
+  adopted: z.boolean(),
+  /** The source the spans point into (an older import after the novel was replaced). */
+  source_id: z.string().nullable(),
+  entities: z.array(BibleEntitySchema),
+  merge_suggestions: z.array(MergeSuggestionSchema),
+});
+export type Bible = z.infer<typeof BibleSchema>;
+
+/** `PATCH /bible/{id}`: only the fields sent change; a new name keeps the old one as an alias. */
+export interface BiblePatch {
+  name?: string;
+  aliases?: string[];
+  data?: Record<string, unknown>;
+  frozen?: boolean;
+}
+
+/** `POST /bible/merge`: 确认合并 (the first id stays) / 不是同一个 / 拆分 (an alias). */
+export type BibleMergeRequest =
+  | { action: "merge" | "distinct"; ids: string[] }
+  | { action: "split"; ids: [string]; alias: string };

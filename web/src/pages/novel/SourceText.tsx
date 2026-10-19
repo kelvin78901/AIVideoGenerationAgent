@@ -10,6 +10,7 @@ export type NovelView = "orig" | "after" | "diff";
 /**
  * 原文 of one chapter with the adopted additions: hidden (原文), inline (采纳后) or highlighted
  * (对比). Paragraphs are numbered across the book; a novel with several chapters gets a picker.
+ * The paragraphs of the bible entry picked below are marked.
  */
 export function SourceText({
   novel,
@@ -18,6 +19,7 @@ export function SourceText({
   onViewChange,
   onChapterChange,
   focus,
+  marked = [],
 }: {
   novel: Novel;
   suggestions: Suggestion[];
@@ -26,6 +28,8 @@ export function SourceText({
   onChapterChange: (idx: number) => void;
   /** Paragraph highlighted from a suggestion's 「第 N 段」. */
   focus: number | null;
+  /** Paragraphs that mention the bible entry picked in 提取到的设定. */
+  marked?: number[];
 }) {
   const { t } = useTranslation("novel");
   const accepted = suggestions.filter((s) => s.status === "accepted");
@@ -91,8 +95,10 @@ export function SourceText({
               key={p.idx}
               id={`novel-para-${p.idx}`}
               data-focused={focus === p.idx || undefined}
+              data-marked={marked.includes(p.idx) || undefined}
               className={cn(
                 "flex gap-3 rounded-md border border-transparent px-2.5 py-2 transition-colors",
+                marked.includes(p.idx) && "border-tone-warn-border bg-tone-warn-bg/50",
                 focus === p.idx && "border-tone-info-border bg-tone-info-bg/50",
               )}
             >

@@ -9,6 +9,7 @@ import {
   type Product,
   type ProductVersion,
 } from "@/api/schemas/products";
+import { backendJson } from "@/mocks/backend";
 import { getDb } from "@/mocks/db";
 import { demoTiming, emitDemoEvent } from "@/mocks/events";
 import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
@@ -20,7 +21,6 @@ import { demoTakeQa, logTake, shotOf, waitingOn } from "@/mocks/handlers/generat
 import { demoError, demoJson, v1 } from "@/mocks/http";
 import { demoRoute, primaryModel } from "@/mocks/route";
 
-const notFound = (id: unknown) => demoError(404, "product_not_found", { id });
 const DEFAULT_MODEL = "local/qwen3.6-27b";
 
 function findVersion(id: string): { product: Product; version: ProductVersion } | undefined {
@@ -178,17 +178,21 @@ export const productHandlers = [
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&
         (!component || p.component_id === component),
     );
-    return demoJson(await Promise.all(list.map(withEstimate)));
+    // The backend's products of the demo series (the novel, 设定提取) come first.
+    const real = kind === "series" ? await backendJson<Product[]>(request.clone(), []) : [];
+    const demo = await Promise.all(list.map(withEstimate));
+    return demoJson([...real, ...demo.filter((p) => !real.some((r) => r.id === p.id))]);
   }),
 
+  // Ids that are not in the demo data are the backend's.
   http.get(v1("/products/:id"), async ({ params }) => {
     const p = getDb().products[String(params.id)];
-    return p ? demoJson(await withEstimate(p)) : notFound(params.id);
+    return p ? demoJson(await withEstimate(p)) : passthrough();
   }),
 
   http.post(v1("/products/:id/run"), async ({ params, request }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     const body = RunRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     if (p.running) return demoError(409, "product_busy", { id: p.id });
@@ -236,14 +240,14 @@ export const productHandlers = [
 
   http.post(v1("/versions/:id/set-current"), ({ params }) => {
     const found = findVersion(String(params.id));
-    if (!found) return demoError(404, "version_not_found", { id: params.id });
+    if (!found) return passthrough();
     found.product.current_version_id = found.version.id;
     return demoJson(found.product);
   }),
 
   http.post(v1("/versions/:id/adopt"), ({ params }) => {
     const found = findVersion(String(params.id));
-    if (!found) return demoError(404, "version_not_found", { id: params.id });
+    if (!found) return passthrough();
     const { product: p, version } = found;
     if (p.locked_hash) return demoError(409, "product_locked", { id: p.id });
     // One adopted version per product: adopting replaces the previous one.
@@ -256,7 +260,7 @@ export const productHandlers = [
   // 取消采纳 (候选墙): nothing downstream uses this product until another version is adopted.
   http.post(v1("/products/:id/unadopt"), ({ params }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     if (p.locked_hash) return demoError(409, "product_locked", { id: p.id });
     p.adopted_version_id = null;
     settle(p);
@@ -266,7 +270,7 @@ export const productHandlers = [
   // 数字键打分 on the candidate wall.
   http.patch(v1("/versions/:id"), async ({ params, request }) => {
     const found = findVersion(String(params.id));
-    if (!found) return demoError(404, "version_not_found", { id: params.id });
+    if (!found) return passthrough();
     const body = VersionPatchSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     Object.assign(found.version, body.data);
@@ -275,7 +279,7 @@ export const productHandlers = [
 
   http.post(v1("/products/:id/lock"), ({ params }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     const adopted = p.versions.find((v) => v.id === p.adopted_version_id);
     if (!adopted) return demoError(409, "nothing_adopted", { id: p.id });
     p.locked_hash = adopted.content_hash;
@@ -285,7 +289,7 @@ export const productHandlers = [
 
   http.post(v1("/products/:id/unlock"), ({ params }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     p.locked_hash = null;
     settle(p);
     return demoJson(p);
@@ -293,7 +297,7 @@ export const productHandlers = [
 
   http.put(v1("/products/:id/prompt"), async ({ params, request }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     const body = SavePromptRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     const model = p.prompt?.model_key ?? currentVersion(p)?.model_key ?? DEFAULT_MODEL;
@@ -308,7 +312,7 @@ export const productHandlers = [
 
   http.post(v1("/products/:id/compile"), async ({ params, request }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     const body = CompileRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     const model = body.data.model ?? p.prompt?.model_key ?? DEFAULT_MODEL;

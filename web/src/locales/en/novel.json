@@ -90,6 +90,38 @@
       "prop": "Props",
       "event": "Timeline"
     },
-    "empty": "None yet"
+    "empty": "None yet",
+    "none": "Nothing extracted yet. Click Rerun above to have the AI go through the text.",
+    "unadopted": "Not adopted",
+    "unadoptedHint": "This version is not adopted yet: the script and asset steps still use the one adopted before.",
+    "frozen": "Frozen",
+    "show": "Mark “{{name}}” in the text",
+    "edit": "Edit “{{name}}”",
+    "shown": "“{{name}}” appears in {{count}} paragraphs, marked on the left.",
+    "shownNone": "No source paragraphs are marked for “{{name}}”.",
+    "same": {
+      "title": "Possibly the same",
+      "pair": "“{{a}}” and “{{b}}”",
+      "merge": "Merge",
+      "mergeLabel": "Merge “{{b}}” into “{{a}}”",
+      "distinct": "Not the same",
+      "distinctLabel": "“{{a}}” and “{{b}}” are not the same",
+      "merged": "Merged: “{{b}}” is now an alias of “{{a}}”."
+    },
+    "dialog": {
+      "title": "Edit entry",
+      "lead": "Changes are saved as a new version and adopted; earlier versions stay in the history.",
+      "name": "Name",
+      "aliases": "Aliases",
+      "aliasesHint": "Separate with commas",
+      "summary": "Summary",
+      "frozen": "Freeze: keep this entry as it is when extraction runs again",
+      "split": "Split off",
+      "splitLabel": "Make “{{alias}}” an entry of its own",
+      "splitDone": "“{{alias}}” is now an entry of its own.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved “{{name}}”."
+    }
   }
 }

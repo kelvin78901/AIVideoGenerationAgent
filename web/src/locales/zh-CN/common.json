@@ -118,7 +118,16 @@
     "file_too_large": "文件超过 {{limit_mb}} MB",
     "novel_unreadable": "读不出这个文件的文字：.txt 请存成 UTF-8 或 GBK，.docx 请确认不是损坏的文件",
     "novel_empty": "文件里没有正文",
-    "chapter_not_found": "没有第 {{idx}} 章"
+    "chapter_not_found": "没有第 {{idx}} 章",
+    "upstream_not_ready": "上一步还没有可用的结果，先把它做完",
+    "entity_not_found": "找不到这条设定 {{id}}",
+    "name_required": "名字不能为空",
+    "merge_needs_two": "至少要两条才能合并",
+    "merge_kinds_differ": "不同类别的设定不能合并",
+    "distinct_needs_two": "要两条不同的设定",
+    "split_needs_alias": "要说明拆出哪个别名",
+    "alias_not_found": "这条设定没有别名「{{alias}}」",
+    "source_missing": "找不到这份设定对应的原文 {{id}}"
   },
   "toast": {
     "generic": "通知：{{code}}",

@@ -90,6 +90,38 @@
       "prop": "道具",
       "event": "时间线"
     },
-    "empty": "还没有"
+    "empty": "还没有",
+    "none": "还没有提取设定。点上面的「重跑」让 AI 从原文里找一遍。",
+    "unadopted": "未采纳",
+    "unadoptedHint": "这一版还没采纳：剧本和素材两步仍用之前采纳的那一版。",
+    "frozen": "已冻结",
+    "show": "在原文里标出「{{name}}」",
+    "edit": "编辑「{{name}}」",
+    "shown": "「{{name}}」在原文里出现 {{count}} 段，已在左边标出。",
+    "shownNone": "「{{name}}」没有标出原文出处。",
+    "same": {
+      "title": "可能是同一个",
+      "pair": "「{{a}}」和「{{b}}」",
+      "merge": "合并",
+      "mergeLabel": "把「{{b}}」合并进「{{a}}」",
+      "distinct": "不是同一个",
+      "distinctLabel": "「{{a}}」和「{{b}}」不是同一个",
+      "merged": "已合并：「{{b}}」现在是「{{a}}」的别名。"
+    },
+    "dialog": {
+      "title": "编辑设定",
+      "lead": "改动会存成新的一版并直接采纳，之前的版本留在历史里。",
+      "name": "名字",
+      "aliases": "别名",
+      "aliasesHint": "用顿号或逗号隔开",
+      "summary": "简介",
+      "frozen": "冻结：重跑设定提取时，这一条保持现在的样子",
+      "split": "拆出来",
+      "splitLabel": "把「{{alias}}」拆成单独一条",
+      "splitDone": "已把「{{alias}}」拆成单独一条。",
+      "save": "保存",
+      "cancel": "取消",
+      "saved": "已保存「{{name}}」。"
+    }
   }
 }

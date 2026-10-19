@@ -118,7 +118,16 @@
     "file_too_large": "The file is larger than {{limit_mb}} MB",
     "novel_unreadable": "Cannot read the text of this file: save a .txt as UTF-8 or GBK, and check that a .docx is not damaged",
     "novel_empty": "The file has no text",
-    "chapter_not_found": "There is no chapter {{idx}}"
+    "chapter_not_found": "There is no chapter {{idx}}",
+    "upstream_not_ready": "The previous step has no usable result yet; finish it first",
+    "entity_not_found": "Entry {{id}} not found",
+    "name_required": "The name cannot be empty",
+    "merge_needs_two": "Merging needs at least two entries",
+    "merge_kinds_differ": "Entries of different kinds cannot be merged",
+    "distinct_needs_two": "Pick two different entries",
+    "split_needs_alias": "Say which alias to split off",
+    "alias_not_found": "This entry has no alias “{{alias}}”",
+    "source_missing": "The text this bible was taken from ({{id}}) is missing"
   },
   "toast": {
     "generic": "Notice: {{code}}",

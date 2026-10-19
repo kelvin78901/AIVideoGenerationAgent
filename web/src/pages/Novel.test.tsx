@@ -7,6 +7,7 @@ import { getDb } from "@/mocks/db";
 import NovelPage from "@/pages/Novel";
 import { backend, fake } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
+import { fakeBible } from "@/test/fakes/bible";
 import { fakeNovel } from "@/test/fakes/novel";
 import { renderAt } from "@/test/render";
 
@@ -60,7 +61,7 @@ describe("NovelPage", () => {
     expect(screen.getByRole("list", { name: "人物" })).toHaveTextContent("林晚 · 26 岁 · 插画师");
     expect(
       within(screen.getByRole("list", { name: "道具" })).getAllByRole("listitem"),
-    ).toHaveLength(4);
+    ).toHaveLength(6);
     expect(screen.getByText("当前产物 · 补全建议 · 4 条")).toBeInTheDocument();
   });
 
@@ -226,7 +227,7 @@ describe("NovelPage", () => {
     await screen.findByText("当前产物 · 补全建议 · 4 条");
     await user.click(screen.getByRole("button", { name: "设定提取" }));
     expect(
-      await screen.findByText("当前产物 · 设定卡 · 人物 2 · 地点 3 · 道具 4"),
+      await screen.findByText("当前产物 · 设定卡 · 人物 3 · 地点 4 · 道具 6"),
     ).toBeInTheDocument();
     expect(screen.getByText(/v1 · Qwen3.6-27B/)).toBeInTheDocument();
   });
@@ -238,5 +239,112 @@ describe("NovelPage", () => {
     await waitFor(() => expect(gate).toBeEnabled());
     await user.click(gate);
     expect(await screen.findByTestId("script-page")).toBeInTheDocument();
+  });
+
+  describe("提取到的设定", () => {
+    const entry = (name: RegExp) => screen.getByRole("button", { name });
+
+    it("marks an entry's paragraphs, in the chapter they are in", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      await user.click(entry(/^旧小票/));
+      expect(entry(/^旧小票/)).toHaveAttribute("aria-pressed", "true");
+      // Paragraphs 31, 37 and 38 are in chapter 3: the page switches there.
+      expect(await screen.findByRole("option", { name: /第三章/, selected: true })).toBeTruthy();
+      await waitFor(() => expect(document.querySelectorAll("li[data-marked]")).toHaveLength(3));
+      expect(document.getElementById("novel-para-30")).toHaveAttribute("data-marked");
+      expect(screen.getByText("「旧小票」在原文里出现 3 段，已在左边标出。")).toBeInTheDocument();
+      await user.click(entry(/^旧小票/));
+      expect(document.querySelectorAll("li[data-marked]")).toHaveLength(0);
+    });
+
+    it("edits and freezes an entry", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      await user.click(screen.getByRole("button", { name: "编辑「林晚」" }));
+      const dialog = await screen.findByRole("dialog", { name: "编辑设定" });
+      const summary = within(dialog).getByLabelText("简介");
+      await user.clear(summary);
+      await user.type(summary, "27 岁 · 插画师");
+      await user.click(within(dialog).getByLabelText(/冻结/));
+      await user.click(within(dialog).getByRole("button", { name: "保存" }));
+      expect(await screen.findByText("已保存「林晚」。")).toBeInTheDocument();
+      expect(fakeBible.edits).toEqual([
+        {
+          id: "c-linwan",
+          data: expect.objectContaining({ summary: "27 岁 · 插画师" }) as unknown,
+          frozen: true,
+        },
+      ]);
+      expect(await screen.findByRole("list", { name: "人物" })).toHaveTextContent(
+        "林晚 · 27 岁 · 插画师已冻结",
+      );
+    });
+
+    it("splits an alias off into an entry of its own", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      await user.click(screen.getByRole("button", { name: "编辑「楼下便利店」" }));
+      const dialog = await screen.findByRole("dialog", { name: "编辑设定" });
+      await user.click(within(dialog).getByRole("button", { name: "把「便利店」拆成单独一条" }));
+      expect(await screen.findByText("已把「便利店」拆成单独一条。")).toBeInTheDocument();
+      expect(fakeBible.edits).toEqual([{ action: "split", ids: ["l-store"], alias: "便利店" }]);
+      expect(
+        await within(screen.getByRole("list", { name: "地点" })).findByRole("button", {
+          name: /^便利店/,
+        }),
+      ).toBeInTheDocument();
+    });
+
+    it("merges what may be the same, or keeps them apart", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      const same = await screen.findByRole("group", { name: "可能是同一个" });
+      expect(same).toHaveTextContent("「旧发圈」和「黑色发圈」");
+      expect(same).toHaveTextContent("小票上的黑色发圈就是她手腕上戴了三年的那根旧发圈。");
+      // The one the text mentions more stays.
+      await user.click(
+        within(same).getByRole("button", { name: "把「黑色发圈」合并进「旧发圈」" }),
+      );
+      expect(
+        await screen.findByText("已合并：「黑色发圈」现在是「旧发圈」的别名。"),
+      ).toBeInTheDocument();
+      expect(fakeBible.edits).toEqual([{ action: "merge", ids: ["p-hairtie", "p-black-hairtie"] }]);
+      await waitFor(() => expect(screen.queryByRole("group", { name: "可能是同一个" })).toBeNull());
+      expect(screen.getByRole("list", { name: "道具" })).not.toHaveTextContent("黑色发圈");
+    });
+
+    it("「不是同一个」 drops the suggestion", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      const same = await screen.findByRole("group", { name: "可能是同一个" });
+      await user.click(
+        within(same).getByRole("button", { name: "「旧发圈」和「黑色发圈」不是同一个" }),
+      );
+      await waitFor(() => expect(screen.queryByRole("group", { name: "可能是同一个" })).toBeNull());
+      expect(fakeBible.edits).toEqual([
+        { action: "distinct", ids: ["p-hairtie", "p-black-hairtie"] },
+      ]);
+      expect(screen.getByRole("list", { name: "道具" })).toHaveTextContent("黑色发圈");
+    });
+
+    it("says when the version on screen is not adopted, and when nothing was extracted", async () => {
+      fakeBible.bible.adopted = false;
+      const { unmount } = renderNovel();
+      expect(await screen.findByText("未采纳")).toBeInTheDocument();
+      expect(
+        screen.getByText("这一版还没采纳：剧本和素材两步仍用之前采纳的那一版。"),
+      ).toBeInTheDocument();
+      unmount();
+      fakeBible.bible.entities = [];
+      fakeBible.bible.merge_suggestions = [];
+      renderNovel();
+      expect(
+        await screen.findByText("还没有提取设定。点上面的「重跑」让 AI 从原文里找一遍。"),
+      ).toBeInTheDocument();
+    });
   });
 });

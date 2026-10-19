@@ -1,11 +1,10 @@
 /**
  * 《雨停之前》: 4 enrichment suggestions on chapter 1 (prototype Main.dc.html `renderVals()`,
- * the first one adopted) and the extracted bible: 2 characters, 3 locations, 4 props, 2 timeline
- * points. The novel itself comes from the backend (`tests/fixtures/demo/雨停之前.txt`, seeded in
- * Mock mode); its chapter 1 as the backend answers it is in `test/data/novel.json`, so the
- * offsets of these anchors and of the demo script's source spans point at the backend's text.
+ * the first one adopted). The novel and its bible come from the backend (seeded in Mock mode
+ * from `tests/fixtures/demo/`); chapter 1 as the backend answers it is in `test/data/novel.json`,
+ * so the offsets of these anchors and of the demo script's source spans point at its text.
  */
-import { NovelSchema, type BibleEntity, type Suggestion } from "@/api/schemas/novel";
+import { NovelSchema, type Suggestion } from "@/api/schemas/novel";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import data from "@/test/data/novel.json";
 
@@ -76,35 +75,3 @@ export const suggestionRewrites: Record<string, string> = {
   s3: "她盯着那行字看了很久，拇指一遍遍蹭过左手腕上的旧发圈。",
   s4: "她低头看手机，锁屏上的时间跳到了 23:52。",
 };
-
-function entity(
-  id: string,
-  kind: BibleEntity["kind"],
-  name: string,
-  summary?: string,
-): BibleEntity {
-  return {
-    id,
-    series_id: DEMO_SERIES_ID,
-    kind,
-    name,
-    aliases: [],
-    data: summary ? { summary } : {},
-    source_spans: [],
-    frozen: false,
-  };
-}
-
-export const bible: BibleEntity[] = [
-  entity("c-linwan", "character", "林晚", "26 岁 · 插画师"),
-  entity("c-zhouyu", "character", "周屿", "本集只出现字迹"),
-  entity("l-stairs", "location", "老小区楼道（六楼）"),
-  entity("l-flat", "location", "林晚出租屋"),
-  entity("l-store", "location", "楼下便利店"),
-  entity("p-umbrella", "prop", "红色长柄伞"),
-  entity("p-note", "prop", "便利贴"),
-  entity("p-hairtie", "prop", "旧发圈"),
-  entity("p-phone", "prop", "手机"),
-  entity("e-night", "event", "雨夜 23:40 前后"),
-  entity("e-deadline", "event", "约定截止 24:00"),
-];

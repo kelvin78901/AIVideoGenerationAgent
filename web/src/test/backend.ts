@@ -11,7 +11,9 @@ import {
 } from "@/api/schemas/spec";
 import { series as demoSeries } from "@/mocks/fixtures/demo/series";
 import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
+import { setBackendFetch } from "@/mocks/backend";
 import { server } from "@/mocks/node";
+import { bibleHandlers, fakeBackendFetch, resetFakeBible } from "@/test/fakes/bible";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { novelHandlers, resetFakeNovel } from "@/test/fakes/novel";
 import { resetFakeSetup, setupHandlers } from "@/test/setupBackend";
@@ -156,13 +158,15 @@ function seriesHandlers() {
     }),
     http.get("*/api/v1/spec/presets", () => HttpResponse.json(presets)),
     ...novelHandlers(known),
+    ...bibleHandlers(known),
   ];
 }
 
 /**
  * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, the
- * series list with the demo series and its output spec and novel (`test/fakes/novel.ts`), and the
- * PC sample machine before its first scan (`test/setupBackend.ts`, `fakeSetup`).
+ * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`) and bible
+ * with its products (`test/fakes/bible.ts`), and the PC sample machine before its first scan
+ * (`test/setupBackend.ts`, `fakeSetup`).
  */
 export function backend({ mock = true }: { mock?: boolean } = {}) {
   fake.series = structuredClone(demoSeries);
@@ -170,6 +174,8 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   fake.created = [];
   fake.specs = {};
   resetFakeNovel();
+  resetFakeBible();
+  setBackendFetch(fakeBackendFetch);
   resetFakeSetup();
   resetFakeConfig();
   server.use(

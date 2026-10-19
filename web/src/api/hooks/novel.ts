@@ -1,12 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { api, post, postForm } from "@/api/client";
+import { api, patch, post, postForm } from "@/api/client";
 import {
   BibleEntitySchema,
+  BibleSchema,
   NovelImportSchema,
   NovelSchema,
   SuggestionSchema,
+  type BibleMergeRequest,
+  type BiblePatch,
   type Suggestion,
 } from "@/api/schemas/novel";
 import { productKeys } from "@/api/hooks/products";
@@ -67,7 +70,42 @@ export function useSuggestions(seriesId: string) {
 export function useBible(seriesId: string) {
   return useQuery({
     queryKey: novelKeys.bible(seriesId),
-    queryFn: () => api(`/series/${enc(seriesId)}/bible`, z.array(BibleEntitySchema)),
+    queryFn: () => api(`/series/${enc(seriesId)}/bible`, BibleSchema),
+  });
+}
+
+/**
+ * Edits make an adopted `edit` version of 设定提取, so the bible and the product (history,
+ * status) are refetched.
+ */
+function useBibleRefresh(seriesId: string) {
+  const client = useQueryClient();
+  return () => {
+    void client.invalidateQueries({ queryKey: novelKeys.bible(seriesId) });
+    void client.invalidateQueries({ queryKey: productKeys.all });
+  };
+}
+
+/** 改名、别名、简介、冻结. */
+export function useEditBibleEntity(seriesId: string) {
+  const refresh = useBibleRefresh(seriesId);
+  return useMutation({
+    mutationFn: ({ id, ...body }: BiblePatch & { id: string }) =>
+      patch(`/bible/${enc(id)}`, BibleEntitySchema, body),
+    onSuccess: refresh,
+  });
+}
+
+/** 确认合并 / 不是同一个 / 拆分. */
+export function useMergeBible(seriesId: string) {
+  const client = useQueryClient();
+  const refresh = useBibleRefresh(seriesId);
+  return useMutation({
+    mutationFn: (body: BibleMergeRequest) => post("/bible/merge", BibleSchema, body),
+    onSuccess: (bible) => {
+      client.setQueryData(novelKeys.bible(seriesId), bible);
+      refresh();
+    },
   });
 }
 
