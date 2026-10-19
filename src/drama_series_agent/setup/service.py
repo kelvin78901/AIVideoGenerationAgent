@@ -69,8 +69,10 @@ from drama_series_agent.setup.installer import (
     comfy_change,
     confirm_reasons,
     install_order,
+    size_bytes,
+    work_s,
 )
-from drama_series_agent.setup.manifest import Item, Manifest, load_manifest
+from drama_series_agent.setup.manifest import OS, Item, Manifest, load_manifest
 from drama_series_agent.setup.pathutil import dirname, inside, join, same_path
 from drama_series_agent.setup.probe import FakeProbe, HostInfo, Probe, RealProbe
 from drama_series_agent.setup.schema import (
@@ -212,6 +214,7 @@ class SetupService:
         self._runner = runner
         self._snapshots = snapshots
         self._lock = asyncio.Lock()
+        self._cost_table: dict[OS, dict[str, tuple[int | None, float]]] = {}
         jobs.register(SCAN_JOB, self._scan_job)
         jobs.register(INSTALL_JOB, self._install_job)
 
@@ -884,9 +887,20 @@ class SetupService:
 
     async def _current(self) -> tuple[MachineProfileRow, ProfileData]:
         row, data = await self._get_or_create()
-        if await self._settle(row, data):
+        changed = await self._settle(row, data)
+        if data.app_dir is None:  # a profile stored before step 8c
+            data.app_dir = await self.probe_for(row).app_dir()
+            changed = True
+        if changed:
             await self._save(row.id, data)
         return row, data
+
+    def _costs(self, os: OS) -> dict[str, tuple[int | None, float]]:
+        """Each item's download size and rough time, from the manifest (read once)."""
+        if os not in self._cost_table:
+            items = self._manifest().for_platform(os)
+            self._cost_table[os] = {x.id: (size_bytes(x), work_s(x)) for x in items}
+        return self._cost_table[os]
 
     async def _load_run(self, pid: str, run: str) -> ProfileData:
         loaded = await self._load(pid)
@@ -932,7 +946,15 @@ class SetupService:
     async def _load(self, pid: str) -> tuple[MachineProfileRow, ProfileData] | None:
         async with self.db.session() as s:
             row = await s.get(MachineProfileRow, pid)
-        return None if row is None else (row, ProfileData.model_validate(row.data_json))
+        if row is None:
+            return None
+        data = ProfileData.model_validate(row.data_json)
+        # Sizes and rough times are the manifest's, not the scan's: always the current ones,
+        # also for a profile scanned before they existed.
+        costs = self._costs(data.machine.os)
+        for x in data.items:
+            x.size_bytes, x.work_s = costs.get(x.id, (x.size_bytes, x.work_s))
+        return row, data
 
     async def _get_or_create(self) -> tuple[MachineProfileRow, ProfileData]:
         pid = self.profile_id

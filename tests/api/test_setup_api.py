@@ -233,6 +233,33 @@ def test_profile_survives_a_restart() -> None:
         assert c.get(PROFILE).json() == before
 
 
+def test_a_profile_from_before_step_8c(client: TestClient) -> None:
+    """Scanned by an older version: no sizes, rough times or program folder stored. They come
+    from the manifest and the probe, without scanning again."""
+    client.post(SCAN)
+    _wait_scanned(client)
+
+    async def strip() -> None:
+        async with _state(client).db.session() as s:
+            row = await s.get(MachineProfileRow, "demo")
+            assert row is not None
+            data = dict(row.data_json)
+            data.pop("app_dir")
+            data["items"] = [
+                {k: v for k, v in x.items() if k not in ("size_bytes", "work_s")}
+                for x in data["items"]
+            ]
+            row.data_json = data
+            s.add(row)
+            await s.commit()
+
+    _call(client, strip)
+    p = client.get(PROFILE).json()
+    assert p["app_dir"] == "C:\\dev\\drama-studio"
+    items = {x["id"]: x for x in p["items"]}
+    assert (items["w_h3"]["size_bytes"], items["node_flashvsr"]["work_s"]) == (49_300_000_000, 80)
+
+
 def test_real_mode(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("DRAMA_SETUP", "real")
     resp = client.post(MACHINE, json={"machine": "mac"})

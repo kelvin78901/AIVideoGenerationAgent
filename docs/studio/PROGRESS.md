@@ -32,7 +32,8 @@
 | 8c（1/4） | `setup/download.py`：按字节计量（每秒最多报一次，速度取最近 5 秒，校验中）；64 MB 分块多连接（动态分段，`.part.json` 记录续传，单块重试 3 次，不支持 Range 退回单连接，老 `.part` 的整块算数，Windows 稀疏文件）；连接数自适应 `Tuner`；`steps.py` 开始前探测一项所有文件的大小；`ItemInstall` 加 `bytes_done` / `bytes_total` / `speed` / `eta_s` / `verifying`；真实 HF 手动核对过；DECISIONS 记 8c（1/4） | 0f9be94 | pytest 317（download 13）；ruff、mypy（含 linux） |
 | 8c（2/4） | 档案存 `download_bps`（装完有下载的项记平均速度；还没有时扫描末尾测第一个权重文件的前 16 MB，`Probe.download_speed`、`steps.speed_test_url`，Fake 读夹具）；`SetupItem` 加 `size_bytes`、`work_s`（`installer.STEP_SECONDS`）；`FakeRunner` 的权重项按 25 MB/s 报字节、最后报校验中；前端测试数据重新导出；DECISIONS 记 8c（2/4） | b35a0e1 | pytest 321；ruff、mypy（含 linux）；web test 191 |
 | 8c（3/4） | zod 加 `size_bytes` / `work_s` / `download_bps` 和 `install` 的字节字段；`items.ts`：`estimate`、`timeLeft`、整体进度按用时加权、`useUnits`（十进制 GB）；`ItemGroups` 下载项显示「已下 / 总大小 · 速度 · 剩余」「校验中…」；汇总条「剩余约」；安装按钮旁和 `ConfirmInstall` 写预计用时；`setupBackend.ts` 加 `installState` / `itemOf`；新词表 key（estimate / transfer / unit / eta）；截图 `setup-installing`、重截 `setup-confirm`；DECISIONS 记 8c（3/4） | 2a9dfc7 | web test 196、lint、typecheck、format；e2e 17 |
-| 8c（4/4 前半） | 档案加 `app_dir`（真实机器 `REPO_ROOT`，示例读夹具）；安装位置在程序目录里时输入框下面黄色警告、日志 `dir_in_app`；`pathutil.inside`、前端 `isInside`；DECISIONS 记 | 本提交 | pytest 322；web test 196、lint、typecheck、format |
+| 8c（4/4 前半） | 档案加 `app_dir`（真实机器 `REPO_ROOT`，示例读夹具）；安装位置在程序目录里时输入框下面黄色警告、日志 `dir_in_app`；`pathutil.inside`、前端 `isInside`；DECISIONS 记 | 8f04b6e | pytest 322；web test 196、lint、typecheck、format |
+| 8c（修） | Kelvin 本机前端热更新后读旧后端报「接口返回的数据和约定不符」（后端没重启）。另修重启后的旧档案：`size_bytes` / `work_s` 改成读档案时按清单补（缓存每个平台一份），`app_dir` 为空时按探针补 | 本提交 | pytest 323 |
 
 ## 下一步
 
@@ -51,7 +52,7 @@
 
 - 有 `upstream` remote（`binwu1/drama-series-agent`）；Kelvin 已把 `gh` 默认仓库设成 `kelvin78901/AIVideoGenerationAgent`，保险起见 `gh pr` 仍带 `-R`。
 - 演示里逐步推进的流程（检测、安装、同步）用 `mocks/events.ts:repeatDemo`；测试把对应的 `demoTiming` 设成 0，所有步骤在一个任务里跑完，不要靠放宽等待时间。
-- Kelvin 本机常开着 `start.ps1`（5173 前端 + 8000 后端，Mock 模式），Vite 会热更新，可以直接拿来做浏览器核对；不要往里发真实（非 Mock）调用。
+- Kelvin 本机常开着 `start.ps1`（5173 前端 + 8000 后端，Mock 模式），Vite 会热更新，可以直接拿来做浏览器核对；不要往里发真实（非 Mock）调用。**后端不会自动重载**：改了后端接口要提醒 Kelvin 重启后端，否则热更新后的前端读旧后端，报「接口返回的数据和约定不符」。
 - 示例里的运行延迟在 `mocks/events.ts:demoTiming.runMs`，测试里改成 20 ms（见 `components/products.test.tsx`）；测试要挂 `useEventStream()`（`FakeEventSource`）才收得到 `version.created`。
 - **Chromium 新版 `scrollIntoView()` 返回 Promise**：`useEffect(() => el.scrollIntoView())` 这种箭头表达式会把 Promise 当清理函数，整页白屏（jsdom 里测不出来）。effect 一律写花括号；滚动日志用容器的 `scrollTop`。
 - 页面里有演示事件驱动的长流程时，用临时的 `e2e/tmp-*-shots.spec.ts`（`--project=shots` 能匹配）在真浏览器里走一遍、截图到 scratchpad，跑完删掉。
