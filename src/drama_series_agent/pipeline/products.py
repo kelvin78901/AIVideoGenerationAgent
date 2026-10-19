@@ -13,7 +13,7 @@ table), then a failed last run, stale (``pipeline/invalidation.py``), locked, ad
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Sequence
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlmodel import col, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
@@ -316,6 +316,31 @@ class ProductService:
         )
         await self._announce(p)
         return v
+
+    async def append_edit(
+        self, product_id: str, base: ProductVersion, payload: dict[str, Any]
+    ) -> ProductVersion | None:
+        """The user's edit of ``base`` (改设定、拖节拍、改剧本行): an adopted ``edit`` version with
+        ``base``'s prompt and dependencies, so it turns stale with it. None when nothing
+        changed."""
+        if payload == base.payload_json:
+            return None
+        async with self._db.session() as session:
+            deps = (
+                await session.exec(select(Dependency).where(Dependency.version_id == base.id))
+            ).all()
+        draft = VersionDraft(
+            payload=payload,
+            intent=base.intent,
+            compiled=base.compiled,
+            compiled_overridden=base.compiled_overridden,
+            dependencies=[
+                DependencyDraft(d.upstream_product_id, d.upstream_hash, d.slice) for d in deps
+            ],
+        )
+        return await self.append(
+            product_id, draft, origin="edit", parent_version_id=base.id, adopt=True
+        )
 
     async def set_current(self, version_id: str) -> ProductOut:
         async with self._db.session() as session:

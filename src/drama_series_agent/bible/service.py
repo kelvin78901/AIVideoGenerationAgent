@@ -26,7 +26,6 @@ from drama_series_agent.bible.schema import (
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import (
     BibleEntity,
-    Dependency,
     Job,
     Product,
     ProductVersion,
@@ -34,7 +33,6 @@ from drama_series_agent.core.models_db import (
     utcnow,
 )
 from drama_series_agent.novel.service import NovelService
-from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 
@@ -88,10 +86,14 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
 async def bible_slicer(
     session: AsyncSession, product: Product, version: ProductVersion, name: str
 ) -> Any:
-    """``names``: what 小说补全 reads (``merge.names_of``); other slices are payload keys."""
+    """``names``: what 小说补全 reads (``merge.names_of``); ``entities:<id,…>``: the entries one
+    episode's script reads (``merge.entries_of``); other slices are payload keys."""
     payload = version.payload_json
     if name == "names":
         return ops.names_of(payload)
+    kind, colon, key = name.partition(":")
+    if kind == "entities" and colon:
+        return ops.entries_of(payload, [i for i in key.split(",") if i])
     return payload if name == "" else payload.get(name)
 
 
@@ -191,19 +193,4 @@ class BibleService:
         raise PipelineError(404, "entity_not_found", id=entity_id)
 
     async def _edit(self, p: Product, v: ProductVersion, payload: dict[str, Any]) -> None:
-        if payload == v.payload_json:
-            return
-        async with self._db.session() as session:
-            deps = (
-                await session.exec(select(Dependency).where(Dependency.version_id == v.id))
-            ).all()
-        draft = VersionDraft(
-            payload=payload,
-            intent=v.intent,
-            compiled=v.compiled,
-            compiled_overridden=v.compiled_overridden,
-            dependencies=[
-                DependencyDraft(d.upstream_product_id, d.upstream_hash, d.slice) for d in deps
-            ],
-        )
-        await self._products.append(p.id, draft, origin="edit", parent_version_id=v.id, adopt=True)
+        await self._products.append_edit(p.id, v, payload)

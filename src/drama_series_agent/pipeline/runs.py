@@ -15,7 +15,7 @@ import asyncio
 import random
 from typing import Any, Literal
 
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.core.config import Resolved
@@ -27,7 +27,7 @@ from drama_series_agent.core.jobs import (
     JobNeedsConfirm,
     JobQueue,
 )
-from drama_series_agent.core.models_db import Job, Product, ProductVersion, Series
+from drama_series_agent.core.models_db import Episode, Job, Product, ProductVersion, Series
 from drama_series_agent.modelhub.adapters.base import ModelError
 from drama_series_agent.modelhub.budget import Budget, cap_of
 from drama_series_agent.modelhub.router import NeedsConfirm, Router
@@ -120,13 +120,31 @@ class RunService:
     # ------------------------------------------------------------------ series products
 
     async def ensure_series_products(self, series_id: str) -> None:
-        """The series-level products (设定提取 …) exist once the series has a novel."""
+        """The series-level products (设定提取 …) exist once the series has a novel, and each
+        episode's (剧本化) once it is in the adopted plan (a plan made before the component)."""
         for comp in self.components.all():
             if comp.owner_type == "series":
                 await self.products.ensure(
                     series_id=series_id,
                     owner_type="series",
                     owner_id=series_id,
+                    slot=comp.slot,
+                    component_id=comp.id,
+                )
+        per_episode = [c for c in self.components.all() if c.owner_type == "episode"]
+        if not per_episode:
+            return
+        async with self.services.db.session() as session:
+            query = select(Episode.id).where(
+                Episode.series_id == series_id, col(Episode.retired).is_(False)
+            )
+            episode_ids = list((await session.exec(query)).all())
+        for episode_id in episode_ids:
+            for comp in per_episode:
+                await self.products.ensure(
+                    series_id=series_id,
+                    owner_type="episode",
+                    owner_id=episode_id,
                     slot=comp.slot,
                     component_id=comp.id,
                 )

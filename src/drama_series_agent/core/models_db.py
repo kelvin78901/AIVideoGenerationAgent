@@ -606,3 +606,58 @@ class Beat(SQLModel, table=True):
     updated_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+class Scene(SQLModel, table=True):
+    """One scene of an episode's script (SPEC 4.1), mirroring the adopted ``script`` version.
+
+    ``idx`` is 1-based within the episode; the series-wide 场号 is counted when read, so a
+    change in episode 1 never touches episode 2's rows or hashes.
+    """
+
+    __tablename__ = "scene"
+
+    id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    episode_id: str = Field(index=True)
+    version_id: str
+    idx: int
+    heading: str = ""  # 「夜　内　林晚出租屋」, without the scene number
+    location_id: str | None = None  # a bible location
+    time_of_day: str | None = None  # day / night / dawn / dusk
+    paras_json: list[int] = _json(list)  # paragraph numbers across the book, 0-based
+    source_spans_json: list[dict[str, Any]] = _json(list)
+    retired: bool = False
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class ScriptLine(SQLModel, table=True):
+    """One line of a scene (SPEC 4.1), mirroring the adopted ``script`` version."""
+
+    __tablename__ = "script_line"
+
+    id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    episode_id: str = Field(index=True)
+    scene_id: str = Field(index=True)
+    version_id: str
+    idx: int  # 1-based within the scene
+    type: str = "action"  # action / dialogue / vo / sfx
+    character_id: str | None = None  # a bible character
+    character_name: str | None = None
+    tone: str | None = None
+    text: str = ""
+    mood: str | None = None
+    duration_s: float | None = None
+    overlay_shot: str | None = None
+    paras_json: list[int] = _json(list)
+    # Paragraph spans, and ``{source_id: "sug:<id>"}`` for a line from an accepted addition.
+    source_spans_json: list[dict[str, Any]] = _json(list)
+    ai_added: bool = False
+    cliffhanger: bool = False
+    retired: bool = False
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

@@ -22,7 +22,6 @@ from drama_series_agent.bible.service import BIBLE_SLOT
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import (
     Beat,
-    Dependency,
     Episode,
     GateDecision,
     Job,
@@ -43,15 +42,16 @@ from drama_series_agent.episodes.schema import (
     StepId,
     StepProgressOut,
 )
-from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
+from drama_series_agent.script import ops as script_ops
 from drama_series_agent.suggestions.service import SUGGESTIONS_SLOT
 
 EPISODES_SLOT = "episodes"
 SPLIT_COMPONENT = "split"
 SCRIPT_SLOT = "script"
+SCRIPT_COMPONENT = "script"
 
 
 async def split_product(session: AsyncSession, series_id: str) -> Product | None:
@@ -61,9 +61,53 @@ async def split_product(session: AsyncSession, series_id: str) -> Product | None
     return (await session.exec(query)).first()
 
 
+async def script_product(session: AsyncSession, episode_id: str) -> Product | None:
+    query = select(Product).where(
+        Product.owner_type == "episode", Product.owner_id == episode_id, Product.slot == SCRIPT_SLOT
+    )
+    return (await session.exec(query)).first()
+
+
+async def ensure_scripts(session: AsyncSession, series_id: str, episode_ids: list[str]) -> None:
+    """Each episode has its 剧本化 product (owner ``episode``, slot ``script``)."""
+    for episode_id in episode_ids:
+        if await script_product(session, episode_id) is None:
+            session.add(
+                Product(
+                    series_id=series_id,
+                    owner_type="episode",
+                    owner_id=episode_id,
+                    slot=SCRIPT_SLOT,
+                    component_id=SCRIPT_COMPONENT,
+                )
+            )
+
+
+async def scene_counts(session: AsyncSession, series_id: str) -> list[dict[str, Any]]:
+    """Each episode's id, number and scenes: the adopted script's once there is one, else the
+    plan's estimate (``scene_count``), for the series-wide 场号."""
+    rows = (
+        await session.exec(
+            select(Episode)
+            .where(Episode.series_id == series_id, col(Episode.retired).is_(False))
+            .order_by(col(Episode.idx))
+        )
+    ).all()
+    out = []
+    for r in rows:
+        count = r.scene_count
+        script = await script_product(session, r.id)
+        if script is not None and script.adopted_version_id:
+            v = await session.get(ProductVersion, script.adopted_version_id)
+            if v is not None:
+                count = script_ops.scene_count(v.payload_json)
+        out.append({"id": r.id, "idx": r.idx, "scene_count": count})
+    return out
+
+
 async def materialize(session: AsyncSession, product: Product, version: ProductVersion) -> None:
     """Mirror an adopted plan: upsert episodes and beats by id (an episode's budget stays as the
-    user set it), retire the ones it dropped."""
+    user set it), retire the ones it dropped; a new episode gets its 剧本化 product."""
     episodes = {
         r.id: r
         for r in (
@@ -117,6 +161,9 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
             gone.version_id = version.id
             gone.updated_at = now
             session.add(gone)
+    await ensure_scripts(
+        session, product.series_id, [e["id"] for e in ops.episodes_of(version.payload_json)]
+    )
 
 
 async def episodes_slicer(
@@ -264,9 +311,7 @@ class EpisodeService:
         query = select(Beat).where(Beat.series_id == series_id, col(Beat.retired).is_(False))
         for b in (await session.exec(query.order_by(col(Beat.idx)))).all():
             beats.setdefault(b.episode_id, []).append(b)
-        ranges = ops.scene_ranges(
-            [{"id": r.id, "idx": r.idx, "scene_count": r.scene_count} for r in rows]
-        )
+        ranges = ops.scene_ranges(await scene_counts(session, series_id))
         out = []
         for r in rows:
             status = await self._script_status(session, r.id, await self._script(session, r.id))
@@ -316,12 +361,7 @@ class EpisodeService:
 
     @staticmethod
     async def _script(session: AsyncSession, episode_id: str) -> Product | None:
-        query = select(Product).where(
-            Product.owner_type == "episode",
-            Product.owner_id == episode_id,
-            Product.slot == SCRIPT_SLOT,
-        )
-        return (await session.exec(query)).first()
+        return await script_product(session, episode_id)
 
     @staticmethod
     async def _script_status(
@@ -360,19 +400,4 @@ class EpisodeService:
             return p, v
 
     async def _edit(self, p: Product, v: ProductVersion, payload: dict[str, Any]) -> None:
-        if payload == v.payload_json:
-            return
-        async with self._db.session() as session:
-            deps = (
-                await session.exec(select(Dependency).where(Dependency.version_id == v.id))
-            ).all()
-        draft = VersionDraft(
-            payload=payload,
-            intent=v.intent,
-            compiled=v.compiled,
-            compiled_overridden=v.compiled_overridden,
-            dependencies=[
-                DependencyDraft(d.upstream_product_id, d.upstream_hash, d.slice) for d in deps
-            ],
-        )
-        await self._products.append(p.id, draft, origin="edit", parent_version_id=v.id, adopt=True)
+        await self._products.append_edit(p.id, v, payload)

@@ -93,11 +93,22 @@ async def _payload_decisions(
 async def suggestions_slicer(
     session: AsyncSession, product: Product, version: ProductVersion, name: str
 ) -> Any:
-    """``adopted``: the accepted suggestions with their final text (what downstream reads)."""
+    """``adopted``: the accepted suggestions with their final text (what downstream reads);
+    ``adopted:<n,m,…>`` only those on these paragraphs (what one episode's script reads)."""
     payload = version.payload_json
-    if name == ADOPTED_SLICE:
-        return ops.additions(payload, await _payload_decisions(session, payload))
+    kind, colon, key = name.partition(":")
+    if kind == ADOPTED_SLICE:
+        accepted = ops.additions(payload, await _payload_decisions(session, payload))
+        if not colon:
+            return accepted
+        paras = {int(p) for p in key.split(",") if p}
+        return [a for a in accepted if int(a["para_idx"]) in paras]
     return payload if name == "" else payload.get(name)
+
+
+def adopted_slice(paras: Iterable[int]) -> str:
+    """The ``adopted:<n,m,…>`` slice of these paragraphs."""
+    return f"{ADOPTED_SLICE}:{','.join(str(p) for p in sorted(set(paras)))}"
 
 
 async def anchored(

@@ -10,11 +10,11 @@
       "target_seconds": 34,
       "scene_count": 2,
       "budget_usd": 15.0,
-      "stage": "script_pending",
+      "stage": "in_progress",
       "scene_from": 1,
       "scene_to": 2,
       "shot_count": null,
-      "script_status": "none",
+      "script_status": "draft",
       "beats": [
         {
           "id": "demo-bt1",
@@ -734,7 +734,7 @@
           "stale": 0
         },
         "script": {
-          "state": "not_started",
+          "state": "in_progress",
           "done": null,
           "total": null,
           "stale": 0

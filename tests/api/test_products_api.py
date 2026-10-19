@@ -57,7 +57,7 @@ def test_list_and_get(client: TestClient) -> None:
         "/api/v1/products", params={"owner": "series:demo", "component": "test_only"}
     )
     assert [p["id"] for p in listed.json()] == [pid]
-    assert client.get("/api/v1/products", params={"component": "script"}).json() == []
+    assert client.get("/api/v1/products", params={"component": "assets"}).json() == []
     data = client.get(f"/api/v1/products/{pid}").json()
     assert data["status"] == "adopted"
     assert (data["current_version_id"], data["adopted_version_id"]) == (v2, v1)

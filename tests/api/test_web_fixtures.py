@@ -1,5 +1,5 @@
-"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes}.json``: what the Mock
-backend answers.
+"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script}.json``: what the
+Mock backend answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -221,6 +221,34 @@ def test_web_episodes_fixture_is_current(client: TestClient) -> None:
     export = {"episodes": episodes, "progress": progress}
     text = json.dumps(export, ensure_ascii=False, indent=2) + "\n"
     path = EPISODES_FIXTURE
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(path, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = path.read_text(encoding="utf-8") if path.exists() else ""
+    assert current == text, f"{path.name} is out of date: see this module's docstring"
+
+
+SCRIPT_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "script.json"
+SCRIPT_DEMO = REPO_ROOT / "tests" / "fixtures" / "demo" / "script.json"
+
+
+def test_web_script_fixture_is_current(client: TestClient) -> None:
+    """Each demo episode's script, its 剧本化 products and the rewrites Mock answers
+    (``test/fakes/script.ts``)."""
+    episodes = client.get(f"{V1}/series/demo/episodes").json()
+    export = {
+        "scripts": {
+            e["id"]: client.get(f"{V1}/episodes/{e['id']}/script").json() for e in episodes
+        },
+        "products": [
+            p
+            for e in episodes
+            for p in client.get(f"{V1}/products", params={"owner": f"episode:{e['id']}"}).json()
+        ],
+        "rewrites": json.loads(SCRIPT_DEMO.read_text(encoding="utf-8"))["rewrites"],
+    }
+    text = json.dumps(export, ensure_ascii=False, indent=2) + "\n"
+    path = SCRIPT_FIXTURE
     if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
         with open(path, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)

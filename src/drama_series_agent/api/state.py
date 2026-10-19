@@ -28,11 +28,14 @@ from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_sli
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
+from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.prompts.compiler import PromptCompiler
+from drama_series_agent.script import service as script_service
+from drama_series_agent.script.service import ScriptService
 from drama_series_agent.setup.service import SetupService
 from drama_series_agent.suggestions import service as suggestions_service
 from drama_series_agent.suggestions.service import SUGGESTIONS_SLOT, SuggestionService
@@ -55,6 +58,7 @@ class StudioState:
     bible: BibleService
     suggestions: SuggestionService
     episodes: EpisodeService
+    script: ScriptService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -86,6 +90,7 @@ class StudioState:
         products.on_adopt(BIBLE_SLOT, materialize)
         products.on_adopt(SUGGESTIONS_SLOT, suggestions_service.materialize)
         products.on_adopt(EPISODES_SLOT, episodes_service.materialize)
+        products.on_adopt(episodes_service.SCRIPT_SLOT, script_service.materialize)
         compiler = PromptCompiler()
         components = ComponentRegistry(
             Services(
@@ -102,6 +107,8 @@ class StudioState:
         enrich = EnrichComponent(components.services, novel)
         components.add(enrich)
         components.add(SplitComponent(components.services, novel))
+        script = ScriptComponent(components.services, novel, budget)
+        components.add(script)
         episodes = EpisodeService(db, products, invalidation)
         budget.episode_budget = episodes.budget
         runs = RunService(components, products, jobs, bus, budget)
@@ -122,6 +129,7 @@ class StudioState:
             bible=BibleService(db, products, novel),
             suggestions=SuggestionService(db, products, novel, enrich),
             episodes=episodes,
+            script=ScriptService(db, products, script),
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:

@@ -17,6 +17,8 @@ from drama_series_agent.core.models_db import (
     OutputSpecRow,
     Product,
     ProductVersion,
+    Scene,
+    ScriptLine,
     Series,
     Suggestion,
     SuggestionDecision,
@@ -27,6 +29,7 @@ from drama_series_agent.episodes import service as episodes
 from drama_series_agent.novel.service import NovelService
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
+from drama_series_agent.script import service as script_service
 from drama_series_agent.studio.demo import DEMO_SERIES_ID, delete_demo, seed_demo
 from drama_series_agent.studio_cli import main
 from drama_series_agent.suggestions import service as suggestions
@@ -93,11 +96,12 @@ async def test_delete_demo_takes_everything_with_it(studio_db: Database) -> None
         assert await _count(studio_db, table) == 0, table.__name__
 
 
-async def test_demo_suggestions_bible_and_plan_are_seeded_once(studio_db: Database) -> None:
+async def test_demo_suggestions_bible_plan_and_script_are_seeded_once(studio_db: Database) -> None:
     products = ProductService(studio_db, EventBus(studio_db))
     products.on_adopt(BIBLE_SLOT, materialize)
     products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
     products.on_adopt(episodes.EPISODES_SLOT, episodes.materialize)
+    products.on_adopt(episodes.SCRIPT_SLOT, script_service.materialize)
     novel = NovelService(studio_db, BlobStore(), products)
 
     async def hook(series_id: str) -> None:  # what the app's hook does
@@ -129,6 +133,16 @@ async def test_demo_suggestions_bible_and_plan_are_seeded_once(studio_db: Databa
             await session.exec(select(Dependency).where(Dependency.version_id == "demo-p-split-v1"))
         ).all()
         rows = (await session.exec(select(Episode).order_by(col(Episode.idx)))).all()
+        scripts = (
+            await session.exec(
+                select(Product).where(Product.slot == "script").order_by(col(Product.id))
+            )
+        ).all()
+        script_deps = (
+            await session.exec(
+                select(Dependency).where(Dependency.version_id == "demo-p-script-e1-v2")
+            )
+        ).all()
     assert product is not None and product.adopted_version_id == "demo-p-extract-v1"
     assert version is not None and version.created_at.isoformat() == "2026-10-14T02:05:00+00:00"
     assert version.payload_json["source_id"] == "demo-src"
@@ -152,8 +166,25 @@ async def test_demo_suggestions_bible_and_plan_are_seeded_once(studio_db: Databa
         ("demo-e2", 2, "十二点", 15.0),
         ("demo-e3", 3, "旧发圈", 15.0),
     ]
-    # novel, enrich ×2, bible, plan: once each
-    assert await _count(studio_db, ProductVersion) == 5
+    # 剧本化: every episode has its product (fixed ids); episode 1's v1 local → v2 Kimi
+    # (adopted) reads its slice of the plan, chapter 1, the addition on its paragraphs and the
+    # bible entries it uses.
+    assert [(p.id, p.owner_id, p.adopted_version_id) for p in scripts] == [
+        ("demo-p-script-e1", "demo-e1", "demo-p-script-e1-v2"),
+        ("demo-p-script-e2", "demo-e2", None),
+        ("demo-p-script-e3", "demo-e3", None),
+    ]
+    assert {(d.upstream_product_id, d.slice.split(":")[0]) for d in script_deps} == {
+        ("demo-p-split", "episode"),
+        ("demo-novel", "chapter"),
+        ("demo-p-enrich", "adopted"),
+        ("demo-p-extract", "entities"),
+    }
+    assert {d.slice for d in script_deps} >= {"episode:demo-e1", "chapter:0", "adopted:0,1,2,3,4"}
+    # novel, enrich ×2, bible, plan, script ×2: once each
+    assert await _count(studio_db, ProductVersion) == 7
+    assert await _count(studio_db, Scene) == 2
+    assert await _count(studio_db, ScriptLine) == 10
     assert await _count(studio_db, BibleEntity) == len(version.payload_json["entities"]) == 18
     assert await _count(studio_db, Suggestion) == 4
     assert await _count(studio_db, Beat) == 22

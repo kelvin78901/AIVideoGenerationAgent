@@ -1,0 +1,1059 @@
+{
+  "scripts": {
+    "demo-e1": {
+      "episode_id": "demo-e1",
+      "product_id": "demo-p-script-e1",
+      "version_id": "demo-p-script-e1-v2",
+      "adopted": true,
+      "source_id": "demo-src",
+      "scenes": [
+        {
+          "id": "demo-b1",
+          "episode_id": "demo-e1",
+          "idx": 1,
+          "heading": "夜　内　老小区楼道 · 六楼林晚家门口",
+          "location_id": "l-stairs",
+          "time_of_day": "night",
+          "paras": [
+            0,
+            1
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 8,
+              "end": 36
+            },
+            {
+              "source_id": "demo-src",
+              "start": 37,
+              "end": 97
+            }
+          ],
+          "edited": false
+        },
+        {
+          "id": "demo-b7",
+          "episode_id": "demo-e1",
+          "idx": 2,
+          "heading": "夜　内　林晚出租屋",
+          "location_id": "l-flat",
+          "time_of_day": "night",
+          "paras": [
+            3
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 125,
+              "end": 145
+            }
+          ],
+          "edited": false
+        }
+      ],
+      "lines": [
+        {
+          "id": "demo-b2",
+          "scene_id": "demo-b1",
+          "idx": 1,
+          "type": "action",
+          "character_id": "c-linwan",
+          "character_name": "林晚",
+          "tone": null,
+          "text": "声控灯坏了一半，忽明忽暗。林晚（26，米色风衣湿了半边，挎帆布画板袋）走上六楼。",
+          "mood": "疲惫",
+          "duration_s": 4.0,
+          "overlay_shot": null,
+          "paras": [
+            0
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 8,
+              "end": 36
+            },
+            {
+              "source_id": "sug:s1",
+              "start": 0,
+              "end": 30
+            }
+          ],
+          "ai_added": false,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b3",
+          "scene_id": "demo-b1",
+          "idx": 2,
+          "type": "action",
+          "character_id": null,
+          "character_name": null,
+          "tone": null,
+          "text": "门口靠着一把红色长柄伞，伞柄上贴着一张黄色便利贴。",
+          "mood": null,
+          "duration_s": 3.0,
+          "overlay_shot": null,
+          "paras": [
+            1
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 37,
+              "end": 97
+            }
+          ],
+          "ai_added": false,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b4",
+          "scene_id": "demo-b1",
+          "idx": 3,
+          "type": "action",
+          "character_id": null,
+          "character_name": null,
+          "tone": null,
+          "text": "特写：便利贴，字迹歪扭——“楼下便利店，等你到十二点。”",
+          "mood": null,
+          "duration_s": 3.0,
+          "overlay_shot": null,
+          "paras": [
+            2
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 98,
+              "end": 124
+            }
+          ],
+          "ai_added": false,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b5",
+          "scene_id": "demo-b1",
+          "idx": 4,
+          "type": "dialogue",
+          "character_id": "c-linwan",
+          "character_name": "林晚",
+          "tone": "低声，愣住",
+          "text": "……周屿？",
+          "mood": null,
+          "duration_s": 4.0,
+          "overlay_shot": null,
+          "paras": [
+            1
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 37,
+              "end": 97
+            }
+          ],
+          "ai_added": true,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b6",
+          "scene_id": "demo-b1",
+          "idx": 5,
+          "type": "action",
+          "character_id": "c-linwan",
+          "character_name": "林晚",
+          "tone": null,
+          "text": "她的指尖停在便利贴上，下意识摸了摸左手腕的旧发圈。",
+          "mood": "动摇",
+          "duration_s": 3.0,
+          "overlay_shot": null,
+          "paras": [
+            1
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 37,
+              "end": 97
+            }
+          ],
+          "ai_added": false,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b8",
+          "scene_id": "demo-b7",
+          "idx": 7,
+          "type": "action",
+          "character_id": "c-linwan",
+          "character_name": "林晚",
+          "tone": null,
+          "text": "林晚把伞靠回墙边，进屋，关门，背靠着门。",
+          "mood": "强撑",
+          "duration_s": 5.0,
+          "overlay_shot": null,
+          "paras": [
+            3
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 125,
+              "end": 145
+            }
+          ],
+          "ai_added": false,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b9",
+          "scene_id": "demo-b7",
+          "idx": 8,
+          "type": "action",
+          "character_id": null,
+          "character_name": null,
+          "tone": null,
+          "text": "特写：手机亮屏，23:52。",
+          "mood": null,
+          "duration_s": 2.0,
+          "overlay_shot": null,
+          "paras": [
+            3
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 125,
+              "end": 145
+            }
+          ],
+          "ai_added": false,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b10",
+          "scene_id": "demo-b7",
+          "idx": 9,
+          "type": "vo",
+          "character_id": "c-linwan",
+          "character_name": "林晚",
+          "tone": "OS",
+          "text": "三年了。他凭什么。",
+          "mood": null,
+          "duration_s": null,
+          "overlay_shot": "1-06",
+          "paras": [
+            1
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 37,
+              "end": 97
+            }
+          ],
+          "ai_added": true,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b11",
+          "scene_id": "demo-b7",
+          "idx": 10,
+          "type": "action",
+          "character_id": "c-linwan",
+          "character_name": "林晚",
+          "tone": null,
+          "text": "她拉开门，又关上。停了两秒，再拉开。",
+          "mood": "犹豫",
+          "duration_s": 6.0,
+          "overlay_shot": null,
+          "paras": [
+            3
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 125,
+              "end": 145
+            }
+          ],
+          "ai_added": false,
+          "cliffhanger": false,
+          "edited": false
+        },
+        {
+          "id": "demo-b12",
+          "scene_id": "demo-b7",
+          "idx": 11,
+          "type": "action",
+          "character_id": "c-linwan",
+          "character_name": "林晚",
+          "tone": null,
+          "text": "门外，她拿起了那把伞。",
+          "mood": "下定决心",
+          "duration_s": 4.0,
+          "overlay_shot": null,
+          "paras": [
+            4
+          ],
+          "source_spans": [
+            {
+              "source_id": "demo-src",
+              "start": 146,
+              "end": 159
+            }
+          ],
+          "ai_added": false,
+          "cliffhanger": true,
+          "edited": false
+        }
+      ]
+    },
+    "demo-e2": {
+      "episode_id": "demo-e2",
+      "product_id": "demo-p-script-e2",
+      "version_id": null,
+      "adopted": true,
+      "source_id": null,
+      "scenes": [],
+      "lines": []
+    },
+    "demo-e3": {
+      "episode_id": "demo-e3",
+      "product_id": "demo-p-script-e3",
+      "version_id": null,
+      "adopted": true,
+      "source_id": null,
+      "scenes": [],
+      "lines": []
+    }
+  },
+  "products": [
+    {
+      "id": "demo-p-script-e1",
+      "series_id": "demo",
+      "owner_type": "episode",
+      "owner_id": "demo-e1",
+      "slot": "script",
+      "component_id": "script",
+      "current_version_id": "demo-p-script-e1-v2",
+      "adopted_version_id": "demo-p-script-e1-v2",
+      "locked_hash": null,
+      "status": "adopted",
+      "versions": [
+        {
+          "id": "demo-p-script-e1-v1",
+          "product_id": "demo-p-script-e1",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "source_id": "demo-src",
+            "episode_id": "demo-e1",
+            "scenes": [
+              {
+                "heading": "夜　内　老小区楼道 · 六楼林晚家门口",
+                "time_of_day": "night",
+                "location_id": "l-stairs",
+                "paras": [
+                  0,
+                  1
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 8,
+                    "end": 36
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 37,
+                    "end": 97
+                  }
+                ],
+                "id": "demo-b1",
+                "lines": [
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "声控灯坏了一半，忽明忽暗。林晚（26，米色风衣湿了半边，挎帆布画板袋）走上六楼。",
+                    "mood": "疲惫",
+                    "duration_s": 4.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      0
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 8,
+                        "end": 36
+                      },
+                      {
+                        "source_id": "sug:s1",
+                        "start": 0,
+                        "end": 30
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b2"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": null,
+                    "character_name": null,
+                    "tone": null,
+                    "text": "门口靠着一把红色长柄伞，伞柄上贴着一张黄色便利贴。",
+                    "mood": null,
+                    "duration_s": 3.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b3"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": null,
+                    "character_name": null,
+                    "tone": null,
+                    "text": "特写：便利贴，字迹歪扭——“楼下便利店，等你到十二点。”",
+                    "mood": null,
+                    "duration_s": 3.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      2
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 98,
+                        "end": 124
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b4"
+                  },
+                  {
+                    "type": "dialogue",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": "低声，愣住",
+                    "text": "……周屿？",
+                    "mood": null,
+                    "duration_s": 4.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "ai_added": true,
+                    "cliffhanger": false,
+                    "id": "demo-b5"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "她的指尖停在便利贴上，下意识摸了摸左手腕的旧发圈。",
+                    "mood": "动摇",
+                    "duration_s": 3.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b6"
+                  }
+                ]
+              },
+              {
+                "heading": "夜　内　林晚出租屋",
+                "time_of_day": "night",
+                "location_id": "l-flat",
+                "paras": [
+                  3
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 125,
+                    "end": 145
+                  }
+                ],
+                "id": "demo-b7",
+                "lines": [
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "林晚把伞靠回墙边，进屋，关门，背靠着门。",
+                    "mood": "强撑",
+                    "duration_s": 5.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      3
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 125,
+                        "end": 145
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b8"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": null,
+                    "character_name": null,
+                    "tone": null,
+                    "text": "特写：手机亮屏，23:52。",
+                    "mood": null,
+                    "duration_s": 2.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      3
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 125,
+                        "end": 145
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b9"
+                  },
+                  {
+                    "type": "vo",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": "OS",
+                    "text": "三年了。他凭什么。",
+                    "mood": null,
+                    "duration_s": null,
+                    "overlay_shot": "1-06",
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "ai_added": true,
+                    "cliffhanger": false,
+                    "id": "demo-b10"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "她拉开门，又关上。停了两秒，再拉开。",
+                    "mood": "犹豫",
+                    "duration_s": 6.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      3
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 125,
+                        "end": 145
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b11"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "门外，她拿起了那把伞。",
+                    "mood": "下定决心",
+                    "duration_s": 4.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      4
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 146,
+                        "end": 159
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": true,
+                    "id": "demo-b12"
+                  }
+                ]
+              }
+            ]
+          },
+          "files": [],
+          "content_hash": "sha256:d0121c61ba681907e9d1dd5f9574fe564c204aa5670d358dfde20fcfa8c19a4c",
+          "intent": "动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。",
+          "compiled": "你负责把竖屏短剧的一集写成剧本：分场，每场写动作、对白、旁白和音效。下游按剧本拆镜头、配音。\n\n[规则]\n动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。\n- 只写 [本集] 这一集：按 [节拍] 的顺序，用 [原文] 里的情节和台词；场数参考预计场数，时长参考预计时长。\n- 原文每段前有段号，例如 [P12]；【补写1】这样的标记后面是作者已采纳的补写，属于那一段。每场、每行的 paras 写它来自哪几段，只能用原文里给出的段号；用到补写的行在 adds 里写补写的编号。\n- 每场一个标题 heading：时间　内/外　地点，例如「夜　内　林晚出租屋」，不写场号。time 写 day / night / dawn / dusk，location 写 [设定] 里的地点名。\n- 行的 type：action 写看得见的动作和画面；dialogue 是对白；vo 是旁白或内心独白（tone 写 OS）；sfx 是音效。对白和旁白写 character（用 [设定] 里的人物名）和 tone（语气，可以空）；动作行可以写 mood（情绪）。\n- seconds 是这一行在成片里大约占几秒。\n- 原文没有、为了好拍加的行，added 写 true；不新增人物，不改情节走向。\n- 本集结尾停在卡点上，卡点那一行 cliffhanger 写 true。\n\n[输出 JSON]\n{\"scenes\": [{\"heading\": \"夜　内　林晚出租屋\", \"time\": \"night\", \"location\": \"林晚出租屋\", \"paras\": [4], \"lines\": [{\"type\": \"action\", \"character\": \"林晚\", \"text\": \"她拉开门，又关上。\", \"mood\": \"犹豫\", \"seconds\": 4, \"paras\": [4]}, {\"type\": \"dialogue\", \"character\": \"林晚\", \"tone\": \"低声\", \"text\": \"……周屿？\", \"seconds\": 3, \"paras\": [2], \"added\": true}]}]}\n\n# 目标模型：local/qwen3.6-27b",
+          "compiled_overridden": false,
+          "model_key": "local/qwen3.6-27b",
+          "where": "local",
+          "seed": 1001,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-14T02:12:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-script-e1-v2",
+          "product_id": "demo-p-script-e1",
+          "n": 2,
+          "origin": "switch",
+          "parent_version_id": "demo-p-script-e1-v1",
+          "payload": {
+            "source_id": "demo-src",
+            "episode_id": "demo-e1",
+            "scenes": [
+              {
+                "heading": "夜　内　老小区楼道 · 六楼林晚家门口",
+                "time_of_day": "night",
+                "location_id": "l-stairs",
+                "paras": [
+                  0,
+                  1
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 8,
+                    "end": 36
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 37,
+                    "end": 97
+                  }
+                ],
+                "id": "demo-b1",
+                "lines": [
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "声控灯坏了一半，忽明忽暗。林晚（26，米色风衣湿了半边，挎帆布画板袋）走上六楼。",
+                    "mood": "疲惫",
+                    "duration_s": 4.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      0
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 8,
+                        "end": 36
+                      },
+                      {
+                        "source_id": "sug:s1",
+                        "start": 0,
+                        "end": 30
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b2"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": null,
+                    "character_name": null,
+                    "tone": null,
+                    "text": "门口靠着一把红色长柄伞，伞柄上贴着一张黄色便利贴。",
+                    "mood": null,
+                    "duration_s": 3.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b3"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": null,
+                    "character_name": null,
+                    "tone": null,
+                    "text": "特写：便利贴，字迹歪扭——“楼下便利店，等你到十二点。”",
+                    "mood": null,
+                    "duration_s": 3.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      2
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 98,
+                        "end": 124
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b4"
+                  },
+                  {
+                    "type": "dialogue",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": "低声，愣住",
+                    "text": "……周屿？",
+                    "mood": null,
+                    "duration_s": 4.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "ai_added": true,
+                    "cliffhanger": false,
+                    "id": "demo-b5"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "她的指尖停在便利贴上，下意识摸了摸左手腕的旧发圈。",
+                    "mood": "动摇",
+                    "duration_s": 3.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b6"
+                  }
+                ]
+              },
+              {
+                "heading": "夜　内　林晚出租屋",
+                "time_of_day": "night",
+                "location_id": "l-flat",
+                "paras": [
+                  3
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 125,
+                    "end": 145
+                  }
+                ],
+                "id": "demo-b7",
+                "lines": [
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "林晚把伞靠回墙边，进屋，关门，背靠着门。",
+                    "mood": "强撑",
+                    "duration_s": 5.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      3
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 125,
+                        "end": 145
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b8"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": null,
+                    "character_name": null,
+                    "tone": null,
+                    "text": "特写：手机亮屏，23:52。",
+                    "mood": null,
+                    "duration_s": 2.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      3
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 125,
+                        "end": 145
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b9"
+                  },
+                  {
+                    "type": "vo",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": "OS",
+                    "text": "三年了。他凭什么。",
+                    "mood": null,
+                    "duration_s": null,
+                    "overlay_shot": "1-06",
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "ai_added": true,
+                    "cliffhanger": false,
+                    "id": "demo-b10"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "她拉开门，又关上。停了两秒，再拉开。",
+                    "mood": "犹豫",
+                    "duration_s": 6.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      3
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 125,
+                        "end": 145
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": false,
+                    "id": "demo-b11"
+                  },
+                  {
+                    "type": "action",
+                    "character_id": "c-linwan",
+                    "character_name": "林晚",
+                    "tone": null,
+                    "text": "门外，她拿起了那把伞。",
+                    "mood": "下定决心",
+                    "duration_s": 4.0,
+                    "overlay_shot": null,
+                    "paras": [
+                      4
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 146,
+                        "end": 159
+                      }
+                    ],
+                    "ai_added": false,
+                    "cliffhanger": true,
+                    "id": "demo-b12"
+                  }
+                ]
+              }
+            ]
+          },
+          "files": [],
+          "content_hash": "sha256:d0121c61ba681907e9d1dd5f9574fe564c204aa5670d358dfde20fcfa8c19a4c",
+          "intent": "动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。",
+          "compiled": "你负责把竖屏短剧的一集写成剧本：分场，每场写动作、对白、旁白和音效。下游按剧本拆镜头、配音。\n\n[规则]\n动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。\n- 只写 [本集] 这一集：按 [节拍] 的顺序，用 [原文] 里的情节和台词；场数参考预计场数，时长参考预计时长。\n- 原文每段前有段号，例如 [P12]；【补写1】这样的标记后面是作者已采纳的补写，属于那一段。每场、每行的 paras 写它来自哪几段，只能用原文里给出的段号；用到补写的行在 adds 里写补写的编号。\n- 每场一个标题 heading：时间　内/外　地点，例如「夜　内　林晚出租屋」，不写场号。time 写 day / night / dawn / dusk，location 写 [设定] 里的地点名。\n- 行的 type：action 写看得见的动作和画面；dialogue 是对白；vo 是旁白或内心独白（tone 写 OS）；sfx 是音效。对白和旁白写 character（用 [设定] 里的人物名）和 tone（语气，可以空）；动作行可以写 mood（情绪）。\n- seconds 是这一行在成片里大约占几秒。\n- 原文没有、为了好拍加的行，added 写 true；不新增人物，不改情节走向。\n- 本集结尾停在卡点上，卡点那一行 cliffhanger 写 true。\n\n[输出 JSON]\n{\"scenes\": [{\"heading\": \"夜　内　林晚出租屋\", \"time\": \"night\", \"location\": \"林晚出租屋\", \"paras\": [4], \"lines\": [{\"type\": \"action\", \"character\": \"林晚\", \"text\": \"她拉开门，又关上。\", \"mood\": \"犹豫\", \"seconds\": 4, \"paras\": [4]}, {\"type\": \"dialogue\", \"character\": \"林晚\", \"tone\": \"低声\", \"text\": \"……周屿？\", \"seconds\": 3, \"paras\": [2], \"added\": true}]}]}\n\n# 目标模型：moonshot/kimi-k2.6",
+          "compiled_overridden": false,
+          "model_key": "moonshot/kimi-k2.6",
+          "where": "api",
+          "seed": 1002,
+          "params": {
+            "mode": "switch",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-14T02:20:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。",
+        "compiled": "你负责把竖屏短剧的一集写成剧本：分场，每场写动作、对白、旁白和音效。下游按剧本拆镜头、配音。\n\n[规则]\n动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。\n- 只写 [本集] 这一集：按 [节拍] 的顺序，用 [原文] 里的情节和台词；场数参考预计场数，时长参考预计时长。\n- 原文每段前有段号，例如 [P12]；【补写1】这样的标记后面是作者已采纳的补写，属于那一段。每场、每行的 paras 写它来自哪几段，只能用原文里给出的段号；用到补写的行在 adds 里写补写的编号。\n- 每场一个标题 heading：时间　内/外　地点，例如「夜　内　林晚出租屋」，不写场号。time 写 day / night / dawn / dusk，location 写 [设定] 里的地点名。\n- 行的 type：action 写看得见的动作和画面；dialogue 是对白；vo 是旁白或内心独白（tone 写 OS）；sfx 是音效。对白和旁白写 character（用 [设定] 里的人物名）和 tone（语气，可以空）；动作行可以写 mood（情绪）。\n- seconds 是这一行在成片里大约占几秒。\n- 原文没有、为了好拍加的行，added 写 true；不新增人物，不改情节走向。\n- 本集结尾停在卡点上，卡点那一行 cliffhanger 写 true。\n\n[输出 JSON]\n{\"scenes\": [{\"heading\": \"夜　内　林晚出租屋\", \"time\": \"night\", \"location\": \"林晚出租屋\", \"paras\": [4], \"lines\": [{\"type\": \"action\", \"character\": \"林晚\", \"text\": \"她拉开门，又关上。\", \"mood\": \"犹豫\", \"seconds\": 4, \"paras\": [4]}, {\"type\": \"dialogue\", \"character\": \"林晚\", \"tone\": \"低声\", \"text\": \"……周屿？\", \"seconds\": 3, \"paras\": [2], \"added\": true}]}]}\n\n# 目标模型：deepseek/v4-pro",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4-pro"
+      },
+      "estimate": {
+        "model_key": "deepseek/v4-pro",
+        "where": "api",
+        "cost_usd": 0.0251,
+        "seconds": 0.0
+      },
+      "running": null
+    },
+    {
+      "id": "demo-p-script-e2",
+      "series_id": "demo",
+      "owner_type": "episode",
+      "owner_id": "demo-e2",
+      "slot": "script",
+      "component_id": "script",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。",
+        "compiled": "你负责把竖屏短剧的一集写成剧本：分场，每场写动作、对白、旁白和音效。下游按剧本拆镜头、配音。\n\n[规则]\n动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。\n- 只写 [本集] 这一集：按 [节拍] 的顺序，用 [原文] 里的情节和台词；场数参考预计场数，时长参考预计时长。\n- 原文每段前有段号，例如 [P12]；【补写1】这样的标记后面是作者已采纳的补写，属于那一段。每场、每行的 paras 写它来自哪几段，只能用原文里给出的段号；用到补写的行在 adds 里写补写的编号。\n- 每场一个标题 heading：时间　内/外　地点，例如「夜　内　林晚出租屋」，不写场号。time 写 day / night / dawn / dusk，location 写 [设定] 里的地点名。\n- 行的 type：action 写看得见的动作和画面；dialogue 是对白；vo 是旁白或内心独白（tone 写 OS）；sfx 是音效。对白和旁白写 character（用 [设定] 里的人物名）和 tone（语气，可以空）；动作行可以写 mood（情绪）。\n- seconds 是这一行在成片里大约占几秒。\n- 原文没有、为了好拍加的行，added 写 true；不新增人物，不改情节走向。\n- 本集结尾停在卡点上，卡点那一行 cliffhanger 写 true。\n\n[输出 JSON]\n{\"scenes\": [{\"heading\": \"夜　内　林晚出租屋\", \"time\": \"night\", \"location\": \"林晚出租屋\", \"paras\": [4], \"lines\": [{\"type\": \"action\", \"character\": \"林晚\", \"text\": \"她拉开门，又关上。\", \"mood\": \"犹豫\", \"seconds\": 4, \"paras\": [4]}, {\"type\": \"dialogue\", \"character\": \"林晚\", \"tone\": \"低声\", \"text\": \"……周屿？\", \"seconds\": 3, \"paras\": [2], \"added\": true}]}]}\n\n# 目标模型：deepseek/v4-pro",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4-pro"
+      },
+      "estimate": {
+        "model_key": "deepseek/v4-pro",
+        "where": "api",
+        "cost_usd": 0.0266,
+        "seconds": 0.0
+      },
+      "running": null
+    },
+    {
+      "id": "demo-p-script-e3",
+      "series_id": "demo",
+      "owner_type": "episode",
+      "owner_id": "demo-e3",
+      "slot": "script",
+      "component_id": "script",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。",
+        "compiled": "你负责把竖屏短剧的一集写成剧本：分场，每场写动作、对白、旁白和音效。下游按剧本拆镜头、配音。\n\n[规则]\n动作只写镜头拍得到的，不写心理活动；对白口语、短句；前 3 秒要抓人，结尾停在卡点上。\n- 只写 [本集] 这一集：按 [节拍] 的顺序，用 [原文] 里的情节和台词；场数参考预计场数，时长参考预计时长。\n- 原文每段前有段号，例如 [P12]；【补写1】这样的标记后面是作者已采纳的补写，属于那一段。每场、每行的 paras 写它来自哪几段，只能用原文里给出的段号；用到补写的行在 adds 里写补写的编号。\n- 每场一个标题 heading：时间　内/外　地点，例如「夜　内　林晚出租屋」，不写场号。time 写 day / night / dawn / dusk，location 写 [设定] 里的地点名。\n- 行的 type：action 写看得见的动作和画面；dialogue 是对白；vo 是旁白或内心独白（tone 写 OS）；sfx 是音效。对白和旁白写 character（用 [设定] 里的人物名）和 tone（语气，可以空）；动作行可以写 mood（情绪）。\n- seconds 是这一行在成片里大约占几秒。\n- 原文没有、为了好拍加的行，added 写 true；不新增人物，不改情节走向。\n- 本集结尾停在卡点上，卡点那一行 cliffhanger 写 true。\n\n[输出 JSON]\n{\"scenes\": [{\"heading\": \"夜　内　林晚出租屋\", \"time\": \"night\", \"location\": \"林晚出租屋\", \"paras\": [4], \"lines\": [{\"type\": \"action\", \"character\": \"林晚\", \"text\": \"她拉开门，又关上。\", \"mood\": \"犹豫\", \"seconds\": 4, \"paras\": [4]}, {\"type\": \"dialogue\", \"character\": \"林晚\", \"tone\": \"低声\", \"text\": \"……周屿？\", \"seconds\": 3, \"paras\": [2], \"added\": true}]}]}\n\n# 目标模型：deepseek/v4-pro",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4-pro"
+      },
+      "estimate": {
+        "model_key": "deepseek/v4-pro",
+        "where": "api",
+        "cost_usd": 0.0271,
+        "seconds": 0.0
+      },
+      "running": null
+    }
+  ],
+  "rewrites": {
+    "demo-b1": "夜　内　老小区六楼楼道",
+    "demo-b2": "声控灯一闪一灭。林晚（26，米色风衣湿了半边）抱着帆布画板袋，一步一步走上六楼。",
+    "demo-b3": "门边的墙上斜靠着一把红色长柄伞，伞柄上粘着一张黄色便利贴。",
+    "demo-b4": "特写：黄色便利贴上一行歪扭的字——“楼下便利店，等你到十二点。”",
+    "demo-b5": "……是你啊。",
+    "demo-b6": "她的手指在便利贴上停住，又缩回来，攥住了左手腕的旧发圈。",
+    "demo-b7": "夜　内　林晚出租屋 · 门内",
+    "demo-b8": "她把伞留在门外，进屋反手关门，后背抵着门板。",
+    "demo-b9": "特写：手机锁屏亮起，23:52，没有新消息。",
+    "demo-b10": "三年了，一句话就想让我下去？",
+    "demo-b11": "她握住门把手，拉开一条缝，又关上。两秒后，再一次拉开。",
+    "demo-b12": "她弯下腰，从墙边拿起那把红伞。"
+  }
+}

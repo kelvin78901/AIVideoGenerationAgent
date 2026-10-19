@@ -6,7 +6,8 @@ is added (only what is missing, so an existing database picks up new blocks on t
 start): the novel (``tests/fixtures/demo/雨停之前.txt``), its enrichment suggestions (小说补全
 v1 local → v2 DeepSeek, adopted, the first suggestion accepted; ``enrich.json``) and its story
 bible (设定提取 v1, read with that accepted addition; ``extract.json``) and its episode plan
-(分集规划 v1 on DeepSeek, three episodes with a $15 budget each; ``split.json``), each assembled
+(分集规划 v1 on DeepSeek, three episodes with a $15 budget each; ``split.json``) and episode 1's
+script (剧本化 v1 local → v2 「不满意换一个」 on Kimi, adopted; ``script.json``), each assembled
 exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``.
 ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset`` deletes the demo
 series first.
@@ -29,12 +30,14 @@ from drama_series_agent.core.paths import REPO_ROOT, database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
-from drama_series_agent.pipeline.components import enrich, split
+from drama_series_agent.pipeline.components import enrich, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
 from drama_series_agent.pipeline.drafts import VersionDraft
+from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
+from drama_series_agent.script import service as script_service
 from drama_series_agent.spec.schema import default_row
 from drama_series_agent.suggestions import service as suggestions
 
@@ -64,6 +67,17 @@ SPLIT_MODEL = "deepseek/v4.1-flash"
 # 分集规划 v1 on DeepSeek, 10:08 +08:00; each episode's 本集 API 预算 is $15.
 SPLIT_AT = datetime(2026, 10, 14, 2, 8, tzinfo=UTC)
 EPISODE_BUDGET_USD = 15.0
+# 剧本化 of episode 1: v1 on the local model 10:12 +08:00, v2 「不满意换一个」 on Kimi 10:20
+# (adopted). Episodes 2 and 3 have an empty script product (「生成这一集的剧本」).
+SCRIPT_VERSIONS = (
+    ("v1", "local/qwen3.6-27b", "local", "run", datetime(2026, 10, 14, 2, 12, tzinfo=UTC)),
+    ("v2", "moonshot/kimi-k2.6", "api", "switch", datetime(2026, 10, 14, 2, 20, tzinfo=UTC)),
+)  # fmt: skip
+
+
+def script_product_id(episode_id: str) -> str:
+    """``demo-e1`` → ``demo-p-script-e1`` (MSW ``scriptProductId``)."""
+    return f"demo-p-script-{episode_id.removeprefix('demo-')}"
 
 
 async def seed_demo(
@@ -86,11 +100,22 @@ async def seed_demo(
             await _series_product(products, ENRICH_PRODUCT, suggestions.SUGGESTIONS_SLOT, "enrich")
             await _series_product(products, BIBLE_PRODUCT, BIBLE_SLOT, "extract")
             await _series_product(products, SPLIT_PRODUCT, episodes.EPISODES_SLOT, "split")
+            # Before the plan is adopted: its mirror would create them with random ids.
+            for e in (split.demo_fixture() or {}).get("episodes", []):
+                await products.ensure(
+                    series_id=DEMO_SERIES_ID,
+                    owner_type="episode",
+                    owner_id=e["id"],
+                    slot=episodes.SCRIPT_SLOT,
+                    component_id=episodes.SCRIPT_COMPONENT,
+                    product_id=script_product_id(e["id"]),
+                )
         await _seed_novel(novel)
         if products is not None and compiler is not None:
             await _seed_enrich(db, novel, products, compiler)
             await _seed_bible(db, novel, products, compiler)
             await _seed_split(db, novel, products, compiler)
+            await _seed_script(db, novel, products, compiler)
     return created
 
 
@@ -115,6 +140,7 @@ async def build_demo(*, reset: bool) -> None:
         products.on_adopt(BIBLE_SLOT, materialize)
         products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
         products.on_adopt(episodes.EPISODES_SLOT, episodes.materialize)
+        products.on_adopt(episodes.SCRIPT_SLOT, script_service.materialize)
         if reset:
             await delete_demo(db)
         novel = NovelService(db, BlobStore(), products)
@@ -323,3 +349,44 @@ async def _seed_split(
                 row.budget_usd = EPISODE_BUDGET_USD
                 session.add(row)
         await session.commit()
+
+
+async def _seed_script(
+    db: Database, novel: NovelService, products: ProductService, compiler: PromptCompiler
+) -> None:
+    invalidation = slicers()
+    for entry in (script.demo_fixture() or {}).get("episodes", []):
+        product_id = script_product_id(entry["episode"])
+        async with db.session() as session:
+            product = await session.get(Product, product_id)
+            if product is None or product.current_version_id is not None:
+                continue
+            try:
+                inputs = await script.gather(
+                    session, invalidation, novel, DEMO_SERIES_ID, entry["episode"]
+                )
+            except PipelineError:
+                return  # the plan is not there yet
+        payload = script.demo_payload(inputs)
+        if payload is None:
+            logger.warning("demo script fixture does not match episode {}", entry["episode"])
+            continue
+        intent = compiler.default_intent("script", "zh-CN")
+        parent = None
+        for n, (suffix, model, where, origin, at) in enumerate(SCRIPT_VERSIONS, 1):
+            draft = VersionDraft(
+                payload=payload,
+                intent=intent,
+                compiled=compiler.compile("script", intent, model),
+                model_key=model,
+                where=where,
+                seed=1000 + n,
+                params={"mode": origin, "calls": 1},
+                dependencies=list(inputs.deps),
+                id=f"{product_id}-{suffix}",
+                created_at=at,
+            )
+            v = await products.append(product_id, draft, origin=origin, parent_version_id=parent)
+            parent = v.id
+        assert parent is not None
+        await products.adopt(parent)

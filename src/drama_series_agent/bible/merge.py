@@ -301,6 +301,23 @@ def names_of(payload: Mapping[str, Any]) -> dict[str, Any]:
 # --------------------------------------------------------------------------- edits
 
 
+def entries_of(payload: Mapping[str, Any], ids: Iterable[str]) -> list[dict[str, Any]]:
+    """The ``entities:<id,…>`` slice: these entries' kind, name, aliases and data (an entry the
+    bible dropped is missing, so that changes the hash too). Paragraphs are left out."""
+    wanted = set(ids)
+    return [
+        {
+            "id": e["id"],
+            "kind": e["kind"],
+            "name": e["name"],
+            "aliases": list(e.get("aliases") or []),
+            "data": dict(e.get("data") or {}),
+        }
+        for e in payload.get("entities") or []
+        if e["id"] in wanted
+    ]
+
+
 def find(payload: Mapping[str, Any], entity_id: str) -> dict[str, Any] | None:
     return next((e for e in payload.get("entities") or [] if e["id"] == entity_id), None)
 

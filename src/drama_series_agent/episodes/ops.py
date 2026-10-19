@@ -101,6 +101,16 @@ def scene_ranges(episodes: Sequence[Mapping[str, Any]]) -> dict[str, tuple[int, 
     return out
 
 
+def first_scene(episodes: Sequence[Mapping[str, Any]], episode_id: str) -> int:
+    """The 场号 an episode's first scene takes: one after the scenes of the episodes before."""
+    n = 1
+    for e in sorted(episodes, key=lambda e: int(e["idx"])):
+        if e["id"] == episode_id:
+            break
+        n += int(e.get("scene_count") or 0)
+    return n
+
+
 # --------------------------------------------------------------------------- reruns
 
 

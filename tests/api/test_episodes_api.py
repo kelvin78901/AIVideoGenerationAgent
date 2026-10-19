@@ -142,7 +142,10 @@ def test_demo_plan_is_seeded(client: TestClient) -> None:
     assert [(e["scene_from"], e["scene_to"]) for e in data] == [(1, 2), (3, 4), (5, 7)]
     assert [e["target_seconds"] for e in data] == [34, 70, 80]
     assert [len(e["beats"]) for e in data] == [5, 9, 8]
-    assert all(e["script_status"] == "none" and e["stage"] == "script_pending" for e in data)
+    # Episode 1's script is seeded (a draft until the gate); 2 and 3 have none yet.
+    assert [(e["script_status"], e["stage"]) for e in data] == [
+        ("draft", "in_progress"), ("none", "script_pending"), ("none", "script_pending"),
+    ]  # fmt: skip
     assert all(e["shot_count"] is None for e in data)
     first = e1["beats"][0]
     assert (first["id"], first["idx"], first["paras"]) == ("demo-bt1", 1, [0])
@@ -370,12 +373,17 @@ def test_progress_of_the_novel_and_script_steps(client: TestClient) -> None:
     steps = resp.json()["steps"]
     assert list(steps) == ["novel", "script", "assets", "storyboard", "generate", "post"]
     assert steps["novel"] == {"state": "in_progress", "done": None, "total": None, "stale": 0}
-    assert steps["script"]["state"] == "not_started" and steps["script"]["stale"] == 0
+    assert steps["script"]["state"] == "in_progress" and steps["script"]["stale"] == 0
+    e2 = client.get(f"{V1}/episodes/demo-e2/progress").json()["steps"]
+    assert e2["script"]["state"] == "not_started"
     assert all(steps[s]["state"] == "not_started" for s in ("assets", "post"))
-    # Accepting an addition: the bible and the plan both read it (待更新 1 each).
+    # Accepting an addition: the bible, the plan and episode 1's script (it is on its first
+    # paragraph) all read it; episode 2's script does not.
     client.post(f"{V1}/suggestions/s2/accept")
     steps = client.get(f"{V1}/episodes/demo-e1/progress").json()["steps"]
-    assert (steps["novel"]["stale"], steps["script"]["stale"]) == (1, 1)
+    assert (steps["novel"]["stale"], steps["script"]["stale"]) == (1, 2)
+    e2 = client.get(f"{V1}/episodes/demo-e2/progress").json()["steps"]
+    assert e2["script"]["stale"] == 1
     assert _status(client, "demo", "split") == "stale"
     assert _code(client.get(f"{V1}/episodes/nope/progress")) == "episode_not_found"
 
