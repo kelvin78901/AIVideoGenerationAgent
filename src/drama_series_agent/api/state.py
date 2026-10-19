@@ -17,6 +17,8 @@ from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.jobs import JobQueue
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
+from drama_series_agent.episodes import service as episodes_service
+from drama_series_agent.episodes.service import EPISODES_SLOT, EpisodeService
 from drama_series_agent.modelhub.adapters.base import ModelSpec
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
@@ -26,6 +28,7 @@ from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_sli
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
+from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
@@ -51,6 +54,7 @@ class StudioState:
     novel: NovelService
     bible: BibleService
     suggestions: SuggestionService
+    episodes: EpisodeService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -77,9 +81,11 @@ class StudioState:
         invalidation.slicer(NOVEL_SLOT, novel_slicer)
         invalidation.slicer(BIBLE_SLOT, bible_slicer)
         invalidation.slicer(SUGGESTIONS_SLOT, suggestions_service.suggestions_slicer)
+        invalidation.slicer(EPISODES_SLOT, episodes_service.episodes_slicer)
         products = ProductService(db, bus, invalidation)
         products.on_adopt(BIBLE_SLOT, materialize)
         products.on_adopt(SUGGESTIONS_SLOT, suggestions_service.materialize)
+        products.on_adopt(EPISODES_SLOT, episodes_service.materialize)
         compiler = PromptCompiler()
         components = ComponentRegistry(
             Services(
@@ -95,6 +101,9 @@ class StudioState:
         components.add(ExtractComponent(components.services, novel))
         enrich = EnrichComponent(components.services, novel)
         components.add(enrich)
+        components.add(SplitComponent(components.services, novel))
+        episodes = EpisodeService(db, products, invalidation)
+        budget.episode_budget = episodes.budget
         runs = RunService(components, products, jobs, bus, budget)
         novel.after_import = runs.ensure_series_products
         state = cls(
@@ -112,6 +121,7 @@ class StudioState:
             novel=novel,
             bible=BibleService(db, products, novel),
             suggestions=SuggestionService(db, products, novel, enrich),
+            episodes=episodes,
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:

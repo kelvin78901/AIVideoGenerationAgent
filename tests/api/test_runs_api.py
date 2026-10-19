@@ -38,7 +38,7 @@ class EchoComponent(Component):
     """Plays ``split``: reads the series' bible product, answers with two lines."""
 
     id = "split"
-    slot = "episodes"
+    slot = "test_split"  # not the demo series' real plan
     owner_type = "series"
     max_tokens = 300
     upstream_id = "test-bible"
@@ -102,7 +102,7 @@ def _setup(client: TestClient) -> str:
             series_id="demo",
             owner_type="series",
             owner_id="demo",
-            slot="episodes",
+            slot="test_split",
             component_id="split",
         )
         return p.id

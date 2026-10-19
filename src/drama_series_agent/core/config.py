@@ -185,6 +185,8 @@ class SpecConfig(_Loose):
 
     platforms: list[PlatformPreset] = Field(default_factory=list)
     defaults: dict[str, Any] = Field(default_factory=dict)
+    # episode_len → [shortest, longest] seconds (分集规划 cuts by it)
+    episode_lengths: dict[str, list[int]] = Field(default_factory=dict)
     safe_areas: dict[str, SafeArea] = Field(default_factory=dict)
     compat_stages: list[CompatStage] = Field(default_factory=list)
 

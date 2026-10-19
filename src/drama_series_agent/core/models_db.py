@@ -560,3 +560,49 @@ class SuggestionDecision(SQLModel, table=True):
     updated_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+class Episode(SQLModel, table=True):
+    """One episode of a series (SPEC 4.1), mirroring the adopted ``episodes`` version (分集规划).
+
+    Rebuilt on every adopt like ``bible_entity`` (upsert by id, ``retired`` instead of a
+    delete, so the episode's products and spending keep their foreign keys). ``budget_usd`` is
+    the user's setting (the Models page), not part of any version: an adopt never changes it.
+    """
+
+    __tablename__ = "episode"
+
+    id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    version_id: str  # the adopted version this row mirrors
+    idx: int  # 1-based within the series
+    title: str = ""
+    hook: str | None = None
+    cliffhanger: str | None = None
+    target_seconds: int | None = None
+    scene_count: int | None = None  # 预计场数 (the plan's estimate, before the script)
+    budget_usd: float | None = None
+    retired: bool = False
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class Beat(SQLModel, table=True):
+    """One beat of an episode's plan (SPEC 4.1), mirroring the adopted ``episodes`` version."""
+
+    __tablename__ = "beat"
+
+    id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    episode_id: str = Field(index=True)
+    version_id: str
+    idx: int  # 1-based within the episode
+    text: str = ""
+    emotion: float = 0.0  # -1 (lowest) … 1 (highest), the emotion curve
+    paras_json: list[int] = _json(list)  # paragraph numbers across the book, 0-based
+    source_spans_json: list[dict[str, Any]] = _json(list)  # [{source_id, start, end}, …]
+    retired: bool = False
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

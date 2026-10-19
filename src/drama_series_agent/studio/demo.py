@@ -5,8 +5,9 @@ handlers have been removed still have a series to show. Then each block the demo
 is added (only what is missing, so an existing database picks up new blocks on the next
 start): the novel (``tests/fixtures/demo/雨停之前.txt``), its enrichment suggestions (小说补全
 v1 local → v2 DeepSeek, adopted, the first suggestion accepted; ``enrich.json``) and its story
-bible (设定提取 v1, read with that accepted addition; ``extract.json``), each assembled exactly
-as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``.
+bible (设定提取 v1, read with that accepted addition; ``extract.json``) and its episode plan
+(分集规划 v1 on DeepSeek, three episodes with a $15 budget each; ``split.json``), each assembled
+exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``.
 ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset`` deletes the demo
 series first.
 """
@@ -23,11 +24,12 @@ from drama_series_agent.bible.service import BIBLE_SLOT, bible_slicer, materiali
 from drama_series_agent.core.config import SpecConfig, get_config
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
-from drama_series_agent.core.models_db import Product, Series, SuggestionDecision
+from drama_series_agent.core.models_db import Episode, Product, Series, SuggestionDecision
 from drama_series_agent.core.paths import REPO_ROOT, database_path
 from drama_series_agent.core.storage import BlobStore
+from drama_series_agent.episodes import service as episodes
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
-from drama_series_agent.pipeline.components import enrich
+from drama_series_agent.pipeline.components import enrich, split
 from drama_series_agent.pipeline.components.extract import demo_payload
 from drama_series_agent.pipeline.drafts import VersionDraft
 from drama_series_agent.pipeline.invalidation import Invalidation
@@ -56,6 +58,12 @@ BIBLE_VERSION = "demo-p-extract-v1"
 BIBLE_MODEL = "local/qwen3.6-27b"
 # 设定提取 v1 on the local model, 10:05 +08:00 (MSW fixtures/demo/products.ts).
 BIBLE_AT = datetime(2026, 10, 14, 2, 5, tzinfo=UTC)
+SPLIT_PRODUCT = "demo-p-split"
+SPLIT_VERSION = "demo-p-split-v1"
+SPLIT_MODEL = "deepseek/v4.1-flash"
+# 分集规划 v1 on DeepSeek, 10:08 +08:00; each episode's 本集 API 预算 is $15.
+SPLIT_AT = datetime(2026, 10, 14, 2, 8, tzinfo=UTC)
+EPISODE_BUDGET_USD = 15.0
 
 
 async def seed_demo(
@@ -77,10 +85,12 @@ async def seed_demo(
             # Before the import: its hook would create the products with random ids.
             await _series_product(products, ENRICH_PRODUCT, suggestions.SUGGESTIONS_SLOT, "enrich")
             await _series_product(products, BIBLE_PRODUCT, BIBLE_SLOT, "extract")
+            await _series_product(products, SPLIT_PRODUCT, episodes.EPISODES_SLOT, "split")
         await _seed_novel(novel)
         if products is not None and compiler is not None:
             await _seed_enrich(db, novel, products, compiler)
             await _seed_bible(db, novel, products, compiler)
+            await _seed_split(db, novel, products, compiler)
     return created
 
 
@@ -104,6 +114,7 @@ async def build_demo(*, reset: bool) -> None:
         products = ProductService(db, EventBus(db), slicers())
         products.on_adopt(BIBLE_SLOT, materialize)
         products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
+        products.on_adopt(episodes.EPISODES_SLOT, episodes.materialize)
         if reset:
             await delete_demo(db)
         novel = NovelService(db, BlobStore(), products)
@@ -155,6 +166,7 @@ def slicers() -> Invalidation:
     invalidation.slicer(NOVEL_SLOT, novel_slicer)
     invalidation.slicer(BIBLE_SLOT, bible_slicer)
     invalidation.slicer(suggestions.SUGGESTIONS_SLOT, suggestions.suggestions_slicer)
+    invalidation.slicer(episodes.EPISODES_SLOT, episodes.episodes_slicer)
     return invalidation
 
 
@@ -259,3 +271,55 @@ async def _seed_bible(
         created_at=BIBLE_AT,
     )
     await products.append(product_id, draft, origin="run")
+
+
+async def _seed_split(
+    db: Database, novel: NovelService, products: ProductService, compiler: PromptCompiler
+) -> None:
+    product_id = await _series_product(products, SPLIT_PRODUCT, episodes.EPISODES_SLOT, "split")
+    invalidation = slicers()
+    async with db.session() as session:
+        product = await session.get(Product, product_id)
+        bible = await session.get(Product, BIBLE_PRODUCT)
+        if product is None or product.current_version_id is not None:
+            return
+        if bible is None or bible.adopted_version_id is None:
+            return
+        book = await novel.book(session, DEMO_SERIES_ID)
+        if book is None or book.product_id is None:
+            return
+        deps = [
+            await invalidation.dependency(session, book.product_id, "chapters"),
+            await invalidation.dependency(session, BIBLE_PRODUCT, "chapters"),
+            await invalidation.dependency(session, BIBLE_PRODUCT, "names"),
+        ]
+        enriched = await session.get(Product, ENRICH_PRODUCT)
+        if enriched is not None and enriched.adopted_version_id is not None:
+            deps.append(
+                await invalidation.dependency(session, ENRICH_PRODUCT, suggestions.ADOPTED_SLICE)
+            )
+    payload = split.demo_payload(book)
+    if payload is None:
+        logger.warning("demo episode plan fixture missing")
+        return
+    intent = compiler.default_intent("split", "zh-CN")
+    draft = VersionDraft(
+        payload=payload,
+        intent=intent,
+        compiled=compiler.compile("split", intent, SPLIT_MODEL),
+        model_key=SPLIT_MODEL,
+        where="api",
+        seed=1001,
+        params={"mode": "run", "calls": 1},
+        dependencies=deps,
+        id=SPLIT_VERSION,
+        created_at=SPLIT_AT,
+    )
+    await products.append(product_id, draft, origin="run")
+    async with db.session() as session:
+        for e in payload["episodes"]:
+            row = await session.get(Episode, e["id"])
+            if row is not None:
+                row.budget_usd = EPISODE_BUDGET_USD
+                session.add(row)
+        await session.commit()

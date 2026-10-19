@@ -2,15 +2,17 @@ from __future__ import annotations
 
 import asyncio
 
-from sqlmodel import func, select
+from sqlmodel import col, func, select
 
 from drama_series_agent.bible.service import BIBLE_SLOT, materialize
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.models_db import (
+    Beat,
     BibleEntity,
     Chapter,
     Dependency,
+    Episode,
     NovelSource,
     OutputSpecRow,
     Product,
@@ -21,6 +23,7 @@ from drama_series_agent.core.models_db import (
 )
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
+from drama_series_agent.episodes import service as episodes
 from drama_series_agent.novel.service import NovelService
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
@@ -90,14 +93,19 @@ async def test_delete_demo_takes_everything_with_it(studio_db: Database) -> None
         assert await _count(studio_db, table) == 0, table.__name__
 
 
-async def test_demo_suggestions_and_bible_are_seeded_once(studio_db: Database) -> None:
+async def test_demo_suggestions_bible_and_plan_are_seeded_once(studio_db: Database) -> None:
     products = ProductService(studio_db, EventBus(studio_db))
     products.on_adopt(BIBLE_SLOT, materialize)
     products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
+    products.on_adopt(episodes.EPISODES_SLOT, episodes.materialize)
     novel = NovelService(studio_db, BlobStore(), products)
 
     async def hook(series_id: str) -> None:  # what the app's hook does
-        for slot, component in ((BIBLE_SLOT, "extract"), ("suggestions", "enrich")):
+        for slot, component in (
+            (BIBLE_SLOT, "extract"),
+            ("suggestions", "enrich"),
+            ("episodes", "split"),
+        ):
             await products.ensure(
                 series_id=series_id, owner_type="series", owner_id=series_id, slot=slot,
                 component_id=component,
@@ -116,6 +124,11 @@ async def test_demo_suggestions_and_bible_are_seeded_once(studio_db: Database) -
             )
         ).all()
         accepted = await session.get(SuggestionDecision, "s1")
+        split = await session.get(Product, "demo-p-split")
+        split_deps = (
+            await session.exec(select(Dependency).where(Dependency.version_id == "demo-p-split-v1"))
+        ).all()
+        rows = (await session.exec(select(Episode).order_by(col(Episode.idx)))).all()
     assert product is not None and product.adopted_version_id == "demo-p-extract-v1"
     assert version is not None and version.created_at.isoformat() == "2026-10-14T02:05:00+00:00"
     assert version.payload_json["source_id"] == "demo-src"
@@ -126,9 +139,24 @@ async def test_demo_suggestions_and_bible_are_seeded_once(studio_db: Database) -
         ("demo-novel", "chapters"),
         ("demo-p-enrich", "adopted"),
     }
-    assert await _count(studio_db, ProductVersion) == 4  # novel, enrich ×2, bible: once each
+    # 分集规划 v1 (adopted): three episodes of $15, read from the bible and the addition.
+    assert split is not None and split.adopted_version_id == "demo-p-split-v1"
+    assert {(d.upstream_product_id, d.slice) for d in split_deps} == {
+        ("demo-novel", "chapters"),
+        ("demo-p-extract", "chapters"),
+        ("demo-p-extract", "names"),
+        ("demo-p-enrich", "adopted"),
+    }
+    assert [(r.id, r.idx, r.title, r.budget_usd) for r in rows] == [
+        ("demo-e1", 1, "红伞", 15.0),
+        ("demo-e2", 2, "十二点", 15.0),
+        ("demo-e3", 3, "旧发圈", 15.0),
+    ]
+    # novel, enrich ×2, bible, plan: once each
+    assert await _count(studio_db, ProductVersion) == 5
     assert await _count(studio_db, BibleEntity) == len(version.payload_json["entities"]) == 18
     assert await _count(studio_db, Suggestion) == 4
+    assert await _count(studio_db, Beat) == 22
 
 
 def test_demo_command_resets() -> None:

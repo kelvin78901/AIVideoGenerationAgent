@@ -31,7 +31,7 @@ def _code(resp: object) -> str:
 
 
 def _product(client: TestClient, versions: int = 2) -> tuple[str, list[str]]:
-    """An episodes product on the demo series with ``versions`` runs; returns ids."""
+    """A test-only product on the demo series with ``versions`` runs; returns ids."""
     svc = _state(client).products
 
     async def make() -> tuple[str, list[str]]:
@@ -39,8 +39,8 @@ def _product(client: TestClient, versions: int = 2) -> tuple[str, list[str]]:
             series_id="demo",
             owner_type="series",
             owner_id="demo",
-            slot="episodes",
-            component_id="split",
+            slot="test",
+            component_id="test_only",
         )
         ids = []
         for n in range(versions):
@@ -53,7 +53,9 @@ def _product(client: TestClient, versions: int = 2) -> tuple[str, list[str]]:
 
 def test_list_and_get(client: TestClient) -> None:
     pid, (v1, v2) = _product(client)
-    listed = client.get("/api/v1/products", params={"owner": "series:demo", "component": "split"})
+    listed = client.get(
+        "/api/v1/products", params={"owner": "series:demo", "component": "test_only"}
+    )
     assert [p["id"] for p in listed.json()] == [pid]
     assert client.get("/api/v1/products", params={"component": "script"}).json() == []
     data = client.get(f"/api/v1/products/{pid}").json()
