@@ -69,7 +69,10 @@
     "sync_target_not_found": "Sync target {{id}} not found",
     "sync_target_missing": "{{id}} not found, so it cannot be turned on",
     "sync_mode_unavailable": "{{id}} cannot sync this way here",
-    "sync_busy": "A sync is running. Try again when it finishes"
+    "sync_busy": "A sync is running. Try again when it finishes",
+    "comfy_not_found": "No ComfyUI was found on this machine",
+    "comfy_snapshot_failed": "ComfyUI-Manager could not do it ({{reason}})",
+    "comfy_snapshot_not_found": "Snapshot {{id}} not found"
   },
   "toast": {
     "generic": "Notice: {{code}}",

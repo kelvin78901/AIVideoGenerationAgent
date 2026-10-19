@@ -12,6 +12,7 @@ import {
 import { series as demoSeries } from "@/mocks/fixtures/demo/series";
 import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
 import { server } from "@/mocks/node";
+import { resetFakeSetup, setupHandlers } from "@/test/setupBackend";
 
 type Dims = { w: number; h: number };
 const even = (n: number) => Math.round(n / 2) * 2;
@@ -110,16 +111,19 @@ function seriesHandlers() {
 }
 
 /**
- * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, and
- * the demo series with its output spec.
+ * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, the
+ * demo series with its output spec, and the PC sample machine before its first scan
+ * (`test/setupBackend.ts`, `fakeSetup`).
  */
 export function backend({ mock = true }: { mock?: boolean } = {}) {
   fake.series = structuredClone(demoSeries);
   fake.spec = structuredClone(demoSpec);
+  resetFakeSetup();
   server.use(
     http.get("*/api/v1/health", () => HttpResponse.json({ status: "ok", version: "0", mock })),
     http.get("*/api/v1/jobs", () => HttpResponse.json([])),
     ...seriesHandlers(),
+    ...setupHandlers(),
     http.get("*/api/v1/providers", () =>
       HttpResponse.json({
         providers: [

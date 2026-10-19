@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 首次启动页接真实接口（第 7 步）
+
+- **前端测试的假后端用真实后端导出的数据**：`tests/api/test_web_fixtures.py` 在 Mock 下扫描 PC / Mac 示例，把 profile（扫描前、扫描后）、全选安装时的顺序和 `install.confirm`、`/comfy/env` 写进 `web/src/test/data/setup.json`；`web/src/test/setupBackend.ts` 读它，按真实后端的节奏（202 后在下一个任务里推 `setup.progress` / `setup.log`，经测试的 `FakeEventSource` 走 SSE 那条路）模拟扫描、确认、快照、安装、重试、跳过、回滚。后端回答一变，这个 pytest 就失败，`DRAMA_UPDATE_FIXTURES=1` 重新生成。原因：MSW 示例和后端的数字已经分叉（MSW 25 项，后端 30 项），手抄一份迟早再分叉。文件由脚本生成，prettier 忽略它。
+- **MSW 的 setup handler、示例数据和 `demoTiming.setup*` 删掉**：首次启动页只走真实后端（Mock 下后端自己有示例机器）。顶栏和「模型与兜底」页读 GPU 名也改走后端。
+- **「只选必需的」和默认勾选一样，不含会改用户 ComfyUI 的项**；「全选」才包括它们。原因：SPEC 6.4.1 要求这些项不随必需项自动勾上，「只选必需的」就是回到默认。
+- **确认弹窗关掉等于取消**（Esc、右上角都算）：取消什么都不装，回到检测结果，勾选保留。
+- **「你的 ComfyUI」区域**：计划只写了快照列表和回滚；顺带把第 4c 步识别出的位置、地址、版本、Manager、节点包和模型文件（可展开）显示出来，方便核对验收第 6 条。放在页面最下面，扫描找到 ComfyUI 后才显示。
+- **前一步的 bug**：没找到 ComfyUI 时（Mac 示例），勾了 Manager 也被排到最前面，排在要装的 ComfyUI 前面；改成只有装进用户自己的 ComfyUI 时才排第一。
+
 ## 2026-10-18 · M1 改已装 ComfyUI 前先确认，快照和回滚（第 5c 步）
 
 - **Manager 的接口按本机装的 comfyui_manager 4.2.2 源码核对**（`glob/manager_server.py`；官方文档只讲界面和 cm-cli，没写 HTTP 接口）：`GET /v2/snapshot/getlist` → `{"items": [...]}`；`POST /v2/snapshot/save` 不带请求体（表单类 Content-Type 会被拒，防 CSRF），返回 200 但不给名字，所以名字取存之前和之后 `getlist` 多出来的那个；`POST /v2/snapshot/restore?target=<名字>` 只是安排好，下次 ComfyUI 启动时才恢复；恢复要 Manager 的安全级别是 normal 或更低（本机监听时，默认 normal 可以），否则 403。Manager 4 以前的版本（custom node，`/snapshot/*`）不支持，报 `snapshot_no_manager`。

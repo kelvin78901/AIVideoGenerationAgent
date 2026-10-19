@@ -149,6 +149,98 @@
   "retry": "Retry",
   "skipItem": "Skip",
   "progressOf": "{{name}} install progress",
+  "touchesComfy": "Changes your ComfyUI",
+  "touchesComfyTitle": "Not ticked by default. Before installing you approve the list of changes, and a ComfyUI-Manager snapshot is taken first",
+  "confirm": {
+    "title": "Confirm before installing",
+    "lead": "These need your OK before anything starts. Cancel installs nothing.",
+    "comfyTitle": "Changes to your ComfyUI ({{count}})",
+    "snapshotNote": "A ComfyUI-Manager snapshot is taken first. If something breaks, roll back with one click under “Your ComfyUI” below.",
+    "otherTitle": "Also",
+    "ok": "Confirm and install",
+    "cancel": "Cancel"
+  },
+  "change": {
+    "col": {
+      "item": "Item",
+      "action": "Action",
+      "version": "Version",
+      "source": "Source",
+      "size": "Size"
+    },
+    "action": {
+      "install": "Install",
+      "update": "Update"
+    },
+    "version": {
+      "fromTo": "{{from}} → {{to}}",
+      "fromLatest": "{{from}} → latest",
+      "latest": "Latest"
+    },
+    "size": "~{{gb}} GB"
+  },
+  "comfy": {
+    "title": "Your ComfyUI",
+    "hint": "Identified read-only. The studio uses it with its own Python, and asks before changing it",
+    "where": "Location",
+    "kind": {
+      "desktop": "Desktop app",
+      "portable": "Portable",
+      "folder": "Folder install",
+      "server": "Running server only"
+    },
+    "url": "Address",
+    "notRunning": "Not running",
+    "version": "Versions",
+    "versionValue": "ComfyUI {{comfy}} · Python {{python}} · PyTorch {{torch}}",
+    "manager": "ComfyUI-Manager",
+    "noManager": "Not installed: no snapshots (it is installed first when an install changes ComfyUI)",
+    "details": "{{packs}} node packs · {{models}} model files",
+    "packs": "Node packs",
+    "models": "Model files",
+    "col": {
+      "source": "Source",
+      "version": "Version",
+      "folder": "Folder",
+      "size": "Size"
+    },
+    "source": {
+      "git": "git",
+      "registry": "Registry",
+      "manual": "Copied in",
+      "unknown": "Unknown"
+    },
+    "truncated": "Too many model files: only some are listed."
+  },
+  "snapshots": {
+    "title": "Snapshots",
+    "hint": "Saved by ComfyUI-Manager: the versions of ComfyUI, every node pack and pip package at the time",
+    "take": "Take one now",
+    "taken": "Snapshot saved: {{name}}",
+    "empty": "No snapshots yet. One is taken automatically before an install changes ComfyUI.",
+    "rowLabel": "Snapshot of {{time}}",
+    "reason": {
+      "install": "Before install",
+      "manual": "Manual"
+    },
+    "for": "Taken before: {{items}}",
+    "sep": ", ",
+    "restored": "Rollback scheduled: restart ComfyUI to apply",
+    "restore": "Roll back",
+    "restoreLabel": "Roll back to the snapshot of {{time}}",
+    "confirmTitle": "Roll back to the snapshot of {{time}}?",
+    "confirmBody": "ComfyUI-Manager restores ComfyUI, its node packs and pip packages to that state the next time ComfyUI starts. The studio does not restart your ComfyUI: restart it yourself afterwards.",
+    "confirmOk": "Roll back",
+    "cancel": "Cancel",
+    "restartToast": "Rollback scheduled: restart ComfyUI to apply"
+  },
+  "snapshotError": {
+    "not_running": "ComfyUI is not running: open it and try again",
+    "no_manager": "This ComfyUI has no ComfyUI-Manager 4",
+    "forbidden": "ComfyUI-Manager's security level does not allow this (set it to normal or lower)",
+    "restart": "ComfyUI-Manager was just installed: restart ComfyUI and try again",
+    "failed": "ComfyUI-Manager could not do it: see its log"
+  },
   "installTitle": "Install settings",
   "dir": "Install location",
   "dirHint": "Model weights go here. Leave plenty of space.",

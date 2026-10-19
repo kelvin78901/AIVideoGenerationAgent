@@ -57,9 +57,12 @@ export function overallPct(p: MachineProfile): number {
   return 100;
 }
 
-/** Ticked by default after a scan: what is required and can be installed. */
+/**
+ * Ticked by default after a scan: what is required and can be installed, except changes to the
+ * user's own ComfyUI (SPEC 6.4.1: those are only installed when ticked on purpose).
+ */
 export const requiredIds = (items: SetupItem[]) =>
-  items.filter((x) => x.installable && x.required).map((x) => x.id);
+  items.filter((x) => x.installable && x.required && !x.touches_comfy).map((x) => x.id);
 
 export const installableIds = (items: SetupItem[]) =>
   items.filter((x) => x.installable).map((x) => x.id);

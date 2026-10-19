@@ -6,7 +6,9 @@
  * delete `src/mocks/` (DECISIONS 2026-10-14 · M0.5).
  *
  * Implemented and removed: GET /series/{id}, GET / PUT /series/{id}/spec,
- * GET /series/{id}/spec/compat, GET /spec/presets (M1).
+ * GET /series/{id}/spec/compat, GET /spec/presets, GET /setup/profile, POST /setup/scan,
+ * POST /setup/install, POST /setup/items/{id}/retry|skip, POST /demo/setup/machine (now the
+ * backend's POST /dev/setup/machine) (M1).
  *
  * | Endpoint                         | Implemented in |
  * | -------------------------------- | -------------- |
@@ -16,7 +18,6 @@
  * | GET /metrics/kpis, spend-series, calls-series | M8 |
  * | GET /metrics/shots, components, speed, apis    | M8 |
  * | GET /metrics/local-models, qa, episodes, export.csv | M8 |
- * | GET /setup/profile               | M1             |
  * | GET /products, GET /products/{id} | M2             |
  * | POST /products/{id}/run          | M2             |
  * | POST /versions/{id}/set-current  | M2             |
@@ -47,9 +48,6 @@
  * | GET /episodes/{id}/timeline      | M7             |
  * | PATCH /clips/{id}, /subtitles/{id} | M7           |
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
- * | POST /setup/scan, /setup/install | M1             |
- * | POST /setup/items/{id}/retry, skip | M1           |
- * | POST /demo/setup/machine (demo only, no backend) | — |
  * | GET, PUT /config/defaults, DELETE /config/override | M2 |
  * | PATCH /episodes/{id}             | M2             |
  * | GET, PUT /sync/targets, POST /sync/targets/{id}/detect | M9 |
@@ -68,12 +66,10 @@ import { scriptHandlers } from "@/mocks/handlers/script";
 import { shotHandlers } from "@/mocks/handlers/shots";
 import { syncHandlers } from "@/mocks/handlers/sync";
 import { seriesHandlers } from "@/mocks/handlers/series";
-import { setupHandlers } from "@/mocks/handlers/setup";
 
 export const handlers = [
   ...seriesHandlers,
   ...metricsHandlers,
-  ...setupHandlers,
   ...productHandlers,
   ...configHandlers,
   ...impactHandlers,

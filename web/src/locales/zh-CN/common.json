@@ -69,7 +69,10 @@
     "sync_target_not_found": "找不到同步目标 {{id}}",
     "sync_target_missing": "没检测到 {{id}}，不能开启",
     "sync_mode_unavailable": "{{id}} 现在不能用这种方式同步",
-    "sync_busy": "正在同步，等这一轮结束再试"
+    "sync_busy": "正在同步，等这一轮结束再试",
+    "comfy_not_found": "这台机器上没找到 ComfyUI",
+    "comfy_snapshot_failed": "ComfyUI-Manager 没做成（{{reason}}）",
+    "comfy_snapshot_not_found": "找不到快照 {{id}}"
   },
   "toast": {
     "generic": "通知：{{code}}",

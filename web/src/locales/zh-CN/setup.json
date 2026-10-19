@@ -149,6 +149,98 @@
   "retry": "重试",
   "skipItem": "跳过",
   "progressOf": "{{name}} 安装进度",
+  "touchesComfy": "会改动你的 ComfyUI",
+  "touchesComfyTitle": "默认不勾；装之前会列出改动清单让你确认，并先用 ComfyUI-Manager 存一份快照",
+  "confirm": {
+    "title": "开始安装前请确认",
+    "lead": "下面这些要你同意才会开始；点「取消」什么都不会装。",
+    "comfyTitle": "会改动你的 ComfyUI（{{count}} 项）",
+    "snapshotNote": "动手前先用 ComfyUI-Manager 存一份快照；装坏了可以在下面「你的 ComfyUI」里一键回滚。",
+    "otherTitle": "另外",
+    "ok": "确认，开始安装",
+    "cancel": "取消"
+  },
+  "change": {
+    "col": {
+      "item": "项目",
+      "action": "操作",
+      "version": "版本",
+      "source": "来源",
+      "size": "大小"
+    },
+    "action": {
+      "install": "安装",
+      "update": "升级"
+    },
+    "version": {
+      "fromTo": "{{from}} → {{to}}",
+      "fromLatest": "{{from}} → 最新版",
+      "latest": "最新版"
+    },
+    "size": "约 {{gb}} GB"
+  },
+  "comfy": {
+    "title": "你的 ComfyUI",
+    "hint": "只读识别；平台默认用它和它自己的 Python，改动它之前都会先问你",
+    "where": "位置",
+    "kind": {
+      "desktop": "桌面版",
+      "portable": "便携版",
+      "folder": "文件夹安装",
+      "server": "只找到运行中的服务"
+    },
+    "url": "地址",
+    "notRunning": "没在运行",
+    "version": "版本",
+    "versionValue": "ComfyUI {{comfy}} · Python {{python}} · PyTorch {{torch}}",
+    "manager": "ComfyUI-Manager",
+    "noManager": "没装：存不了快照（装会改动 ComfyUI 的项时会先装它）",
+    "details": "节点包 {{packs}} 个 · 模型文件 {{models}} 个",
+    "packs": "节点包",
+    "models": "模型文件",
+    "col": {
+      "source": "来源",
+      "version": "版本",
+      "folder": "目录",
+      "size": "大小"
+    },
+    "source": {
+      "git": "git",
+      "registry": "Registry",
+      "manual": "手动放入",
+      "unknown": "未知"
+    },
+    "truncated": "模型文件太多，只列出了一部分。"
+  },
+  "snapshots": {
+    "title": "快照",
+    "hint": "ComfyUI-Manager 存的：ComfyUI、每个节点包和 pip 包当时的版本",
+    "take": "现在存一份",
+    "taken": "已存快照：{{name}}",
+    "empty": "还没有快照。装或升级会改动 ComfyUI 的项之前，会自动存一份。",
+    "rowLabel": "{{time}} 的快照",
+    "reason": {
+      "install": "安装前",
+      "manual": "手动"
+    },
+    "for": "为这些改动存的：{{items}}",
+    "sep": "、",
+    "restored": "已安排回滚，重启 ComfyUI 后生效",
+    "restore": "回滚到这里",
+    "restoreLabel": "回滚到 {{time}} 的快照",
+    "confirmTitle": "回滚到 {{time}} 的快照？",
+    "confirmBody": "ComfyUI-Manager 会在 ComfyUI 下次启动时，把 ComfyUI、节点包和 pip 包恢复成那时的样子。平台不会替你重启 ComfyUI，回滚后请自己重启它。",
+    "confirmOk": "回滚",
+    "cancel": "取消",
+    "restartToast": "已安排回滚：重启 ComfyUI 后生效"
+  },
+  "snapshotError": {
+    "not_running": "ComfyUI 没在运行，打开它后重试",
+    "no_manager": "这份 ComfyUI 没有 ComfyUI-Manager 4",
+    "forbidden": "ComfyUI-Manager 的安全级别不允许这样做（要设成 normal 或更低）",
+    "restart": "ComfyUI-Manager 刚装好，重启 ComfyUI 后重试",
+    "failed": "ComfyUI-Manager 没做成，看看它的日志"
+  },
   "installTitle": "安装设置",
   "dir": "安装位置",
   "dirHint": "模型权重放在这里，要留足空间。",

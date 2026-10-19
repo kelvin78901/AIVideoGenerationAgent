@@ -71,7 +71,14 @@ export function ItemGroups({
                   <StatusBadge tone={statusTone[status]} icon={null}>
                     {t(`status.${status}`)}
                   </StatusBadge>
-                  <span className="text-sm font-medium">{name}</span>
+                  <span className="flex flex-col gap-0.5">
+                    <span className="text-sm font-medium">{name}</span>
+                    {x.touches_comfy && x.installable ? (
+                      <span className="text-xs text-tone-warn-fg" title={t("touchesComfyTitle")}>
+                        {t("touchesComfy")}
+                      </span>
+                    ) : null}
+                  </span>
                   <span className="text-[13px] leading-normal text-muted-foreground">
                     {checking ? "…" : x.found ? msg("found", x.found) : t("none")}
                   </span>
