@@ -16,6 +16,7 @@ The snapshot holds ComfyUI's commit, every node pack's commit or version and the
 from __future__ import annotations
 
 from datetime import UTC, datetime
+from pathlib import Path
 from typing import Literal, Protocol
 
 import httpx
@@ -24,6 +25,18 @@ import httpx
 # forbidden: Manager's security level does not allow it; restart: Manager was just installed and
 # only loads when ComfyUI restarts; failed: anything else.
 SnapshotFailure = Literal["not_running", "no_manager", "forbidden", "restart", "failed"]
+
+
+def prepare_restore(comfy_root: str) -> None:
+    """Create ``custom_nodes/.disabled`` before ComfyUI-Manager restores a snapshot.
+
+    Manager disables node packs the snapshot does not have with ``shutil.move`` into that
+    folder. When it does not exist yet, the rename fails and Python falls back to copy + delete,
+    and on Windows the delete stops at git's read-only pack files: the restore aborts halfway,
+    leaving a copy behind (comfyui_manager 4.2.2, seen on Kelvin's machine 2026-10-18). With the
+    folder there, the move is a plain rename.
+    """
+    Path(comfy_root, "custom_nodes", ".disabled").mkdir(parents=True, exist_ok=True)
 
 
 class SnapshotError(Exception):

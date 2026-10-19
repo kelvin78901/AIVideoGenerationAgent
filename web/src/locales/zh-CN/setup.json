@@ -121,6 +121,8 @@
     "weights_pending_p0": "等 P0 实测确定版本后再装"
   },
   "error": {
+    "not_detected": "装完了，但重新检测还是找不到它（比如装上的包导入不了），详情看日志",
+    "torch_unsupported": "这台机器的 PyTorch {{version}} 还没有配好对应的版本，先跳过",
     "no_wheel": "没有适合这台机器的预编译包，现场编译也没成功",
     "dependency_failed": "它依赖的 {{item}} 没装好",
     "dependency_missing": "缺少它依赖的 {{item}}，把它也勾上再装",

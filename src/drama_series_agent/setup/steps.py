@@ -14,6 +14,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import re
 import shlex
 import shutil
 import sys
@@ -36,6 +37,9 @@ from drama_series_agent.setup.manifest import PKG_MANAGER, TODO, Item, Step
 from drama_series_agent.setup.pathutil import join
 
 LineFn = Callable[[str], Awaitable[None]]
+# A pinned commit is a detached HEAD; git's dozen lines of advice about it only fill the log.
+QUIET_CHECKOUT = ("-c", "advice.detachedHead=false")
+_TORCH = re.compile(r"(?P<minor>\d+\.\d+)\.\d+(?:\+(?P<cuda>\w+))?")
 
 # winget's APPINSTALLER_CLI_ERROR_PACKAGE_ALREADY_INSTALLED (0x8A15002B as a signed int).
 WINGET_ALREADY_INSTALLED = -1978335189
@@ -93,6 +97,12 @@ def _python_in(venv: str, os: str) -> str:
     return join(venv, "bin", "python")
 
 
+# Detectors that read the disk or the item's own Python: right after an install they already
+# see it. Not ComfyUI's running server (new nodes and versions show after a restart) and not
+# commands (a package manager's PATH change reaches new processes only).
+VERIFY_AFTER = frozenset({"py_import", "file", "downloads"})
+
+
 class RealRunner:
     """Runs an item's install steps on this machine."""
 
@@ -131,6 +141,11 @@ class RealRunner:
             run = _StepRun(self, step, env, names, log, sub)
             paths += await run.go()
             await progress((i + 1) * span)
+        # Steps can all succeed and still leave nothing that works (a package that does not
+        # import): ask the detector again where its answer holds right away.
+        verify = self._already if item.detect.type in VERIFY_AFTER else None
+        if verify is not None and not await verify(item, env):
+            raise InstallError("not_detected")
         return Installed(paths=paths)
 
     # ------------------------------------------------------------------ mirrors
@@ -220,6 +235,24 @@ class _StepRun:
         venv = join(self.env.envs, env_name)
         return _python_in(venv, self.env.os), venv
 
+    async def for_torch(self, python: str, table: dict[str, list[str]]) -> list[str]:
+        """The packages for the PyTorch ``python`` has now (it may have changed in this run),
+        keyed ``<major.minor>+<cuda>``, e.g. ``2.12+cu130``."""
+        lines: list[str] = []
+
+        async def keep(text: str) -> None:
+            lines.append(text.strip())
+
+        await self.r._exec(
+            [python, "-c", "import torch; print(torch.__version__)"], cwd=None, on_line=keep
+        )
+        found = next((m for x in reversed(lines) if (m := _TORCH.match(x))), None)
+        key = f"{found['minor']}+{found['cuda']}" if found and found["cuda"] else None
+        if key is None or key not in table:
+            version = found.group(0) if found else "?"
+            raise InstallError("torch_unsupported", version=version)
+        return [str(p) for p in table[key]]
+
     async def ensure_venv(self, venv: str) -> None:
         if await _exists(_python_in(venv, self.env.os)):
             return
@@ -245,6 +278,9 @@ class _StepRun:
             raise InstallError("manifest_todo", field="uv_pip.packages")
         if requirements:
             argv += ["-r", self.expand(str(requirements))]
+        by_torch = self.value("by_torch", required=False)
+        if by_torch:
+            packages = [*await self.for_torch(python, by_torch), *packages]
         argv += [str(p) for p in packages]
         index = self.value("index_url", required=False)
         if index:
@@ -275,12 +311,14 @@ class _StepRun:
             if head and head[-1].strip() == ref:
                 return [dest]
             await self.run(["git", "-C", dest, "fetch", "--depth", "1", "origin", ref])
-            await self.run(["git", "-C", dest, "checkout", "--force", "FETCH_HEAD"])
+            await self.run(
+                ["git", "-C", dest, *QUIET_CHECKOUT, "checkout", "--force", "FETCH_HEAD"]
+            )
             return [dest]
         if await asyncio.to_thread(_has_files, d):
             raise InstallError("dest_not_empty", path=dest)
         await self.run(["git", "clone", "--filter=blob:none", url, dest])
-        await self.run(["git", "-C", dest, "checkout", "--force", ref])
+        await self.run(["git", "-C", dest, *QUIET_CHECKOUT, "checkout", "--force", ref])
         return [dest]
 
     async def _download(self) -> list[str]:

@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import httpx
 import pytest
 
-from drama_series_agent.setup.snapshots import FakeSnapshots, ManagerSnapshots, SnapshotError
+from drama_series_agent.setup.snapshots import (
+    FakeSnapshots,
+    ManagerSnapshots,
+    SnapshotError,
+    prepare_restore,
+)
 
 URL = "http://127.0.0.1:8188"
 
@@ -94,3 +101,12 @@ async def test_fake_snapshots() -> None:
     assert fake.restored == [a]
     with pytest.raises(SnapshotError):
         await FakeSnapshots(fail="not_running").save()
+
+
+def test_restore_finds_the_disabled_folder_in_place(tmp_path: Path) -> None:
+    """Manager moves node packs the snapshot lacks into custom_nodes/.disabled; without it the
+    move turns into copy + delete, which stops at git's read-only files on Windows."""
+    (tmp_path / "custom_nodes").mkdir()
+    prepare_restore(str(tmp_path))
+    prepare_restore(str(tmp_path))  # already there: fine
+    assert (tmp_path / "custom_nodes" / ".disabled").is_dir()

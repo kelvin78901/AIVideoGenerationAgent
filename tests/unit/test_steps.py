@@ -14,7 +14,7 @@ import pytest
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.setup.comfy import ModelDir
 from drama_series_agent.setup.installer import InstallEnv, InstallError
-from drama_series_agent.setup.manifest import OS, Item, Step, load_manifest
+from drama_series_agent.setup.manifest import OS, Detect, Item, Step, load_manifest
 from drama_series_agent.setup.pathutil import join
 from drama_series_agent.setup.snapshots import SnapshotFailure
 from drama_series_agent.setup.steps import WINGET_ALREADY_INSTALLED, RealRunner, _python_in
@@ -26,10 +26,17 @@ KNOWN = {"uv", "git", "winget", "brew", "sudo"}
 class Recorder:
     """Stands in for running commands: records them and fakes what they leave behind."""
 
-    def __init__(self, os: OS = "windows", head: str = "", codes: dict[str, int] | None = None):
+    def __init__(
+        self,
+        os: OS = "windows",
+        head: str = "",
+        codes: dict[str, int] | None = None,
+        torch: str = "2.12.1+cu130",
+    ):
         self.os = os
         self.head = head
         self.codes = codes or {}
+        self.torch = torch  # what `python -c "import torch; ..."` prints
         self.calls: list[list[str]] = []
 
     async def __call__(self, argv: list[str], *, cwd: str | None, on_line: Any) -> int:
@@ -38,6 +45,8 @@ class Recorder:
         self._leave_behind(argv)
         if "rev-parse" in argv and self.head:
             await on_line(self.head)
+        if argv[1:2] == ["-c"] and "import torch" in argv[2]:
+            await on_line(self.torch)
         return self.codes.get(argv[1] if len(argv) > 1 else argv[0], 0)
 
     def _leave_behind(self, argv: list[str]) -> None:
@@ -191,6 +200,61 @@ async def test_no_python_outside_our_envs(tmp_path: Path, os: OS) -> None:
     assert all(re.search(r"/resolve/[0-9a-f]{40}/", u) for u in urls), urls
 
 
+def _sage(os: OS = "windows") -> Item:
+    return next(x for x in load_manifest().for_platform(os) if x.id == "sage")
+
+
+@pytest.mark.parametrize(
+    ("torch", "triton"),
+    [
+        ("2.12.1+cu130", "triton-windows>=3.7.1,<3.8"),
+        ("2.14.1+cu130", "triton-windows>=3.8.0,<3.9"),
+    ],
+)
+async def test_sage_on_windows_follows_the_pytorch_there(
+    tmp_path: Path, torch: str, triton: str
+) -> None:
+    """PyPI's sageattention needs triton, which Windows lacks: a prebuilt wheel plus the
+    triton-windows that matches the PyTorch ComfyUI runs on, asked at install time."""
+    py = "D:/ComfyUI/venv/Scripts/python.exe"
+    env = _env(tmp_path, comfy_python=py)
+    rec, _ = await _install(_sage(), env, Recorder(torch=torch))
+    assert rec.calls[0] == [py, "-c", "import torch; print(torch.__version__)"]
+    pip = rec.calls[-1]
+    assert pip[:5] == ["uv", "pip", "install", "--python", py]
+    assert pip[5] == triton
+    assert pip[6].startswith("sageattention @ https://github.com/woct0rdho/SageAttention/")
+    assert "+cu130torch2.10.0andhigher" in pip[6]
+
+    for other in ("2.9.0+cu128", "2.12.1+cu128", "garbage"):
+        with pytest.raises(InstallError) as err:
+            await _install(_sage(), env, Recorder(torch=other))
+        assert err.value.code == "torch_unsupported"
+    assert [s.packages for s in _sage("linux").install] == [["sageattention"]]  # type: ignore[attr-defined]
+
+
+async def test_checked_again_after_installing(tmp_path: Path) -> None:
+    """All steps can succeed and leave something that does not work (sageattention without
+    triton): what the detector can see at once is asked again."""
+    calls: list[str] = []
+
+    async def never(item: Item, env: InstallEnv) -> bool:
+        calls.append(item.id)
+        return False
+
+    pip = {"type": "uv_pip", "env": "comfy", "packages": ["sageattention"]}
+    item = _item(pip).model_copy(
+        update={"detect": Detect(type="py_import", env="comfy", module="sageattention")}
+    )
+    with pytest.raises(InstallError) as err:
+        await _install(item, _env(tmp_path), already=never)
+    assert err.value.code == "not_detected" and calls == ["x", "x"]  # before and after
+    # A package manager's PATH reaches new processes only: no check for commands.
+    calls.clear()
+    await _install(_item(pip), _env(tmp_path), already=never)
+    assert calls == ["x"]
+
+
 # --------------------------------------------------------------------------- git
 
 
@@ -209,14 +273,19 @@ async def test_git_clone_then_already_there(tmp_path: Path) -> None:
     # The China mirror is a proxy prefix in front of the official URL.
     proxied = "https://gh-proxy.com/" + step["url"]
     assert rec.calls[0] == ["git", "clone", "--filter=blob:none", proxied, dest]
-    assert rec.calls[1] == ["git", "-C", dest, "checkout", "--force", "abc123"]
+    # A pinned commit is a detached HEAD: git's advice about it stays out of the log.
+    quiet = ["-c", "advice.detachedHead=false"]
+    assert rec.calls[1] == ["git", "-C", dest, *quiet, "checkout", "--force", "abc123"]
     pip = rec.calls[-1]
     assert pip[pip.index("-r") + 1] == f"{dest}/requirements.txt"  # the clone's {dest}
 
     rec, _ = await _install(_item(step), env, Recorder(head="abc123"))
     assert rec.calls == [["git", "-C", dest, "rev-parse", "HEAD"]]
     rec, _ = await _install(_item(step), env, Recorder(head="0ld"))
-    assert [c[3] for c in rec.calls] == ["rev-parse", "fetch", "checkout"]
+    assert rec.calls[1:] == [
+        ["git", "-C", dest, "fetch", "--depth", "1", "origin", "abc123"],
+        ["git", "-C", dest, *quiet, "checkout", "--force", "FETCH_HEAD"],
+    ]
 
 
 async def test_git_clone_into_a_folder_with_other_files(tmp_path: Path) -> None:

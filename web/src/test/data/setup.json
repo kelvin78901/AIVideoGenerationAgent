@@ -720,7 +720,8 @@
           "params": {
             "item": "sage",
             "action": "install",
-            "source": "sageattention"
+            "to": "2.2.0",
+            "source": "sageattention @ https://github.com/woct0rdho/SageAttention/releases/download/v2.2.0-windows.post6/sageattention-2.2.0+cu130torch2.10.0andhigher.post6-cp310-abi3-win_amd64.whl"
           }
         },
         {

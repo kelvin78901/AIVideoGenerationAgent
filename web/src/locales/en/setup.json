@@ -121,6 +121,8 @@
     "weights_pending_p0": "Install after the P0 tests settle the version"
   },
   "error": {
+    "not_detected": "Installed, but a fresh check still can't find it (a package that won't import, say); see the log",
+    "torch_unsupported": "No matching build for this machine's PyTorch {{version}} yet; skip it for now",
     "no_wheel": "No prebuilt package fits this machine, and building it failed",
     "dependency_failed": "{{item}}, which it needs, did not install",
     "dependency_missing": "It needs {{item}}: tick that too",

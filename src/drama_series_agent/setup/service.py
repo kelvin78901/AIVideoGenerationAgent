@@ -94,6 +94,7 @@ from drama_series_agent.setup.snapshots import (
     SnapshotError,
     SnapshotFailure,
     Snapshots,
+    prepare_restore,
 )
 from drama_series_agent.setup.steps import RealRunner
 
@@ -779,6 +780,9 @@ class SetupService:
         row, data = loaded
         if data.phase == "installing":
             raise SetupBusy
+        if row.id != PROFILE_DEMO and data.comfy and data.comfy.root:
+            with contextlib.suppress(OSError):  # Manager may still manage without it
+                await asyncio.to_thread(prepare_restore, data.comfy.root)
         try:
             await self.snapshots_for(row, data).restore(snap.manager_name)
         except SnapshotError as exc:

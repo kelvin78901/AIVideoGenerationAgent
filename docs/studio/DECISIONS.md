@@ -2,6 +2,32 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 第 8b 步：Kelvin 5090 上真装的结果和修复
+
+- **装了什么**（`DRAMA_SETUP=real`，ComfyUI Desktop 0.41.2 开着）：
+  - VHS、FlashVSR：在锁定的 commit 上（`4d907be`、`8877fdd`）。
+  - 四项权重：H3 49.3 GB、Qwen3-VL-32B 文本编码器 15.7 GB、SeedVR2 7B 8.8 GB、IndexTTS-2.5 5.5 GB，全部下完、sha256 都对。
+  - 装前自动存了快照，改动清单 6 项。下载单连接实测 18–30 MB/s，共约 79 GB，一小时左右。
+  - 重新检测：通过 21、可选 6、缺少 3（DramaStudio 节点包没发布；Qwen-Image-Edit 这次不装；SageAttention 见下）。
+- **SageAttention 报「完成」却检测不到**：PyPI 的 `sageattention` 1.0.6 装上了，但它要 `triton`，Windows 上没有，一导入就报错；安装器只看 `uv pip` 的返回码。
+  - 改 1：装完再问一次检测器，只对 `py_import`、`file`、`downloads` 三类（装完马上就能看到）；还检测不到就报 `not_detected`。ComfyUI 在跑时看到的节点和版本要重启后才变；包管理器改的 PATH 只对新进程生效，所以这两类不复检。
+  - 改 2：Windows 上改装 woct0rdho 的预编译包 `sageattention 2.2.0+cu130torch2.10.0andhigher.post6`（abi3，Python ≥ 3.10），加上 `triton-windows`。
+    - triton-windows 的版本要和 PyTorch 自己锁的 triton 一致（`pytorch/.ci/docker/triton_version.txt`：2.12、2.13 → 3.7.1，2.14 → 3.8.0）。
+    - 清单新字段 `by_torch`：键是 `<major.minor>+<cuda>`，装的时候问 ComfyUI 的 Python 现在是哪个 PyTorch（同一次安装里可能刚升级过），表里没有就报 `torch_unsupported`。
+  - Kelvin 机器上的 1.0.6 等新装法装上时会被覆盖。
+- **安装位置填成了仓库目录**（`C:\dev\drama-studio`，页面默认是 `C:\Users\kelvin\DramaStudio`），IndexTTS 下进了仓库。
+  - 已挪到默认位置；用默认位置重新装时，安装器检测到文件已在，记成「已经装好了」，没有重下。
+  - 安装位置在程序目录里时要提示，加进第 8c 步。
+- **回滚：ComfyUI-Manager 4.2.2 在 Windows 上会半途失败**。
+  - 原因：Manager 回滚时用 `shutil.move` 把快照里没有的节点包挪进 `custom_nodes\.disabled`。这个文件夹不存在时改名失败，Python 改成先复制再删除；git 的 pack 文件是只读的，删除报「拒绝访问」，回滚中止，留下一份复制品，其余节点包都没处理。
+  - 修复：触发回滚前先建好 `.disabled`（`snapshots.prepare_restore`），这样就是同盘改名。
+  - 第二次回滚成功：VHS、FlashVSR 停用，节点不再加载。删掉了第一次留下的复制品；之后用安装器装回去了（全新 clone，装前又存了快照）。
+  - 已知限制：
+    - 回滚不卸载快照之后多出来的 pip 包（Manager 只补齐快照里有的）。
+    - 停用的节点包留在 `.disabled` 里。
+    - 平台在「排上回滚」时就记 `restored_at`，没核对是否真的生效（第一次失败了也显示「已安排回滚」）。ComfyUI 重启后要核对环境和快照是否一致，加进第 8c 步。
+- **git checkout 加 `-c advice.detachedHead=false`**：锁定 commit 就是 detached HEAD，git 那十几行提示只会占满安装日志。
+
 ## 2026-10-18 · M1 第 8b 步：权重版本、SeedVR2 改用 ComfyUI 自带节点、权重放哪
 
 - **Kelvin 选定的版本**（候选、大小、来源在 8b 列给他挑）：
