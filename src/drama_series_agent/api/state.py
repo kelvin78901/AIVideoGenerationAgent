@@ -9,6 +9,7 @@ from pathlib import Path
 import httpx
 from fastapi import Request
 
+from drama_series_agent.bible.service import BIBLE_SLOT, BibleService, materialize
 from drama_series_agent.core import secrets
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.db import Database, migrate
@@ -23,6 +24,7 @@ from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
+from drama_series_agent.pipeline.components.extract import ExtractComponent
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
@@ -44,6 +46,7 @@ class StudioState:
     runs: RunService
     budget: Budget
     novel: NovelService
+    bible: BibleService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -69,16 +72,22 @@ class StudioState:
         invalidation = Invalidation()
         invalidation.slicer(NOVEL_SLOT, novel_slicer)
         products = ProductService(db, bus, invalidation)
+        products.on_adopt(BIBLE_SLOT, materialize)
+        compiler = PromptCompiler()
         components = ComponentRegistry(
             Services(
                 db=db,
                 router=router,
                 registry=registry,
-                compiler=PromptCompiler(),
+                compiler=compiler,
                 store=store,
                 invalidation=invalidation,
             )
         )
+        novel = NovelService(db, store, products)
+        components.add(ExtractComponent(components.services, novel))
+        runs = RunService(components, products, jobs, bus, budget)
+        novel.after_import = runs.ensure_series_products
         state = cls(
             db=db,
             bus=bus,
@@ -89,9 +98,10 @@ class StudioState:
             setup=setup,
             products=products,
             components=components,
-            runs=RunService(components, products, jobs, bus, budget),
+            runs=runs,
             budget=budget,
-            novel=NovelService(db, store, products),
+            novel=novel,
+            bible=BibleService(db, products, novel),
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:
@@ -107,7 +117,8 @@ class StudioState:
         if registry.mock:
             from drama_series_agent.studio.demo import seed_demo
 
-            await seed_demo(db, novel=state.novel)
+            await seed_demo(db, novel=novel, products=products, compiler=compiler)
+        await runs.ensure_all_series_products()
         return state
 
     async def run(self) -> None:

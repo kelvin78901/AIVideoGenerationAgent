@@ -11,6 +11,8 @@ currency_rates:            # 只用于把人民币单价折算成美元显示；
 # ---------------------------------------------------------------------------
 # 写作类 LLM：全部走 OpenAI 兼容协议（OpenAICompatAdapter）
 # price 单位：每百万 token，in / out
+# max_context：上下文窗口（token）。长小说按兜底链里最小的那个分块（每块不超过 60%）；
+# 没填的按 32k 算——宁可多分几块，也不按没核对过的数字塞满。
 # ---------------------------------------------------------------------------
 llm_providers:
   - id: deepseek
@@ -132,9 +134,12 @@ llm_providers:
     base_url: http://127.0.0.1:11434/v1      # Ollama；llama.cpp server 默认 http://127.0.0.1:8080/v1
     key_name: null
     where: local
+    # 让 Ollama 按 max_context 开上下文（请求体 options.num_ctx；它的默认值只有 2–4k，会悄悄截断长提示词）。
+    # 是否被 OpenAI 兼容接口接受没有核对过（DECISIONS 2026-10-19 · 设定提取），本地冒烟时看 model_call 的输入 token。
+    send_num_ctx: true
     models:
-      - { key: local/qwen3.6-27b,   display: Qwen3.6-27B（本地）,   model_id: null, price: { in: 0, out: 0, currency: USD }, needs: [llmsrv, w_llm] }
-      - { key: local/qwen3-30b-a3b, display: Qwen3-30B-A3B（本地）, model_id: null, price: { in: 0, out: 0, currency: USD }, needs: [llmsrv] }
+      - { key: local/qwen3.6-27b,   display: Qwen3.6-27B（本地）,   model_id: null, price: { in: 0, out: 0, currency: USD }, max_context: 32768, needs: [llmsrv, w_llm] }
+      - { key: local/qwen3-30b-a3b, display: Qwen3-30B-A3B（本地）, model_id: null, price: { in: 0, out: 0, currency: USD }, max_context: 32768, needs: [llmsrv] }
 
 # 写作类组件在模型选择器里的顺序；前 6 个直接显示，其余收进「更多供应商」
 llm_ui_order:

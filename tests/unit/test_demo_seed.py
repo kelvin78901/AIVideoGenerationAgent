@@ -4,9 +4,11 @@ import asyncio
 
 from sqlmodel import func, select
 
+from drama_series_agent.bible.service import BIBLE_SLOT, materialize
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.models_db import (
+    BibleEntity,
     Chapter,
     NovelSource,
     OutputSpecRow,
@@ -18,6 +20,7 @@ from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.novel.service import NovelService
 from drama_series_agent.pipeline.products import ProductService
+from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.studio.demo import DEMO_SERIES_ID, delete_demo, seed_demo
 from drama_series_agent.studio_cli import main
 
@@ -83,6 +86,26 @@ async def test_delete_demo_takes_everything_with_it(studio_db: Database) -> None
         assert await _count(studio_db, table) == 0, table.__name__
 
 
+async def test_demo_bible_is_seeded_once(studio_db: Database) -> None:
+    products = ProductService(studio_db, EventBus(studio_db))
+    products.on_adopt(BIBLE_SLOT, materialize)
+    novel = NovelService(studio_db, BlobStore(), products)
+    novel.after_import = lambda series_id: products.ensure(  # what the app's hook does
+        series_id=series_id, owner_type="series", owner_id=series_id, slot=BIBLE_SLOT,
+        component_id="extract",
+    )  # type: ignore[assignment,return-value]  # fmt: skip
+    for _ in range(2):
+        await seed_demo(studio_db, novel=novel, products=products, compiler=PromptCompiler())
+    async with studio_db.session() as session:
+        product = await session.get(Product, "demo-p-extract")  # not a random id from the hook
+        version = await session.get(ProductVersion, "demo-p-extract-v1")
+    assert product is not None and product.adopted_version_id == "demo-p-extract-v1"
+    assert version is not None and version.created_at.isoformat() == "2026-10-14T02:05:00+00:00"
+    assert version.payload_json["source_id"] == "demo-src"
+    assert await _count(studio_db, ProductVersion) == 2  # the novel and the bible, once each
+    assert await _count(studio_db, BibleEntity) == len(version.payload_json["entities"]) == 18
+
+
 def test_demo_command_resets() -> None:
     assert main(["demo"]) == 0
     assert main(["demo", "--reset"]) == 0
@@ -91,6 +114,7 @@ def test_demo_command_resets() -> None:
     async def check() -> None:
         assert await _count(db, Series) == 1
         assert await _count(db, NovelSource) == 1
+        assert await _count(db, BibleEntity) == 18
         await db.dispose()
 
     asyncio.run(check())

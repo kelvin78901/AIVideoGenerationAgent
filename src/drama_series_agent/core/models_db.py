@@ -490,3 +490,29 @@ class Chapter(SQLModel, table=True):
     end: int
     para_start: int
     paras_json: list[list[int]] = _json(list)  # [[start, end], …]
+
+
+class BibleEntity(SQLModel, table=True):
+    """One entry of a series' story bible (SPEC 4.1), mirroring the adopted ``bible`` version.
+
+    Rebuilt from that version on every adopt (``bible/service.py:materialize``): upserted by
+    id, and entries the version no longer has are marked ``retired`` rather than deleted, so
+    rows that point at them later (assets, shots) keep their foreign keys.
+    """
+
+    __tablename__ = "bible_entity"
+
+    id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    version_id: str  # the adopted version this row mirrors
+    kind: str  # character / location / prop / event / relation
+    name: str
+    aliases_json: list[str] = _json(list)
+    data_json: dict[str, Any] = _json(dict)
+    paras_json: list[int] = _json(list)  # paragraph numbers across the book, 0-based
+    source_spans_json: list[dict[str, Any]] = _json(list)  # [{source_id, start, end}, …]
+    frozen: bool = False  # the user marked it as not to be changed by extraction
+    retired: bool = False
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

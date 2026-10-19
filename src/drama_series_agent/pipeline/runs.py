@@ -15,6 +15,7 @@ import asyncio
 import random
 from typing import Any, Literal
 
+from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.core.config import Resolved
@@ -115,6 +116,28 @@ class RunService:
             return None
         job = await session.get(Job, product.running_job_id)
         return job if job is not None and job.state not in TERMINAL else None
+
+    # ------------------------------------------------------------------ series products
+
+    async def ensure_series_products(self, series_id: str) -> None:
+        """The series-level products (设定提取 …) exist once the series has a novel."""
+        for comp in self.components.all():
+            if comp.owner_type == "series":
+                await self.products.ensure(
+                    series_id=series_id,
+                    owner_type="series",
+                    owner_id=series_id,
+                    slot=comp.slot,
+                    component_id=comp.id,
+                )
+
+    async def ensure_all_series_products(self) -> None:
+        """At startup: series whose novel was imported before a component existed."""
+        async with self.services.db.session() as session:
+            query = select(Product.series_id).where(Product.slot == "novel")
+            series_ids = list((await session.exec(query)).all())
+        for series_id in series_ids:
+            await self.ensure_series_products(series_id)
 
     # ------------------------------------------------------------------ reads
 

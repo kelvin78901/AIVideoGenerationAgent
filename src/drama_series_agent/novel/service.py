@@ -3,16 +3,20 @@
 The novel is a product like the others (slot ``novel``, component ``import``): every import
 appends a version (origin ``import``) and adopts it. So a re-import replaces the text while the
 old one stays in the history, and whatever was built from it turns stale through the slice
-hashes (``chapter:<idx>``, see ``novel_slicer``) without storing a flag. A novel locked by its
-gate refuses the import (409 ``product_locked``); the impact preview for ``novel_replace``
-comes with the gates.
+hashes (``chapter:<idx>``, ``chapters``, see ``novel_slicer``) without storing a flag. A
+novel locked by its gate refuses the import (409 ``product_locked``); the impact preview for
+``novel_replace`` comes with the gates.
+
+Components read the adopted text through ``book()``: chapters and paragraphs numbered across the
+book, which is how prompts cite the novel (``[P12]``) and how answers map back to offsets.
 """
 
 from __future__ import annotations
 
 import asyncio
 from collections import OrderedDict
-from dataclasses import dataclass
+from collections.abc import Awaitable, Callable
+from dataclasses import dataclass, field
 from datetime import datetime
 from pathlib import PurePath
 from typing import Any
@@ -60,6 +64,37 @@ class FixedIds:
     at: datetime
 
 
+@dataclass
+class Book:
+    """A novel source as components read it: its chapters and paragraph offsets."""
+
+    product_id: str | None  # the series' ``novel`` product (None for a source read by id)
+    source: NovelSource
+    chapters: list[Chapter]
+    text: str
+    # Paragraph number across the book (0-based) → (start, end) in ``text``.
+    offsets: dict[int, tuple[int, int]] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        for c in self.chapters:
+            for i, (s, e) in enumerate(c.paras_json):
+                self.offsets[c.para_start + i] = (s, e)
+
+    def paragraph(self, idx: int) -> str:
+        s, e = self.offsets.get(idx, (0, 0))
+        return self.text[s:e]
+
+    def paragraphs(self, chapter: Chapter) -> list[int]:
+        return [chapter.para_start + i for i in range(len(chapter.paras_json))]
+
+    def span(self, idx: int) -> dict[str, Any] | None:
+        """A paragraph as a source span ``{source_id, start, end}`` (SPEC 4.1)."""
+        if idx not in self.offsets:
+            return None
+        s, e = self.offsets[idx]
+        return {"source_id": self.source.id, "start": s, "end": e}
+
+
 def chapter_hash(text: str, title: str | None, paras: list[list[int]] | tuple[Any, ...]) -> str:
     """What a chapter says: its title and paragraphs, not the blank lines around them."""
     return hash_json({"title": title, "paras": [text[s:e] for s, e in paras]})
@@ -71,6 +106,8 @@ async def novel_slicer(
     """Slices of the ``novel`` product: ``chapter:<idx>`` is that chapter's title and hash."""
     if name == "":
         return version.payload_json
+    if name == "chapters":  # the whole book, without file name or source id
+        return [c.get("hash") for c in version.payload_json.get("chapters", [])]
     kind, _, key = name.partition(":")
     if kind == "chapter":
         for c in version.payload_json.get("chapters", []):
@@ -90,6 +127,8 @@ class NovelService:
         self._store = store
         self._products = products
         self._texts: OrderedDict[str, str] = OrderedDict()
+        # Called with the series id after a new text is adopted (creates the series' products).
+        self.after_import: Callable[[str], Awaitable[None]] | None = None
 
     # ------------------------------------------------------------------ import
 
@@ -185,6 +224,8 @@ class NovelService:
             created_at=fixed.at if fixed else None,
         )
         await self._products.append(product.id, draft, origin="import", adopt=True)
+        if self.after_import is not None:
+            await self.after_import(series_id)
         return import_out(parsed, name, dry_run=False, source_id=source_id, chapter_ids=chapter_ids)
 
     # ------------------------------------------------------------------ read
@@ -236,6 +277,23 @@ class NovelService:
                 for i, (s, e) in enumerate(shown.paras_json)
             ],
         )
+
+    async def book(self, session: AsyncSession, series_id: str) -> Book | None:
+        """The adopted novel of a series; None before anything is imported."""
+        product = await self._product(session, series_id)
+        source = await self._adopted_source(session, product) if product else None
+        if product is None or source is None:
+            return None
+        chapters = await self._chapters(session, source.id)
+        return Book(product.id, source, chapters, await self.text(source.sha256))
+
+    async def book_of(self, session: AsyncSession, source_id: str) -> Book | None:
+        """Any source by id (bible spans keep pointing at the text they were taken from)."""
+        source = await session.get(NovelSource, source_id)
+        if source is None:
+            return None
+        chapters = await self._chapters(session, source.id)
+        return Book(None, source, chapters, await self.text(source.sha256))
 
     async def text(self, sha256: str) -> str:
         """A source's normalized text (the few most recent are kept in memory)."""

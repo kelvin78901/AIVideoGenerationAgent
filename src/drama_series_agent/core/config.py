@@ -55,6 +55,8 @@ class LlmModel(_Loose):
     offpeak: dict[str, Any] | None = None
     json_mode: bool = False
     verify: bool = False
+    # Context window in tokens; None = unknown (long inputs are chunked as if it were 32k).
+    max_context: int | None = None
     # Local models only (core/capabilities.py): setup-manifest item ids it needs, and CUDA.
     needs: list[str] = Field(default_factory=list)
     requires_cuda: bool = False
@@ -68,6 +70,9 @@ class LlmProvider(_Loose):
     where: Literal["local", "api"] = "api"
     docs: str | None = None
     verify: bool = False
+    # Ask the server for a context of ``max_context`` (``options.num_ctx``, Ollama): its
+    # default can be as small as 2–4k and silently cuts long prompts.
+    send_num_ctx: bool = False
     models: list[LlmModel] = Field(default_factory=list)
 
 

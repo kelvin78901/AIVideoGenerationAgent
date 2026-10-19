@@ -22,7 +22,7 @@ M1_TABLES = {
 }  # fmt: skip
 M2_TABLES = {
     "product", "product_version", "dependency", "gate_decision", "app_setting", "llm_cache",
-    "novel_source", "chapter",
+    "novel_source", "chapter", "bible_entity",
 }  # fmt: skip
 ALL_TABLES = M0_TABLES | M1_TABLES | M2_TABLES
 

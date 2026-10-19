@@ -133,6 +133,9 @@ class OpenAICompatAdapter:
             body["seed"] = req.seed
         if req.json_mode and self.spec.caps.json_mode:
             body["response_format"] = {"type": "json_object"}
+        num_ctx = (self.spec.caps.model_extra or {}).get("num_ctx")
+        if num_ctx:
+            body["options"] = {"num_ctx": int(num_ctx)}
         for name in ("temperature", "top_p", "stream"):
             if name in req.params:
                 body[name] = req.params[name]

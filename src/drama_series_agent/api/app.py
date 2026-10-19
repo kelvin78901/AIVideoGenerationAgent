@@ -19,6 +19,7 @@ from fastapi.responses import JSONResponse
 from drama_series_agent import __version__
 from drama_series_agent.api import sse
 from drama_series_agent.api.routes import (
+    bible,
     comfy,
     config,
     dev,
@@ -72,6 +73,7 @@ def _v1_router() -> APIRouter:
     router.include_router(providers.router)
     router.include_router(series.router)
     router.include_router(novel.router)
+    router.include_router(bible.router)
     router.include_router(spec.router)
     router.include_router(setup.router)
     router.include_router(comfy.router)

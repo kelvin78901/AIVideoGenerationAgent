@@ -214,13 +214,17 @@ class Component(ABC):
         )
 
     def request(
-        self, messages: Sequence[dict[str, Any]], seed: int | None, task: str = "run"
+        self,
+        messages: Sequence[dict[str, Any]],
+        seed: int | None,
+        task: str = "run",
+        max_tokens: int | None = None,
     ) -> ModelRequest:
         return ModelRequest(
             kind="llm",
             messages=list(messages),
             json_mode=True,
-            max_tokens=self.max_tokens,
+            max_tokens=max_tokens or self.max_tokens,
             seed=seed,
             params={"stream": True},
             meta={"component": self.id, "task": task},
@@ -234,9 +238,10 @@ class Component(ABC):
         episode_id: str | None = None,
         *,
         task: str = "run",
+        max_tokens: int | None = None,
     ) -> CallResult:
         """One validated JSON answer: cached, else asked (and asked again once with errors)."""
-        req = self.request(messages, ctx.seed, task)
+        req = self.request(messages, ctx.seed, task, max_tokens)
         key = request_key(ctx.model_key, req, schema)
         cached = await self._cache_get(key, schema)
         if cached is not None:
@@ -272,6 +277,7 @@ class Component(ABC):
                 ],
                 ctx.seed,
                 task,
+                max_tokens,
             )
         raw = self.services.store.put_bytes(text.encode("utf-8"))
         raise ComponentError("invalid_output", raw=raw, errors=errors[:500])
@@ -339,3 +345,6 @@ class ComponentRegistry:
 
     def get(self, component_id: str) -> Component | None:
         return self._components.get(component_id)
+
+    def all(self) -> list[Component]:
+        return list(self._components.values())

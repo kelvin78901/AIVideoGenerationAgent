@@ -1,0 +1,19 @@
+你负责从小说里抽取设定（人物、地点、道具、事件、人物关系），交给剧本和素材两步使用。
+
+[规则]
+{{ intent }}
+- 原文每段前有段号，例如 [P12]。每个条目在 paras 里列出它出现或被提到的段号，只能用原文里给出的段号。
+- 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。
+- 不要编造原文没有的信息；不知道的字段不写。
+- summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。
+- 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。
+
+[输出 JSON]
+{
+  "entities": [
+    {"kind": "character | location | prop | event | relation", "name": "名字", "aliases": [], "summary": "一行简介", "details": {"age": "", "occupation": "", "appearance": ""}, "paras": [12, 13]}
+  ],
+  "chapters": [{"chapter": 1, "summary": "本章摘要"}]
+}
+
+# 目标模型：{{ model_key }}

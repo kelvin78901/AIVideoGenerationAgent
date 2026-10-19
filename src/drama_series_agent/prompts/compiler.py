@@ -78,6 +78,10 @@ class PromptCompiler:
             out.append({"role": "user", "content": data})
         return out
 
+    def render(self, name: str, **context: Any) -> str:
+        """A fixed internal prompt (``<component>/<name>.j2``), e.g. a second call of a run."""
+        return self._env.get_template(name).render(**context).strip()
+
     def fix_json(self, errors: str) -> str:
         """The follow-up that asks once for corrected JSON after a validation failure."""
         return self._env.get_template("_shared/fix_json.j2").render(errors=errors).strip()

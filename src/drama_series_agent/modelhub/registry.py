@@ -49,7 +49,11 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                     base_url=provider.base_url,
                     key_name=provider.key_name,
                     pricing=pricing_for_llm(model, prov.as_of),
-                    caps=Caps(json_mode=model.json_mode, max_context=extra.get("context")),
+                    caps=Caps(
+                        json_mode=model.json_mode,
+                        max_context=model.max_context or extra.get("context"),
+                        num_ctx=model.max_context if provider.send_num_ctx else None,
+                    ),
                 )
             )
     for media in prov.media_models:

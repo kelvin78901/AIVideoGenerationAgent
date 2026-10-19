@@ -3,8 +3,9 @@
 Mock mode seeds it at startup when the database has no series yet, so pages whose MSW
 handlers have been removed still have a series to show. Then each block the demo series lacks
 is added (only what is missing, so an existing database picks up new blocks on the next
-start): so far the novel, ``tests/fixtures/demo/雨停之前.txt``. Ids and times match
-``web/src/mocks/fixtures/demo/``. ``drama-studio demo [--reset]`` runs the same seeding on
+start): the novel (``tests/fixtures/demo/雨停之前.txt``) and its story bible (设定提取 v1,
+assembled from ``tests/fixtures/demo/extract.json`` exactly as a Mock run would). Ids and times
+match ``web/src/mocks/fixtures/demo/``. ``drama-studio demo [--reset]`` runs the same seeding on
 demand; ``--reset`` deletes the demo series first.
 """
 
@@ -16,15 +17,19 @@ from datetime import UTC, datetime
 from loguru import logger
 from sqlmodel import select
 
+from drama_series_agent.bible.service import BIBLE_SLOT, materialize
 from drama_series_agent.core.config import SpecConfig, get_config
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
-from drama_series_agent.core.models_db import Series
+from drama_series_agent.core.models_db import Product, Series
 from drama_series_agent.core.paths import REPO_ROOT, database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
+from drama_series_agent.pipeline.components.extract import demo_payload
+from drama_series_agent.pipeline.drafts import VersionDraft
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
+from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.spec.schema import default_row
 
 DEMO_SERIES_ID = "demo"
@@ -36,12 +41,19 @@ NOVEL_IDS = FixedIds(
     source_id="demo-src",
     at=datetime(2026, 10, 14, 1, 22, tzinfo=UTC),
 )
+BIBLE_PRODUCT = "demo-p-extract"
+BIBLE_VERSION = "demo-p-extract-v1"
+BIBLE_MODEL = "local/qwen3.6-27b"
+# 设定提取 v1 on the local model, 10:05 +08:00 (MSW fixtures/demo/products.ts).
+BIBLE_AT = datetime(2026, 10, 14, 2, 5, tzinfo=UTC)
 
 
 async def seed_demo(
     db: Database,
     *,
     novel: NovelService | None = None,
+    products: ProductService | None = None,
+    compiler: PromptCompiler | None = None,
     cfg: SpecConfig | None = None,
     force: bool = False,
 ) -> bool:
@@ -51,7 +63,12 @@ async def seed_demo(
     async with db.session() as session:
         exists = await session.get(Series, DEMO_SERIES_ID) is not None
     if exists and novel is not None:
+        if products is not None:
+            # Before the import: its hook would create the product with a random id.
+            await _bible_product(products)
         await _seed_novel(novel)
+        if products is not None and compiler is not None:
+            await _seed_bible(db, novel, products, compiler)
     return created
 
 
@@ -75,9 +92,11 @@ async def build_demo(*, reset: bool) -> None:
         invalidation = Invalidation()
         invalidation.slicer(NOVEL_SLOT, novel_slicer)
         products = ProductService(db, EventBus(db), invalidation)
+        products.on_adopt(BIBLE_SLOT, materialize)
         if reset:
             await delete_demo(db)
-        await seed_demo(db, novel=NovelService(db, BlobStore(), products), force=True)
+        novel = NovelService(db, BlobStore(), products)
+        await seed_demo(db, novel=novel, products=products, compiler=PromptCompiler(), force=True)
     finally:
         await db.dispose()
 
@@ -117,3 +136,49 @@ async def _seed_novel(novel: NovelService) -> None:
     await novel.import_novel(
         DEMO_SERIES_ID, DEMO_NOVEL.name, data, rights_confirmed=True, fixed=NOVEL_IDS
     )
+
+
+async def _bible_product(products: ProductService) -> str:
+    p = await products.ensure(
+        series_id=DEMO_SERIES_ID,
+        owner_type="series",
+        owner_id=DEMO_SERIES_ID,
+        slot=BIBLE_SLOT,
+        component_id="extract",
+        product_id=BIBLE_PRODUCT,
+    )
+    return p.id
+
+
+async def _seed_bible(
+    db: Database, novel: NovelService, products: ProductService, compiler: PromptCompiler
+) -> None:
+    product_id = await _bible_product(products)
+    invalidation = Invalidation()
+    invalidation.slicer(NOVEL_SLOT, novel_slicer)
+    async with db.session() as session:
+        product = await session.get(Product, product_id)
+        if product is None or product.current_version_id is not None:
+            return
+        book = await novel.book(session, DEMO_SERIES_ID)
+        if book is None or book.product_id is None:
+            return
+        dep = await invalidation.dependency(session, book.product_id, "chapters")
+    payload = demo_payload(book)
+    if payload is None:
+        logger.warning("demo bible fixture missing")
+        return
+    intent = compiler.default_intent("extract", "zh-CN")
+    draft = VersionDraft(
+        payload=payload,
+        intent=intent,
+        compiled=compiler.compile("extract", intent, BIBLE_MODEL),
+        model_key=BIBLE_MODEL,
+        where="local",
+        seed=1001,
+        params={"mode": "run", "calls": 2},
+        dependencies=[dep],
+        id=BIBLE_VERSION,
+        created_at=BIBLE_AT,
+    )
+    await products.append(product_id, draft, origin="run")

@@ -93,8 +93,8 @@ def _setup(client: TestClient) -> str:
             series_id="demo",
             owner_type="series",
             owner_id="demo",
-            slot="bible",
-            component_id="extract",
+            slot="test_upstream",
+            component_id="upstream",
             product_id="test-bible",
         )
         await svc.append("test-bible", VersionDraft(payload={"names": ["林晚"]}), origin="run")
@@ -156,7 +156,7 @@ def test_first_run_makes_an_adopted_version(client: TestClient) -> None:
 
     calls = [c for c in _rows(client, ModelCall) if c.product_id == pid]
     assert len(calls) == 1 and calls[0].component_id == "split" and calls[0].status == "success"
-    deps = _rows(client, Dependency)
+    deps = [d for d in _rows(client, Dependency) if d.product_id == pid]
     assert [(d.version_id, d.upstream_product_id) for d in deps] == [(v1["id"], "test-bible")]
     toasts = [e.data_json for e in _rows(client, Event) if e.type == "toast"]
     assert toasts[-1]["code"] == "version_created" and toasts[-1]["params"]["n"] == 1
@@ -291,7 +291,7 @@ def test_run_errors(client: TestClient) -> None:
     _state(client).registry.mock_settings.delay_s = 0
 
     resp = client.post(f"{V1}/products/test-bible/run", json={"mode": "run"})
-    assert resp.status_code == 409 and _code(resp) == "component_not_ready"  # extract: later
+    assert resp.status_code == 409 and _code(resp) == "component_not_ready"  # no such component
     resp = client.post(f"{V1}/products/{pid}/run", json={"mode": "run", "model": "no/such"})
     assert resp.status_code == 422 and _code(resp) == "unknown_model"
     resp = client.post(f"{V1}/products/nope/run", json={"mode": "run"})

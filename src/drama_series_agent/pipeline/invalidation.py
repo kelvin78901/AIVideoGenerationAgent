@@ -22,8 +22,9 @@ from drama_series_agent.core.models_db import Dependency, Product, ProductVersio
 from drama_series_agent.pipeline.drafts import DependencyDraft
 from drama_series_agent.pipeline.hashing import hash_json
 
-# Fields that only change how something is shown, never what downstream builds from.
-DISPLAY_KEYS = frozenset({"idx", "edited", "duration_s", "overlay_shot"})
+# Fields that only change how something is shown or rerun, never what downstream builds from
+# (``frozen`` only keeps a bible entry as it is when extraction runs again).
+DISPLAY_KEYS = frozenset({"idx", "edited", "duration_s", "overlay_shot", "frozen"})
 
 Slicer = Callable[[AsyncSession, Product, ProductVersion, str], Awaitable[Any]]
 
