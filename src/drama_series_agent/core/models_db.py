@@ -445,3 +445,48 @@ class LlmCache(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+class NovelSource(SQLModel, table=True):
+    """One imported novel file (SPEC 4.1). A re-import adds a row; the old text stays.
+
+    The text lives in the blob store: ``sha256`` is the normalized text (UTF-8, ``\n`` line
+    ends), which every source span points into; ``original_sha256`` is the uploaded file.
+    Which source a series uses is the adopted version of its ``novel`` product.
+    """
+
+    __tablename__ = "novel_source"
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    filename: str
+    sha256: str
+    original_sha256: str
+    encoding: str  # utf-8 / utf-16 / gb18030 / docx
+    split_by: str  # heading / length
+    chars: int  # paragraph characters, headings and blank lines excluded
+    rights_confirmed_at: datetime = Field(sa_column=Column(UtcDateTime(), nullable=False))
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class Chapter(SQLModel, table=True):
+    """A chapter of a novel source: character offsets into its text (SPEC 4.1).
+
+    Paragraphs are numbered across the whole book (``para_start`` + i) and their offsets are
+    stored, so a source keeps its numbering even if the splitting rules change later.
+    """
+
+    __tablename__ = "chapter"
+    __table_args__ = (UniqueConstraint("source_id", "idx"),)
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    source_id: str = Field(foreign_key="novel_source.id", ondelete="CASCADE", index=True)
+    idx: int  # 0-based
+    # The heading line; None for text before the first heading or a part of a length split.
+    title: str | None = None
+    start: int
+    end: int
+    para_start: int
+    paras_json: list[list[int]] = _json(list)  # [[start, end], …]

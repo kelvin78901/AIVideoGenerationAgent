@@ -1,23 +1,40 @@
 from __future__ import annotations
 
+import asyncio
+
 from sqlmodel import func, select
 
 from drama_series_agent.core.db import Database
-from drama_series_agent.core.models_db import OutputSpecRow, Series
-from drama_series_agent.studio.demo import DEMO_SERIES_ID, seed_demo
+from drama_series_agent.core.events import EventBus
+from drama_series_agent.core.models_db import (
+    Chapter,
+    NovelSource,
+    OutputSpecRow,
+    Product,
+    ProductVersion,
+    Series,
+)
+from drama_series_agent.core.paths import database_path
+from drama_series_agent.core.storage import BlobStore
+from drama_series_agent.novel.service import NovelService
+from drama_series_agent.pipeline.products import ProductService
+from drama_series_agent.studio.demo import DEMO_SERIES_ID, delete_demo, seed_demo
+from drama_series_agent.studio_cli import main
 
 
-async def _count(db: Database) -> tuple[int, int]:
+async def _count(db: Database, table: type) -> int:
     async with db.session() as session:
-        series = (await session.exec(select(func.count()).select_from(Series))).one()
-        specs = (await session.exec(select(func.count()).select_from(OutputSpecRow))).one()
-    return series, specs
+        return (await session.exec(select(func.count()).select_from(table))).one()
+
+
+def _novel(db: Database) -> NovelService:
+    return NovelService(db, BlobStore(), ProductService(db, EventBus(db)))
 
 
 async def test_seed_demo_is_idempotent(studio_db: Database) -> None:
     assert await seed_demo(studio_db) is True
     assert await seed_demo(studio_db) is False
-    assert await _count(studio_db) == (1, 1)
+    assert (await _count(studio_db, Series), await _count(studio_db, OutputSpecRow)) == (1, 1)
     async with studio_db.session() as session:
         series = await session.get(Series, DEMO_SERIES_ID)
         spec = await session.get(OutputSpecRow, DEMO_SERIES_ID)
@@ -32,5 +49,48 @@ async def test_seed_skips_when_any_series_exists(studio_db: Database) -> None:
     async with studio_db.session() as session:
         session.add(Series(id="mine", slug="mine", title="Mine"))
         await session.commit()
-    assert await seed_demo(studio_db) is False
-    assert await _count(studio_db) == (1, 0)
+    assert await seed_demo(studio_db, novel=_novel(studio_db)) is False
+    assert (await _count(studio_db, Series), await _count(studio_db, OutputSpecRow)) == (1, 0)
+    assert await _count(studio_db, NovelSource) == 0
+    # On demand (drama-studio demo) it is added next to the user's series.
+    assert await seed_demo(studio_db, novel=_novel(studio_db), force=True) is True
+    assert await _count(studio_db, Series) == 2
+
+
+async def test_missing_blocks_are_filled_in(studio_db: Database) -> None:
+    """A database seeded before the novel existed gets it on the next start, once."""
+    assert await seed_demo(studio_db) is True
+    assert await _count(studio_db, NovelSource) == 0
+    novel = _novel(studio_db)
+    assert await seed_demo(studio_db, novel=novel) is False
+    await seed_demo(studio_db, novel=novel)  # already there: not imported twice
+    shown = await novel.get(DEMO_SERIES_ID)
+    assert shown.source is not None and shown.source.id == "demo-src"
+    assert [c.id for c in shown.chapters] == ["demo-src-ch1", "demo-src-ch2", "demo-src-ch3"]
+    async with studio_db.session() as session:
+        product = await session.get(Product, "demo-novel")
+        version = await session.get(ProductVersion, "demo-novel-v1")
+    assert product is not None and product.adopted_version_id == "demo-novel-v1"
+    assert version is not None and version.created_at.isoformat() == "2026-10-14T01:22:00+00:00"
+    assert (await _count(studio_db, NovelSource), await _count(studio_db, Chapter)) == (1, 3)
+
+
+async def test_delete_demo_takes_everything_with_it(studio_db: Database) -> None:
+    await seed_demo(studio_db, novel=_novel(studio_db))
+    assert await delete_demo(studio_db) is True
+    assert await delete_demo(studio_db) is False
+    for table in (Series, OutputSpecRow, Product, ProductVersion, NovelSource, Chapter):
+        assert await _count(studio_db, table) == 0, table.__name__
+
+
+def test_demo_command_resets() -> None:
+    assert main(["demo"]) == 0
+    assert main(["demo", "--reset"]) == 0
+    db = Database(database_path())
+
+    async def check() -> None:
+        assert await _count(db, Series) == 1
+        assert await _count(db, NovelSource) == 1
+        await db.dispose()
+
+    asyncio.run(check())

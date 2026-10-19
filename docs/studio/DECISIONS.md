@@ -2,6 +2,17 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-19 · M2 第 5 步：剧集和导入小说
+
+- **小说也是一个产物**（slot `novel`，组件 `import`）：每次导入追加一个 `origin=import` 的版本并直接采纳。原因：重新导入 = 替换、旧文本留在历史里、下游变「待更新」、闸门锁定，全都复用第 1–3 步的机制，不另造一套。下游按切片 `chapter:<idx>` 依赖它，切片哈希 = 标题 + 各段文字（空行、缩进变了不算改动）。同一份文本再导入不出新版本（返回 `unchanged: true`）；被闸门锁定时 409 `product_locked`（影响范围 `novel_replace` 第 10 步做）。
+- **原文放 blob**：`novel_source.sha256` 是规范化后的文本（去 BOM、换行统一成 `\n`，别的不动），所有字符偏移都指向它；`original_sha256` 是上传的原文件。SPEC 4.1 的 `text_path` 不要了。另加 `encoding`、`split_by`、`chars`。
+- **章节表存段落偏移**（`para_start`、`paras_json`），比 SPEC 多两列：段号全书连续，存下来以后改了切分规则，旧导入的段号（剧本行、`[P12]` 引用）也不变。
+- **切分规则**（`novel/parse.py`）：段落 = 去掉首尾空白（含全角空格）的非空行；标题行 = 不超过 40 字、开头像「第 X 章 / 回 / 节」「Chapter N」「楔子 / 序章 / 尾声 / 番外……」、不以句末标点结尾（「第三节课下课后，他来了。」是正文），.docx 里用了标题样式的段落也算。第一个标题前的文字单独成一章（没有标题）；标题下面没有正文的丢掉（卷名）；整本没有标题时按段落凑成约 6000 字一部分。
+- **编码**：有 BOM 按 BOM，否则先试 UTF-8 再试 GB18030；解出来含 NUL（没 BOM 的 UTF-16）算读不了。.docx 用 `python-docx`。上传上限 30 MB。错误码：`unsupported_file` 415、`file_too_large` 413、`novel_unreadable {reason: encoding|docx}`、`novel_empty`、`rights_not_confirmed` 422。
+- **接口**：`POST /series/{id}/novel` 是 multipart（`file`、`rights_confirmed`、`dry_run`）。`dry_run` 只返回识别结果（编码、章节），不存、不要求确认改编权，导入弹窗的章节预览用它。`GET /series/{id}/novel?chapter=` 默认第一章，只带这一章的段落；没导入过时返回 200 和 `source: null`（页面显示空状态，不当成错误）。
+- **剧集**：`GET /series` 按新建时间倒序；`POST /series {title, ui_lang}` 同时建默认成片规格；slug 取标题里的英文和数字，没有就 `series`，重名加 `-2`；改名不改 slug。
+- **示例剧集**：启动时（Mock）只在库里一个剧集都没有时建示例剧集；示例剧集在的话补上它缺的块（现在是小说：`demo-novel`、`demo-src`、`demo-src-ch1..3`）。`drama-studio demo` 不管有没有别的剧集都建；`--reset` 先删掉示例剧集（规格、产物、版本、小说级联删除；`job`、`model_call` 里的记录留着）。示例小说约 2400 字（计划写的约 3000 字），Kelvin 过目时可以再加。
+
 ## 2026-10-19 · M2 第 4 步：预算和确认
 
 - **入队前查一次，调用前再查一次**（`modelhub/budget.py`）：入队时用整个任务的预估比单次上限（解析结果的 `per_call_cap_usd`）和本集剩余，超了任务直接进 `waiting_confirm`，原因写在任务参数 `confirm: {reason: per_call|episode|fallback, estimate_usd, limit_usd}`。每次模型调用前路由器的守卫再查：确认过的任务最多花到确认的金额（已花 + 这次预估），没确认的单次调用不能超过单次上限；超了抛 `budget_exceeded`，不兜底，一分钱不花。所以确认之后主用模型出错、兜底模型更贵时任务失败，而不是悄悄多花。

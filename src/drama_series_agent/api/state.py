@@ -21,6 +21,7 @@ from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapt
 from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
+from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
@@ -42,6 +43,7 @@ class StudioState:
     components: ComponentRegistry
     runs: RunService
     budget: Budget
+    novel: NovelService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -65,6 +67,7 @@ class StudioState:
         )
         budget = Budget(db)
         invalidation = Invalidation()
+        invalidation.slicer(NOVEL_SLOT, novel_slicer)
         products = ProductService(db, bus, invalidation)
         components = ComponentRegistry(
             Services(
@@ -88,6 +91,7 @@ class StudioState:
             components=components,
             runs=RunService(components, products, jobs, bus, budget),
             budget=budget,
+            novel=NovelService(db, store, products),
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:
@@ -103,7 +107,7 @@ class StudioState:
         if registry.mock:
             from drama_series_agent.studio.demo import seed_demo
 
-            await seed_demo(db)
+            await seed_demo(db, novel=state.novel)
         return state
 
     async def run(self) -> None:

@@ -23,6 +23,7 @@ from drama_series_agent.api.routes import (
     config,
     dev,
     jobs,
+    novel,
     products,
     providers,
     series,
@@ -70,6 +71,7 @@ def _v1_router() -> APIRouter:
     router.include_router(dev.router)
     router.include_router(providers.router)
     router.include_router(series.router)
+    router.include_router(novel.router)
     router.include_router(spec.router)
     router.include_router(setup.router)
     router.include_router(comfy.router)

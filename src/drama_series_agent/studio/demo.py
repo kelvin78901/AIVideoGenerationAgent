@@ -1,28 +1,92 @@
 """The demo series 《雨停之前》 (prototype/README.md「示例数据」).
 
 Mock mode seeds it at startup when the database has no series yet, so pages whose MSW
-handlers have been removed still have a series to show. Values match
-``web/src/mocks/fixtures/demo/{series,spec}.ts``. M2's ``drama-studio demo`` builds on this.
+handlers have been removed still have a series to show. Then each block the demo series lacks
+is added (only what is missing, so an existing database picks up new blocks on the next
+start): so far the novel, ``tests/fixtures/demo/雨停之前.txt``. Ids and times match
+``web/src/mocks/fixtures/demo/``. ``drama-studio demo [--reset]`` runs the same seeding on
+demand; ``--reset`` deletes the demo series first.
 """
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 
+from loguru import logger
 from sqlmodel import select
 
 from drama_series_agent.core.config import SpecConfig, get_config
-from drama_series_agent.core.db import Database
+from drama_series_agent.core.db import Database, migrate
+from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.models_db import Series
+from drama_series_agent.core.paths import REPO_ROOT, database_path
+from drama_series_agent.core.storage import BlobStore
+from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
+from drama_series_agent.pipeline.invalidation import Invalidation
+from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.spec.schema import default_row
 
 DEMO_SERIES_ID = "demo"
+DEMO_NOVEL = REPO_ROOT / "tests" / "fixtures" / "demo" / "雨停之前.txt"
+# Imported 09:22 +08:00, two minutes after the series was created.
+NOVEL_IDS = FixedIds(
+    product_id="demo-novel",
+    version_id="demo-novel-v1",
+    source_id="demo-src",
+    at=datetime(2026, 10, 14, 1, 22, tzinfo=UTC),
+)
 
 
-async def seed_demo(db: Database, cfg: SpecConfig | None = None) -> bool:
-    """Create the demo series and its spec if there is no series at all. Returns True if seeded."""
+async def seed_demo(
+    db: Database,
+    *,
+    novel: NovelService | None = None,
+    cfg: SpecConfig | None = None,
+    force: bool = False,
+) -> bool:
+    """Create the demo series if there is no series at all (or ``force``), then fill in its
+    missing blocks. Returns True if the series was created."""
+    created = await _seed_series(db, cfg, force=force)
     async with db.session() as session:
-        if (await session.exec(select(Series.id).limit(1))).first() is not None:
+        exists = await session.get(Series, DEMO_SERIES_ID) is not None
+    if exists and novel is not None:
+        await _seed_novel(novel)
+    return created
+
+
+async def delete_demo(db: Database) -> bool:
+    """Delete the demo series; its spec, products, versions and novel go with it (cascade)."""
+    async with db.session() as session:
+        row = await session.get(Series, DEMO_SERIES_ID)
+        if row is None:
+            return False
+        await session.delete(row)
+        await session.commit()
+    return True
+
+
+async def build_demo(*, reset: bool) -> None:
+    """``drama-studio demo [--reset]``: seed (or rebuild) the demo series in the data dir."""
+    path = database_path()
+    await asyncio.to_thread(migrate, path)
+    db = Database(path)
+    try:
+        invalidation = Invalidation()
+        invalidation.slicer(NOVEL_SLOT, novel_slicer)
+        products = ProductService(db, EventBus(db), invalidation)
+        if reset:
+            await delete_demo(db)
+        await seed_demo(db, novel=NovelService(db, BlobStore(), products), force=True)
+    finally:
+        await db.dispose()
+
+
+async def _seed_series(db: Database, cfg: SpecConfig | None, *, force: bool) -> bool:
+    async with db.session() as session:
+        if await session.get(Series, DEMO_SERIES_ID) is not None:
+            return False
+        if not force and (await session.exec(select(Series.id).limit(1))).first() is not None:
             return False
         session.add(
             Series(
@@ -41,3 +105,15 @@ async def seed_demo(db: Database, cfg: SpecConfig | None = None) -> bool:
         session.add(spec)
         await session.commit()
     return True
+
+
+async def _seed_novel(novel: NovelService) -> None:
+    if (await novel.get(DEMO_SERIES_ID)).source is not None:
+        return
+    if not DEMO_NOVEL.is_file():
+        logger.warning("demo novel missing: {}", DEMO_NOVEL)
+        return
+    data = await asyncio.to_thread(DEMO_NOVEL.read_bytes)
+    await novel.import_novel(
+        DEMO_SERIES_ID, DEMO_NOVEL.name, data, rights_confirmed=True, fixed=NOVEL_IDS
+    )

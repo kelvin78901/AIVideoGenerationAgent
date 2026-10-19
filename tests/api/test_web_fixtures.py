@@ -1,4 +1,4 @@
-"""``web/src/test/data/{setup,config}.json``: what the Mock backend answers.
+"""``web/src/test/data/{setup,config,novel}.json``: what the Mock backend answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -135,3 +135,35 @@ def test_web_config_fixture_is_current(client: TestClient) -> None:
             f.write(text)
     current = CONFIG_FIXTURE.read_text(encoding="utf-8") if CONFIG_FIXTURE.exists() else ""
     assert current == text, f"{CONFIG_FIXTURE.name} is out of date: see this module's docstring"
+
+
+NOVEL_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "novel.json"
+DEMO_NOVEL = REPO_ROOT / "tests" / "fixtures" / "demo" / "雨停之前.txt"
+
+
+def _novel_export(client: TestClient) -> dict[str, Any]:
+    """The demo novel chapter by chapter, and what the import dialog's preview shows for it.
+
+    ``test/fakes/novel.ts`` serves these; the MSW demo data takes its paragraph offsets from
+    here, so source spans in the demo script point at the backend's text.
+    """
+    novel = client.get(f"{V1}/series/demo/novel").json()
+    chapters = [
+        client.get(f"{V1}/series/demo/novel", params={"chapter": c["idx"]}).json()
+        for c in novel["chapters"]
+    ]
+    preview = client.post(
+        f"{V1}/series/demo/novel",
+        files={"file": (DEMO_NOVEL.name, DEMO_NOVEL.read_bytes())},
+        data={"dry_run": "true"},
+    ).json()
+    return {"chapters": chapters, "preview": preview}
+
+
+def test_web_novel_fixture_is_current(client: TestClient) -> None:
+    text = json.dumps(_novel_export(client), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(NOVEL_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = NOVEL_FIXTURE.read_text(encoding="utf-8") if NOVEL_FIXTURE.exists() else ""
+    assert current == text, f"{NOVEL_FIXTURE.name} is out of date: see this module's docstring"
