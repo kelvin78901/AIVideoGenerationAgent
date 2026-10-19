@@ -1,0 +1,170 @@
+{
+  "title": "Workflow library",
+  "lead": "Every ComfyUI workflow is registered as a local model and shows up in its step's local model list. Recommended and “My workflows” join presets, automatic routing and fallback; unverified ones can only be picked by hand.",
+  "import": "Import workflow",
+  "checkAll": "Check all",
+  "checkedAll": "Checked {{count}} workflows",
+  "filter": {
+    "label": "Filter by tier",
+    "all": "All {{count}}",
+    "recommended": "Recommended {{count}}",
+    "mine": "My workflows {{count}}",
+    "unverified": "Unverified {{count}}"
+  },
+  "col": {
+    "name": "Name",
+    "components": "Used for",
+    "tier": "Tier",
+    "check": "Health check",
+    "trial": "Last trial",
+    "file": "File"
+  },
+  "tier": {
+    "recommended": "Recommended",
+    "mine": "My workflow",
+    "unverified": "Unverified"
+  },
+  "tierWhy": {
+    "recommended": "Ships with the studio, node packs and models pinned and tested. Joins presets, automatic routing and fallback.",
+    "mine": "Imported by you and passed a trial. Joins presets, automatic routing and fallback like the recommended ones.",
+    "unverified": "No passed trial yet (or the file changed, or the check found problems): only picked by hand, never in presets, fallback or “Try another”."
+  },
+  "status": {
+    "ok": "OK",
+    "missing": "Missing {{packs}} node packs, {{models}} models",
+    "missingPacks": "Missing {{count}} node packs",
+    "missingModels": "Missing {{count}} models",
+    "broken": "{{count}} problems",
+    "pending": "{{count}} bindings to confirm",
+    "never": "Not checked yet"
+  },
+  "trialCell": {
+    "never": "Never run",
+    "running": "Running…",
+    "passed": "Passed {{time}} · {{seconds}} s",
+    "failed": "Failed {{time}}"
+  },
+  "file": {
+    "same": "Unchanged",
+    "changed": "Changed, run a trial again"
+  },
+  "toggle": "Expand {{name}}",
+  "source": {
+    "repo": "Ships with the studio · workflows/{{slug}}/",
+    "user": "Imported from {{origin}} · ~/.drama-studio/workflows/{{slug}}/"
+  },
+  "caps": {
+    "line": "Capabilities: {{list}}",
+    "aspects": "Aspects {{list}}",
+    "maxSeconds": "Up to {{n}} s",
+    "refs": "{{n}} reference images",
+    "vram": "About {{n}} GB VRAM"
+  },
+  "promote": "Make it my workflow",
+  "promoted": "Now in “My workflows”: {{name}}",
+  "demote": "Mark unverified",
+  "demoted": "Marked unverified: {{name}}",
+  "promoteBlocked": {
+    "pending": "Confirm the bindings first",
+    "trial": "Pass a trial first"
+  },
+  "tab": {
+    "bindings": "Bindings",
+    "check": "Health check",
+    "trial": "Trial"
+  },
+  "bindings": {
+    "dramastudio": "Uses DramaStudio input / output nodes: the studio fills in and reads back by node type, no bindings needed.",
+    "lead": "Nodes are found by title (not id), so reordering or adding other nodes in ComfyUI does not matter; a bound title must be unique in the workflow.",
+    "pendingNote": "{{count}} bindings were guessed on import. Confirm them before a trial or registering.",
+    "col": {
+      "slot": "Slot",
+      "node": "Node title",
+      "class": "Node type",
+      "field": "Field",
+      "state": "State"
+    },
+    "state": {
+      "dramastudio": "DramaStudio node",
+      "confirmed": "Confirmed",
+      "guessed": "Guessed · to confirm"
+    },
+    "nodeOf": "Node for {{slot}}",
+    "fieldOf": "Field for {{slot}}",
+    "output": "(output)",
+    "save": "Confirm all bindings",
+    "saved": "Bindings confirmed",
+    "reset": "Undo changes"
+  },
+  "slot": {
+    "first_frame": "First frame",
+    "video_in": "Input video",
+    "ref_image": "Reference {{n}}",
+    "prompt": "Prompt (positive)",
+    "negative": "Prompt (negative)",
+    "dialogue_audio": "Dialogue audio",
+    "width": "Width",
+    "height": "Height",
+    "fps": "Frame rate",
+    "seconds": "Duration (s)",
+    "seed": "Seed",
+    "video_out": "Video output",
+    "image_out": "Image output",
+    "audio_out": "Audio output"
+  },
+  "check": {
+    "last": "Last check {{time}} · {{found}}/{{total}} node types present",
+    "run": "Check again",
+    "done": "Checked: {{name}}",
+    "okLine": "Everything is there: node types, bound node titles and fields, model files.",
+    "packs": "Missing node packs",
+    "models": "Missing models",
+    "col": {
+      "name": "Name",
+      "classes": "Node types it provides",
+      "source": "Source",
+      "version": "Version",
+      "folder": "Folder",
+      "file": "File",
+      "size": "Size"
+    },
+    "install": "Install {{packs}} node packs and {{models}} models",
+    "installNote": "You approve the list of changes first, and a ComfyUI-Manager snapshot is taken before anything installs; snapshots and rollback are under Environment.",
+    "snapshotNote": "A ComfyUI-Manager snapshot is taken first. If something breaks, roll back with one click under Environment.",
+    "installed": "Snapshot {{snapshot}} saved; installed {{packs}} node packs, {{models}} models",
+    "never": "Imported workflows are checked automatically."
+  },
+  "trial": {
+    "lead": "One run on the sample project's inputs: first frame, reference images, prompt, dialogue audio, at the draft size and shortest duration. Queued on the local GPU.",
+    "inputs": "Sample inputs",
+    "prompt": "A rainy street at night: Lin Xia turns back under a red umbrella, neon reflected in the puddles",
+    "size": "{{w}}×{{h}} · {{seconds}} s (draft size, shortest duration)",
+    "run": "Run a trial",
+    "rerun": "Run it again",
+    "started": "Trial started: {{name}}",
+    "running": "Running… (local GPU queue)",
+    "blockedPending": "Confirm the bindings first",
+    "blockedCheck": "Install the missing node packs and models first",
+    "result": "Result",
+    "passed": "Passed · {{time}} · took {{seconds}} s · {{vram}} GB VRAM",
+    "failed": "Failed · {{time}}",
+    "none": "No trial yet.",
+    "promoteNow": "Passed: make it my workflow"
+  },
+  "importDialog": {
+    "title": "Import workflow",
+    "lead": "Imported workflows are checked right away; without DramaStudio nodes the studio guesses the bindings for you to confirm one by one.",
+    "drop": "Drop a ComfyUI API-format JSON here",
+    "dropHint": "In ComfyUI, use “Export (API)” to get one",
+    "pick": "Choose a file",
+    "fromComfy": "Pick from ComfyUI's workflow list",
+    "imported": "Imported",
+    "board": "Asset board: not registrable",
+    "importThis": "Import",
+    "done": "Imported “{{name}}”: confirm the bindings, then run a trial",
+    "badFile": "This file is not a ComfyUI API-format workflow",
+    "close": "Close",
+    "loading": "Reading ComfyUI's workflow list…"
+  },
+  "empty": "No workflows in this tier yet."
+}

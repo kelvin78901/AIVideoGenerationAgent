@@ -72,7 +72,16 @@
     "sync_busy": "A sync is running. Try again when it finishes",
     "comfy_not_found": "No ComfyUI was found on this machine",
     "comfy_snapshot_failed": "ComfyUI-Manager could not do it ({{reason}})",
-    "comfy_snapshot_not_found": "Snapshot {{id}} not found"
+    "comfy_snapshot_not_found": "Snapshot {{id}} not found",
+    "workflow_not_found": "Workflow {{id}} not found",
+    "workflow_is_board": "This is the studio's asset board, not a workflow to register",
+    "workflow_imported": "This workflow is already imported",
+    "workflow_tier_repo": "Recommended workflows keep their tier",
+    "workflow_bindings_pending": "{{count}} bindings still to confirm",
+    "workflow_needs_trial": "Pass a trial first",
+    "workflow_dramastudio_bindings": "Workflows with DramaStudio nodes need no bindings",
+    "workflow_unknown_node": "No node titled “{{title}}” in this workflow",
+    "workflow_check_failed": "The health check failed: install the missing node packs and models first"
   },
   "toast": {
     "generic": "Notice: {{code}}",

@@ -39,7 +39,8 @@ describe("ModelsPage", () => {
     await ready();
     expect(preset(/^均衡/)).toHaveAttribute("aria-pressed", "true");
     expect(preset(/^均衡/)).toHaveTextContent("当前");
-    expect(screen.getAllByRole("rowgroup")).toHaveLength(19);
+    const components = screen.getByRole("table", { name: "组件设置" });
+    expect(within(components).getAllByRole("rowgroup")).toHaveLength(19);
     expect(mode("设定提取", "本地")).toBeChecked();
     expect(row("设定提取")).toHaveTextContent("Qwen3.6-27B");
     expect(row("参考图生成")).toHaveTextContent("Qwen-Image-Edit → Nano Banana Pro");

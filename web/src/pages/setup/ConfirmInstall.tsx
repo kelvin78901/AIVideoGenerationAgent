@@ -35,6 +35,7 @@ export function ConfirmInstall({
   comfyRoot,
   itemName,
   pending,
+  snapshotNote,
   onConfirm,
   onCancel,
 }: {
@@ -44,6 +45,8 @@ export function ConfirmInstall({
   comfyRoot: string | null;
   itemName: (id: string) => string;
   pending: boolean;
+  /** Where rollback lives, seen from this page (default: 「你的 ComfyUI」 below, on the setup page). */
+  snapshotNote?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -113,7 +116,7 @@ export function ConfirmInstall({
               </table>
             </div>
             <p className="text-xs leading-relaxed text-muted-foreground">
-              {t("confirm.snapshotNote")}
+              {snapshotNote ?? t("confirm.snapshotNote")}
             </p>
           </section>
         ) : null}

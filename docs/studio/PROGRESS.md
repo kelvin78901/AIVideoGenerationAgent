@@ -25,11 +25,12 @@
 | 5c | `setup/snapshots.py`（Manager 4 的 `/v2/snapshot/*`，按本机 4.2.2 源码核对；Fake）；`Item.touches_comfy` / `snapshot_first`，清单加 `comfy_manager`（检测 + 安装，缺 Manager 时自动排第一）；`install.confirm` 先列 `comfy_change` 改动清单；第一个改 ComfyUI 的项开始前存快照，存不成这些项就不装；表 `comfy_snapshot` + 迁移 `0005`；`GET/POST /comfy/snapshots`、`POST /comfy/snapshots/{id}/restore`；新文案 error 5 个、log 2 个、confirmReason 1 个；PC 示例补 Manager 4；DECISIONS 记 5c | bbf65ce | pytest 293（snapshots 单元 3、接口 5；续跑 e2e 加「快照只存一次」）；ruff、mypy（含 `--platform linux`）、web i18n、prettier 通过 |
 | 7（1/3） | 后端：没找到 ComfyUI 时 Manager 排在要装的 ComfyUI 后面（修 5c）；`tests/api/test_web_fixtures.py` 导出 Mock 后端回答到 `web/src/test/data/setup.json`（`DRAMA_UPDATE_FIXTURES=1` 重新生成） | a5a5ea6 | pytest 295 |
 | 7（2/3） | zod 补字段、`schemas/comfy.ts`、hooks；`test/setupBackend.ts`（假后端，读上面的 JSON）；Setup 页：确认弹窗 `setup/ConfirmInstall.tsx`、「你的 ComfyUI」`setup/ComfyPanel.tsx`（识别结果、快照、回滚）、改 ComfyUI 的项默认不勾；删 MSW setup handler；DECISIONS 记第 7 步 | cdce398 | web test 178 |
-| 7（3/3） | 导航「环境与安装」+「缺 N 项」；`/` 没扫描过跳 `/setup`；弹窗 / 导航不换行；切示例机器清快照（后端）；Playwright 后端改 `python -m`；e2e 加完整流程和导航；全部页面重截（侧栏变了）+ `setup-confirm`、`setup-done` 两张；勾计划第 7 步、ROADMAP 4 项；之后 `start.ps1` 也改 `python -m`（本提交） | 5c6e0b9 | pytest 295；web test 183、lint、typecheck、format；e2e 16；ruff、mypy（含 linux） |
+| 7（3/3） | 导航「环境与安装」+「缺 N 项」；`/` 没扫描过跳 `/setup`；弹窗 / 导航不换行；切示例机器清快照（后端）；Playwright 后端改 `python -m`；e2e 加完整流程和导航；全部页面重截（侧栏变了）+ `setup-confirm`、`setup-done` 两张；勾计划第 7 步、ROADMAP 4 项；之后 `start.ps1` 也改 `python -m`（5a86c26） | 5c6e0b9 | pytest 295；web test 183、lint、typecheck、format；e2e 16；ruff、mypy（含 linux） |
+| 7b（设计稿） | 工作流库先做出来给 Kelvin 审：`schemas/workflows.ts`、`hooks/workflows.ts`、MSW `handlers/workflows.ts` + 示例 5 个（H3、SeedVR2 推荐；LatentSync 我的；Wan 绑定待确认；Flux Kontext 缺 2 节点包 1 模型）；`pages/models/{WorkflowLibrary,WorkflowDetail,ImportWorkflowDialog}.tsx`、`workflowStatus.ts`；`ConfirmInstall` 加 `snapshotNote`；词表 `workflows.json`、错误码 9 个；审阅图 `reports/ui/workflows/` | 本提交 | web test 183、lint、typecheck、format |
 
 ## 下一步
 
-- **第 7b 步 「工作流库」区域，示例数据（前端）**：按计划 7b 做。原型里没有这一块，**先出设计截图给 Kelvin 看，同意后再做完**（M0.5 风格；放「模型与兜底」页，`web/src/pages/Models.tsx`、`pages/models/`）。zod 按 SPEC 9.1 的 `/workflows/*`（SPEC 6.4.2–6.4.6 定字段：档位、体检、绑定、试跑、文件哈希）；MSW handler + 示例：H3 推荐档、一个绑定待确认的社区工作流、一个缺节点的未验证工作流；安装缺的节点包走第 7 步的确认弹窗样式。
+- **第 7b 步（等 Kelvin 审设计稿）**：界面已按 M0.5 风格做完（中英文），审阅图在 `docs/studio/reports/ui/workflows/`。Kelvin 同意后：Vitest（列表筛选、展开、确认绑定、装缺的依赖走确认弹窗、试跑后升档、导入）、Playwright 冒烟加一条、重截 models 两张、DECISIONS 记 SPEC 9.1 里没有的接口（`GET /comfy/workflows`、`POST /workflows/{id}/deps`、`/deps/install`）和试跑轮询（M5 换成任务事件）、勾计划 7b 和 ROADMAP。Kelvin 要改就先改界面再补测试。
   - 收尾（第 9 步）SPEC 要补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm|changes|snapshot|snapshot_error`、`GET /comfy/env`、`/comfy/snapshots*` 的返回结构；第 4 节 `comfy_env` 的 `comfyui_commit` 列；16.1 的 `/` 跳转规则和导航「环境与安装」。
 
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -67,5 +68,6 @@
 
 ## 等 Kelvin 的事
 
+- **审第 7b 步设计稿**：`docs/studio/reports/ui/workflows/` 下 10 张（列表、各种状态的展开、装依赖的确认弹窗、导入）。
 - （2026-10-18 已办：`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图 Kelvin 审核通过。）
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。

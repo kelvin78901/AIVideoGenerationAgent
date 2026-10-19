@@ -72,7 +72,16 @@
     "sync_busy": "正在同步，等这一轮结束再试",
     "comfy_not_found": "这台机器上没找到 ComfyUI",
     "comfy_snapshot_failed": "ComfyUI-Manager 没做成（{{reason}}）",
-    "comfy_snapshot_not_found": "找不到快照 {{id}}"
+    "comfy_snapshot_not_found": "找不到快照 {{id}}",
+    "workflow_not_found": "找不到工作流 {{id}}",
+    "workflow_is_board": "这是工作台生成的素材板，不能登记成工作流",
+    "workflow_imported": "这个工作流已经导入过了",
+    "workflow_tier_repo": "平台推荐的工作流不能改档",
+    "workflow_bindings_pending": "还有 {{count}} 项绑定没确认",
+    "workflow_needs_trial": "要先试跑通过",
+    "workflow_dramastudio_bindings": "用 DramaStudio 节点的工作流不用绑定",
+    "workflow_unknown_node": "工作流里没有标题为「{{title}}」的节点",
+    "workflow_check_failed": "体检没通过：先装好缺的节点包和模型"
   },
   "toast": {
     "generic": "通知：{{code}}",
