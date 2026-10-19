@@ -1,7 +1,7 @@
 /**
  * First run: machine scan and install (SPEC 12, 9.1 `POST /setup/scan`, `GET /setup/profile`,
- * `POST /setup/install`, `POST /setup/items/{id}/retry|skip`). Progress arrives as
- * `setup.progress` / `setup.log` events.
+ * `POST /setup/install`, `POST /setup/install/confirm|cancel`, `POST /setup/items/{id}/retry|skip`,
+ * Mock's `POST /dev/setup/machine`). Progress arrives as `setup.progress` / `setup.log` events.
  */
 import { z } from "zod";
 
@@ -54,20 +54,59 @@ export const SetupItemSchema = z.object({
   /** Ticked by default; a failed required item blocks the steps that need it. */
   required: z.boolean(),
   installable: z.boolean(),
+  /**
+   * Installing it changes the user's own ComfyUI (SPEC 6.4.1): never ticked by default, listed
+   * for approval, and a ComfyUI-Manager snapshot is taken first.
+   */
+  touches_comfy: z.boolean(),
+  /** What it downloads (bytes, the manifest's `size_gb`); null when it downloads nothing. */
+  size_bytes: z.number().nullable(),
+  /** Rough seconds of its steps that are not downloads (a clone, a pip install …). */
+  work_s: z.number(),
   /** null until the item is queued for install. */
   install: z
     .object({
       state: InstallStateSchema,
+      /** One decimal; an item with downloads goes by bytes and stays at 99 until it is done. */
       pct: z.number(),
       /** Why it failed (`setup:error.<code>`). */
       error: MessageSchema.nullable(),
+      /** Downloads while it runs: bytes over all its files (the sizes known so far). */
+      bytes_done: z.number().nullable(),
+      bytes_total: z.number().nullable(),
+      /** Bytes per second over the last few seconds; null in the first second and while checking. */
+      speed: z.number().nullable(),
+      /** Seconds left at that speed. */
+      eta_s: z.number().nullable(),
+      /** A finished file's sha256 is being checked (tens of seconds for a big one). */
+      verifying: z.boolean(),
     })
     .nullable(),
 });
 export type SetupItem = z.infer<typeof SetupItemSchema>;
+export type ItemInstall = NonNullable<SetupItem["install"]>;
 
 export const SetupPhaseSchema = z.enum(["idle", "scanning", "scanned", "installing", "done"]);
 export type SetupPhase = z.infer<typeof SetupPhaseSchema>;
+
+export const InstallInfoSchema = z.object({
+  mirror: MirrorSchema,
+  dir: z.string(),
+  items: z.array(z.string()),
+  /**
+   * What the user has to approve before anything starts (SPEC 12.2-5, 6.4.1): changes to their
+   * ComfyUI (`setup:confirmReason.comfy_change`), elevation (`admin`), downloads over 10 GB
+   * (`large_download`). Empty once approved; the install waits while it is not.
+   */
+  confirm: z.array(MessageSchema),
+  /** The `comfy_change` lines, kept after approval: what the snapshot was taken for. */
+  changes: z.array(MessageSchema),
+  /** The ComfyUI-Manager snapshot taken before the first change (`/comfy/snapshots` id). */
+  snapshot: z.string().nullable(),
+  /** Why no snapshot could be taken (`setup:error.snapshot_<reason>`); ComfyUI was left alone. */
+  snapshot_error: MessageSchema.nullable(),
+});
+export type InstallInfo = z.infer<typeof InstallInfoSchema>;
 
 export const MachineProfileSchema = z.object({
   /** When the last full scan finished; null before the first one. */
@@ -76,16 +115,23 @@ export const MachineProfileSchema = z.object({
   phase: SetupPhaseSchema,
   /** Empty before the first scan; every manifest item for this platform afterwards. */
   items: z.array(SetupItemSchema),
-  /** The last install request; null before the first install. */
-  install: z
-    .object({ mirror: MirrorSchema, dir: z.string(), items: z.array(z.string()) })
-    .nullable(),
+  /** The last install request (items in install order); null before the first install. */
+  install: InstallInfoSchema.nullable(),
   /** Where models go unless the user picks another folder. */
   default_dir: z.string(),
+  /** The program's own folder: an install location inside it gets a warning. */
+  app_dir: z.string().nullable(),
   /** Preset suggested for this hardware (SPEC 12.2); null before the first scan. */
   recommendation: z
     .object({ preset: z.string(), reason: z.enum(["local_video", "no_cuda"]) })
     .nullable(),
+  /** Mock's sample machines (no real scan): the page shows the 示例机器 switch. */
+  simulated: z.boolean(),
+  /**
+   * This machine's download speed (bytes/s): the last install's, else a short download during
+   * the scan; null when never measured. Times the downloads in the estimates.
+   */
+  download_bps: z.number().nullable(),
 });
 export type MachineProfile = z.infer<typeof MachineProfileSchema>;
 

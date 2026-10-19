@@ -13,10 +13,11 @@ guard only exposes the hook. ``qa_fail`` fallback arrives with QA in M6.
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
+from drama_series_agent.core.capabilities import Capabilities
 from drama_series_agent.core.config import Resolved, StudioConfig, get_config
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus, EventType
@@ -101,6 +102,7 @@ class Router:
         budget: BudgetGuard | None = None,
         config: Callable[[], StudioConfig] = get_config,
         api_timeout_s: float = DEFAULT_API_TIMEOUT_S,
+        capabilities: Callable[[], Awaitable[Capabilities | None]] | None = None,
     ) -> None:
         self.db = db
         self.bus = bus
@@ -109,10 +111,15 @@ class Router:
         self.budget = budget or NoBudget()
         self._config = config
         self.api_timeout_s = api_timeout_s
+        # What this machine can run locally (the setup scan); None = route as configured.
+        self._capabilities = capabilities
 
     async def settings(self, component_id: str, item: str | None = None) -> Resolved:
+        caps = await self._capabilities() if self._capabilities is not None else None
         async with self.db.session() as session:
-            return await resolve_component(session, component_id, item=item, config=self._config())
+            return await resolve_component(
+                session, component_id, item=item, config=self._config(), caps=caps
+            )
 
     @staticmethod
     def primary_model(settings: Resolved, where: Literal["local", "api"] | None = None) -> str:

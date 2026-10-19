@@ -1,0 +1,65 @@
+# 成片规格的出厂值（SPEC 13.1）：平台预设、新剧集的默认规格、平台遮挡区比例。
+# 尺寸不在这里：宽高只由 src/drama_series_agent/spec/dims.py 计算。
+
+# 平台预设：选了预设就带出画幅和交付档；custom 保留当前选择（null）。
+platforms:
+  - id: cn # 国内短剧（抖音、快手、视频号、红果短剧）
+    aspect: "9:16"
+    delivery: 1080p
+  - id: intl # 海外短剧 App（ReelShort、DramaBox、TikTok）
+    aspect: "9:16"
+    delivery: 1080p
+  - id: wide # 横屏平台（B 站、YouTube）
+    aspect: "16:9"
+    delivery: 1080p
+  - id: custom
+    aspect: null
+    delivery: null
+
+# 新建剧集时的规格：国内短剧 · 9:16 · 1080p · 24 fps · 每集 30–90 秒 · 字幕两样都要
+# · 48 kHz / -14 LUFS / -1 dBTP · H.264 · AI 标识开。
+defaults:
+  platform: cn
+  aspect: "9:16"
+  delivery: 1080p
+  fps: 24
+  episode_len: short
+  subtitles: both
+  audio: { sample_rate: 48000, lufs: -14, peak_dbtp: -1 }
+  codec: h264
+  ai_mark: true
+  derive: null
+
+# 平台界面挡住画面的地方（画面的百分比，近似值，照原型 Spec.dc.html）。
+# 竖屏短剧 App：顶栏、右侧按钮列、底部标题区；其他播放器只有底部控件。
+# 成片规格页的预览目前用前端 pages/spec/SafeAreaPreview.tsx 里的同一份数字；
+# 分镜和关键帧页叠参考线时从 GET /spec/presets 的 safe_areas 读。
+safe_areas:
+  vertical_app:
+    zones:
+      - { key: top, l: 0, t: 0, w: 100, h: 7 }
+      - { key: buttons, l: 84, t: 38, w: 16, h: 42 }
+      - { key: caption, l: 0, t: 82, w: 100, h: 18 }
+    subtitle: { top: 70, right: 16 }
+  vertical_player:
+    zones:
+      - { key: controls, l: 0, t: 86, w: 100, h: 14 }
+    subtitle: { top: 76, right: 0 }
+  horizontal:
+    zones:
+      - { key: controlsWide, l: 0, t: 86, w: 100, h: 14 }
+    subtitle: { top: 72, right: 0 }
+
+# 兼容表（SPEC 13.3，spec/compat.py）：每行取当前路由里某个组件的某个角色的模型，
+# 按 providers.yaml 的 caps 判定原生 / 转换 / 不支持。
+#   pick：api_model / local_model / fallback（兜底模型）/ alt（换一个时的第一个备选）
+#   tier：判分辨率时用草稿档（draft）还是交付档（delivery）
+#   native：原生支持时的说明 code（spec:compat.how.<code>）
+compat_stages:
+  - { stage: keyframe, component: kf, pick: [api_model], tier: delivery, native: native_4k }
+  - { stage: text_keyframe, component: text, pick: [api_model], tier: delivery, native: native }
+  - { stage: sketch, component: kf, pick: [fallback], tier: draft, native: cheap_sketch }
+  - { stage: video_draft, component: vid, pick: [local_model], tier: draft, native: h3_aspects }
+  - { stage: video_final, component: up, pick: [api_model], tier: delivery, native: follow_draft }
+  - { stage: video_alt, component: vid, pick: [alt], tier: delivery, native: native }
+  - { stage: upscale, component: up, pick: [local_model, fallback], tier: delivery, native: any_aspect }

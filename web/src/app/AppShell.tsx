@@ -3,6 +3,7 @@ import {
   Database,
   FlaskConical,
   Grid2x2Plus,
+  MonitorCog,
   Moon,
   SlidersHorizontal,
   Smartphone,
@@ -10,7 +11,7 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { useLayoutEffect } from "react";
+import { useLayoutEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { NavLink, Outlet, useLocation } from "react-router";
 
@@ -28,6 +29,7 @@ import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatSpecTag, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
+import { missingCount } from "@/pages/setup/items";
 import { useDemoStore } from "@/stores/demo";
 import { useUiStore } from "@/stores/ui";
 
@@ -171,12 +173,39 @@ const navItem = ({ isActive }: { isActive: boolean }) =>
     isActive && "border-sidebar-border bg-card font-semibold text-foreground shadow-xs",
   );
 
-function ToolLink({ to, icon: Icon, label }: { to: string; icon: LucideIcon; label: string }) {
+function ToolLink({
+  to,
+  icon: Icon,
+  label,
+  badge,
+}: {
+  to: string;
+  icon: LucideIcon;
+  label: string;
+  badge?: ReactNode;
+}) {
   return (
     <NavLink to={to} className={navItem}>
-      <Icon className="size-4 text-muted-foreground" aria-hidden />
-      <span>{label}</span>
+      <Icon className="size-4 shrink-0 text-muted-foreground" aria-hidden />
+      <span className="whitespace-nowrap">{label}</span>
+      {badge}
     </NavLink>
+  );
+}
+
+/** 缺 N 项 on 环境与安装; nothing before the first scan, while scanning, or when all is there. */
+function SetupBadge() {
+  const { t } = useTranslation("nav");
+  const profile = useMachineProfile();
+  const n = missingCount(profile.data?.items ?? []);
+  if (!n) return null;
+  return (
+    <span
+      className="ml-auto shrink-0 rounded bg-tone-warn-bg px-1.5 py-px font-mono text-[11px] font-normal whitespace-nowrap text-tone-warn-fg"
+      data-testid="setup-badge"
+    >
+      {t("badge.missing", { count: n })}
+    </span>
   );
 }
 
@@ -228,6 +257,7 @@ function SideNav() {
         </NavLink>
       ))}
       <div className="my-2 h-px bg-sidebar-border" />
+      <ToolLink to={paths.setup()} icon={MonitorCog} label={t("setup")} badge={<SetupBadge />} />
       <ToolLink to={paths.spec(seriesId)} icon={Smartphone} label={t("spec")} />
       <ToolLink to={paths.models()} icon={SlidersHorizontal} label={t("models")} />
       <ToolLink to={paths.sync(seriesId)} icon={Grid2x2Plus} label={t("sync")} />

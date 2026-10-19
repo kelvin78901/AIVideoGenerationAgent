@@ -1,0 +1,1687 @@
+{
+  "failing": {
+    "item": "sage",
+    "pct": 60,
+    "error": "no_wheel"
+  },
+  "pc": {
+    "idle": {
+      "scanned_at": null,
+      "machine": {
+        "os": "windows",
+        "gpu": {
+          "name": "RTX 5090",
+          "vram_gb": 32.0,
+          "backend": "cuda"
+        }
+      },
+      "phase": "idle",
+      "items": [],
+      "install": null,
+      "default_dir": "D:\\DramaStudio",
+      "app_dir": "C:\\dev\\drama-studio",
+      "recommendation": null,
+      "simulated": true,
+      "download_bps": null
+    },
+    "scanned": {
+      "scanned_at": "2026-10-18T09:00:00Z",
+      "machine": {
+        "os": "windows",
+        "gpu": {
+          "name": "RTX 5090",
+          "vram_gb": 32.0,
+          "backend": "cuda"
+        }
+      },
+      "phase": "scanned",
+      "items": [
+        {
+          "id": "os",
+          "group": "sys",
+          "name": {
+            "zh": "操作系统",
+            "en": "Operating system"
+          },
+          "status": "ok",
+          "found": {
+            "code": "os",
+            "params": {
+              "name": "Windows 11",
+              "bits": 64
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "gpu",
+          "group": "sys",
+          "name": {
+            "zh": "显卡",
+            "en": "GPU"
+          },
+          "status": "ok",
+          "found": {
+            "code": "gpu_vram",
+            "params": {
+              "name": "NVIDIA RTX 5090",
+              "gb": 32
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "driver",
+          "group": "sys",
+          "name": {
+            "zh": "显卡驱动",
+            "en": "GPU driver"
+          },
+          "status": "ok",
+          "found": {
+            "code": "driver_cuda",
+            "params": {
+              "cuda": "13"
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "ram",
+          "group": "sys",
+          "name": {
+            "zh": "内存",
+            "en": "Memory"
+          },
+          "status": "ok",
+          "found": {
+            "code": "ram",
+            "params": {
+              "gb": 64
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "disk",
+          "group": "sys",
+          "name": {
+            "zh": "磁盘空间",
+            "en": "Disk space"
+          },
+          "status": "ok",
+          "found": {
+            "code": "disk_free_on",
+            "params": {
+              "drive": "D:",
+              "free": "1.2 TB"
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "python",
+          "group": "rt",
+          "name": {
+            "zh": "Python",
+            "en": "Python"
+          },
+          "status": "ok",
+          "found": {
+            "code": "version",
+            "params": {
+              "version": "3.12"
+            }
+          },
+          "fix": null,
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 30.0,
+          "install": null
+        },
+        {
+          "id": "uv",
+          "group": "rt",
+          "name": {
+            "zh": "uv",
+            "en": "uv"
+          },
+          "status": "ok",
+          "found": {
+            "code": "installed",
+            "params": {}
+          },
+          "fix": null,
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "torch",
+          "group": "rt",
+          "name": {
+            "zh": "PyTorch",
+            "en": "PyTorch"
+          },
+          "status": "old",
+          "found": {
+            "code": "torch_not_cuda",
+            "params": {
+              "cuda": "13"
+            }
+          },
+          "fix": {
+            "code": "torch_cuda",
+            "params": {
+              "cuda": "13.0"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "ffmpeg",
+          "group": "rt",
+          "name": {
+            "zh": "FFmpeg",
+            "en": "FFmpeg"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "FFmpeg"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "git",
+          "group": "rt",
+          "name": {
+            "zh": "Git",
+            "en": "Git"
+          },
+          "status": "ok",
+          "found": {
+            "code": "installed",
+            "params": {}
+          },
+          "fix": null,
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "comfy",
+          "group": "comfy",
+          "name": {
+            "zh": "ComfyUI",
+            "en": "ComfyUI"
+          },
+          "status": "old",
+          "found": {
+            "code": "outdated",
+            "params": {}
+          },
+          "fix": {
+            "code": "update_latest",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": null,
+          "work_s": 80.0,
+          "install": null
+        },
+        {
+          "id": "comfy_manager",
+          "group": "comfy",
+          "name": {
+            "zh": "ComfyUI-Manager（快照和回滚）",
+            "en": "ComfyUI-Manager (snapshots and rollback)"
+          },
+          "status": "ok",
+          "found": {
+            "code": "version",
+            "params": {
+              "version": "4.2.2"
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": true,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "node_h3",
+          "group": "comfy",
+          "name": {
+            "zh": "MiniMax H3 节点",
+            "en": "MiniMax H3 nodes"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "update_comfy_native",
+            "params": {
+              "version": "0.30.0"
+            }
+          },
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "node_vhs",
+          "group": "comfy",
+          "name": {
+            "zh": "VideoHelperSuite",
+            "en": "VideoHelperSuite"
+          },
+          "status": "ok",
+          "found": {
+            "code": "installed",
+            "params": {}
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": true,
+          "size_bytes": null,
+          "work_s": 80.0,
+          "install": null
+        },
+        {
+          "id": "node_seedvr2",
+          "group": "comfy",
+          "name": {
+            "zh": "SeedVR2 节点（本地超分）",
+            "en": "SeedVR2 nodes (local upscaling)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "update_comfy_native",
+            "params": {
+              "version": "0.28.0"
+            }
+          },
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "node_flashvsr",
+          "group": "comfy",
+          "name": {
+            "zh": "FlashVSR 节点（快速超分）",
+            "en": "FlashVSR nodes (fast upscaling)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_nodes",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": null,
+          "work_s": 80.0,
+          "install": null
+        },
+        {
+          "id": "node_ctrl",
+          "group": "comfy",
+          "name": {
+            "zh": "Fun ControlNet 节点",
+            "en": "Fun ControlNet nodes"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "update_comfy_native",
+            "params": {
+              "version": "0.35.0"
+            }
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "sage",
+          "group": "comfy",
+          "name": {
+            "zh": "SageAttention 加速",
+            "en": "SageAttention speed-up"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "sage_build",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "node_dramastudio",
+          "group": "comfy",
+          "name": {
+            "zh": "DramaStudio 节点包（素材板与存回）",
+            "en": "DramaStudio nodes (boards and save-back)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "dramastudio_pending",
+            "params": {}
+          },
+          "required": true,
+          "installable": false,
+          "touches_comfy": true,
+          "size_bytes": null,
+          "work_s": 35.0,
+          "install": null
+        },
+        {
+          "id": "w_h3",
+          "group": "w",
+          "name": {
+            "zh": "MiniMax H3 权重（int8）",
+            "en": "MiniMax H3 weights (int8)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 49300000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_te",
+          "group": "w",
+          "name": {
+            "zh": "Qwen3-VL-32B 文本编码器（NVFP4）",
+            "en": "Qwen3-VL-32B text encoder (NVFP4)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 15700000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_img",
+          "group": "w",
+          "name": {
+            "zh": "Qwen-Image-Edit-2511（int8）",
+            "en": "Qwen-Image-Edit-2511 (int8)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 31000000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_sr",
+          "group": "w",
+          "name": {
+            "zh": "SeedVR2 7B 权重（int8）",
+            "en": "SeedVR2 7B weights (int8)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 8800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_tts",
+          "group": "w",
+          "name": {
+            "zh": "IndexTTS-2.5",
+            "en": "IndexTTS-2.5"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 5500000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_llm",
+          "group": "w",
+          "name": {
+            "zh": "Qwen3.6-27B（本地 LLM）",
+            "en": "Qwen3.6-27B (local LLM)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "llm_optional",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 30.0,
+          "install": null
+        },
+        {
+          "id": "hf",
+          "group": "svc",
+          "name": {
+            "zh": "模型下载网络",
+            "en": "Model download network"
+          },
+          "status": "warn",
+          "found": {
+            "code": "hf_slow",
+            "params": {}
+          },
+          "fix": {
+            "code": "pick_mirror",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "llmsrv",
+          "group": "svc",
+          "name": {
+            "zh": "本地 LLM 服务",
+            "en": "Local LLM server"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_llm_server",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "keys",
+          "group": "svc",
+          "name": {
+            "zh": "API 密钥",
+            "en": "API keys"
+          },
+          "status": "optional",
+          "found": {
+            "code": "no_keys",
+            "params": {}
+          },
+          "fix": {
+            "code": "keys_later",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "eagle",
+          "group": "svc",
+          "name": {
+            "zh": "Eagle 素材库（可选）",
+            "en": "Eagle library (optional)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_running",
+            "params": {}
+          },
+          "fix": {
+            "code": "eagle_later",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "resolve",
+          "group": "svc",
+          "name": {
+            "zh": "达芬奇 Resolve（可选）",
+            "en": "DaVinci Resolve (optional)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "resolve_later",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        }
+      ],
+      "install": null,
+      "default_dir": "D:\\DramaStudio",
+      "app_dir": "C:\\dev\\drama-studio",
+      "recommendation": {
+        "preset": "balanced",
+        "reason": "local_video"
+      },
+      "simulated": true,
+      "download_bps": 22000000.0
+    },
+    "install": {
+      "order": [
+        "torch",
+        "ffmpeg",
+        "comfy",
+        "node_flashvsr",
+        "sage",
+        "w_h3",
+        "w_te",
+        "w_img",
+        "w_sr",
+        "w_tts",
+        "llmsrv"
+      ],
+      "confirm": [
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "torch",
+            "action": "update",
+            "from": "2.7.1+cu128",
+            "source": "torch torchvision torchaudio"
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "comfy",
+            "action": "update",
+            "from": "0.3.40",
+            "to": "v0.42.1",
+            "source": "https://github.com/comfyanonymous/ComfyUI"
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "node_flashvsr",
+            "action": "install",
+            "to": "8877fdd",
+            "source": "https://github.com/1038lab/ComfyUI-FlashVSR"
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "sage",
+            "action": "install",
+            "to": "2.2.0",
+            "source": "sageattention @ https://github.com/woct0rdho/SageAttention/releases/download/v2.2.0-windows.post6/sageattention-2.2.0+cu130torch2.10.0andhigher.post6-cp310-abi3-win_amd64.whl"
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "w_h3",
+            "action": "install",
+            "to": "e5eb578",
+            "source": "Comfy-Org/MiniMax-H3",
+            "gb": 49.3
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "w_te",
+            "action": "install",
+            "to": "e5eb578",
+            "source": "Comfy-Org/MiniMax-H3",
+            "gb": 15.7
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "w_img",
+            "action": "install",
+            "to": "f68ace8",
+            "source": "Comfy-Org/Qwen-Image-Edit_ComfyUI",
+            "gb": 31.0
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "w_sr",
+            "action": "install",
+            "to": "df48879",
+            "source": "Comfy-Org/SeedVR2",
+            "gb": 8.8
+          }
+        },
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_h3",
+            "gb": 49.3
+          }
+        },
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_te",
+            "gb": 15.7
+          }
+        },
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_img",
+            "gb": 31.0
+          }
+        }
+      ]
+    },
+    "comfy": {
+      "scanned_at": "2026-10-18T09:00:00Z",
+      "simulated": true,
+      "comfy": {
+        "root": "D:\\ComfyUI",
+        "kind": "folder",
+        "url": "http://127.0.0.1:8188",
+        "port": 8188,
+        "python_path": "D:\\ComfyUI\\venv\\Scripts\\python.exe",
+        "manager": {
+          "source": "pip",
+          "version": "4.2.2",
+          "enabled": true
+        },
+        "model_dirs": [
+          {
+            "folder": "checkpoints",
+            "path": "D:\\ComfyUI\\models\\checkpoints",
+            "default": false
+          },
+          {
+            "folder": "vae",
+            "path": "D:\\ComfyUI\\models\\vae",
+            "default": false
+          },
+          {
+            "folder": "checkpoints",
+            "path": "D:/AI/models/checkpoints",
+            "default": false
+          },
+          {
+            "folder": "loras",
+            "path": "D:/AI/models/loras",
+            "default": false
+          }
+        ],
+        "models": [
+          {
+            "folder": "checkpoints",
+            "name": "sd_xl_base_1.0.safetensors",
+            "path": "D:\\ComfyUI\\models\\checkpoints\\sd_xl_base_1.0.safetensors",
+            "size_bytes": 6938078334
+          },
+          {
+            "folder": "loras",
+            "name": "rain/rain_style.safetensors",
+            "path": "D:/AI/models/loras/rain/rain_style.safetensors",
+            "size_bytes": 228456789
+          },
+          {
+            "folder": "vae",
+            "name": "ae.safetensors",
+            "path": "D:\\ComfyUI\\models\\vae\\ae.safetensors",
+            "size_bytes": 335304388
+          }
+        ],
+        "models_truncated": false,
+        "env_hash": "f0348403cb83f482e94f8216063e5ad62cb589628af6be258024212cfb0d3efa"
+      },
+      "env": {
+        "comfyui_version": "0.3.40",
+        "comfyui_commit": null,
+        "python": "3.12.9",
+        "torch": "2.7.1+cu128",
+        "node_packs": [
+          {
+            "name": "ComfyUI-KJNodes",
+            "source": "registry",
+            "version": "1.2.6",
+            "commit": null,
+            "remote": null,
+            "classes": [
+              "GetImageSizeAndCount",
+              "ImageResizeKJ"
+            ]
+          },
+          {
+            "name": "ComfyUI-VideoHelperSuite",
+            "source": "git",
+            "version": "1.7.9",
+            "commit": "8a3f6c1e9b2d4f70a5c8e1b3d6f9a2c4e7b0d1f3",
+            "remote": "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite",
+            "classes": [
+              "VHS_LoadVideo",
+              "VHS_VideoCombine"
+            ]
+          },
+          {
+            "name": "websocket_image_save",
+            "source": "manual",
+            "version": null,
+            "commit": null,
+            "remote": null,
+            "classes": []
+          }
+        ],
+        "hash": "f0348403cb83f482e94f8216063e5ad62cb589628af6be258024212cfb0d3efa",
+        "captured_at": "2026-10-18T09:00:00Z"
+      }
+    }
+  },
+  "mac": {
+    "idle": {
+      "scanned_at": null,
+      "machine": {
+        "os": "macos",
+        "gpu": {
+          "name": "Apple M4 Pro",
+          "vram_gb": 48.0,
+          "backend": "mps"
+        }
+      },
+      "phase": "idle",
+      "items": [],
+      "install": null,
+      "default_dir": "~/DramaStudio",
+      "app_dir": "~/drama-studio",
+      "recommendation": null,
+      "simulated": true,
+      "download_bps": null
+    },
+    "scanned": {
+      "scanned_at": "2026-10-18T09:00:00Z",
+      "machine": {
+        "os": "macos",
+        "gpu": {
+          "name": "Apple M4 Pro",
+          "vram_gb": 48.0,
+          "backend": "mps"
+        }
+      },
+      "phase": "scanned",
+      "items": [
+        {
+          "id": "os",
+          "group": "sys",
+          "name": {
+            "zh": "操作系统",
+            "en": "Operating system"
+          },
+          "status": "ok",
+          "found": {
+            "code": "os_apple",
+            "params": {
+              "name": "macOS"
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "gpu",
+          "group": "sys",
+          "name": {
+            "zh": "显卡",
+            "en": "GPU"
+          },
+          "status": "warn",
+          "found": {
+            "code": "gpu_unified",
+            "params": {
+              "name": "Apple M4 Pro"
+            }
+          },
+          "fix": {
+            "code": "no_cuda_video_api",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "ram",
+          "group": "sys",
+          "name": {
+            "zh": "内存",
+            "en": "Memory"
+          },
+          "status": "ok",
+          "found": {
+            "code": "ram_unified",
+            "params": {
+              "gb": 48
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "disk",
+          "group": "sys",
+          "name": {
+            "zh": "磁盘空间",
+            "en": "Disk space"
+          },
+          "status": "ok",
+          "found": {
+            "code": "disk_free",
+            "params": {
+              "free": "600 GB"
+            }
+          },
+          "fix": null,
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "python",
+          "group": "rt",
+          "name": {
+            "zh": "Python",
+            "en": "Python"
+          },
+          "status": "ok",
+          "found": {
+            "code": "version",
+            "params": {
+              "version": "3.12"
+            }
+          },
+          "fix": null,
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 30.0,
+          "install": null
+        },
+        {
+          "id": "uv",
+          "group": "rt",
+          "name": {
+            "zh": "uv",
+            "en": "uv"
+          },
+          "status": "ok",
+          "found": {
+            "code": "installed",
+            "params": {}
+          },
+          "fix": null,
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "torch",
+          "group": "rt",
+          "name": {
+            "zh": "PyTorch",
+            "en": "PyTorch"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_torch_mps",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "ffmpeg",
+          "group": "rt",
+          "name": {
+            "zh": "FFmpeg",
+            "en": "FFmpeg"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "FFmpeg"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "git",
+          "group": "rt",
+          "name": {
+            "zh": "Git",
+            "en": "Git"
+          },
+          "status": "ok",
+          "found": {
+            "code": "installed",
+            "params": {}
+          },
+          "fix": null,
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "comfy",
+          "group": "comfy",
+          "name": {
+            "zh": "ComfyUI",
+            "en": "ComfyUI"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "comfy_images_only",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 80.0,
+          "install": null
+        },
+        {
+          "id": "comfy_manager",
+          "group": "comfy",
+          "name": {
+            "zh": "ComfyUI-Manager（快照和回滚）",
+            "en": "ComfyUI-Manager (snapshots and rollback)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_nodes",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "node_h3",
+          "group": "comfy",
+          "name": {
+            "zh": "MiniMax H3 节点",
+            "en": "MiniMax H3 nodes"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "node_vhs",
+          "group": "comfy",
+          "name": {
+            "zh": "VideoHelperSuite",
+            "en": "VideoHelperSuite"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_nodes",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 80.0,
+          "install": null
+        },
+        {
+          "id": "node_seedvr2",
+          "group": "comfy",
+          "name": {
+            "zh": "SeedVR2 节点（本地超分）",
+            "en": "SeedVR2 nodes (local upscaling)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_upscale_api",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "node_flashvsr",
+          "group": "comfy",
+          "name": {
+            "zh": "FlashVSR 节点（快速超分）",
+            "en": "FlashVSR nodes (fast upscaling)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_upscale_api",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 80.0,
+          "install": null
+        },
+        {
+          "id": "node_ctrl",
+          "group": "comfy",
+          "name": {
+            "zh": "Fun ControlNet 节点",
+            "en": "Fun ControlNet nodes"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "sage",
+          "group": "comfy",
+          "name": {
+            "zh": "SageAttention 加速",
+            "en": "SageAttention speed-up"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "node_dramastudio",
+          "group": "comfy",
+          "name": {
+            "zh": "DramaStudio 节点包（素材板与存回）",
+            "en": "DramaStudio nodes (boards and save-back)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "dramastudio_pending",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 35.0,
+          "install": null
+        },
+        {
+          "id": "w_h3",
+          "group": "w",
+          "name": {
+            "zh": "MiniMax H3 权重（int8）",
+            "en": "MiniMax H3 weights (int8)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 49300000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_te",
+          "group": "w",
+          "name": {
+            "zh": "Qwen3-VL-32B 文本编码器（NVFP4）",
+            "en": "Qwen3-VL-32B text encoder (NVFP4)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 15700000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_img",
+          "group": "w",
+          "name": {
+            "zh": "Qwen-Image-Edit-2511（int8）",
+            "en": "Qwen-Image-Edit-2511 (int8)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "mac_image_slow",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 31000000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_sr",
+          "group": "w",
+          "name": {
+            "zh": "SeedVR2 7B 权重（int8）",
+            "en": "SeedVR2 7B weights (int8)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_upscale_api",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 8800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_tts",
+          "group": "w",
+          "name": {
+            "zh": "本地配音模型",
+            "en": "Local voice model"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "mac_voice_slow",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 5500000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_llm",
+          "group": "w",
+          "name": {
+            "zh": "Qwen3.6-27B（MLX 版）",
+            "en": "Qwen3.6-27B (MLX)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "weights_pending_p0",
+            "params": {}
+          },
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 30.0,
+          "install": null
+        },
+        {
+          "id": "hf",
+          "group": "svc",
+          "name": {
+            "zh": "模型下载网络",
+            "en": "Model download network"
+          },
+          "status": "warn",
+          "found": {
+            "code": "hf_slow",
+            "params": {}
+          },
+          "fix": {
+            "code": "pick_mirror",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "llmsrv",
+          "group": "svc",
+          "name": {
+            "zh": "本地 LLM 服务",
+            "en": "Local LLM server"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_ollama_mlx",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 60.0,
+          "install": null
+        },
+        {
+          "id": "keys",
+          "group": "svc",
+          "name": {
+            "zh": "API 密钥",
+            "en": "API keys"
+          },
+          "status": "warn",
+          "found": {
+            "code": "no_keys",
+            "params": {}
+          },
+          "fix": {
+            "code": "keys_video_api",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "eagle",
+          "group": "svc",
+          "name": {
+            "zh": "Eagle 素材库（可选）",
+            "en": "Eagle library (optional)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_running",
+            "params": {}
+          },
+          "fix": {
+            "code": "eagle_later",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "resolve",
+          "group": "svc",
+          "name": {
+            "zh": "达芬奇 Resolve（可选）",
+            "en": "DaVinci Resolve (optional)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "resolve_later",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 0.0,
+          "install": null
+        }
+      ],
+      "install": null,
+      "default_dir": "~/DramaStudio",
+      "app_dir": "~/drama-studio",
+      "recommendation": {
+        "preset": "balanced",
+        "reason": "no_cuda"
+      },
+      "simulated": true,
+      "download_bps": 12000000.0
+    },
+    "install": {
+      "order": [
+        "torch",
+        "ffmpeg",
+        "comfy",
+        "comfy_manager",
+        "node_vhs",
+        "w_img",
+        "w_tts",
+        "llmsrv"
+      ],
+      "confirm": [
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_img",
+            "gb": 31.0
+          }
+        }
+      ]
+    },
+    "comfy": {
+      "scanned_at": "2026-10-18T09:00:00Z",
+      "simulated": true,
+      "comfy": null,
+      "env": null
+    }
+  }
+}

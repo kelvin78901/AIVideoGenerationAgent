@@ -20,6 +20,7 @@ from drama_series_agent.modelhub.adapters.base import ModelSpec
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
+from drama_series_agent.setup.service import SetupService
 
 
 @dataclass
@@ -30,6 +31,7 @@ class StudioState:
     store: BlobStore
     registry: Registry
     router: Router
+    setup: SetupService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -41,13 +43,16 @@ class StudioState:
         bus = EventBus(db)
         store = BlobStore()
         registry = Registry.from_config(get_config())
+        jobs = JobQueue(db, bus)
+        setup = SetupService(db, bus, jobs)
         state = cls(
             db=db,
             bus=bus,
-            jobs=JobQueue(db, bus),
+            jobs=jobs,
             store=store,
             registry=registry,
-            router=Router(db, bus, registry, store=store),
+            router=Router(db, bus, registry, store=store, capabilities=setup.capabilities),
+            setup=setup,
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:
@@ -60,6 +65,10 @@ class StudioState:
         from drama_series_agent.api.handlers import register_handlers
 
         register_handlers(state)
+        if registry.mock:
+            from drama_series_agent.studio.demo import seed_demo
+
+            await seed_demo(db)
         return state
 
     async def run(self) -> None:

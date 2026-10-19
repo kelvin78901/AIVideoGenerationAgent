@@ -1,0 +1,170 @@
+{
+  "title": "工作流库",
+  "lead": "每个 ComfyUI 工作流登记成一个本地模型，出现在对应步骤的本地模型列表里。平台推荐和「我的工作流」进预设、自动路由和兜底；未验证的只能手动选。",
+  "import": "导入工作流",
+  "checkAll": "全部体检",
+  "checkedAll": "体检完了：{{count}} 个工作流",
+  "filter": {
+    "label": "按档位筛选",
+    "all": "全部 {{count}}",
+    "recommended": "平台推荐 {{count}}",
+    "mine": "我的工作流 {{count}}",
+    "unverified": "未验证 {{count}}"
+  },
+  "col": {
+    "name": "名称",
+    "components": "用在",
+    "tier": "档位",
+    "check": "体检",
+    "trial": "上次试跑",
+    "file": "文件"
+  },
+  "tier": {
+    "recommended": "平台推荐",
+    "mine": "我的工作流",
+    "unverified": "未验证"
+  },
+  "tierWhy": {
+    "recommended": "随平台提供，节点包和模型锁定版本、测过。进预设、自动路由和兜底。",
+    "mine": "你导入的，试跑通过。和平台推荐一样进预设、自动路由和兜底。",
+    "unverified": "还没试跑通过（或文件变了、体检坏了）：只能在模型选择里手动选，不进预设、兜底和「不满意换一个」。"
+  },
+  "status": {
+    "ok": "正常",
+    "missing": "缺 {{packs}} 个节点包、{{models}} 个模型",
+    "missingPacks": "缺 {{count}} 个节点包",
+    "missingModels": "缺 {{count}} 个模型",
+    "broken": "有问题 {{count}} 处",
+    "pending": "绑定待确认 {{count}} 项",
+    "never": "还没体检"
+  },
+  "trialCell": {
+    "never": "没试跑过",
+    "running": "试跑中…",
+    "passed": "{{time}} 通过 · {{seconds}} 秒",
+    "failed": "{{time}} 失败"
+  },
+  "file": {
+    "same": "没变",
+    "changed": "变过，需重新试跑"
+  },
+  "toggle": "展开 {{name}}",
+  "source": {
+    "repo": "随平台提供 · workflows/{{slug}}/",
+    "user": "导入自 {{origin}} · ~/.drama-studio/workflows/{{slug}}/"
+  },
+  "caps": {
+    "line": "能力：{{list}}",
+    "aspects": "画幅 {{list}}",
+    "maxSeconds": "最长 {{n}} 秒",
+    "refs": "参考图 {{n}} 张",
+    "vram": "显存约 {{n}} GB"
+  },
+  "promote": "升为我的工作流",
+  "promoted": "已升为「我的工作流」：{{name}}",
+  "demote": "降为未验证",
+  "demoted": "已降为未验证：{{name}}",
+  "promoteBlocked": {
+    "pending": "先确认绑定",
+    "trial": "先试跑通过"
+  },
+  "tab": {
+    "bindings": "绑定",
+    "check": "体检",
+    "trial": "试跑"
+  },
+  "bindings": {
+    "dramastudio": "用的是 DramaStudio 输入 / 输出节点：平台按节点类型填值、取结果，不用绑定。",
+    "lead": "平台按节点标题找节点（不是节点编号），在 ComfyUI 里重排、增删别的节点不影响；被绑定的节点标题在工作流里必须唯一。",
+    "pendingNote": "还有 {{count}} 项是导入时自动猜的，确认后才能试跑和登记。",
+    "col": {
+      "slot": "槽位",
+      "node": "节点标题",
+      "class": "节点类型",
+      "field": "字段",
+      "state": "状态"
+    },
+    "state": {
+      "dramastudio": "DramaStudio 节点",
+      "confirmed": "已确认",
+      "guessed": "自动猜的 · 待确认"
+    },
+    "nodeOf": "{{slot}} 的节点",
+    "fieldOf": "{{slot}} 的字段",
+    "output": "（输出）",
+    "save": "确认全部绑定",
+    "saved": "绑定已确认",
+    "reset": "撤销改动"
+  },
+  "slot": {
+    "first_frame": "首帧",
+    "video_in": "输入视频",
+    "ref_image": "参考图 {{n}}",
+    "prompt": "提示词（正向）",
+    "negative": "提示词（反向）",
+    "dialogue_audio": "台词音频",
+    "width": "宽",
+    "height": "高",
+    "fps": "帧率",
+    "seconds": "时长（秒）",
+    "seed": "种子",
+    "video_out": "视频输出",
+    "image_out": "图片输出",
+    "audio_out": "音频输出"
+  },
+  "check": {
+    "last": "上次体检 {{time}} · 节点类 {{found}}/{{total}} 在",
+    "run": "重新体检",
+    "done": "体检完了：{{name}}",
+    "okLine": "都在：节点类、被绑定的节点标题和字段、模型文件。",
+    "packs": "缺的节点包",
+    "models": "缺的模型",
+    "col": {
+      "name": "名称",
+      "classes": "提供的节点类",
+      "source": "来源",
+      "version": "版本",
+      "folder": "目录",
+      "file": "文件",
+      "size": "大小"
+    },
+    "install": "安装缺的 {{packs}} 个节点包和 {{models}} 个模型",
+    "installNote": "装之前会列出改动清单让你确认，并先用 ComfyUI-Manager 存一份快照；快照和回滚在「环境与安装」。",
+    "snapshotNote": "动手前先用 ComfyUI-Manager 存一份快照；装坏了可以在「环境与安装」里一键回滚。",
+    "installed": "已存快照 {{snapshot}}，装好了 {{packs}} 个节点包、{{models}} 个模型",
+    "never": "导入后会自动体检。"
+  },
+  "trial": {
+    "lead": "用示例项目里的输入跑一次：首帧、参考图、提示词、台词音频，草稿档尺寸、最短时长。在本地 GPU 队列里排队。",
+    "inputs": "示例输入",
+    "prompt": "雨夜街头，林夏撑着红伞回头，霓虹倒映在积水里",
+    "size": "{{w}}×{{h}} · {{seconds}} 秒（草稿档、最短时长）",
+    "run": "试跑",
+    "rerun": "再试跑一次",
+    "started": "已开始试跑：{{name}}",
+    "running": "试跑中…（本地 GPU 队列）",
+    "blockedPending": "先确认绑定",
+    "blockedCheck": "先装好缺的节点包和模型",
+    "result": "结果",
+    "passed": "通过 · {{time}} · 用时 {{seconds}} 秒 · 显存 {{vram}} GB",
+    "failed": "失败 · {{time}}",
+    "none": "还没试跑过。",
+    "promoteNow": "通过了，升为我的工作流"
+  },
+  "importDialog": {
+    "title": "导入工作流",
+    "lead": "导入后自动体检；用的不是 DramaStudio 节点时，平台会猜绑定，等你逐项确认。",
+    "drop": "把 ComfyUI 导出的 API 格式 JSON 拖到这里",
+    "dropHint": "在 ComfyUI 里用「导出（API）」得到这种文件",
+    "pick": "选择文件",
+    "fromComfy": "从 ComfyUI 的工作流列表里选",
+    "imported": "已导入",
+    "board": "素材板，不能登记",
+    "importThis": "导入",
+    "done": "已导入「{{name}}」：先确认绑定，再试跑",
+    "badFile": "这个文件不是 ComfyUI 的 API 格式工作流",
+    "close": "关闭",
+    "loading": "正在读 ComfyUI 的工作流列表…"
+  },
+  "empty": "这个档位还没有工作流。"
+}

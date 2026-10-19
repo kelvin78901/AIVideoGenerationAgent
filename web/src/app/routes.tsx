@@ -1,5 +1,6 @@
 import { Navigate, Route, Routes } from "react-router";
 
+import { useMachineProfile } from "@/api/hooks/setup";
 import { AppShell, type ShellStatus } from "@/app/AppShell";
 import { DEMO_EPISODE, DEMO_SERIES, paths } from "@/app/paths";
 import AssetsPage from "@/pages/Assets";
@@ -18,15 +19,28 @@ import SpecPage from "@/pages/Spec";
 import StoryboardPage from "@/pages/Storyboard";
 import SyncPage from "@/pages/Sync";
 
+/**
+ * `/` opens the first-run page until a scan has finished (SPEC 16.1), otherwise the demo episode.
+ * Deep links never jump; if the profile cannot be read, the workbench opens anyway.
+ */
+function HomeRedirect() {
+  const profile = useMachineProfile();
+  if (profile.isPending) return null;
+  const firstRun = profile.data?.scanned_at === null;
+  return (
+    <Navigate
+      to={firstRun ? paths.setup() : paths.step(DEMO_SERIES, DEMO_EPISODE, "novel")}
+      replace
+    />
+  );
+}
+
 export function AppRoutes({ status }: { status?: ShellStatus }) {
   return (
     <Routes>
       <Route path="/legacy/*" element={<LegacyPage />} />
       <Route element={<AppShell status={status} />}>
-        <Route
-          index
-          element={<Navigate to={paths.step(DEMO_SERIES, DEMO_EPISODE, "novel")} replace />}
-        />
+        <Route index element={<HomeRedirect />} />
         <Route path="setup" element={<SetupPage />} />
         <Route path="models" element={<ModelsPage />} />
         <Route path="s/:series">

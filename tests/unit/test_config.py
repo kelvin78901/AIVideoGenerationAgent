@@ -75,6 +75,7 @@ def test_config_dir_override(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) ->
         "components:\n  - {id: x, stage: s, name: {zh: 甲, en: X}, kind: llm, api: [a/b]}\n",
         encoding="utf-8",
     )
+    (tmp_path / "spec.yaml").write_text("platforms: []\n", encoding="utf-8")
     monkeypatch.setenv("DRAMA_CONFIG_DIR", str(tmp_path))
     get_config.cache_clear()
     try:

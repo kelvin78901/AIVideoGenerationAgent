@@ -12,7 +12,7 @@ from __future__ import annotations
 import copy
 import re
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -20,6 +20,7 @@ from typing import Any, Literal
 import yaml
 from pydantic import BaseModel, ConfigDict, Field
 
+from drama_series_agent.core.capabilities import Capabilities, restrict
 from drama_series_agent.core.paths import config_dir
 
 Layer = Literal["factory", "project", "component", "item"]
@@ -49,6 +50,9 @@ class LlmModel(_Loose):
     offpeak: dict[str, Any] | None = None
     json_mode: bool = False
     verify: bool = False
+    # Local models only (core/capabilities.py): setup-manifest item ids it needs, and CUDA.
+    needs: list[str] = Field(default_factory=list)
+    requires_cuda: bool = False
 
 
 class LlmProvider(_Loose):
@@ -78,7 +82,11 @@ class LocalModel(_Loose):
     display: str
     runtime: str | None = None
     workflow: str | None = None
+    caps: dict[str, Any] = Field(default_factory=dict)
     verify: bool = False
+    # What this machine must have to run it (core/capabilities.py): setup-manifest item ids.
+    needs: list[str] = Field(default_factory=list)
+    requires_cuda: bool = False
 
 
 class ProvidersConfig(_Loose):
@@ -136,10 +144,44 @@ class ComponentsConfig(_Loose):
         raise KeyError(f"unknown component: {component_id}")
 
 
+# --------------------------------------------------------------------------- spec.yaml
+
+
+class PlatformPreset(_Loose):
+    id: str
+    aspect: str | None = None
+    delivery: str | None = None
+
+
+class SafeArea(_Loose):
+    zones: list[dict[str, Any]] = Field(default_factory=list)
+    subtitle: dict[str, float] = Field(default_factory=dict)
+
+
+class CompatStage(_Loose):
+    """One row of the compatibility table (SPEC 13.3): which route model(s) make this stage."""
+
+    stage: str
+    component: str
+    pick: list[Literal["api_model", "local_model", "fallback", "alt"]]
+    tier: Literal["draft", "delivery"] = "delivery"
+    native: str = "native"  # spec:compat.how.<code> when every picked model is native
+
+
+class SpecConfig(_Loose):
+    """Output-spec presets (SPEC 13.1). Sizes are not here: only ``spec/dims.py`` computes them."""
+
+    platforms: list[PlatformPreset] = Field(default_factory=list)
+    defaults: dict[str, Any] = Field(default_factory=dict)
+    safe_areas: dict[str, SafeArea] = Field(default_factory=dict)
+    compat_stages: list[CompatStage] = Field(default_factory=list)
+
+
 @dataclass(frozen=True)
 class StudioConfig:
     providers: ProvidersConfig
     components: ComponentsConfig
+    spec: SpecConfig
 
 
 class _Yaml12BoolLoader(yaml.SafeLoader):
@@ -174,6 +216,7 @@ def load_config(directory: Path | None = None) -> StudioConfig:
     return StudioConfig(
         providers=ProvidersConfig.model_validate(_read_yaml(base / "providers.yaml")),
         components=ComponentsConfig.model_validate(_read_yaml(base / "components.yaml")),
+        spec=SpecConfig.model_validate(_read_yaml(base / "spec.yaml")),
     )
 
 
@@ -229,6 +272,9 @@ class Override:
 class Resolved:
     values: dict[str, Any]
     sources: dict[str, Layer]  # dotted field path → layer, e.g. "fallback.to" → "item"
+    # Local models taken off the route because this machine cannot run them → what each lacks
+    # ("cuda" or setup item ids). ``values`` already route around them; ``sources`` are unchanged.
+    unavailable: dict[str, list[str]] = field(default_factory=dict)
 
 
 def _flatten(data: Mapping[str, Any], prefix: str = "") -> dict[str, Any]:
@@ -260,8 +306,13 @@ def resolve(
     *,
     item: str | None = None,
     config: StudioConfig | None = None,
+    caps: Capabilities | None = None,
 ) -> Resolved:
-    """Merge factory defaults with the overrides that apply to ``component_id`` / ``item``."""
+    """Merge factory defaults with the overrides that apply to ``component_id`` / ``item``.
+
+    With ``caps`` (this machine, after a scan), local models it cannot run are routed around
+    last, so a hand-picked local model is dropped too (SPEC 7.3).
+    """
     cfg = config or get_config()
     comp = cfg.components.component(component_id)
     values = copy.deepcopy(factory_settings(comp, cfg.components.fallback_defaults))
@@ -279,4 +330,5 @@ def resolve(
         for path, value in _flatten(ov.data).items():
             _set_path(values, path, value)
             sources[path] = ov.scope
-    return Resolved(values=values, sources=sources)
+    unavailable = restrict(values, cfg.providers, caps) if caps is not None else {}
+    return Resolved(values=values, sources=sources, unavailable=unavailable)

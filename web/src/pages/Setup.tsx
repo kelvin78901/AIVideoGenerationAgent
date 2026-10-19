@@ -1,4 +1,8 @@
-/** 首次启动 · 主机检测与自动安装 (prototype Setup.dc.html; SPEC 12). */
+/**
+ * 首次启动 · 主机检测与自动安装 (prototype Setup.dc.html; SPEC 12), also the 环境与安装 page the
+ * left nav keeps open: rescan, install what is missing, approve changes to the user's ComfyUI,
+ * and roll it back to a snapshot (SPEC 6.4.1; not in the prototype).
+ */
 import { Check } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
@@ -7,11 +11,14 @@ import { toast } from "sonner";
 
 import { errorMessage } from "@/api/client";
 import { onEvent } from "@/api/events";
+import { useComfyEnv } from "@/api/hooks/comfy";
 import {
-  useDemoMachine,
+  useCancelInstall,
+  useConfirmInstall,
   useInstall,
   useMachineProfile,
   useRetrySetupItem,
+  useSampleMachine,
   useScan,
   useSkipSetupItem,
 } from "@/api/hooks/setup";
@@ -22,7 +29,6 @@ import {
   type SetupLog,
   type SetupPhase,
 } from "@/api/schemas/setup";
-import { DEMO_DATA } from "@/app/demo";
 import { DEMO_EPISODE, DEMO_SERIES, paths } from "@/app/paths";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState, Skeleton } from "@/components/QueryState";
@@ -32,16 +38,22 @@ import { Button } from "@/components/ui/button";
 import { Input, Label } from "@/components/ui/form";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { ComfyPanel } from "@/pages/setup/ComfyPanel";
+import { ConfirmInstall } from "@/pages/setup/ConfirmInstall";
 import { ItemGroups } from "@/pages/setup/ItemGroups";
 import { InstallLog } from "@/pages/setup/InstallLog";
 import {
   GROUPS,
+  estimate,
   installableIds,
+  isInside,
   overallPct,
   requiredIds,
   statusCounts,
   statusTone,
+  timeLeft,
   useItemName,
+  useUnits,
 } from "@/pages/setup/items";
 
 const MIRRORS: Mirror[] = ["auto", "official", "cn"];
@@ -90,7 +102,7 @@ export default function SetupPage() {
   const { t } = useTranslation("setup");
   const { t: tc } = useTranslation();
   const profile = useMachineProfile();
-  const demoMachine = useDemoMachine();
+  const sampleMachine = useSampleMachine();
   const p = profile.data;
 
   return (
@@ -101,14 +113,16 @@ export default function SetupPage() {
         lead={t("lead")}
         className="items-end"
         actions={
-          DEMO_DATA && p ? (
+          p?.simulated ? (
             <div className="flex flex-col gap-1.5">
               <div className="text-xs text-muted-foreground">{t("demoMachine")}</div>
               <SegmentedControl
                 label={t("demoMachine")}
                 value={p.machine.os === "macos" ? "mac" : "pc"}
                 onChange={(m) =>
-                  demoMachine.mutate(m, { onError: (err) => toast.error(errorMessage(tc, err)) })
+                  sampleMachine.mutate(m, {
+                    onError: (err) => toast.error(errorMessage(tc, err)),
+                  })
                 }
                 options={(["pc", "mac"] as const).map((m) => ({
                   value: m,
@@ -130,10 +144,15 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
   const { t } = useTranslation("setup");
   const { t: tc } = useTranslation();
   const nameOf = useItemName();
+  const units = useUnits();
   const scan = useScan();
   const install = useInstall();
+  const confirm = useConfirmInstall();
+  const cancel = useCancelInstall();
   const retry = useRetrySetupItem();
   const skip = useSkipSetupItem();
+  const comfy = useComfyEnv();
+  const comfyScan = comfy.data?.comfy ?? null;
   const [selected, setSelected] = useState<Set<string> | null>(null);
   const [mirror, setMirror] = useState<Mirror | null>(null);
   const [dir, setDir] = useState<string | null>(null);
@@ -196,12 +215,24 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
     );
 
   const queue = p.install?.items ?? [];
+  const waiting = p.phase === "installing" && !!p.install?.confirm.length;
   const queued = p.items.filter((x) => queue.includes(x.id));
   const doneN = queued.filter((x) => x.install?.state === "done").length;
   const failed = queued.filter(
     (x) => x.install?.state === "failed" || x.install?.state === "skipped",
   );
   const pct = overallPct(p);
+  const left = waiting ? null : timeLeft(p);
+  const speedNote =
+    p.download_bps !== null
+      ? t("estimate.speedNote", { speed: units.speed(p.download_bps) })
+      : undefined;
+  const planned = units.estimateText(
+    estimate(
+      p.items.filter((x) => sel.has(x.id)),
+      p.download_bps,
+    ),
+  );
 
   return (
     <>
@@ -213,6 +244,11 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
           <span className="text-[15px] font-bold" role="status">
             {t(`phase.${p.phase}`)}
           </span>
+          {left !== null ? (
+            <span className="text-[13px] text-muted-foreground" title={speedNote}>
+              {t("estimate.left", { time: units.duration(left) })}
+            </span>
+          ) : null}
           {statusCounts(p.phase, p.items).map((c) => (
             <StatusBadge key={c.status} tone={statusTone[c.status]} icon={null}>
               {t(`status.${c.status}`)} {c.n}
@@ -269,7 +305,13 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
                 onChange={(e) => setDir(e.target.value)}
                 className="font-mono text-[13px]"
               />
-              <div className="text-xs text-muted-foreground">{t("dirHint")}</div>
+              {p.app_dir && isInside(chosenDir, p.app_dir) ? (
+                <div className="text-xs leading-relaxed text-tone-warn-fg">
+                  {t("dirInApp", { app: p.app_dir })}
+                </div>
+              ) : (
+                <div className="text-xs text-muted-foreground">{t("dirHint")}</div>
+              )}
             </div>
             <div className="flex flex-[1_1_320px] flex-col gap-1.5">
               <div className="text-[13px] font-medium">{t("mirror.label")}</div>
@@ -304,6 +346,11 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
             >
               {t("selectAll")}
             </Button>
+            {sel.size ? (
+              <span className="text-[13px] text-muted-foreground" title={speedNote}>
+                {planned}
+              </span>
+            ) : null}
             <Link
               to={paths.step(DEMO_SERIES, DEMO_EPISODE, "novel")}
               className="ml-auto text-sm text-primary underline-offset-4 hover:underline"
@@ -316,6 +363,18 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
 
       {p.phase === "installing" || p.phase === "done" ? (
         <InstallLog lines={log} itemName={itemName} />
+      ) : null}
+
+      {waiting && p.install ? (
+        <ConfirmInstall
+          reasons={p.install.confirm}
+          comfyRoot={comfyScan?.root ?? null}
+          itemName={itemName}
+          pending={confirm.isPending || cancel.isPending}
+          estimate={units.estimateText(estimate(queued, p.download_bps))}
+          onConfirm={() => confirm.mutate(undefined, { onError })}
+          onCancel={() => cancel.mutate(undefined, { onError })}
+        />
       ) : null}
 
       {p.phase === "done" ? (
@@ -356,6 +415,16 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
             <span className="text-xs text-muted-foreground">{t("done.later")}</span>
           </div>
         </section>
+      ) : null}
+
+      {comfyScan && p.phase !== "scanning" ? (
+        <ComfyPanel
+          scan={comfyScan}
+          env={comfy.data?.env ?? null}
+          installing={p.phase === "installing"}
+          snapshotError={p.install?.snapshot_error ?? null}
+          itemName={itemName}
+        />
       ) : null}
     </>
   );

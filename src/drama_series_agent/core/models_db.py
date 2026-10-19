@@ -186,3 +186,122 @@ class Event(SQLModel, table=True):
     created_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+# --------------------------------------------------------------------------- M1: series, spec
+
+
+class Series(SQLModel, table=True):
+    __tablename__ = "series"
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    slug: str = Field(unique=True)
+    title: str
+    ui_lang: str = "zh-CN"
+    settings_json: dict[str, Any] = _json(dict)
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class OutputSpecRow(SQLModel, table=True):
+    """One output spec per series (SPEC 4.1, 13). Sizes are derived, never stored."""
+
+    __tablename__ = "output_spec"
+
+    series_id: str = Field(primary_key=True, foreign_key="series.id", ondelete="CASCADE")
+    platform: str  # cn / intl / wide / custom
+    aspect: str  # 9:16 / 16:9 / 3:4 / 1:1 / 21:9
+    delivery: str  # 1080p / 2k
+    fps: int  # 24 / 25 / 30
+    episode_len: str  # short / mid / long / xl
+    subtitles: str  # burn / srt / both
+    audio_json: dict[str, Any] = _json(dict)  # sample_rate, lufs, peak_dbtp
+    codec: str = "h264"
+    ai_mark: bool = True
+    derive: str | None = None  # the second aspect made at export time
+    # Set when the first keyframe is adopted; afterwards an aspect change needs an impact preview.
+    locked_at: datetime | None = _ts()
+
+
+# --------------------------------------------------------------------------- M1: setup
+
+
+class MachineProfileRow(SQLModel, table=True):
+    """The last scan of a machine and the install state (SPEC 12.2).
+
+    ``id`` is ``local`` for this computer, ``demo`` for Mock mode's sample machines (``machine``
+    then says which one), so a simulated install never leaks into the real profile.
+    """
+
+    __tablename__ = "machine_profile"
+
+    id: str = Field(primary_key=True)
+    machine: str | None = None  # demo: pc / mac
+    scanned_at: datetime | None = _ts()
+    data_json: dict[str, Any] = _json(dict)  # phase, items, install, facts, recommendation…
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class InstalledItem(SQLModel, table=True):
+    """What the installer put on this machine, for uninstall and the next scan (SPEC 12.2-3)."""
+
+    __tablename__ = "installed_item"
+
+    profile_id: str = Field(primary_key=True, foreign_key="machine_profile.id", ondelete="CASCADE")
+    item_id: str = Field(primary_key=True)
+    version: str | None = None
+    paths_json: list[str] = _json(list)
+    installed_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class ComfyEnvRow(SQLModel, table=True):
+    """One ComfyUI environment the scan saw, kept under its content hash (SPEC 6.4.1, 6.4.5).
+
+    A new row only when something changed (version, Python, PyTorch, a node pack), so a take
+    made locally can always say which ComfyUI and nodes made it.
+    """
+
+    __tablename__ = "comfy_env"
+
+    hash: str = Field(primary_key=True)
+    comfyui_version: str | None = None
+    comfyui_commit: str | None = None
+    python: str | None = None
+    torch: str | None = None
+    node_packs_json: list[dict[str, Any]] = _json(list)
+    captured_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class ComfySnapshotRow(SQLModel, table=True):
+    """A ComfyUI-Manager snapshot of the user's ComfyUI, taken before we changed it (SPEC 6.4.1).
+
+    ``profile_id`` keeps Mock's sample machines apart from this computer, as in
+    ``machine_profile``.
+    """
+
+    __tablename__ = "comfy_snapshot"
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    profile_id: str = Field(index=True)
+    manager_name: str  # the snapshot's name in ComfyUI-Manager
+    env_hash: str | None = None  # comfy_env as of the last scan
+    reason: str  # install / manual
+    changes_json: list[dict[str, Any]] = _json(list)  # the change list the user approved
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+    # A rollback to it: requested (Manager applies it when ComfyUI next starts), then checked by
+    # the first scan that finds ComfyUI changed. State: pending / done / incomplete, or
+    # unchecked for one requested before the check existed (migration 0006).
+    restore_requested_at: datetime | None = _ts()
+    restore_from_hash: str | None = None  # comfy_env when the rollback was requested
+    restore_state: str | None = None
+    restore_diff_json: list[dict[str, Any]] | None = _json()  # what still differs
+    restored_at: datetime | None = _ts()  # when a scan found ComfyUI back at this snapshot

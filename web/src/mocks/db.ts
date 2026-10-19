@@ -26,17 +26,15 @@ import { shotProducts, shots } from "@/mocks/fixtures/demo/shots";
 import { series } from "@/mocks/fixtures/demo/series";
 import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtures/demo/post";
 import { products } from "@/mocks/fixtures/demo/products";
-import { profile, type DemoMachine } from "@/mocks/fixtures/demo/setup";
-import { spec } from "@/mocks/fixtures/demo/spec";
 import { syncLog, syncRules, syncTargets } from "@/mocks/fixtures/demo/sync";
 import { generateLog, generateRules, takeProducts } from "@/mocks/fixtures/demo/takes";
+import { comfyWorkflowFiles, workflows } from "@/mocks/fixtures/demo/workflows";
 
 function createDb() {
   return structuredClone({
     series: { [series.id]: series },
     episodes,
     progress,
-    specs: { [spec.series_id]: spec },
     summary,
     /** Dashboard series (read-only in the demo). */
     metrics: {
@@ -51,9 +49,6 @@ function createDb() {
       qa: qaMetrics,
       episodes: episodeMetrics,
     },
-    profile,
-    /** Demo-only: which sample machine the setup page scans, and the running scan / install. */
-    setup: { machine: "pc" as DemoMachine, run: 0, pumping: false, installed: [] as string[] },
     products: Object.fromEntries(
       [...products, ...assetProducts, ...shotProducts, ...takeProducts, ...postProducts].map(
         (p) => [p.id, p],
@@ -93,6 +88,9 @@ function createDb() {
     },
     impacts: new Map<string, Impact>(),
     gates: [] as GateDecision[],
+    /** Workflow library (SPEC 6.4) and ComfyUI's own workflow list. */
+    workflows,
+    comfyWorkflowFiles,
   });
 }
 

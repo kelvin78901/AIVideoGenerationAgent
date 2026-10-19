@@ -5,9 +5,8 @@ import { Route, Routes } from "react-router";
 import { Toaster } from "@/components/ui/sonner";
 import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
-import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import SpecPage from "@/pages/Spec";
-import { backend } from "@/test/backend";
+import { backend, fake } from "@/test/backend";
 import { renderAt } from "@/test/render";
 
 function renderSpec() {
@@ -27,7 +26,7 @@ function renderSpec() {
   );
 }
 
-const spec = () => getDb().specs[DEMO_SERIES_ID];
+const spec = () => fake.spec;
 const group = (name: string) => screen.getByRole("group", { name });
 const aspect = (name: RegExp) => within(group("画幅")).getByRole("button", { name });
 const ready = () => screen.findByRole("button", { name: /国内短剧平台/ });
@@ -72,7 +71,7 @@ describe("SpecPage", () => {
     expect(screen.getByTestId("zone-controlsWide")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "保存规格" }));
     expect(await screen.findByText("先在上面的提示里选怎么处理已生成的内容。")).toBeInTheDocument();
-    expect(spec()?.aspect).toBe("9:16");
+    expect(spec().aspect).toBe("9:16");
   });
 
   it("撤销 keeps 9:16", async () => {
@@ -87,7 +86,7 @@ describe("SpecPage", () => {
       "aria-pressed",
       "true",
     );
-    expect(spec()?.aspect).toBe("9:16");
+    expect(spec().aspect).toBe("9:16");
   });
 
   it("「改，并标记待更新」 writes the aspect and marks downstream work", async () => {
@@ -96,9 +95,9 @@ describe("SpecPage", () => {
     await ready();
     await user.click(screen.getByRole("button", { name: /横屏平台/ }));
     await user.click(await screen.findByRole("button", { name: "改，并标记待更新" }));
-    await waitFor(() => expect(spec()?.aspect).toBe("16:9"));
-    expect(spec()?.platform).toBe("wide");
-    expect(spec()?.dims.delivery).toEqual({ w: 1920, h: 1080 });
+    await waitFor(() => expect(spec().aspect).toBe("16:9"));
+    expect(spec().platform).toBe("wide");
+    expect(spec().dims.delivery).toEqual({ w: 1920, h: 1080 });
     expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(9);
     await waitFor(() => expect(screen.queryByText(/会影响已经做好的部分/)).toBeNull());
   });
@@ -139,15 +138,14 @@ describe("SpecPage", () => {
   });
 
   it("an unlocked spec changes aspect directly on save", async () => {
-    const s = spec();
-    if (s) s.locked_at = null;
+    spec().locked_at = null;
     const user = userEvent.setup();
     renderSpec();
     await ready();
     await user.click(aspect(/^3:4 竖版/));
     expect(screen.queryByText(/会影响已经做好的部分/)).toBeNull();
     await user.click(screen.getByRole("button", { name: "保存规格" }));
-    await waitFor(() => expect(spec()?.aspect).toBe("3:4"));
-    expect(spec()?.dims.delivery).toEqual({ w: 1080, h: 1440 });
+    await waitFor(() => expect(spec().aspect).toBe("3:4"));
+    expect(spec().dims.delivery).toEqual({ w: 1080, h: 1440 });
   });
 });

@@ -2,6 +2,312 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-19 · M1 第 8c 步（4/4 后半）：回滚后核对
+
+- **回滚只是排上**：ComfyUI-Manager 下次启动 ComfyUI 时才执行，而且会半途失败（2026-10-18 第一次就是）。所以「回滚」按钮不再马上记 `restored_at`，而是记请求时间和当时的环境哈希，状态 `pending`。
+- **下一次扫描核对**（识别完 ComfyUI 之后），按顺序判断：
+  1. 现在的 ComfyUI 和快照时的一致 → `done`，记 `restored_at`。快照后什么都没改过时，回滚本来就是空操作，也算这一种；示例机器的环境不会变，所以示例里重新检测就会显示「已回滚」。
+  2. 和请求时的环境哈希相同 → 还没重启 ComfyUI，继续 `pending`。
+  3. 都不是 → `incomplete`，列出差异：ComfyUI 的 commit（没有就比版本），多出的、少了的、版本不同的节点包。
+- **只比 Manager 会恢复的东西**：ComfyUI 和节点包。不比 Python、PyTorch，因为 Manager 不降级 pip 包，比了会永远「没完成」。节点包按名字比 commit（没有就比版本），不比加载出的节点类：ComfyUI 没在跑时读不到节点类。
+- **迁移 `0006`**：`comfy_snapshot` 加 `restore_requested_at`、`restore_from_hash`、`restore_state`、`restore_diff_json`。之前的回滚记录标成 `unchecked`（界面写「回滚过（当时没有核对）」），`restored_at` 清空。
+  - 原因：Kelvin 回滚之后又装回了 VHS、FlashVSR，现在的环境和快照本来就不一样，拿来比会误报「没完成」。
+- **接口**：`ComfySnapshot` 加 `restore: {state, requested_at, diff}`；`restored_at` 的意思改成「核对通过的时间」。核对结果写日志 `restore_done` / `restore_incomplete`。
+
+## 2026-10-19 · M1 第 8c 步（4/4 前半）：安装位置在程序目录里时提示
+
+- 档案加 `app_dir`（程序所在的文件夹：真实机器是仓库根目录 `REPO_ROOT`，示例机器读夹具），扫描时和 `default_dir` 一起写。
+- 「安装位置」等于它或在它下面时，输入框下面的说明换成黄色警告，提示会让程序文件夹变大、更新或重装时可能被一起删掉。比较时统一斜杠，Windows 盘符路径不分大小写（和 `pathutil.norm` 一致）。
+- 只提示，不拦：确实想放那里也能装。开始安装时日志多一行 `dir_in_app` 警告。
+- 原因：2026-10-18 真装时安装位置填成了仓库目录，IndexTTS 下进了仓库。
+
+## 2026-10-19 · M1 第 8c 步（3/4）：安装页显示进度和预计用时
+
+- **放在哪**（原型里没有，截图见 `reports/ui/setup-installing.light.jpg`、`setup-confirm.light.jpg`）：
+  - 安装按钮那一排写「约 N GB，预计 M 分钟」，跟着勾选实时变；鼠标悬停显示「按这台机器测到的下载速度 X MB/s 估算」。
+  - 确认弹窗底部写这次安装的合计。
+  - 下载中的项：进度条下面两行小字，「已下 / 总大小」和「速度 · 剩 M 分钟」；算 sha256 时第二行换成「校验中…」。行内百分比取整（后端给一位小数）。
+  - 汇总条在「正在安装…」后面写「剩余约 M 分钟」。
+- **没测过速度**：只写体积，加一句「还没测过下载速度，算不出用时」；安装中算不出剩余时间就不显示。
+- **整体进度按用时加权**：每项的权重 = 下载量 ÷ 测到的速度 + `work_s`（从没测过就按 20 MB/s 算权重）。剩余时间：正在下的项用它自己的 `eta_s`，排队的下载项按正在下的那项的实时速度，没有就按 `download_bps`。
+- **大小用十进制 GB / MB**（`useUnits`）：和清单的 `size_gb`、Hugging Face 页面、改动清单里的「约 49.3 GB」一致。`lib/format.ts:formatBytes` 是二进制单位，素材页继续用它。
+
+## 2026-10-19 · M1 第 8c 步（2/4）：预估用的数
+
+- **档案存 `download_bps`**（这台机器的下载速度，字节/秒），`GET /setup/profile` 返回。
+  - 装完一项、而且它有下载时，记这一项的平均速度：只算收数据的时间，不算校验。
+  - 还没有时，扫描最后测一小段：清单里第一个权重文件的前 16 MB，从「自动」镜像会选的站点下，只放在内存里，所以扫描仍然只读。
+  - 测不到就留空，前端只写体积。已经有了就不再测，重新扫描也不测。
+- **每项给两个数**：`size_bytes`（清单的 `size_gb`）和 `work_s`。`work_s` 是下载以外步骤的经验用时（`installer.STEP_SECONDS`）：clone 20 s、pip 60 s、包管理器 60 s、建 venv 10 s、脚本 30 s、复制 5 s。
+- **整体进度、剩余时间和开始前的预估都由前端算**，后端只给上面这些数和每项的实时字节。
+  - 原因：勾选哪些项是在页面上改的，预估得跟着勾选实时变；整体进度条本来就在前端算（`overallPct`）。放在一处，两边不会算得不一样。
+- **示例机器**：扫描测速读夹具（PC 22 MB/s、Mac 12 MB/s）；示例安装的权重项按 25 MB/s 报字节，最后报一下「校验中」。
+
+## 2026-10-19 · M1 第 8c 步（1/4）：下载按字节报进度、分块多连接
+
+- **新模块 `setup/download.py`**，`steps.py` 的下载改用它。
+- **分块**：文件按 64 MB 分块写进 `.part`。每个连接从一个空闲块开头一直流到文件尾，到下一块时认领，下一块已被别的连接占了就停。新连接从最长的空闲段开始；这段前面紧挨着一个正在下的块时，从段的中间开始（IDM 式动态分段）。
+  - 原因：每块单独请求，49 GB 要多出约 770 次 Hugging Face 跳转；单连接时也没必要断开重连。
+- **续传**：`<name>.part.json` 记下完成的块，续传和单块重试都靠它；记录里的大小或块大小对不上就从头下。老的单连接 `.part`（没有记录）开头的整块算下完。
+- **不支持 Range**：探测请求 `Range: bytes=0-0` 回 200，就单连接从头下。
+- **重试**：一个块连续失败 3 次（之间等 1 s、2 s）整项失败；完成的块留着，重试从断点接着下。
+- **连接数自适应（`Tuner`）**：从 1 个开始，每 5 秒看一次总速度；比之前最好的快 10 % 以上就再加一个（最多 8 个），否则退回一个并固定。一次安装里共用，后面的文件直接用找到的连接数。
+- **Windows 上 `.part` 设成稀疏文件**（`FSCTL_SET_SPARSE`）：不然在文件中间写，NTFS 会先把前面全部补零。设置失败不影响下载。
+- **按字节计量（`Meter`）**：一项所有文件合计的已下载 / 总大小；速度取最近 5 秒；每秒最多报一次；算 sha256 时报「校验中」。
+  - 第一步开始前先探测这一项所有文件的大小，总数从一开始就准。
+  - `ItemInstall` 加 `bytes_done`、`bytes_total`、`speed`（字节/秒）、`eta_s`、`verifying`。
+  - `pct` 保留一位小数；有下载的项按字节算，封顶 99，装完才是 100。
+- **真实网络手动核对**（Hugging Face，Xet 存储的跳转）：探测拿到了大小和 Range 支持；用 4 个连接下 gpt2 的 `tokenizer.json`，sha256 一致；H3 音频 VAE 的前 16 MB 测出 41 MB/s。
+
+## 2026-10-18 · M1 第 8b 步：Kelvin 5090 上真装的结果和修复
+
+- **装了什么**（`DRAMA_SETUP=real`，ComfyUI Desktop 0.41.2 开着）：
+  - VHS、FlashVSR：在锁定的 commit 上（`4d907be`、`8877fdd`）。
+  - 四项权重：H3 49.3 GB、Qwen3-VL-32B 文本编码器 15.7 GB、SeedVR2 7B 8.8 GB、IndexTTS-2.5 5.5 GB，全部下完、sha256 都对。
+  - 装前自动存了快照，改动清单 6 项。下载单连接实测 18–30 MB/s，共约 79 GB，一小时左右。
+  - 重新检测：通过 21、可选 6、缺少 3（DramaStudio 节点包没发布；Qwen-Image-Edit 这次不装；SageAttention 见下）。
+- **SageAttention 报「完成」却检测不到**：PyPI 的 `sageattention` 1.0.6 装上了，但它要 `triton`，Windows 上没有，一导入就报错；安装器只看 `uv pip` 的返回码。
+  - 改 1：装完再问一次检测器，只对 `py_import`、`file`、`downloads` 三类（装完马上就能看到）；还检测不到就报 `not_detected`。ComfyUI 在跑时看到的节点和版本要重启后才变；包管理器改的 PATH 只对新进程生效，所以这两类不复检。
+  - 改 2：Windows 上改装 woct0rdho 的预编译包 `sageattention 2.2.0+cu130torch2.10.0andhigher.post6`（abi3，Python ≥ 3.10），加上 `triton-windows`。
+    - triton-windows 的版本要和 PyTorch 自己锁的 triton 一致（`pytorch/.ci/docker/triton_version.txt`：2.12、2.13 → 3.7.1，2.14 → 3.8.0）。
+    - 清单新字段 `by_torch`：键是 `<major.minor>+<cuda>`，装的时候问 ComfyUI 的 Python 现在是哪个 PyTorch（同一次安装里可能刚升级过），表里没有就报 `torch_unsupported`。
+  - 新装法在 Kelvin 机器上装好：torch 2.12.1+cu130、triton-windows 3.7.1、sageattention 2.2.0；装完复检通过。
+    在 5090（sm_120）上跑了一次 1×8×1024×64 的注意力，和 PyTorch SDPA 的余弦相似度 0.99927（量化注意力，正常）。
+    FlashVSR 启动时认到了它。ComfyUI 自己的模型要用它，得加启动参数 `--use-sage-attention`：Kelvin 同意开，改在 Desktop 的 `installations.json`（`launchArgs`），Desktop 完全退出后再改，不然会被它写回。2026-10-19 已开：argv 带上了参数，日志「Using sage attention」。
+- **安装位置填成了仓库目录**（`C:\dev\drama-studio`，页面默认是 `C:\Users\kelvin\DramaStudio`），IndexTTS 下进了仓库。
+  - 已挪到默认位置；用默认位置重新装时，安装器检测到文件已在，记成「已经装好了」，没有重下。
+  - 安装位置在程序目录里时要提示，加进第 8c 步。
+- **回滚：ComfyUI-Manager 4.2.2 在 Windows 上会半途失败**。
+  - 原因：Manager 回滚时用 `shutil.move` 把快照里没有的节点包挪进 `custom_nodes\.disabled`。这个文件夹不存在时改名失败，Python 改成先复制再删除；git 的 pack 文件是只读的，删除报「拒绝访问」，回滚中止，留下一份复制品，其余节点包都没处理。
+  - 修复：触发回滚前先建好 `.disabled`（`snapshots.prepare_restore`），这样就是同盘改名。
+  - 第二次回滚成功：VHS、FlashVSR 停用，节点不再加载。删掉了第一次留下的复制品；之后用安装器装回去了（全新 clone，装前又存了快照）。
+  - 已知限制：
+    - 回滚不卸载快照之后多出来的 pip 包（Manager 只补齐快照里有的）。
+    - 停用的节点包留在 `.disabled` 里。
+    - 平台在「排上回滚」时就记 `restored_at`，没核对是否真的生效（第一次失败了也显示「已安排回滚」）。ComfyUI 重启后要核对环境和快照是否一致，加进第 8c 步。
+- **git checkout 加 `-c advice.detachedHead=false`**：锁定 commit 就是 detached HEAD，git 那十几行提示只会占满安装日志。
+
+## 2026-10-18 · M1 第 8b 步：权重版本、SeedVR2 改用 ComfyUI 自带节点、权重放哪
+
+- **Kelvin 选定的版本**（候选、大小、来源在 8b 列给他挑）：
+  - 图像编辑：Qwen-Image-Edit-2511 int8_convrot（Comfy-Org 重打包），按官方模板 `image_qwen_image_edit_2511_int8` 配齐：Qwen2.5-VL-7B fp8 文本编码器、VAE、Lightning 4 步 LoRA，共 31.0 GB。
+    - 没选 2026-10-13 新出的 Qwen-Image 2.1（7B，生成和编辑一体，最多 10 张参考图）：太新，P0 时可以再比。
+  - SeedVR2：用 ComfyUI 自带节点（`comfy_extras/nodes_seedvr.py`，v0.28.0 起，在各 tag 源码上二分查的），权重用 Comfy-Org/SeedVR2 的 7B int8_convrot 和 VAE，共 8.8 GB。
+    - 改了第 8 步：不再装社区节点包 numz。`node_seedvr2` 和 H3 一样算「ComfyUI 自带」，不再是安装项。
+  - 配音：IndexTTS-2.5（IndexTeam 2026-08 发布，比 2 快，多了语速控制），5.5 GB。
+    - 运行环境等配音那个里程碑再装：index-tts 源码、Python 3.10–3.11 的 uv 环境、运行时自动下载的辅助模型。
+- **这次真装不装 Qwen-Image-Edit**（Kelvin 2026-10-18：不是必要的，用到再装）。清单里保留这一项和锁定的版本，以后在「环境与安装」勾上就能装；没装时关键帧按能力过滤走 API。
+- **H3 全套按官方模板补了两个加速 LoRA**：`video_minimax_h3_i2v` / `r2v` 默认引用，各 1.96 GB；Comfy-Org 仓库里的和 lightx2v 原仓库的 sha256 一致。
+  - H3 合计 49.3 GB，文本编码器 15.7 GB，五项权重共约 110 GB。
+- **权重锁 revision**：每个 Hugging Face 仓库锁 commit，改动清单显示前 7 位。
+  - 文件大小和 sha256 取自 HF 接口 `/api/models/<repo>/tree/<rev>`。
+  - 不走 LFS 的小文件（IndexTTS 的配置、分词表）HF 不给 sha256，靠锁定的 revision。
+- **ComfyUI 用的权重放哪**：照 ComfyUI 自己的规则。
+  - `extra_model_paths` 里写了 `is_default: true` 的那组目录排在最前，新文件放那里。ComfyUI Desktop 给每个安装写的 `instance-model-paths/<id>.yaml` 就是这样指向共享目录 `ComfyUI-Shared\models` 的；没有这样的目录就放 `{comfy}/models/<类别>`。
+  - 清单里 download 的文件写 `folder:`（diffusion_models、vae、loras、text_encoders），表示放进 ComfyUI 的这一类目录；`ModelDir` 加 `default`；安装时用扫描时存下的模型目录。
+  - 不写死 Desktop 的路径：用户自己配了别的默认目录也一样对。本机只读扫描核对过：13 个文件都落在 `C:\Users\kelvin\AppData\Local\Comfy-Desktop\ComfyUI-Shared\models\<类别>`（`scripts/setup_scan_real.py` 新加了「weights would go to」一段）。
+- **新检测类型 `downloads`**：这一项下载步骤里的文件都在才算装好，和安装用同一份文件清单。
+  - ComfyUI 的文件在它任一模型目录里（含 extra_model_paths）都算。
+  - 原来的 `file` 只看一个文件、只看 `{comfy}/models`，认不出 Desktop 共享目录里的。
+- **往 ComfyUI 模型目录放文件算改动 ComfyUI**（SPEC 12.2-6）：这类权重进改动清单、默认不勾、动手前先存快照。
+  - Manager 的快照不含模型文件，回滚也不会删已下载的权重；为了规则统一，照样先存。
+  - IndexTTS 不进 ComfyUI，默认勾上。
+- **不走 ComfyUI 的权重放「安装位置」**（Setup 页的 `dir`，即 `{models}`）：IndexTTS 在 `{models}/IndexTTS-2.5`。
+- **DramaStudio 节点包** `installable: false`，提示「还没发布：随 ComfyUI 对接一起提供」（源码 M5 才有）。
+- **下载日志**每个文件多一行 `download`（文件 → 目标路径），真装时能看到每个文件落在哪。
+- **影响（Mock 的示例 PC）**：能装的变成 11 项，默认勾 FFmpeg 和 IndexTTS-2.5；全部装完后导航徽标是「缺 3 项」（H3、SeedVR2 节点要新版 ComfyUI，我们自己的节点包还没发布）。
+
+## 2026-10-18 · 现在就在 5090 上真装节点包和权重（Kelvin 定）
+
+- 用来测安装功能，计划加第 8b 步。改了 2026-10-15「模型权重只检测，等 P0 实测」的决定：
+  - H3 全套和 Qwen3-VL-32B NVFP4 文本编码器现在就装，用官方文件；
+  - Qwen-Image-Edit、SeedVR2 权重、IndexTTS2 先列出官方和社区版本让 Kelvin 挑；
+  - 本地 LLM 不装。
+- 权重放 ComfyUI Desktop 的共享模型目录（`ComfyUI-Shared\models`），Desktop 升级或重装都不丢。
+
+## 2026-10-18 · M1 清单补齐（第 8 步）
+
+逐条按官方仓库 / 文档核对（commit 用 `git ls-remote` 取，版本按各 tag 的源码核对）：
+
+- **ComfyUI**：锁 v0.42.1（`63be2f9`），最低版本 `>=0.35.0`。
+  - H3 原生节点（`MiniMaxH3ImageToVideo`、`MiniMaxH3ReferenceToVideo`，`comfy_extras/nodes_minimax_h3.py`）从 v0.30.0 开始有。
+  - H3 的 Fun ControlNet（`MiniMaxH3FunControlNetApply`）从 v0.35.0 开始有。这两个起始版本是在各 tag 的源码上二分查出来的；后者和 docs.comfy.org 的教程「requires ComfyUI 0.35.0 or later」一致。
+- **H3 节点、Fun ControlNet**：都是 ComfyUI 自带的，没有单独的节点包，所以不再算安装项（`install: []`，提示「ComfyUI 自带：更新到 x 或更新」）。
+  - 检测：ComfyUI 在跑时按 `/object_info` 里的节点类；没在跑时按 ComfyUI 版本（`detect.native_since`，新字段）。
+- **ComfyUI-Manager**：ComfyUI 0.4x 的官方装法是 `pip install -r manager_requirements.txt`（锁 `comfyui_manager==4.2.2`），启动时加 `--enable-manager`。不再 git clone 到 custom_nodes。第 5c 步核对快照接口用的正好是 4.2.2。上游已有 4.3 tag，但 ComfyUI 还没跟进，先不升。`snapshot_no_manager` 的文案改成提示 `--enable-manager`。
+- **节点包**：
+  - VideoHelperSuite 没有发布 tag，锁 2026-10-18 的 main `4d907be`。
+  - SeedVR2 锁 v2.5.23（`5a4bf42`）。
+  - FlashVSR 没有官方节点包，选 1038lab/ComfyUI-FlashVSR（`8877fdd`）：清单原来的 docs 链接指的就是它，作者在 Hugging Face 上的 1038lab/FlashVSR 模型也按它说明。
+- **PyTorch**：源 `https://download.pytorch.org/whl/cu130`。2026-10-18 最新 2.14.1+cu130，有 Python 3.12 的 Windows 包。不锁版本号，和 ComfyUI 自己的 requirements.txt 一样。
+- **uv**：winget `astral-sh.uv` / brew `uv`；官方安装脚本只写在注释里（没有包管理器时手动用）。
+- **国内镜像的 GitHub**：用 `https://gh-proxy.com/https://github.com` 代理前缀（本机测 348 ms，返回的 commit 和官方一致）。kkgithub 连不上，ghfast 能用但慢。它是第三方服务，不能用时选「官方源」。
+- **模型权重**：全部 `installable: false`，提示「等 P0 实测确定版本后再装」。
+  - H3 和它的文本编码器按官方教程写了文件名（Hugging Face 的 Comfy-Org/MiniMax-H3），扫描能认出来。
+  - 其他权重的文件名等 P0。
+  - 影响：Mock 下 PC 示例能装的从 16 项变成 8 项，默认只勾 FFmpeg；导航徽标在全部装完后仍是「缺 6 项」（H3 节点要新版 ComfyUI，权重等 P0）。
+- **`verify: true` 的核对**：在 Kelvin 的 5090 上跑 `scripts/setup_scan_real.py`（只读）：
+  - PyTorch 2.12.1+cu130 判通过；
+  - ComfyUI Desktop 0.41.2（没在跑）的位置、版本、commit、Python 3.13、Manager 4.2.2（pip，已启用）都认对了；
+  - H3 节点和 Fun ControlNet 按版本判已有；
+  - 网络测速通过。
+
+  这三项（PyTorch、ComfyUI、网络）去掉 `verify`；Eagle、Resolve 本机没装，留着等装了的机器实测。
+- **改动清单显示可读的版本**：安装步骤里写了 `version`（tag）就用它；没有就用 commit 的前 7 位。
+- **测试绝不触网**：`tests/unit/test_steps.py` 的 `_install` 默认用离线 transport，碰网络就报错；遍历清单的测试只跑 `can_install` 的项。
+
+  原因：权重有了真实地址后，那条测试真的开始下 H3 权重。本次开发中跑了 4 次，在 pytest 临时目录留下约 30 GB 的 `.part` 文件，已经删掉。
+
+## 2026-10-18 · 按镜头选工作流；拼节点做 beta（Kelvin 定）
+
+- **自动选工作流只用成熟的**：官方（平台推荐档）或用户导入、确认绑定、试跑通过的（「我的工作流」）。未验证的不参与自动选择。
+- **拼节点做成 beta 功能**：从成熟工作流里取片段拼成新图，**拼完不跑**，只给用户参考；用户要用就按普通导入走（未验证 → 确认绑定 → 体检 → 试跑）。
+- 写进 SPEC 6.4.8，ROADMAP 的 M5 加三项。原因：拼出来的图质量不可预知、没测过，不能进自动路由；但作为参考能省用户自己搭的时间。
+
+## 2026-10-18 · M1 工作流库界面，示例数据（第 7b 步）
+
+- **设计稿 Kelvin 审过**（审阅图 `reports/ui/workflows/`）：放「模型与兜底」页最下面，和组件表一样点一行在下面展开；展开后三个标签「绑定 / 体检 / 试跑」，默认打开最该处理的那个（有猜的绑定 → 绑定；缺依赖 → 体检；否则试跑）。
+- **改档规则**（SPEC 6.4.4）：平台推荐的不能改档；升为「我的工作流」要绑定全部确认、试跑通过、文件没变过；「我的工作流」随时能降为未验证；改了绑定的「我的工作流」自动降为未验证（试跑结果不再算数）。
+- **SPEC 9.1 没写、这次补的接口**（M5 接后端时再定）：`GET /comfy/workflows`（读 ComfyUI 自己的工作流列表，供导入；工作台的素材板列出但不能登记）、`POST /workflows/{id}/deps`（缺的节点包和模型的改动清单，`comfy_change` 同第 7 步）、`POST /workflows/{id}/deps/install`（确认后：先存快照再装）。装依赖复用第 7 步的确认弹窗，回滚提示指向「环境与安装」（`ConfirmInstall` 加 `snapshotNote`）。
+- **试跑进度先轮询**：列表里有试跑中的工作流时每秒刷新一次；M5 有真任务后改成 `job.updated` 事件。
+- **绑定的槽位**：照 SPEC 6.4.3 的输入输出，另加 `video_in`（超分、口型这类以视频为输入的工作流要用）。SPEC 收尾时补上。
+
+## 2026-10-18 · M1 首次启动页接真实接口（第 7 步）
+
+- **前端测试的假后端用真实后端导出的数据**：`tests/api/test_web_fixtures.py` 在 Mock 下扫描 PC / Mac 示例，把 profile（扫描前、扫描后）、全选安装时的顺序和 `install.confirm`、`/comfy/env` 写进 `web/src/test/data/setup.json`；`web/src/test/setupBackend.ts` 读它，按真实后端的节奏（202 后在下一个任务里推 `setup.progress` / `setup.log`，经测试的 `FakeEventSource` 走 SSE 那条路）模拟扫描、确认、快照、安装、重试、跳过、回滚。后端回答一变，这个 pytest 就失败，`DRAMA_UPDATE_FIXTURES=1` 重新生成。原因：MSW 示例和后端的数字已经分叉（MSW 25 项，后端 30 项），手抄一份迟早再分叉。文件由脚本生成，prettier 忽略它。
+- **MSW 的 setup handler、示例数据和 `demoTiming.setup*` 删掉**：首次启动页只走真实后端（Mock 下后端自己有示例机器）。顶栏和「模型与兜底」页读 GPU 名也改走后端。
+- **「只选必需的」和默认勾选一样，不含会改用户 ComfyUI 的项**；「全选」才包括它们。原因：SPEC 6.4.1 要求这些项不随必需项自动勾上，「只选必需的」就是回到默认。
+- **确认弹窗关掉等于取消**（Esc、右上角都算）：取消什么都不装，回到检测结果，勾选保留。
+- **「你的 ComfyUI」区域**：计划只写了快照列表和回滚；顺带把第 4c 步识别出的位置、地址、版本、Manager、节点包和模型文件（可展开）显示出来，方便核对验收第 6 条。放在页面最下面，扫描找到 ComfyUI 后才显示。
+- **前一步的 bug**：没找到 ComfyUI 时（Mac 示例），勾了 Manager 也被排到最前面，排在要装的 ComfyUI 前面；改成只有装进用户自己的 ComfyUI 时才排第一。
+- **导航徽标「缺 N 项」**：必需项里检测结果是「缺少」或「需更新」、而且还没装好的（PC 示例 11、Mac 4）。扫描前、扫描中、全部就绪时都不显示。会改用户 ComfyUI 的必需项也算（缺就是缺，只是不自动勾）。
+- **`/` 的跳转**：profile 的 `scanned_at` 为空（从没扫描完过）才跳 `/setup`；profile 还没读到时先不渲染，读失败就照常进工作台，不把人卡在首次启动页。
+- **切换示例机器也清掉示例档案的快照**：和清掉已装记录一样，「重新开始」要干净；只影响 Mock 的示例档案。
+- **Playwright 和 `start.ps1` 起后端改用 `uv run python -m drama_series_agent.studio_cli dev`**：Kelvin 本机的应用控制策略拦 `.venv/Scripts/drama-studio.exe`（os error 4551），用模块方式效果一样，CI 也能跑。`start.sh`（Mac / Linux）不受影响，没改。
+
+## 2026-10-18 · M1 改已装 ComfyUI 前先确认，快照和回滚（第 5c 步）
+
+- **Manager 的接口按本机装的 comfyui_manager 4.2.2 源码核对**（`glob/manager_server.py`；官方文档只讲界面和 cm-cli，没写 HTTP 接口）：`GET /v2/snapshot/getlist` → `{"items": [...]}`；`POST /v2/snapshot/save` 不带请求体（表单类 Content-Type 会被拒，防 CSRF），返回 200 但不给名字，所以名字取存之前和之后 `getlist` 多出来的那个；`POST /v2/snapshot/restore?target=<名字>` 只是安排好，下次 ComfyUI 启动时才恢复；恢复要 Manager 的安全级别是 normal 或更低（本机监听时，默认 normal 可以），否则 403。Manager 4 以前的版本（custom node，`/snapshot/*`）不支持，报 `snapshot_no_manager`。
+- **用 Manager 的快照，不用 Desktop 自己的**：SPEC 定的是 Manager；它对便携版、git 版、Desktop 都一样能用；Desktop 2 的快照（`.launcher/snapshots`）只有 Desktop 自己的界面能用，没有给我们调的接口。
+- **哪些项算改用户的 ComfyUI**（`Item.touches_comfy`）：comfy 组里有安装步骤的项，或者安装步骤写进 `{comfy}`、`env: comfy` 的项（PyTorch 装进它的 Python、权重放进它的模型目录）。只有扫描找到的 ComfyUI 不是我们装的那份（`~/.drama-studio/ComfyUI`）时才算。每一项的 `touches_comfy` 随档案返回，第 7 步前端用它把这些项默认不勾。
+- **改动清单**：`install.confirm` 里先列 `comfy_change`（item、`action` 为 install 或 update、`from`、`to`、`source`、`gb`），后面才是提权和大下载。不知道的字段直接不写，因为前端的 Message 参数不能为 null。清单另存一份在 `install.changes`，存快照时记进 `comfy_snapshot`。
+- **快照什么时候存**：在第一个会改 ComfyUI 的项开始执行之前（它的 `start` 日志之后、第一步之前），不是整次安装开始前，所以排在前面、不碰 ComfyUI 的项照常先装。一次安装只存一份，重启续跑时沿用这一份。存不成时，会改 ComfyUI 的项都失败（`snapshot_not_running` / `no_manager` / `forbidden` / `restart` / `failed`），其他项照常装；失败原因在这次安装里沿用，重试时清掉再存一次。存快照要 ComfyUI 开着（Manager 的接口在 ComfyUI 里面）。
+- **没装 Manager 时**：清单加了一项 `comfy_manager`（检测 pip 包或 custom node；安装从官方仓库 git clone，ref 第 8 步锁定）。勾了会改 ComfyUI 的项时自动带上它并排在最前面；它自己不用先存快照（`snapshot_first: false`）。刚装好的 Manager 要等 ComfyUI 重启后才加载，所以这一次后面的项都报 `snapshot_restart`，重启 ComfyUI 后重试就行。PC 示例机器补了 Manager 4（pip 包），这样 Mock 下能走完整个流程。清单行数变成 PC 30 行（通过 10），Mac 29 行（可选 8）。
+- **`comfy_snapshot`**（迁移 `0005`）比 SPEC 多一列 `profile_id`，把示例机器和本机分开；`reason` 是 install 或 manual。
+- **接口**：`GET /comfy/snapshots`；`POST /comfy/snapshots`（手动存一份，201）；`POST /comfy/snapshots/{id}/restore` → `{snapshot, restart_required: true}`。出错时：404 `comfy_snapshot_not_found`；409 `comfy_not_found`、`comfy_snapshot_failed {reason}`；安装进行中不能回滚，409 `setup_busy`。平台不替用户重启他的 ComfyUI，只提示。
+
+## 2026-10-18 · M1 识别已装的 ComfyUI（第 4c 步）
+
+- **Comfy Desktop 2**（Kelvin 本机，只读看过目录和日志）：安装记录在 `%APPDATA%\Comfy Desktop\installations.json`（每项有 `installPath`、ComfyUI 版本和 commit、Python、PyTorch、`launchArgs`）。程序、`.venv`、`custom_nodes` 都在 `<installPath>\ComfyUI` 里，模型放在共享目录，由 Desktop 生成的 `instance-model-paths\<id>.yaml` 指过去。它启动 ComfyUI 时 `main.py` 是相对路径，所以运行中的实例靠 argv 里的 `--extra-model-paths-config` 对上是哪一份安装。定位顺序：运行中的实例 → Desktop 的安装记录 → 常见目录 → 设置里的路径。macOS / Linux 上 Desktop 设置目录的位置是按 Electron 惯例推的，没核对。第一代 Desktop（程序和数据分两个目录、默认端口 8000）没有专门处理，只靠常见目录找。
+- **端口**：先试清单里的地址（8188），再试 8000。只有 `/system_stats` 返回了 ComfyUI 的 `system`（含版本或 argv）才算找到，所以本机 8000 上的后端不会被误认成 ComfyUI。Kelvin 的 ComfyUI 在 8188，不冲突；真冲突时用 `start.ps1 -Port` 换后端端口，默认值不改。端口取 argv 的 `--port`，没有就取应答的那个地址。
+- **节点包来源**：有 `.git` 是 git（HEAD、loose ref、`packed-refs`、`gitdir:` 指针都直接读文件；远端地址去掉用户名和令牌）；有 ComfyUI-Manager 留下的 `.tracking` 文件是 Registry（这一点没核对 Manager 文档）；都没有是手动放进来的，单个 `.py` 也算；只在 `/object_info` 里出现、目录里没有的记为 unknown。跳过 `.disabled` 目录和 `*.disabled`。版本取 `pyproject.toml` 的 `project.version`。
+- **Python / PyTorch 版本不靠运行解释器**：在跑时取 `/system_stats`；没在跑时读 `pyvenv.cfg` 和 site-packages 里 `*.dist-info` 的目录名；最后才用 Desktop 安装记录里的值。（扫描里的 PyTorch 检测项本来就会单独跑一次 import。）
+- **ComfyUI-Manager**：新版是 pip 包 `comfyui_manager`，`--enable-manager` 启用，Desktop 2 用的就是这种（本机 4.2.2）；旧版是 `custom_nodes/ComfyUI-Manager`。两种都认。**这影响第 5c 步**：Desktop 2 自己会存快照（`<installPath>\.launcher\snapshots\*.json`，开机和更新后各存一份），Manager 4 的快照接口要按官方文档重新核对。
+- **模型文件**：目录是 `models/` 下的各子目录，加上每个用到的 `extra_model_paths.yaml`（argv 指定的、ComfyUI 根目录下的、Desktop 生成的）。在磁盘上最多往下走 4 层、最多记 5000 个文件，只认模型扩展名，超出的标 `models_truncated`。在跑时以 `/models/{folder}` 的清单为准，再到磁盘上对出路径和大小，对不上的路径和大小留空。
+- **`comfy_env`**：哈希只覆盖 ComfyUI 版本、commit、Python、PyTorch 和节点包（含节点类），不含模型文件和路径；同样的环境不重复存。比 SPEC 多一列 `comfyui_commit`。模型清单和位置存在 `machine_profile`（`data_json.comfy`），重新扫描期间保留上一次的结果。
+- **迁移**：`0004` 只建 `comfy_env`，`comfy_snapshot` 放到第 5c 步的 `0005`（计划写的是两张表都在 `0004`）。原因：Kelvin 在两步之间重启 `start.ps1` 时本机库会升到 `0004`，再回头改已经执行过的迁移，他的库里就会少这张表。
+- 路径小工具（`join`、`dirname` 等）挪到 `setup/pathutil.py`，`comfy.py` 和 `detectors.py` 共用，避免循环导入。
+
+## 2026-10-18 · M1 能力过滤（第 6 步）
+
+- **本地模型写明自己要什么**：`providers.yaml` 的本地模型（含本地 LLM 服务的两个）加 `needs`（清单项 id）和 `requires_cuda`。H3 要 ComfyUI + H3 节点 + 两份权重 + CUDA，ControlNet 再加 Fun ControlNet 节点；SeedVR2 / FlashVSR 要各自的节点（SeedVR2 还要权重）+ CUDA；Qwen-Image-Edit 要 ComfyUI + 权重，不要求 CUDA（Mac 上 ComfyUI 能出图，只是慢）；本地 LLM 和 Qwen3-VL 要本地 LLM 服务（Qwen3.6-27B 还要 `w_llm`）。清单里还没有对应项的（CosyVoice、Whisper 等）不写 `needs`，视为能跑，跑时失败照常兜底；LatentSync、InfiniteTalk 只标 CUDA。测试检查每个 `needs` 都是清单里的 id。
+- **「有」怎么算**：最近一次扫描里状态为通过、需更新、注意的项，加上之后装好的项（和安装器判断依赖的规则一致：ComfyUI 版本旧也算有，H3 节点有单独的检测项）。存在档案的 `found` 里：扫描结束时写，每装好一项追加一项，重新扫描期间沿用上一次的结果，切换示例机器时清空。**从没扫描过时不过滤**：不知道机器情况，就按配置走。
+- **怎么绕开**（`core/capabilities.py:restrict`，在 `resolve()` 合并完各层覆盖之后做，所以用户手选的本地模型也会被绕开）：`local_model` 置空；`local` / `hybrid` 改成 `api`，没有 API 模型的（结构控制）改成 `off`；`fallback.to` 是跑不了的本地模型时置空（路由器接着按 `alt_order` 找）；`alt_order` 里也去掉。不自动换另一个本地模型顶上，免得悄悄换了模型。
+- **来源不变**：`sources` 仍标原来那一级；另给 `Resolved.unavailable`（模型 → 缺什么：`cuda` 或清单项 id），M2 的「模型与兜底」页用它说明「本机跑不了」（前端契约里已有 `ComponentDef.unavailable`）。
+- **用在哪**：`router.settings()`（每次模型调用）和兼容表（`/series/{id}/spec/compat` 按这台机器实际会走的路由判断）。Mock 模式下扫描示例机器同样生效：扫描 PC 示例后、装好之前，视频、关键帧、超分都走 API。
+- **原因**：SPEC 7.3、12.2-1「跑不了的本地选项隐藏」。验收第 3 条（Mac 上视频、关键帧、超分走 API）由能力过滤直接得出，推荐预设里不用另写规则。
+
+## 2026-10-18 · ComfyUI 与工作流库（Kelvin 定）
+
+- **背景**：Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作流。设计写进 SPEC 6.4（原「ComfyUI」扩成「ComfyUI 与工作流库」），ROADMAP 的 M1、M5 加了对应条目。
+- **默认用已装的 ComfyUI**：M1 只读识别路径、端口、版本、节点包（git commit 或 Registry 版本）、模型文件。任何安装或升级都先列清单问，动手前用 ComfyUI-Manager 存快照，可一键回滚。平台自管的另一份 ComfyUI（`extra_model_paths.yaml` 共享模型）以后再说。
+- **工作流库（M5）**：每个工作流登记为一个本地模型：API 格式文件、绑定（语义槽位 → 节点标题和字段）、依赖（节点包和版本、模型文件）、能力（组件、画幅、时长、参考图数、显存）。登记后进对应组件的 ModelPicker，路由、兜底、记账、质检规则不变。
+- **对接**：首选 DramaStudio 节点包的输入 / 输出节点，平台只认这些；普通工作流导入时自动猜绑定，在绑定页确认。
+- **导入体检和分档**：`/object_info` 查缺节点和模型 → 问了再按版本装 → 示例输入试跑。平台推荐 / 我的工作流 / 未验证，未验证的只能手动选，不进自动路由。
+- **可复现**：version 和 `model_call` 记工作流文件哈希和节点包版本；工作流文件变了要重新试跑；每次装节点后自动体检全部已登记的工作流，坏了提示回滚。
+- **界面**：「模型与兜底」页加「工作流库」区域（导入、绑定、体检、试跑、分档），先用示例数据做，M5 接后端。
+- **随之改的旧写法和补的默认值**（Kelvin 可改）：
+  - 绑定按节点标题（`_meta.title`），不再按节点编号（原 6.4 的 `{node: "12", field: "text"}`）；工作流文件从 `workflows/<name>.json` + `<name>.bindings.yaml` 改成 `workflows/<slug>/workflow.api.json` + `workflow.yaml`。
+  - 「工作流库」示例数据界面放在 M1（Kelvin 说先用示例数据做、M5 再接后端；M0.5 已经结束，M1 是现在的里程碑）。
+  - 机器上一份 ComfyUI 都没有时，仍按 2026-10-15 的决定装到 `~/.drama-studio/ComfyUI`；「另起一份平台自管的」理解为已经有一份时再并行装一份，这个以后做。
+  - 改已装的 ComfyUI 的项（升级它、装节点、往它的 Python 装包、往它的模型目录放文件）不随「必需项默认勾上」，单独列清单确认。第 5 步的安装器要补这一层：现在只对提权和大下载确认，也还没有快照。
+  - 装节点后的自动体检：所有工作流做静态检查；用到变动节点包的推荐档和「我的」档再排一次低优先级试跑（全部都试跑太占 GPU）。
+  - DramaStudio 节点包分两批：输入 / 输出节点在 M5，镜头、素材、存回节点仍在 M9。
+  - `providers.yaml` 里的 `comfy/*` 本地模型以后由工作流库提供，有推荐档工作流才算可用。
+- **M1 计划追加**（Kelvin 2026-10-18 批准）：4c 只读识别已装的 ComfyUI、5c 改动清单确认 + 快照回滚、7b 工作流库示例数据界面；第 7、8 步跟着补；剩下的顺序 6 → 4c → 5c → 7 → 7b → 8 → 9。上面按理解补的几处，Kelvin 批准时没有提出修改，照此执行。
+- **原因**：那份 ComfyUI 是 Kelvin 自己的工作环境，平台不能悄悄改坏它；社区工作流和节点更新很快，只有按节点标题绑定、记下文件哈希和节点版本、分档管理，才能放心地把它们当模型用，出了问题查得到、回得去。
+
+## 2026-10-18 · M1 真实安装步骤（第 5b 步）
+
+- **每一步都幂等，装之前先再检测一次**：`RealRunner` 先重跑这一项的检测器，已经「通过」就直接算装好（日志 `already`，比如扫描后用户自己装了）；各步骤再各自跳过已经做完的部分，所以重试和重启续跑只补缺的。
+- **Python 包只进两个地方**：`~/.drama-studio/envs/<name>`，或者找到的 ComfyUI 自己的解释器（`env: comfy` 时优先用它，Kelvin 2026-10-15 定）。没有 venv 先 `uv venv --python 3.12`。测试把清单里三个平台的每一项都跑一遍（命令只记录不执行），断言 uv 命令全都指向 `envs`，也没有直接调 `pip` / `python`。
+- **git_clone**：`--filter=blob:none` 克隆后 checkout 锁定的 ref；已经在这个 ref 就跳过，不在就 `fetch --depth 1` + checkout；目标文件夹已有别的文件、又不是仓库时报 `dest_not_empty`，不覆盖用户的东西。后面步骤的 `{dest}` 指上一步克隆 / 下载 / 复制的位置。
+- **download**：写到 `.part`，再次下载用 `Range` 接着下，服务器不支持就从头下；sha256 不对就删掉 `.part` 报 `sha256_mismatch`；`hf_repo` + `files` 拼成 `<hf>/<repo>/resolve/<revision>/<file>`。
+- **镜像**：「自动」按扫描时测的各站点延迟，每个站点单独判，超过 1500 ms 或不通就用国内；国内 PyPI 用清华源；步骤自带 `index_url`（PyTorch 的 CUDA 源）时不改；清单里国内 GitHub 镜像还是 TODO，暂时一律走官方。
+- **pkg**：winget `--exact --silent --accept-*`，「已经装了」的退出码算成功；brew 直接装；apt 用 `sudo -n`（不弹密码，提权已在安装前确认过；Linux 上要先在终端 `sudo -v`，Linux 不是主力平台，先这样）。`script` 不经 shell，按空格拆开，命令必须在 PATH 里。
+- **清单里还是 TODO 的值**让这一项以 `manifest_todo` 失败（第 8 步补齐之前，PyTorch、ComfyUI、各节点和权重都会停在这里）；子进程输出逐行发 `setup.log`（`output`，单行截到 500 字）。
+- **CI 两个修复**：Linux 的 mypy 不认识 `subprocess.CREATE_NO_WINDOW`（只在 Windows 存在；第 4a 步起 CI 一直卡在 mypy，后面的 pytest 没跑），本地改动 `setup/` 后加跑 `mypy --platform linux`；runner 上 corepack 默认的 pnpm 升到 12.14.0，在仓库根目录调 `pnpm -C web` 时和 `web/package.json` 锁的 12.11.2 不符，CI 先 `corepack install -g` 锁定的版本。
+
+## 2026-10-18 · M1 安装流程（第 5a 步）
+
+- **一次安装 = 一个 `setup.install` 任务**（cpu 队列）：按依赖拓扑排好的顺序（存进 `install.items`）一项一项装，装好写 `installed_item`。重试时如果任务还在跑，只把这一项排回队列，由它接着装；任务已经结束就新开一个。重试不再问一遍确认。
+- **依赖怎么算满足**：扫描时就在的（包括「需更新」「注意」）算满足，所以 ComfyUI 更新失败不挡 H3 节点；依赖这次装失败或被跳过 → 跳过，原因 `dependency_failed`；没勾选、机器上也没有 → 跳过，原因 `dependency_missing`。日志 `skip_dep`。
+- **安装前确认**（SPEC 12.2-5）：任务队列只能在入队时进 `waiting_confirm`，所以是整次安装等确认；`install.confirm` 列出原因（`setup:confirmReason.admin` / `large_download`）。新增 `POST /setup/install/confirm` 和 `POST /setup/install/cancel`（SPEC 9.1 没有）：不直接让前端调 `/jobs/{id}/confirm|cancel`，因为档案要跟着改、要发事件。取消 = 回到检测结果，什么都没装。
+- **哪些要管理员权限**：清单 `pkg` 步骤的 `admin: [winget, apt]` 写哪些包管理器装它要提权，默认只有 apt（走 sudo）；Git for Windows 装到 Program Files，标了 winget。单项 `size_gb` 超过 10 GB 的下载也要确认（权重的体积等 P0 实测后填）。
+- **重启续跑**：进程被杀后任务照常恢复，正在装的那一项从 0 重来，已经装好的不重装（`tests/e2e/test_setup_resume.py` 用 `installed_at` 验证）。任务彻底失败时，排队中和正在装的项标「失败 · 安装中断了」（`interrupted`），可以重试。
+- **示例机器的节奏**：每步 120 ms（`DRAMA_SETUP_FAKE_TICK_MS`，测试设 0），下载类每步 +10 %、其他 +34 %，SageAttention 到 60 % 报 `no_wheel`，和 MSW 版一致。PC 上全选是 16 项（原型 15 项，多了 DramaStudio 节点包）：15 项成功、1 项失败。
+- **e2e 的 `Backend` 挪进 `tests/e2e/conftest.py`**，`start()` 可以带额外环境变量；两个 e2e 测试共用。
+- 真实机器的安装步骤在第 5b 步接上；在那之前 `local` 档案的安装项都会以 `internal` 失败。
+
+## 2026-10-18 · M1 机器档案和检测任务（第 4b 步）
+
+- **一台机器一行 `machine_profile`**：`local` 是这台电脑（`RealProbe`），`demo` 是 Mock 的示例机器（`FakeProbe`，`machine` 列记 PC / Mac）。`installed_item` 的主键是 (profile_id, item_id)，所以 Mock 下模拟装过的东西不会混进真实档案。`DRAMA_SETUP=real|fake` 显式指定；不设时 Mock 模式就是 fake。`data_json` 存阶段、各项结果、安装请求、推荐，以及检测器看到的细节（`facts`：路径、版本、延迟），细节不经接口返回，留给安装器和能力过滤用。
+- **扫描是 cpu 队列上的 `setup.scan` 任务**：`POST /setup/scan` 先把所有项设成「检测中」并返回 202，任务逐项写库、每项发一条 `setup.progress`（开始和结束各一条 `item: null`）。重新检测会取消正在跑的那次；每次扫描或重置换一个 `run` 令牌，令牌过期的任务不再写库，所以两次扫描不会混在一起。进程重启后任务照常续跑（同一个令牌，从头再扫一遍）。任务彻底失败、档案停在「检测中」时，下次读档案改回「还没检测」或「检测完成」（没出结果的项标「检测出错」）。
+- **示例机器上以 `installed_item` 为准**：示例机器的探针结果是固定的，装过的项重新检测时直接算「已安装」；真实机器以检测结果为准。
+- **示例机器每项间隔 110 ms**（和原型演示一致，`DRAMA_SETUP_FAKE_DELAY_MS` 可改，测试设 0）；真实扫描不加延迟。示例机器的 `envs` 在它自己的主目录下（`C:/Users/kelvin/.drama-studio/envs`、`/Users/demo/.drama-studio/envs`）。
+- **推荐规则放在清单的 `recommend:` 里**（硬规则 7：默认路由不写死在代码里），按顺序取第一条满足的：有 CUDA → 均衡 / `local_video`，否则 → 均衡 / `no_cuda`。
+- **扫描前的档案**：第一次读档案时做一次快速的只读硬件读取（系统、显卡、默认目录）存起来，顶栏和「会检测这些」用它。显卡名去掉 `NVIDIA ` / `GeForce ` 前缀（`RTX 5090`），显存取整。
+- **切换示例机器**（`POST /dev/setup/machine`，只在 fake 模式，否则 403 `setup_not_simulated`）：取消正在跑的扫描、清空示例机器的 `installed_item`、回到「还没检测」，和 MSW 版一致。
+
+## 2026-10-18 · M1 清单和检测器（第 4a 步）
+
+- **扫描按清单全列**（Kelvin 2026-10-15 选定）：每台机器显示清单里这个平台的全部项，PC 29 行（通过 9 / 缺少 9 / 需更新 2 / 可选 8 / 注意 1），Mac 28 行（没有驱动；通过 6 / 注意 3 / 缺少 4 / 可选 7 / 跳过 8）。原型的 PC 25 行、Mac 17 行少了 uv、DramaStudio 节点包、Eagle、达芬奇，Mac 上把 SeedVR2 / FlashVSR 并成一行、不列需要 CUDA 的权重；两边共有的项 status 和 found / fix code 一致。需要 CUDA 的项在没有 CUDA 的机器上显示「跳过」，不隐藏。
+- **清单加三个字段**（SPEC 12.1 没有）：`fix`（状态 → 建议 code，可带 params；不写时按类型给默认：节点「安装节点」、权重「下载」、其他「安装 X」、旧版「更新到最新版」）；`if_missing`（没找到时的状态，默认必需 → 缺少、否则可选）；平台覆盖 `macos:` / `windows:` / `linux:`（覆盖 required、name、variant、fix、if_missing、installable，`optional` 是 `{required: false}` 的简写）。依赖的项在这个平台不是必需的，依赖它的项也不是必需的（Mac 上 ComfyUI 可选，节点也跟着可选）。依赖成环、id 重复、依赖不存在都在加载时报错。
+- **新检测类型 `comfy`**：先问正在运行的 `127.0.0.1:8188/system_stats`（argv 里有 `main.py` 的绝对路径就用它；ComfyUI 自己也是这样报的，相对路径就继续往下找），再找常见目录（主目录、文档、各盘根目录和便携版目录、`~/.drama-studio/ComfyUI`），最后用设置里的路径。用它自己的 Python（便携版 `python_embeded`、`venv`、`.venv`），都没有才用我们的 `envs/comfy`；PyTorch 检测用同一个解释器。还没找到 ComfyUI 时，PyTorch 检测我们自己的 `envs/comfy`（PyTorch 比 ComfyUI 先装）。
+- **扫描不算 sha256**：`file` 检测只看文件在不在。几十 GB 的权重算一遍哈希要好几分钟，违背「大约 10 秒」；sha256 在安装器下载完时校验（第 5 步）。
+- **检测器出错不阻塞**：单个检测器抛异常时这一项显示「注意 · 检测出错」，其他项照常检测。API 密钥只数 `providers.yaml` 里 LLM 供应商的 `key_name`（媒体模型和它们共用账号）。网络测速把官方的 HF / PyPI / GitHub 各访问一次，超过 `max_latency_ms` 或不通算慢；HF 慢用原来的「直连 Hugging Face 较慢」，其他站点用新的 `site_slow`。
+- **探针分 `RealProbe` / `FakeProbe`**：检测器只通过 `Probe` 访问机器（跑命令、HTTP、文件、NVML、导入模块、钥匙串、达芬奇版本），`RealProbe` 只读；`FakeProbe` 读 `tests/fixtures/setup/{pc,mac}.yaml`（原型的两台示例机器），Mock 模式和测试都用它。显卡先用 NVML（`nvidia-ml-py`），没有再用 `nvidia-smi`；访问本机服务时不走系统代理。
+
+## 2026-10-15 · M1 成片规格页接真实接口（第 3 步）
+
+- **MSW 的 `/impact/apply` 用普通 `put()` 写规格，不用 `bypass()`**：`PUT /series/{id}/spec` 的 handler 已经删了，请求在浏览器里自然落到真实后端；测试里则落到 `test/backend.ts` 的假后端。`bypass()` 会连测试的假后端一起跳过，单测里就没法走。后端返回的错误原样转成 demo 错误。
+- **同步页「镜头」节点的尺寸读真实规格**：`/sync/board` 的 demo handler 先 `GET /series/demo/spec`，后端不通时用示例数据。MSW 的内存库不再存规格（删了 `specs`）。
+- **`test/backend.ts` 加剧集和规格的假后端**：`fake.series` / `fake.spec` 每次 `backend()` 重置，测试直接读写；尺寸和兼容表是 `spec/dims.py`、`spec/compat.py` 的测试副本。AppShell 测试也挂上 `backend()`（顶栏读剧集和规格）。
+- **冒烟加一条**：真实浏览器里锁定规格改 16:9 →「改，并标记待更新」→ 刷新后顶栏仍是 16:9，再改回 9:16。
+
+## 2026-10-15 · M1 兼容表（第 2 步）
+
+- **兼容表的行由 `config/spec.yaml` 的 `compat_stages` 定**：每行 = 一个组件的某个角色（`api_model` / `local_model` / `fallback` / `alt` = 备选里第一个不是主用的），按解析后的路由取模型，所以 Inspector 改了模型表格跟着变；组件 `mode: off` 或角色为空就不出这一行。原型的 7 行照这个规则得出，5 种画幅下和 MSW 版逐行一致。
+- **判定只看画幅和短边**：`caps.aspects` 不含 → 不支持，处理方式 `outpaint_from_<最接近的画幅>`；`caps.max_short_edge` 小于该行的档（草稿行用 768p，其他用交付档）→ 需要转换，`upscale_from_<1k / 720p>`；否则原生，说明用该行的 `native` code。帧率不判（SPEC 13.2 在后期转换）。没有 `caps` 的模型当原生。多个模型一行时取最差的。
+- **caps 补充**：`openai/gpt-image-2` 加 `max_short_edge: 1024`、`volc/seedance-2.5` 加 `720`（都按 note 里「部分渠道」的下限，带 `verify: true`）；本地模型可以写 `caps`，`comfy/h3` 照 H3 API 填了画幅、24 fps、5–15 秒、短边 1440。新增通用文案 `spec:compat.how.native`。
+
+## 2026-10-15 · M1 剧集和成片规格（第 1 步）
+
+- **`config/spec.yaml` 进 `StudioConfig.spec`**：平台预设、新剧集默认规格、平台遮挡区比例都在这里；尺寸不进配置，只由 `spec/dims.py` 算（短边 1080 / 1440 / 768，21:9 2K 封顶 2976×1248）。取偶数用「四舍五入」而不是 Python 的银行家舍入，和前端 `Math.round` 一致（9:16 草稿 768×1366）。
+- **`GET /spec/presets` 多返回 `safe_areas`**：前端 schema 不认识的字段会被 zod 去掉，现在不影响页面；成片规格页的预览仍用前端那份同样的数字，分镜 / 关键帧叠参考线时改读接口。
+- **表名 `output_spec`，模型类叫 `OutputSpecRow`**：和 API 形状 `spec/schema.py:OutputSpec`（带 `audio`、`dims`）区分。`series_id` 外键到 `series`，级联删除。
+- **示例剧集只在 Mock 下、库里一个剧集都没有时建**（`StudioState.start()` 调 `seed_demo()`），所以测试里每个 `TestClient` 都有 `demo`。时间存 UTC，接口返回 `…Z`。
+
+## 2026-10-15 · M1 计划（Kelvin 已定）
+
+- **ComfyUI 先用已有的**：扫描时先找正在运行的 127.0.0.1:8188 和常见目录，找到就用它（节点、权重装进它里面，用它自己的 Python）；找不到才装到 `~/.drama-studio/ComfyUI`。安装设置里能手动改路径。
+- **清单只补运行环境和节点**：Python、uv、PyTorch、FFmpeg、Git、ComfyUI 和各节点在 M1 补齐真实地址、锁定版本；模型权重只检测，安装显示「等 P0 实测确定版本」，到对应里程碑再补。
+- **导航加「环境与安装 / Environment」**：放工具区第一个（「成片规格」上面），徽标显示「缺 N 项」，就绪时不显示。原型里没有这个入口。
+- **Mock 下检测和安装都是模拟的**：`DRAMA_MOCK=1` 时用原型里的示例机器（PC / Mac 可切），什么都不装；`DRAMA_SETUP=real`（或 `DRAMA_MOCK=0`）才真实扫描、真实安装。
+- **示例剧集进真实数据库**：Mock 启动时库里没有剧集就建 `demo`（《雨停之前》，规格已锁定），这样删掉 `/series`、`/spec` 的 MSW handler 后其他页面照常能用；M2 的 `drama-studio demo` 在它上面扩展。
+- **锁定后改画幅**：后端 `PUT /series/{id}/spec` 遇到已锁定又改画幅返回 409 `spec_locked`；影响范围在 M4 之前仍由 MSW 给，MSW 的 `/impact/apply` 收到 `spec_aspect` 时调真实的 `PUT …/spec?confirmed_impact=<id>` 写入（M1 只检查不为空，M2 有真的影响范围后校验 id）。
+- **首次启动跳转**：只有打开 `/` 而且从没扫描过时跳到 `/setup`，直接打开的页面不跳。
+
 ## 2026-10-15 · M0.5 收尾
 
 - **依赖的数据没加载到时不再永远转圈**：很多查询的 key 要用上游结果（例如分集 id 来自 `/series`），上游失败时它们一直是 disabled，`QueryState` 原来会一直显示骨架。现在「没有请求在跑、而且有查询失败」时，disabled 的查询显示中性提示「没有可显示的内容：它依赖的数据没加载到」，「重试」重跑所有失败的查询（`components/QueryState.tsx:useUpstreamFailed`）。正常加载时没有失败的查询，所以不会闪一下。

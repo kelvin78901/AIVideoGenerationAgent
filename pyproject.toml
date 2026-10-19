@@ -23,6 +23,7 @@ dependencies = [
   "pyyaml>=6.0.3",
   "keyring>=25.7.0",
   "greenlet>=3.5.6",
+  "nvidia-ml-py>=13.615.71",
 ]
 
 [project.optional-dependencies]
@@ -112,7 +113,7 @@ follow_imports = "skip"
 ignore_errors = true
 
 [[tool.mypy.overrides]]
-module = ["imageio_ffmpeg", "keyring", "keyring.*"]
+module = ["imageio_ffmpeg", "keyring", "keyring.*", "pynvml"]
 ignore_missing_imports = true
 
 [tool.pytest.ini_options]

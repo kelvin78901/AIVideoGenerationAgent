@@ -5,6 +5,8 @@
 import { http } from "msw";
 import { z } from "zod";
 
+import { api } from "@/api/client";
+import { OutputSpecSchema } from "@/api/schemas/spec";
 import {
   SyncSettingsPatchSchema,
   type SyncRun,
@@ -15,6 +17,7 @@ import { getDb, type DemoDb } from "@/mocks/db";
 import { demoTiming, emitDemoEvent, repeatDemo } from "@/mocks/events";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
+import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
 import { SIZE_ROW, SYNC_ROOT, SYNC_RUN, syncBoard } from "@/mocks/fixtures/demo/sync";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
@@ -111,13 +114,16 @@ export const syncHandlers = [
   http.get(v1("/sync/log"), () => demoJson(getDb().sync.log)),
 
   // ?episode=<id>
-  http.get(v1("/sync/board"), ({ request }) => {
+  http.get(v1("/sync/board"), async ({ request }) => {
     const episode = new URL(request.url).searchParams.get("episode");
     if (episode !== EP1) return demoError(404, "episode_not_found", { id: episode ?? "" });
     const board = structuredClone(syncBoard);
-    const spec = getDb().specs[DEMO_SERIES_ID];
+    // The 镜头 node's size follows the real spec (M1); the fixture if the backend is down.
+    const spec = await api(`/series/${DEMO_SERIES_ID}/spec`, OutputSpecSchema).catch(
+      () => demoSpec,
+    );
     const row = board.nodes.find((n) => n.id === SIZE_ROW.node)?.rows[SIZE_ROW.row];
-    if (row && spec) row.label = `${spec.dims.delivery.w}×${spec.dims.delivery.h} · ${spec.fps}fps`;
+    if (row) row.label = `${spec.dims.delivery.w}×${spec.dims.delivery.h} · ${spec.fps}fps`;
     return demoJson(board);
   }),
 ];

@@ -2,18 +2,16 @@
 import { injectEvent, type EventType } from "@/api/events";
 
 /**
- * Simulated durations. Tests set the step timings (`setup*Ms`, `syncTickMs`) to 0: every step then
- * runs in one task and the page renders the end state once (see `repeatDemo`).
+ * Simulated durations. Tests set the step timings (`syncTickMs`) to 0: every step then runs in one
+ * task and the page renders the end state once (see `repeatDemo`).
  */
 export const demoTiming = {
   /** `POST /products/{id}/run` appends the new version after this long (prototype: 1.4 s). */
   runMs: 1400,
   /** 「重写这一段」 (prototype: 1.1 s). */
   rewriteMs: 1100,
-  /** First-run scan: one item per tick (prototype: 110 ms). */
-  setupScanMs: 110,
-  /** Install: one progress step per tick (prototype: 120 ms; +10 % for downloads, +34 % otherwise). */
-  setupTickMs: 120,
+  /** Workflow library: a trial run on the sample inputs, and installing missing node packs. */
+  workflowTrialMs: 2500,
   /** 「立即同步」: one file per tick (prototype: 90 ms, 24 files). */
   syncTickMs: 90,
 };
