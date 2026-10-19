@@ -67,6 +67,5 @@
 
 ## 等 Kelvin 的事
 
-- **重启 `start.ps1`**：本机 8000 的后端是旧代码（没开 `--reload`），重启后自动迁移到 `0005`。之后打开 `/` 会先到「环境与安装」：扫描 PC 示例 → 全选 → 弹改动清单 → 确认 → 「你的 ComfyUI」里出现快照 → 回滚。
-- **看第 7 步的新界面**（原型里没有）：`reports/ui/setup-confirm.light.jpg`（改动清单弹窗）、`reports/ui/setup-done.light.jpg`（装完后的整页，最下面是「你的 ComfyUI」）。不满意的地方告诉我。
+- （2026-10-18 已办：`start.ps1` 改 `python -m` 后本机能起；第 7 步的两张新界面截图 Kelvin 审核通过。）
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。
