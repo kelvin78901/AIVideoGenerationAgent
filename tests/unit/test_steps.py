@@ -487,10 +487,11 @@ async def test_download_into_comfyui_model_folders(tmp_path: Path) -> None:
     _, log = await _install(item, env, transport=httpx.MockTransport(server))
     assert (shared / "vae" / "v.safetensors").read_bytes() == BLOB
     assert (tmp_path / "ComfyUI" / "models" / "loras" / "l.safetensors").read_bytes() == BLOB
-    assert list(dict.fromkeys(str(r.url) for r in server.requests)) == [
+    # The sizes are probed concurrently, so the requests come in either order.
+    assert {str(r.url) for r in server.requests} == {
         f"https://huggingface.co/o/r/resolve/{'a' * 40}/split_files/vae/v.safetensors",
         f"https://huggingface.co/o/r/resolve/{'a' * 40}/loras/l.safetensors",
-    ]
+    }
     # Both sizes were asked for first: the total covers both files from the start.
     assert log.transfers[0] == Transfer(done=0, total=2 * len(BLOB), speed=None)
     assert (
