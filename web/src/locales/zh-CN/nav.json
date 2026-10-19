@@ -8,6 +8,7 @@
     "generate": "生成",
     "post": "后期"
   },
+  "setup": "环境与安装",
   "spec": "成片规格",
   "models": "模型与兜底",
   "sync": "素材整理与同步",
@@ -33,7 +34,8 @@
     "confirmed": "已确认",
     "inProgress": "进行中",
     "notStarted": "未开始",
-    "stale": "待更新 {{count}}"
+    "stale": "待更新 {{count}}",
+    "missing": "缺 {{count}} 项"
   },
   "devComponents": "开发 · 组件"
 }

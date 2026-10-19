@@ -23,17 +23,16 @@
 | 6 | `core/capabilities.py`（`Capabilities`、`restrict`）；`providers.yaml` 本地模型加 `needs` / `requires_cuda`；`resolve(caps=)` + `Resolved.unavailable`；档案存 `found`（扫描结束写、装好追加），`SetupService.capabilities()` 接进 `Router` 和兼容表；勾验收第 3 条；DECISIONS 记第 6 步 | c13867e | pytest 273（capabilities 单元 9、接口 3）；ruff、mypy（含 `--platform linux`）通过 |
 | 4c | `setup/comfy.py`（Desktop 2 安装记录、argv 对安装、节点包 git / Registry / 手动、Python / PyTorch / Manager 版本、模型目录和文件、`identify()`）；`setup/pathutil.py`；探针加只读 `list_dir`，Fake 加 `sizes`；试端口 8188、8000；表 `comfy_env` + 迁移 `0004`；档案存 `comfy`；`GET /comfy/env`；PC 夹具补两个节点包、`extra_model_paths.yaml`、模型文件；勾 ROADMAP 一项；DECISIONS 记 4c | 37170f7 | pytest 285（comfy 单元 9、接口 3；RealProbe 在临时目录按 Desktop 2 布局读，前后文件快照一致）；ruff、mypy（含 `--platform linux`）通过；本机只读试跑结果和手查一致 |
 | 5c | `setup/snapshots.py`（Manager 4 的 `/v2/snapshot/*`，按本机 4.2.2 源码核对；Fake）；`Item.touches_comfy` / `snapshot_first`，清单加 `comfy_manager`（检测 + 安装，缺 Manager 时自动排第一）；`install.confirm` 先列 `comfy_change` 改动清单；第一个改 ComfyUI 的项开始前存快照，存不成这些项就不装；表 `comfy_snapshot` + 迁移 `0005`；`GET/POST /comfy/snapshots`、`POST /comfy/snapshots/{id}/restore`；新文案 error 5 个、log 2 个、confirmReason 1 个；PC 示例补 Manager 4；DECISIONS 记 5c | bbf65ce | pytest 293（snapshots 单元 3、接口 5；续跑 e2e 加「快照只存一次」）；ruff、mypy（含 `--platform linux`）、web i18n、prettier 通过 |
-| 7（1/3） | 后端：没找到 ComfyUI 时 Manager 不再排第一（排在要装的 ComfyUI 后面，修 5c 的 bug）；`tests/api/test_web_fixtures.py` 把 Mock 后端在 PC / Mac 示例上的回答导出成 `web/src/test/data/setup.json`（前端测试的假后端用它；`DRAMA_UPDATE_FIXTURES=1` 重新生成；prettier 忽略） | a5a5ea6 | pytest 295；ruff、mypy（含 linux）通过 |
-| 7（2/3） | zod：`touches_comfy`、`install.confirm|changes|snapshot|snapshot_error`、`simulated`、`schemas/comfy.ts`；hooks `comfy.ts`、确认 / 取消、`useSampleMachine`（`/dev/setup/machine`）；`test/setupBackend.ts`；Setup 页：确认弹窗（`setup/ConfirmInstall.tsx`，改动清单表）、「你的 ComfyUI」（`setup/ComfyPanel.tsx`：识别结果、节点包和模型、快照、回滚确认）、改 ComfyUI 的项标出且默认不勾；删 MSW setup handler / 示例数据 / `demoTiming.setup*`；`formatDateTime`、`formatBytes`；新文案；DECISIONS 记第 7 步 | 本提交 | web test 178（Setup 13）、lint、typecheck、format 通过 |
+| 7（1/3） | 后端：没找到 ComfyUI 时 Manager 排在要装的 ComfyUI 后面（修 5c）；`tests/api/test_web_fixtures.py` 导出 Mock 后端回答到 `web/src/test/data/setup.json`（`DRAMA_UPDATE_FIXTURES=1` 重新生成） | a5a5ea6 | pytest 295 |
+| 7（2/3） | zod 补字段、`schemas/comfy.ts`、hooks；`test/setupBackend.ts`（假后端，读上面的 JSON）；Setup 页：确认弹窗 `setup/ConfirmInstall.tsx`、「你的 ComfyUI」`setup/ComfyPanel.tsx`（识别结果、快照、回滚）、改 ComfyUI 的项默认不勾；删 MSW setup handler；DECISIONS 记第 7 步 | cdce398 | web test 178 |
+| 7（3/3） | 导航「环境与安装」+「缺 N 项」；`/` 没扫描过跳 `/setup`；弹窗 / 导航不换行；切示例机器清快照（后端）；Playwright 后端改 `python -m`；e2e 加完整流程和导航；全部页面重截（侧栏变了）+ `setup-confirm`、`setup-done` 两张；勾计划第 7 步、ROADMAP 4 项 | 本提交 | pytest 295；web test 183、lint、typecheck、format；e2e 16；ruff、mypy（含 linux） |
 
 ## 下一步
 
-- **第 7 步（3/3）**：导航「环境与安装 / Environment」放工具区第一个（`app/AppShell.tsx` 的 SideNav），徽标「缺 N 项」= 必需项里 status 为 missing / old 且没装好的（PC 11、Mac 4），扫描前和就绪时不显示；`app/routes.tsx` 的 index：profile 的 `scanned_at` 为空跳 `/setup`，否则去小说页（加载中不跳，出错去小说页）；`done.later` 文案改成指向「环境与安装」；AppShell 测试（重定向、入口、徽标）；e2e 冒烟加导航入口和「扫描 → 全选 → 弹窗 → 确认 → 快照 → 回滚」，最后切回 PC 复位；重截 setup 两张图，另用临时 spec 在真浏览器里截弹窗和「你的 ComfyUI」给 Kelvin 看；勾计划第 7 步和 ROADMAP 对应项。
-  - ROADMAP「改已装的 ComfyUI 前列改动清单确认……可一键回滚」在 3/3 做完浏览器核对后再勾。
-  - Mock 下扫描 PC 示例后，装任何会改 D:\ComfyUI 的项都会先弹确认（PC 示例的 ComfyUI 算用户自己的）；Playwright 冒烟要按这个走。
-  - 收尾时 SPEC 要补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm`、`GET /comfy/env` 的返回结构；第 4 节 `comfy_env` 多的 `comfyui_commit` 列。
+- **第 7b 步 「工作流库」区域，示例数据（前端）**：按计划 7b 做。原型里没有这一块，**先出设计截图给 Kelvin 看，同意后再做完**（M0.5 风格；放「模型与兜底」页，`web/src/pages/Models.tsx`、`pages/models/`）。zod 按 SPEC 9.1 的 `/workflows/*`（SPEC 6.4.2–6.4.6 定字段：档位、体检、绑定、试跑、文件哈希）；MSW handler + 示例：H3 推荐档、一个绑定待确认的社区工作流、一个缺节点的未验证工作流；安装缺的节点包走第 7 步的确认弹窗样式。
+  - 收尾（第 9 步）SPEC 要补：9.1 的 `POST /dev/setup/machine`、`/setup/install/confirm|cancel`、profile 的 `simulated`、`install.confirm|changes|snapshot|snapshot_error`、`GET /comfy/env`、`/comfy/snapshots*` 的返回结构；第 4 节 `comfy_env` 的 `comfyui_commit` 列；16.1 的 `/` 跳转规则和导航「环境与安装」。
 
-- **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
+- **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
 - 截图：`pnpm -C web shots -g "<page> (light|dark)"`（只写 `-g <page>` 时 `spec` 会匹配到文件名 `shots.spec.ts`，把所有页都截一遍），然后填 `reports/ui/README.md` 对照表那一行。
 
@@ -51,6 +50,7 @@
 - 页面里有演示事件驱动的长流程时，用临时的 `e2e/tmp-*-shots.spec.ts`（`--project=shots` 能匹配）在真浏览器里走一遍、截图到 scratchpad，跑完删掉。
 - e2e 偶发过一次失败（2026-10-18，两条 e2e 一起跑，按耗时推断是 M0 的 `test_restart_resume`），之后连跑 17 次没复现，CI 上留意。
 - Playwright 冒烟收尾时后端会打印 aiosqlite「Task was destroyed but it is pending」，不影响结果，还没查（后端本步没改）。
+- **示例机器切换**：点已选中的那台不会触发切换；e2e 里切 Mac 再切回 PC 要等前一次 `aria-checked` 变了再点。
 - MSW 在 jsdom 里能拦相对路径的 fetch；handler 路径写 `*/api/v1/...`（`mocks/http.ts:v1()`）。
 
 - **能力过滤在 Mock 下也生效**：扫描示例机器后路由会变（PC 示例装好之前视频、关键帧、超分走 API，兼容表没有 `video_draft` 行；没扫描过不过滤）。第 7 步 Setup 页接真实接口后，e2e 里如果先扫描再看成片规格页，兼容表的预期要跟着改。
@@ -67,5 +67,6 @@
 
 ## 等 Kelvin 的事
 
-- **重启 `start.ps1`**：本机 8000 的后端是旧代码（没开 `--reload`），重启后自动迁移到 `0005`（剧集、规格、机器档案、ComfyUI 环境和快照）并建示例剧集。首次启动页在第 7 步之前仍用 MSW 示例数据，后端的 `/setup/*`、`/comfy/env` 可以用 `curl` 或 `/docs` 先看。
+- **重启 `start.ps1`**：本机 8000 的后端是旧代码（没开 `--reload`），重启后自动迁移到 `0005`。之后打开 `/` 会先到「环境与安装」：扫描 PC 示例 → 全选 → 弹改动清单 → 确认 → 「你的 ComfyUI」里出现快照 → 回滚。
+- **看第 7 步的新界面**（原型里没有）：`reports/ui/setup-confirm.light.jpg`（改动清单弹窗）、`reports/ui/setup-done.light.jpg`（装完后的整页，最下面是「你的 ComfyUI」）。不满意的地方告诉我。
 - 按 `reports/M0.5.md`「怎么验证」在本机点一遍，切中英和亮暗；看 `reports/ui/README.md` 的「有意的差异」。

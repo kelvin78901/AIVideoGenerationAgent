@@ -428,7 +428,8 @@ class SetupService:
             return self._public(row, data)
 
     async def switch_machine(self, machine: DemoMachine) -> MachineProfile:
-        """Mock only: scan the other sample machine. Starts over: no scan, nothing installed."""
+        """Mock only: scan the other sample machine. Starts over: no scan, nothing installed,
+        no snapshots."""
         async with self._lock:
             if self.profile_id != PROFILE_DEMO:
                 raise NotSimulated
@@ -439,6 +440,9 @@ class SetupService:
             async with self.db.session() as s:
                 await s.exec(
                     delete(InstalledItem).where(col(InstalledItem.profile_id) == PROFILE_DEMO)
+                )
+                await s.exec(
+                    delete(ComfySnapshotRow).where(col(ComfySnapshotRow.profile_id) == PROFILE_DEMO)
                 )
                 await s.commit()
             await self._save(row.id, fresh, machine=machine, scanned_at=None)

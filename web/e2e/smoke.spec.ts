@@ -54,3 +54,60 @@ test("a locked spec changes aspect through the impact dialog and keeps it after 
   await change(/国内短剧平台/, "9:16 · 1080×1920 · 24 fps");
   expect(errors).toEqual([]);
 });
+
+test("first run: / opens 环境与安装; installing into ComfyUI asks first, snapshots, rolls back", async ({
+  page,
+}) => {
+  test.setTimeout(90_000);
+  const errors = trackConsoleErrors(page);
+  await setUi(page, {});
+  await page.goto("/");
+  await expect(page).toHaveURL(/\/setup$/);
+  const nav = page.getByRole("navigation", { name: "制作步骤" });
+  await expect(nav.getByRole("link", { name: "环境与安装" })).toHaveAttribute(
+    "aria-current",
+    "page",
+  );
+
+  await page.getByRole("button", { name: "开始检测" }).click();
+  const summary = page.getByRole("region", { name: "检测结果" });
+  await expect(summary.getByRole("status")).toHaveText("检测完成", { timeout: 20_000 });
+  await expect(nav.getByTestId("setup-badge")).toHaveText("缺 11 项");
+  await expect(page.getByRole("region", { name: "你的 ComfyUI" })).toContainText("D:\\ComfyUI");
+
+  await page.getByRole("button", { name: "全选" }).click();
+  await page.getByRole("button", { name: "安装选中的 16 项" }).click();
+  const dialog = page.getByRole("alertdialog", { name: "开始安装前请确认" });
+  await expect(dialog.getByText("会改动你的 ComfyUI（9 项）")).toBeVisible();
+  await dialog.getByRole("button", { name: "确认，开始安装" }).click();
+  await expect(page.getByRole("heading", { name: "准备好了" })).toBeVisible({ timeout: 60_000 });
+  await expect(page.getByText(/^已存 ComfyUI 快照：/)).toBeVisible();
+  await expect(nav.getByTestId("setup-badge")).toHaveCount(0);
+
+  const snapshots = page.getByRole("list", { name: "快照" });
+  await expect(snapshots.getByRole("listitem")).toHaveCount(1);
+  await snapshots.getByRole("button", { name: /^回滚到 .* 的快照$/ }).click();
+  await page.getByRole("alertdialog").getByRole("button", { name: "回滚", exact: true }).click();
+  await expect(page.getByText("已安排回滚：重启 ComfyUI 后生效")).toBeVisible();
+  await expect(snapshots.getByRole("listitem")).toContainText("已安排回滚，重启 ComfyUI 后生效");
+  expect(errors).toEqual([]);
+
+  // Back to a fresh sample PC, so later tests see the first-run page. Each switch has to land
+  // before the next: clicking the machine already shown does nothing.
+  const machine = page.getByRole("radiogroup", { name: "示例机器（原型演示用）" });
+  for (const name of ["Mac M4 Pro", "Windows + RTX 5090"]) {
+    await machine.getByRole("radio", { name }).click();
+    await expect(machine.getByRole("radio", { name })).toHaveAttribute("aria-checked", "true");
+  }
+  await expect(page.getByRole("button", { name: "开始检测" })).toBeVisible();
+});
+
+test("环境与安装 is in the left nav on every page", async ({ page }) => {
+  await setUi(page, {});
+  await openPage(page, "/s/demo/spec");
+  await page
+    .getByRole("navigation", { name: "制作步骤" })
+    .getByRole("link", { name: "环境与安装" })
+    .click();
+  await expect(page.getByRole("heading", { level: 1 })).toHaveText("先看看这台电脑能跑什么");
+});

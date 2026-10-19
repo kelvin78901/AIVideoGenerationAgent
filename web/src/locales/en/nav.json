@@ -8,6 +8,7 @@
     "generate": "Generate",
     "post": "Post"
   },
+  "setup": "Environment",
   "spec": "Output spec",
   "models": "Models & fallback",
   "sync": "Organize & sync",
@@ -33,7 +34,8 @@
     "confirmed": "Confirmed",
     "inProgress": "In progress",
     "notStarted": "Not started",
-    "stale": "{{count}} to update"
+    "stale": "{{count}} to update",
+    "missing": "{{count}} missing"
   },
   "devComponents": "Dev · Components"
 }

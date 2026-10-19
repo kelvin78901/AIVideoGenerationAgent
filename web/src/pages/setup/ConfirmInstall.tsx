@@ -55,7 +55,7 @@ export function ConfirmInstall({
 
   return (
     <Dialog open onOpenChange={(open) => (!open && !pending ? onCancel() : undefined)}>
-      <DialogContent role="alertdialog" className="max-w-2xl gap-3.5">
+      <DialogContent role="alertdialog" className="max-w-3xl gap-3.5">
         <DialogTitle className="flex items-center gap-2 text-base font-bold">
           <AlertTriangle className="size-4 text-tone-warn-fg" aria-hidden />
           {t("confirm.title")}
@@ -75,26 +75,34 @@ export function ConfirmInstall({
                 <thead className="bg-muted/60 text-left text-xs text-muted-foreground">
                   <tr>
                     <th className="px-3 py-1.5 font-medium">{t("change.col.item")}</th>
-                    <th className="px-3 py-1.5 font-medium">{t("change.col.action")}</th>
-                    <th className="px-3 py-1.5 font-medium">{t("change.col.version")}</th>
+                    <th className="px-3 py-1.5 font-medium whitespace-nowrap">
+                      {t("change.col.action")}
+                    </th>
+                    <th className="px-3 py-1.5 font-medium whitespace-nowrap">
+                      {t("change.col.version")}
+                    </th>
                     <th className="px-3 py-1.5 font-medium">{t("change.col.source")}</th>
-                    <th className="px-3 py-1.5 text-right font-medium">{t("change.col.size")}</th>
+                    <th className="px-3 py-1.5 text-right font-medium whitespace-nowrap">
+                      {t("change.col.size")}
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {changes.map((m) => (
                     <tr key={String(m.params.item)} className="border-t border-border/60">
                       <td className="px-3 py-1.5 font-medium">{name(m)}</td>
-                      <td className="px-3 py-1.5">
+                      <td className="px-3 py-1.5 whitespace-nowrap">
                         {t(`change.action.${m.params.action === "update" ? "update" : "install"}`)}
                       </td>
-                      <td className="px-3 py-1.5 font-mono text-xs">{versionText(m)}</td>
+                      <td className="px-3 py-1.5 font-mono text-xs whitespace-nowrap">
+                        {versionText(m)}
+                      </td>
                       <td className="max-w-56 truncate px-3 py-1.5 font-mono text-xs text-muted-foreground">
                         <span title={str(m.params.source)}>
                           {str(m.params.source) ?? t("none")}
                         </span>
                       </td>
-                      <td className="px-3 py-1.5 text-right font-mono text-xs">
+                      <td className="px-3 py-1.5 text-right font-mono text-xs whitespace-nowrap">
                         {m.params.gb !== undefined
                           ? t("change.size", { gb: m.params.gb })
                           : t("none")}

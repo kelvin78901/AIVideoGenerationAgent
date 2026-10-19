@@ -59,18 +59,18 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 
 - [x] `setup-manifest.yaml` 解析、各类检测器、只读扫描 → `machine_profile`
 - [x] 安装器：按依赖顺序执行、SSE 实时日志、每步重试 / 跳过、`installed_item` 记录、镜像（自动 / 官方 / 国内）
-- [ ] Setup 页（对照 `prototype/Setup.dc.html`，中英文完整）（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
+- [x] Setup 页（对照 `prototype/Setup.dc.html`，中英文完整）（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [x] `output_spec` 表、`spec/dims.py`、`spec/compat.py`、平台预设
 - [x] Spec 页（对照 `prototype/Spec.dc.html`）：平台、画幅、分辨率、帧率、每集时长、字幕、安全区预览、模型兼容表（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
 - [x] 顶栏规格标签接真实数据
-- [ ] 左侧导航常驻「环境与安装」入口（Kelvin 2026-10-15 要求）：随时重新检测、补装，徽标显示缺几项
+- [x] 左侧导航常驻「环境与安装」入口（Kelvin 2026-10-15 要求）：随时重新检测、补装，徽标显示缺几项
 - [x] 识别已装的 ComfyUI（只读）：路径、端口、版本、节点包（git commit 或 Registry 版本）、模型文件（Kelvin 2026-10-18 要求，SPEC 6.4.1）
-- [ ] 改已装的 ComfyUI 前列改动清单确认；动手前用 ComfyUI-Manager 存快照，可一键回滚（SPEC 6.4.1）
+- [x] 改已装的 ComfyUI 前列改动清单确认；动手前用 ComfyUI-Manager 存快照，可一键回滚（SPEC 6.4.1）
 - [ ] 「模型与兜底」页的「工作流库」区域：导入、绑定、体检、试跑、分档，先用示例数据（SPEC 6.4.6；M5 接后端）
 
 **验收**
 - [ ] 在 Kelvin 的 Windows + RTX 5090 上真实扫描，结果和实际一致
-- [ ] Mock 安装流程能跑完；失败项可重试、可跳过；重新扫描只补差异
+- [x] Mock 安装流程能跑完；失败项可重试、可跳过；重新扫描只补差异
 - [x] macOS 上扫描后，视频、关键帧、超分自动标为走 API
 - [ ] 改画幅时尺寸、兼容表、安全区一起变；锁定后改画幅返回影响范围（M4 之前用示例数据）
 - [ ] 识别出的 ComfyUI 端口、版本、节点包版本、模型文件和 Kelvin 机器上的一致；装或升级前弹改动清单，回滚能回到改动前的快照

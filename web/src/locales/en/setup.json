@@ -288,7 +288,7 @@
     "recommend": "Recommended preset for this machine",
     "enter": "New series: set the output format",
     "toModels": "Add API keys in Models & fallback",
-    "later": "You can run this scan again from Models & fallback."
+    "later": "You can scan again and install more under Environment in the left nav."
   },
   "rec": {
     "local_video": {

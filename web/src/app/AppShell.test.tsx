@@ -1,4 +1,4 @@
-import { act, screen, waitFor } from "@testing-library/react";
+import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 
@@ -9,6 +9,7 @@ import { server } from "@/mocks/node";
 import { useUiStore } from "@/stores/ui";
 import { backend } from "@/test/backend";
 import { renderAt } from "@/test/render";
+import { fakeSetup, resetFakeSetup } from "@/test/setupBackend";
 
 beforeEach(() => {
   act(() => useUiStore.setState({ lang: "zh-CN", theme: "light" }));
@@ -16,10 +17,62 @@ beforeEach(() => {
 });
 
 describe("AppShell", () => {
-  it("redirects / to the first step of the demo episode", () => {
+  it("redirects / to the first-run page until the machine has been scanned", async () => {
     renderAt(<AppRoutes />, "/");
-    expect(screen.getByRole("heading", { level: 1, name: "小说" })).toBeInTheDocument();
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "先看看这台电脑能跑什么" }),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "环境与安装" })).toHaveAttribute(
+      "aria-current",
+      "page",
+    );
+  });
+
+  it("redirects / to the first step of the demo episode once scanned", async () => {
+    resetFakeSetup("pc", { scanned: true });
+    renderAt(<AppRoutes />, "/");
+    expect(await screen.findByRole("heading", { level: 1, name: "小说" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /01\s*小说/ })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("deep links never jump to the first-run page", async () => {
+    renderAt(<AppRoutes />, "/models");
+    expect(screen.getByRole("heading", { level: 1, name: "模型与兜底" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("gpu-status")).toHaveTextContent("RTX 5090"));
+    expect(screen.getByRole("heading", { level: 1, name: "模型与兜底" })).toBeInTheDocument();
+  });
+
+  it("keeps 环境与安装 first among the tools, with what is missing as its badge", async () => {
+    renderAt(<AppRoutes />, "/s/demo/spec");
+    const nav = screen.getByRole("navigation", { name: "制作步骤" });
+    const tools = within(nav)
+      .getAllByRole("link")
+      .map((a) => a.textContent)
+      .filter((text) => !/^\d\d/.test(text ?? ""));
+    expect(tools.slice(0, 2)).toEqual(["环境与安装", "成片规格"]);
+    expect(within(nav).getByRole("link", { name: "环境与安装" })).toHaveAttribute("href", "/setup");
+    // Nothing before the first scan.
+    expect(screen.queryByTestId("setup-badge")).toBeNull();
+  });
+
+  it("counts required items still missing or outdated, in both languages", async () => {
+    resetFakeSetup("pc", { scanned: true });
+    renderAt(<AppRoutes />, "/s/demo/spec");
+    expect(await screen.findByTestId("setup-badge")).toHaveTextContent("缺 11 项");
+    expect(screen.getByRole("link", { name: /^环境与安装\s*缺 11 项$/ })).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
+    expect(screen.getByTestId("setup-badge")).toHaveTextContent("11 missing");
+    expect(screen.getByRole("link", { name: /^Environment\s*11 missing$/ })).toBeInTheDocument();
+  });
+
+  it("hides the badge once everything required is there", async () => {
+    resetFakeSetup("pc", { scanned: true });
+    for (const x of fakeSetup.profile.items)
+      if (x.status === "missing" || x.status === "old")
+        x.install = { state: "done", pct: 100, error: null };
+    renderAt(<AppRoutes />, "/s/demo/spec");
+    await waitFor(() => expect(screen.getByTestId("gpu-status")).toHaveTextContent("RTX 5090"));
+    expect(screen.queryByTestId("setup-badge")).toBeNull();
   });
 
   it("renders every SPEC 16.1 route", () => {

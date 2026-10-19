@@ -215,7 +215,8 @@ def test_rollback(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
         "params": {"reason": "forbidden"},
     }
 
-    # The Mac sample has no ComfyUI to snapshot; the PC's snapshots are not its own.
+    # The Mac sample has no ComfyUI to snapshot; switching sample machines starts over.
     _scan(client, "mac")
     resp = client.post(SNAPSHOTS)
     assert resp.status_code == 409 and resp.json()["detail"]["code"] == "comfy_not_found"
+    assert client.get(SNAPSHOTS).json() == []

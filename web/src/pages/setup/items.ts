@@ -64,6 +64,16 @@ export function overallPct(p: MachineProfile): number {
 export const requiredIds = (items: SetupItem[]) =>
   items.filter((x) => x.installable && x.required && !x.touches_comfy).map((x) => x.id);
 
+/**
+ * The left nav's 缺 N 项: required items the scan found missing or outdated and no install has
+ * fixed yet. 0 while scanning (items are still checking) and once everything required is there.
+ */
+export const missingCount = (items: SetupItem[]) =>
+  items.filter(
+    (x) =>
+      x.required && (x.status === "missing" || x.status === "old") && x.install?.state !== "done",
+  ).length;
+
 export const installableIds = (items: SetupItem[]) =>
   items.filter((x) => x.installable).map((x) => x.id);
 

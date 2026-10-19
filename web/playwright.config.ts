@@ -42,7 +42,8 @@ export default defineConfig({
   ],
   webServer: [
     {
-      command: `uv run drama-studio dev --port ${BACKEND_PORT}`,
+      // `python -m`, not the `drama-studio` entry exe: Windows Application Control may block it.
+      command: `uv run python -m drama_series_agent.studio_cli dev --port ${BACKEND_PORT}`,
       cwd: "..",
       url: `http://127.0.0.1:${BACKEND_PORT}/api/v1/health`,
       reuseExistingServer: false,

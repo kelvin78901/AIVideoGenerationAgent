@@ -50,13 +50,18 @@ export const fakeSetup = {
   snapshotFail: null as SnapshotFailure | null,
 };
 
-export function resetFakeSetup(machine: SampleMachine = "pc"): void {
+/** Starts over on a sample machine; `scanned` skips to the end of its first scan. */
+export function resetFakeSetup(
+  machine: SampleMachine = "pc",
+  { scanned = false }: { scanned?: boolean } = {},
+): void {
+  const s = sample(machine);
   Object.assign(fakeSetup, {
     machine,
-    profile: sample(machine).idle,
+    profile: scanned ? s.scanned : s.idle,
     installed: new Set<string>(),
     snapshots: [],
-    comfyScanned: false,
+    comfyScanned: scanned,
     snapshotFail: null,
   });
 }

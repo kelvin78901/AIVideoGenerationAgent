@@ -28,7 +28,7 @@ function Fact({ label, children }: { label: string; children: ReactNode }) {
   return (
     <div className="flex min-w-0 flex-col gap-0.5">
       <dt className="text-xs text-muted-foreground">{label}</dt>
-      <dd className="min-w-0 truncate text-[13px]">{children}</dd>
+      <dd className="min-w-0 text-[13px] break-words">{children}</dd>
     </div>
   );
 }
@@ -137,7 +137,10 @@ function SnapshotRow({
       <StatusBadge tone={snap.reason === "install" ? "info" : "neutral"} icon={null}>
         {t(`snapshots.reason.${snap.reason}`)}
       </StatusBadge>
-      <span className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground">
+      <span
+        className="min-w-0 flex-1 truncate text-[13px] text-muted-foreground"
+        title={items.length ? items.join(t("snapshots.sep")) : undefined}
+      >
         {items.length
           ? t("snapshots.for", { items: items.join(t("snapshots.sep")) })
           : snap.manager_name}
@@ -207,9 +210,7 @@ export function ComfyPanel({
       </div>
       <dl className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-x-5 gap-y-2.5">
         <Fact label={t("comfy.where")}>
-          <span className="font-mono text-xs" title={scan.root ?? undefined}>
-            {scan.root ?? none}
-          </span>{" "}
+          <span className="font-mono text-xs break-all">{scan.root ?? none}</span>{" "}
           <span className="text-muted-foreground">· {t(`comfy.kind.${scan.kind}`)}</span>
         </Fact>
         <Fact label={t("comfy.url")}>
