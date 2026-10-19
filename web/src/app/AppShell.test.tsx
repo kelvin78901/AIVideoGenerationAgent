@@ -9,7 +9,7 @@ import { server } from "@/mocks/node";
 import { useUiStore } from "@/stores/ui";
 import { backend } from "@/test/backend";
 import { renderAt } from "@/test/render";
-import { fakeSetup, resetFakeSetup } from "@/test/setupBackend";
+import { fakeSetup, installState, resetFakeSetup } from "@/test/setupBackend";
 
 beforeEach(() => {
   act(() => useUiStore.setState({ lang: "zh-CN", theme: "light" }));
@@ -68,8 +68,7 @@ describe("AppShell", () => {
   it("hides the badge once everything required is there", async () => {
     resetFakeSetup("pc", { scanned: true });
     for (const x of fakeSetup.profile.items)
-      if (x.status === "missing" || x.status === "old")
-        x.install = { state: "done", pct: 100, error: null };
+      if (x.status === "missing" || x.status === "old") x.install = installState("done", 100);
     renderAt(<AppRoutes />, "/s/demo/spec");
     await waitFor(() => expect(screen.getByTestId("gpu-status")).toHaveTextContent("RTX 5090"));
     expect(screen.queryByTestId("setup-badge")).toBeNull();

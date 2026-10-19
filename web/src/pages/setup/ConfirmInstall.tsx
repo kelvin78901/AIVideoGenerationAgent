@@ -36,6 +36,7 @@ export function ConfirmInstall({
   itemName,
   pending,
   snapshotNote,
+  estimate,
   onConfirm,
   onCancel,
 }: {
@@ -47,6 +48,8 @@ export function ConfirmInstall({
   pending: boolean;
   /** Where rollback lives, seen from this page (default: 「你的 ComfyUI」 below, on the setup page). */
   snapshotNote?: string;
+  /** 「约 N GB，预计 M 分钟」 for the whole install, when the caller can tell. */
+  estimate?: string;
   onConfirm: () => void;
   onCancel: () => void;
 }) {
@@ -144,6 +147,8 @@ export function ConfirmInstall({
             </ul>
           </section>
         ) : null}
+
+        {estimate ? <p className="text-sm font-medium">{estimate}</p> : null}
 
         <DialogFooter>
           <Button variant="outline" disabled={pending} onClick={onCancel}>

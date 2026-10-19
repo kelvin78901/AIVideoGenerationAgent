@@ -1,14 +1,42 @@
-/** Scan result by group: status, what was found, what to do, tick / install progress. */
+/**
+ * Scan result by group: status, what was found, what to do, tick / install progress. A running
+ * download also shows bytes, speed and time left, or that it is checking a finished file.
+ */
 import { useTranslation } from "react-i18next";
 
 import type { Message } from "@/api/schemas/common";
-import type { SetupItem, SetupPhase } from "@/api/schemas/setup";
+import type { ItemInstall, SetupItem, SetupPhase } from "@/api/schemas/setup";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
-import { GROUPS, shownStatus, statusTone, useItemName } from "@/pages/setup/items";
+import { GROUPS, shownStatus, statusTone, useItemName, useUnits } from "@/pages/setup/items";
+
+function TransferLine({ inst }: { inst: ItemInstall }) {
+  const { t } = useTranslation("setup");
+  const u = useUnits();
+  if (inst.bytes_total === null) return null;
+  return (
+    <div className="flex flex-col font-mono text-[11px] leading-snug text-muted-foreground">
+      <span>
+        {t("transfer.bytes", {
+          done: u.size(inst.bytes_done ?? 0),
+          total: u.size(inst.bytes_total),
+        })}
+      </span>
+      {inst.verifying ? (
+        <span>{t("transfer.verifying")}</span>
+      ) : inst.speed ? (
+        <span>
+          {inst.eta_s !== null
+            ? t("transfer.speedLeft", { speed: u.speed(inst.speed), time: u.duration(inst.eta_s) })
+            : u.speed(inst.speed)}
+        </span>
+      ) : null}
+    </div>
+  );
+}
 
 export function ItemGroups({
   phase,
@@ -130,22 +158,25 @@ export function ItemGroups({
                       </label>
                     ) : null}
                     {installing && inst && queue.includes(x.id) ? (
-                      <>
-                        <Progress
-                          value={inst.pct}
-                          aria-label={t("progressOf", { name })}
-                          className="flex-1 bg-muted"
-                          indicatorClassName={cn(failed && "bg-status-warn")}
-                        />
-                        <span
-                          className={cn(
-                            "shrink-0 font-mono text-xs",
-                            failed ? "text-tone-warn-fg" : "text-muted-foreground",
-                          )}
-                        >
-                          {failed ? t("status.fail") : `${inst.pct}%`}
-                        </span>
-                      </>
+                      <div className="flex min-w-0 flex-1 flex-col gap-1">
+                        <div className="flex items-center gap-2">
+                          <Progress
+                            value={inst.pct}
+                            aria-label={t("progressOf", { name })}
+                            className="flex-1 bg-muted"
+                            indicatorClassName={cn(failed && "bg-status-warn")}
+                          />
+                          <span
+                            className={cn(
+                              "shrink-0 font-mono text-xs",
+                              failed ? "text-tone-warn-fg" : "text-muted-foreground",
+                            )}
+                          >
+                            {failed ? t("status.fail") : `${Math.floor(inst.pct)}%`}
+                          </span>
+                        </div>
+                        {inst.state === "running" ? <TransferLine inst={inst} /> : null}
+                      </div>
                     ) : null}
                   </div>
                 </li>

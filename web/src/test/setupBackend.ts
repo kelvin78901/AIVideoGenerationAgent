@@ -13,6 +13,7 @@ import { MessageSchema, type Message } from "@/api/schemas/common";
 import {
   InstallRequestSchema,
   MachineProfileSchema,
+  type ItemInstall,
   type SetupItem,
   type SetupLog,
 } from "@/api/schemas/setup";
@@ -36,6 +37,8 @@ function sample(m: SampleMachine) {
 const FAILING = data.failing;
 const MANAGER = "comfy_manager";
 const NOW = "2026-10-18T09:30:00Z";
+/** The sample installs' download speed (setup/installer.py:FAKE_BPS). */
+const FAKE_BPS = 25e6;
 
 /** State of the fake; reset by `backend()`. Tests may read it, or set `snapshotFail`. */
 export const fakeSetup = {
@@ -82,6 +85,29 @@ const error = (status: number, code: string, params: Record<string, unknown> = {
 const reply = (status = 200) => HttpResponse.json(fakeSetup.profile, { status });
 
 const later = (fn: () => void) => setTimeout(fn, 0);
+
+/** The item `id` of `profile`; a test that names a missing one fails here. */
+export function itemOf(profile: { items: SetupItem[] }, id: string): SetupItem {
+  const x = profile.items.find((i) => i.id === id);
+  if (!x) throw new Error(`no item ${id}`);
+  return x;
+}
+
+/** An install state without download figures (the backend sends them as null). */
+export const installState = (
+  state: ItemInstall["state"],
+  pct = 0,
+  error: Message | null = null,
+): ItemInstall => ({
+  state,
+  pct,
+  error,
+  bytes_done: null,
+  bytes_total: null,
+  speed: null,
+  eta_s: null,
+  verifying: false,
+});
 
 function scanned(): SetupItem[] {
   return sample(fakeSetup.machine).scanned.items.map((x) =>
@@ -139,15 +165,12 @@ function runInstall(): void {
     }
     if (!failure && id === FAILING.item) failure = { code: FAILING.error, params: {} };
     if (failure) {
-      x.install = {
-        state: "failed",
-        pct: failure.code === FAILING.error ? FAILING.pct : 0,
-        error: failure,
-      };
+      x.install = installState("failed", failure.code === FAILING.error ? FAILING.pct : 0, failure);
       log("warn", x.required ? "fail" : "fail_optional", { item: id });
     } else {
-      x.install = { state: "done", pct: 100, error: null };
+      x.install = installState("done", 100);
       fakeSetup.installed.add(id);
+      if (x.size_bytes) p.download_bps = FAKE_BPS; // what its download measured
       log("ok", "done", { item: id });
     }
     progress(x);
@@ -187,6 +210,8 @@ export function setupHandlers() {
           phase: "scanned",
           scanned_at: NOW,
           recommendation: done.recommendation,
+          // The scan's short download, unless an install measured the speed already.
+          download_bps: p.download_bps ?? done.download_bps,
         });
         fakeSetup.comfyScanned = true;
         progress();
@@ -215,8 +240,7 @@ export function setupHandlers() {
         snapshot: null,
         snapshot_error: null,
       };
-      for (const x of p.items)
-        x.install = order.includes(x.id) ? { state: "queued", pct: 0, error: null } : null;
+      for (const x of p.items) x.install = order.includes(x.id) ? installState("queued") : null;
       later(() => {
         log("info", "mirror", { mirror: body.data.mirror, dir: body.data.dir });
         if (confirm.length) log("warn", "confirm");
@@ -254,7 +278,7 @@ export function setupHandlers() {
       if (!x?.install) return error(404, "setup_item_not_found", { id: params.id });
       if (x.install.state !== "failed" && x.install.state !== "skipped")
         return error(409, "setup_item_state", { id: params.id });
-      x.install = { state: "queued", pct: 0, error: null };
+      x.install = installState("queued");
       const p = fakeSetup.profile;
       if (p.install) p.install.snapshot_error = null;
       p.phase = "installing";

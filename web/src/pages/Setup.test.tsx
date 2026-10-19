@@ -8,7 +8,7 @@ import { useUiStore } from "@/stores/ui";
 import { backend } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
-import { fakeSetup } from "@/test/setupBackend";
+import { fakeSetup, installState, itemOf, resetFakeSetup } from "@/test/setupBackend";
 
 function Page() {
   useEventStream();
@@ -110,9 +110,15 @@ describe("SetupPage", () => {
     ).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: "安装 IndexTTS-2.5" })).toBeChecked();
     expect(screen.getByRole("button", { name: "安装选中的 2 项" })).toBeEnabled();
+    // FFmpeg about a minute, IndexTTS 5.5 GB at the 22 MB/s the scan measured.
+    expect(screen.getByText("约 5.5 GB，预计 6 分钟")).toHaveAttribute(
+      "title",
+      "按这台机器测到的下载速度 22.0 MB/s 估算",
+    );
 
     await user.click(screen.getByRole("button", { name: "全选" }));
     expect(screen.getByRole("button", { name: "安装选中的 11 项" })).toBeInTheDocument();
+    expect(screen.getByText("约 110.3 GB，预计 1 小时 31 分钟")).toBeInTheDocument();
     await user.click(
       screen.getByRole("checkbox", { name: "安装（可选） FlashVSR 节点（快速超分）" }),
     );
@@ -183,6 +189,7 @@ describe("SetupPage", () => {
       within(dialog).getByText("MiniMax H3 权重（int8） 要下载约 49.3 GB"),
     ).toBeInTheDocument();
     expect(within(dialog).getByText(/动手前先用 ComfyUI-Manager 存一份快照/)).toBeInTheDocument();
+    expect(within(dialog).getByText("约 110.3 GB，预计 1 小时 31 分钟")).toBeInTheDocument();
     expect(await screen.findByText("等你确认后开始安装")).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole("button", { name: "取消" }));
@@ -343,6 +350,47 @@ describe("SetupPage", () => {
     expect(row("FFmpeg")).toHaveTextContent(/^通过/);
     expect(row("IndexTTS-2.5")).toHaveTextContent(/^通过/);
     expect(within(summary()).getByText("通过 12")).toBeInTheDocument();
+  });
+
+  it("a running download shows bytes, speed and time left, then that it is checking", async () => {
+    resetFakeSetup("pc", { scanned: true });
+    const p = fakeSetup.profile;
+    p.phase = "installing";
+    p.install = {
+      items: ["ffmpeg", "w_tts"],
+      mirror: "auto",
+      dir: "D:\\DramaStudio",
+      confirm: [],
+      changes: [],
+      snapshot: null,
+      snapshot_error: null,
+    };
+    const tts = itemOf(p, "w_tts");
+    itemOf(p, "ffmpeg").install = installState("done", 100);
+    const running = {
+      ...installState("running", 38.2),
+      bytes_done: 2.1e9,
+      bytes_total: 5.5e9,
+      speed: 18.6e6,
+      eta_s: 183,
+    };
+    tts.install = running;
+    renderSetup();
+    const r = await screen.findByRole("listitem", { name: "IndexTTS-2.5" });
+    expect(r).toHaveTextContent("38%2.1 GB / 5.5 GB18.6 MB/s · 剩 4 分钟");
+    expect(within(summary()).getByText("剩余约 4 分钟")).toBeInTheDocument();
+    // By rough time FFmpeg (60 s) is a fifth of it, IndexTTS (250 s at 22 MB/s) the rest.
+    expect(within(summary()).getByRole("progressbar")).toHaveAttribute("aria-valuenow", "50");
+
+    const checking = { ...running, pct: 99, bytes_done: 5.5e9, speed: null, eta_s: null };
+    act(() => {
+      for (const es of FakeEventSource.instances)
+        es.emit("setup.progress", {
+          phase: "installing",
+          item: { ...tts, install: { ...checking, verifying: true } },
+        });
+    });
+    await waitFor(() => expect(r).toHaveTextContent("99%5.5 GB / 5.5 GB校验中…"));
   });
 
   it("switches to English, item names and the change list included", async () => {

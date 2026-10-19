@@ -264,6 +264,29 @@
   },
   "installNote": "Large files resume if interrupted. Close the app halfway and it picks up next time. Everything installed is recorded so it can be removed cleanly.",
   "install": "Install {{count}} selected",
+  "estimate": {
+    "sizeTime": "About {{size}}, roughly {{time}}",
+    "size": "About {{size}} (download speed not measured yet, so no time estimate)",
+    "time": "Roughly {{time}}",
+    "left": "About {{time}} left",
+    "speedNote": "Estimated from this machine's measured download speed, {{speed}}"
+  },
+  "transfer": {
+    "bytes": "{{done}} / {{total}}",
+    "speedLeft": "{{speed}} · {{time}} left",
+    "verifying": "Checking…"
+  },
+  "unit": {
+    "gb": "{{n}} GB",
+    "mb": "{{n}} MB",
+    "mbps": "{{n}} MB/s"
+  },
+  "eta": {
+    "under1": "under a minute",
+    "min": "{{m}} min",
+    "hour": "{{h}} h",
+    "hourMin": "{{h}} h {{m}} min"
+  },
   "onlyRequired": "Required only",
   "selectAll": "Select all",
   "skip": "Skip for now and open the studio",

@@ -264,6 +264,29 @@
   },
   "installNote": "大文件支持断点续传；装到一半关掉，下次打开会接着装。装好的东西会写进清单，卸载时一并清理。",
   "install": "安装选中的 {{count}} 项",
+  "estimate": {
+    "sizeTime": "约 {{size}}，预计 {{time}}",
+    "size": "约 {{size}}（还没测过下载速度，算不出用时）",
+    "time": "预计 {{time}}",
+    "left": "剩余约 {{time}}",
+    "speedNote": "按这台机器测到的下载速度 {{speed}} 估算"
+  },
+  "transfer": {
+    "bytes": "{{done}} / {{total}}",
+    "speedLeft": "{{speed}} · 剩 {{time}}",
+    "verifying": "校验中…"
+  },
+  "unit": {
+    "gb": "{{n}} GB",
+    "mb": "{{n}} MB",
+    "mbps": "{{n}} MB/s"
+  },
+  "eta": {
+    "under1": "不到 1 分钟",
+    "min": "{{m}} 分钟",
+    "hour": "{{h}} 小时",
+    "hourMin": "{{h}} 小时 {{m}} 分钟"
+  },
   "onlyRequired": "只选必需的",
   "selectAll": "全选",
   "skip": "先跳过，进入工作台",

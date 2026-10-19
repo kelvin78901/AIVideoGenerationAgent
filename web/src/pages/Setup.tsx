@@ -44,12 +44,15 @@ import { ItemGroups } from "@/pages/setup/ItemGroups";
 import { InstallLog } from "@/pages/setup/InstallLog";
 import {
   GROUPS,
+  estimate,
   installableIds,
   overallPct,
   requiredIds,
   statusCounts,
   statusTone,
+  timeLeft,
   useItemName,
+  useUnits,
 } from "@/pages/setup/items";
 
 const MIRRORS: Mirror[] = ["auto", "official", "cn"];
@@ -140,6 +143,7 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
   const { t } = useTranslation("setup");
   const { t: tc } = useTranslation();
   const nameOf = useItemName();
+  const units = useUnits();
   const scan = useScan();
   const install = useInstall();
   const confirm = useConfirmInstall();
@@ -217,6 +221,17 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
     (x) => x.install?.state === "failed" || x.install?.state === "skipped",
   );
   const pct = overallPct(p);
+  const left = waiting ? null : timeLeft(p);
+  const speedNote =
+    p.download_bps !== null
+      ? t("estimate.speedNote", { speed: units.speed(p.download_bps) })
+      : undefined;
+  const planned = units.estimateText(
+    estimate(
+      p.items.filter((x) => sel.has(x.id)),
+      p.download_bps,
+    ),
+  );
 
   return (
     <>
@@ -228,6 +243,11 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
           <span className="text-[15px] font-bold" role="status">
             {t(`phase.${p.phase}`)}
           </span>
+          {left !== null ? (
+            <span className="text-[13px] text-muted-foreground" title={speedNote}>
+              {t("estimate.left", { time: units.duration(left) })}
+            </span>
+          ) : null}
           {statusCounts(p.phase, p.items).map((c) => (
             <StatusBadge key={c.status} tone={statusTone[c.status]} icon={null}>
               {t(`status.${c.status}`)} {c.n}
@@ -319,6 +339,11 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
             >
               {t("selectAll")}
             </Button>
+            {sel.size ? (
+              <span className="text-[13px] text-muted-foreground" title={speedNote}>
+                {planned}
+              </span>
+            ) : null}
             <Link
               to={paths.step(DEMO_SERIES, DEMO_EPISODE, "novel")}
               className="ml-auto text-sm text-primary underline-offset-4 hover:underline"
@@ -339,6 +364,7 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
           comfyRoot={comfyScan?.root ?? null}
           itemName={itemName}
           pending={confirm.isPending || cancel.isPending}
+          estimate={units.estimateText(estimate(queued, p.download_bps))}
           onConfirm={() => confirm.mutate(undefined, { onError })}
           onCancel={() => cancel.mutate(undefined, { onError })}
         />
