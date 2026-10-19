@@ -7,10 +7,10 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from drama_series_agent.core.config import Resolved, get_config
+from drama_series_agent.core.config import Defaults, Resolved, get_config
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus
-from drama_series_agent.core.overrides import put_override
+from drama_series_agent.core.overrides import put_override, save_defaults
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.modelhub import calllog
 from drama_series_agent.modelhub.adapters.base import (
@@ -288,3 +288,14 @@ async def test_unknown_component_and_model(hub: tuple[Router, Registry, EventBus
     with pytest.raises(ModelError) as err:
         await router.call("script", _llm_req(), model="nope/x")
     assert err.value.code == "unknown_model"
+
+
+async def test_component_switched_off(hub: tuple[Router, Registry, EventBus]) -> None:
+    """全本地 turns 3D 场景 off (no local version): calling it is an error, not a guess."""
+    router, _, _ = hub
+    async with router.db.session() as s:
+        await save_defaults(s, Defaults(preset="local"))
+    with pytest.raises(ModelError) as err:
+        await router.call("world", _llm_req())
+    assert err.value.code == "component_off"
+    assert await calllog.recent(router.db) == []

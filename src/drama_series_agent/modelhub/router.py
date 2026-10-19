@@ -124,6 +124,8 @@ class Router:
     @staticmethod
     def primary_model(settings: Resolved, where: Literal["local", "api"] | None = None) -> str:
         values = settings.values
+        if values["mode"] == "off" and where is None:
+            raise ModelError("component_off")  # e.g. 全本地 for a component with no local model
         mode = where or values["mode"]
         if mode == "hybrid":
             mode = "local"  # hybrid = local draft; the API final is an explicit where="api" call
@@ -188,7 +190,7 @@ class Router:
         await self.budget.check(spec, estimate, settings, ctx)
 
         timeout_s = (
-            float(settings.values["fallback"].get("local_timeout_s") or 600)
+            float(settings.values["fallback"].get("timeout_s") or 600)
             if spec.where == "local"
             else self.api_timeout_s
         )

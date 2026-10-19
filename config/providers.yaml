@@ -185,6 +185,7 @@ media_models:
   - { key: sync/lipsync-2-pro, kind: lipsync, display: sync lipsync-2-pro, unit: second, price_range: [0.067, 0.083], currency: USD }
   - { key: topaz/starlight-precise-2.5, kind: upscale, display: Topaz Starlight Precise 2.5, unit: second, price: 0.12, currency: USD, note: "1080p，按积分换算" }
   - { key: elevenlabs/music, kind: music, display: ElevenLabs Music, unit: subscription, price: 22, currency: USD, period: month }
+  - { key: elevenlabs/sfx, kind: sfx, display: ElevenLabs Sound Effects, unit: call, price: null, verify: true }
   - { key: elevenlabs/scribe, kind: asr, display: ElevenLabs Scribe, unit: minute, price: null, verify: true }
   - { key: worldlabs/marble, kind: world, display: World Labs Marble, unit: world, price: 1.2, currency: USD, enabled_by_default: false }
 
@@ -209,5 +210,6 @@ local_models:
   - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python, requires_cuda: true }
   - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server, needs: [llmsrv] }
   - { key: local/ace-step,          kind: music,   display: ACE-Step（本地）,         runtime: python }
+  - { key: local/mmaudio,           kind: sfx,     display: MMAudio（本地）,          runtime: python, verify: true }
   - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python }
   - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }

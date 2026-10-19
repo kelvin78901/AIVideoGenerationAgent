@@ -14,6 +14,7 @@ import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { PRODUCT_ENRICH, PRODUCT_EXTRACT } from "@/mocks/fixtures/demo/products";
 import { useInspectorStore } from "@/stores/inspector";
 import { backend } from "@/test/backend";
+import { fakeConfig } from "@/test/fakes/config";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
 
@@ -27,7 +28,7 @@ const NOVEL = [
 ];
 
 function override(component = "enrich") {
-  return getDb().config.component[component];
+  return fakeConfig.component[component];
 }
 
 beforeEach(() => {
@@ -64,7 +65,7 @@ describe("Inspector", () => {
 
 describe("ModelPicker", () => {
   it("greys out run locations that cannot be used and says why", async () => {
-    const def = getDb().config.components.find((c) => c.id === "enrich");
+    const def = fakeConfig.catalog.components.find((c) => c.id === "enrich");
     if (def) def.local_models = [];
     renderAt(<Panel />);
     await screen.findByRole("heading", { name: "小说补全" });
@@ -75,14 +76,14 @@ describe("ModelPicker", () => {
     expect(screen.getByText("这个组件没有可本地运行的模型。")).toBeInTheDocument();
   });
 
-  it("lists 6 API services and expands 「更多供应商（9）」", async () => {
+  it("lists 6 API services and expands 「更多供应商（8）」", async () => {
     const user = userEvent.setup();
     renderAt(<Panel />);
     const api = await screen.findByRole("radiogroup", { name: "API 服务" });
     expect(within(api).getAllByRole("radio")).toHaveLength(6);
     expect(within(api).getByRole("radio", { name: /DeepSeek V4 Pro/ })).toBeChecked();
-    await user.click(screen.getByRole("button", { name: "更多供应商（9）" }));
-    expect(within(api).getAllByRole("radio")).toHaveLength(15);
+    await user.click(screen.getByRole("button", { name: "更多供应商（8）" }));
+    expect(within(api).getAllByRole("radio")).toHaveLength(14);
     expect(screen.getByRole("button", { name: "收起" })).toBeInTheDocument();
   });
 
@@ -135,7 +136,7 @@ describe("ModelPicker", () => {
     const user = userEvent.setup();
     renderAt(<Panel item="shot:1-05" />);
     await user.click(await screen.findByRole("radio", { name: "混合" }));
-    await waitFor(() => expect(getDb().config.item["enrich|shot:1-05"]?.mode).toBe("hybrid"));
+    await waitFor(() => expect(fakeConfig.item["enrich|shot:1-05"]?.mode).toBe("hybrid"));
     expect(override()).toBeUndefined();
     await waitFor(() =>
       expect(screen.getAllByTestId("config-source")[0]).toHaveTextContent("单项"),

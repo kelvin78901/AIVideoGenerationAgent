@@ -2,6 +2,17 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-19 · M2 第 2 步：配置接口
+
+- **预设在后端现算**：`core/config.py:preset_settings()` 照搬原型 `presetCfg()`（质量 / 均衡 / 省钱 / 全本地，全本地下没有本地版本的组件 `mode: off`，路由器调用它报 `component_off`）。当前预设和兜底方式存新表 `app_setting`（键 `config.defaults`，迁移 `0008`），`resolve()` 多一个 `defaults` 参数。来源层 `factory` 改名 `preset`，和前端契约一致；解析结果里 `fallback.local_timeout_s` 改名 `timeout_s`（YAML 的键不变）。
+- **「不满意换一个」的默认顺序**：YAML 没写 `alt_order` 的组件按原型规则排：兜底目标第一，然后本地、API（去掉主用的）。M0 的规则是「API 里除了主用的」。所以 Mac 上能力过滤会从顺序里拿掉本地模型（`test_capabilities` 跟着改）。
+- **单次花费上限进 `components.yaml`**：顶层默认 `per_call_cap_usd: 0.50`，各组件的值取自原型各页 Inspector（设定提取 $0.2、剧本化 $0.8、视频 $2……）；没有 API 模型的组件为 null。写作类组件的默认兜底条件不含 `qa_fail`（文本没有自动质检），界面上仍可以勾。
+- **「音效」组件 `sfx` 现在就进 `components.yaml`**（M0.5 说 M7 再加）：组件目录改由后端给，后期页的 Inspector 要用它；`providers.yaml` 补 `elevenlabs/sfx`、`local/mmaudio`（`verify: true`，没有价格）。模型页的表格因此是 20 行（多了 `dub` 和 `sfx`，原来示例里没有 `dub`）。
+- **媒体组件的路由以 YAML 为准**：原来 MSW 照原型页面写的几条（配音 API + IndexTTS2、配乐 API、口型 API、精修兜底到 H3 2K）和 YAML 不一样，现在素材、生成、后期页的 Inspector 显示 YAML 的值；到 M3 / M5 / M7 做这些组件时再定。
+- **组件目录**：`custom`（自定义 OpenAI 兼容模型）先不列，等自定义模型接口；媒体价格换成界面的单位（按分钟的换成每秒，按分辨率的取草稿档，订阅制和按 token 的辅助模型不显示）；本地模型没有价格。`unavailable` 只给机器原因（`machine_cuda`、`machine_missing {count}`，新文案两种语言），「没有本地 / API 版本」前端自己推。`local_runtime_ok` = 没扫描过或扫描找到了 ComfyUI。
+- **`/config/resolve` 按本机能力过滤**（和路由器、兼容表一样），界面看到的就是真会跑的路由。`PUT /config/override` 按顶层字段合并进已有的覆盖；`project` 层存成不带组件（对所有组件生效）；模型 key 不认识返回 422 `unknown_model`。
+- **MSW**：删 `handlers/config.ts` 和 `fixtures/demo/config.ts`；剩下的示例 handler 用 `mocks/route.ts:demoRoute()` 读真实的 `/config/resolve`。页面测试的假后端 `test/fakes/config.ts` 读 `test/data/config.json`（目录 + 四个预设下每个组件的预设层，由 `tests/api/test_web_fixtures.py` 生成，`DRAMA_UPDATE_FIXTURES=1` 更新）。
+
 ## 2026-10-19 · M2 第 1 步：产物和版本
 
 - **`dependency` 挂在版本上**：比 SPEC 4.2 多 `version_id` 和 `slice` 两列，一个版本读了上游哪几片就写几行（SPEC 只写了 `product_id`，但同一产物的不同版本依赖的上游不同）。`product_version` 现在就带上 6.4.5 的 `workflow_id`、`workflow_sha256`、`comfy_env_hash`（可空），M5 不用再迁移。

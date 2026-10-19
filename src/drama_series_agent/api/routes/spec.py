@@ -10,7 +10,7 @@ from drama_series_agent.api.errors import ApiError
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.config import get_config, resolve
 from drama_series_agent.core.models_db import OutputSpecRow
-from drama_series_agent.core.overrides import load_overrides
+from drama_series_agent.core.overrides import load_defaults, load_overrides
 from drama_series_agent.spec.compat import Compat, compat_table
 from drama_series_agent.spec.dims import Aspect, Delivery
 from drama_series_agent.spec.schema import OutputSpec, SpecPatch, apply_patch, presets, to_public
@@ -71,6 +71,7 @@ async def get_compat(series_id: str, state: State, aspect: Aspect | None = None)
         if row is None:
             raise ApiError(404, "series_not_found", id=series_id)
         overrides = await load_overrides(session)
+        defaults = await load_defaults(session)
     cfg = get_config()
     caps = await state.setup.capabilities()
     current: Aspect = row.aspect  # type: ignore[assignment]
@@ -78,6 +79,6 @@ async def get_compat(series_id: str, state: State, aspect: Aspect | None = None)
     return compat_table(
         aspect or current,
         delivery,
-        lambda comp: resolve(comp, overrides, config=cfg, caps=caps).values,
+        lambda comp: resolve(comp, overrides, config=cfg, caps=caps, defaults=defaults).values,
         cfg,
     )

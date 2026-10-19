@@ -12,6 +12,7 @@ import {
 import { series as demoSeries } from "@/mocks/fixtures/demo/series";
 import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
 import { server } from "@/mocks/node";
+import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { resetFakeSetup, setupHandlers } from "@/test/setupBackend";
 
 type Dims = { w: number; h: number };
@@ -119,11 +120,13 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   fake.series = structuredClone(demoSeries);
   fake.spec = structuredClone(demoSpec);
   resetFakeSetup();
+  resetFakeConfig();
   server.use(
     http.get("*/api/v1/health", () => HttpResponse.json({ status: "ok", version: "0", mock })),
     http.get("*/api/v1/jobs", () => HttpResponse.json([])),
     ...seriesHandlers(),
     ...setupHandlers(),
+    ...configHandlers(),
     http.get("*/api/v1/providers", () =>
       HttpResponse.json({
         providers: [

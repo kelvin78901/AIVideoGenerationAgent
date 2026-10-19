@@ -20,7 +20,7 @@ M0_TABLES = {"job", "model_call", "config_override", "provider_account", "custom
 M1_TABLES = {
     "series", "output_spec", "machine_profile", "installed_item", "comfy_env", "comfy_snapshot"
 }  # fmt: skip
-M2_TABLES = {"product", "product_version", "dependency", "gate_decision"}
+M2_TABLES = {"product", "product_version", "dependency", "gate_decision", "app_setting"}
 ALL_TABLES = M0_TABLES | M1_TABLES | M2_TABLES
 
 

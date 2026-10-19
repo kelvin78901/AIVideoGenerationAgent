@@ -1,4 +1,4 @@
-"""``web/src/test/data/setup.json``: what the Mock backend answers on its sample machines.
+"""``web/src/test/data/{setup,config}.json``: what the Mock backend answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -104,3 +104,34 @@ def test_web_setup_fixture_is_current(client: TestClient) -> None:
             f.write(text)
     current = FIXTURE.read_text(encoding="utf-8") if FIXTURE.exists() else ""
     assert current == text, f"{FIXTURE.name} is out of date: see this module's docstring"
+
+
+CONFIG_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "config.json"
+
+
+def _config_export(client: TestClient) -> dict[str, Any]:
+    """The component catalog and every preset's layer per component (``test/fakes/config.ts``).
+
+    Taken before any scan, so nothing is filtered by the machine.
+    """
+    catalog = client.get(f"{V1}/config/components").json()
+    presets: dict[str, dict[str, Any]] = {}
+    for preset in ("quality", "balanced", "cheap", "local"):
+        client.put(f"{V1}/config/defaults", json={"preset": preset, "fallback_notify": "after"})
+        presets[preset] = {
+            c["id"]: client.get(f"{V1}/config/resolve", params={"component": c["id"]}).json()[
+                "values"
+            ]
+            for c in catalog["components"]
+        }
+    client.put(f"{V1}/config/defaults", json={"preset": "balanced"})
+    return {"catalog": catalog, "presets": presets}
+
+
+def test_web_config_fixture_is_current(client: TestClient) -> None:
+    text = json.dumps(_config_export(client), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(CONFIG_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = CONFIG_FIXTURE.read_text(encoding="utf-8") if CONFIG_FIXTURE.exists() else ""
+    assert current == text, f"{CONFIG_FIXTURE.name} is out of date: see this module's docstring"

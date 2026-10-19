@@ -3,10 +3,9 @@ import { http } from "msw";
 import type { ImpactChange } from "@/api/schemas/impact";
 import { getDb } from "@/mocks/db";
 import { demoTiming } from "@/mocks/events";
-import { primaryModel } from "@/mocks/fixtures/demo/config";
 import { blockRewrites } from "@/mocks/fixtures/demo/script";
-import { resolveConfig } from "@/mocks/handlers/config";
 import { demoError, demoJson, v1 } from "@/mocks/http";
+import { demoRoute, primaryModel } from "@/mocks/route";
 
 function findBlock(id: string) {
   for (const script of Object.values(getDb().scripts)) {
@@ -38,9 +37,8 @@ function rewrite(kind: "lines" | "scenes") {
     const id = String(params.id);
     if (!findBlock(id)) return demoError(404, "line_not_found", { id });
     const body = (await request.json().catch(() => ({}))) as { model?: unknown };
-    const cfg = resolveConfig("script", null);
     const model =
-      typeof body.model === "string" ? body.model : ((cfg && primaryModel(cfg.values)) ?? "");
+      typeof body.model === "string" ? body.model : (primaryModel(await demoRoute("script")) ?? "");
     await new Promise((r) => setTimeout(r, demoTiming.rewriteMs));
     return demoJson({ text: blockRewrites[id] ?? "", model_key: model });
   });

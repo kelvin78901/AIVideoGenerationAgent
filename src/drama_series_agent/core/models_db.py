@@ -412,3 +412,15 @@ class GateDecision(SQLModel, table=True):
     decided_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+class AppSetting(SQLModel, table=True):
+    """App-wide settings that are not per component: e.g. ``config.defaults`` (Models page)."""
+
+    __tablename__ = "app_setting"
+
+    key: str = Field(primary_key=True)
+    value_json: dict[str, Any] = _json(dict)
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

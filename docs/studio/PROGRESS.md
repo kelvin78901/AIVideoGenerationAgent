@@ -11,11 +11,12 @@
 ## 已完成的小步
 
 - 0：开分支、存计划、DECISIONS 记 Kelvin 定的四项（7a52479）。
-- 1：表 `product` / `product_version` / `dependency` / `gate_decision`（迁移 `0007`）、`pipeline/products.py`（`ProductService`：只追加、第一次才自动采纳、锁定、`on_adopt` 物化钩子）、`/products`、`/versions` 六个接口、`PipelineError`；事件改成只带 id（前端 zod、MSW 同步改）。pytest 339、Vitest 197 全过（本提交）。
+- 1：表 `product` / `product_version` / `dependency` / `gate_decision`（迁移 `0007`）、`pipeline/products.py`（`ProductService`：只追加、第一次才自动采纳、锁定、`on_adopt` 物化钩子）、`/products`、`/versions` 六个接口、`PipelineError`；事件改成只带 id（前端 zod、MSW 同步改）。pytest 339、Vitest 197 全过（1b44c55）。
+- 2：`core/config.py:preset_settings()`（四个预设、`off`）、`app_setting`（迁移 `0008`）、`modelhub/catalog.py`、`/config/components|resolve|override|defaults`；`components.yaml` 加单次上限和 `sfx`；删 MSW config handler，剩下的示例 handler 用 `mocks/route.ts:demoRoute()`，页面测试用 `test/fakes/config.ts` + `test/data/config.json`。pytest 350、Vitest 197、e2e 17 全过（本提交）。
 
 ## 下一步
 
-- **第 2 步：配置接口 + 模型与兜底页**。后端照搬 `web/src/mocks/handlers/config.ts` 的 `presetConfig()` / `resolveConfig()`（四个预设、`off` 模式）进 `core/config.py`；新表 `app_setting`（迁移 `0008`）存 `{preset, fallback_notify}`；接口放 `api/routes/config.py`，形状照 `web/src/api/schemas/config.ts`（来源层叫 `preset`、`sources` 按顶层字段、`fallback.timeout_s`）。然后删 MSW `config.ts`，`resolveConfig()` 挪成剩下 handler 共用的小工具；页面测试改用假后端。注意 `core/config.py:resolve()` 的 project / component 覆盖不看 `scope_id`（全局），模型页本来就是全局的。
+- **第 3 步：组件框架、提示词、Mock 应答器**（计划第 3 步）。新包内容：`pipeline/component.py`（协议 + 注册表）、`product.run` 任务处理器（注册方式照 `api/handlers.py` 的 `dev.llm_test`）、`prompts/compiler.py` + `prompts/templates/<component>/default.j2`（要加依赖 `jinja2`：先请 Kelvin 停掉 `start.ps1` 再 `uv add jinja2`）、`ModelRequest.meta`（`modelhub/adapters/base.py`）+ Mock 应答器注册（`modelhub/adapters/mock.py` 的 `_llm`）、`pipeline/invalidation.py`（切片哈希、待更新现算）；接口 `POST /products/{id}/run`、`PUT /products/{id}/prompt`、`POST /products/{id}/compile`，`GET /products/{id}` 补 `prompt` / `estimate` / `running`（MSW 的参考实现在 `web/src/mocks/handlers/products.ts`）。先用一个测试组件跑通。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。

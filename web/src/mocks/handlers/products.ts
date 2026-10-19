@@ -11,15 +11,14 @@ import {
 } from "@/api/schemas/products";
 import { getDb } from "@/mocks/db";
 import { demoTiming, emitDemoEvent } from "@/mocks/events";
-import { primaryModel } from "@/mocks/fixtures/demo/config";
 import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
 import { keyframeCandidates } from "@/mocks/fixtures/demo/shots";
 import { assetPayload } from "@/mocks/handlers/assets";
-import { resolveConfig } from "@/mocks/handlers/config";
 import { demoTakeQa, logTake, shotOf, waitingOn } from "@/mocks/handlers/generate";
 import { demoError, demoJson, v1 } from "@/mocks/http";
+import { demoRoute, primaryModel } from "@/mocks/route";
 
 const notFound = (id: unknown) => demoError(404, "product_not_found", { id });
 const DEFAULT_MODEL = "local/qwen3.6-27b";
@@ -79,10 +78,9 @@ function nextModel(current: string): string {
 }
 
 /** The model a plain run uses: the component's configured route (Inspector「运行设置」). */
-function routeModel(p: Product): string {
-  const cfg = resolveConfig(p.component_id, null);
+async function routeModel(p: Product): Promise<string> {
   return (
-    (cfg && primaryModel(cfg.values)) ??
+    primaryModel(await demoRoute(p.component_id)) ??
     currentVersion(p)?.model_key ??
     p.prompt?.model_key ??
     DEFAULT_MODEL
@@ -90,9 +88,9 @@ function routeModel(p: Product): string {
 }
 
 /** `estimate` is computed on read, so it follows config changes (hard rule 6). */
-function withEstimate(p: Product): Product {
+async function withEstimate(p: Product): Promise<Product> {
   if (p.running) return p;
-  const model = routeModel(p);
+  const model = await routeModel(p);
   p.estimate = {
     model_key: model,
     where: modelByKey(model)?.where ?? "api",
@@ -168,7 +166,7 @@ function finishRun(
 
 export const productHandlers = [
   // ?owner=<type>:<id>&component=<id>
-  http.get(v1("/products"), ({ request }) => {
+  http.get(v1("/products"), async ({ request }) => {
     const q = new URL(request.url).searchParams;
     const owner = q.get("owner");
     const component = q.get("component");
@@ -177,12 +175,12 @@ export const productHandlers = [
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&
         (!component || p.component_id === component),
     );
-    return demoJson(list.map(withEstimate));
+    return demoJson(await Promise.all(list.map(withEstimate)));
   }),
 
-  http.get(v1("/products/:id"), ({ params }) => {
+  http.get(v1("/products/:id"), async ({ params }) => {
     const p = getDb().products[String(params.id)];
-    return p ? demoJson(withEstimate(p)) : notFound(params.id);
+    return p ? demoJson(await withEstimate(p)) : notFound(params.id);
   }),
 
   http.post(v1("/products/:id/run"), async ({ params, request }) => {
@@ -199,7 +197,9 @@ export const productHandlers = [
     const req = body.data;
     // 重跑 uses the configured route; 不满意换一个 moves on from the version on screen.
     const base =
-      req.mode === "switch" ? (currentVersion(p)?.model_key ?? routeModel(p)) : routeModel(p);
+      req.mode === "switch"
+        ? (currentVersion(p)?.model_key ?? (await routeModel(p)))
+        : await routeModel(p);
     const model = req.model ?? (req.mode === "switch" ? nextModel(base) : base);
     if (!modelByKey(model)) return demoError(404, "unknown_model", { key: model });
 

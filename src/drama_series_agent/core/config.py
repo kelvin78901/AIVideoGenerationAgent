@@ -2,7 +2,8 @@
 
 Resolution order for a component setting (SPEC 7.1), later layers win:
 
-``factory`` (components.yaml) → ``project`` → ``component`` → ``item`` (a single shot / asset).
+``preset`` (components.yaml under the active preset, SPEC 7.2) → ``project`` → ``component`` →
+``item`` (a single shot / asset).
 
 Every resolved field carries the layer it came from so the UI can show "来自哪一级".
 """
@@ -23,8 +24,12 @@ from pydantic import BaseModel, ConfigDict, Field
 from drama_series_agent.core.capabilities import Capabilities, restrict
 from drama_series_agent.core.paths import config_dir
 
-Layer = Literal["factory", "project", "component", "item"]
-LAYERS: tuple[Layer, ...] = ("factory", "project", "component", "item")
+Layer = Literal["preset", "project", "component", "item"]
+LAYERS: tuple[Layer, ...] = ("preset", "project", "component", "item")
+PresetId = Literal["quality", "balanced", "cheap", "local"]
+PRESETS: tuple[PresetId, ...] = ("quality", "balanced", "cheap", "local")
+# The top-level fields of a component's settings; the UI shows one source per field.
+CONFIG_FIELDS = ("mode", "api_model", "local_model", "fallback", "alt_order", "per_call_cap_usd")
 
 
 class _Loose(BaseModel):
@@ -121,6 +126,7 @@ class ComponentDefault(_Loose):
     balanced: BalancedRoute = Field(default_factory=BalancedRoute)
     alt_order: list[str] | None = None
     cheap_api: str | None = None
+    per_call_cap_usd: float | None = None  # 单次花费上限; default: ComponentsConfig's
     candidates: int | None = None
     gate: str | None = None
     follows_output_spec: bool = False
@@ -135,6 +141,7 @@ class FallbackDefaults(_Loose):
 
 class ComponentsConfig(_Loose):
     fallback_defaults: FallbackDefaults = Field(default_factory=FallbackDefaults)
+    per_call_cap_usd: float | None = 0.5  # hard rule 6: a run above this waits for a yes
     components: list[ComponentDefault] = Field(default_factory=list)
 
     def component(self, component_id: str) -> ComponentDefault:
@@ -229,32 +236,83 @@ def get_config() -> StudioConfig:
 # --------------------------------------------------------------------------- resolution
 
 
-def factory_settings(comp: ComponentDefault, fallback: FallbackDefaults) -> dict[str, Any]:
-    """Per-component defaults derived from the balanced preset (SPEC 7.2, ``presetCfg()``)."""
+@dataclass(frozen=True)
+class Defaults:
+    """Global defaults on the Models page (``app_setting`` ``config.defaults``)."""
+
+    preset: PresetId = "balanced"
+    fallback_notify: Literal["after", "ask"] = "after"
+
+
+def _first(keys: list[str]) -> str | None:
+    return keys[0] if keys else None
+
+
+def _alt_after(comp: ComponentDefault, primary: str | None, to: str | None) -> list[str]:
+    """「不满意换一个」: the fallback target first, then the other models (local first)."""
+    rest = [k for k in [*comp.local, *comp.api] if k not in (primary, to)]
+    return [to, *rest] if to else rest
+
+
+def preset_settings(
+    comp: ComponentDefault, components: ComponentsConfig, defaults: Defaults | None = None
+) -> dict[str, Any]:
+    """One component's preset layer (SPEC 7.2; the prototype's ``presetCfg()``).
+
+    质量优先 = the first API model, local only as fallback; 均衡 = components.yaml ``balanced``
+    (mode not given: hybrid when there are both); 省钱 = local first, ``cheap_api`` as
+    fallback; 全本地 = local only, components without a local model are ``off``.
+    """
+    defaults = defaults or Defaults()
+    fb = components.fallback_defaults
+    apis, locals_ = comp.api, comp.local
+    cap = comp.per_call_cap_usd
+    if cap is None:
+        cap = components.per_call_cap_usd
     bal = comp.balanced
-    api_model = bal.api or (comp.api[0] if comp.api else None)
-    local_model = bal.local or (comp.local[0] if comp.local else None)
-    mode = bal.mode
-    if mode is None:
-        if api_model and local_model:
-            mode = "hybrid"
+    api_model = bal.api or _first(apis)
+    local_model = bal.local or _first(locals_)
+    to = bal.fallback_to
+    if defaults.preset == "balanced":
+        mode = bal.mode or (
+            "hybrid" if api_model and local_model else "api" if api_model else "local"
+        )
+        primary = local_model if mode in ("local", "hybrid") else api_model
+        alt_order = list(comp.alt_order) if comp.alt_order else _alt_after(comp, primary, to)
+        enabled = to is not None
+    elif defaults.preset in ("quality", "cheap"):
+        both = bool(apis and locals_)
+        if defaults.preset == "quality":
+            api_model = _first(apis)
+            mode = "api" if apis else "local"
         else:
-            mode = "api" if api_model else "local"
-    alt_order = comp.alt_order or [m for m in comp.api if m != api_model]
+            api_model = comp.cheap_api or (apis[-1] if apis else None)
+            mode = "local" if locals_ else "api"
+        local_model = _first(locals_)
+        to = (local_model if mode == "api" else api_model) if both else None
+        alt_order = _alt_after(comp, api_model if mode == "api" else local_model, to)
+        enabled = both
+    else:  # local
+        local_model = _first(locals_)
+        mode = "local" if local_model else "off"
+        to = None
+        alt_order = [k for k in locals_ if k != local_model]
+        enabled = False
     return {
         "mode": mode,
         "api_model": api_model,
         "local_model": local_model,
         "fallback": {
-            "enabled": bal.fallback_to is not None,
-            "on": list(fallback.on),
-            "qa_fail_n": fallback.qa_fail_n,
-            "to": bal.fallback_to,
-            "notify": fallback.notify,
-            "local_timeout_s": fallback.local_timeout_s,
+            "enabled": enabled,
+            # Text has no auto QA, so a writing component never falls back on it by default.
+            "on": [t for t in fb.on if not (t == "qa_fail" and comp.kind == "llm")],
+            "qa_fail_n": fb.qa_fail_n,
+            "timeout_s": fb.local_timeout_s,
+            "to": to,
+            "notify": defaults.fallback_notify,
         },
         "alt_order": alt_order,
-        "per_call_cap_usd": None,
+        "per_call_cap_usd": cap if apis else None,
     }
 
 
@@ -307,16 +365,17 @@ def resolve(
     item: str | None = None,
     config: StudioConfig | None = None,
     caps: Capabilities | None = None,
+    defaults: Defaults | None = None,
 ) -> Resolved:
-    """Merge factory defaults with the overrides that apply to ``component_id`` / ``item``.
+    """Merge the preset layer with the overrides that apply to ``component_id`` / ``item``.
 
     With ``caps`` (this machine, after a scan), local models it cannot run are routed around
     last, so a hand-picked local model is dropped too (SPEC 7.3).
     """
     cfg = config or get_config()
     comp = cfg.components.component(component_id)
-    values = copy.deepcopy(factory_settings(comp, cfg.components.fallback_defaults))
-    sources: dict[str, Layer] = dict.fromkeys(_flatten(values), "factory")
+    values = copy.deepcopy(preset_settings(comp, cfg.components, defaults))
+    sources: dict[str, Layer] = dict.fromkeys(_flatten(values), "preset")
 
     def applies(ov: Override) -> bool:
         if ov.component_id not in (None, component_id):

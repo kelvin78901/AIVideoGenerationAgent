@@ -2,12 +2,10 @@
  * In-memory demo store, built from the fixtures. Handlers read and mutate it; a page reload
  * (or `resetDb()` in tests) brings back the initial demo state.
  */
-import type { ComponentConfig, ConfigDefaults } from "@/api/schemas/config";
 import type { GateDecision } from "@/api/schemas/gates";
 import type { GenerateLogEntry, GenerateRules } from "@/api/schemas/generate";
 import type { Impact } from "@/api/schemas/impact";
 import type { SyncRun } from "@/api/schemas/sync";
-import { componentDefs } from "@/mocks/fixtures/demo/config";
 import { assetProducts, assets } from "@/mocks/fixtures/demo/assets";
 import { EP1, episodes, progress } from "@/mocks/fixtures/demo/episodes";
 import { calls, kpis, spend, summary } from "@/mocks/fixtures/demo/metrics";
@@ -55,15 +53,6 @@ function createDb() {
       ),
     ),
     assets,
-    config: {
-      components: componentDefs,
-      /** Active preset (its layer is computed, `presetConfig()`) and the fallback policy. */
-      defaults: { preset: "balanced", fallback_notify: "after" } as ConfigDefaults,
-      project: {} as Partial<ComponentConfig>,
-      component: {} as Record<string, Partial<ComponentConfig>>,
-      /** `<component>|<item>` → override. */
-      item: {} as Record<string, Partial<ComponentConfig>>,
-    },
     novel,
     suggestions,
     bible,

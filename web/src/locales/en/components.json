@@ -130,7 +130,9 @@
       "no_local_model": "This component has no model that runs locally",
       "no_api_model": "This component has no API version",
       "needs_both": "Hybrid needs both local and API",
-      "machine": "This machine cannot run it: {{reason}}"
+      "machine": "This machine cannot run it: {{reason}}",
+      "machine_cuda": "This machine has no NVIDIA GPU (CUDA), so the local models cannot run",
+      "machine_missing": "This machine still lacks {{count}} runtime item(s); add them under Environment"
     },
     "reasonLine": "{{mode}}: {{reason}}"
   },

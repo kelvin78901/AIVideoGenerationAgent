@@ -20,6 +20,7 @@ from drama_series_agent import __version__
 from drama_series_agent.api import sse
 from drama_series_agent.api.routes import (
     comfy,
+    config,
     dev,
     jobs,
     products,
@@ -73,6 +74,7 @@ def _v1_router() -> APIRouter:
     router.include_router(setup.router)
     router.include_router(comfy.router)
     router.include_router(products.router)
+    router.include_router(config.router)
     return router
 
 

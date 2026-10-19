@@ -2,10 +2,9 @@ import { http } from "msw";
 
 import type { Suggestion } from "@/api/schemas/novel";
 import { getDb } from "@/mocks/db";
-import { primaryModel } from "@/mocks/fixtures/demo/config";
 import { suggestionRewrites } from "@/mocks/fixtures/demo/novel";
-import { resolveConfig } from "@/mocks/handlers/config";
 import { demoError, demoJson, v1 } from "@/mocks/http";
+import { demoRoute, primaryModel } from "@/mocks/route";
 
 const seriesGuard = (id: string) =>
   getDb().series[id] ? null : demoError(404, "series_not_found", { id });
@@ -67,10 +66,10 @@ export const novelHandlers = [
     if (!s) return demoError(404, "suggestion_not_found", { id: params.id });
     const body = (await request.json()) as { instruction?: unknown };
     const instruction = typeof body.instruction === "string" ? body.instruction.trim() : "";
-    const cfg = resolveConfig("enrich", null);
+    const route = await demoRoute("enrich");
     s.text = suggestionRewrites[s.id] ?? s.text;
     s.rewrite_instruction = instruction;
-    s.rewritten_by = (cfg && primaryModel(cfg.values)) ?? null;
+    s.rewritten_by = primaryModel(route);
     if (s.status !== "accepted") s.status = "rewritten";
     return demoJson(s);
   }),

@@ -130,7 +130,9 @@
       "no_local_model": "这个组件没有可本地运行的模型",
       "no_api_model": "这个组件没有 API 版本",
       "needs_both": "混合需要本地和 API 都能用",
-      "machine": "这台机器跑不了：{{reason}}"
+      "machine": "这台机器跑不了：{{reason}}",
+      "machine_cuda": "这台机器没有 NVIDIA 显卡（CUDA），本地模型跑不了",
+      "machine_missing": "这台机器还缺 {{count}} 项运行环境，去「环境与安装」补装"
     },
     "reasonLine": "{{mode}}：{{reason}}"
   },
