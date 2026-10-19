@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-18 · M1 工作流库界面，示例数据（第 7b 步）
+
+- **设计稿 Kelvin 审过**（审阅图 `reports/ui/workflows/`）：放「模型与兜底」页最下面，和组件表一样点一行在下面展开；展开后三个标签「绑定 / 体检 / 试跑」，默认打开最该处理的那个（有猜的绑定 → 绑定；缺依赖 → 体检；否则试跑）。
+- **改档规则**（SPEC 6.4.4）：平台推荐的不能改档；升为「我的工作流」要绑定全部确认、试跑通过、文件没变过；「我的工作流」随时能降为未验证；改了绑定的「我的工作流」自动降为未验证（试跑结果不再算数）。
+- **SPEC 9.1 没写、这次补的接口**（M5 接后端时再定）：`GET /comfy/workflows`（读 ComfyUI 自己的工作流列表，供导入；工作台的素材板列出但不能登记）、`POST /workflows/{id}/deps`（缺的节点包和模型的改动清单，`comfy_change` 同第 7 步）、`POST /workflows/{id}/deps/install`（确认后：先存快照再装）。装依赖复用第 7 步的确认弹窗，回滚提示指向「环境与安装」（`ConfirmInstall` 加 `snapshotNote`）。
+- **试跑进度先轮询**：列表里有试跑中的工作流时每秒刷新一次；M5 有真任务后改成 `job.updated` 事件。
+- **绑定的槽位**：照 SPEC 6.4.3 的输入输出，另加 `video_in`（超分、口型这类以视频为输入的工作流要用）。SPEC 收尾时补上。
+
 ## 2026-10-18 · M1 首次启动页接真实接口（第 7 步）
 
 - **前端测试的假后端用真实后端导出的数据**：`tests/api/test_web_fixtures.py` 在 Mock 下扫描 PC / Mac 示例，把 profile（扫描前、扫描后）、全选安装时的顺序和 `install.confirm`、`/comfy/env` 写进 `web/src/test/data/setup.json`；`web/src/test/setupBackend.ts` 读它，按真实后端的节奏（202 后在下一个任务里推 `setup.progress` / `setup.log`，经测试的 `FakeEventSource` 走 SSE 那条路）模拟扫描、确认、快照、安装、重试、跳过、回滚。后端回答一变，这个 pytest 就失败，`DRAMA_UPDATE_FIXTURES=1` 重新生成。原因：MSW 示例和后端的数字已经分叉（MSW 25 项，后端 30 项），手抄一份迟早再分叉。文件由脚本生成，prettier 忽略它。
