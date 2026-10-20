@@ -37,7 +37,7 @@ export default defineConfig({
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
   use: { baseURL: BASE_URL, locale: "zh-CN" },
   projects: [
-    { name: "smoke", testMatch: /smoke\.spec\.ts/, use: { ...desktop } },
+    { name: "smoke", testMatch: /(smoke|m2)\.spec\.ts/, use: { ...desktop } },
     { name: "shots", testMatch: /shots\.spec\.ts/, use: { ...desktop } },
   ],
   webServer: [
