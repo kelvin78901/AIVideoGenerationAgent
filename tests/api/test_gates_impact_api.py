@@ -260,8 +260,8 @@ def test_editing_a_confirmed_novel_chapter(client: TestClient) -> None:
     assert codes[0] == ("self_novel", {}, False)
     # Everything read chapter 1: all of it directly, episode 1's script through chapter:0.
     assert [c for c, _, opt in codes if c.startswith("stale_")] == [
-        "stale_bible",
         "stale_suggestions",
+        "stale_bible",
         "stale_episodes",
         "stale_script",
     ]

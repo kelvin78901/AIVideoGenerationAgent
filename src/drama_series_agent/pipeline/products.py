@@ -102,10 +102,12 @@ def product_public(
         prompt = PromptOut.model_validate(p.prompt_json)
     running = None
     if job is not None and job.state in ACTIVE_JOB_STATES:
+        cascade = job.params_json.get("cascade")
         running = RunningOut(
             job_id=job.id,
             model_key=str(job.params_json.get("model_key", "")),
             state=job.state,
+            cascade_id=str(cascade["id"]) if isinstance(cascade, dict) else None,
         )
     return ProductOut(
         id=p.id,

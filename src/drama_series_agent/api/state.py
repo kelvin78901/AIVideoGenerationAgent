@@ -26,6 +26,7 @@ from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
+from drama_series_agent.pipeline.cascade import CascadeService
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
@@ -64,6 +65,7 @@ class StudioState:
     script: ScriptService
     gates: GateService
     impact: ImpactService
+    cascade: CascadeService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -127,6 +129,9 @@ class StudioState:
         suggestions = SuggestionService(db, products, novel, enrich)
         script_svc = ScriptService(db, products, script)
         impact = ImpactService(db, products, invalidation, estimate)
+        gates = GateService(db, bus, products, invalidation)
+        cascade = CascadeService(db, bus, products, invalidation, runs, gates)
+        impact.cascade = cascade
         register_kinds(
             impact,
             novel=novel,
@@ -152,8 +157,9 @@ class StudioState:
             suggestions=suggestions,
             episodes=episodes,
             script=script_svc,
-            gates=GateService(db, bus, products, invalidation),
+            gates=gates,
             impact=impact,
+            cascade=cascade,
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:
@@ -174,8 +180,10 @@ class StudioState:
         return state
 
     async def run(self) -> None:
-        """Start background work (the job dispatcher, which first re-queues interrupted jobs)."""
+        """Start background work (the job dispatcher, which first re-queues interrupted jobs) and
+        pick up a 确认并同步 a stop interrupted between two steps."""
         await self.jobs.start()
+        await self.cascade.resume()
 
     async def stop(self) -> None:
         await self.jobs.stop()

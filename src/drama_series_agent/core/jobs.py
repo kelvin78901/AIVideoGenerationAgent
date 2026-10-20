@@ -144,11 +144,16 @@ class JobQueue:
         self._poll_interval_s = poll_interval_s
         self._dispatcher: asyncio.Task[None] | None = None
         self._stopping = False
+        self._finished: list[Callable[[Job], Awaitable[None]]] = []
 
     # ------------------------------------------------------------------ registration
 
     def register(self, kind: str, handler: Handler) -> None:
         self._handlers[kind] = handler
+
+    def on_finished(self, hook: Callable[[Job], Awaitable[None]]) -> None:
+        """Called after a job ends (succeeded, failed or canceled); a failing hook is logged."""
+        self._finished.append(hook)
 
     def limit_for(self, queue: str) -> int:
         if queue in self._concurrency:
@@ -308,7 +313,13 @@ class JobQueue:
         return job
 
     async def _finish(self, job_id: str, state: str, **fields: Any) -> Job:
-        return await self._update(job_id, state=state, finished_at=utcnow(), **fields)
+        job = await self._update(job_id, state=state, finished_at=utcnow(), **fields)
+        for hook in self._finished:
+            try:
+                await hook(job)
+            except Exception:
+                logger.exception("job {} finished hook failed", job_id)
+        return job
 
     async def _dispatch_loop(self) -> None:
         while not self._stopping:

@@ -10,7 +10,9 @@ if the rerun changes what it reads).
 
 ``apply``: ``undo`` drops the preview; ``mark`` writes the change, lifting the lock for the
 write and putting it back (the gate stays confirmed: the user confirmed this change), and
-staleness follows on its own; ``rerun`` (确认并同步) is M2 step 10b. A preview lives in memory
+staleness follows on its own; ``rerun`` (确认并同步) writes it the same way and hands what
+it made stale to ``pipeline/cascade.py`` (rerun and adopt, down to the scripts). A preview lives
+in memory
 until it is applied (a restart loses it: 404 ``impact_not_found``, preview again); applying
 re-plans the change and refuses it (409 ``impact_outdated``) when what it was made from has
 changed since.
@@ -21,7 +23,7 @@ from __future__ import annotations
 from collections import OrderedDict, deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Any, Literal
+from typing import Any, Literal, Protocol
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from sqlmodel import col, select
@@ -56,8 +58,17 @@ Planner = Callable[[str, dict[str, Any]], Awaitable[PlannedChange]]
 # The next run's price of a product on its current route; None = free (local) or unknown.
 Estimator = Callable[[Product], Awaitable[float | None]]
 
-# Pipeline order of the lines; the navigation step each slot's 「待更新」 counts in.
-_ORDER = {NOVEL_SLOT: 0, BIBLE_SLOT: 1, SUGGESTIONS_SLOT: 2, EPISODES_SLOT: 3, SCRIPT_SLOT: 4}
+# Pipeline order (of the lines, and of a sync's reruns); the navigation step each slot's
+# 「待更新」 counts in. The suggestions come before the bible: the bible is extracted from the
+# text plus the accepted additions, while the suggestions only read its names (M2 plan 计划变更
+# 5), so a sync that reruns both builds the bible from the new suggestions.
+PIPELINE_ORDER = {
+    NOVEL_SLOT: 0,
+    SUGGESTIONS_SLOT: 1,
+    BIBLE_SLOT: 2,
+    EPISODES_SLOT: 3,
+    SCRIPT_SLOT: 4,
+}
 _STEP = {
     NOVEL_SLOT: "novel",
     BIBLE_SLOT: "novel",
@@ -66,6 +77,12 @@ _STEP = {
     SCRIPT_SLOT: "script",
 }
 _KEPT = 100  # previews kept in memory
+
+
+class Cascader(Protocol):
+    """确认并同步 (``pipeline/cascade.py``): returns the first reruns' job ids."""
+
+    async def start(self, series_id: str, origin: str) -> list[str]: ...
 
 
 class ImpactChangeIn(BaseModel):
@@ -111,7 +128,7 @@ class ImpactApplyOut(BaseModel):
 
 
 @dataclass(frozen=True)
-class _Node:
+class Node:
     """A product as the preview reads it (copied out before the staged write is rolled back)."""
 
     id: str
@@ -125,7 +142,7 @@ class _Node:
 
 @dataclass
 class _Affected:
-    nodes: dict[str, _Node]
+    nodes: dict[str, Node]
     direct: list[str]
     further: list[str]
     noop: bool  # the change writes nothing new
@@ -136,6 +153,41 @@ class _Preview:
     change: ImpactChangeIn
     planned: PlannedChange
     stale: dict[str, int] = field(default_factory=dict)
+
+
+def rank(node: Node) -> tuple[int, int]:
+    """Where a product comes in the pipeline (an episode's after the one before)."""
+    return PIPELINE_ORDER.get(node.slot, 9), node.n or 0
+
+
+async def series_graph(
+    session: AsyncSession, series_id: str
+) -> tuple[dict[str, Node], list[tuple[str, str, str]]]:
+    """The series' products, and what each one shows (adopted, else current) was built from:
+    (product, upstream product, slice). Plain data: it outlives a rolled-back session."""
+    query = select(Product).where(Product.series_id == series_id)
+    products = list((await session.exec(query)).all())
+    shown = [v for p in products if (v := p.adopted_version_id or p.current_version_id)]
+    deps = await session.exec(select(Dependency).where(col(Dependency.version_id).in_(shown)))
+    edges = sorted({(d.product_id, d.upstream_product_id, d.slice) for d in deps.all()})
+    adopted = [p.adopted_version_id for p in products if p.adopted_version_id]
+    versions = await session.exec(select(ProductVersion).where(col(ProductVersion.id).in_(adopted)))
+    origins = {v.id: v.origin for v in versions.all()}
+    rows = await session.exec(select(Episode).where(Episode.series_id == series_id))
+    episodes = {e.id: e.idx for e in rows.all()}
+    nodes = {
+        p.id: Node(
+            id=p.id,
+            slot=p.slot,
+            owner_type=p.owner_type,
+            owner_id=p.owner_id,
+            locked=bool(p.locked_hash),
+            edited=origins.get(p.adopted_version_id or "") == "edit",
+            n=episodes.get(p.owner_id) if p.owner_type == "episode" else None,
+        )
+        for p in products
+    }
+    return nodes, edges
 
 
 class ImpactService:
@@ -151,6 +203,7 @@ class ImpactService:
         self._invalidation = invalidation
         self._estimate = estimate
         self._planners: dict[str, Planner] = {}
+        self.cascade: Cascader | None = None
         self._previews: OrderedDict[str, _Preview] = OrderedDict()
 
     def kind(self, name: str, planner: Planner) -> None:
@@ -180,8 +233,6 @@ class ImpactService:
     async def apply(self, body: ImpactApplyIn) -> ImpactApplyOut:
         if body.impact_id not in self._previews:
             raise PipelineError(404, "impact_not_found", id=body.impact_id)
-        if body.action == "rerun":
-            raise PipelineError(422, "action_not_supported", action=body.action)
         preview = self._previews.pop(body.impact_id)
         if body.action == "undo":
             return ImpactApplyOut(action="undo", stale={}, job_ids=[])
@@ -190,7 +241,10 @@ class ImpactService:
         if (planned.base_version_id, planned.content) != (before.base_version_id, before.content):
             raise PipelineError(409, "impact_outdated", id=body.impact_id)
         await self._write(planned)
-        return ImpactApplyOut(action="mark", stale=preview.stale, job_ids=[])
+        jobs: list[str] = []
+        if body.action == "rerun" and self.cascade is not None:
+            jobs = await self.cascade.start(planned.series_id, planned.product_id)
+        return ImpactApplyOut(action=body.action, stale=preview.stale, job_ids=jobs)
 
     async def _write(self, planned: PlannedChange) -> None:
         """Commit a change to a locked product: unlock for the write, lock what it adopted."""
@@ -218,7 +272,7 @@ class ImpactService:
 
     async def _affected(self, planned: PlannedChange) -> _Affected:
         async with self._db.session() as session:
-            nodes, edges = await self._graph(session, planned.series_id)
+            nodes, edges = await series_graph(session, planned.series_id)
             keys = {(up, name) for _, up, name in edges}
             changed: set[tuple[str, str]] = set()
             noop = await self._noop(session, planned)
@@ -244,41 +298,9 @@ class ImpactService:
                     queue.append(nxt)
 
         def ordered(ids: set[str]) -> list[str]:
-            return sorted(ids, key=lambda i: (_ORDER.get(nodes[i].slot, 9), nodes[i].n or 0))
+            return sorted(ids, key=lambda i: rank(nodes[i]))
 
         return _Affected(nodes, ordered(direct), ordered(reached), noop)
-
-    @staticmethod
-    async def _graph(
-        session: AsyncSession, series_id: str
-    ) -> tuple[dict[str, _Node], list[tuple[str, str, str]]]:
-        """The series' products, and what each one shows (adopted, else current) was built
-        from: (product, upstream product, slice). Plain data: it outlives the rollback."""
-        query = select(Product).where(Product.series_id == series_id)
-        products = list((await session.exec(query)).all())
-        shown = [v for p in products if (v := p.adopted_version_id or p.current_version_id)]
-        deps = await session.exec(select(Dependency).where(col(Dependency.version_id).in_(shown)))
-        edges = sorted({(d.product_id, d.upstream_product_id, d.slice) for d in deps.all()})
-        adopted = [p.adopted_version_id for p in products if p.adopted_version_id]
-        versions = await session.exec(
-            select(ProductVersion).where(col(ProductVersion.id).in_(adopted))
-        )
-        origins = {v.id: v.origin for v in versions.all()}
-        rows = await session.exec(select(Episode).where(Episode.series_id == series_id))
-        episodes = {e.id: e.idx for e in rows.all()}
-        nodes = {
-            p.id: _Node(
-                id=p.id,
-                slot=p.slot,
-                owner_type=p.owner_type,
-                owner_id=p.owner_id,
-                locked=bool(p.locked_hash),
-                edited=origins.get(p.adopted_version_id or "") == "edit",
-                n=episodes.get(p.owner_id) if p.owner_type == "episode" else None,
-            )
-            for p in products
-        }
-        return nodes, edges
 
     @staticmethod
     async def _noop(session: AsyncSession, planned: PlannedChange) -> bool:
@@ -325,7 +347,7 @@ class ImpactService:
             costs[p.id] = await self._estimate(p)
 
         def line(
-            code: str, node: _Node, *, cost: float | None = None, optional: bool = False
+            code: str, node: Node, *, cost: float | None = None, optional: bool = False
         ) -> ImpactLineOut:
             params: dict[str, Any] = {"n": node.n} if node.n is not None else {}
             return ImpactLineOut(code=code, params=params, cost_usd=cost, optional=optional)
@@ -339,7 +361,7 @@ class ImpactService:
             line(f"then_{nodes[i].slot}", nodes[i], cost=costs.get(i), optional=True)
             for i in found.further
         ]
-        gates: dict[tuple[str, str], _Node] = {}
+        gates: dict[tuple[str, str], Node] = {}
         for i in ids:
             node = nodes[i]
             under = gate_of(node.owner_type, node.owner_id, node.slot) if node.locked else None

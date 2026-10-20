@@ -203,7 +203,10 @@ class RunService:
         intent: str | None = None,
         compiled: str | None = None,
         count: int = 1,
+        cascade: dict[str, str] | None = None,
     ) -> Job:
+        """Queue a run. ``cascade`` (``{id, origin}``): one rerun of 确认并同步
+        (``pipeline/cascade.py``), adopted when it succeeds."""
         router = self.services.router
         async with self.services.db.session() as session:
             p = await require_product(session, product_id)
@@ -265,6 +268,7 @@ class RunService:
                 "intent": intent,
                 "compiled": compiled,
                 "compiled_overridden": overridden,
+                **({"cascade": dict(cascade)} if cascade else {}),
                 **({} if verdict.ok else {"confirm": verdict.params()}),
             },
             series_id=p.series_id,

@@ -71,6 +71,8 @@ class RunningOut(BaseModel):
     job_id: str
     model_key: str
     state: Literal["queued", "waiting_confirm", "running"]
+    # The 确认并同步 this run is part of (shown as 「同步中」); None for a run of its own.
+    cascade_id: str | None = None
 
 
 class ProductOut(BaseModel):
