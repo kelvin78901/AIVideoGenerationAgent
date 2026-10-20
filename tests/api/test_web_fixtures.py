@@ -40,7 +40,8 @@ def _fast_demo(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def client() -> Iterator[TestClient]:
+def client(demo_gates: None) -> Iterator[TestClient]:
+    """The demo as the app seeds it: 小说 and episode 1's 剧本 confirmed."""
     with TestClient(create_app(), base_url=LOCAL, headers={"X-Drama-Studio": "1"}) as c:
         yield c
 

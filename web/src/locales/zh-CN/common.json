@@ -136,7 +136,9 @@
     "generic": "通知：{{code}}",
     "version_created": "已生成 v{{n}}（{{model}}）。上一版还在历史里，满意就点「采纳」。",
     "sync_done": "同步完成：检查了 {{files}} 个文件，新增 {{added}} 个，其余没有变化。",
-    "run_failed": "生成失败（{{error}}）。之前的版本都还在历史里，可以重跑或换个模型。"
+    "run_failed": "生成失败（{{error}}）。之前的版本都还在历史里，可以重跑或换个模型。",
+    "cascade_done": "已同步：{{count}} 个产物更新，新版本已采纳。旧版本都在历史里。",
+    "cascade_done_failed": "同步结束：{{count}} 个产物更新，{{failed}} 个失败（停在「待更新」，可以单独重跑）。"
   },
   "legacy": {
     "banner": "旧界面：调用不记账、不受预算限制",

@@ -16,6 +16,7 @@ import { server } from "@/mocks/node";
 import { bibleBackendFetch, bibleHandlers, resetFakeBible } from "@/test/fakes/bible";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { episodeHandlers, episodesBackendFetch, resetFakeEpisodes } from "@/test/fakes/episodes";
+import { gateHandlers, impactBackendFetch, resetFakeImpact } from "@/test/fakes/impact";
 import { novelHandlers, resetFakeNovel } from "@/test/fakes/novel";
 import { resetFakeScript, scriptBackendFetch, scriptHandlers } from "@/test/fakes/script";
 import { resetFakeSuggestions, suggestionHandlers } from "@/test/fakes/suggestions";
@@ -162,13 +163,18 @@ function seriesHandlers() {
     ...suggestionHandlers(known),
     ...episodeHandlers(known),
     ...scriptHandlers(),
+    ...gateHandlers(),
   ];
 }
 
-/** What the MSW demo merges in from the backend (`mocks/backend.ts`): products, the plan. */
+/**
+ * What the MSW demo merges in from the backend (`mocks/backend.ts`): products, the plan, and
+ * the impact previews it lays its downstream over.
+ */
 async function fakeBackendFetch(request: Request): Promise<Response> {
   const url = new URL(request.url);
   return (
+    (await impactBackendFetch(request)) ??
     bibleBackendFetch(url) ??
     episodesBackendFetch(url) ??
     scriptBackendFetch(url) ??
@@ -180,8 +186,9 @@ async function fakeBackendFetch(request: Request): Promise<Response> {
  * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, the
  * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`), bible
  * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), the
- * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`), and
- * the PC sample machine before its first scan
+ * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`), the
+ * novel and script gates and impact previews (`test/fakes/impact.ts`), and the PC sample machine
+ * before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
  */
 export function backend({ mock = true }: { mock?: boolean } = {}) {
@@ -194,6 +201,7 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeSuggestions();
   resetFakeEpisodes();
   resetFakeScript();
+  resetFakeImpact();
   setBackendFetch(fakeBackendFetch);
   resetFakeSetup();
   resetFakeConfig();

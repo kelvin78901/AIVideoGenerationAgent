@@ -44,7 +44,7 @@ export function resetFakeScript() {
 const error = (status: number, code: string, params: Record<string, unknown> = {}) =>
   HttpResponse.json({ detail: { code, params } }, { status });
 
-function findBlock(id: string) {
+export function findBlock(id: string) {
   for (const script of Object.values(fakeScript.scripts)) {
     const scene = script.scenes.find((s) => s.id === id);
     const line = script.lines.find((l) => l.id === id);
@@ -52,6 +52,31 @@ function findBlock(id: string) {
   }
   return undefined;
 }
+
+type Edited = { script: Script } | { status: number; code: string };
+
+/** `ops.edit_line`: trimmed, marked `edited` when it changed. */
+export function editLine(id: string, value: string | undefined): Edited {
+  const found = findBlock(id);
+  if (!found?.line) return { status: 404, code: "line_not_found" };
+  const text = (value ?? "").trim();
+  if (!text) return { status: 422, code: "line_empty" };
+  if (text !== found.line.text) Object.assign(found.line, { text, edited: true });
+  return { script: found.script };
+}
+
+/** `ops.edit_scene`: the 场号 typed in front is dropped. */
+export function editScene(id: string, value: string | undefined): Edited {
+  const found = findBlock(id);
+  if (!found?.scene) return { status: 404, code: "scene_not_found" };
+  const heading = (value ?? "").replace(/^\s*场\s*\d+\s*/, "").trim();
+  if (!heading) return { status: 422, code: "heading_empty" };
+  if (heading !== found.scene.heading) Object.assign(found.scene, { heading, edited: true });
+  return { script: found.script };
+}
+
+const answer = (r: Edited) =>
+  "script" in r ? HttpResponse.json(r.script) : error(r.status, r.code);
 
 /** The fake backend's 剧本化 products of a demo episode (merged into the MSW list), or null. */
 export function scriptBackendFetch(url: URL): Response | null {
@@ -191,24 +216,14 @@ export function scriptHandlers() {
       const id = String(params.id);
       const body = (await request.json()) as { text?: string };
       fakeScript.patches.push({ id, ...body });
-      const found = findBlock(id);
-      if (!found?.line) return error(404, "line_not_found", { id });
-      const text = (body.text ?? "").trim();
-      if (!text) return error(422, "line_empty");
-      if (text !== found.line.text) Object.assign(found.line, { text, edited: true });
-      return HttpResponse.json(found.script);
+      return answer(editLine(id, body.text));
     }),
 
     http.patch("*/api/v1/scenes/:id", async ({ params, request }) => {
       const id = String(params.id);
       const body = (await request.json()) as { heading?: string };
       fakeScript.patches.push({ id, ...body });
-      const found = findBlock(id);
-      if (!found?.scene) return error(404, "scene_not_found", { id });
-      const heading = (body.heading ?? "").replace(/^\s*场\s*\d+\s*/, "").trim();
-      if (!heading) return error(422, "heading_empty");
-      if (heading !== found.scene.heading) Object.assign(found.scene, { heading, edited: true });
-      return HttpResponse.json(found.script);
+      return answer(editScene(id, body.heading));
     }),
 
     http.post("*/api/v1/:kind/:id/rewrite", async ({ params, request }) => {

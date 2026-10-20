@@ -187,6 +187,8 @@ export const ProductSchema = z.object({
       model_key: z.string(),
       /** `waiting_confirm`: over a spending limit or an ask-first fallback (ConfirmJobs). */
       state: z.enum(["queued", "waiting_confirm", "running"]).optional(),
+      /** The 确认并同步 this run is part of (「同步中」); null for a run of its own. */
+      cascade_id: z.string().nullable().optional(),
     })
     .nullable(),
 });

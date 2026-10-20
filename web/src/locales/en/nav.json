@@ -35,6 +35,7 @@
     "inProgress": "In progress",
     "notStarted": "Not started",
     "stale": "{{count}} to update",
+    "syncing": "Syncing",
     "missing": "{{count}} missing"
   },
   "devComponents": "Dev · Components"

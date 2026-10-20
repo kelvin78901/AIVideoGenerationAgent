@@ -1,6 +1,7 @@
 /**
- * Impact previews (prototype Spec 改画幅, Script 改已确认的段落). Keyed `<kind>:<target_id>`.
- * Names inside params are content, shown as is.
+ * Impact previews (prototype Spec 改画幅) and the demo episode's downstream of its script blocks
+ * (prototype Script 改已确认的段落: shots, keyframes, videos), laid over the backend's preview.
+ * Keyed `<kind>:<target_id>`. Names inside params are content, shown as is.
  */
 import type { Impact } from "@/api/schemas/impact";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
@@ -16,8 +17,9 @@ const line = (code: string, params: Line["params"] = {}): Line => ({
 });
 
 /**
- * Editing a confirmed script block (prototype Script.dc.html `imp`): what goes stale and the
- * rerun estimate. Scene headings are `scene_edit`, the rest `line_edit`.
+ * Editing a confirmed script block (prototype Script.dc.html `imp`): what goes stale after the
+ * script and the rerun estimate (M4 makes shots real). Scene headings are `scene_edit`, the rest
+ * `line_edit`.
  */
 function scriptImpacts(): Record<string, Preview> {
   const p = (lines: Line[], cost: number, stale: Preview["stale"]): Preview => ({
@@ -156,5 +158,7 @@ export const impactPreviews: Record<string, Preview> = {
     rerun_cost_usd: 4.02,
     stale: { storyboard: 9, generate: 10 },
   },
-  ...scriptImpacts(),
 };
+
+/** Laid over the backend's preview of a demo script block (`mocks/handlers/impact.ts`). */
+export const scriptDownstream: Record<string, Preview> = scriptImpacts();

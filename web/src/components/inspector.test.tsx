@@ -15,6 +15,7 @@ import { PRODUCT_ENRICH, PRODUCT_EXTRACT } from "@/mocks/fixtures/demo/products"
 import { useInspectorStore } from "@/stores/inspector";
 import { backend } from "@/test/backend";
 import { fakeConfig } from "@/test/fakes/config";
+import { fakeEpisodes } from "@/test/fakes/episodes";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
 
@@ -181,7 +182,7 @@ function SpecImpact({
 }
 
 describe("ImpactDialog", () => {
-  it("lists what is affected with costs; 「只标记」 marks the steps 待更新", async () => {
+  it("lists what is affected with costs; 「只改这里」 marks the steps 待更新", async () => {
     const user = userEvent.setup();
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="inline" onResolved={resolved} />);
@@ -190,30 +191,34 @@ describe("ImpactDialog", () => {
     expect(dialog).toHaveTextContent("API 终版 · 约 $2.76");
     expect(dialog).toHaveTextContent("建议重出（可选）");
     expect(dialog).toHaveTextContent("剧本、分镜表、配音和音色不受影响");
-    await user.click(within(dialog).getByRole("button", { name: "只标记待更新" }));
+    // 确认并同步 comes first (the filled button), then 只改这里 and 撤销.
+    expect(
+      within(dialog)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["确认并同步 · 预计 $4.02", "只改这里，下游标待更新", "撤销"]);
+    await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("mark"));
     const steps = getDb().progress[EP1]?.steps;
     expect(steps?.storyboard.stale).toBe(9);
     expect(steps?.generate.stale).toBe(10);
   });
 
-  it("「自动重跑」 shows the total and queues the rerun", async () => {
+  it("「确认并同步」 shows the total and queues the rerun", async () => {
     const user = userEvent.setup();
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="modal" onResolved={resolved} />);
     const dialog = await screen.findByRole("alertdialog");
-    await user.click(
-      within(dialog).getByRole("button", { name: "自动重跑受影响的部分 · 预计 $4.02" }),
-    );
+    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $4.02" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("rerun"));
     expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(9);
   });
 
-  it("「撤销修改」 leaves everything as it was", async () => {
+  it("「撤销」 leaves everything as it was", async () => {
     const user = userEvent.setup();
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="inline" onResolved={resolved} />);
-    await user.click(await screen.findByRole("button", { name: "撤销修改" }));
+    await user.click(await screen.findByRole("button", { name: "撤销" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("undo"));
     expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(0);
   });
@@ -267,6 +272,7 @@ describe("GateButton", () => {
     expect(await screen.findByText("已确认")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "重新打开" }));
     await waitFor(() => expect(screen.queryByText("已确认")).not.toBeInTheDocument());
-    expect(getDb().progress[EP1]?.steps.novel.state).toBe("in_progress");
+    // The novel gate is the backend's (M2).
+    expect(fakeEpisodes.progress[EP1]?.steps.novel.state).toBe("in_progress");
   });
 });

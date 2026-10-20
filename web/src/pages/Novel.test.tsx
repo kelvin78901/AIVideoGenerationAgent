@@ -7,6 +7,7 @@ import NovelPage from "@/pages/Novel";
 import { backend, fake } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { fakeBible } from "@/test/fakes/bible";
+import { reopenFakeNovel } from "@/test/fakes/impact";
 import { fakeNovel } from "@/test/fakes/novel";
 import { fakeSuggestions } from "@/test/fakes/suggestions";
 import { renderAt } from "@/test/render";
@@ -401,6 +402,9 @@ describe("NovelPage", () => {
   });
 
   describe("逐段编辑", () => {
+    // A reopened novel is edited in place; a confirmed one previews the impact first.
+    beforeEach(() => reopenFakeNovel());
+
     async function original() {
       const user = userEvent.setup();
       renderNovel();

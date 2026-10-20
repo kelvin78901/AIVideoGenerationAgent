@@ -834,8 +834,8 @@
       "component_id": "enrich",
       "current_version_id": "demo-p-enrich-v2",
       "adopted_version_id": "demo-p-enrich-v2",
-      "locked_hash": null,
-      "status": "adopted",
+      "locked_hash": "sha256:12b869b209e63695ca60db091066067e18f7fd61763521ece68edb559836ec7d",
+      "status": "locked",
       "versions": [
         {
           "id": "demo-p-enrich-v1",
@@ -1023,8 +1023,8 @@
       "component_id": "extract",
       "current_version_id": "demo-p-extract-v1",
       "adopted_version_id": "demo-p-extract-v1",
-      "locked_hash": null,
-      "status": "adopted",
+      "locked_hash": "sha256:bb028a6b6707cf43d8bc06d3fdccac58c606b84f6e4fb946d6a5f5e05db93925",
+      "status": "locked",
       "versions": [
         {
           "id": "demo-p-extract-v1",
@@ -2638,8 +2638,8 @@
       "component_id": "import",
       "current_version_id": "demo-novel-v1",
       "adopted_version_id": "demo-novel-v1",
-      "locked_hash": null,
-      "status": "adopted",
+      "locked_hash": "sha256:b657e79533a387b34805a5332f406eaa23fd5056db5595218f2353706ff7ef7c",
+      "status": "locked",
       "versions": [
         {
           "id": "demo-novel-v1",

@@ -35,6 +35,7 @@
     "inProgress": "进行中",
     "notStarted": "未开始",
     "stale": "待更新 {{count}}",
+    "syncing": "同步中",
     "missing": "缺 {{count}} 项"
   },
   "devComponents": "开发 · 组件"

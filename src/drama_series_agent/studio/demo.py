@@ -8,7 +8,8 @@ v1 local → v2 DeepSeek, adopted, the first suggestion accepted; ``enrich.json`
 bible (设定提取 v1, read with that accepted addition; ``extract.json``) and its episode plan
 (分集规划 v1 on DeepSeek, three episodes with a $15 budget each; ``split.json``) and episode 1's
 script (剧本化 v1 local → v2 「不满意换一个」 on Kimi, adopted; ``script.json``), each assembled
-exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``.
+exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``. Then the
+novel gate and episode 1's script gate are confirmed, once: a gate the user reopened stays open.
 ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset`` deletes the demo
 series first.
 """
@@ -29,11 +30,13 @@ from drama_series_agent.core.models_db import Episode, Product, Series, Suggesti
 from drama_series_agent.core.paths import REPO_ROOT, database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes
+from drama_series_agent.episodes.service import latest_gate
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
 from drama_series_agent.pipeline.components import enrich, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
 from drama_series_agent.pipeline.drafts import VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
@@ -73,6 +76,8 @@ SCRIPT_VERSIONS = (
     ("v1", "local/qwen3.6-27b", "local", "run", datetime(2026, 10, 14, 2, 12, tzinfo=UTC)),
     ("v2", "moonshot/kimi-k2.6", "api", "switch", datetime(2026, 10, 14, 2, 20, tzinfo=UTC)),
 )  # fmt: skip
+# Confirmed by the seed (the prototype's demo: 小说 and episode 1's 剧本 已确认).
+CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 
 
 def script_product_id(episode_id: str) -> str:
@@ -86,6 +91,7 @@ async def seed_demo(
     novel: NovelService | None = None,
     products: ProductService | None = None,
     compiler: PromptCompiler | None = None,
+    gates: GateService | None = None,
     cfg: SpecConfig | None = None,
     force: bool = False,
 ) -> bool:
@@ -116,6 +122,8 @@ async def seed_demo(
             await _seed_bible(db, novel, products, compiler)
             await _seed_split(db, novel, products, compiler)
             await _seed_script(db, novel, products, compiler)
+        if gates is not None:
+            await _seed_gates(db, gates)
     return created
 
 
@@ -144,7 +152,10 @@ async def build_demo(*, reset: bool) -> None:
         if reset:
             await delete_demo(db)
         novel = NovelService(db, BlobStore(), products)
-        await seed_demo(db, novel=novel, products=products, compiler=PromptCompiler(), force=True)
+        gates = GateService(db, EventBus(db), products, slicers())
+        await seed_demo(
+            db, novel=novel, products=products, compiler=PromptCompiler(), gates=gates, force=True
+        )
     finally:
         await db.dispose()
 
@@ -390,3 +401,15 @@ async def _seed_script(
             parent = v.id
         assert parent is not None
         await products.adopt(parent)
+
+
+async def _seed_gates(db: Database, gates: GateService) -> None:
+    """Confirm the demo's gates that were never decided (a reopened one stays open)."""
+    for gate, scope in CONFIRMED_GATES:
+        async with db.session() as session:
+            if await latest_gate(session, gate, scope) is not None:
+                continue
+        try:
+            await gates.confirm(gate, scope)
+        except PipelineError as exc:  # nothing adopted yet, or a run still going
+            logger.warning("demo gate {} {} not confirmed: {}", gate, scope, exc.code)

@@ -73,9 +73,11 @@ export function RunBar({
           {t(
             product.running?.state === "waiting_confirm"
               ? "runBar.waiting"
-              : product.status === "queued"
-                ? "runBar.queued"
-                : "runBar.running",
+              : product.running?.cascade_id
+                ? "runBar.syncing"
+                : product.status === "queued"
+                  ? "runBar.queued"
+                  : "runBar.running",
             { model: modelName(models, busyModel) },
           )}
         </div>

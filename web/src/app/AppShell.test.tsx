@@ -8,6 +8,7 @@ import { series } from "@/mocks/fixtures/demo/series";
 import { server } from "@/mocks/node";
 import { useUiStore } from "@/stores/ui";
 import { backend, fake } from "@/test/backend";
+import { makeJob } from "@/test/fixtures";
 import { renderAt } from "@/test/render";
 import { fakeSetup, installState, resetFakeSetup } from "@/test/setupBackend";
 
@@ -215,6 +216,35 @@ describe("AppShell", () => {
     ]);
     await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
     expect(screen.getAllByTestId("step-badge")[5]).toHaveTextContent("Not started");
+  });
+
+  it("shows 同步中 on the steps a 确认并同步 is still rerunning", async () => {
+    const cascade = { id: "sync-1", origin: "demo-novel" };
+    server.use(
+      http.get("*/api/v1/jobs", () =>
+        HttpResponse.json([
+          makeJob({
+            id: "j1",
+            series_id: "demo",
+            component_id: "split",
+            state: "running",
+            params: { cascade },
+          }),
+          // Episode 2's script, and a run of its own: not this episode's sync.
+          makeJob({
+            id: "j2",
+            series_id: "demo",
+            episode_id: "demo-e2",
+            component_id: "script",
+            params: { cascade },
+          }),
+          makeJob({ id: "j3", series_id: "demo", component_id: "extract", state: "running" }),
+        ]),
+      ),
+    );
+    renderAt(<AppRoutes />, "/s/demo/e/1/novel");
+    await waitFor(() => expect(screen.getAllByTestId("step-badge")[1]).toHaveTextContent("同步中"));
+    expect(screen.getAllByTestId("step-badge")[0]).toHaveTextContent("已确认");
   });
 
   it("switches language from the top bar", async () => {

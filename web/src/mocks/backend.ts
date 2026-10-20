@@ -14,6 +14,15 @@ export function setBackendFetch(fn: BackendFetch | null): void {
   fetchBackend = fn ?? realBackend;
 }
 
+/** The backend's response to this request (errors included); null when it is down. */
+export async function backendResponse(request: Request): Promise<Response | null> {
+  try {
+    return await fetchBackend(request);
+  } catch {
+    return null;
+  }
+}
+
 /** The backend's JSON for this request; `fallback` when it is down or answers an error. */
 export async function backendJson<T>(request: Request, fallback: T): Promise<T> {
   try {

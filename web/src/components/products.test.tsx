@@ -94,6 +94,16 @@ describe("RunBar", () => {
     expect(screen.getByRole("button", { name: "历史 2" })).toBeInTheDocument();
   });
 
+  it("shows 同步中 while a 确认并同步 reruns it", async () => {
+    Object.assign(enrich(), {
+      status: "running",
+      running: { job_id: "j1", model_key: "deepseek/v4-pro", state: "running", cascade_id: "s1" },
+    });
+    renderAt(<Harness />);
+    expect(await screen.findByRole("status")).toHaveTextContent("同步中 · DeepSeek V4 Pro");
+    expect(screen.getByRole("button", { name: /^重跑/ })).toBeDisabled();
+  });
+
   it("rerun appends v3 with the same model and origin=rerun", async () => {
     // Long enough that the running state is still on screen when a loaded runner looks for it.
     demoTiming.runMs = 300;

@@ -3,15 +3,18 @@ import { z } from "zod";
 
 import { api, post } from "@/api/client";
 import { productKeys } from "@/api/hooks/products";
+import type { StepId } from "@/api/schemas/episodes";
 import {
   HealthSchema,
   JobSchema,
   ModelCallSchema,
   type Job,
+  type JobState,
   type ModelCall,
 } from "@/api/schemas/jobs";
 
 export const jobKeys = { all: ["jobs"] as const };
+const ACTIVE = new Set<JobState>(["queued", "waiting_confirm", "running"]);
 export const callKeys = { all: ["model-calls"] as const };
 export const healthKeys = { all: ["health"] as const };
 
@@ -78,6 +81,33 @@ export function gpuStatus(jobs: Job[] | undefined): GpuStatus {
     running: gpu.filter((j) => j.state === "running").length,
     queued: gpu.filter((j) => j.state === "queued").length,
   };
+}
+
+/** The production step a component's product shows under (the left navigation). */
+const COMPONENT_STEP: Partial<Record<string, StepId>> = {
+  enrich: "novel",
+  extract: "novel",
+  split: "script",
+  script: "script",
+};
+
+/**
+ * Steps of this episode with a 确认并同步 rerun still queued, waiting or running (「同步中」):
+ * series-level products count for every episode, an episode's only for itself.
+ */
+export function syncingSteps(
+  jobs: Job[] | undefined,
+  seriesId: string,
+  episodeId: string | undefined,
+): Set<StepId> {
+  const steps = new Set<StepId>();
+  for (const j of jobs ?? []) {
+    if (!ACTIVE.has(j.state) || j.series_id !== seriesId || !j.params.cascade) continue;
+    if (j.episode_id && j.episode_id !== episodeId) continue;
+    const step = COMPONENT_STEP[j.component_id ?? ""];
+    if (step) steps.add(step);
+  }
+  return steps;
 }
 
 /** Billed API spend over the loaded calls. M8 replaces this with `/metrics/summary`. */

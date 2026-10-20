@@ -136,7 +136,9 @@
     "generic": "Notice: {{code}}",
     "version_created": "Generated v{{n}} ({{model}}). The previous version is still in the history; adopt this one if you like it.",
     "sync_done": "Sync done: {{files}} files checked, {{added}} new, the rest unchanged.",
-    "run_failed": "Generation failed ({{error}}). Earlier versions are still in History; rerun or switch models."
+    "run_failed": "Generation failed ({{error}}). Earlier versions are still in History; rerun or switch models.",
+    "cascade_done": "Synced: {{count}} outputs updated and adopted. Older versions are still in the history.",
+    "cascade_done_failed": "Sync finished: {{count}} outputs updated, {{failed}} failed (left as outdated; rerun them on their own)."
   },
   "legacy": {
     "banner": "Legacy UI: calls are not logged and not budget-limited",

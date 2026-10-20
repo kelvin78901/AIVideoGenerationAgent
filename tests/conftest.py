@@ -12,6 +12,9 @@ from keyring.backend import KeyringBackend
 
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.paths import database_path
+from drama_series_agent.studio import demo
+
+SEEDED_GATES = demo.CONFIRMED_GATES
 
 
 class MemoryKeyring(KeyringBackend):
@@ -42,6 +45,18 @@ def _isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[N
     keyring.set_keyring(MemoryKeyring())
     yield
     keyring.set_keyring(previous)
+
+
+@pytest.fixture(autouse=True)
+def _demo_gates_open(monkeypatch: pytest.MonkeyPatch) -> None:
+    """The Mock demo starts with 小说 and episode 1's 剧本 confirmed; tests edit it directly, so
+    by default it is seeded with its gates open. `demo_gates` seeds them as the app does."""
+    monkeypatch.setattr(demo, "CONFIRMED_GATES", ())
+
+
+@pytest.fixture
+def demo_gates(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(demo, "CONFIRMED_GATES", SEEDED_GATES)
 
 
 @pytest.fixture

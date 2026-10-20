@@ -127,6 +127,23 @@ def _wait(client: TestClient, job_id: str) -> dict[str, Any]:
 # --------------------------------------------------------------------------- gates
 
 
+def test_the_demo_starts_confirmed_and_a_reopened_gate_stays_open(demo_gates: None) -> None:
+    def app() -> TestClient:
+        return TestClient(create_app(), base_url=LOCAL, headers={"X-Drama-Studio": "1"})
+
+    with app() as client:
+        steps = _progress(client)
+        assert (steps["novel"]["state"], steps["script"]["state"]) == ("confirmed", "confirmed")
+        assert _progress(client, "demo-e2")["script"]["state"] == "not_started"
+        for product_id in (NOVEL, BIBLE, ENRICH, SCRIPT1):
+            assert _row(client, product_id).locked_hash, product_id
+        assert not _row(client, SPLIT).locked_hash  # no gate covers the plan
+        _gate(client, "novel", "reopen", "demo")
+    with app() as client:  # a restart seeds what is missing, never a decision again
+        steps = _progress(client)
+        assert (steps["novel"]["state"], steps["script"]["state"]) == ("in_progress", "confirmed")
+
+
 def test_novel_gate_locks_the_novel_step_of_the_series(client: TestClient) -> None:
     decision = _gate(client, "novel", "confirm", "demo-e2")  # an episode: its series'
     assert decision["scope_id"] == "demo" and decision["action"] == "confirm"

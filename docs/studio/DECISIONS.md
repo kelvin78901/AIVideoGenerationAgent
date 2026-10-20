@@ -4,6 +4,14 @@
 
 ## 2026-10-19 · M2 第 10 步：闸门、影响范围
 
+### 10c 前端（2026-10-20）
+
+- **影响范围弹窗的按钮**：主按钮（实心、排第一）「确认并同步 · 预计 $x」（估价是 0 时只写「确认并同步」），然后「只改这里，下游标待更新」「撤销」。会重跑的产物就是弹窗里的各行（后端按流水线顺序列，各带估价）。原型里的「只标记待更新 / 自动重跑受影响的部分 / 撤销修改」按 Kelvin 2026-10-19 第 6 条改了（原型没跟着改）。成片规格页（M4 前仍是 MSW）保留原型的顺序（`primary="mark"`，「改，并标记待更新」在前）：改画幅要重画关键帧、重做视频，自动重做是例外。
+- **「同步中」从哪来**：RunBar 看产物的 `running.cascade_id`；左侧步骤看全局任务列表（`/jobs`，SSE 实时更新）里没结束、带 `params.cascade` 的任务：补全、设定 → 小说，分集 → 剧本，剧本只算本集的（`useJobs.ts:syncingSteps`）。不加接口：任务列表本来就常驻在 App 里。
+- **完成提示**：toast `cascade_done` 有失败时前端换成 `cascade_done_failed` 的文案（`api/events.ts`）。`gate.updated` 刷新产物、剧集列表（剧本状态）和进度徽章。
+- **MSW**：`/gates/novel|script` 放行到后端。`/impact/preview` 除了 `spec_aspect`、`asset_unlock`（M4）都转给后端；示例剧集第 1 集剧本的块，在后端结果后面再叠加镜头、关键帧这些下游行（`fixtures/demo/impacts.ts:scriptDownstream`），叠加的「待更新」记在 `impactOverlays`，`/impact/apply` 转给后端成功后再加到示例进度上。转发用 `mocks/backend.ts:backendResponse`（错误原样返回），不用 `passthrough()`：页面测试里要落到假后端（`test/fakes/impact.ts`）。删掉 apply 里转发 PATCH 的那段和 `series.ts` 里演示闸门的叠加。
+- **示例种子的闸门**：`seed_demo` 最后确认小说闸门和第 1 集剧本闸门，只在这个闸门从来没有过决定时做：用户重新打开的，重启后保持打开。后端测试默认把 `demo.CONFIRMED_GATES` 换成空的（`tests/conftest.py`；大多数测试直接改示例剧集），要种子闸门的测试用 `demo_gates` fixture（导出前端测试数据的 `test_web_fixtures.py` 用它，所以前端假后端里小说和第 1 集剧本是已确认的）。
+
 ### 10b 后端（确认并同步）
 
 - **同步不建表**：一次「确认并同步」= 一组重跑任务，任务参数里带 `cascade: {id, origin}`（`origin` 是改动的那个产物）。每一步都从数据库现算（`pipeline/cascade.py:advance`）：这组任务到目前的状态 + 从 `origin` 往下、现在「待更新」的产物。任务结束（成功、失败、取消）时队列的新钩子 `JobQueue.on_finished` 触发下一步；启动时 `StudioState.run()` 调 `cascade.resume()`，把停机正好停在两步之间的同步接着走（不弹完成提示）。原因：同步的状态本来就在任务和版本里，另存一份只会对不上。

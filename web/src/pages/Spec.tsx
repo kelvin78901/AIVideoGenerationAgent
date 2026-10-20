@@ -272,6 +272,7 @@ export default function SpecPage() {
                       }),
                       undo: t("impact.undo", { aspect: saved.aspect }),
                     }}
+                    primary="mark"
                     onResolved={onResolved}
                   />
                 ) : null}

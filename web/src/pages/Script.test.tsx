@@ -10,6 +10,8 @@ import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import ScriptPage from "@/pages/Script";
 import { backend } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
+import { fakeEpisodes } from "@/test/fakes/episodes";
+import { fakeImpact } from "@/test/fakes/impact";
 import { fakeScript } from "@/test/fakes/script";
 import { renderAt } from "@/test/render";
 
@@ -56,7 +58,7 @@ describe("ScriptPage", () => {
     expect(ep1).toHaveAttribute("aria-current", "page");
     expect(ep1).toHaveTextContent("场 1–2 · 9 个镜头 · 约 0:34");
     expect(ep1).toHaveTextContent("卡点：她拿起了那把伞");
-    // The backend says 草稿; the script gate is still the demo's (step 10).
+    // The seeded demo has episode 1's script gate confirmed.
     expect(ep1).toHaveTextContent("剧本已确认");
     // The plan is the backend's (分集规划): episode 3 has its cliffhanger too.
     expect(screen.getByRole("link", { name: /第 3 集/ })).toHaveTextContent(
@@ -113,7 +115,7 @@ describe("ScriptPage", () => {
     expect(rows[8]).toHaveTextContent("叠在 1-06");
   });
 
-  it("editing a confirmed line previews the impact; 只标记 saves it and marks 待更新", async () => {
+  it("editing a confirmed line previews the impact; 只改这里 saves it and marks 待更新", async () => {
     const user = userEvent.setup();
     renderScript();
     await screen.findByText(META);
@@ -125,13 +127,18 @@ describe("ScriptPage", () => {
     await user.click(screen.getByRole("button", { name: "保存" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent(`改的是：△ ${EDITED}`);
+    // The backend's line, then the demo's downstream of the script.
+    expect(dialog).toHaveTextContent("已确认的第 1 集剧本会改成新内容");
     expect(dialog).toHaveTextContent("素材 · 道具「红色长柄伞、黄色便利贴」");
     expect(dialog).toHaveTextContent("视频 · 1-02（已采纳）");
     // Nothing is saved while the dialog is open.
-    expect(fakeScript.patches).toEqual([]);
-    await user.click(within(dialog).getByRole("button", { name: "只标记待更新" }));
+    expect(lineOf("demo-b3")?.edited).toBe(false);
+    await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
-    // The backend saved it (PATCH /lines); the demo marks the later steps.
+    // The backend saved it (/impact/apply); the demo marks the later steps.
+    expect(fakeImpact.applied).toEqual([
+      { kind: "line_edit", target_id: "demo-b3", action: "mark" },
+    ]);
     expect(lineOf("demo-b3")).toMatchObject({ text: EDITED, edited: true });
     expect(stale()?.assets.stale).toBe(2);
     expect(stale()?.storyboard.stale).toBe(1);
@@ -141,7 +148,7 @@ describe("ScriptPage", () => {
     ).toHaveTextContent("已修改");
   });
 
-  it("「撤销修改」 keeps the confirmed text", async () => {
+  it("「撤销」 keeps the confirmed text", async () => {
     const user = userEvent.setup();
     renderScript();
     await screen.findByText(META);
@@ -150,9 +157,10 @@ describe("ScriptPage", () => {
     await user.type(screen.getByLabelText(/编辑这一段/), "！");
     await user.click(screen.getByRole("button", { name: "保存" }));
     const dialog = await screen.findByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: "撤销修改" }));
+    await user.click(within(dialog).getByRole("button", { name: "撤销" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(fakeScript.patches).toEqual([]);
+    expect(fakeImpact.applied.map((a) => a.action)).toEqual(["undo"]);
     expect(lineOf("demo-b3")?.edited).toBe(false);
     expect(stale()?.assets.stale).toBe(0);
     expect(screen.getByRole("button", { name: /门口靠着一把红色长柄伞/ })).not.toHaveTextContent(
@@ -161,8 +169,8 @@ describe("ScriptPage", () => {
   });
 
   it("a draft script is edited in place, without the impact dialog", async () => {
-    const step = stale()?.script;
-    if (step) step.state = "in_progress"; // the gate reopened: 剧本草稿
+    const ep1 = fakeEpisodes.list.find((e) => e.id === EP1);
+    if (ep1) ep1.script_status = "draft"; // the gate reopened: 剧本草稿
     const user = userEvent.setup();
     renderScript();
     await screen.findByText(META);
@@ -180,7 +188,7 @@ describe("ScriptPage", () => {
     );
   });
 
-  it("「重写这一段」 proposes a rewrite; 自动重跑 saves it", async () => {
+  it("「重写这一段」 proposes a rewrite; 确认并同步 saves it", async () => {
     const user = userEvent.setup();
     renderScript();
     await screen.findByText(META);
@@ -188,10 +196,9 @@ describe("ScriptPage", () => {
     await user.click(screen.getByRole("button", { name: "重写这一段" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("改的是：林晚（低声，愣住）：……是你啊。");
-    await user.click(
-      within(dialog).getByRole("button", { name: "自动重跑受影响的部分 · 预计 $0.33" }),
-    );
+    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $0.33" }));
     await waitFor(() => expect(lineOf("demo-b5")?.text).toBe("……是你啊。"));
+    expect(await screen.findByText(/已开始同步/)).toBeInTheDocument();
   });
 
   it("a rewrite over the budget waits for the user's yes", async () => {

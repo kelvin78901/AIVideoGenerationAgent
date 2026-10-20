@@ -54,6 +54,8 @@ const invalidates: Partial<Record<EventType, readonly (readonly unknown[])[]>> =
   "product.updated": [productKeys.all, ["series"], ["episodes"]],
   // A new take also adds a line to the generate step's run log.
   "version.created": [productKeys.all, generateKeys.logs],
+  // Confirming or reopening locks products and changes the step badges and script status.
+  "gate.updated": [productKeys.all, ["series"], ["episodes"]],
 };
 
 export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType, data: unknown) {
@@ -71,7 +73,10 @@ export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType
     else console.error("[events] bad sync.updated payload", ev.error);
   } else if (type === "toast") {
     const ev = data as ToastEvent;
-    const text = t(`toast.${ev.code}` as "toast.generic", {
+    // 确认并同步 finished: the wording says how many failed, when some did.
+    const code =
+      ev.code === "cascade_done" && Number(ev.params?.failed) > 0 ? "cascade_done_failed" : ev.code;
+    const text = t(`toast.${code}` as "toast.generic", {
       ...ev.params,
       code: ev.code,
       defaultValue: t("toast.generic", { code: ev.code }),

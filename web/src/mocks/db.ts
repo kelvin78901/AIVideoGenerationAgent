@@ -67,6 +67,8 @@ function createDb() {
       runs: 0,
     },
     impacts: new Map<string, Impact>(),
+    /** The demo's downstream (shots, keyframes…) laid over a backend impact: what it marks. */
+    impactOverlays: new Map<string, Impact["stale"]>(),
     gates: [] as GateDecision[],
     /** Workflow library (SPEC 6.4) and ComfyUI's own workflow list. */
     workflows,

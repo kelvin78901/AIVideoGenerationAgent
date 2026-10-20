@@ -175,7 +175,7 @@ class StudioState:
         if registry.mock:
             from drama_series_agent.studio.demo import seed_demo
 
-            await seed_demo(db, novel=novel, products=products, compiler=compiler)
+            await seed_demo(db, novel=novel, products=products, compiler=compiler, gates=gates)
         await runs.ensure_all_series_products()
         return state
 

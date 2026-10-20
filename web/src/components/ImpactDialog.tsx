@@ -16,19 +16,22 @@ type Labels = Partial<Record<ImpactAction, string>>;
 function ImpactBody({
   impact,
   labels,
+  primary,
   onResolved,
 }: {
   impact: Impact;
   labels?: Labels;
+  primary: "rerun" | "mark";
   onResolved?: (action: ImpactAction, result: ApplyImpactResult) => void;
 }) {
   const { t } = useTranslation("components");
   const { t: tc } = useTranslation();
   const apply = useApplyImpact();
   const cost = formatUsd(impact.rerun_cost_usd, { cents: true });
+  const sync = impact.rerun_cost_usd > 0 ? t("impact.sync", { cost }) : t("impact.syncFree");
   const done: Record<ImpactAction, string> = {
     mark: t("impact.marked"),
-    rerun: t("impact.rerunQueued", { cost }),
+    rerun: t("impact.syncStarted"),
     undo: t("impact.undone"),
   };
   const run = (action: ImpactAction) =>
@@ -68,17 +71,28 @@ function ImpactBody({
         </p>
       ) : null}
       <div className="flex flex-wrap gap-2">
-        <Button disabled={apply.isPending} onClick={() => run("mark")}>
+        {primary === "rerun" ? (
+          <Button disabled={apply.isPending} onClick={() => run("rerun")}>
+            {labels?.rerun ?? sync}
+          </Button>
+        ) : null}
+        <Button
+          variant={primary === "mark" ? "default" : "outline"}
+          disabled={apply.isPending}
+          onClick={() => run("mark")}
+        >
           {labels?.mark ?? t("impact.mark")}
         </Button>
-        <Button
-          variant="outline"
-          className="border-tone-warn-border text-tone-warn-fg"
-          disabled={apply.isPending}
-          onClick={() => run("rerun")}
-        >
-          {labels?.rerun ?? t("impact.rerun", { cost })}
-        </Button>
+        {primary === "mark" ? (
+          <Button
+            variant="outline"
+            className="border-tone-warn-border text-tone-warn-fg"
+            disabled={apply.isPending}
+            onClick={() => run("rerun")}
+          >
+            {labels?.rerun ?? sync}
+          </Button>
+        ) : null}
         <Button variant="outline" disabled={apply.isPending} onClick={() => run("undo")}>
           {labels?.undo ?? t("impact.undo")}
         </Button>
@@ -90,8 +104,9 @@ function ImpactBody({
 
 /**
  * Shown when a change hits confirmed upstream work (SPEC 16.2): what becomes outdated and what
- * redoing it costs, with 只标记待更新 / 自动重跑 / 撤销. `inline` sits in the page (script and
- * spec pages, as in the prototype); `modal` is a dialog (asset lock / unlock).
+ * redoing it costs, with 确认并同步 (rerun what is affected and adopt it, the default) / 只改这里，
+ * 下游标待更新 / 撤销. `inline` sits in the page (script and spec pages, as in the prototype);
+ * `modal` is a dialog (asset lock / unlock, the novel page, the beat board).
  */
 export function ImpactDialog({
   impact,
@@ -101,6 +116,7 @@ export function ImpactDialog({
   open = true,
   onOpenChange,
   labels,
+  primary = "rerun",
   onResolved,
   className,
 }: {
@@ -113,6 +129,8 @@ export function ImpactDialog({
   onOpenChange?: (open: boolean) => void;
   /** Page wording, e.g. 成片规格「改，并标记待更新」. */
   labels?: Labels;
+  /** The filled button: 确认并同步, or 标记 where redoing is the exception (成片规格). */
+  primary?: "rerun" | "mark";
   /** After the action succeeded; on `undo` the page reverts its edit. */
   onResolved?: (action: ImpactAction, result: ApplyImpactResult) => void;
   className?: string;
@@ -132,6 +150,7 @@ export function ImpactDialog({
           <ImpactBody
             impact={impact}
             labels={labels}
+            primary={primary}
             onResolved={(action, result) => {
               onOpenChange?.(false);
               onResolved?.(action, result);
@@ -155,7 +174,7 @@ export function ImpactDialog({
         {title}
       </h2>
       {detail ? <div className="text-sm">{detail}</div> : null}
-      <ImpactBody impact={impact} labels={labels} onResolved={onResolved} />
+      <ImpactBody impact={impact} labels={labels} primary={primary} onResolved={onResolved} />
     </section>
   );
 }

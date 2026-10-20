@@ -349,8 +349,8 @@
       "component_id": "script",
       "current_version_id": "demo-p-script-e1-v2",
       "adopted_version_id": "demo-p-script-e1-v2",
-      "locked_hash": null,
-      "status": "adopted",
+      "locked_hash": "sha256:d0121c61ba681907e9d1dd5f9574fe564c204aa5670d358dfde20fcfa8c19a4c",
+      "status": "locked",
       "versions": [
         {
           "id": "demo-p-script-e1-v1",

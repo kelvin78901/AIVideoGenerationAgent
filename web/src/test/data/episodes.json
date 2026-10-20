@@ -14,7 +14,7 @@
       "scene_from": 1,
       "scene_to": 2,
       "shot_count": null,
-      "script_status": "draft",
+      "script_status": "confirmed",
       "beats": [
         {
           "id": "demo-bt1",
@@ -728,13 +728,13 @@
       "episode_id": "demo-e1",
       "steps": {
         "novel": {
-          "state": "in_progress",
+          "state": "confirmed",
           "done": null,
           "total": null,
           "stale": 0
         },
         "script": {
-          "state": "in_progress",
+          "state": "confirmed",
           "done": null,
           "total": null,
           "stale": 0
@@ -769,7 +769,7 @@
       "episode_id": "demo-e2",
       "steps": {
         "novel": {
-          "state": "in_progress",
+          "state": "confirmed",
           "done": null,
           "total": null,
           "stale": 0
@@ -810,7 +810,7 @@
       "episode_id": "demo-e3",
       "steps": {
         "novel": {
-          "state": "in_progress",
+          "state": "confirmed",
           "done": null,
           "total": null,
           "stale": 0

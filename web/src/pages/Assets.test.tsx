@@ -96,7 +96,7 @@ describe("AssetsPage", () => {
     expect(screen.getByRole("radio", { name: "v1 · C" })).toBeDisabled();
   });
 
-  it("unlocking previews the affected shots in a dialog; 只标记 unlocks", async () => {
+  it("unlocking previews the affected shots in a dialog; 只改这里 unlocks", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
@@ -105,20 +105,20 @@ describe("AssetsPage", () => {
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("解锁「红色长柄伞」会影响用到它的镜头");
     expect(dialog).toHaveTextContent("分镜 · 1-02 1-08 1-09，共 3 个镜头用它做参考");
-    await user.click(within(dialog).getByRole("button", { name: "只标记待更新" }));
+    await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     expect(await screen.findByText("已锁定 6 / 13")).toBeInTheDocument();
     expect(item(/红色长柄伞/)).toHaveTextContent("待选");
     expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(3);
   });
 
-  it("「撤销修改」 keeps the asset locked", async () => {
+  it("「撤销」 keeps the asset locked", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
     await user.click(item(/红色长柄伞/));
     await user.click(screen.getByRole("button", { name: "解锁" }));
     const dialog = await screen.findByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: "撤销修改" }));
+    await user.click(within(dialog).getByRole("button", { name: "撤销" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
     expect(productOf("umbrella")?.locked_hash).not.toBeNull();
   });
