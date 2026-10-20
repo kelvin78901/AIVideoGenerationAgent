@@ -53,6 +53,7 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                         json_mode=model.json_mode,
                         max_context=model.max_context or extra.get("context"),
                         num_ctx=model.max_context if provider.send_num_ctx else None,
+                        request=model.request or None,
                     ),
                 )
             )

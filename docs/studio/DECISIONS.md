@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-20 · M2 第 13 步：真实冒烟
+
+- **按官方文档核对了 DeepSeek、Kimi、通义千问的模型 ID**（M2 四个组件的主模型、兜底和备选都在这三家）：`deepseek-v4-pro`、`deepseek-flash`（V4.1 Flash；旧名 `deepseek-v4-flash` 已退役）、`kimi-k2.6`、`qwen3.8-max` / `qwen3.7-plus` / `qwen3.8-flash`。价格和 `providers.yaml` 一致（Kimi 的价格页没读到表格，价格没核对）；DeepSeek 的「测试连接」（`GET /models`）也返回了这两个 ID。这三家改成 `verify: false`；火山、智谱、MiniMax、Google、OpenAI、OpenRouter 等后面的里程碑用到时再核对。
+- **默认关掉「思考」**：这些模型默认都开思考模式。思考过程按输出 token 计费，也占 `max_tokens`（结构化 JSON 可能被截断）；而估价按 `max_tokens` 算答案，不算思考，「花钱前先估价」会算少。`providers.yaml` 的模型加了 `request` 字段：每次调用都带上的额外请求字段，不覆盖适配器自己设的（model、messages ……），请求自己的参数优先。DeepSeek / Kimi 写 `thinking: {type: disabled}`，千问写 `enable_thinking: false`。以后要开思考，改这里就行，不用改代码（硬规则 7）。Kimi K2.6 的 temperature 是固定值，传别的值会报错；我们的组件都不传。
+- **冒烟脚本** `scripts/smoke/live_script.py`：自己起一个 `DRAMA_MOCK=0` 的后端（随机端口、临时数据目录），只走 HTTP，和 Kelvin 开着的工作台互不影响，其他地方仍默认 Mock。四个组件都指到 DeepSeek（设定提取默认用本地模型）。单次上限设成 `--ask-above`（默认 $0.20），估价超过就不跑、停下来问；累计花费加估价超过 `--cap`（默认 $1）也不跑；跑的过程中累计花费超过上限就取消。`--mock` 用 Mock 后端走同一条流程，不花钱，用来先检查脚本本身。
+- 结果（2026-10-20，Kelvin 同意后我跑的）：示例小说第一章（160 字）→ 补全 4 条，全部采纳 → 设定 8 条 → 1 集 8 个节拍 → 第 1 集剧本 2 场。4 次调用，合计 $0.0078（按高峰价记账；跑的时候是闲时，实际扣费大约一半），没有兜底、没有失败，每次调用 2.2–4.6 秒。后端日志和临时数据库里都搜不到密钥。完整输出见 `reports/m2-live-smoke.txt`。
+
 ## 2026-10-20 · M2 第 12d 步：没分集时也能确认小说（Kelvin 定）
 
 - **新剧集在分集规划前就能「确认原文，生成剧本」**：小说闸门本来就按剧集记（`gate_decision.scope_id` 是剧集 id，后端也收剧集 id），前端改成用剧集 id 确认；确认后进剧本页，那里就是「开始分集规划」。原因：12a 端到端发现，没分集时这个按钮是灰的（`GateButton` 要一个集 id），用户得先去剧本页做分集规划再回来确认，按钮上也没有提示。Kelvin 2026-10-20 同意这样改。

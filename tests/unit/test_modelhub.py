@@ -170,13 +170,14 @@ async def test_call_uses_component_default_and_logs(hub: tuple[Router, Registry,
     )
     assert row.status == "success" and row.billed and row.provider_id == "deepseek"
     assert row.tokens_in and row.tokens_out
-    assert row.unit_prices_json == {
+    prices = dict(row.unit_prices_json or {})
+    assert prices.pop("offpeak")["factor"] == 0.5  # its note is providers.yaml's wording
+    assert prices == {
         "unit": "token",
         "price_in": 1.32,
         "price_out": 3.96,
         "currency": "USD",
         "as_of": "2026-10-14",
-        "offpeak": {"factor": 0.5, "note": "闲时半价，时段以官方为准"},
     }
     expected = (row.tokens_in * 1.32 + row.tokens_out * 3.96) / 1e6
     assert row.cost_usd == pytest.approx(expected)

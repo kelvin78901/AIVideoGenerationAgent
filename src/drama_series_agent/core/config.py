@@ -57,6 +57,9 @@ class LlmModel(_Loose):
     verify: bool = False
     # Context window in tokens; None = unknown (long inputs are chunked as if it were 32k).
     max_context: int | None = None
+    # Extra request-body fields sent with every call (e.g. DeepSeek's ``thinking``); they never
+    # replace what the adapter sets itself (model, messages, max_tokens, ...).
+    request: dict[str, Any] = Field(default_factory=dict)
     # Local models only (core/capabilities.py): setup-manifest item ids it needs, and CUDA.
     needs: list[str] = Field(default_factory=list)
     requires_cuda: bool = False

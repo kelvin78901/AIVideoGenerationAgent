@@ -13,6 +13,7 @@ currency_rates:            # 只用于把人民币单价折算成美元显示；
 # price 单位：每百万 token，in / out
 # max_context：上下文窗口（token）。长小说按兜底链里最小的那个分块（每块不超过 60%）；
 # 没填的按 32k 算——宁可多分几块，也不按没核对过的数字塞满。
+# request：每次调用都带上的额外请求字段（如关掉「思考」），不会覆盖 model、messages 这些。
 # ---------------------------------------------------------------------------
 llm_providers:
   - id: deepseek
@@ -20,44 +21,59 @@ llm_providers:
     base_url: https://api.deepseek.com/v1
     key_name: DEEPSEEK_API_KEY
     docs: https://api-docs.deepseek.com/quick_start/pricing
-    verify: true
+    # 2026-10-20 按官方文档核对（M2 第 13 步）：模型 ID、价格（高峰价、缓存未命中）、上下文 1M。
+    # 两个模型默认开「思考」：思考过程按输出计费、也占 max_tokens（JSON 可能被截断），估价
+    # 也没算它，所以流水线调用默认关掉（request.thinking）；要开就在这里改成 enabled。
+    verify: false
     models:
       - key: deepseek/v4-pro
         display: DeepSeek V4 Pro
-        model_id: null
+        model_id: deepseek-v4-pro          # DeepSeek-V4-Pro-0813
         price: { in: 1.32, out: 3.96, currency: USD }
-        offpeak: { factor: 0.5, note: "闲时半价，时段以官方为准" }
+        offpeak: { factor: 0.5, note: "闲时半价：高峰是 UTC 周一至周五 01:00–04:00、06:00–10:00（中国法定假日全天闲时）" }
         json_mode: true
+        max_context: 1000000
+        request: { thinking: { type: disabled } }
       - key: deepseek/v4.1-flash
         display: DeepSeek V4.1 Flash
-        model_id: null
+        model_id: deepseek-flash           # DeepSeek-V4.1-Flash-1017（旧名 deepseek-v4-flash 已退役）
         price: { in: 0.30, out: 1.20, currency: USD }
-        offpeak: { factor: 0.5, note: "闲时半价，时段以官方为准" }
+        offpeak: { factor: 0.5, note: "闲时半价：高峰是 UTC 周一至周五 01:00–04:00、06:00–10:00（中国法定假日全天闲时）" }
         json_mode: true
+        max_context: 1000000
+        request: { thinking: { type: disabled } }
 
   - id: moonshot
     name: Moonshot（Kimi）
     base_url: https://api.moonshot.ai/v1        # 国内站：https://api.moonshot.cn/v1
     key_name: MOONSHOT_API_KEY
     docs: https://platform.kimi.ai/docs/pricing/chat
-    verify: true
+    # 2026-10-20 按官方 K2.6 quickstart 核对（M2 第 13 步）：模型 ID、上下文 256K、默认开思考
+    # （关掉见 DeepSeek 的说明）；temperature 固定，传别的值会报错（我们不传）。价格页的表格
+    # 没读到，价格仍是 2026-10-14 的来源；没有密钥，没真调过。
+    verify: false
     models:
       - key: moonshot/kimi-k2.6
         display: Kimi K2.6
-        model_id: null
+        model_id: kimi-k2.6
         price: { in: 0.95, out: 4.00, currency: USD }
         json_mode: true
+        max_context: 256000
+        request: { thinking: { type: disabled } }
 
   - id: dashscope
     name: 阿里云百炼（Qwen）
     base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1   # 国内：https://dashscope.aliyuncs.com/compatible-mode/v1
     key_name: DASHSCOPE_API_KEY
     docs: https://www.alibabacloud.com/help/en/model-studio/model-pricing
-    verify: true
+    # 2026-10-20 按官方价格页（新加坡）和「深度思考」页核对（M2 第 13 步）：模型 ID、价格
+    # （qwen3.7-plus 是 256K 以内那一档）；三个都默认开思考，enable_thinking: false 关掉。
+    # 上下文没写明，按 32k 分块；没有密钥，没真调过。
+    verify: false
     models:
-      - { key: qwen/qwen3.8-max,   display: Qwen3.8-max,   model_id: null, price: { in: 2.00, out: 6.00, currency: USD }, json_mode: true }
-      - { key: qwen/qwen3.7-plus,  display: Qwen3.7-plus,  model_id: null, price: { in: 0.40, out: 1.60, currency: USD }, json_mode: true }
-      - { key: qwen/qwen3.8-flash, display: Qwen3.8-flash, model_id: null, price: { in: 0.15, out: 0.47, currency: USD }, json_mode: true }
+      - { key: qwen/qwen3.8-max,   display: Qwen3.8-max,   model_id: qwen3.8-max,   price: { in: 2.00, out: 6.00, currency: USD }, json_mode: true, request: { enable_thinking: false } }
+      - { key: qwen/qwen3.7-plus,  display: Qwen3.7-plus,  model_id: qwen3.7-plus,  price: { in: 0.40, out: 1.60, currency: USD }, json_mode: true, request: { enable_thinking: false } }
+      - { key: qwen/qwen3.8-flash, display: Qwen3.8-flash, model_id: qwen3.8-flash, price: { in: 0.15, out: 0.47, currency: USD }, json_mode: true, request: { enable_thinking: false } }
 
   - id: volcengine
     name: 火山引擎（豆包）

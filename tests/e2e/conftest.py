@@ -49,6 +49,16 @@ class Backend:
         self.proc.kill()
         self.proc.wait(timeout=10)
         self.proc = None
+        # On Windows the venv's python.exe is a launcher: the interpreter is its child and goes
+        # a moment later. Until then it holds the database (a reader gets "disk I/O error").
+        deadline = time.monotonic() + 10
+        while time.monotonic() < deadline:
+            try:
+                httpx.get(f"{self.base}/health", timeout=0.5)
+            except httpx.HTTPError:
+                return
+            time.sleep(0.05)
+        raise AssertionError("the backend still answers after the kill")
 
     def jobs(self) -> dict[str, dict[str, Any]]:
         rows: list[dict[str, Any]] = httpx.get(f"{self.base}/jobs", timeout=5).json()

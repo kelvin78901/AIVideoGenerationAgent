@@ -25,11 +25,12 @@
 - 12b：Playwright `real` 项目（`web/e2e/real.spec.ts`；第三个 webServer 是 `VITE_DEMO_DATA=0` 的 Vite 5184，共用 Mock 后端；`pnpm e2e` = smoke + real）：环境、规格、小说、剧本（第 1、2 集）、模型、任务页，加小说页切视图 / 章节 / 设定 / 历史 / 提示词、剧本页看板 / 表格 / 分集规划 / 历史；只收 zod 不一致、页面异常、5xx，404 记成注释。**没有发现契约不一致**；404 只有 `/episodes/{id}/shots`（M4）、`/metrics/summary`（M8）、`/workflows`（工作流库）。DECISIONS 记一条；CLAUDE.md 的 e2e 说明更新。e2e 29、lint / typecheck / format 全过（5021781）。
 - 12c：11 页亮 / 暗重截（`shots.spec.ts` 截图前等页面高度稳定——模型页的工作流库、素材页晚到的一行之前会让整页图被截短，亮暗高度不一）；变化都是预期的：顶栏剧名菜单（第 5 步）、模型页和各页 Inspector 的运行设置来自后端 `components.yaml`（第 2 步，模型页上次截图在 M1）、导航徽章；小说、剧本两页和 10c-2 一致；M2 新界面截图都已在对照表里，模型页那行改写说明，README 的「只截一页」写法改对；ROADMAP 勾掉两条验收（跑到第 1 集剧本确认、改已确认剧本行三个选项）。Vitest 254、lint / typecheck / format 全过（9617b0d）。
 - CI 修复：分支 CI 从第 2 步起一直红——上游 `.gitignore` 的 `config.json` 挡住了 `web/src/test/data/config.json`（`test_web_fixtures` 导出的配置），CI 上文件不存在，pytest 失败，后面的前端检查和 e2e 都没跑过。`.gitignore` 放行这个文件并提交（727fe55）；之后 Linux CI 全绿（含 e2e 29 条，run 39453343896）。Windows CI 只在往 main 开 PR 时跑，第 14 步开 PR 时看。
-- 12d（Kelvin 2026-10-20 定）：没分集时也能确认小说——小说闸门用剧集 id 确认，新接口 `GET /series/{id}/progress`（小说一步，其余未开始），左侧导航在没分集时读它；`GateButton` 属性改名 `scopeId`；pytest / Playwright 新剧集流程改成先确认小说、再分集规划；假后端加剧集进度。pytest 514、Vitest 255、e2e 29 全过（本提交）。
+- 12d（Kelvin 2026-10-20 定）：没分集时也能确认小说——小说闸门用剧集 id 确认，新接口 `GET /series/{id}/progress`（小说一步，其余未开始），左侧导航在没分集时读它；`GateButton` 属性改名 `scopeId`；pytest / Playwright 新剧集流程改成先确认小说、再分集规划；假后端加剧集进度。pytest 514、Vitest 255、e2e 29 全过（621d125，CI run 39472579251 绿）。
+- 13（Kelvin 同意后我跑的）：按官方文档核对 DeepSeek / Kimi / 千问的模型 ID（三家 `verify: false`），`providers.yaml` 模型加 `request` 字段，默认关掉思考；`scripts/smoke/live_script.py`（自起 `DRAMA_MOCK=0` 后端、临时目录；估价超过 $0.20 不跑，累计到 $1 停；`--mock` 空跑）。真跑：第一章 → 补全 → 设定 → 1 集 → 剧本 2 场，4 次调用 $0.0078，没有兜底和失败，输出存 `reports/m2-live-smoke.txt`。顺带修了 e2e 杀后端的竞态（见坑）。pytest 515、Vitest 255、e2e 29、build 全过（本提交）。
 
 ## 下一步
 
-- **13. 真实冒烟**（下一步，计划第 13 步）：按 DeepSeek 官方文档核对模型 id 和参数（`config/providers.yaml` 里 `verify: true` 的写作类模型一起看），写 `scripts/smoke/live_script.py`（`DRAMA_LIVE=1`、真实密钥、临时数据目录、花费硬上限 $1，示例小说第 1 章跑到剧本化，打印剧本和 `model_call`）。**真跑要 Kelvin 的 DeepSeek 密钥**（钥匙串里），Kelvin 自己跑或同意后我来跑。然后第 14 步收尾（SPEC、ROADMAP、`reports/M2.md`、PR）。
+- **14. 收尾**（下一步，计划第 14 步）：SPEC 补 M2 的实际做法（含 `GET /series/{id}/progress`、`providers.yaml` 的 `request`），ROADMAP 剩下的 M2 项按实际勾，写 `reports/M2.md`（冒烟结果用 `reports/m2-live-smoke.txt`），`gh pr create --base main -R kelvin78901/AIVideoGenerationAgent`，看 Windows CI。
 - **Kelvin 要重启后端**（9b–10c）：重启后示例剧集会补上「小说已确认」「第 1 集剧本已确认」（只在这两个闸门从没决定过时）；之后在 5173 改原文、设定、剧本行都会弹影响范围。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -48,7 +49,7 @@
 - 示例里的运行延迟在 `mocks/events.ts:demoTiming.runMs`，测试里改成 20 ms（见 `components/products.test.tsx`）；测试要挂 `useEventStream()`（`FakeEventSource`）才收得到 `version.created`。
 - **Chromium 新版 `scrollIntoView()` 返回 Promise**：`useEffect(() => el.scrollIntoView())` 这种箭头表达式会把 Promise 当清理函数，整页白屏（jsdom 里测不出来）。effect 一律写花括号；滚动日志用容器的 `scrollTop`。
 - 页面里有演示事件驱动的长流程时，用临时的 `e2e/tmp-*-shots.spec.ts`（`--project=shots` 能匹配）在真浏览器里走一遍、截图到 scratchpad，跑完删掉。
-- e2e 偶发过一次失败（2026-10-18，两条 e2e 一起跑，按耗时推断是 M0 的 `test_restart_resume`），之后连跑 17 次没复现，CI 上留意。
+- `test_restart_resume` 偶发失败（2026-10-18、10-20）的原因：Windows 上 `.venv/Scripts/python.exe` 是启动器，真正的解释器是它的子进程，`kill()` 后还要零点几秒才退出，期间读数据库报 disk I/O error。第 13 步起 `tests/e2e/conftest.py:Backend.kill()` 等端口关掉再返回（连跑 5 次都过）。
 - Playwright 冒烟收尾时后端会打印 aiosqlite「Task was destroyed but it is pending」，不影响结果，还没查。
 - **单元测试绝不能触网**：`test_steps.py` 的 `_install` 默认离线 transport；别给 RealRunner 的测试传 `transport=None`（清单有真实下载地址，曾真的下了 30 GB 到 pytest 临时目录）。
 - **示例机器切换**：点已选中的那台不会触发切换；e2e 里切 Mac 再切回 PC 要等前一次 `aria-checked` 变了再点。
@@ -67,7 +68,7 @@
 - **页面测试里上传文件**：`test/setup.ts` 已把 `FormData` / `File` 换成 Node 的（jsdom 的发出去是 `"[object FormData]"`），假后端里 `await request.formData()` 可以直接用。
 - **Radix 下拉菜单里打开对话框要 `modal={false}`**，否则对话框关掉后 `body` 留着 `pointer-events: none`（jsdom 里表现为后面的测试点不动）。
 - **ESLint `no-irregular-whitespace`**：全角空格（U+3000）在正则、注释里会报错（字符串里不报）——正则写 `\s`，注释别用；**`react-hooks/set-state-in-effect`**：不要在 effect 里同步 URL 参数到 state，在渲染时推出来（见 `Script.tsx` 的 `picked`）。
-- **本机应用控制从 2026-10-20 起也拦 `.venv/Scripts/python.exe`**（`uv run python` 报 os error 4551；uv 的基础解释器不拦）：临时用 `PY=~/AppData/Roaming/uv/python/cpython-3.12-windows-x86_64-none/python.exe` + `PYTHONPATH='C:\dev\drama-studio\.venv\Lib\site-packages;C:\dev\drama-studio\src'` 跑 pytest / mypy；Playwright 用不进 git 的临时配置把后端命令换成它。`start.ps1` 可能也起不来，等 Kelvin 看。
+- 再出现 os error 4551，就是 Windows 智能应用控制（Kelvin 2026-10-20 已关掉）。
 - **改代码前先看 ruff 有没有已经改过行**：`ruff format` 会把长行拆开，之后用 sed 按原行号替换会留下碎片（第 4 步踩过）。
 
 ## 等 Kelvin 的事
@@ -75,6 +76,4 @@
 - **审第 8 步的节拍看板和情绪曲线**：截图 `reports/ui/script-board.light.jpg`（暗色 `.dark`）、`script-board-drag.light.jpg`（拖动中）、`script-board-edit.light.jpg`（改节拍）；重启后端后在 5173 剧本页点「节拍看板」能直接试拖动。
 - **审第 9 步的三向溯源**：`reports/ui/script-trace.light.jpg`（剧本行 → 镜头 / 原文）、`novel-trace.light.jpg`（小说段落「在剧本里」）、`storyboard-lines.light.jpg`（镜头 → 剧本行）；重启后端后在 5173 能点着来回跳。
 - **审第 10 步的影响范围和同步**：`reports/ui/novel-impact.light.jpg`（改已确认原文的弹窗）、`novel-syncing.light.jpg`（同步中）、`novel-synced.light.jpg`（同步完）、`script-impact.light.jpg`（剧本页的新按钮）；按钮文案、主按钮放「确认并同步」、已确认时「全部采纳」置灰这几处要你看一眼。
-- **`.venv/Scripts/python.exe` 被应用控制拦了**（见上面的坑）：`start.ps1` 的后端可能起不来；看一下 Windows 安全中心「智能应用控制」的拦截记录，或者重建 `.venv`。
-- 之后：第 13 步真实冒烟要 DeepSeek 密钥。
 - M1 留下的：下次真装大文件（如 Qwen-Image-Edit 31 GB）时看速度、剩余时间准不准，连接数是否停在 1 个。
