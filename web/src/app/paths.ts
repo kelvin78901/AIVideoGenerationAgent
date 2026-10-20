@@ -15,5 +15,4 @@ export const paths = {
   step: (series: string, episode: string, step: Step) => `/s/${series}/e/${episode}/${step}`,
   devJobs: () => "/dev/jobs",
   devComponents: () => "/dev/components",
-  legacy: () => "/legacy",
 };

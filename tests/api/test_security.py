@@ -34,8 +34,7 @@ def test_other_hosts_are_rejected(client: TestClient, host: str) -> None:
     resp = client.get("/api/v1/health", headers={"Host": host})
     assert resp.status_code == 421
     assert resp.json() == {"detail": {"code": "host_not_allowed", "params": {}}}
-    # also for the upstream routes and the event stream
-    assert client.get("/api/series/conversations", headers={"Host": host}).status_code == 421
+    # also for the event stream
     assert client.get("/api/v1/events", headers={"Host": host}).status_code == 421
 
 
@@ -48,8 +47,6 @@ def test_writes_need_the_client_header(client: TestClient) -> None:
     )
     assert client.delete("/api/v1/providers/deepseek/key").status_code == 403
     assert client.post("/api/v1/jobs/x/cancel", headers={"X-Drama-Studio": "0"}).status_code == 403
-    # upstream routes are guarded too (e.g. the settings write)
-    assert client.put("/api/series/settings", json={}).status_code == 403
 
 
 def test_cross_site_post_is_rejected_even_with_header(client: TestClient) -> None:

@@ -1,7 +1,8 @@
 """FastAPI application factory for AI Drama Studio.
 
-Mounts the upstream drama-series-agent routes under ``/api`` unchanged and the studio
-routes under ``/api/v1``.
+Serves the studio routes under ``/api/v1``. The upstream drama-series-agent routes
+(``api/routers/series.py``, which call models without ``router.call()``) are no longer mounted:
+their only user, the ``/legacy`` UI, was removed in M2.
 """
 
 from __future__ import annotations
@@ -113,8 +114,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
-    from drama_series_agent.api.routers.series import router as upstream_router
-
     app = FastAPI(title="AI Drama Studio", version=__version__, lifespan=lifespan)
     origins = allowed_origins()
     # Added first = runs inside CORS, so preflight requests are answered by CORS untouched.
@@ -127,6 +126,5 @@ def create_app() -> FastAPI:
         allow_headers=["content-type", CLIENT_HEADER, "last-event-id"],
     )
     app.add_exception_handler(PipelineError, _pipeline_error)
-    app.include_router(upstream_router, prefix="/api")
     app.include_router(_v1_router())
     return app

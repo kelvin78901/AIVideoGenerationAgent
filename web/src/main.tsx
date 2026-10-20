@@ -1,4 +1,4 @@
-// Modified for AI Drama Studio: new entry point; the upstream Hermes UI lives in src/legacy/.
+// Modified for AI Drama Studio: new entry point (the upstream Hermes UI was removed in M2).
 import { StrictMode } from "react";
 import { createRoot } from "react-dom/client";
 

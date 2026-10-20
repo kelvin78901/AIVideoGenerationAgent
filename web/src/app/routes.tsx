@@ -9,7 +9,6 @@ import DevComponentsPage from "@/pages/DevComponents";
 import DevJobsPage from "@/pages/DevJobs";
 import DashboardPage from "@/pages/Dashboard";
 import GeneratePage from "@/pages/Generate";
-import LegacyPage from "@/pages/Legacy";
 import ModelsPage from "@/pages/Models";
 import NoSeriesPage from "@/pages/NoSeries";
 import NotFoundPage from "@/pages/NotFound";
@@ -43,7 +42,6 @@ function HomeRedirect() {
 export function AppRoutes({ status }: { status?: ShellStatus }) {
   return (
     <Routes>
-      <Route path="/legacy/*" element={<LegacyPage />} />
       <Route element={<AppShell status={status} />}>
         <Route index element={<HomeRedirect />} />
         <Route path="setup" element={<SetupPage />} />

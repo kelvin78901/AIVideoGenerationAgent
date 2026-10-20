@@ -1,6 +1,6 @@
 """Studio code must not reach upstream modules that call models directly (bypassing
-``router.call()``): those stay reachable only through the upstream ``/api/series`` routes,
-i.e. the ``/legacy`` UI, and the upstream ``drama-series-render`` CLI."""
+``router.call()``): those stay reachable only through the upstream ``drama-series-render`` CLI
+(the upstream ``/api/series`` routes and the ``/legacy`` UI were removed in M2)."""
 
 from __future__ import annotations
 
@@ -24,7 +24,6 @@ UPSTREAM = ("agent", "drama", "intake", "adapters", "utils", "llm_presets", "cli
 # The only upstream things studio code may touch, and why:
 ALLOWED = {
     ("drama_series_agent.utils.llm_client", "normalize_base_url"),  # pure URL helper, no calls
-    ("drama_series_agent.api.routers.series", "router"),  # mounts upstream /api for /legacy
 }
 
 

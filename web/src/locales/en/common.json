@@ -139,9 +139,5 @@
     "run_failed": "Generation failed ({{error}}). Earlier versions are still in History; rerun or switch models.",
     "cascade_done": "Synced: {{count}} outputs updated and adopted. Older versions are still in the history.",
     "cascade_done_failed": "Sync finished: {{count}} outputs updated, {{failed}} failed (left as outdated; rerun them on their own)."
-  },
-  "legacy": {
-    "banner": "Legacy UI: calls are not logged and not budget-limited",
-    "detail": "This is the upstream Hermes UI, removed after M2. Model calls started here bypass router.call(): no model_call rows, no budget checks."
   }
 }

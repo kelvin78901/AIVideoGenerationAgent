@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-20 · M2 第 11 步：删掉旧界面
+
+- 删 `web/src/legacy/`（上游 Hermes 界面）、`pages/Legacy.tsx`、`/legacy` 路由、`common.legacy` 词条和 ESLint / Prettier 里对它的忽略。
+- **后端不再挂上游的 `/api/series/*`**：这些接口直接调模型、不经过 `router.call()`（不记账、不查预算），唯一的用户 `/legacy` 已经删了。上游代码（`api/routers/series.py`、`api/schemas/`、`agent/`、`drama/` …）留在仓库里，只是不挂载；`drama-series-render` 命令行不变；`drama-series-api` 仍起 `create_app`，现在只有 `/api/v1`。
+- `tests/api/test_upstream_settings.py`（上游 settings 接口不回传密钥）删掉：接口不再对外；`test_app` 改成断言 `/api/series/...` 是 404，`test_isolation` 的白名单去掉上游 router 那一项。
+
 ## 2026-10-19 · M2 第 10 步：闸门、影响范围
 
 ### 10c 前端（2026-10-20）

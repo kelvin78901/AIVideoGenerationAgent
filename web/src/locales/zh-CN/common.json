@@ -139,9 +139,5 @@
     "run_failed": "生成失败（{{error}}）。之前的版本都还在历史里，可以重跑或换个模型。",
     "cascade_done": "已同步：{{count}} 个产物更新，新版本已采纳。旧版本都在历史里。",
     "cascade_done_failed": "同步结束：{{count}} 个产物更新，{{failed}} 个失败（停在「待更新」，可以单独重跑）。"
-  },
-  "legacy": {
-    "banner": "旧界面：调用不记账、不受预算限制",
-    "detail": "这是上游 Hermes 界面，M2 之后删除。这里发起的模型调用不经过 router.call()，不写 model_call，也不检查预算。"
   }
 }
