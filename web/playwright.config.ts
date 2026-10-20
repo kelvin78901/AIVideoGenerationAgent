@@ -1,7 +1,8 @@
 /**
- * Playwright: `pnpm e2e` (smoke tests, run in CI) and `pnpm shots` (screenshots for
- * docs/studio/reports/ui/). Starts its own mock backend (temporary DRAMA_HOME) and Vite server on
- * separate ports, so a running `start.ps1` / `start.sh` session is never touched.
+ * Playwright: `pnpm e2e` (smoke tests and the no-demo-data round, run in CI) and `pnpm shots`
+ * (screenshots for docs/studio/reports/ui/). Starts its own mock backend (temporary DRAMA_HOME)
+ * and two Vite servers on separate ports — one with the MSW demo data, one without
+ * (`VITE_DEMO_DATA=0`) — so a running `start.ps1` / `start.sh` session is never touched.
  */
 import { mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -12,6 +13,8 @@ import { defineConfig, devices } from "@playwright/test";
 const BACKEND_PORT = 8765;
 const WEB_PORT = 5183;
 const BASE_URL = `http://127.0.0.1:${WEB_PORT}`;
+const REAL_PORT = 5184; // VITE_DEMO_DATA=0: the backend only
+const REAL_URL = `http://127.0.0.1:${REAL_PORT}`;
 
 // Playwright loads this config in every worker; the env var keeps one data folder per run.
 const home = process.env.DRAMA_E2E_HOME ?? mkdtempSync(join(tmpdir(), "drama-e2e-"));
@@ -38,6 +41,7 @@ export default defineConfig({
   use: { baseURL: BASE_URL, locale: "zh-CN" },
   projects: [
     { name: "smoke", testMatch: /(smoke|m2)\.spec\.ts/, use: { ...desktop } },
+    { name: "real", testMatch: /real\.spec\.ts/, use: { ...desktop, baseURL: REAL_URL } },
     { name: "shots", testMatch: /shots\.spec\.ts/, use: { ...desktop } },
   ],
   webServer: [
@@ -52,7 +56,7 @@ export default defineConfig({
         DRAMA_HOME: home,
         DRAMA_MOCK: "1",
         DRAMA_ENV_FILE: envFile,
-        DRAMA_WEB_ORIGINS: BASE_URL,
+        DRAMA_WEB_ORIGINS: `${BASE_URL},${REAL_URL}`,
       },
     },
     {
@@ -61,6 +65,13 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
       env: { DRAMA_BACKEND_URL: `http://127.0.0.1:${BACKEND_PORT}` },
+    },
+    {
+      command: `pnpm exec vite --port ${REAL_PORT} --strictPort`,
+      url: REAL_URL,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: { DRAMA_BACKEND_URL: `http://127.0.0.1:${BACKEND_PORT}`, VITE_DEMO_DATA: "0" },
     },
   ],
 });

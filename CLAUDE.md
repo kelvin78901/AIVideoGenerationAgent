@@ -47,7 +47,7 @@ uv run alembic revision --autogenerate -m "..."   # 新增数据表时生成迁�
 pnpm -C web install && pnpm -C web dev    # 前端 127.0.0.1:5173，/api 代理到后端
 pnpm -C web test                          # i18n key 检查 + Vitest
 pnpm -C web lint && pnpm -C web typecheck && pnpm -C web format:check
-pnpm -C web e2e                           # Playwright 冒烟（自起 Mock 后端 8765 + Vite 5183；首次先 pnpm -C web exec playwright install chromium）
+pnpm -C web e2e                           # Playwright 冒烟 + M2 流程 + 关掉示例数据的一轮（自起 Mock 后端 8765 + Vite 5183 / 5184；首次先 pnpm -C web exec playwright install chromium）
 pnpm -C web shots                         # 11 页亮 / 暗整页截图 → docs/studio/reports/ui/（-g "novel (light|dark)" 只截一页）
 VITE_DEMO_DATA=0 pnpm -C web dev          # 关掉 MSW 示例数据，只走真实后端（没实现的接口显示加载失败）
 # 前端默认用浏览器里的 MSW 返回示例数据（顶栏「示例数据」标记）；某个接口在后端实现后，删掉 web/src/mocks/handlers/ 里对应的 handler

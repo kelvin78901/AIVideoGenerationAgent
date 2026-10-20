@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-20 · M2 第 12 步：端到端
+
+- **pytest 端到端起真实后端进程**（`tests/e2e/test_novel_to_script.py`，沿用 M0 的 `Backend` fixture），只走 HTTP；`model_call` 从 `/dev/model-calls` 读。原因：和 `tests/api` 的 TestClient 测试互补，覆盖启动时建产物、重启后闸门仍在。
+- **Playwright 加 `real` 项目**：第三个 webServer 是 `VITE_DEMO_DATA=0` 的 Vite（5184），和 smoke 共用 Mock 后端 8765（后端 `DRAMA_WEB_ORIGINS` 两个都放行）；`pnpm e2e` = smoke + real。real 只收 zod 不一致（`does not match its schema`、`[events]`）、页面异常和 5xx；404 记成测试注释不算失败（现在只有 M4 的 `/episodes/{id}/shots`、M8 的 `/metrics/summary`、工作流库 `/workflows`）。原因：MSW 示例数据会盖住后端的真实返回，契约不一致只有关掉它才看得见。
+- **M2 流程用例（`m2.spec.ts`）进 smoke 项目、串行**：会改示例剧集（剧本行、小说第 2 段），文件名排在 `smoke.spec.ts` 前面先跑；smoke 里的页面用例只看标题和报错，不受影响；任务页用例改成按新任务 id 找那一行。新剧集流程里 M3 / M4 才有的 `/series/{id}/assets`、`/episodes/{id}/shots` 的 404 列为允许。
+
 ## 2026-10-20 · M2 第 11 步：删掉旧界面
 
 - 删 `web/src/legacy/`（上游 Hermes 界面）、`pages/Legacy.tsx`、`/legacy` 路由、`common.legacy` 词条和 ESLint / Prettier 里对它的忽略。

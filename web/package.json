@@ -14,7 +14,7 @@
     "test": "pnpm check:i18n && vitest run",
     "test:watch": "vitest",
     "preview": "vite preview",
-    "e2e": "playwright test --project=smoke",
+    "e2e": "playwright test --project=smoke --project=real",
     "shots": "playwright test --project=shots",
     "shots:prototype": "tsx scripts/prototype-shots.ts"
   },
