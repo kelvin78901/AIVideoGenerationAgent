@@ -24,7 +24,7 @@
 - 12a：pytest 端到端 `tests/e2e/test_novel_to_script.py`（真实后端进程：新建剧集 → 导入示例小说 → 补全 → 全部采纳 → 设定 → 分集 → 第 1 集剧本超单次上限先等确认 → 两个闸门 → 重启后仍已确认；每步断言版本已采纳、`model_call` 属于这个产物）；Playwright `web/e2e/m2.spec.ts`（进 smoke 项目，串行）：同一条流程走界面（含「要你点头」弹窗）、示例剧集已确认剧本行的「撤销 / 只改这里 / 确认并同步」、改已确认小说第 2 段 → 确认并同步 → 「已同步」→ 两个闸门重新打开、剧本是同步重跑的版本；M3 / M4 才有的 `/episodes/{id}/shots`、`/series/{id}/assets` 的 404 列为允许；`smoke.spec.ts` 的任务页用例改按新任务 id 找那一行（列表里有了别的完成任务）。pytest 513、e2e 20 全过（99ad819）。
 - 12b：Playwright `real` 项目（`web/e2e/real.spec.ts`；第三个 webServer 是 `VITE_DEMO_DATA=0` 的 Vite 5184，共用 Mock 后端；`pnpm e2e` = smoke + real）：环境、规格、小说、剧本（第 1、2 集）、模型、任务页，加小说页切视图 / 章节 / 设定 / 历史 / 提示词、剧本页看板 / 表格 / 分集规划 / 历史；只收 zod 不一致、页面异常、5xx，404 记成注释。**没有发现契约不一致**；404 只有 `/episodes/{id}/shots`（M4）、`/metrics/summary`（M8）、`/workflows`（工作流库）。DECISIONS 记一条；CLAUDE.md 的 e2e 说明更新。e2e 29、lint / typecheck / format 全过（5021781）。
 - 12c：11 页亮 / 暗重截（`shots.spec.ts` 截图前等页面高度稳定——模型页的工作流库、素材页晚到的一行之前会让整页图被截短，亮暗高度不一）；变化都是预期的：顶栏剧名菜单（第 5 步）、模型页和各页 Inspector 的运行设置来自后端 `components.yaml`（第 2 步，模型页上次截图在 M1）、导航徽章；小说、剧本两页和 10c-2 一致；M2 新界面截图都已在对照表里，模型页那行改写说明，README 的「只截一页」写法改对；ROADMAP 勾掉两条验收（跑到第 1 集剧本确认、改已确认剧本行三个选项）。Vitest 254、lint / typecheck / format 全过（9617b0d）。
-- CI 修复：分支 CI 从第 2 步起一直红——上游 `.gitignore` 的 `config.json` 挡住了 `web/src/test/data/config.json`（`test_web_fixtures` 导出的配置），CI 上文件不存在，pytest 失败，后面的前端检查和 e2e 都没跑过。`.gitignore` 放行这个文件并提交（本提交）。
+- CI 修复：分支 CI 从第 2 步起一直红——上游 `.gitignore` 的 `config.json` 挡住了 `web/src/test/data/config.json`（`test_web_fixtures` 导出的配置），CI 上文件不存在，pytest 失败，后面的前端检查和 e2e 都没跑过。`.gitignore` 放行这个文件并提交（727fe55）；之后 Linux CI 全绿（含 e2e 29 条，run 39453343896）。Windows CI 只在往 main 开 PR 时跑，第 14 步开 PR 时看。
 
 ## 下一步
 
