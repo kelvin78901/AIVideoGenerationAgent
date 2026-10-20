@@ -5,17 +5,17 @@
 ## 当前
 
 - 里程碑：**M2 小说 → 剧本，已做完**（计划 [`plans/M2.md`](plans/M2.md) 全部勾完；报告 [`reports/M2.md`](reports/M2.md) 也是 PR 描述）。
-- 分支：`m2-novel-script`；PR 开往 main（编号见下一步），等 Kelvin 审完合并。
+- 分支：`m2-novel-script`；**PR #4**（https://github.com/kelvin78901/AIVideoGenerationAgent/pull/4），Linux、Windows CI 都绿，等 Kelvin 审完合并。
 
 ## 已完成的小步
 
 - M2 第 0–14 步（含 7b、12a–12d）：每步做了什么、提交、测试结果见 `reports/M2.md` 和 `git log main..m2-novel-script`。最后：pytest 515、Vitest 255、e2e 29 全过，Linux CI 绿。
 - 13 的真实冒烟：第一章 $0.0078（`reports/m2-live-smoke.txt`）、整本 5 集 $0.0530（`reports/m2-live-smoke-book.txt`），都没有兜底和失败。
-- 14：SPEC 4.2 / 6.2 / 7.6 / 9.1 补 M2 的实际做法，ROADMAP M2 全部勾上，`reports/M2.md`，CLAUDE.md 加 `demo`、冒烟脚本命令（本提交）。
+- 14：SPEC 4.2 / 6.2 / 7.6 / 9.1 补 M2 的实际做法，ROADMAP M2 全部勾上，`reports/M2.md`，CLAUDE.md 加 `demo`、冒烟脚本命令（43cdab9）。
 
 ## 下一步
 
-- **等 Kelvin 审 PR、合并**；Windows CI 在 PR 上跑，看结果。
+- **等 Kelvin 审 PR #4、合并**。
 - 合并后开始 **M3 素材与配音**：先进 plan mode 出计划给 Kelvin（CLAUDE.md「工作方式」），批准后存 `plans/M3.md`、开分支 `m3-assets-voice`。
 - M3 开工前先处理：设定提取输出上限 4000 对长小说可能不够（整本 3000 字已输出约 3000 token；见报告「遗留问题」）。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
