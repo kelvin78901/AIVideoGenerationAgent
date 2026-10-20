@@ -13,9 +13,11 @@ import {
   EpisodePatchSchema,
   EpisodeProgressSchema,
   EpisodeSchema,
+  STEP_IDS,
   type BeatPatch,
   type Episode,
   type EpisodePatch,
+  type StepProgress,
 } from "@/api/schemas/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import data from "@/test/data/episodes.json";
@@ -27,6 +29,8 @@ const demoProgress = z.record(z.string(), EpisodeProgressSchema).parse(data.prog
 export const fakeEpisodes = {
   list: structuredClone(demo),
   progress: structuredClone(demoProgress),
+  /** The novel gate of the other series (no episodes; the demo's shows on its episodes). */
+  seriesNovel: {} as Record<string, StepProgress["state"]>,
   /** Every edit sent, in order. */
   episodePatches: [] as ({ id: string } & EpisodePatch)[],
   beatPatches: [] as ({ id: string } & BeatPatch)[],
@@ -37,6 +41,7 @@ export const fakeEpisodes = {
 export function resetFakeEpisodes() {
   fakeEpisodes.list = structuredClone(demo);
   fakeEpisodes.progress = structuredClone(demoProgress);
+  fakeEpisodes.seriesNovel = {};
   fakeEpisodes.episodePatches = [];
   fakeEpisodes.beatPatches = [];
   fakeEpisodes.failWith = null;
@@ -88,6 +93,20 @@ export function episodeHandlers(known: (id: string) => boolean) {
       const id = String(params.id);
       if (id === DEMO_SERIES_ID) return undefined;
       return known(id) ? HttpResponse.json([]) : error(404, "series_not_found", { id });
+    }),
+
+    // `GET /series/{id}/progress`: 小说 only (the demo's as its episodes show it).
+    http.get("*/api/v1/series/:id/progress", ({ params }) => {
+      const id = String(params.id);
+      if (id !== DEMO_SERIES_ID && !known(id)) return error(404, "series_not_found", { id });
+      const blank: StepProgress = { state: "not_started", done: null, total: null, stale: 0 };
+      const steps = Object.fromEntries(STEP_IDS.map((s) => [s, blank]));
+      const demoNovel = Object.values(fakeEpisodes.progress)[0]?.steps.novel;
+      steps.novel =
+        id === DEMO_SERIES_ID && demoNovel
+          ? demoNovel
+          : { ...blank, state: fakeEpisodes.seriesNovel[id] ?? "in_progress" };
+      return HttpResponse.json({ series_id: id, steps });
     }),
 
     http.patch("*/api/v1/episodes/:id", async ({ params, request }) => {

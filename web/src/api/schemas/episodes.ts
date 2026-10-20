@@ -92,3 +92,10 @@ export const EpisodeProgressSchema = z.object({
   steps: z.record(StepIdSchema, StepProgressSchema),
 });
 export type EpisodeProgress = z.infer<typeof EpisodeProgressSchema>;
+
+/** `GET /series/{id}/progress`: the badges before there are episodes (小说 only; its gate is the
+ * series'). */
+export const SeriesProgressSchema = z.object({
+  series_id: z.string(),
+  steps: z.record(StepIdSchema, StepProgressSchema),
+});

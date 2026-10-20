@@ -231,7 +231,7 @@ export default function ScriptPage() {
           actions={
             <GateButton
               gate="script"
-              episodeId={episode?.id}
+              scopeId={episode?.id}
               label={t("gate")}
               to={paths.step(seriesId, ep, "assets")}
             />

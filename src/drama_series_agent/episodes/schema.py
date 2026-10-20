@@ -83,3 +83,11 @@ class StepProgressOut(BaseModel):
 class EpisodeProgressOut(BaseModel):
     episode_id: str
     steps: dict[StepId, StepProgressOut]
+
+
+class SeriesProgressOut(BaseModel):
+    """The badges before the series has episodes: 小说 (its gate is the series'), the rest not
+    started."""
+
+    series_id: str
+    steps: dict[StepId, StepProgressOut]

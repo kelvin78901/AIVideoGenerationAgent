@@ -8,7 +8,7 @@ import { useComponentModels } from "@/api/hooks/config";
 import { useBible, useNovel, useSuggestions } from "@/api/hooks/novel";
 import { useProducts } from "@/api/hooks/products";
 import type { BibleEntity } from "@/api/schemas/novel";
-import { useEpisodeProgress, useEpisodes, useRouteEpisode } from "@/api/hooks/series";
+import { useEpisodes, useRouteEpisode, useSeriesProgress } from "@/api/hooks/series";
 import { paths } from "@/app/paths";
 import { EmptyState } from "@/components/EmptyState";
 import { GateButton } from "@/components/GateButton";
@@ -31,14 +31,14 @@ const COMPONENTS = ["enrich", "extract"] as const;
 
 export default function NovelPage() {
   const { t } = useTranslation("novel");
-  const { seriesId, episodeIdx, episode } = useRouteEpisode();
+  const { seriesId, episodeIdx } = useRouteEpisode();
   const products = useProducts({ owner: `series:${seriesId}` });
   const [chapter, setChapter] = useState(0);
   const novel = useNovel(seriesId, chapter);
   const suggestions = useSuggestions(seriesId);
   const bible = useBible(seriesId);
   const episodes = useEpisodes(seriesId);
-  const progress = useEpisodeProgress(episode?.id);
+  const progress = useSeriesProgress(seriesId);
   const selected = useInspectorStore((s) => s.component) ?? COMPONENTS[0];
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(selected);
@@ -130,7 +130,7 @@ export default function NovelPage() {
               </Button>
               <GateButton
                 gate="novel"
-                episodeId={episode?.id}
+                scopeId={seriesId}
                 label={t("gate")}
                 to={paths.step(seriesId, ep, "script")}
               />

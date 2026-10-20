@@ -233,7 +233,7 @@ describe("GateButton", () => {
           element={
             <GateButton
               gate="assets"
-              episodeId={EP1}
+              scopeId={EP1}
               label={TO_STORYBOARD}
               to="/s/demo/e/1/storyboard"
             />
@@ -242,12 +242,7 @@ describe("GateButton", () => {
         <Route
           path="/s/demo/e/1/novel"
           element={
-            <GateButton
-              gate="novel"
-              episodeId={EP1}
-              label={CONFIRM_NOVEL}
-              to="/s/demo/e/1/script"
-            />
+            <GateButton gate="novel" scopeId="demo" label={CONFIRM_NOVEL} to="/s/demo/e/1/script" />
           }
         />
         <Route path="/s/demo/e/1/storyboard" element={<div data-testid="next-step" />} />
@@ -272,7 +267,7 @@ describe("GateButton", () => {
     expect(await screen.findByText("已确认")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "重新打开" }));
     await waitFor(() => expect(screen.queryByText("已确认")).not.toBeInTheDocument());
-    // The novel gate is the backend's (M2).
+    // The novel gate is the backend's (M2) and the series': it shows on every episode.
     expect(fakeEpisodes.progress[EP1]?.steps.novel.state).toBe("in_progress");
   });
 });

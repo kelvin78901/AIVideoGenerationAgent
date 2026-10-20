@@ -39,6 +39,7 @@ from drama_series_agent.episodes.schema import (
     EpisodePatch,
     EpisodeProgressOut,
     ScriptStatus,
+    SeriesProgressOut,
     StepId,
     StepProgressOut,
 )
@@ -217,40 +218,53 @@ class EpisodeService:
         with their milestones (not started until then)."""
         async with self._db.session() as session:
             ep = await self._episode(session, episode_id)
-            series_products = list(
-                (
-                    await session.exec(
-                        select(Product).where(
-                            Product.owner_type == "series", Product.owner_id == ep.series_id
-                        )
+            steps = await self._steps(session, ep.series_id, ep.id)
+        return EpisodeProgressOut(episode_id=ep.id, steps=steps)
+
+    async def series_progress(self, series_id: str) -> SeriesProgressOut:
+        """The badges of a series with no episode to show (before 分集规划): 小说 only."""
+        async with self._db.session() as session:
+            if await session.get(Series, series_id) is None:
+                raise PipelineError(404, "series_not_found", id=series_id)
+            steps = await self._steps(session, series_id, None)
+        return SeriesProgressOut(series_id=series_id, steps=steps)
+
+    async def _steps(
+        self, session: AsyncSession, series_id: str, episode_id: str | None
+    ) -> dict[StepId, StepProgressOut]:
+        series_products = list(
+            (
+                await session.exec(
+                    select(Product).where(
+                        Product.owner_type == "series", Product.owner_id == series_id
                     )
-                ).all()
-            )
-            script = await self._script(session, ep.id)
-            stale = await self._invalidation.stale_ids(
-                session, [*series_products, *([script] if script else [])]
-            )
-            by_slot = {p.slot: p for p in series_products}
+                )
+            ).all()
+        )
+        script = await self._script(session, episode_id) if episode_id else None
+        stale = await self._invalidation.stale_ids(
+            session, [*series_products, *([script] if script else [])]
+        )
+        by_slot = {p.slot: p for p in series_products}
 
-            def stale_of(*products: Product | None) -> int:
-                return sum(1 for p in products if p is not None and p.id in stale)
+        def stale_of(*products: Product | None) -> int:
+            return sum(1 for p in products if p is not None and p.id in stale)
 
-            novel_confirmed = await gate_confirmed(session, "novel", ep.series_id)
-            novel = StepProgressOut(
-                state="confirmed" if novel_confirmed else "in_progress",
-                stale=stale_of(by_slot.get(BIBLE_SLOT), by_slot.get(SUGGESTIONS_SLOT)),
-            )
-            status = await self._script_status(session, ep.id, script)
-            script_step = StepProgressOut(
-                state={"confirmed": "confirmed", "draft": "in_progress"}.get(status, "not_started"),
-                stale=stale_of(by_slot.get(EPISODES_SLOT), script),
-            )
+        novel_confirmed = await gate_confirmed(session, "novel", series_id)
         steps: dict[StepId, StepProgressOut] = {
             s: StepProgressOut(state="not_started") for s in STEP_IDS
         }
-        steps["novel"] = novel
-        steps["script"] = script_step
-        return EpisodeProgressOut(episode_id=ep.id, steps=steps)
+        steps["novel"] = StepProgressOut(
+            state="confirmed" if novel_confirmed else "in_progress",
+            stale=stale_of(by_slot.get(BIBLE_SLOT), by_slot.get(SUGGESTIONS_SLOT)),
+        )
+        if episode_id:
+            status = await self._script_status(session, episode_id, script)
+            steps["script"] = StepProgressOut(
+                state={"confirmed": "confirmed", "draft": "in_progress"}.get(status, "not_started"),
+                stale=stale_of(by_slot.get(EPISODES_SLOT), script),
+            )
+        return steps
 
     # ------------------------------------------------------------------ edits
 

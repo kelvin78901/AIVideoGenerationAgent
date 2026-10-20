@@ -1,5 +1,6 @@
 """Episodes and beats (SPEC 9.1): ``GET /series/{id}/episodes``, ``PATCH /episodes/{id}``,
-``PATCH /beats/{id}``, ``GET /episodes/{id}/progress``. Edits of the plan append an ``edit``
+``PATCH /beats/{id}``, ``GET /episodes/{id}/progress`` (and ``GET /series/{id}/progress`` before
+there are episodes). Edits of the plan append an ``edit``
 version of 分集规划 and adopt it (``episodes/service.py``)."""
 
 from __future__ import annotations
@@ -14,6 +15,7 @@ from drama_series_agent.episodes.schema import (
     EpisodeOut,
     EpisodePatch,
     EpisodeProgressOut,
+    SeriesProgressOut,
 )
 
 router = APIRouter(tags=["episodes"])
@@ -43,3 +45,9 @@ async def patch_beat(beat_id: str, body: BeatPatch, state: State) -> list[Episod
 async def episode_progress(episode_id: str, state: State) -> EpisodeProgressOut:
     """The nav badges of one episode's steps."""
     return await state.episodes.progress(episode_id)
+
+
+@router.get("/series/{series_id}/progress")
+async def series_progress(series_id: str, state: State) -> SeriesProgressOut:
+    """The nav badges while the series has no episodes yet (小说 can be confirmed already)."""
+    return await state.episodes.series_progress(series_id)

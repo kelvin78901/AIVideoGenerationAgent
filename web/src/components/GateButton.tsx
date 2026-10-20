@@ -5,23 +5,25 @@ import { toast } from "sonner";
 
 import { errorMessage } from "@/api/client";
 import { useGate } from "@/api/hooks/gates";
-import { useEpisodeProgress } from "@/api/hooks/series";
+import { useEpisodeProgress, useSeriesProgress } from "@/api/hooks/series";
 import { GATE_STEP, type Gate } from "@/api/schemas/gates";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 
 /**
  * The page header's 「确认原文，生成剧本 →」 (SPEC 16.2): confirms the step's gate and moves on.
- * Once confirmed it shows 已确认, still leads to the next step, and can be reopened.
+ * Once confirmed it shows 已确认, still leads to the next step, and can be reopened. The novel
+ * gate is the series' (it can be confirmed before 分集规划); the others are an episode's.
  */
 export function GateButton({
   gate,
-  episodeId,
+  scopeId,
   label,
   to,
 }: {
   gate: Gate;
-  episodeId: string | undefined;
+  /** The series for the novel gate, else the episode. */
+  scopeId: string | undefined;
   /** Page wording, e.g. 「确认原文，生成剧本」. */
   label: string;
   /** The next step's path. */
@@ -30,8 +32,11 @@ export function GateButton({
   const { t } = useTranslation("components");
   const { t: tc } = useTranslation();
   const navigate = useNavigate();
-  const progress = useEpisodeProgress(episodeId);
-  const decide = useGate(gate, episodeId ?? "");
+  const ofSeries = gate === "novel";
+  const seriesProgress = useSeriesProgress(ofSeries ? scopeId : undefined);
+  const episodeProgress = useEpisodeProgress(ofSeries ? undefined : scopeId);
+  const progress = ofSeries ? seriesProgress : episodeProgress;
+  const decide = useGate(gate, scopeId ?? "");
   const confirmed = progress.data?.steps[GATE_STEP[gate]]?.state === "confirmed";
   const onError = (err: unknown) => toast.error(errorMessage(tc, err));
 
@@ -57,7 +62,7 @@ export function GateButton({
       ) : null}
       <Button
         size="lg"
-        disabled={!episodeId || !progress.data || decide.isPending}
+        disabled={!scopeId || !progress.data || decide.isPending}
         onClick={() => {
           if (confirmed) void navigate(to);
           else decide.mutate("confirm", { onSuccess: () => void navigate(to), onError });

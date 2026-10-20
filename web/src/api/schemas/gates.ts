@@ -20,7 +20,7 @@ export const GATE_STEP: Record<Gate, StepId> = {
 export const GateDecisionSchema = z.object({
   id: z.string(),
   gate: GateSchema,
-  /** Episode id. */
+  /** The series (novel gate) or the episode. */
   scope_id: z.string(),
   action: z.enum(["confirm", "reopen"]),
   decided_at: Timestamp,

@@ -1,6 +1,6 @@
 /**
- * M2 flows on the Mock backend (plan step 12): a new series from the novel to a confirmed script
- * (with one budget confirmation), the three choices on a confirmed script line, and an edit of
+ * M2 flows on the Mock backend (plan step 12): a new series from the novel (confirmed before
+ * 分集规划, step 12d) to a confirmed script (with one budget confirmation), the three choices on a confirmed script line, and an edit of
  * the confirmed demo novel synced down to the script. The demo tests change the demo series:
  * they run after the new series, the script line before the novel.
  */
@@ -39,7 +39,7 @@ async function runFirst(page: Page): Promise<void> {
   await expect(page.getByRole("button", { name: "历史 1" })).toBeVisible({ timeout: 20_000 });
 }
 
-test("a new series: import the novel, run the four steps, confirm both gates", async ({ page }) => {
+test("a new series: import, confirm the novel, plan and script episode 1", async ({ page }) => {
   test.setTimeout(120_000);
   const errors = trackErrors(page);
   await setUi(page, {});
@@ -72,11 +72,13 @@ test("a new series: import the novel, run the four steps, confirm both gates", a
   await expect(page.getByText("已采纳全部未忽略的建议。")).toBeVisible();
   await page.getByRole("button", { name: "设定提取", exact: true }).click();
   await runFirst(page);
-  // No episode yet: the novel gate waits for 分集规划.
-  await expect(page.getByRole("button", { name: "确认原文，生成剧本" })).toBeDisabled();
+
+  // 确认原文 before there are episodes (the gate is the series'): on to 剧本 and its 分集规划.
+  await page.getByRole("button", { name: "确认原文，生成剧本" }).click();
+  await expect(page).toHaveURL(new RegExp(`/s/${series}/e/1/script$`));
+  await expect(step(page, "小说")).toContainText("已确认");
 
   // 剧本: 分集规划, then episode 1's script over the per-call cap (asks first).
-  await step(page, "剧本").click();
   await page.getByRole("button", { name: "开始分集规划" }).click();
   await expect(page.getByRole("link", { name: /第 1 集/ }).first()).toBeVisible({
     timeout: 20_000,
@@ -100,10 +102,7 @@ test("a new series: import the novel, run the four steps, confirm both gates", a
   });
   expect(removed.ok()).toBe(true);
 
-  // The two gates: the novel's, then episode 1's script.
-  await step(page, "小说").click();
-  await page.getByRole("button", { name: "确认原文，生成剧本" }).click();
-  await expect(page).toHaveURL(new RegExp(`/s/${series}/e/1/script$`));
+  // Episode 1's script gate; the novel's shows on the episode too.
   await page.getByRole("button", { name: "确认剧本，分析素材" }).click();
   await expect(page).toHaveURL(new RegExp(`/s/${series}/e/1/assets$`));
   await expect(step(page, "小说")).toContainText("已确认");

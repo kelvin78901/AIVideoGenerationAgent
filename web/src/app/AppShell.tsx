@@ -21,6 +21,7 @@ import {
   useOutputSpec,
   useRouteEpisode,
   useSeries,
+  useSeriesProgress,
 } from "@/api/hooks/series";
 import { useMachineProfile } from "@/api/hooks/setup";
 import { syncingSteps, useJobs } from "@/api/hooks/useJobs";
@@ -262,8 +263,11 @@ function StepBadge({
 
 function SideNav() {
   const { t } = useTranslation("nav");
-  const { seriesId, episodeIdx, episode } = useRouteEpisode();
-  const progress = useEpisodeProgress(episode?.id);
+  const { seriesId, episodeIdx, episode, isLoading } = useRouteEpisode();
+  const episodeProgress = useEpisodeProgress(episode?.id);
+  // No such episode (before 分集规划): the series' badges, i.e. 小说 and its gate.
+  const seriesProgress = useSeriesProgress(episode || isLoading ? undefined : seriesId);
+  const progress = episode ? episodeProgress : seriesProgress;
   const jobs = useJobs();
   const syncing = syncingSteps(jobs.data, seriesId, episode?.id);
   const episodeKey = String(episodeIdx);

@@ -11,7 +11,6 @@ import { ApiError } from "@/api/client";
 import { useComponentModels } from "@/api/hooks/config";
 import { useImpactPreview } from "@/api/hooks/impact";
 import { useLock, useProducts } from "@/api/hooks/products";
-import { useEpisodes } from "@/api/hooks/series";
 import type { ModelOption } from "@/api/schemas/models";
 import { Chip } from "@/components/Chip";
 import { CostBadge } from "@/components/CostBadge";
@@ -62,13 +61,11 @@ type Sample = (key: string, opts?: Record<string, unknown>) => string;
 /** RunBar per demo product, driving the Inspector beside them (the novel page's layout). */
 function ProductShowcase({ s }: { s: Sample }) {
   const products = useProducts({ owner: `series:${DEMO_SERIES}` });
-  const episodes = useEpisodes(DEMO_SERIES);
   const show = useInspectorStore((st) => st.show);
   const enrichModels = useComponentModels("enrich");
   const extractModels = useComponentModels("extract");
   const models: Record<string, ModelOption[]> = { enrich: enrichModels, extract: extractModels };
   const what: Record<string, string> = { enrich: s("what"), extract: s("whatExtract") };
-  const episodeId = episodes.data?.[0]?.id;
   return (
     <QueryState query={products}>
       {(list) => (
@@ -100,7 +97,7 @@ function ProductShowcase({ s }: { s: Sample }) {
               </ModelSwitchMenu>
               <GateButton
                 gate="novel"
-                episodeId={episodeId}
+                scopeId={DEMO_SERIES}
                 label={s("gateLabel")}
                 to={paths.devComponents()}
               />

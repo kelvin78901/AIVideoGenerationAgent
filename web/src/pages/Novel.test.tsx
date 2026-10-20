@@ -7,6 +7,7 @@ import NovelPage from "@/pages/Novel";
 import { backend, fake } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { fakeBible } from "@/test/fakes/bible";
+import { fakeEpisodes } from "@/test/fakes/episodes";
 import { fakeImpact, openFakeGates, reopenFakeNovel } from "@/test/fakes/impact";
 import { fakeNovel } from "@/test/fakes/novel";
 import { fakeSuggestions } from "@/test/fakes/suggestions";
@@ -295,6 +296,22 @@ describe("NovelPage", () => {
     await waitFor(() => expect(gate).toBeEnabled());
     await user.click(gate);
     expect(await screen.findByTestId("script-page")).toBeInTheDocument();
+  });
+
+  it("a new series confirms its novel before 分集规划 (the gate is the series')", async () => {
+    const user = userEvent.setup();
+    renderNovel(newSeries());
+    await user.click(await screen.findByRole("button", { name: "导入小说" }));
+    const dialog = await screen.findByRole("dialog", { name: "导入小说" });
+    await user.upload(within(dialog).getByTestId("novel-file"), novelFile());
+    await user.click(await within(dialog).findByRole("checkbox", { name: /改编权/ }));
+    await user.click(within(dialog).getByRole("button", { name: "导入" }));
+    await screen.findByText(/^那天雨下得很大/);
+    const gate = screen.getByRole("button", { name: "确认原文，生成剧本" });
+    await waitFor(() => expect(gate).toBeEnabled());
+    await user.click(gate);
+    expect(await screen.findByTestId("script-page")).toBeInTheDocument();
+    expect(fakeEpisodes.seriesNovel).toEqual({ s1: "confirmed" });
   });
 
   describe("提取到的设定", () => {

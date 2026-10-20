@@ -25,6 +25,7 @@
 - 12b：Playwright `real` 项目（`web/e2e/real.spec.ts`；第三个 webServer 是 `VITE_DEMO_DATA=0` 的 Vite 5184，共用 Mock 后端；`pnpm e2e` = smoke + real）：环境、规格、小说、剧本（第 1、2 集）、模型、任务页，加小说页切视图 / 章节 / 设定 / 历史 / 提示词、剧本页看板 / 表格 / 分集规划 / 历史；只收 zod 不一致、页面异常、5xx，404 记成注释。**没有发现契约不一致**；404 只有 `/episodes/{id}/shots`（M4）、`/metrics/summary`（M8）、`/workflows`（工作流库）。DECISIONS 记一条；CLAUDE.md 的 e2e 说明更新。e2e 29、lint / typecheck / format 全过（5021781）。
 - 12c：11 页亮 / 暗重截（`shots.spec.ts` 截图前等页面高度稳定——模型页的工作流库、素材页晚到的一行之前会让整页图被截短，亮暗高度不一）；变化都是预期的：顶栏剧名菜单（第 5 步）、模型页和各页 Inspector 的运行设置来自后端 `components.yaml`（第 2 步，模型页上次截图在 M1）、导航徽章；小说、剧本两页和 10c-2 一致；M2 新界面截图都已在对照表里，模型页那行改写说明，README 的「只截一页」写法改对；ROADMAP 勾掉两条验收（跑到第 1 集剧本确认、改已确认剧本行三个选项）。Vitest 254、lint / typecheck / format 全过（9617b0d）。
 - CI 修复：分支 CI 从第 2 步起一直红——上游 `.gitignore` 的 `config.json` 挡住了 `web/src/test/data/config.json`（`test_web_fixtures` 导出的配置），CI 上文件不存在，pytest 失败，后面的前端检查和 e2e 都没跑过。`.gitignore` 放行这个文件并提交（727fe55）；之后 Linux CI 全绿（含 e2e 29 条，run 39453343896）。Windows CI 只在往 main 开 PR 时跑，第 14 步开 PR 时看。
+- 12d（Kelvin 2026-10-20 定）：没分集时也能确认小说——小说闸门用剧集 id 确认，新接口 `GET /series/{id}/progress`（小说一步，其余未开始），左侧导航在没分集时读它；`GateButton` 属性改名 `scopeId`；pytest / Playwright 新剧集流程改成先确认小说、再分集规划；假后端加剧集进度。pytest 514、Vitest 255、e2e 29 全过（本提交）。
 
 ## 下一步
 
@@ -66,6 +67,7 @@
 - **页面测试里上传文件**：`test/setup.ts` 已把 `FormData` / `File` 换成 Node 的（jsdom 的发出去是 `"[object FormData]"`），假后端里 `await request.formData()` 可以直接用。
 - **Radix 下拉菜单里打开对话框要 `modal={false}`**，否则对话框关掉后 `body` 留着 `pointer-events: none`（jsdom 里表现为后面的测试点不动）。
 - **ESLint `no-irregular-whitespace`**：全角空格（U+3000）在正则、注释里会报错（字符串里不报）——正则写 `\s`，注释别用；**`react-hooks/set-state-in-effect`**：不要在 effect 里同步 URL 参数到 state，在渲染时推出来（见 `Script.tsx` 的 `picked`）。
+- **本机应用控制从 2026-10-20 起也拦 `.venv/Scripts/python.exe`**（`uv run python` 报 os error 4551；uv 的基础解释器不拦）：临时用 `PY=~/AppData/Roaming/uv/python/cpython-3.12-windows-x86_64-none/python.exe` + `PYTHONPATH='C:\dev\drama-studio\.venv\Lib\site-packages;C:\dev\drama-studio\src'` 跑 pytest / mypy；Playwright 用不进 git 的临时配置把后端命令换成它。`start.ps1` 可能也起不来，等 Kelvin 看。
 - **改代码前先看 ruff 有没有已经改过行**：`ruff format` 会把长行拆开，之后用 sed 按原行号替换会留下碎片（第 4 步踩过）。
 
 ## 等 Kelvin 的事
@@ -73,6 +75,6 @@
 - **审第 8 步的节拍看板和情绪曲线**：截图 `reports/ui/script-board.light.jpg`（暗色 `.dark`）、`script-board-drag.light.jpg`（拖动中）、`script-board-edit.light.jpg`（改节拍）；重启后端后在 5173 剧本页点「节拍看板」能直接试拖动。
 - **审第 9 步的三向溯源**：`reports/ui/script-trace.light.jpg`（剧本行 → 镜头 / 原文）、`novel-trace.light.jpg`（小说段落「在剧本里」）、`storyboard-lines.light.jpg`（镜头 → 剧本行）；重启后端后在 5173 能点着来回跳。
 - **审第 10 步的影响范围和同步**：`reports/ui/novel-impact.light.jpg`（改已确认原文的弹窗）、`novel-syncing.light.jpg`（同步中）、`novel-synced.light.jpg`（同步完）、`script-impact.light.jpg`（剧本页的新按钮）；按钮文案、主按钮放「确认并同步」、已确认时「全部采纳」置灰这几处要你看一眼。
-- **新剧集「确认原文，生成剧本」在分集规划前是灰的**（12a 端到端发现）：小说闸门挂在集上，没分集就没有集；现在得先从左侧进「剧本」点「开始分集规划」，再回小说页确认，按钮上没有提示。建议：没分集时也能确认小说（按剧集记），确认后到剧本页，那里就是「开始分集规划」。要你定。
+- **`.venv/Scripts/python.exe` 被应用控制拦了**（见上面的坑）：`start.ps1` 的后端可能起不来；看一下 Windows 安全中心「智能应用控制」的拦截记录，或者重建 `.venv`。
 - 之后：第 13 步真实冒烟要 DeepSeek 密钥。
 - M1 留下的：下次真装大文件（如 Qwen-Image-Edit 31 GB）时看速度、剩余时间准不准，连接数是否停在 1 个。

@@ -140,7 +140,7 @@ export default function GeneratePage() {
             </Button>
             <GateButton
               gate="takes"
-              episodeId={episode?.id}
+              scopeId={episode?.id}
               label={t("gate")}
               to={paths.step(seriesId, ep, "post")}
             />

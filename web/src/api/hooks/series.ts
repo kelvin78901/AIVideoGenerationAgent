@@ -7,6 +7,7 @@ import { productKeys } from "@/api/hooks/products";
 import {
   EpisodeProgressSchema,
   EpisodeSchema,
+  SeriesProgressSchema,
   type BeatPatch,
   type Episode,
   type EpisodePatch,
@@ -30,6 +31,8 @@ export const seriesKeys = {
   list: ["series-list"] as const,
   detail: (id: string) => ["series", id] as const,
   episodes: (id: string) => ["series", id, "episodes"] as const,
+  /** The series' badges (no episodes yet); `progress` is an episode's. */
+  seriesProgress: (id: string) => ["series", id, "progress"] as const,
   spec: (id: string) => ["series", id, "spec"] as const,
   compat: (id: string, aspect: string) => ["series", id, "spec", "compat", aspect] as const,
   presets: ["spec", "presets"] as const,
@@ -102,6 +105,15 @@ export function useEpisodeProgress(episodeId: string | undefined) {
     queryKey: seriesKeys.progress(episodeId ?? ""),
     queryFn: () => api(`/episodes/${enc(episodeId ?? "")}/progress`, EpisodeProgressSchema),
     enabled: !!episodeId,
+  });
+}
+
+/** The badges of a series with no episodes yet; the novel gate's state at any time. */
+export function useSeriesProgress(seriesId: string | undefined) {
+  return useQuery({
+    queryKey: seriesKeys.seriesProgress(seriesId ?? ""),
+    queryFn: () => api(`/series/${enc(seriesId ?? "")}/progress`, SeriesProgressSchema),
+    enabled: !!seriesId,
   });
 }
 

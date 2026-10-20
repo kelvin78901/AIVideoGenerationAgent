@@ -9,6 +9,7 @@
 import { http, HttpResponse } from "msw";
 
 import { ApplyImpactRequestSchema, ImpactChangeSchema, type Impact } from "@/api/schemas/impact";
+import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import { fakeBible } from "@/test/fakes/bible";
 import { fakeEpisodes } from "@/test/fakes/episodes";
 import { fakeScript, findBlock } from "@/test/fakes/script";
@@ -185,9 +186,11 @@ export function gateHandlers() {
       const ep = fakeEpisodes.list.find((e) => e.id === scope);
       if (!ep && gate === "script") return error(404, "episode_not_found", { id: scope });
       const state = action === "confirm" ? "confirmed" : "in_progress";
-      if (gate === "novel") {
+      if (gate === "novel" && (ep || scope === DEMO_SERIES_ID)) {
         for (const p of Object.values(fakeEpisodes.progress))
           p.steps.novel = { ...p.steps.novel, state };
+      } else if (gate === "novel") {
+        fakeEpisodes.seriesNovel[scope] = state;
       } else if (ep) {
         const step = fakeEpisodes.progress[ep.id]?.steps.script;
         if (step) step.state = state;

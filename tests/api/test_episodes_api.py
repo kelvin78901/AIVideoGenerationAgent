@@ -388,6 +388,29 @@ def test_progress_of_the_novel_and_script_steps(client: TestClient) -> None:
     assert _code(client.get(f"{V1}/episodes/nope/progress")) == "episode_not_found"
 
 
+def test_the_novel_gate_before_there_are_episodes(client: TestClient) -> None:
+    # A new series: 小说 in progress, the rest not started; nothing to confirm yet.
+    empty = str(client.post(f"{V1}/series", json={"title": "空"}).json()["id"])
+    resp = client.get(f"{V1}/series/{empty}/progress")
+    assert resp.status_code == 200, resp.text
+    assert resp.json()["series_id"] == empty
+    steps = resp.json()["steps"]
+    assert steps["novel"]["state"] == "in_progress"
+    assert all(s["state"] == "not_started" for k, s in steps.items() if k != "novel")
+    gate = client.post(f"{V1}/gates/novel/confirm", json={"scope_id": empty})
+    assert _code(gate) == "nothing_adopted"
+    # The novel gate is the series': confirming it by the series id shows on every episode.
+    gate = client.post(f"{V1}/gates/novel/confirm", json={"scope_id": "demo"})
+    assert gate.status_code == 200, gate.text
+    assert gate.json()["scope_id"] == "demo"
+    steps = client.get(f"{V1}/series/demo/progress").json()["steps"]
+    assert steps["novel"]["state"] == "confirmed" and steps["script"]["state"] == "not_started"
+    for ep in ("demo-e1", "demo-e2"):
+        steps = client.get(f"{V1}/episodes/{ep}/progress").json()["steps"]
+        assert steps["novel"]["state"] == "confirmed"
+    assert _code(client.get(f"{V1}/series/nope/progress")) == "series_not_found"
+
+
 def test_the_mirror_can_be_rebuilt_from_the_adopted_version(client: TestClient) -> None:
     client.patch(f"{V1}/beats/demo-bt5", json={"episode_id": "demo-e2"})
 

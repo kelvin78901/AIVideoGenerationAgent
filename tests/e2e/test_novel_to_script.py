@@ -1,5 +1,6 @@
 """M2 acceptance (plan step 12): a new series, the demo novel imported, the four components run
-in order, then both gates confirmed, against a real backend process. Each step leaves a version
+in order with the novel confirmed before the plan (step 12d), then episode 1's script confirmed,
+against a real backend process. Each step leaves a version
 and a ``model_call`` row; one run goes over the per-call cap and waits for a yes first.
 """
 
@@ -96,9 +97,9 @@ def test_new_series_from_the_novel_to_a_confirmed_script(backend: Backend) -> No
     owner = f"series:{series}"
     assert api.product(owner, "import")["status"] == "adopted"
 
-    # 补全 (accepted) → 设定提取 (reads the accepted additions) → 分集规划; each one's first
-    # success is adopted, and nothing it read changes after it ran.
-    for component in ("enrich", "extract", "split"):
+    # 补全 (accepted) → 设定提取 (reads the accepted additions); each one's first success is
+    # adopted, and nothing it read changes after it ran.
+    for component in ("enrich", "extract"):
         product = api.product(owner, component)
         assert product["status"] == "empty", component
         _check_step(api, product, api.run(product["id"]), series)
@@ -106,6 +107,16 @@ def test_new_series_from_the_novel_to_a_confirmed_script(backend: Backend) -> No
             sugs = api.get(f"/series/{series}/suggestions")["suggestions"]
             assert sugs and all(s["status"] == "pending" for s in sugs)
             api.send("POST", f"/series/{series}/suggestions/accept-all")
+
+    # 确认原文 before there are episodes: the novel gate is the series'.
+    assert api.get(f"/series/{series}/progress")["steps"]["novel"]["state"] == "in_progress"
+    api.send("POST", "/gates/novel/confirm", json={"scope_id": series})
+    assert api.get(f"/series/{series}/progress")["steps"]["novel"]["state"] == "confirmed"
+
+    # 分集规划 reads the confirmed novel and bible (the novel gate does not lock the plan).
+    product = api.product(owner, "split")
+    assert product["status"] == "empty"
+    _check_step(api, product, api.run(product["id"]), series)
 
     assert api.get(f"/series/{series}/bible")["entities"]
     episodes = api.get(f"/series/{series}/episodes")
@@ -128,8 +139,7 @@ def test_new_series_from_the_novel_to_a_confirmed_script(backend: Backend) -> No
     lines = api.get(f"/episodes/{e1}/script")["lines"]
     assert lines and all(x["source_spans"] for x in lines)
 
-    # The two gates: the novel (scope: an episode, the backend takes its series), episode 1.
-    api.send("POST", "/gates/novel/confirm", json={"scope_id": e1})
+    # Episode 1's script gate; the series' novel gate shows on the episode as well.
     api.send("POST", "/gates/script/confirm", json={"scope_id": e1})
     steps = api.get(f"/episodes/{e1}/progress")["steps"]
     assert (steps["novel"]["state"], steps["script"]["state"]) == ("confirmed", "confirmed")

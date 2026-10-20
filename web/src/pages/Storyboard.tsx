@@ -100,7 +100,7 @@ export default function StoryboardPage() {
         actions={
           <GateButton
             gate="storyboard"
-            episodeId={episode?.id}
+            scopeId={episode?.id}
             label={t("gate")}
             to={paths.step(seriesId, ep, "generate")}
           />
