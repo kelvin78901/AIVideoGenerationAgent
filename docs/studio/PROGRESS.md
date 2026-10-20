@@ -23,7 +23,8 @@
 - 11：删 `web/src/legacy/`、`/legacy` 路由、`pages/Legacy*`、`common.legacy` 词条、ESLint / Prettier 忽略项；后端不再挂上游 `/api/series/*`（代码留着），删 `test_upstream_settings.py`，`test_app` 断言 404，`test_isolation` 白名单去掉上游 router；ROADMAP 勾掉「删除 legacy」。pytest 512、Vitest 254、e2e 17、`pnpm build` 全过（9a24f15）。
 - 12a：pytest 端到端 `tests/e2e/test_novel_to_script.py`（真实后端进程：新建剧集 → 导入示例小说 → 补全 → 全部采纳 → 设定 → 分集 → 第 1 集剧本超单次上限先等确认 → 两个闸门 → 重启后仍已确认；每步断言版本已采纳、`model_call` 属于这个产物）；Playwright `web/e2e/m2.spec.ts`（进 smoke 项目，串行）：同一条流程走界面（含「要你点头」弹窗）、示例剧集已确认剧本行的「撤销 / 只改这里 / 确认并同步」、改已确认小说第 2 段 → 确认并同步 → 「已同步」→ 两个闸门重新打开、剧本是同步重跑的版本；M3 / M4 才有的 `/episodes/{id}/shots`、`/series/{id}/assets` 的 404 列为允许；`smoke.spec.ts` 的任务页用例改按新任务 id 找那一行（列表里有了别的完成任务）。pytest 513、e2e 20 全过（99ad819）。
 - 12b：Playwright `real` 项目（`web/e2e/real.spec.ts`；第三个 webServer 是 `VITE_DEMO_DATA=0` 的 Vite 5184，共用 Mock 后端；`pnpm e2e` = smoke + real）：环境、规格、小说、剧本（第 1、2 集）、模型、任务页，加小说页切视图 / 章节 / 设定 / 历史 / 提示词、剧本页看板 / 表格 / 分集规划 / 历史；只收 zod 不一致、页面异常、5xx，404 记成注释。**没有发现契约不一致**；404 只有 `/episodes/{id}/shots`（M4）、`/metrics/summary`（M8）、`/workflows`（工作流库）。DECISIONS 记一条；CLAUDE.md 的 e2e 说明更新。e2e 29、lint / typecheck / format 全过（5021781）。
-- 12c：11 页亮 / 暗重截（`shots.spec.ts` 截图前等页面高度稳定——模型页的工作流库、素材页晚到的一行之前会让整页图被截短，亮暗高度不一）；变化都是预期的：顶栏剧名菜单（第 5 步）、模型页和各页 Inspector 的运行设置来自后端 `components.yaml`（第 2 步，模型页上次截图在 M1）、导航徽章；小说、剧本两页和 10c-2 一致；M2 新界面截图都已在对照表里，模型页那行改写说明，README 的「只截一页」写法改对；ROADMAP 勾掉两条验收（跑到第 1 集剧本确认、改已确认剧本行三个选项）。Vitest 254、lint / typecheck / format 全过（本提交）。
+- 12c：11 页亮 / 暗重截（`shots.spec.ts` 截图前等页面高度稳定——模型页的工作流库、素材页晚到的一行之前会让整页图被截短，亮暗高度不一）；变化都是预期的：顶栏剧名菜单（第 5 步）、模型页和各页 Inspector 的运行设置来自后端 `components.yaml`（第 2 步，模型页上次截图在 M1）、导航徽章；小说、剧本两页和 10c-2 一致；M2 新界面截图都已在对照表里，模型页那行改写说明，README 的「只截一页」写法改对；ROADMAP 勾掉两条验收（跑到第 1 集剧本确认、改已确认剧本行三个选项）。Vitest 254、lint / typecheck / format 全过（9617b0d）。
+- CI 修复：分支 CI 从第 2 步起一直红——上游 `.gitignore` 的 `config.json` 挡住了 `web/src/test/data/config.json`（`test_web_fixtures` 导出的配置），CI 上文件不存在，pytest 失败，后面的前端检查和 e2e 都没跑过。`.gitignore` 放行这个文件并提交（本提交）。
 
 ## 下一步
 
@@ -61,7 +62,7 @@
 - Windows PowerShell 5.1：`.ps1` 必须存成 UTF-8 带 BOM，否则中文乱码。
 - YAML 1.1 会把 `on:` / `mode: off` 解析成布尔值：`core/config.py` 用只认 true/false 的加载器。
 - SQLite 读回时间会丢时区，用 `models_db.UtcDateTime`。
-- **上游 `.gitignore` 有一行 `templates/`**，会挡住任何叫 templates 的目录；`src/drama_series_agent/prompts/templates/` 已用 `!` 放行，新加别的 templates 目录要留意 `git status`。
+- **上游 `.gitignore` 有 `templates/`、`config.json`**，会挡住任何叫这个名字的目录 / 文件；`prompts/templates/`、`web/src/test/data/config.json` 已用 `!` 放行。新加文件后看 `git status --ignored`；**每次 push 后看一眼 `gh run list`**（这次红了 20 多个提交没发现）。
 - **页面测试里上传文件**：`test/setup.ts` 已把 `FormData` / `File` 换成 Node 的（jsdom 的发出去是 `"[object FormData]"`），假后端里 `await request.formData()` 可以直接用。
 - **Radix 下拉菜单里打开对话框要 `modal={false}`**，否则对话框关掉后 `body` 留着 `pointer-events: none`（jsdom 里表现为后面的测试点不动）。
 - **ESLint `no-irregular-whitespace`**：全角空格（U+3000）在正则、注释里会报错（字符串里不报）——正则写 `\s`，注释别用；**`react-hooks/set-state-in-effect`**：不要在 effect 里同步 URL 参数到 state，在渲染时推出来（见 `Script.tsx` 的 `picked`）。

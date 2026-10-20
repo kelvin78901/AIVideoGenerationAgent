@@ -1,0 +1,2759 @@
+{
+  "catalog": {
+    "components": [
+      {
+        "id": "extract",
+        "stage": "novel",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "enrich",
+        "stage": "novel",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "split",
+        "stage": "script",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "script",
+        "stage": "script",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "assets",
+        "stage": "assets",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "img",
+        "stage": "assets",
+        "kind": "image",
+        "api_models": [
+          "openai/gpt-image-2",
+          "google/nano-banana-pro",
+          "volc/seedream-5.0"
+        ],
+        "local_models": [
+          "comfy/qwen-image-edit",
+          "comfy/flux2-dev"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "text",
+        "stage": "assets",
+        "kind": "image",
+        "api_models": [
+          "openai/gpt-image-2",
+          "google/nano-banana-pro"
+        ],
+        "local_models": [
+          "comfy/qwen-image"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "voice",
+        "stage": "assets",
+        "kind": "tts",
+        "api_models": [
+          "minimax/speech-2.8-hd",
+          "elevenlabs/v3"
+        ],
+        "local_models": [
+          "local/indextts2",
+          "local/cosyvoice",
+          "local/qwen3-tts"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "dub",
+        "stage": "assets",
+        "kind": "tts",
+        "api_models": [
+          "minimax/speech-2.8-hd",
+          "elevenlabs/v3"
+        ],
+        "local_models": [
+          "local/indextts2",
+          "local/cosyvoice"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "plan",
+        "stage": "storyboard",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "kf",
+        "stage": "storyboard",
+        "kind": "image",
+        "api_models": [
+          "openai/gpt-image-2",
+          "google/nano-banana-pro",
+          "volc/seedream-5.0"
+        ],
+        "local_models": [
+          "comfy/qwen-image-edit",
+          "comfy/flux2-dev"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "world",
+        "stage": "storyboard",
+        "kind": "world",
+        "api_models": [
+          "worldlabs/marble"
+        ],
+        "local_models": [],
+        "unavailable": {}
+      },
+      {
+        "id": "vid",
+        "stage": "generate",
+        "kind": "video",
+        "api_models": [
+          "minimax/h3-api",
+          "volc/seedance-2.5",
+          "google/gemini-omni-flash-1.1",
+          "alibaba/wan-3.0",
+          "kling/kling-3.0",
+          "google/veo-3.1"
+        ],
+        "local_models": [
+          "comfy/h3",
+          "comfy/wan-2.2",
+          "comfy/ltx"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "ctrl",
+        "stage": "generate",
+        "kind": "video",
+        "api_models": [],
+        "local_models": [
+          "comfy/h3-fun-controlnet"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "up",
+        "stage": "generate",
+        "kind": "upscale",
+        "api_models": [
+          "minimax/h3-regenerate-2k",
+          "topaz/starlight-precise-2.5"
+        ],
+        "local_models": [
+          "comfy/seedvr2",
+          "comfy/flashvsr"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "lip",
+        "stage": "generate",
+        "kind": "lipsync",
+        "api_models": [
+          "sync/lipsync-2-pro"
+        ],
+        "local_models": [
+          "local/latentsync",
+          "local/infinitetalk"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "qa",
+        "stage": "generate",
+        "kind": "vlm",
+        "api_models": [
+          "google/gemini-3.6-flash",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "local_models": [
+          "local/qwen3-vl-32b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "music",
+        "stage": "post",
+        "kind": "music",
+        "api_models": [
+          "elevenlabs/music"
+        ],
+        "local_models": [
+          "local/ace-step"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "sfx",
+        "stage": "post",
+        "kind": "sfx",
+        "api_models": [
+          "elevenlabs/sfx"
+        ],
+        "local_models": [
+          "local/mmaudio"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "sub",
+        "stage": "post",
+        "kind": "asr",
+        "api_models": [
+          "elevenlabs/scribe"
+        ],
+        "local_models": [
+          "local/whisper-large-v3",
+          "local/paraformer"
+        ],
+        "unavailable": {}
+      }
+    ],
+    "models": [
+      {
+        "key": "deepseek/v4-pro",
+        "display": "DeepSeek V4 Pro",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 1.32,
+          "out": 3.96,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "deepseek/v4.1-flash",
+        "display": "DeepSeek V4.1 Flash",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.3,
+          "out": 1.2,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "moonshot/kimi-k2.6",
+        "display": "Kimi K2.6",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.95,
+          "out": 4.0,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "qwen/qwen3.8-max",
+        "display": "Qwen3.8-max",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 2.0,
+          "out": 6.0,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "qwen/qwen3.7-plus",
+        "display": "Qwen3.7-plus",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.4,
+          "out": 1.6,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "qwen/qwen3.8-flash",
+        "display": "Qwen3.8-flash",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.15,
+          "out": 0.47,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "volc/doubao-2.1-pro",
+        "display": "豆包 2.1 Pro",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 6.0,
+          "out": 30.0,
+          "currency": "CNY"
+        }
+      },
+      {
+        "key": "zhipu/glm-5.3",
+        "display": "GLM-5.3",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 1.4,
+          "out": 4.4,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "zhipu/glm-5.3-flash",
+        "display": "GLM-5.3-Flash",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.15,
+          "out": 0.5,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "minimax/m3",
+        "display": "MiniMax-M3",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.3,
+          "out": 1.2,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "google/gemini-3.6-flash",
+        "display": "Gemini 3.6 Flash",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.75,
+          "out": 3.75,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "google/gemini-3.1-flash-lite",
+        "display": "Gemini 3.1 Flash-Lite",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.25,
+          "out": 1.5,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "openai/gpt-6-luna",
+        "display": "GPT-6 Luna",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 0.1,
+          "out": 0.5,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "openrouter/claude-sonnet-5.5",
+        "display": "Claude Sonnet 5.5（经 OpenRouter）",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "openrouter/any",
+        "display": "任意模型",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "local/qwen3.6-27b",
+        "display": "Qwen3.6-27B（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/qwen3-30b-a3b",
+        "display": "Qwen3-30B-A3B（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "google/nano-banana-pro",
+        "display": "Nano Banana Pro",
+        "where": "api",
+        "price": {
+          "unit": "image",
+          "amount": 0.14,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "openai/gpt-image-2",
+        "display": "GPT Image 2",
+        "where": "api",
+        "price": {
+          "unit": "image",
+          "amount": 0.28,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "volc/seedream-5.0",
+        "display": "Seedream 5.0",
+        "where": "api",
+        "price": {
+          "unit": "image",
+          "amount": 0.03,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "minimax/h3-api",
+        "display": "MiniMax H3 API",
+        "where": "api",
+        "price": {
+          "unit": "second",
+          "amount": 0.08,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "minimax/h3-regenerate-2k",
+        "display": "H3 Regenerate-2K",
+        "where": "api",
+        "price": {
+          "unit": "second",
+          "amount": 0.05,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "minimax/context-ir",
+        "display": "H3 Context-IR",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "volc/seedance-2.5",
+        "display": "Seedance 2.5",
+        "where": "api",
+        "price": {
+          "unit": "second",
+          "amount": 0.41000000000000003,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "google/gemini-omni-flash-1.1",
+        "display": "Gemini Omni Flash 1.1",
+        "where": "api",
+        "price": {
+          "unit": "second",
+          "amount": 0.152,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "alibaba/wan-3.0",
+        "display": "Wan 3.0",
+        "where": "api",
+        "price": {
+          "unit": "second",
+          "amount": 0.2,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "kling/kling-3.0",
+        "display": "Kling 3.0",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "google/veo-3.1",
+        "display": "Veo 3.1",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "minimax/speech-2.8-hd",
+        "display": "MiniMax Speech 2.8 HD",
+        "where": "api",
+        "price": {
+          "unit": "mchar",
+          "amount": 100.0,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "elevenlabs/v3",
+        "display": "ElevenLabs v3",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "sync/lipsync-2-pro",
+        "display": "sync lipsync-2-pro",
+        "where": "api",
+        "price": {
+          "unit": "second",
+          "amount": 0.067,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "topaz/starlight-precise-2.5",
+        "display": "Topaz Starlight Precise 2.5",
+        "where": "api",
+        "price": {
+          "unit": "second",
+          "amount": 0.12,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "elevenlabs/music",
+        "display": "ElevenLabs Music",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "elevenlabs/sfx",
+        "display": "ElevenLabs Sound Effects",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "elevenlabs/scribe",
+        "display": "ElevenLabs Scribe",
+        "where": "api",
+        "price": null
+      },
+      {
+        "key": "worldlabs/marble",
+        "display": "World Labs Marble",
+        "where": "api",
+        "price": {
+          "unit": "call",
+          "amount": 1.2,
+          "currency": "USD"
+        }
+      },
+      {
+        "key": "comfy/h3",
+        "display": "MiniMax H3（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/h3-fun-controlnet",
+        "display": "H3 Fun ControlNet（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/wan-2.2",
+        "display": "Wan 2.2（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/ltx",
+        "display": "LTX（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/qwen-image-edit",
+        "display": "Qwen-Image-Edit（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/qwen-image",
+        "display": "Qwen-Image（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/flux2-dev",
+        "display": "FLUX.2 dev（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/seedvr2",
+        "display": "SeedVR2（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/flashvsr",
+        "display": "FlashVSR（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/indextts2",
+        "display": "IndexTTS2（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/cosyvoice",
+        "display": "CosyVoice（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/qwen3-tts",
+        "display": "Qwen3-TTS（本地试听）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/latentsync",
+        "display": "LatentSync（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/infinitetalk",
+        "display": "InfiniteTalk（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/qwen3-vl-32b",
+        "display": "Qwen3-VL-32B（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/ace-step",
+        "display": "ACE-Step（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/mmaudio",
+        "display": "MMAudio（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/whisper-large-v3",
+        "display": "Whisper large-v3（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "local/paraformer",
+        "display": "Paraformer（本地）",
+        "where": "local",
+        "price": null
+      }
+    ],
+    "local_runtime_ok": true
+  },
+  "presets": {
+    "quality": {
+      "extract": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.2
+      },
+      "enrich": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "split": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "script": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.8
+      },
+      "assets": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "img": {
+        "mode": "api",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/qwen-image-edit",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/qwen-image-edit",
+          "comfy/flux2-dev",
+          "google/nano-banana-pro",
+          "volc/seedream-5.0"
+        ],
+        "per_call_cap_usd": 1.5
+      },
+      "text": {
+        "mode": "api",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/qwen-image",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/qwen-image",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/qwen-image",
+          "google/nano-banana-pro"
+        ],
+        "per_call_cap_usd": 1.2
+      },
+      "voice": {
+        "mode": "api",
+        "api_model": "minimax/speech-2.8-hd",
+        "local_model": "local/indextts2",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/indextts2",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/indextts2",
+          "local/cosyvoice",
+          "local/qwen3-tts",
+          "elevenlabs/v3"
+        ],
+        "per_call_cap_usd": 3.0
+      },
+      "dub": {
+        "mode": "api",
+        "api_model": "minimax/speech-2.8-hd",
+        "local_model": "local/indextts2",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/indextts2",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/indextts2",
+          "local/cosyvoice",
+          "elevenlabs/v3"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "plan": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.8
+      },
+      "kf": {
+        "mode": "api",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/qwen-image-edit",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/qwen-image-edit",
+          "comfy/flux2-dev",
+          "google/nano-banana-pro",
+          "volc/seedream-5.0"
+        ],
+        "per_call_cap_usd": 1.0
+      },
+      "world": {
+        "mode": "api",
+        "api_model": "worldlabs/marble",
+        "local_model": null,
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 1.0
+      },
+      "vid": {
+        "mode": "api",
+        "api_model": "minimax/h3-api",
+        "local_model": "comfy/h3",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/h3",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/h3",
+          "comfy/wan-2.2",
+          "comfy/ltx",
+          "volc/seedance-2.5",
+          "google/gemini-omni-flash-1.1",
+          "alibaba/wan-3.0",
+          "kling/kling-3.0",
+          "google/veo-3.1"
+        ],
+        "per_call_cap_usd": 2.0
+      },
+      "ctrl": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/h3-fun-controlnet",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
+      },
+      "up": {
+        "mode": "api",
+        "api_model": "minimax/h3-regenerate-2k",
+        "local_model": "comfy/seedvr2",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/seedvr2",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/seedvr2",
+          "comfy/flashvsr",
+          "topaz/starlight-precise-2.5"
+        ],
+        "per_call_cap_usd": 1.0
+      },
+      "lip": {
+        "mode": "api",
+        "api_model": "sync/lipsync-2-pro",
+        "local_model": "local/latentsync",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/latentsync",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/latentsync",
+          "local/infinitetalk"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "qa": {
+        "mode": "api",
+        "api_model": "google/gemini-3.6-flash",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3-vl-32b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.2
+      },
+      "music": {
+        "mode": "api",
+        "api_model": "elevenlabs/music",
+        "local_model": "local/ace-step",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/ace-step",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/ace-step"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "sfx": {
+        "mode": "api",
+        "api_model": "elevenlabs/sfx",
+        "local_model": "local/mmaudio",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/mmaudio",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/mmaudio"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "sub": {
+        "mode": "api",
+        "api_model": "elevenlabs/scribe",
+        "local_model": "local/whisper-large-v3",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/whisper-large-v3",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/whisper-large-v3",
+          "local/paraformer"
+        ],
+        "per_call_cap_usd": 0.1
+      }
+    },
+    "balanced": {
+      "extract": {
+        "mode": "local",
+        "api_model": "qwen/qwen3.8-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "qwen/qwen3.8-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "qwen/qwen3.8-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.2
+      },
+      "enrich": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "moonshot/kimi-k2.6",
+          "notify": "after"
+        },
+        "alt_order": [
+          "moonshot/kimi-k2.6",
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "split": {
+        "mode": "api",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "qwen/qwen3.7-plus",
+          "notify": "after"
+        },
+        "alt_order": [
+          "qwen/qwen3.7-plus",
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "script": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "qwen/qwen3.8-max",
+          "notify": "after"
+        },
+        "alt_order": [
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "local/qwen3.6-27b"
+        ],
+        "per_call_cap_usd": 0.8
+      },
+      "assets": {
+        "mode": "api",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "qwen/qwen3.7-plus",
+          "notify": "after"
+        },
+        "alt_order": [
+          "qwen/qwen3.7-plus",
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "img": {
+        "mode": "hybrid",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "volc/seedream-5.0",
+          "notify": "after"
+        },
+        "alt_order": [
+          "volc/seedream-5.0",
+          "comfy/flux2-dev",
+          "openai/gpt-image-2",
+          "google/nano-banana-pro"
+        ],
+        "per_call_cap_usd": 1.5
+      },
+      "text": {
+        "mode": "hybrid",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/qwen-image",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/nano-banana-pro",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/nano-banana-pro",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 1.2
+      },
+      "voice": {
+        "mode": "hybrid",
+        "api_model": "minimax/speech-2.8-hd",
+        "local_model": "local/qwen3-tts",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "elevenlabs/v3",
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/v3",
+          "local/indextts2",
+          "local/cosyvoice",
+          "minimax/speech-2.8-hd"
+        ],
+        "per_call_cap_usd": 3.0
+      },
+      "dub": {
+        "mode": "api",
+        "api_model": "minimax/speech-2.8-hd",
+        "local_model": "local/indextts2",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "elevenlabs/v3",
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/v3",
+          "local/indextts2",
+          "local/cosyvoice"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "plan": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "moonshot/kimi-k2.6",
+          "notify": "after"
+        },
+        "alt_order": [
+          "moonshot/kimi-k2.6",
+          "local/qwen3.6-27b",
+          "deepseek/v4.1-flash",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.8
+      },
+      "kf": {
+        "mode": "hybrid",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "volc/seedream-5.0",
+          "notify": "after"
+        },
+        "alt_order": [
+          "volc/seedream-5.0",
+          "comfy/flux2-dev",
+          "openai/gpt-image-2",
+          "google/nano-banana-pro"
+        ],
+        "per_call_cap_usd": 1.0
+      },
+      "world": {
+        "mode": "off",
+        "api_model": "worldlabs/marble",
+        "local_model": null,
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 1.0
+      },
+      "vid": {
+        "mode": "hybrid",
+        "api_model": "minimax/h3-api",
+        "local_model": "comfy/h3",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "minimax/h3-api",
+          "notify": "after"
+        },
+        "alt_order": [
+          "minimax/h3-api",
+          "volc/seedance-2.5",
+          "google/gemini-omni-flash-1.1"
+        ],
+        "per_call_cap_usd": 2.0
+      },
+      "ctrl": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/h3-fun-controlnet",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
+      },
+      "up": {
+        "mode": "local",
+        "api_model": "minimax/h3-regenerate-2k",
+        "local_model": "comfy/seedvr2",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/flashvsr",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/flashvsr",
+          "minimax/h3-regenerate-2k",
+          "topaz/starlight-precise-2.5"
+        ],
+        "per_call_cap_usd": 1.0
+      },
+      "lip": {
+        "mode": "hybrid",
+        "api_model": "sync/lipsync-2-pro",
+        "local_model": "local/latentsync",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/infinitetalk",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/infinitetalk",
+          "sync/lipsync-2-pro"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "qa": {
+        "mode": "local",
+        "api_model": "google/gemini-3.6-flash",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/gemini-3.6-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/gemini-3.6-flash",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.2
+      },
+      "music": {
+        "mode": "hybrid",
+        "api_model": "elevenlabs/music",
+        "local_model": "local/ace-step",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/music"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "sfx": {
+        "mode": "local",
+        "api_model": "elevenlabs/sfx",
+        "local_model": "local/mmaudio",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "elevenlabs/sfx",
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/sfx"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "sub": {
+        "mode": "local",
+        "api_model": "elevenlabs/scribe",
+        "local_model": "local/whisper-large-v3",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "elevenlabs/scribe",
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/scribe",
+          "local/paraformer"
+        ],
+        "per_call_cap_usd": 0.1
+      }
+    },
+    "cheap": {
+      "extract": {
+        "mode": "local",
+        "api_model": "qwen/qwen3.8-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "qwen/qwen3.8-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "qwen/qwen3.8-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.2
+      },
+      "enrich": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "deepseek/v4.1-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "deepseek/v4.1-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "split": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "deepseek/v4.1-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "deepseek/v4.1-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "script": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "deepseek/v4.1-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "deepseek/v4.1-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.8
+      },
+      "assets": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "deepseek/v4.1-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "deepseek/v4.1-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "img": {
+        "mode": "local",
+        "api_model": "volc/seedream-5.0",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "volc/seedream-5.0",
+          "notify": "after"
+        },
+        "alt_order": [
+          "volc/seedream-5.0",
+          "comfy/flux2-dev",
+          "openai/gpt-image-2",
+          "google/nano-banana-pro"
+        ],
+        "per_call_cap_usd": 1.5
+      },
+      "text": {
+        "mode": "local",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/nano-banana-pro",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/nano-banana-pro",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 1.2
+      },
+      "voice": {
+        "mode": "local",
+        "api_model": "minimax/speech-2.8-hd",
+        "local_model": "local/indextts2",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "minimax/speech-2.8-hd",
+          "notify": "after"
+        },
+        "alt_order": [
+          "minimax/speech-2.8-hd",
+          "local/cosyvoice",
+          "local/qwen3-tts",
+          "elevenlabs/v3"
+        ],
+        "per_call_cap_usd": 3.0
+      },
+      "dub": {
+        "mode": "local",
+        "api_model": "elevenlabs/v3",
+        "local_model": "local/indextts2",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "elevenlabs/v3",
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/v3",
+          "local/cosyvoice",
+          "minimax/speech-2.8-hd"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "plan": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "deepseek/v4.1-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "deepseek/v4.1-flash",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k2.6",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "custom"
+        ],
+        "per_call_cap_usd": 0.8
+      },
+      "kf": {
+        "mode": "local",
+        "api_model": "volc/seedream-5.0",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "volc/seedream-5.0",
+          "notify": "after"
+        },
+        "alt_order": [
+          "volc/seedream-5.0",
+          "comfy/flux2-dev",
+          "openai/gpt-image-2",
+          "google/nano-banana-pro"
+        ],
+        "per_call_cap_usd": 1.0
+      },
+      "world": {
+        "mode": "api",
+        "api_model": "worldlabs/marble",
+        "local_model": null,
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 1.0
+      },
+      "vid": {
+        "mode": "local",
+        "api_model": "google/veo-3.1",
+        "local_model": "comfy/h3",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/veo-3.1",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/veo-3.1",
+          "comfy/wan-2.2",
+          "comfy/ltx",
+          "minimax/h3-api",
+          "volc/seedance-2.5",
+          "google/gemini-omni-flash-1.1",
+          "alibaba/wan-3.0",
+          "kling/kling-3.0"
+        ],
+        "per_call_cap_usd": 2.0
+      },
+      "ctrl": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/h3-fun-controlnet",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
+      },
+      "up": {
+        "mode": "local",
+        "api_model": "minimax/h3-regenerate-2k",
+        "local_model": "comfy/seedvr2",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "minimax/h3-regenerate-2k",
+          "notify": "after"
+        },
+        "alt_order": [
+          "minimax/h3-regenerate-2k",
+          "comfy/flashvsr",
+          "topaz/starlight-precise-2.5"
+        ],
+        "per_call_cap_usd": 1.0
+      },
+      "lip": {
+        "mode": "local",
+        "api_model": "sync/lipsync-2-pro",
+        "local_model": "local/latentsync",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "sync/lipsync-2-pro",
+          "notify": "after"
+        },
+        "alt_order": [
+          "sync/lipsync-2-pro",
+          "local/infinitetalk"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "qa": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/gemini-3.1-flash-lite",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.2
+      },
+      "music": {
+        "mode": "local",
+        "api_model": "elevenlabs/music",
+        "local_model": "local/ace-step",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "elevenlabs/music",
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/music"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "sfx": {
+        "mode": "local",
+        "api_model": "elevenlabs/sfx",
+        "local_model": "local/mmaudio",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "elevenlabs/sfx",
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/sfx"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "sub": {
+        "mode": "local",
+        "api_model": "elevenlabs/scribe",
+        "local_model": "local/whisper-large-v3",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "elevenlabs/scribe",
+          "notify": "after"
+        },
+        "alt_order": [
+          "elevenlabs/scribe",
+          "local/paraformer"
+        ],
+        "per_call_cap_usd": 0.1
+      }
+    },
+    "local": {
+      "extract": {
+        "mode": "local",
+        "api_model": "qwen/qwen3.8-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-30b-a3b"
+        ],
+        "per_call_cap_usd": 0.2
+      },
+      "enrich": {
+        "mode": "local",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-30b-a3b"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "split": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-30b-a3b"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "script": {
+        "mode": "local",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-30b-a3b"
+        ],
+        "per_call_cap_usd": 0.8
+      },
+      "assets": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-30b-a3b"
+        ],
+        "per_call_cap_usd": 0.3
+      },
+      "img": {
+        "mode": "local",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/flux2-dev"
+        ],
+        "per_call_cap_usd": 1.5
+      },
+      "text": {
+        "mode": "local",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/qwen-image",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 1.2
+      },
+      "voice": {
+        "mode": "local",
+        "api_model": "minimax/speech-2.8-hd",
+        "local_model": "local/indextts2",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/cosyvoice",
+          "local/qwen3-tts"
+        ],
+        "per_call_cap_usd": 3.0
+      },
+      "dub": {
+        "mode": "local",
+        "api_model": "minimax/speech-2.8-hd",
+        "local_model": "local/indextts2",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/cosyvoice"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "plan": {
+        "mode": "local",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.8
+      },
+      "kf": {
+        "mode": "local",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/flux2-dev"
+        ],
+        "per_call_cap_usd": 1.0
+      },
+      "world": {
+        "mode": "off",
+        "api_model": "worldlabs/marble",
+        "local_model": null,
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 1.0
+      },
+      "vid": {
+        "mode": "local",
+        "api_model": "minimax/h3-api",
+        "local_model": "comfy/h3",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/wan-2.2",
+          "comfy/ltx"
+        ],
+        "per_call_cap_usd": 2.0
+      },
+      "ctrl": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/h3-fun-controlnet",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
+      },
+      "up": {
+        "mode": "local",
+        "api_model": "minimax/h3-regenerate-2k",
+        "local_model": "comfy/seedvr2",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/flashvsr"
+        ],
+        "per_call_cap_usd": 1.0
+      },
+      "lip": {
+        "mode": "local",
+        "api_model": "sync/lipsync-2-pro",
+        "local_model": "local/latentsync",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/infinitetalk"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "qa": {
+        "mode": "local",
+        "api_model": "google/gemini-3.6-flash",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.2
+      },
+      "music": {
+        "mode": "local",
+        "api_model": "elevenlabs/music",
+        "local_model": "local/ace-step",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.5
+      },
+      "sfx": {
+        "mode": "local",
+        "api_model": "elevenlabs/sfx",
+        "local_model": "local/mmaudio",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.3
+      },
+      "sub": {
+        "mode": "local",
+        "api_model": "elevenlabs/scribe",
+        "local_model": "local/whisper-large-v3",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/paraformer"
+        ],
+        "per_call_cap_usd": 0.1
+      }
+    }
+  }
+}

@@ -20,6 +20,8 @@ projects/
 !docs/assets/**
 .env
 config.json
+# ...but this one is test data exported from the backend (tests/api/test_web_fixtures.py)
+!web/src/test/data/config.json
 dramas/
 data/cast/
 templates/
