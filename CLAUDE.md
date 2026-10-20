@@ -53,7 +53,8 @@ VITE_DEMO_DATA=0 pnpm -C web dev          # 关掉 MSW 示例数据，只走真�
 # 前端默认用浏览器里的 MSW 返回示例数据（顶栏「示例数据」标记）；某个接口在后端实现后，删掉 web/src/mocks/handlers/ 里对应的 handler
 # 开发面板：http://127.0.0.1:5173/dev/jobs（发起 Mock LLM 调用、看任务和 model_call）
 # 脚本调写接口要带请求头 X-Drama-Studio: 1（见 api/security.py）
-# 示例项目 `uv run drama-studio demo` 还没做（随 M2 的产物 / 版本一起做）
+uv run drama-studio demo [--reset]           # Mock 示例剧集《雨停之前》：补上缺的（--reset 删掉重建）
+DRAMA_LIVE=1 uv run python scripts/smoke/live_script.py   # 真实冒烟（花真钱，上限 $1；--whole 整本，--mock 走 Mock）
 ```
 
 ## 工作方式

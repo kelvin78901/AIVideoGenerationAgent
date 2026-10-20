@@ -78,21 +78,21 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 
 ## M2 小说 → 剧本（约 2 周）
 
-- [ ] 导入 .txt / .docx，确认改编权，按章节分块
-- [ ] 设定提取（extract）+ 别名合并 + 设定卡；点卡片高亮原文
-- [ ] 补全建议（enrich）：原文锚点、接受 / 拒绝 / 按要求重写、修订视图
-- [ ] 分集规划（split）：节拍看板（可拖动换集）+ 情绪曲线
-- [ ] 剧本化（script）：原文和剧本左右对照，三向溯源跳转
-- [ ] 产物与版本：`product` / `product_version` / `dependency`
-- [ ] 共用组件：RunBar、Inspector、ModelPicker（前 6 家 + 更多供应商）、PromptEditor（意图层 / 编译层）、VersionHistory（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
-- [ ] 闸门：小说确认、剧本确认；失效传播 + ImpactDialog
-- [ ] 模型与兜底页：四个预设、全局默认、密钥、兜底方式、备选顺序（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）
-- [ ] 预算：单次上限、超限进 `waiting_confirm`
+- [x] 导入 .txt / .docx，确认改编权，按章节分块（M2 第 5 步）
+- [x] 设定提取（extract）+ 别名合并 + 设定卡；点卡片高亮原文（第 6 步）
+- [x] 补全建议（enrich）：原文锚点、接受 / 拒绝 / 按要求重写、修订视图（第 7 步；另加第 7b 步小说逐段编辑）
+- [x] 分集规划（split）：节拍看板（可拖动换集）+ 情绪曲线（第 8 步）
+- [x] 剧本化（script）：原文和剧本左右对照，三向溯源跳转（第 9 步；镜头那一向的数据要到 M4）
+- [x] 产物与版本：`product` / `product_version` / `dependency`（第 1 步）
+- [x] 共用组件：RunBar、Inspector、ModelPicker（前 6 家 + 更多供应商）、PromptEditor（意图层 / 编译层）、VersionHistory（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）（第 2、3 步）
+- [x] 闸门：小说确认、剧本确认；失效传播 + ImpactDialog（第 10 步，含「确认并同步」级联重跑；第 12d 步没分集也能确认小说）
+- [x] 模型与兜底页：四个预设、全局默认、密钥、兜底方式、备选顺序（界面 M0.5 已做；这里接真实接口、删掉对应 MSW handler）（第 2 步）
+- [x] 预算：单次上限、超限进 `waiting_confirm`（第 4 步）
 - [x] 新页面做完后删除 `web/src/legacy/`（上游 Hermes 界面）和 `/legacy` 路由（M2 第 11 步；上游 `/api/series` 一起摘掉）
 
 **验收**
 - [x] 用示例小说《雨停之前》跑到第 1 集剧本确认（M2 第 12 步：`tests/e2e/test_novel_to_script.py`、`web/e2e/m2.spec.ts`）
-- [ ] 任一产物都能改提示词、重跑、不满意换一个、回到历史版本、采纳
+- [x] 任一产物都能改提示词、重跑、不满意换一个、回到历史版本、采纳（`tests/api/test_runs_api.py`、`test_products_api.py`、`web/src/components/products.test.tsx`）
 - [x] 改一行已确认的剧本，弹出影响范围，三个选项都能用（M2 第 12 步：`web/e2e/m2.spec.ts`）
 - [x] 手动冒烟：真实 DeepSeek 跑一遍剧本化（`DRAMA_LIVE=1`，上限 $1；M2 第 13 步：`scripts/smoke/live_script.py`，2026-10-20 花 $0.0078）
 

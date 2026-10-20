@@ -4,6 +4,8 @@
     DRAMA_LIVE=1 uv run python scripts/smoke/live_script.py [--cap 1.0] [--ask-above 0.2]
     uv run python scripts/smoke/live_script.py --mock     # the same flow on Mock, no spending
 
+``--whole`` imports the whole novel instead of chapter 1 and writes every episode's script.
+
 The DeepSeek key comes from the OS keyring (模型与兜底 → 填密钥), else ``.env``. The script
 starts its own backend (``DRAMA_MOCK=0``) on a free port with a temporary data directory, so
 the studio you have open is not touched and Mock stays the default everywhere else.
@@ -127,25 +129,28 @@ class Smoke:
             override = {"scope": "component", "scope_id": None, "component_id": component}
             self.send("PUT", "/config/override", json={**override, "data": data})
 
-    def import_first_chapter(self) -> None:
+    def import_novel(self, whole: bool) -> None:
         text = NOVEL.read_text(encoding="utf-8")
-        first = text[: text.index("第二章")].strip() + "\n"
+        if not whole:
+            text = text[: text.index("第二章")].strip() + "\n"
+        name = "雨停之前.txt" if whole else "雨停之前-第一章.txt"
         self.series = self.send("POST", "/series", json={"title": "雨停之前 · 真实冒烟"})["id"]
         imported = self.send(
             "POST",
             f"/series/{self.series}/novel",
-            files={"file": ("雨停之前-第一章.txt", first.encode("utf-8"))},
+            files={"file": (name, text.encode("utf-8"))},
             data={"rights_confirmed": "true"},
         )
         chapters = ", ".join(f"{c['title']}" for c in imported["chapters"])
-        print(f"imported: {chapters} ({len(first)} chars)")
+        print(f"imported: {chapters} ({len(text)} chars)")
 
     def product(self, owner: str, component: str) -> dict[str, Any]:
         listed: list[dict[str, Any]] = self.get("/products", owner=owner)
         return next(p for p in listed if p["component_id"] == component)
 
-    def run(self, owner: str, component: str) -> None:
+    def run(self, owner: str, component: str, label: str = "") -> None:
         product = self.product(owner, component)
+        component = label or component
         estimate = float((product.get("estimate") or {}).get("cost_usd") or 0)
         spent = self.spent()
         model = (product.get("estimate") or {}).get("model_key")
@@ -175,7 +180,8 @@ class Smoke:
             raise Stop(f"{component}: {job['state']} {job.get('error') or ''}")
         print(f"   done in {seconds:.1f}s")
 
-    def flow(self) -> str:
+    def flow(self, every_episode: bool) -> list[tuple[int, str]]:
+        """The scripted episodes: (number, id)."""
         owner = f"series:{self.series}"
         self.run(owner, "enrich")
         sugs = self.get(f"/series/{self.series}/suggestions")["suggestions"]
@@ -188,15 +194,16 @@ class Smoke:
         episodes = self.get(f"/series/{self.series}/episodes")
         for e in episodes:
             print(f"   第 {e['idx']} 集 {e['title']}（{len(e['beats'])} 个节拍）")
-        e1 = str(episodes[0]["id"])
-        self.run(f"episode:{e1}", "script")
-        return e1
+        scripted = [(int(e["idx"]), str(e["id"])) for e in episodes[: None if every_episode else 1]]
+        for idx, episode_id in scripted:
+            self.run(f"episode:{episode_id}", "script", f"script e{idx}")
+        return scripted
 
     # ------------------------------------------------------------------ report
 
-    def print_script(self, episode_id: str) -> None:
+    def print_script(self, idx: int, episode_id: str) -> None:
         script = self.get(f"/episodes/{episode_id}/script")
-        print("\n== 第 1 集剧本")
+        print(f"\n== 第 {idx} 集剧本")
         for scene in script["scenes"]:
             print(f"\n场 {scene['idx']}　{scene['heading']}")
             for line in (x for x in script["lines"] if x["scene_id"] == scene["id"]):
@@ -227,7 +234,7 @@ class Smoke:
         )
         for component, job_id, seconds in self.steps:
             models = sorted({r["model_key"] for r in rows if r["job_id"] == job_id})
-            print(f"  {component:<8} {', '.join(models) or '-':<40} {seconds:.1f}s")
+            print(f"  {component:<10} {', '.join(models) or '-':<40} {seconds:.1f}s")
 
 
 def _free_port() -> int:
@@ -249,6 +256,9 @@ def main() -> int:
         "--ask-above", type=float, default=0.2, help="stop before a step estimated above this"
     )
     parser.add_argument("--mock", action="store_true", help="the same flow on Mock (free)")
+    parser.add_argument(
+        "--whole", action="store_true", help="the whole novel, every episode (default: chapter 1)"
+    )
     args = parser.parse_args()
     if not args.mock:
         if os.environ.get("DRAMA_LIVE") != "1":
@@ -263,19 +273,19 @@ def main() -> int:
     print(f"data directory: {home}")
     smoke = Smoke(home, args.cap, args.ask_above, mock=args.mock)
     code = 0
-    episode: str | None = None
+    scripted: list[tuple[int, str]] = []
     try:
         smoke.start()
         smoke.setup()
-        smoke.import_first_chapter()
-        episode = smoke.flow()
+        smoke.import_novel(args.whole)
+        scripted = smoke.flow(every_episode=args.whole)
     except Stop as stop:
         print(f"\nSTOPPED: {stop}")
         code = 1
     finally:
         try:
-            if episode:
-                smoke.print_script(episode)
+            for idx, episode_id in scripted:
+                smoke.print_script(idx, episode_id)
             if smoke.series:
                 smoke.print_calls()
         finally:
