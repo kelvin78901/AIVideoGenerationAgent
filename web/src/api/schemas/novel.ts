@@ -69,7 +69,7 @@ export type Novel = z.infer<typeof NovelSchema>;
 
 /** `POST /series/{id}/novel` (multipart `file`, `rights_confirmed`, `dry_run`). */
 export const NovelImportSchema = z.object({
-  /** Only what was found (the dialog's preview); nothing stored. */
+  /** Only what was found (the dialog's preview); nothing imported. */
   dry_run: z.boolean(),
   /** Same text as the current source: nothing was added. */
   unchanged: z.boolean(),
@@ -79,6 +79,8 @@ export const NovelImportSchema = z.object({
   split_by: NovelSplitSchema,
   chars: z.number().int().nonnegative(),
   chapters: z.array(NovelChapterSchema),
+  /** `dry_run`: the file as kept, for replacing a confirmed novel (impact `novel_replace`). */
+  upload_id: z.string().nullable().default(null),
 });
 export type NovelImport = z.infer<typeof NovelImportSchema>;
 

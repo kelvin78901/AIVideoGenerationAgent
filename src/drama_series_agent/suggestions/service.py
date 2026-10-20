@@ -28,6 +28,7 @@ from drama_series_agent.core.models_db import (
     utcnow,
 )
 from drama_series_agent.novel.service import Book, NovelService
+from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.suggestions import ops
@@ -175,6 +176,17 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
             session.add(row)
 
 
+Decide = Literal["accept", "reject", "reset"]
+
+
+def _decided(row: SuggestionDecision, action: Decide) -> str:
+    if action == "accept":
+        return "accepted"
+    if action == "reject":
+        return "rejected"
+    return "rewritten" if row.rewrite_instruction else "pending"
+
+
 class SuggestionService:
     def __init__(
         self,
@@ -218,22 +230,40 @@ class SuggestionService:
 
     # ------------------------------------------------------------------ decisions
 
-    async def decide(
-        self, suggestion_id: str, action: Literal["accept", "reject", "reset"]
-    ) -> SuggestionOut:
+    async def decide(self, suggestion_id: str, action: Decide) -> SuggestionOut:
         """采纳 / 忽略 / 撤销 (reset: back to undecided, or to 「已重写」 after a rewrite)."""
         p, s = await self._locate(suggestion_id)
         async with self._db.session() as session:
             row = await self._row(session, p, suggestion_id)
-            if action == "accept":
-                row.status = "accepted"
-            elif action == "reject":
-                row.status = "rejected"
-            else:
-                row.status = "rewritten" if row.rewrite_instruction else "pending"
+            row.status = _decided(row, action)
             decision = await self._save(session, row)
         await self._products.announce(p.id)
         return suggestion_out(p.series_id, s, decision)
+
+    async def plan_decision(self, suggestion_id: str, action: Decide) -> PlannedChange:
+        """A decision on a confirmed novel (the impact preview's ``suggestion_decision``): not
+        a version, so the preview stages the decision row itself."""
+        p, _ = await self._locate(suggestion_id, allow_locked=True)
+        async with self._db.session() as session:
+            row = await self._row(session, p, suggestion_id)
+            status = _decided(row, action)
+
+        async def stage(session: AsyncSession) -> None:
+            staged = await self._row(session, p, suggestion_id)
+            staged.status = status
+            session.add(staged)
+
+        async def commit() -> None:
+            await self.decide(suggestion_id, action)
+
+        return PlannedChange(
+            product_id=p.id,
+            series_id=p.series_id,
+            base_version_id=p.current_version_id,
+            commit=commit,
+            stage=stage if status != row.status else None,
+            content={"id": suggestion_id, "status": status},
+        )
 
     async def accept_all(self, series_id: str) -> SuggestionsOut:
         """「全部采纳」: every suggestion on screen that was not ignored."""
@@ -293,17 +323,20 @@ class SuggestionService:
         return await session.get(ProductVersion, p.current_version_id)
 
     @staticmethod
-    async def _guard(session: AsyncSession, p: Product) -> None:
+    async def _guard(session: AsyncSession, p: Product, *, allow_locked: bool = False) -> None:
         """A decision changes what downstream reads: not while enrichment runs (its result
-        would carry the old decisions) nor while a gate has it locked."""
+        would carry the old decisions) nor while a gate has it locked (that goes through the
+        impact preview, which passes ``allow_locked``)."""
         if p.running_job_id:
             job = await session.get(Job, p.running_job_id)
             if job is not None and job.state in ACTIVE_JOB_STATES:
                 raise PipelineError(409, "product_busy", id=p.id)
-        if p.locked_hash:
+        if p.locked_hash and not allow_locked:
             raise PipelineError(409, "product_locked", id=p.id)
 
-    async def _locate(self, suggestion_id: str) -> tuple[Product, dict[str, Any]]:
+    async def _locate(
+        self, suggestion_id: str, *, allow_locked: bool = False
+    ) -> tuple[Product, dict[str, Any]]:
         """The 小说补全 product whose version on screen has this suggestion."""
         async with self._db.session() as session:
             row = await session.get(Suggestion, suggestion_id)
@@ -316,7 +349,7 @@ class SuggestionService:
                 v = await self._current(session, p)
                 s = ops.find(v.payload_json, suggestion_id) if v is not None else None
                 if s is not None:
-                    await self._guard(session, p)
+                    await self._guard(session, p, allow_locked=allow_locked)
                     return p, s
         raise PipelineError(404, "suggestion_not_found", id=suggestion_id)
 

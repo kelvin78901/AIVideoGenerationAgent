@@ -121,6 +121,7 @@ export function novelHandlers(known: (id: string) => boolean) {
         dry_run: false,
         source_id: `${id}-src`,
         chapters: found.chapters.map((c) => ({ ...c, id: `${id}-src-ch${c.idx + 1}` })),
+        upload_id: null,
       } satisfies NovelImport);
     }),
 

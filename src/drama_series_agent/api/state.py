@@ -15,6 +15,7 @@ from drama_series_agent.core.config import get_config
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.jobs import JobQueue
+from drama_series_agent.core.models_db import Product
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes_service
@@ -30,6 +31,8 @@ from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
+from drama_series_agent.pipeline.gates import GateService
+from drama_series_agent.pipeline.impact import ImpactService, register_kinds
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
@@ -59,6 +62,8 @@ class StudioState:
     suggestions: SuggestionService
     episodes: EpisodeService
     script: ScriptService
+    gates: GateService
+    impact: ImpactService
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
@@ -113,6 +118,23 @@ class StudioState:
         budget.episode_budget = episodes.budget
         runs = RunService(components, products, jobs, bus, budget)
         novel.after_import = runs.ensure_series_products
+
+        async def estimate(product: Product) -> float | None:
+            _, est = await runs.describe(product)
+            return est.cost_usd if est is not None and est.where == "api" and est.cost_usd else None
+
+        bible = BibleService(db, products, novel)
+        suggestions = SuggestionService(db, products, novel, enrich)
+        script_svc = ScriptService(db, products, script)
+        impact = ImpactService(db, products, invalidation, estimate)
+        register_kinds(
+            impact,
+            novel=novel,
+            bible=bible,
+            suggestions=suggestions,
+            episodes=episodes,
+            script=script_svc,
+        )
         state = cls(
             db=db,
             bus=bus,
@@ -126,10 +148,12 @@ class StudioState:
             runs=runs,
             budget=budget,
             novel=novel,
-            bible=BibleService(db, products, novel),
-            suggestions=SuggestionService(db, products, novel, enrich),
+            bible=bible,
+            suggestions=suggestions,
             episodes=episodes,
-            script=ScriptService(db, products, script),
+            script=script_svc,
+            gates=GateService(db, bus, products, invalidation),
+            impact=impact,
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:

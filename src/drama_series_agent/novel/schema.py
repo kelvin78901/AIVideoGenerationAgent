@@ -72,6 +72,8 @@ class NovelImportOut(BaseModel):
     split_by: Literal["heading", "length"]
     chars: int
     chapters: list[ChapterOut]
+    # ``dry_run``: the file as kept for replacing a confirmed novel (``novel_replace``).
+    upload_id: str | None = None
 
 
 def chapter_out(c: ChapterDraft, chapter_id: str | None) -> ChapterOut:
@@ -95,6 +97,7 @@ def import_out(
     source_id: str | None = None,
     chapter_ids: list[str] | None = None,
     unchanged: bool = False,
+    upload_id: str | None = None,
 ) -> NovelImportOut:
     ids: list[str | None] = list(chapter_ids) if chapter_ids else [None] * len(parsed.chapters)
     return NovelImportOut(
@@ -106,4 +109,5 @@ def import_out(
         split_by=parsed.split_by,
         chars=parsed.chars,
         chapters=[chapter_out(c, i) for c, i in zip(parsed.chapters, ids, strict=True)],
+        upload_id=upload_id,
     )

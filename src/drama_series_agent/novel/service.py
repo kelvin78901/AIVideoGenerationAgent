@@ -6,8 +6,8 @@ old one stays in the history, and whatever was built from it turns stale through
 hashes (``chapter:<idx>``, ``chapters``, see ``novel_slicer``) without storing a flag. Editing a
 chapter by paragraphs (``edit_chapter``, M2 step 7b) works the same way: a new source with
 encoding ``edited`` and an adopted ``edit`` version; the chapters it did not touch keep their
-hashes. A novel locked by its gate refuses both (409 ``product_locked``); the impact preview
-for ``novel_replace`` / ``novel_edit`` comes with the gates.
+hashes. A novel locked by its gate refuses both (409 ``product_locked``): they go through the
+impact preview (``novel_replace`` / ``novel_edit``, ``plan_replace`` / ``plan_edit``).
 
 Components read the adopted text through ``book()``: chapters and paragraphs numbered across the
 book, which is how prompts cite the novel (``[P12]``) and how answers map back to offsets.
@@ -16,6 +16,7 @@ book, which is how prompts cite the novel (``[P12]``) and how answers map back t
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass, field
@@ -53,7 +54,7 @@ from drama_series_agent.novel.schema import (
     SourceOut,
     import_out,
 )
-from drama_series_agent.pipeline.drafts import VersionDraft
+from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.hashing import hash_json
 from drama_series_agent.pipeline.products import ProductService
@@ -62,6 +63,8 @@ NOVEL_SLOT = "novel"
 IMPORT_COMPONENT = "import"
 _PARSE_STATUS = {"unsupported_file": 415, "file_too_large": 413}
 _TEXT_CACHE = 4
+# A planned edit's payload names its source before the text is stored (``plan_edit``).
+PENDING_SOURCE = "pending"
 
 
 @dataclass(frozen=True)
@@ -126,6 +129,10 @@ async def novel_slicer(
     return None
 
 
+async def _nothing() -> None:
+    return None
+
+
 def safe_filename(name: str | None) -> str:
     base = PurePath((name or "").replace("\\", "/")).name.strip()
     return base[:200] or "novel.txt"
@@ -143,10 +150,40 @@ class NovelService:
     # ------------------------------------------------------------------ import
 
     async def preview(self, series_id: str, filename: str, data: bytes) -> NovelImportOut:
-        """What an import would find (encoding, chapters), without storing anything."""
+        """What an import would find (encoding, chapters). Only the file is kept, as
+        ``upload_id``: replacing a confirmed novel previews the impact with it first
+        (``plan_replace``)."""
         await self._require_series(series_id)
         name = safe_filename(filename)
-        return import_out(await self._parse(name, data), name, dry_run=True)
+        parsed = await self._parse(name, data)
+        upload_id = await asyncio.to_thread(self._store.put_bytes, data)
+        return import_out(parsed, name, dry_run=True, upload_id=upload_id)
+
+    async def plan_replace(self, series_id: str, upload_id: str, filename: str) -> PlannedChange:
+        """重新导入 a confirmed novel (the impact preview's ``novel_replace``): the file kept by
+        the ``dry_run`` preview, parsed again; the commit imports it."""
+        await self._require_series(series_id)
+        try:
+            data = await asyncio.to_thread(self._store.read_bytes, upload_id)
+        except (ValueError, OSError) as exc:
+            raise PipelineError(404, "upload_not_found", id=upload_id) from exc
+        name = safe_filename(filename)
+        parsed = await self._parse(name, data)
+        text_sha = hashlib.sha256(parsed.text.encode("utf-8")).hexdigest()
+        async with self._db.session() as session:
+            product = await self._product(session, series_id)
+            source = await self._adopted_source(session, product) if product else None
+        if product is None or source is None:
+            raise PipelineError(404, "novel_not_found", id=series_id)
+        base_id = product.adopted_version_id
+        if source.sha256 == text_sha:
+            return PlannedChange(product.id, series_id, base_id, _nothing)
+
+        async def commit() -> None:
+            await self.import_novel(series_id, name, data, rights_confirmed=True)
+
+        payload = self._payload(PENDING_SOURCE, name, text_sha, parsed)
+        return PlannedChange(product.id, series_id, base_id, commit, payload, content=text_sha)
 
     async def import_novel(
         self,
@@ -206,6 +243,22 @@ class NovelService:
         """逐段编辑: one chapter's title and paragraphs as the user left them (a line break
         starts a new paragraph, empty ones are dropped) → a new source and an adopted ``edit``
         version. Nothing changed → nothing is made. Returns the chapter as ``get`` shows it."""
+        planned = await self.plan_edit(series_id, idx, title, paragraphs)
+        await planned.commit()
+        return await self.get(series_id, idx)
+
+    async def plan_edit(
+        self,
+        series_id: str,
+        idx: int,
+        title: str | None,
+        paragraphs: Sequence[str],
+        *,
+        allow_locked: bool = False,
+    ) -> PlannedChange:
+        """``edit_chapter`` worked out but not written; ``allow_locked`` for a confirmed novel
+        (the impact preview, ``novel_edit``). The payload's source id is a placeholder until
+        the commit stores the text."""
         paras = clean_paragraphs(paragraphs)
         if not paras:
             raise PipelineError(422, "chapter_empty", idx=idx)
@@ -215,7 +268,7 @@ class NovelService:
             source = await self._adopted_source(session, product) if product else None
             if product is None or source is None:
                 raise PipelineError(404, "novel_not_found", id=series_id)
-            if product.locked_hash:
+            if product.locked_hash and not allow_locked:
                 raise PipelineError(409, "product_locked", id=product.id)
             chapters = await self._chapters(session, source.id)
         if idx >= len(chapters):
@@ -224,34 +277,36 @@ class NovelService:
         before = [(c.title, [text[s:e] for s, e in c.paras_json]) for c in chapters]
         after = list(before)
         after[idx] = (clean_title(title), paras)
+        base_id = product.adopted_version_id
         if after == before:
-            return await self.get(series_id, idx)
+            return PlannedChange(product.id, series_id, base_id, _nothing)
         edited = compose(after, cast(SplitBy, source.split_by))
         data = edited.text.encode("utf-8")
-        text_sha = await asyncio.to_thread(self._store.put_bytes, data)
-        async with self._db.session() as session:
-            source_id, _ = await self._add_source(
-                session,
-                series_id,
-                source.filename,
-                edited,
-                text_sha,
-                text_sha,
-                source.rights_confirmed_at,
-                utcnow(),
+        text_sha = hashlib.sha256(data).hexdigest()
+        payload = self._payload(PENDING_SOURCE, source.filename, text_sha, edited)
+
+        async def commit() -> None:
+            await asyncio.to_thread(self._store.put_bytes, data)
+            async with self._db.session() as session:
+                source_id, _ = await self._add_source(
+                    session,
+                    series_id,
+                    source.filename,
+                    edited,
+                    text_sha,
+                    text_sha,
+                    source.rights_confirmed_at,
+                    utcnow(),
+                )
+            draft = VersionDraft(
+                payload=self._payload(source_id, source.filename, text_sha, edited),
+                note=source.filename,
             )
-        draft = VersionDraft(
-            payload=self._payload(source_id, source.filename, text_sha, edited),
-            note=source.filename,
-        )
-        await self._products.append(
-            product.id,
-            draft,
-            origin="edit",
-            parent_version_id=product.adopted_version_id,
-            adopt=True,
-        )
-        return await self.get(series_id, idx)
+            await self._products.append(
+                product.id, draft, origin="edit", parent_version_id=base_id, adopt=True
+            )
+
+        return PlannedChange(product.id, series_id, base_id, commit, payload, content=after)
 
     # ------------------------------------------------------------------ read
 

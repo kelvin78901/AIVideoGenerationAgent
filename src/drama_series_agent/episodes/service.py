@@ -42,6 +42,7 @@ from drama_series_agent.episodes.schema import (
     StepId,
     StepProgressOut,
 )
+from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
@@ -177,7 +178,7 @@ async def episodes_slicer(
     return payload if name == "" else payload.get(name)
 
 
-async def _latest_gate(session: AsyncSession, gate: str, scope_id: str) -> GateDecision | None:
+async def latest_gate(session: AsyncSession, gate: str, scope_id: str) -> GateDecision | None:
     query = (
         select(GateDecision)
         .where(GateDecision.gate == gate, GateDecision.scope_id == scope_id)
@@ -186,8 +187,8 @@ async def _latest_gate(session: AsyncSession, gate: str, scope_id: str) -> GateD
     return (await session.exec(query)).first()
 
 
-async def _confirmed(session: AsyncSession, gate: str, scope_id: str) -> bool:
-    row = await _latest_gate(session, gate, scope_id)
+async def gate_confirmed(session: AsyncSession, gate: str, scope_id: str) -> bool:
+    row = await latest_gate(session, gate, scope_id)
     return row is not None and row.action == "confirm"
 
 
@@ -234,7 +235,7 @@ class EpisodeService:
             def stale_of(*products: Product | None) -> int:
                 return sum(1 for p in products if p is not None and p.id in stale)
 
-            novel_confirmed = await _confirmed(session, "novel", ep.series_id)
+            novel_confirmed = await gate_confirmed(session, "novel", ep.series_id)
             novel = StepProgressOut(
                 state="confirmed" if novel_confirmed else "in_progress",
                 stale=stale_of(by_slot.get(BIBLE_SLOT), by_slot.get(SUGGESTIONS_SLOT)),
@@ -274,6 +275,12 @@ class EpisodeService:
 
     async def patch_beat(self, beat_id: str, body: BeatPatch) -> list[EpisodeOut]:
         """Returns the whole plan: a drag changes two episodes."""
+        planned = await self.plan_beat(beat_id, body)
+        await planned.commit()
+        return await self.list_episodes(planned.series_id)
+
+    async def plan_beat(self, beat_id: str, body: BeatPatch) -> PlannedChange:
+        """改节拍 / 拖节拍, worked out but not written (the impact preview's ``beat_move``)."""
         async with self._db.session() as session:
             row = await session.get(Beat, beat_id)
             if row is None or row.retired:
@@ -292,8 +299,18 @@ class EpisodeService:
                 position=body.position,
             )
         )
-        await self._edit(p, v, payload)
-        return await self.list_episodes(series_id)
+
+        async def commit() -> None:
+            await self._edit(p, v, payload)
+
+        return PlannedChange(
+            product_id=p.id,
+            series_id=series_id,
+            base_version_id=v.id,
+            commit=commit,
+            payload=payload,
+            content=payload,
+        )
 
     # ------------------------------------------------------------------ internals
 
@@ -369,7 +386,7 @@ class EpisodeService:
     ) -> ScriptStatus:
         if script is None or script.adopted_version_id is None:
             return "none"
-        return "confirmed" if await _confirmed(session, "script", episode_id) else "draft"
+        return "confirmed" if await gate_confirmed(session, "script", episode_id) else "draft"
 
     @staticmethod
     def _apply(fn: Any) -> Any:

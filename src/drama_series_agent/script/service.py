@@ -32,6 +32,7 @@ from drama_series_agent.core.models_db import (
 )
 from drama_series_agent.episodes import ops as episode_ops
 from drama_series_agent.episodes.service import SCRIPT_SLOT, scene_counts, script_product
+from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.script import ops
@@ -219,18 +220,33 @@ class ScriptService:
     # ------------------------------------------------------------------ edits
 
     async def patch_line(self, line_id: str, body: LinePatch) -> ScriptOut:
-        p, v = await self._locate(line_id, "line_not_found")
-        payload = self._apply(lambda: ops.patch_line(v.payload_json, line_id, text=body.text))
-        await self._products.append_edit(p.id, v, payload)
-        return await self.get(p.owner_id)
+        planned = await self.plan_line(line_id, body)
+        await planned.commit()
+        return await self.get(await self._episode_of(planned.product_id))
 
     async def patch_scene(self, scene_id: str, body: ScenePatch) -> ScriptOut:
-        p, v = await self._locate(scene_id, "scene_not_found")
+        planned = await self.plan_scene(scene_id, body)
+        await planned.commit()
+        return await self.get(await self._episode_of(planned.product_id))
+
+    async def plan_line(
+        self, line_id: str, body: LinePatch, *, allow_locked: bool = False
+    ) -> PlannedChange:
+        """改一行, worked out but not written; ``allow_locked`` for a confirmed script (the
+        impact preview, ``line_edit``)."""
+        p, v = await self._locate(line_id, "line_not_found", allow_locked=allow_locked)
+        payload = self._apply(lambda: ops.patch_line(v.payload_json, line_id, text=body.text))
+        return self._planned(p, v, payload)
+
+    async def plan_scene(
+        self, scene_id: str, body: ScenePatch, *, allow_locked: bool = False
+    ) -> PlannedChange:
+        """改场景标题 (``scene_edit``), as ``plan_line``."""
+        p, v = await self._locate(scene_id, "scene_not_found", allow_locked=allow_locked)
         payload = self._apply(
             lambda: ops.patch_scene(v.payload_json, scene_id, heading=body.heading)
         )
-        await self._products.append_edit(p.id, v, payload)
-        return await self.get(p.owner_id)
+        return self._planned(p, v, payload)
 
     async def rewrite(
         self, block_id: str, body: BlockRewriteIn, *, scene: bool
@@ -270,11 +286,31 @@ class ScriptService:
             return None
         return await session.get(ProductVersion, p.current_version_id)
 
+    def _planned(self, p: Product, v: ProductVersion, payload: dict[str, Any]) -> PlannedChange:
+        async def commit() -> None:
+            await self._products.append_edit(p.id, v, payload)
+
+        return PlannedChange(
+            product_id=p.id,
+            series_id=p.series_id,
+            base_version_id=v.id,
+            commit=commit,
+            payload=payload,
+            content=payload,
+        )
+
+    async def _episode_of(self, product_id: str) -> str:
+        async with self._db.session() as session:
+            p = await session.get(Product, product_id)
+        assert p is not None
+        return p.owner_id
+
     async def _locate(
-        self, block_id: str, missing: str, *, editable: bool = True
+        self, block_id: str, missing: str, *, editable: bool = True, allow_locked: bool = False
     ) -> tuple[Product, ProductVersion]:
         """The script whose version on screen has this line or scene; an edit refuses a busy or
-        locked product (an edit while it runs would be lost when the run finishes)."""
+        locked product (an edit while it runs would be lost when the run finishes; a locked one
+        goes through the impact preview, which passes ``allow_locked``)."""
         async with self._db.session() as session:
             row: Scene | ScriptLine | None = await session.get(ScriptLine, block_id)
             row = row or await session.get(Scene, block_id)
@@ -291,7 +327,7 @@ class ScriptService:
                     job = await session.get(Job, p.running_job_id)
                     if job is not None and job.state in ACTIVE_JOB_STATES:
                         raise PipelineError(409, "product_busy", id=p.id)
-                if editable and p.locked_hash:
+                if editable and not allow_locked and p.locked_hash:
                     raise PipelineError(409, "product_locked", id=p.id)
                 return p, v
         raise PipelineError(404, missing, id=block_id)

@@ -33,6 +33,7 @@ from drama_series_agent.core.models_db import (
     utcnow,
 )
 from drama_series_agent.novel.service import NovelService
+from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 
@@ -124,16 +125,31 @@ class BibleService:
     # ------------------------------------------------------------------ edits
 
     async def patch(self, entity_id: str, body: BiblePatch) -> BibleEntityOut:
-        p, v = await self._locate(entity_id)
-        changes: dict[str, Any] = body.model_dump(exclude_unset=True)
-        payload = self._apply(lambda: ops.patch(v.payload_json, entity_id, **changes))
-        await self._edit(p, v, payload)
-        entity = ops.find(payload, entity_id)
+        planned = await self.plan_patch(entity_id, body)
+        await planned.commit()
+        assert planned.payload is not None
+        entity = ops.find(planned.payload, entity_id)
         assert entity is not None
-        return entity_out(p.series_id, entity)
+        return entity_out(planned.series_id, entity)
 
     async def merge(self, body: BibleMergeIn) -> BibleOut:
-        p, v = await self._locate(body.ids[0])
+        planned = await self.plan_merge(body)
+        await planned.commit()
+        return await self.get(planned.series_id)
+
+    async def plan_patch(
+        self, entity_id: str, body: BiblePatch, *, allow_locked: bool = False
+    ) -> PlannedChange:
+        """改设定, worked out but not written; ``allow_locked`` for a confirmed novel (the impact
+        preview, ``bible_edit``)."""
+        p, v = await self._locate(entity_id, allow_locked=allow_locked)
+        changes: dict[str, Any] = body.model_dump(exclude_unset=True)
+        payload = self._apply(lambda: ops.patch(v.payload_json, entity_id, **changes))
+        return self._planned(p, v, payload)
+
+    async def plan_merge(self, body: BibleMergeIn, *, allow_locked: bool = False) -> PlannedChange:
+        """合并 / 不是同一个 / 拆出别名 (``bible_merge``), as ``plan_patch``."""
+        p, v = await self._locate(body.ids[0], allow_locked=allow_locked)
         current = v.payload_json
         if body.action == "merge":
             payload = self._apply(lambda: ops.merge(current, body.ids))
@@ -150,8 +166,7 @@ class BibleService:
             payload, _ = self._apply(
                 lambda: ops.split(current, body.ids[0], alias, book.paragraph, book.span)
             )
-        await self._edit(p, v, payload)
-        return await self.get(p.series_id)
+        return self._planned(p, v, payload)
 
     # ------------------------------------------------------------------ internals
 
@@ -169,9 +184,12 @@ class BibleService:
             return None
         return await session.get(ProductVersion, p.current_version_id)
 
-    async def _locate(self, entity_id: str) -> tuple[Product, ProductVersion]:
+    async def _locate(
+        self, entity_id: str, *, allow_locked: bool = False
+    ) -> tuple[Product, ProductVersion]:
         """The bible product whose version on screen has this entry; refuses a busy or locked
-        product (an edit while extraction runs would be lost when it finishes)."""
+        product (an edit while extraction runs would be lost when it finishes; a locked one
+        goes through the impact preview, which passes ``allow_locked``)."""
         async with self._db.session() as session:
             row = await session.get(BibleEntity, entity_id)
             if row is not None:
@@ -187,10 +205,20 @@ class BibleService:
                     job = await session.get(Job, p.running_job_id)
                     if job is not None and job.state in ACTIVE_JOB_STATES:
                         raise PipelineError(409, "product_busy", id=p.id)
-                if p.locked_hash:
+                if p.locked_hash and not allow_locked:
                     raise PipelineError(409, "product_locked", id=p.id)
                 return p, v
         raise PipelineError(404, "entity_not_found", id=entity_id)
 
-    async def _edit(self, p: Product, v: ProductVersion, payload: dict[str, Any]) -> None:
-        await self._products.append_edit(p.id, v, payload)
+    def _planned(self, p: Product, v: ProductVersion, payload: dict[str, Any]) -> PlannedChange:
+        async def commit() -> None:
+            await self._products.append_edit(p.id, v, payload)
+
+        return PlannedChange(
+            product_id=p.id,
+            series_id=p.series_id,
+            base_version_id=v.id,
+            commit=commit,
+            payload=payload,
+            content=payload,
+        )
