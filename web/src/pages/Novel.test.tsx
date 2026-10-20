@@ -7,7 +7,7 @@ import NovelPage from "@/pages/Novel";
 import { backend, fake } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { fakeBible } from "@/test/fakes/bible";
-import { reopenFakeNovel } from "@/test/fakes/impact";
+import { fakeImpact, openFakeGates, reopenFakeNovel } from "@/test/fakes/impact";
 import { fakeNovel } from "@/test/fakes/novel";
 import { fakeSuggestions } from "@/test/fakes/suggestions";
 import { renderAt } from "@/test/render";
@@ -49,6 +49,9 @@ const suggestion = (id: string) => fakeSuggestions.data.suggestions.find((s) => 
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   backend();
+  // Most tests edit a novel nothing confirmed yet (written directly); 「已确认」 below starts
+  // from the seeded demo, where edits preview their impact first.
+  openFakeGates();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -402,9 +405,6 @@ describe("NovelPage", () => {
   });
 
   describe("逐段编辑", () => {
-    // A reopened novel is edited in place; a confirmed one previews the impact first.
-    beforeEach(() => reopenFakeNovel());
-
     async function original() {
       const user = userEvent.setup();
       renderNovel();
@@ -468,16 +468,143 @@ describe("NovelPage", () => {
       expect(screen.queryByRole("button", { name: "改第 1 段" })).toBeNull();
       expect(screen.queryByRole("button", { name: "改标题" })).toBeNull();
     });
+  });
 
-    it("not while the novel is locked", async () => {
-      const novel = fakeBible.products.find((p) => p.slot === "novel");
-      if (novel) novel.locked_hash = "sha256:x";
+  describe("已确认（示例种子：小说和第 1 集剧本已确认）", () => {
+    // The seeded demo: the fake backend as `backend()` left it, before `openFakeGates()`.
+    beforeEach(() => backend());
+
+    async function editPara2(text: string) {
       const user = userEvent.setup();
       renderNovel();
       await screen.findByText("177 字 · 5 段");
       await user.click(screen.getByRole("radio", { name: "原文" }));
-      expect(screen.queryByRole("button", { name: "改第 1 段" })).toBeNull();
-      expect(screen.queryByText("要改原文，切到「原文」。")).toBeNull();
+      await user.click(screen.getByRole("button", { name: "改第 2 段" }));
+      expect(
+        screen.getByText("已确认：保存时先显示影响范围，你再决定同步下游还是只改这里。"),
+      ).toBeInTheDocument();
+      const box = screen.getByLabelText("第 2 段的文字");
+      await user.clear(box);
+      await user.type(box, text);
+      await user.click(screen.getByRole("button", { name: "保存" }));
+      return { user, dialog: await screen.findByRole("alertdialog") };
+    }
+
+    it("an edit previews its impact; 确认并同步 writes it and starts the sync", async () => {
+      const { user, dialog } = await editPara2("家门口靠着一把红伞。");
+      expect(dialog).toHaveTextContent("改原文会影响已确认的内容");
+      expect(dialog).toHaveTextContent("已确认的小说原文会改成新内容");
+      expect(dialog).toHaveTextContent("小说补全 · 按新内容重跑 · 约 $0.02");
+      expect(dialog).toHaveTextContent(
+        "第 1 集剧本 · 上游重跑后有变化才跟着重跑 · 约 $0.03（可选）",
+      );
+      expect(dialog).toHaveTextContent("「确认原文」会重新打开");
+      expect(fakeNovel.edits).toEqual([]); // nothing is written while the dialog is open
+      await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $0.06" }));
+      expect(await screen.findByText(/已开始同步/)).toBeInTheDocument();
+      expect(fakeImpact.applied).toEqual([
+        { kind: "novel_edit", target_id: "demo", action: "rerun" },
+      ]);
+      expect(fakeNovel.edits[0]?.paragraphs[1]).toBe("家门口靠着一把红伞。");
+      await waitFor(() => expect(screen.queryByLabelText("第 2 段的文字")).toBeNull());
+      expect(await screen.findByText("家门口靠着一把红伞。")).toBeInTheDocument();
+    });
+
+    it("「撤销」 writes nothing and keeps the editor open", async () => {
+      const { user, dialog } = await editPara2("家门口靠着一把红伞。");
+      await user.click(within(dialog).getByRole("button", { name: "撤销" }));
+      await waitFor(() => expect(screen.queryByRole("alertdialog")).toBeNull());
+      expect(fakeNovel.edits).toEqual([]);
+      expect(fakeImpact.applied.map((a) => a.action)).toEqual(["undo"]);
+      expect(screen.getByLabelText("第 2 段的文字")).toHaveValue("家门口靠着一把红伞。");
+    });
+
+    it("with the novel reopened, a confirmed script still previews first", async () => {
+      reopenFakeNovel();
+      const { user, dialog } = await editPara2("家门口靠着一把红伞。");
+      expect(dialog).not.toHaveTextContent("已确认的小说原文");
+      expect(dialog).toHaveTextContent("第 1 集的「确认剧本」会重新打开");
+      await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+      await waitFor(() => expect(fakeNovel.edits).toHaveLength(1));
+      expect(fakeImpact.applied.map((a) => a.action)).toEqual(["mark"]);
+    });
+
+    it("a decision on a suggestion previews; 只改这里 writes it", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      await user.click(within(card(1, 1)).getByRole("button", { name: "采纳" }));
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("改补全会影响已确认的内容");
+      expect(dialog).toHaveTextContent("已确认的小说补全会改成新内容");
+      expect(suggestion("s2")?.status).toBe("pending");
+      await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+      expect(await screen.findByText("已采纳 2 / 4")).toBeInTheDocument();
+      expect(fakeImpact.applied).toEqual([
+        { kind: "suggestion_decision", target_id: "s2", action: "mark" },
+      ]);
+    });
+
+    it("「全部采纳」 and rewrites on request wait for 重新打开", async () => {
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      expect(screen.getByText(/小说已确认：逐条采纳、忽略会先显示影响范围/)).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "全部采纳" })).toBeDisabled();
+      expect(within(card(1, 0)).getByRole("button", { name: "改写要求" })).toBeDisabled();
+    });
+
+    it("editing a bible entry previews first; the entry dialog closes once written", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      await user.click(screen.getByRole("button", { name: "编辑「林晚」" }));
+      const form = await screen.findByRole("dialog", { name: "编辑设定" });
+      await user.click(within(form).getByLabelText(/冻结/));
+      await user.click(within(form).getByRole("button", { name: "保存" }));
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("改设定会影响已确认的内容");
+      expect(dialog).toHaveTextContent("已确认的设定会改成新内容");
+      expect(fakeBible.edits).toEqual([]);
+      await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+      await waitFor(() => expect(fakeBible.edits).toEqual([{ id: "c-linwan", frozen: true }]));
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "编辑设定" })).toBeNull());
+    });
+
+    it("merging what may be the same previews first", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      const same = await screen.findByRole("group", { name: "可能是同一个" });
+      await user.click(
+        within(same).getByRole("button", { name: "「旧发圈」和「黑色发圈」不是同一个" }),
+      );
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("「旧发圈」和「黑色发圈」");
+      await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+      await waitFor(() =>
+        expect(fakeBible.edits).toEqual([
+          { ids: ["p-hairtie", "p-black-hairtie"], action: "distinct" },
+        ]),
+      );
+    });
+
+    it("importing again previews the replacement with the file the scan stored", async () => {
+      const user = userEvent.setup();
+      renderNovel();
+      await screen.findByText("177 字 · 5 段");
+      await user.click(screen.getByRole("button", { name: "导入 .txt / .docx" }));
+      const form = await screen.findByRole("dialog", { name: "导入小说" });
+      await user.upload(within(form).getByTestId("novel-file"), novelFile());
+      await user.click(await within(form).findByRole("checkbox", { name: /改编权/ }));
+      await user.click(within(form).getByRole("button", { name: "导入" }));
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("替换小说会影响已确认的内容");
+      await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+      await waitFor(() => expect(screen.queryByRole("dialog", { name: "导入小说" })).toBeNull());
+      expect(fakeImpact.applied).toEqual([
+        { kind: "novel_replace", target_id: "demo", action: "mark" },
+      ]);
+      // Only the scan was sent; the import is the backend's, from the stored file.
+      expect(fakeNovel.uploads.map((u) => u.dryRun)).toEqual([true]);
     });
   });
 });

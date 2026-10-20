@@ -56,7 +56,7 @@ export function findBlock(id: string) {
 type Edited = { script: Script } | { status: number; code: string };
 
 /** `ops.edit_line`: trimmed, marked `edited` when it changed. */
-export function editLine(id: string, value: string | undefined): Edited {
+function editLine(id: string, value: string | undefined): Edited {
   const found = findBlock(id);
   if (!found?.line) return { status: 404, code: "line_not_found" };
   const text = (value ?? "").trim();
@@ -66,7 +66,7 @@ export function editLine(id: string, value: string | undefined): Edited {
 }
 
 /** `ops.edit_scene`: the 场号 typed in front is dropped. */
-export function editScene(id: string, value: string | undefined): Edited {
+function editScene(id: string, value: string | undefined): Edited {
   const found = findBlock(id);
   if (!found?.scene) return { status: 404, code: "scene_not_found" };
   const heading = (value ?? "").replace(/^\s*场\s*\d+\s*/, "").trim();

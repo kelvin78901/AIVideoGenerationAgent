@@ -9,6 +9,7 @@ import { backend, fake } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { fakeBible } from "@/test/fakes/bible";
 import { fakeEpisodes } from "@/test/fakes/episodes";
+import { fakeImpact, openFakeGates } from "@/test/fakes/impact";
 import { renderAt } from "@/test/render";
 
 function Page() {
@@ -48,6 +49,9 @@ async function openBoard(user: ReturnType<typeof userEvent.setup>) {
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   backend();
+  // Moves are written directly while no script is confirmed; 「已确认的剧本」 below starts from
+  // the seeded demo (episode 1's script confirmed).
+  openFakeGates();
 });
 afterEach(() => vi.unstubAllGlobals());
 
@@ -176,5 +180,45 @@ describe("节拍看板", () => {
     expect(await screen.findByText("还没有分集")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: "开始分集规划" })).toBeDisabled();
     expect(screen.queryByRole("radio", { name: "节拍看板" })).not.toBeInTheDocument();
+  });
+});
+
+describe("已确认的剧本（示例种子：第 1 集）", () => {
+  beforeEach(() => backend());
+
+  it("moving a beat out of a confirmed episode previews first; 确认并同步 writes it", async () => {
+    const user = userEvent.setup();
+    await openBoard(user);
+    fireEvent.dragStart(beatEl("demo-bt5"), { dataTransfer: dataTransfer() });
+    fireEvent.dragOver(beatEl("demo-bt6"), { dataTransfer: dataTransfer() });
+    fireEvent.drop(beatEl("demo-bt6"), { dataTransfer: dataTransfer() });
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("改节拍会影响已确认的剧本");
+    expect(dialog).toHaveTextContent("她还是拿起了那把伞。");
+    expect(dialog).toHaveTextContent("第 1 集剧本 · 按新内容重跑 · 约 $0.05");
+    expect(dialog).toHaveTextContent("第 1 集的「确认剧本」会重新打开");
+    expect(fakeEpisodes.beatPatches).toEqual([]);
+    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $0.05" }));
+    await waitFor(() =>
+      expect(fakeEpisodes.beatPatches).toEqual([
+        { id: "demo-bt5", position: 0, episode_id: "demo-e2" },
+      ]),
+    );
+    expect(fakeImpact.applied).toEqual([
+      { kind: "beat_move", target_id: "demo-bt5", action: "rerun" },
+    ]);
+    await waitFor(() => expect(beats(/第 1 集/)).toHaveLength(4));
+  });
+
+  it("a move between episodes nothing confirmed was built on is written directly", async () => {
+    const user = userEvent.setup();
+    await openBoard(user);
+    fireEvent.dragStart(beatEl("demo-bt6"), { dataTransfer: dataTransfer() });
+    const end = within(column(/第 3 集/)).getByText("拖到这里放在最后");
+    fireEvent.dragOver(end, { dataTransfer: dataTransfer() });
+    fireEvent.drop(end, { dataTransfer: dataTransfer() });
+    expect(await screen.findByText("已把节拍移到第 3 集第 9 个。")).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).toBeNull();
+    expect(fakeImpact.applied).toEqual([]);
   });
 });

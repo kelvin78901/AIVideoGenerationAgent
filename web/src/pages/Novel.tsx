@@ -8,10 +8,11 @@ import { useComponentModels } from "@/api/hooks/config";
 import { useBible, useNovel, useSuggestions } from "@/api/hooks/novel";
 import { useProducts } from "@/api/hooks/products";
 import type { BibleEntity } from "@/api/schemas/novel";
-import { useEpisodes, useRouteEpisode } from "@/api/hooks/series";
+import { useEpisodeProgress, useEpisodes, useRouteEpisode } from "@/api/hooks/series";
 import { paths } from "@/app/paths";
 import { EmptyState } from "@/components/EmptyState";
 import { GateButton } from "@/components/GateButton";
+import { ImpactGuard } from "@/components/ImpactGuard";
 import { Inspector } from "@/components/Inspector";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState, Skeleton } from "@/components/QueryState";
@@ -37,6 +38,7 @@ export default function NovelPage() {
   const suggestions = useSuggestions(seriesId);
   const bible = useBible(seriesId);
   const episodes = useEpisodes(seriesId);
+  const progress = useEpisodeProgress(episode?.id);
   const selected = useInspectorStore((s) => s.component) ?? COMPONENTS[0];
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(selected);
@@ -63,8 +65,11 @@ export default function NovelPage() {
 
   const productOf = (component: string) => products.data?.find((p) => p.component_id === component);
   const product = productOf(selected);
-  // The novel can be edited until its gate locks it; an edit turns what was built from it stale.
+  // An edit turns what was built from the novel stale. Once the novel (or a script built on it)
+  // is confirmed, edits preview their impact first.
   const novelProduct = products.data?.find((p) => p.slot === "novel");
+  const confirmed = progress.data?.steps.novel?.state === "confirmed";
+  const guarded = confirmed || !!episodes.data?.some((e) => e.script_status === "confirmed");
   const downstream = COMPONENTS.some((c) => productOf(c)?.adopted_version_id);
   const ep = String(episodeIdx);
   const count = (kind: string) => bible.data?.entities.filter((e) => e.kind === kind).length ?? 0;
@@ -107,126 +112,129 @@ export default function NovelPage() {
   const empty = novel.data != null && source == null;
 
   return (
-    <StepLayout
-      inspector={
-        <Inspector components={COMPONENTS.map((id) => ({ id, productId: productOf(id)?.id }))} />
-      }
-    >
-      <PageHeader
-        step={1}
-        title={t("title")}
-        lead={t("lead")}
-        actions={
-          <>
-            <Button variant="outline" size="lg" onClick={() => setImporting(true)}>
-              <Upload aria-hidden />
-              {t("import")}
-            </Button>
-            <GateButton
-              gate="novel"
-              episodeId={episode?.id}
-              label={t("gate")}
-              to={paths.step(seriesId, ep, "script")}
-            />
-          </>
+    <ImpactGuard active={guarded}>
+      <StepLayout
+        inspector={
+          <Inspector components={COMPONENTS.map((id) => ({ id, productId: productOf(id)?.id }))} />
         }
-      />
-
-      {empty ? (
-        <EmptyState
-          icon={BookOpen}
-          title={t("empty.title")}
-          description={t("empty.lead")}
-          className="py-14"
-          action={
-            <Button size="lg" onClick={() => setImporting(true)}>
-              <Upload aria-hidden />
-              {t("empty.action")}
-            </Button>
+      >
+        <PageHeader
+          step={1}
+          title={t("title")}
+          lead={t("lead")}
+          actions={
+            <>
+              <Button variant="outline" size="lg" onClick={() => setImporting(true)}>
+                <Upload aria-hidden />
+                {t("import")}
+              </Button>
+              <GateButton
+                gate="novel"
+                episodeId={episode?.id}
+                label={t("gate")}
+                to={paths.step(seriesId, ep, "script")}
+              />
+            </>
           }
         />
-      ) : (
-        <>
-          {product ? (
-            <RunBar
-              product={product}
-              what={what}
-              models={models}
-              onEditPrompt={() => show("prompt", selected)}
-              onOpenHistory={() => show("history", selected)}
-            />
-          ) : (
-            <QueryState query={products} skeleton={<Skeleton className="h-14 w-full" />}>
-              {() => null}
-            </QueryState>
-          )}
 
-          <div className="grid items-start gap-4 xl:grid-cols-2">
-            <QueryState query={novel} skeleton={<Skeleton className="h-96 w-full" />}>
-              {(n) => (
-                <SourceText
-                  seriesId={seriesId}
-                  novel={n}
-                  suggestions={suggestions.data?.suggestions ?? []}
-                  view={view}
-                  onViewChange={setView}
-                  onChapterChange={setChapter}
-                  focus={focus}
-                  marked={entity?.paras}
-                  editable={novelProduct !== undefined && !novelProduct.locked_hash}
-                  downstream={downstream}
-                  traced={traced}
-                  onTrace={setTraced}
-                  trace={(idx) => (
-                    <ScriptTrace
-                      seriesId={seriesId}
-                      para={idx}
-                      episodes={episodes.data ?? []}
-                      onClose={() => setTraced(null)}
-                    />
-                  )}
-                />
-              )}
-            </QueryState>
-            <QueryState query={suggestions} skeleton={<Skeleton className="h-96 w-full" />}>
-              {(data) => (
-                <SuggestionList
-                  seriesId={seriesId}
-                  suggestions={data.suggestions}
-                  adopted={data.adopted}
-                  models={enrichModels}
-                  onFocus={focusPara}
-                />
-              )}
-            </QueryState>
-          </div>
-
-          <QueryState query={bible} skeleton={<Skeleton className="h-32 w-full" />}>
-            {(b) => (
-              <BiblePanel
-                seriesId={seriesId}
-                bible={b}
-                assetsPath={paths.step(seriesId, ep, "assets")}
-                selected={entity?.id ?? null}
-                onSelect={selectEntity}
+        {empty ? (
+          <EmptyState
+            icon={BookOpen}
+            title={t("empty.title")}
+            description={t("empty.lead")}
+            className="py-14"
+            action={
+              <Button size="lg" onClick={() => setImporting(true)}>
+                <Upload aria-hidden />
+                {t("empty.action")}
+              </Button>
+            }
+          />
+        ) : (
+          <>
+            {product ? (
+              <RunBar
+                product={product}
+                what={what}
+                models={models}
+                onEditPrompt={() => show("prompt", selected)}
+                onOpenHistory={() => show("history", selected)}
               />
+            ) : (
+              <QueryState query={products} skeleton={<Skeleton className="h-14 w-full" />}>
+                {() => null}
+              </QueryState>
             )}
-          </QueryState>
-        </>
-      )}
 
-      <ImportDialog
-        seriesId={seriesId}
-        current={source ?? null}
-        open={importing}
-        onOpenChange={setImporting}
-        onImported={() => {
-          setChapter(0);
-          setFocus(0);
-          setTarget(0);
-          setEntity(null);
-        }}
-      />
-    </StepLayout>
+            <div className="grid items-start gap-4 xl:grid-cols-2">
+              <QueryState query={novel} skeleton={<Skeleton className="h-96 w-full" />}>
+                {(n) => (
+                  <SourceText
+                    seriesId={seriesId}
+                    novel={n}
+                    suggestions={suggestions.data?.suggestions ?? []}
+                    view={view}
+                    onViewChange={setView}
+                    onChapterChange={setChapter}
+                    focus={focus}
+                    marked={entity?.paras}
+                    editable={novelProduct !== undefined}
+                    downstream={downstream}
+                    traced={traced}
+                    onTrace={setTraced}
+                    trace={(idx) => (
+                      <ScriptTrace
+                        seriesId={seriesId}
+                        para={idx}
+                        episodes={episodes.data ?? []}
+                        onClose={() => setTraced(null)}
+                      />
+                    )}
+                  />
+                )}
+              </QueryState>
+              <QueryState query={suggestions} skeleton={<Skeleton className="h-96 w-full" />}>
+                {(data) => (
+                  <SuggestionList
+                    seriesId={seriesId}
+                    suggestions={data.suggestions}
+                    adopted={data.adopted}
+                    locked={!!productOf("enrich")?.locked_hash}
+                    models={enrichModels}
+                    onFocus={focusPara}
+                  />
+                )}
+              </QueryState>
+            </div>
+
+            <QueryState query={bible} skeleton={<Skeleton className="h-32 w-full" />}>
+              {(b) => (
+                <BiblePanel
+                  seriesId={seriesId}
+                  bible={b}
+                  assetsPath={paths.step(seriesId, ep, "assets")}
+                  selected={entity?.id ?? null}
+                  onSelect={selectEntity}
+                />
+              )}
+            </QueryState>
+          </>
+        )}
+
+        <ImportDialog
+          seriesId={seriesId}
+          current={source ?? null}
+          open={importing}
+          onOpenChange={setImporting}
+          onImported={() => {
+            setChapter(0);
+            setFocus(0);
+            setTarget(0);
+            setEntity(null);
+          }}
+        />
+      </StepLayout>
+    </ImpactGuard>
   );
 }

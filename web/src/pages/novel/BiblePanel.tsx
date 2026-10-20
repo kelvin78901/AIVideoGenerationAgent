@@ -7,6 +7,7 @@ import { toast } from "sonner";
 import { errorMessage } from "@/api/client";
 import { useMergeBible } from "@/api/hooks/novel";
 import type { Bible, BibleEntity, MergeSuggestion } from "@/api/schemas/novel";
+import { useImpactGuard } from "@/components/impactGuardContext";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -146,6 +147,7 @@ function SameSuggestions({ seriesId, bible }: { seriesId: string; bible: Bible }
   const { t } = useTranslation("novel");
   const { t: tc } = useTranslation();
   const merge = useMergeBible(seriesId);
+  const guard = useImpactGuard();
   return (
     <div
       role="group"
@@ -160,15 +162,20 @@ function SameSuggestions({ seriesId, bible }: { seriesId: string; bible: Bible }
           const [a, b] = keepFirst(bible.entities, s);
           if (!a || !b) return null;
           const names = { a: a.name, b: b.name };
-          const send = (action: "merge" | "distinct") =>
-            merge.mutate(
-              { action, ids: [a.id, b.id] },
-              {
-                onSuccess: () =>
-                  action === "merge" ? toast.success(t("bible.same.merged", names)) : undefined,
-                onError: (err) => toast.error(errorMessage(tc, err)),
-              },
-            );
+          const send = (action: "merge" | "distinct") => {
+            const body = { action, ids: [a.id, b.id] };
+            if (guard)
+              return guard({
+                change: { kind: "bible_merge", target_id: a.id, patch: body },
+                title: t("impact.bible"),
+                detail: t("bible.same.pair", names),
+              });
+            merge.mutate(body, {
+              onSuccess: () =>
+                action === "merge" ? toast.success(t("bible.same.merged", names)) : undefined,
+              onError: (err) => toast.error(errorMessage(tc, err)),
+            });
+          };
           return (
             <li key={s.id} className="flex flex-wrap items-center gap-x-3 gap-y-1.5 text-sm">
               <span className="font-medium">{t("bible.same.pair", names)}</span>

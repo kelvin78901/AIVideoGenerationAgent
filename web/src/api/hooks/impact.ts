@@ -23,6 +23,9 @@ export function useApplyImpact() {
     mutationFn: (body: { impact_id: string; action: ImpactAction }) =>
       post("/impact/apply", ApplyImpactResultSchema, body),
     onSuccess: () => {
+      // The edit itself is written by apply: the novel, bible, suggestions and plan (under
+      // ["series"]), the script and badges (["episodes"]).
+      void client.invalidateQueries({ queryKey: ["series"] });
       void client.invalidateQueries({ queryKey: ["episodes"] });
       void client.invalidateQueries({ queryKey: productKeys.all });
     },

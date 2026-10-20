@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { errorMessage } from "@/api/client";
 import { usePatchBeat, useUpdateEpisode } from "@/api/hooks/series";
 import type { Beat, BeatPatch, Episode, EpisodePatch } from "@/api/schemas/episodes";
+import { useImpactGuard } from "@/components/impactGuardContext";
 import { Button } from "@/components/ui/button";
 import {
   Dialog,
@@ -56,6 +57,7 @@ function BeatForm({
   const { t } = useTranslation("script");
   const { t: tc } = useTranslation();
   const save = usePatchBeat(seriesId);
+  const guard = useImpactGuard();
   const [text, setText] = useState(beat.text);
   const [emotion, setEmotion] = useState(beat.emotion);
   const [episodeId, setEpisodeId] = useState(beat.episode_id);
@@ -67,6 +69,15 @@ function BeatForm({
     if (episodeId !== beat.episode_id) body.episode_id = episodeId;
     if (Object.keys(body).length === 0) return onClose();
     const target = episodes.find((e) => e.id === episodeId);
+    const source = episodes.find((e) => e.id === beat.episode_id);
+    // A confirmed script of either episode changes with it: preview first.
+    if (guard && [source, target].some((e) => e?.script_status === "confirmed"))
+      return guard({
+        change: { kind: "beat_move", target_id: beat.id, patch: body },
+        title: t("board.impactTitle"),
+        detail: beat.text,
+        onDone: onClose,
+      });
     save.mutate(
       { id: beat.id, ...body },
       {

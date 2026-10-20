@@ -6,6 +6,7 @@ import { toast } from "sonner";
 import { errorMessage } from "@/api/client";
 import { useEditChapter } from "@/api/hooks/novel";
 import type { Novel, Suggestion } from "@/api/schemas/novel";
+import { useImpactGuard } from "@/components/impactGuardContext";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/form";
@@ -58,7 +59,7 @@ export function SourceText({
   focus: number | null;
   /** Paragraphs that mention the bible entry picked in 提取到的设定. */
   marked?: number[];
-  /** The novel can be edited (it is not locked by its gate). */
+  /** There is a novel to edit (a confirmed one goes through the impact preview). */
   editable?: boolean;
   /** Something adopted was built from the novel (an edit turns it 待更新). */
   downstream?: boolean;
@@ -71,6 +72,8 @@ export function SourceText({
   const { t } = useTranslation("novel");
   const { t: tc } = useTranslation();
   const edit = useEditChapter(seriesId);
+  // Confirmed (or built on by a confirmed script): the edit previews its impact first.
+  const guard = useImpactGuard();
   const [draft, setDraft] = useState<Draft | null>(null);
   const accepted = suggestions.filter((s) => s.status === "accepted");
   const splitBy = novel.source?.split_by ?? "heading";
@@ -79,6 +82,16 @@ export function SourceText({
 
   const save = (paragraphs: string[], title = chapter?.title ?? null) => {
     if (!chapter) return;
+    if (guard)
+      return guard({
+        change: {
+          kind: "novel_edit",
+          target_id: seriesId,
+          patch: { chapter: chapter.idx, title, paragraphs },
+        },
+        title: t("impact.edit"),
+        onDone: () => setDraft(null),
+      });
     edit.mutate(
       { idx: chapter.idx, title, paragraphs },
       {
@@ -123,8 +136,10 @@ export function SourceText({
             className="text-[15px] leading-7"
           />
         )}
-        {downstream ? (
-          <p className="text-xs text-muted-foreground">{t("edit.downstream")}</p>
+        {guard || downstream ? (
+          <p className="text-xs text-muted-foreground">
+            {t(guard ? "edit.guarded" : "edit.downstream")}
+          </p>
         ) : null}
         <div className="flex gap-2 self-end">
           <Button variant="outline" size="sm" onClick={() => setDraft(null)}>

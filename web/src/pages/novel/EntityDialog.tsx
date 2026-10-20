@@ -10,6 +10,7 @@ import { toast } from "sonner";
 import { errorMessage } from "@/api/client";
 import { useEditBibleEntity, useMergeBible } from "@/api/hooks/novel";
 import type { BibleEntity, BiblePatch } from "@/api/schemas/novel";
+import { useImpactGuard } from "@/components/impactGuardContext";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -56,6 +57,7 @@ function EntityForm({
   const { t: tc } = useTranslation();
   const edit = useEditBibleEntity(seriesId);
   const merge = useMergeBible(seriesId);
+  const guard = useImpactGuard();
   const [name, setName] = useState(entity.name);
   const [aliases, setAliases] = useState(entity.aliases.join("、"));
   const [summary, setSummary] = useState(entity.data.summary ?? "");
@@ -72,6 +74,13 @@ function EntityForm({
       body.data = { ...entity.data, summary: summary.trim() };
     if (frozen !== entity.frozen) body.frozen = frozen;
     if (Object.keys(body).length === 0) return close();
+    if (guard)
+      return guard({
+        change: { kind: "bible_edit", target_id: entity.id, patch: { ...body } },
+        title: t("impact.bible"),
+        detail: entity.name,
+        onDone: close,
+      });
     edit.mutate(
       { id: entity.id, ...body },
       {
@@ -84,16 +93,27 @@ function EntityForm({
   };
 
   const split = (alias: string) =>
-    merge.mutate(
-      { action: "split", ids: [entity.id], alias },
-      {
-        onSuccess: () => {
-          toast.success(t("bible.dialog.splitDone", { alias }));
-          close();
-        },
-        onError: (err) => toast.error(errorMessage(tc, err)),
-      },
-    );
+    guard
+      ? guard({
+          change: {
+            kind: "bible_merge",
+            target_id: entity.id,
+            patch: { action: "split", ids: [entity.id], alias },
+          },
+          title: t("impact.bible"),
+          detail: entity.name,
+          onDone: close,
+        })
+      : merge.mutate(
+          { action: "split", ids: [entity.id], alias },
+          {
+            onSuccess: () => {
+              toast.success(t("bible.dialog.splitDone", { alias }));
+              close();
+            },
+            onError: (err) => toast.error(errorMessage(tc, err)),
+          },
+        );
 
   return (
     <Dialog open onOpenChange={onOpenChange}>

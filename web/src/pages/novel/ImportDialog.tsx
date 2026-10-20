@@ -11,6 +11,7 @@ import { toast } from "sonner";
 import { errorMessage } from "@/api/client";
 import { useImportNovel } from "@/api/hooks/novel";
 import type { NovelImport, NovelSource } from "@/api/schemas/novel";
+import { useImpactGuard } from "@/components/impactGuardContext";
 import { Button } from "@/components/ui/button";
 import { Checkbox } from "@/components/ui/checkbox";
 import {
@@ -41,12 +42,14 @@ export function ImportDialog({
   current: NovelSource | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  onImported: (result: NovelImport) => void;
+  onImported: () => void;
 }) {
   const { t } = useTranslation("novel");
   const { t: tc } = useTranslation();
   const scan = useImportNovel(seriesId);
   const save = useImportNovel(seriesId);
+  // Replacing a confirmed novel previews its impact first, with the file the scan stored.
+  const guard = useImpactGuard();
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [rights, setRights] = useState(false);
@@ -71,6 +74,20 @@ export function ImportDialog({
 
   const submit = () => {
     if (!file || !preview) return;
+    if (guard && preview.upload_id)
+      return guard({
+        change: {
+          kind: "novel_replace",
+          target_id: seriesId,
+          patch: { upload_id: preview.upload_id, filename: file.name },
+        },
+        title: t("impact.replace"),
+        detail: file.name,
+        onDone: () => {
+          close(false);
+          onImported();
+        },
+      });
     save.mutate(
       { file, dryRun: false, rightsConfirmed: true },
       {
@@ -85,7 +102,7 @@ export function ImportDialog({
               }),
             );
           close(false);
-          onImported(result);
+          onImported();
         },
         onError: (err) => toast.error(errorMessage(tc, err)),
       },

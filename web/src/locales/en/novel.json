@@ -62,6 +62,7 @@
     "titleLabel": "Chapter title",
     "saved": "Saved as a new version of the novel (the old text stays in the history).",
     "downstream": "After saving, enrichment and extraction become out of date.",
+    "guarded": "Confirmed: saving shows what it affects first, then you choose to sync what depends on it or change only this.",
     "switchHint": "Switch to Original to edit the text."
   },
   "chapter": {
@@ -98,7 +99,8 @@
     "acceptAllDone": "Adopted every suggestion that was not ignored.",
     "empty": "No suggestions yet. Click Rerun above to let the AI look for gaps.",
     "unadopted": "Not adopted",
-    "unadoptedHint": "This version is not adopted yet: extraction and episode planning still use the additions of the adopted one."
+    "unadoptedHint": "This version is not adopted yet: extraction and episode planning still use the additions of the adopted one.",
+    "lockedHint": "The novel is confirmed: accepting or ignoring one addition shows what it affects first; “Accept all” and rewrites on request need “Reopen” first."
   },
   "bible": {
     "title": "Extracted story bible",
@@ -153,5 +155,11 @@
     "notPlanned": "The episode plan does not use this paragraph.",
     "open": "Open the script",
     "close": "Close"
+  },
+  "impact": {
+    "edit": "Editing the novel affects confirmed work",
+    "replace": "Replacing the novel affects confirmed work",
+    "bible": "Editing the story bible affects confirmed work",
+    "suggestion": "Changing the enrichment affects confirmed work"
   }
 }

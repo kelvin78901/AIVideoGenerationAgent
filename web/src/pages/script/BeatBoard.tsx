@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { errorMessage } from "@/api/client";
 import { usePatchBeat } from "@/api/hooks/series";
 import type { Beat, Episode } from "@/api/schemas/episodes";
+import { useImpactGuard } from "@/components/impactGuardContext";
 import { Button } from "@/components/ui/button";
 import { formatEmotion } from "@/lib/beats";
 import { formatClock } from "@/lib/format";
@@ -40,6 +41,7 @@ export function BeatBoard({
   const { t } = useTranslation("script");
   const { t: tc } = useTranslation();
   const move = usePatchBeat(seriesId);
+  const guard = useImpactGuard();
   const [dragging, setDragging] = useState<Beat | null>(null);
   const [dropAt, setDropAt] = useState<DropAt | null>(null);
   const [editing, setEditing] = useState<Beat | null>(null);
@@ -82,12 +84,19 @@ export function BeatBoard({
     const same = at.episodeId === beat.episode_id && at.position === beat.idx - 1;
     if (!source || same) return;
     const target = episodes.find((e) => e.id === at.episodeId);
+    const body = {
+      position: at.position,
+      ...(at.episodeId !== beat.episode_id ? { episode_id: at.episodeId } : {}),
+    };
+    // A confirmed script of either episode changes with it: preview first.
+    if (guard && [source, target].some((e) => e?.script_status === "confirmed"))
+      return guard({
+        change: { kind: "beat_move", target_id: beat.id, patch: body },
+        title: t("board.impactTitle"),
+        detail: beat.text,
+      });
     move.mutate(
-      {
-        id: beat.id,
-        position: at.position,
-        ...(at.episodeId !== beat.episode_id ? { episode_id: at.episodeId } : {}),
-      },
+      { id: beat.id, ...body },
       {
         onSuccess: () =>
           toast.success(t("board.moved", { n: target?.idx ?? 0, idx: at.position + 1 })),

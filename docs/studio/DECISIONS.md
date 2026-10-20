@@ -11,6 +11,9 @@
 - **完成提示**：toast `cascade_done` 有失败时前端换成 `cascade_done_failed` 的文案（`api/events.ts`）。`gate.updated` 刷新产物、剧集列表（剧本状态）和进度徽章。
 - **MSW**：`/gates/novel|script` 放行到后端。`/impact/preview` 除了 `spec_aspect`、`asset_unlock`（M4）都转给后端；示例剧集第 1 集剧本的块，在后端结果后面再叠加镜头、关键帧这些下游行（`fixtures/demo/impacts.ts:scriptDownstream`），叠加的「待更新」记在 `impactOverlays`，`/impact/apply` 转给后端成功后再加到示例进度上。转发用 `mocks/backend.ts:backendResponse`（错误原样返回），不用 `passthrough()`：页面测试里要落到假后端（`test/fakes/impact.ts`）。删掉 apply 里转发 PATCH 的那段和 `series.ts` 里演示闸门的叠加。
 - **示例种子的闸门**：`seed_demo` 最后确认小说闸门和第 1 集剧本闸门，只在这个闸门从来没有过决定时做：用户重新打开的，重启后保持打开。后端测试默认把 `demo.CONFIRMED_GATES` 换成空的（`tests/conftest.py`；大多数测试直接改示例剧集），要种子闸门的测试用 `demo_gates` fixture（导出前端测试数据的 `test_web_fixtures.py` 用它，所以前端假后端里小说和第 1 集剧本是已确认的）。
+- **什么时候先预览**（10c-2）：小说页的改动（逐段编辑 `novel_edit`、重新导入 `novel_replace`、设定编辑 / 合并 / 拆别名 `bible_edit` / `bible_merge`、补全的采纳 / 忽略 / 恢复 `suggestion_decision`）在小说已确认**或**有任何一集剧本已确认时先预览；节拍的拖动和改动（`beat_move`）只在它离开或进入的那一集剧本已确认时预览，别的集照旧直接写、立即显示新位置。预览没有任何行就直接「只改这里」（toast「已保存。」）。共用组件 `ImpactGuard`（页面包一层，`active` 决定要不要预览）+ `useImpactGuard()`（各编辑处拿到就走预览，拿不到就照旧直接写），弹窗是 `ImpactDialog variant="modal"`，「撤销」后编辑框保持原样（用户可以接着改或取消），写入后编辑框 / 弹窗才关。原因：编辑分散在五个组件里，一个页面只要一个弹窗。
+- **后端没有影响种类的操作**：已确认时「全部采纳」和按要求重写补全（要调模型）按钮置灰，补全区写一句「要先重新打开」——后端对锁定的补全返回 409，与其报错不如先说清楚。改集（集名、钩子、卡点、预计时长）不预览：分集规划不归任何闸门，直接改，受影响的剧本照常显示「待更新」。
+- **假后端的影响预览**（`test/fakes/impact.ts`）：「只改这里 / 确认并同步」时，用直接编辑的那个请求（`PATCH /lines`、`PUT …/chapters/{idx}`、`POST /suggestions/{id}/accept` …）写入，落到各自的假后端 handler，不另写一套写入逻辑；`novel_replace` 只记录（上传的文件在后端）。`openFakeGates()` 把两个闸门都打开，测「没确认时直接写」的老测试用它。
 
 ### 10b 后端（确认并同步）
 

@@ -18,6 +18,7 @@ import type { Product } from "@/api/schemas/products";
 import { paths } from "@/app/paths";
 import { GateButton } from "@/components/GateButton";
 import { ImpactDialog } from "@/components/ImpactDialog";
+import { ImpactGuard } from "@/components/ImpactGuard";
 import { Inspector } from "@/components/Inspector";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState, Skeleton } from "@/components/QueryState";
@@ -211,156 +212,159 @@ export default function ScriptPage() {
   };
 
   return (
-    <StepLayout
-      inspector={
-        <Inspector
-          components={[
-            { id: "split", productId: split?.id },
-            { id: "script", productId: scriptProduct?.id },
-          ]}
-        />
-      }
-    >
-      <PageHeader
-        step={2}
-        title={t("title")}
-        lead={t("lead")}
-        actions={
-          <GateButton
-            gate="script"
-            episodeId={episode?.id}
-            label={t("gate")}
-            to={paths.step(seriesId, ep, "assets")}
+    // Moving or editing a beat of a confirmed script previews its impact (BeatBoard).
+    <ImpactGuard active={!!episodes.data?.some((e) => e.script_status === "confirmed")}>
+      <StepLayout
+        inspector={
+          <Inspector
+            components={[
+              { id: "split", productId: split?.id },
+              { id: "script", productId: scriptProduct?.id },
+            ]}
           />
         }
-      />
-
-      <QueryState query={episodes} skeleton={<Skeleton className="h-28 w-full" />}>
-        {(list) => (
-          <Episodes
-            seriesId={seriesId}
-            episodes={list}
-            currentIdx={episodeIdx}
-            split={split}
-            view={episodeView}
-            onViewChange={(v) => {
-              setEpisodeView(v);
-              // The board is 分集规划's: its RunBar and Inspector come along.
-              useInspectorStore.getState().select(v === "board" ? "split" : "script");
-            }}
-            onRunSplit={() => {
-              useInspectorStore.getState().select("split");
-              splitAction.run({ mode: split?.versions.length ? "rerun" : "run" });
-            }}
-            onOpenHistory={() => show("history", "split")}
-          />
-        )}
-      </QueryState>
-
-      {product ? (
-        <RunBar
-          product={product}
-          what={what}
-          models={models}
-          onEditPrompt={() => show("prompt", selected)}
-          onOpenHistory={() => show("history", selected)}
+      >
+        <PageHeader
+          step={2}
+          title={t("title")}
+          lead={t("lead")}
+          actions={
+            <GateButton
+              gate="script"
+              episodeId={episode?.id}
+              label={t("gate")}
+              to={paths.step(seriesId, ep, "assets")}
+            />
+          }
         />
-      ) : (
-        <QueryState
-          query={selected === "split" ? seriesProducts : episodeProducts}
-          skeleton={<Skeleton className="h-14 w-full" />}
-        >
-          {() => null}
+
+        <QueryState query={episodes} skeleton={<Skeleton className="h-28 w-full" />}>
+          {(list) => (
+            <Episodes
+              seriesId={seriesId}
+              episodes={list}
+              currentIdx={episodeIdx}
+              split={split}
+              view={episodeView}
+              onViewChange={(v) => {
+                setEpisodeView(v);
+                // The board is 分集规划's: its RunBar and Inspector come along.
+                useInspectorStore.getState().select(v === "board" ? "split" : "script");
+              }}
+              onRunSplit={() => {
+                useInspectorStore.getState().select("split");
+                splitAction.run({ mode: split?.versions.length ? "rerun" : "run" });
+              }}
+              onOpenHistory={() => show("history", "split")}
+            />
+          )}
         </QueryState>
-      )}
 
-      {pending && preview.data ? (
-        <ImpactDialog
-          impact={preview.data}
-          title={t("script.impactTitle")}
-          detail={t("script.impactWhat", { text: leadOf(pending.block) + pending.text })}
-          onResolved={(action) => {
-            if (action === "undo") {
-              setPending(null);
-              preview.reset();
-            } else void settle();
-          }}
-        />
-      ) : null}
+        {product ? (
+          <RunBar
+            product={product}
+            what={what}
+            models={models}
+            onEditPrompt={() => show("prompt", selected)}
+            onOpenHistory={() => show("history", selected)}
+          />
+        ) : (
+          <QueryState
+            query={selected === "split" ? seriesProducts : episodeProducts}
+            skeleton={<Skeleton className="h-14 w-full" />}
+          >
+            {() => null}
+          </QueryState>
+        )}
 
-      <QueryState query={script} skeleton={<Skeleton className="h-96 w-full" />}>
-        {(s) =>
-          s.scenes.length === 0 ? (
-            episode ? (
-              <GenerateEpisode episode={episode} product={scriptProduct} />
-            ) : null
-          ) : (
-            <section aria-labelledby="script-title" className="flex flex-col gap-3">
-              <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
-                <h2 id="script-title" className="text-base font-bold">
-                  {t("script.title", { n: episodeIdx })}
-                </h2>
-                <span className="text-xs text-muted-foreground tabular-nums">
-                  {t("script.meta", { scenes: sceneCount, blocks: blocks.length, ai: aiCount })}
-                </span>
-                <SegmentedControl
-                  className="ml-auto"
-                  size="sm"
-                  label={t("script.views")}
-                  value={view}
-                  onChange={setView}
-                  options={(["script", "table"] as const).map((v) => ({
-                    value: v,
-                    label: t(`script.view.${v}`),
-                  }))}
-                />
-              </div>
-              {!s.adopted ? (
-                <div
-                  role="status"
-                  className="flex flex-wrap items-center gap-2 rounded-md border border-tone-warn-border bg-tone-warn-bg px-3 py-2 text-sm text-tone-warn-fg"
-                >
-                  <span>{t("script.unadopted")}</span>
-                  <Button
-                    size="sm"
-                    variant="outline"
+        {pending && preview.data ? (
+          <ImpactDialog
+            impact={preview.data}
+            title={t("script.impactTitle")}
+            detail={t("script.impactWhat", { text: leadOf(pending.block) + pending.text })}
+            onResolved={(action) => {
+              if (action === "undo") {
+                setPending(null);
+                preview.reset();
+              } else void settle();
+            }}
+          />
+        ) : null}
+
+        <QueryState query={script} skeleton={<Skeleton className="h-96 w-full" />}>
+          {(s) =>
+            s.scenes.length === 0 ? (
+              episode ? (
+                <GenerateEpisode episode={episode} product={scriptProduct} />
+              ) : null
+            ) : (
+              <section aria-labelledby="script-title" className="flex flex-col gap-3">
+                <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <h2 id="script-title" className="text-base font-bold">
+                    {t("script.title", { n: episodeIdx })}
+                  </h2>
+                  <span className="text-xs text-muted-foreground tabular-nums">
+                    {t("script.meta", { scenes: sceneCount, blocks: blocks.length, ai: aiCount })}
+                  </span>
+                  <SegmentedControl
                     className="ml-auto"
-                    onClick={() => show("history", "script")}
-                  >
-                    {t("script.openHistory")}
-                  </Button>
+                    size="sm"
+                    label={t("script.views")}
+                    value={view}
+                    onChange={setView}
+                    options={(["script", "table"] as const).map((v) => ({
+                      value: v,
+                      label: t(`script.view.${v}`),
+                    }))}
+                  />
                 </div>
-              ) : null}
-              {view === "script" ? (
-                <ScriptScreenplay
-                  blocks={blocks}
-                  paragraphs={paragraphs}
-                  selectedId={activeId}
-                  pendingId={pending?.block.id ?? null}
-                  rewritingId={rewrite.isPending ? (rewrite.variables?.id ?? null) : null}
-                  locked={pending !== null || patchBlock.isPending}
-                  confirmed={confirmed}
-                  models={scriptModels}
-                  routeModel={scriptProduct?.estimate?.model_key}
-                  overBudget={overBudget}
-                  links={links}
-                  onSelect={(id) => {
-                    setPicked({ id, link: linked });
-                    if (overBudget?.blockId !== id) setOverBudget(null);
-                  }}
-                  actions={{ onSave: startChange, onRewrite: startRewrite }}
-                />
-              ) : (
-                <ScriptTable
-                  blocks={blocks}
-                  selectedId={activeId}
-                  pendingId={pending?.block.id ?? null}
-                />
-              )}
-            </section>
-          )
-        }
-      </QueryState>
-    </StepLayout>
+                {!s.adopted ? (
+                  <div
+                    role="status"
+                    className="flex flex-wrap items-center gap-2 rounded-md border border-tone-warn-border bg-tone-warn-bg px-3 py-2 text-sm text-tone-warn-fg"
+                  >
+                    <span>{t("script.unadopted")}</span>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="ml-auto"
+                      onClick={() => show("history", "script")}
+                    >
+                      {t("script.openHistory")}
+                    </Button>
+                  </div>
+                ) : null}
+                {view === "script" ? (
+                  <ScriptScreenplay
+                    blocks={blocks}
+                    paragraphs={paragraphs}
+                    selectedId={activeId}
+                    pendingId={pending?.block.id ?? null}
+                    rewritingId={rewrite.isPending ? (rewrite.variables?.id ?? null) : null}
+                    locked={pending !== null || patchBlock.isPending}
+                    confirmed={confirmed}
+                    models={scriptModels}
+                    routeModel={scriptProduct?.estimate?.model_key}
+                    overBudget={overBudget}
+                    links={links}
+                    onSelect={(id) => {
+                      setPicked({ id, link: linked });
+                      if (overBudget?.blockId !== id) setOverBudget(null);
+                    }}
+                    actions={{ onSave: startChange, onRewrite: startRewrite }}
+                  />
+                ) : (
+                  <ScriptTable
+                    blocks={blocks}
+                    selectedId={activeId}
+                    pendingId={pending?.block.id ?? null}
+                  />
+                )}
+              </section>
+            )
+          }
+        </QueryState>
+      </StepLayout>
+    </ImpactGuard>
   );
 }

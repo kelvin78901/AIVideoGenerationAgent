@@ -44,6 +44,7 @@
     "emptyColumn": "No beats in this episode yet; drag one here",
     "moved": "Beat moved to episode {{n}}, position {{idx}}.",
     "saved": "Saved.",
+    "impactTitle": "Changing this beat affects a confirmed script",
     "locked": "The episode plan is locked; beats can't be changed.",
     "busy": "Episode planning is running; edit once it finishes.",
     "unadopted": "Episode planning has a newer result that isn't adopted: this is the adopted plan, and it changes once you adopt the new one in History.",

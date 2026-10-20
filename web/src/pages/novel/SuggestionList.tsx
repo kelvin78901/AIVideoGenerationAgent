@@ -11,6 +11,7 @@ import {
 import type { ModelOption } from "@/api/schemas/models";
 import type { Suggestion } from "@/api/schemas/novel";
 import { EmptyState } from "@/components/EmptyState";
+import { useImpactGuard } from "@/components/impactGuardContext";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -22,11 +23,13 @@ function SuggestionCard({
   s,
   seriesId,
   models,
+  locked,
   onFocus,
 }: {
   s: Suggestion;
   seriesId: string;
   models: readonly ModelOption[];
+  locked: boolean;
   onFocus: (para: number) => void;
 }) {
   const { t } = useTranslation("novel");
@@ -34,6 +37,7 @@ function SuggestionCard({
   const { t: tc } = useTranslation();
   const ids = useId();
   const act = useSuggestionAction(seriesId);
+  const guard = useImpactGuard();
   const [editing, setEditing] = useState(false);
   const [instruction, setInstruction] = useState("");
   // A rewrite over the per-call cap waits here for the user's yes (hard rule 6).
@@ -41,6 +45,17 @@ function SuggestionCard({
   const accepted = s.status === "accepted";
   const ignored = s.status === "rejected";
   const para = s.para_idx + 1;
+
+  /** 采纳 / 撤销采纳 / 忽略 / 恢复; on confirmed work the impact preview comes first. */
+  const decide = (action: "accept" | "reject" | "reset", done?: () => void) =>
+    guard
+      ? guard({
+          change: { kind: "suggestion_decision", target_id: s.id, patch: { action } },
+          title: t("impact.suggestion"),
+          detail: t("suggestions.para", { n: para }),
+          onDone: done,
+        })
+      : run({ id: s.id, action }, done);
 
   const run = (a: SuggestionAction, done?: (updated: Suggestion) => void) =>
     act.mutate(a, {
@@ -151,15 +166,15 @@ function SuggestionCard({
         <Button
           variant={accepted ? "outline" : "default"}
           disabled={act.isPending}
-          onClick={() =>
-            run({ id: s.id, action: accepted ? "reset" : "accept" }, () => onFocus(s.para_idx))
-          }
+          onClick={() => decide(accepted ? "reset" : "accept", () => onFocus(s.para_idx))}
         >
           {t(accepted ? "suggestions.unaccept" : "suggestions.accept")}
         </Button>
         <Button
           variant="outline"
           aria-expanded={editing}
+          // Rewriting on request calls a model; a confirmed novel is reopened first.
+          disabled={locked}
           onClick={() => {
             setEditing(!editing);
             setInstruction("");
@@ -171,7 +186,7 @@ function SuggestionCard({
         <Button
           variant="outline"
           disabled={act.isPending}
-          onClick={() => run({ id: s.id, action: ignored ? "reset" : "reject" })}
+          onClick={() => decide(ignored ? "reset" : "reject")}
         >
           {t(ignored ? "suggestions.restore" : "suggestions.ignore")}
         </Button>
@@ -188,12 +203,16 @@ export function SuggestionList({
   seriesId,
   suggestions,
   adopted = true,
+  locked = false,
   models,
   onFocus,
 }: {
   seriesId: string;
   suggestions: Suggestion[];
   adopted?: boolean;
+  /** Confirmed with the novel: decisions preview their impact, 全部采纳 and rewrites wait for
+   * 重新打开 (the backend has no impact preview for them). */
+  locked?: boolean;
   models: readonly ModelOption[];
   onFocus: (para: number) => void;
 }) {
@@ -214,7 +233,7 @@ export function SuggestionList({
         <Button
           variant="outline"
           className="ml-auto"
-          disabled={acceptAll.isPending || suggestions.length === 0}
+          disabled={locked || acceptAll.isPending || suggestions.length === 0}
           onClick={() =>
             acceptAll.mutate(undefined, {
               onSuccess: () => toast.success(t("suggestions.acceptAllDone")),
@@ -228,9 +247,19 @@ export function SuggestionList({
       {adopted ? null : (
         <p className="text-xs text-muted-foreground">{t("suggestions.unadoptedHint")}</p>
       )}
+      {locked ? (
+        <p className="text-xs text-muted-foreground">{t("suggestions.lockedHint")}</p>
+      ) : null}
       {suggestions.length === 0 ? <EmptyState title={t("suggestions.empty")} /> : null}
       {suggestions.map((s) => (
-        <SuggestionCard key={s.id} s={s} seriesId={seriesId} models={models} onFocus={onFocus} />
+        <SuggestionCard
+          key={s.id}
+          s={s}
+          seriesId={seriesId}
+          models={models}
+          locked={locked}
+          onFocus={onFocus}
+        />
       ))}
     </section>
   );

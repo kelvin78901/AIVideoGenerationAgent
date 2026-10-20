@@ -147,6 +147,7 @@
     "lineCost": "about {{cost}}",
     "optional": " (optional)",
     "marked": "Saved. What depends on it is marked outdated; the counts show in the left navigation.",
+    "saved": "Saved.",
     "syncStarted": "Sync started: affected outputs rerun one after another and the new versions are adopted.",
     "undone": "Change undone.",
     "line": {
