@@ -564,8 +564,8 @@
         "where": "api",
         "price": {
           "unit": "image",
-          "amount": 0.018,
-          "currency": "USD"
+          "amount": 0.12,
+          "currency": "CNY"
         }
       },
       {
@@ -642,8 +642,8 @@
         "where": "api",
         "price": {
           "unit": "mchar",
-          "amount": 100.0,
-          "currency": "USD"
+          "amount": 350.0,
+          "currency": "CNY"
         }
       },
       {
@@ -652,8 +652,8 @@
         "where": "api",
         "price": {
           "unit": "mchar",
-          "amount": 100.0,
-          "currency": "USD"
+          "amount": 350.0,
+          "currency": "CNY"
         }
       },
       {

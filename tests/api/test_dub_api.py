@@ -86,8 +86,9 @@ def test_dub_the_whole_episode(client: TestClient) -> None:
     estimate = client.post(f"{V1}/episodes/{EP1}/dub", json={"dry_run": True}).json()
     todo = [x for x in _dub(client)["lines"] if x["status"] == "missing"]
     assert estimate["jobs"] == [] and estimate["lines"] == len(todo) > 0
-    chars = sum(len(x["text"]) for x in todo)
-    assert estimate["estimate_usd"] == pytest.approx(chars * 100 / 1e6)
+    # 3.50 元 / 万字符; each line's estimate is rounded to 4 places, like every run's
+    per_line = [round(len(x["text"]) * 350 / 1e6 / 7.1, 4) for x in todo]
+    assert estimate["estimate_usd"] == pytest.approx(sum(per_line))
 
     started = _dub_all(client)
     assert len(started["jobs"]) == len(todo)

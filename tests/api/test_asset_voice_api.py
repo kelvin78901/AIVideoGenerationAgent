@@ -1,5 +1,6 @@
 """音色 (SPEC 5 ``voice``; M3 step 6), in Mock mode: free local auditions, the MiniMax final
-(design + five emotions, $3 + characters), the local final, levelling and locking.
+(design + five emotions, the 9.90 元 design fee + characters), the local final, levelling and
+locking.
 
 The demo seeds 林晚's voice: three auditions reading her two lines, then the MiniMax final from
 A, locked whole. 周屿 (vzhouyu) has no lines in episode 1, so his auditions read the sample.
@@ -32,7 +33,9 @@ from drama_series_agent.pipeline.hashing import hash_json
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
 EMOTIONS = ["calm", "angry", "crying", "whisper", "shout"]
-PER_CHAR = 100 / 1e6  # MiniMax Speech HD, per character
+CNY = 7.1  # providers.yaml currency_rates
+PER_CHAR = 350 / 1e6 / CNY  # MiniMax Speech HD (China), per character
+DESIGN = 9.90 / CNY  # the voice design fee, on the first synthesis
 
 
 @pytest.fixture
@@ -87,13 +90,11 @@ def _done(client: TestClient, asset_id: str, **body: Any) -> dict[str, Any]:
 
 
 def _final(client: TestClient, asset_id: str, draft: dict[str, Any], idx: int) -> dict[str, Any]:
-    """「用 MiniMax 出终版」 from candidate ``idx``: it costs over the $3 cap, so it waits for a
-    yes first."""
+    """「用 MiniMax 出终版」 from candidate ``idx``: about $1.40, under the $3 cap, so it runs
+    without asking."""
     params = {"source_version_id": draft["id"], "source_idx": idx}
-    job = _wait(client, _run(client, asset_id, where="api", params=params)["id"], "waiting_confirm")
-    assert job["params"]["confirm"]["reason"] == "per_call"
-    client.post(f"{V1}/jobs/{job['id']}/confirm").raise_for_status()
-    job = _wait(client, job["id"])
+    job = _wait(client, _run(client, asset_id, where="api", params=params)["id"])
+    assert "confirm" not in (job["params"] or {})
     assert job["state"] == "succeeded", job
     return job
 
@@ -169,13 +170,13 @@ def test_auditions_then_the_minimax_final_then_lock(client: TestClient) -> None:
 
     calls = [c for c in _rows(client, ModelCall) if c.job_id == job["id"]]
     assert len(calls) == 6 and all(c.status == "success" for c in calls)
-    # Whisper on 2.6 HD (2.8 has none); the $3 on the first synthesis with the voice.
+    # Whisper on 2.6 HD (2.8 has none); the design fee on the first synthesis with the voice.
     assert [c.model_key for c in calls].count("minimax/speech-2.6-hd") == 1
     sample = len(get_config().voice.sample_text)
     assert sorted(round(c.cost_usd, 6) for c in calls) == sorted(
-        [round(sample * PER_CHAR, 6)] * 5 + [round(3 + sample * PER_CHAR, 6)]
+        [round(sample * PER_CHAR, 6)] * 5 + [round(DESIGN + sample * PER_CHAR, 6)]
     )
-    assert final["cost_usd"] == pytest.approx(3 + 6 * sample * PER_CHAR)
+    assert final["cost_usd"] == pytest.approx(DESIGN + 6 * sample * PER_CHAR)
     assert job["est_cost_usd"] == pytest.approx(final["cost_usd"])
 
     resp = client.post(f"{V1}/assets/vzhouyu/lock")
@@ -272,7 +273,7 @@ def test_samples_are_levelled(client: TestClient, monkeypatch: pytest.MonkeyPatc
     assert lufs is not None and abs(lufs - get_config().components.audio.dialogue.lufs) <= 0.5
 
 
-MINIMAX = "https://api.minimax.io/v1"
+MINIMAX = "https://api.minimax.cn/v1"
 
 
 @respx.mock(assert_all_called=False)
@@ -280,7 +281,7 @@ def test_the_minimax_final_through_the_real_adapter(
     client: TestClient, respx_mock: respx.MockRouter
 ) -> None:
     """The same final against a fake MiniMax: one design, five syntheses (whisper on 2.6), the
-    $3 on the synthesis MiniMax bills it on, characters as MiniMax counts them."""
+    design fee on the synthesis MiniMax bills it on, characters as MiniMax counts them."""
     respx_mock.route(host="127.0.0.1").pass_through()
     _done(client, "vzhouyu")  # Mock auditions
     draft = _latest(client, "vzhouyu")
@@ -325,6 +326,7 @@ def test_the_minimax_final_through_the_real_adapter(
     assert final["payload"]["voice_id"] == "ttv-zhouyu"
     calls = [c for c in _rows(client, ModelCall) if c.job_id == job["id"]]
     assert len(calls) == 6 and all(c.status == "success" for c in calls)
-    expected = billed * 60 / 1e6 + 3 + 5 * billed * PER_CHAR  # the trial clip, $3, five lines
+    # the trial clip (2.00 元 / 万字符), the design fee, five lines
+    expected = billed * 0.0002 / CNY + DESIGN + 5 * billed * PER_CHAR
     assert final["cost_usd"] == pytest.approx(expected)
     assert job["est_cost_usd"] == pytest.approx(expected)

@@ -285,7 +285,7 @@ async def test_seedream_no_watermark_b64_and_one_request_per_picture(store: Blob
     assert sent["image"].startswith("data:image/png;base64,")
     assert route.calls.last.request.headers["authorization"] == "Bearer ark-SECRET"
     assert len(result.files) == 2 and result.usage.images == 2
-    assert cost_usd(adapter.spec.pricing, result.usage) == pytest.approx(0.036)
+    assert cost_usd(adapter.spec.pricing, result.usage) == pytest.approx(2 * 0.12 / 7.1)
 
 
 @respx.mock

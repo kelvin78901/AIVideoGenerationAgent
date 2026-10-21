@@ -16,7 +16,10 @@ from drama_series_agent.modelhub.adapters.mock import sine_wav
 from drama_series_agent.modelhub.pricing import cost_usd
 from drama_series_agent.modelhub.registry import specs_from_config
 
-BASE = "https://api.minimax.io/v1"
+BASE = "https://api.minimax.cn/v1"
+CNY = 7.1  # providers.yaml currency_rates
+PER_CHAR = 350 / 1e6 / CNY  # 3.50 元 per 10k characters
+DESIGN = 9.90 / CNY
 KEY = "mm-SECRET"
 WAV = sine_wav(0.5)
 
@@ -77,7 +80,7 @@ async def test_t2a_request_and_the_first_use_fee() -> None:
     (f,) = result.files
     assert (f.data, f.mime, f.duration_s) == (WAV, "audio/wav", 1.5)
     assert result.usage.chars == 20 and result.usage.calls == {"voice_design": 1}
-    assert cost_usd(adapter.spec.pricing, result.usage) == pytest.approx(3 + 20 * 100 / 1e6)
+    assert cost_usd(adapter.spec.pricing, result.usage) == pytest.approx(DESIGN + 20 * PER_CHAR)
 
 
 @respx.mock
@@ -86,10 +89,10 @@ async def test_no_voice_fee_unless_minimax_bills_one() -> None:
     adapter = _adapter()
     result = await adapter.run(_tts(voice_id="v-1", charge_design=True), CallContext())
     assert result.usage.calls is None
-    assert cost_usd(adapter.spec.pricing, result.usage) == pytest.approx(20 * 100 / 1e6)
-    # The estimate still counts the $3 the first synthesis is expected to cost.
+    assert cost_usd(adapter.spec.pricing, result.usage) == pytest.approx(20 * PER_CHAR)
+    # The estimate still counts the design fee the first synthesis is expected to cost.
     est = adapter.estimate(_tts(voice_id="v-1", charge_design=True)).cost_usd
-    assert est == pytest.approx(3 + billed_chars("三年了。他凭什么。") * 100 / 1e6)
+    assert est == pytest.approx(DESIGN + billed_chars("三年了。他凭什么。") * PER_CHAR)
 
 
 @respx.mock
@@ -114,8 +117,8 @@ async def test_voice_design_returns_the_id_and_its_trial() -> None:
     assert sent == {"prompt": "二十多岁的女声，偏低沉", "preview_text": "我" * 500}
     assert result.json == {"voice_id": "ttv-voice-1"} and result.files[0].data == WAV
     assert result.usage.calls == {"design_preview_char": 1000}
-    assert cost_usd(adapter.spec.pricing, result.usage) == pytest.approx(1000 * 60 / 1e6)
-    assert adapter.estimate(req).cost_usd == pytest.approx(1000 * 60 / 1e6)
+    assert cost_usd(adapter.spec.pricing, result.usage) == pytest.approx(1000 * 0.0002 / CNY)
+    assert adapter.estimate(req).cost_usd == pytest.approx(1000 * 0.0002 / CNY)
 
 
 @respx.mock

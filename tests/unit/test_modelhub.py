@@ -85,11 +85,12 @@ def test_registry_reads_all_model_sections() -> None:
     h3 = reg.spec("minimax/h3-api")
     assert h3.pricing.unit == "second" and h3.pricing.price_by_res == {"768p": 0.08, "2k": 0.13}
     tts = reg.spec("minimax/speech-2.8-hd")
-    assert tts.pricing.unit == "char" and tts.pricing.price == pytest.approx(100 / 1e6)
+    assert tts.pricing.unit == "char" and tts.pricing.price == pytest.approx(350 / 1e6)
+    assert tts.pricing.currency == "CNY" and tts.base_url == "https://api.minimax.cn/v1"
     assert tts.pricing.extras == {
-        "voice_design": 3.0,
-        "voice_clone": 1.5,
-        "design_preview_char": 6e-05,
+        "voice_design": 9.9,
+        "voice_clone": 9.9,
+        "design_preview_char": 0.0002,
     }
     assert tts.adapter == "minimax_speech" and tts.model_id == "speech-2.8-hd"
     # Media models use their account's key (one MiniMax / Google key for everything).

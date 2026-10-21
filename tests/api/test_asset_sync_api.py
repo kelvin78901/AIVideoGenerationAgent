@@ -174,9 +174,7 @@ def test_a_new_voice_makes_its_characters_lines_stale(client: TestClient) -> Non
         "params": {"source_version_id": draft["id"], "source_idx": 1},
     }
     job = client.post(f"{V1}/products/demo-p-asset-vlinwan/run", json=body).json()
-    job = _wait(client, job["id"], "waiting_confirm")  # over the $3 cap
-    client.post(f"{V1}/jobs/{job['id']}/confirm").raise_for_status()
-    assert _wait(client, job["id"])["state"] == "succeeded"
+    assert _wait(client, job["id"])["state"] == "succeeded"  # about $1.40: under the $3 cap
     resp = client.post(f"{V1}/assets/vlinwan/lock", json={})
     assert resp.status_code == 200, resp.text
     lines = _dub(client)["lines"]

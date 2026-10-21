@@ -41,7 +41,8 @@ def test_components_catalog(client: TestClient) -> None:
     assert prices["google/nano-banana-pro"] == {"unit": "image", "amount": 0.134, "currency": "USD"}
     assert prices["minimax/h3-api"]["amount"] == 0.08  # from the draft tier
     assert prices["volc/seedance-2.5"]["unit"] == "second"
-    assert prices["minimax/speech-2.8-hd"] == {"unit": "mchar", "amount": 100.0, "currency": "USD"}
+    assert prices["minimax/speech-2.8-hd"] == {"unit": "mchar", "amount": 350.0, "currency": "CNY"}
+    assert prices["volc/seedream-5.0"] == {"unit": "image", "amount": 0.12, "currency": "CNY"}
     assert prices["elevenlabs/music"] is None  # a subscription
     assert prices["local/qwen3.6-27b"] is None
     assert data["local_runtime_ok"] is True

@@ -16,12 +16,12 @@
 - 第 5 步：画面文字 + OCR（4461791，矩阵排序修在 68c9cdc）：组件 `text` / `ocr`、`ocr_mismatch`。截图 `assets-{text,text-composite,ocr-confirm}`。
 - 第 6 步：音色（ea5fd19）：试听 → MiniMax 终版 + 5 个情绪 → 整版锁定、`config/voice.yaml`。截图 `assets-voice-{final,drafts}`。
 - 第 7 步：台词配音 + 时长（后端 1d94c66、前端 49215a9，DECISIONS 2026-10-21「第 7 步」）：组件 `dub`、`pipeline/timing.py`、`POST /episodes/{id}/dub`；素材页「台词配音 n / m · 全部配音」、音色详情的台词配音、剧本页播放和真实时长；Playwright 项目 `seeded`。
-- 第 8 步：素材闸门、影响范围、级联（后端 bb1b47d、前端 333bdc6，DECISIONS 同日「第 8 步」）：整集素材闸门 409 `assets_not_locked`、「素材」真实计数 7 / 10、级联停止集、影响行按槽位合并、`asset_edit`。
-- Kelvin 看过第 7、8 步（cf66b26）：计数定 7 / 10；候选卡改定宽小卡 + 放大看（`components/MediaLightbox.tsx`）。
+- 第 8 步：素材闸门、影响范围、级联（后端 bb1b47d、前端 333bdc6，DECISIONS 同日「第 8 步」）：整集素材闸门 409 `assets_not_locked`、「素材」真实计数 7 / 10、级联停止集、影响行按槽位合并、`asset_edit`。 Kelvin 看过（cf66b26）：计数定 7 / 10，候选卡改定宽小卡 + 放大看。
 - 第 9 步：Mock 端到端（c6c1761，时序修复 5fc2940，CI 绿）：`tests/e2e/test_script_to_dub.py` 从导入小说走到每句配音、场时长 = 音频之和。
 - 第 10 步：图像 API 适配器（489516e，CI 绿，DECISIONS 2026-10-21「第 10 步」）。三家按官方文档核对：`gemini-3-pro-image`（原生 `generateContent`）、`gpt-image-2`（generations / edits）、Seedream 选 5.0 flash `doubao-seedream-5-0-flash-260915`；`adapters/{http,images,google,openai_images,volcengine}.py`、`modelhub/media_adapters.py`（按 `providers.yaml` 的 `adapter` 挑类）；`Pricing.token_rates` + `Usage.tokens`（Gemini、GPT Image 按 token 记账）；测试连接带上同账号的出图模型（`media`），密钥弹窗显示「这个密钥也用于」。价格改成 0.134 / 0.23（估）/ 0.018；兼容表两行变原生（和原型不同），`spec` 重截。`tests/unit/test_image_adapters.py` 13 个（respx，不触网）。pytest 614、Vitest 277、Playwright 34 全过。
 - 第 11 步：MiniMax 适配器（0931412，CI 绿，DECISIONS 2026-10-21「第 11 步」）。`adapters/minimax.py`（`adapter: minimax_speech`）：`/t2a_v2`（hex WAV）和 `/voice_design`；`base_resp` 错误码；按 `usage_characters` 记字数，$3 按 `usage_voice_count` 记在 MiniMax 收费的那次合成上，试听 $60 / 百万字（`extras.design_preview_char`）；估价非 ASCII 按 2 字；测试连接用免费的 `/get_voice`。国内地址改成 `api.minimax.cn`。`run_failed` toast 的错误码翻成人话（`common:modelError`）。`tests/unit/test_minimax_adapter.py` 7 个 + 音色出终版走真实适配器的集成测试。pytest 622、Vitest 278、Playwright 34 全过。
-- 第 12 步（上）：本地 Python 运行时（本提交，DECISIONS 2026-10-21「第 12 步（上）」）。`adapters/local_python.py`（常驻 worker、JSON 行协议、超时杀掉重启、`Registry.aclose()` 退出时关掉）、`modelhub/vram.py`（整个进程一把显存锁，换模型先让上一个放手）、`workers/worker_{protocol,qwentts,indextts,rapidocr}.py`（不进 mypy，第 13 步真跑）；`providers.yaml` 本地模型加 `worker` / `env` / `args` / `gpu`；`SetupService.runtime_paths()`。`tests/unit/test_local_python.py` 6 个（假 worker 用真协议，连跑 5 次都过）。pytest 628 全过（前端没改）。
+- 第 12 步（上）：本地 Python 运行时（783045c，CI 绿，DECISIONS 2026-10-21「第 12 步（上）」）。`adapters/local_python.py`（常驻 worker、JSON 行协议、超时杀掉重启、`Registry.aclose()` 退出时关掉）、`modelhub/vram.py`（整个进程一把显存锁，换模型先让上一个放手）、`workers/worker_{protocol,qwentts,indextts,rapidocr}.py`（不进 mypy，第 13 步真跑）；`providers.yaml` 本地模型加 `worker` / `env` / `args` / `gpu`；`SetupService.runtime_paths()`。`tests/unit/test_local_python.py` 6 个（假 worker 用真协议，连跑 5 次都过）。pytest 628 全过（前端没改）。
+- MiniMax 改国内站 + 人民币价（本提交，Kelvin 定，DECISIONS 2026-10-21「MiniMax 用国内站」）：`api.minimax.cn`，配音 350 元 / 百万字符、音色设计 9.90 元、试听 0.0002 元 / 字；Seedream 改火山方舟官方价 0.12 元 / 张；音色终版约 $1.40，不再进确认。H3 视频价格 M4 再换。pytest 628、Vitest 278、Playwright 34 全过。
 
 ## 下一步
 
@@ -74,6 +74,6 @@
 ## 等 Kelvin 的事
 
 - 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
-- **定一下**：确认过的任务真实花费超过确认金额时现在直接停（`budget_exceeded`），多步流程（音色终版 = 设计 + 5 次合成）会停在半路、前面的 $3 白花。要不要留余量（比如确认金额的 10% 或 $0.05，取大的）？没定之前靠估价往高估（DECISIONS「第 11 步」）。
+- **定一下**：确认过的任务真实花费超过确认金额时现在直接停（`budget_exceeded`），多步流程（比如音色终版 = 设计 + 5 次合成）会停在半路、前面花的白花。要不要留余量（比如确认金额的 10% 或 $0.05，取大的）？没定之前靠估价往高估（DECISIONS「第 11 步」）。
 - 第 13 步还要下约 20 GB 的 Qwen-Image-2512 和约 15 GB 的 TTS 环境（到时再问）。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。

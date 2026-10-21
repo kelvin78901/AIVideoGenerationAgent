@@ -353,7 +353,7 @@ def test_a_retried_call_does_not_pay_again(client: TestClient) -> None:
         return first, again
 
     first, again = client.portal.call(twice)  # type: ignore[union-attr]
-    assert not first.cached and first.cost_usd == 0.036
+    assert not first.cached and first.cost_usd == pytest.approx(2 * 0.12 / 7.1)  # 0.12 元 each
     assert again.cached and again.cost_usd == 0 and again.files == first.files
     calls = [c for c in _rows(client, ModelCall) if c.model_key == "volc/seedream-5.0"]
     assert len(calls) == 1

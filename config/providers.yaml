@@ -96,9 +96,11 @@ llm_providers:
 
   - id: minimax_llm
     name: MiniMax
-    base_url: https://api.minimax.io/v1               # 国内：https://api.minimax.cn/v1（国内、国际是两个账号，密钥不通用）
+    # 用国内站（Kelvin 2026-10-21 定：配音和音色设计约是国际站的一半）。国际站 https://api.minimax.io/v1，
+    # 两个是独立账号，密钥不通用；换站时连同下面配音的人民币单价一起改。
+    base_url: https://api.minimax.cn/v1
     key_name: MINIMAX_API_KEY                         # 和配音、视频共用账号
-    docs: https://platform.minimax.io/docs/guides/pricing
+    docs: https://platform.minimax.cn/docs/guides/pricing-paygo
     verify: true
     models:
       - { key: minimax/m3, display: MiniMax-M3, model_id: null, price: { in: 0.30, out: 1.20, currency: USD }, json_mode: true }
@@ -219,8 +221,8 @@ media_models:
     adapter: seedream
     model_id: doubao-seedream-5-0-flash-260915   # 5.0 flash：三档里最便宜，1K–2K 覆盖草稿和交付档
     unit: image
-    price: 0.018            # BytePlus 的美元价（1K / 1.5K / 2K 同价，参考图不另收）；火山引擎的人民币价第 14 步冒烟时核对
-    currency: USD
+    price: 0.12             # 火山方舟官方价目表（2026-10-21）：输出 0.12 元 / 张，输入图免费；审核没过没出图的不收
+    currency: CNY
     caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_refs: 10 }
     docs: https://docs.volcengine.com/docs/82379/1541523
   # 视频
@@ -239,10 +241,10 @@ media_models:
   - { key: alibaba/wan-3.0, kind: video, display: Wan 3.0, unit: minute, price: 12.00, currency: USD, verify: true }
   - { key: kling/kling-3.0, kind: video, display: Kling 3.0, unit: second, price: null, verify: true }
   - { key: google/veo-3.1, kind: video, display: Veo 3.1, unit: second, price: null, verify: true }
-  # 配音（2026-10-21 按官方文档核对，M3 第 11 步，DECISIONS 同日「第 11 步」）
-  # 按计费字数（返回的 usage_characters；估价时汉字按 2 个算）。extras：音色设计 $3 在设计出的
-  # 音色第一次合成时收（返回 usage_voice_count），不是设计时；设计时的试听按 $60 / 百万字。
-  # request：每次合成都带上的字段（language_boost: auto 自动判断语种）。
+  # 配音（2026-10-21 按官方文档核对，M3 第 11 步，DECISIONS 同日「第 11 步」）：国内站人民币价。
+  # 按计费字数（返回的 usage_characters；1 个汉字算 2 个字符）：3.50 元 / 万字符 = 350 元 / 百万字符。
+  # extras：音色设计 9.90 元在设计出的音色第一次合成时收（返回 usage_voice_count），不是设计时；
+  # 设计时的试听 2.00 元 / 万字符。request：每次合成都带上的字段（language_boost: auto 自动判断语种）。
   - key: minimax/speech-2.8-hd
     kind: tts
     display: MiniMax Speech 2.8 HD
@@ -250,11 +252,11 @@ media_models:
     adapter: minimax_speech
     model_id: speech-2.8-hd
     unit: char
-    price_per_million: 100
-    currency: USD
-    extras: { voice_design: 3.00, voice_clone: 1.50, design_preview_char: 0.00006 }
+    price_per_million: 350
+    currency: CNY
+    extras: { voice_design: 9.90, voice_clone: 9.90, design_preview_char: 0.0002 }
     caps: { request: { language_boost: auto } }
-    docs: https://platform.minimax.io/docs/guides/pricing-paygo
+    docs: https://platform.minimax.cn/docs/guides/pricing-paygo
   # 只用来出耳语变体（2.8 没有 whisper，config/voice.yaml）；不在「模型与兜底」的可选列表里。
   - key: minimax/speech-2.6-hd
     kind: tts
@@ -263,9 +265,9 @@ media_models:
     adapter: minimax_speech
     model_id: speech-2.6-hd
     unit: char
-    price_per_million: 100
-    currency: USD
-    extras: { voice_design: 3.00, design_preview_char: 0.00006 }
+    price_per_million: 350
+    currency: CNY
+    extras: { voice_design: 9.90, design_preview_char: 0.0002 }
     caps: { request: { language_boost: auto } }
   - { key: elevenlabs/v3, kind: tts, display: ElevenLabs v3, unit: char, price: null, docs: https://invideo.io/blog/ai-voice-model-pricing/, verify: true }
   # 口型、超分、配乐、字幕、3D

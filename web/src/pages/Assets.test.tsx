@@ -409,7 +409,7 @@ describe("AssetsPage", () => {
     expect(await screen.findByText("台词配音 0 / 2")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "全部配音" }));
     const dialog = await screen.findByRole("dialog", { name: "给第 1 集配音" });
-    expect(dialog).toHaveTextContent("要配 2 句台词，约 $0.0014。");
+    expect(dialog).toHaveTextContent("要配 2 句台词，约 $0.0006。");
     expect(fakeDub.takes).toEqual([]);
     await user.click(within(dialog).getByRole("button", { name: "开始配音" }));
     expect(await screen.findByText("台词配音 2 / 2")).toBeInTheDocument();
