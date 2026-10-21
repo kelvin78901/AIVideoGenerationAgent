@@ -341,6 +341,9 @@ class Product(SQLModel, table=True):
     # 「选这个」 on a candidate (M3): {version_id, idx}; kept here, not in a mirror table, so
     # rebuilding the mirrors never loses it.
     pick_json: dict[str, Any] | None = _json()
+    # What the user set besides the prompt (M3): an on-screen text's exact characters and
+    # lettering, a voice's source, a line's emotion. A run reads it like the intent.
+    settings_json: dict[str, Any] | None = _json()
     # Its owner left (a script line a rerun dropped): never stale, not in progress or cascades.
     retired: bool = False
     created_at: datetime = Field(

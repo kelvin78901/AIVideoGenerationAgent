@@ -43,6 +43,7 @@ from drama_series_agent.episodes.schema import BeatPatch
 from drama_series_agent.episodes.service import EPISODES_SLOT, SCRIPT_SLOT, EpisodeService
 from drama_series_agent.novel.schema import ChapterEditIn
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService
+from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT
 from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import gate_of
@@ -68,6 +69,7 @@ PIPELINE_ORDER = {
     BIBLE_SLOT: 2,
     EPISODES_SLOT: 3,
     SCRIPT_SLOT: 4,
+    ASSET_LIST_SLOT: 5,
 }
 _STEP = {
     NOVEL_SLOT: "novel",
@@ -75,6 +77,7 @@ _STEP = {
     SUGGESTIONS_SLOT: "novel",
     EPISODES_SLOT: "script",
     SCRIPT_SLOT: "script",
+    ASSET_LIST_SLOT: "assets",
 }
 _KEPT = 100  # previews kept in memory
 

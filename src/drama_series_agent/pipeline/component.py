@@ -152,6 +152,9 @@ class Component(ABC):
     # False for candidate components (M3: four pictures to choose from): a run never adopts by
     # itself, the user picks one and locks it (``ProductService.lock_pick``).
     auto_adopt: ClassVar[bool] = True
+    # True when a run is the user's explicit ask and only adds, so it is adopted every time
+    # (素材分析's 「重新分析剧本」; what the user set lives elsewhere, M3).
+    adopt_every_run: ClassVar[bool] = False
 
     def __init__(self, services: Services) -> None:
         self.services = services

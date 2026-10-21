@@ -100,4 +100,5 @@ class ProductOut(BaseModel):
     estimate: EstimateOut | None
     running: RunningOut | None
     pick: PickOut | None = None
+    settings: dict[str, Any] | None = None
     retired: bool = False

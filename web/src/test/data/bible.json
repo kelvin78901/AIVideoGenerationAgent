@@ -1014,6 +1014,7 @@
       },
       "running": null,
       "pick": null,
+      "settings": null,
       "retired": false
     },
     {
@@ -1892,6 +1893,7 @@
       },
       "running": null,
       "pick": null,
+      "settings": null,
       "retired": false
     },
     {
@@ -2633,6 +2635,7 @@
       },
       "running": null,
       "pick": null,
+      "settings": null,
       "retired": false
     },
     {
@@ -2699,6 +2702,7 @@
       "estimate": null,
       "running": null,
       "pick": null,
+      "settings": null,
       "retired": false
     }
   ]

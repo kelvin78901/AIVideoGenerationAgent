@@ -1,0 +1,75 @@
+{
+  "_comment": "素材分析 of the demo's episode 1, as a model would answer (M3 step 2). Lines are numbered across the episode (L1 = demo-b2 … L10 = demo-b12). The descriptions and names are the prototype's (Assets.dc.html assets(); MSW web/src/mocks/fixtures/demo/assets.ts). 周屿, his voice and 楼下便利店 come up in episode 2; the model names them now with a note. The demo seed builds its asset_list version from this file with the MSW ids (studio/demo.py DEMO_ASSET_IDS).",
+  "answer": {
+    "assets": [
+      {
+        "key": "character:c-linwan",
+        "description": "26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。"
+      },
+      {
+        "key": "voice:c-linwan",
+        "description": "二十多岁女声，偏低，克制，句尾轻，不要播音腔。"
+      },
+      {
+        "key": "scene:l-stairs:night",
+        "name": "老小区楼道 · 夜",
+        "description": "六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。"
+      },
+      {
+        "key": "scene:l-flat:night",
+        "name": "林晚出租屋 · 夜",
+        "description": "十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。"
+      },
+      {
+        "key": "prop:p-umbrella",
+        "description": "正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。"
+      },
+      {
+        "key": "prop:p-note",
+        "name": "黄色便利贴",
+        "description": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。"
+      },
+      {
+        "key": "prop:p-hairtie",
+        "name": "旧黑发圈",
+        "description": "洗旧了的黑色布发圈，戴在林晚左手腕上。"
+      },
+      {
+        "key": "prop:p-phone",
+        "description": "普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。"
+      },
+      {
+        "kind": "text",
+        "name": "便利贴手写",
+        "description": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
+        "text": { "exact": "楼下便利店，等你到十二点。", "style": "handwritten", "method": "model" },
+        "lines": [3]
+      },
+      {
+        "kind": "text",
+        "name": "手机锁屏时间",
+        "description": "手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。",
+        "text": { "exact": "23:52", "style": "screen", "method": "composite" },
+        "lines": [7]
+      },
+      {
+        "kind": "character",
+        "name": "周屿",
+        "description": "外貌待定，第 2 集出场前再做。",
+        "note": "本集只出现字迹"
+      },
+      {
+        "kind": "voice",
+        "name": "周屿",
+        "description": "第 2 集出场前再定。",
+        "note": "第 2 集出场"
+      },
+      {
+        "kind": "scene",
+        "name": "楼下便利店 · 夜",
+        "description": "第 2 集才出现，到时再做。",
+        "note": "第 2 集出场"
+      }
+    ]
+  }
+}

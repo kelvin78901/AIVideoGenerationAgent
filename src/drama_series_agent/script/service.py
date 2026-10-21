@@ -62,6 +62,36 @@ class Rewriter(Protocol):
     ) -> tuple[str, str]: ...
 
 
+SPEAKING = ("dialogue", "vo")
+
+
+async def script_slicer(
+    session: AsyncSession, product: Product, version: ProductVersion, name: str
+) -> Any:
+    """``assets`` (素材分析, M3): scenes with their place and time, each line's id, type and
+    character, and the text of the lines that are not spoken, so rewording dialogue never makes
+    the asset list stale. Any other name is a key of the payload."""
+    if name != "assets":
+        return version.payload_json if name == "" else version.payload_json.get(name)
+    return [
+        {
+            "id": s["id"],
+            "location_id": s.get("location_id"),
+            "time": s.get("time_of_day"),
+            "lines": [
+                {
+                    "id": x["id"],
+                    "type": x.get("type"),
+                    "character_id": x.get("character_id"),
+                    **({} if x.get("type") in SPEAKING else {"text": x.get("text")}),
+                }
+                for x in s.get("lines") or []
+            ],
+        }
+        for s in ops.scenes_of(version.payload_json)
+    ]
+
+
 async def materialize(session: AsyncSession, product: Product, version: ProductVersion) -> None:
     """Mirror an adopted script: upsert the episode's scenes and lines by id, retire the ones it
     dropped."""

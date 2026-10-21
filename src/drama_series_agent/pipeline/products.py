@@ -130,6 +130,7 @@ def product_public(
         estimate=None if running else estimate,
         running=running,
         pick=PickOut.model_validate(p.pick_json) if p.pick_json else None,
+        settings=p.settings_json,
         retired=p.retired,
     )
 
@@ -386,6 +387,20 @@ class ProductService:
                 raise PipelineError(409, "nothing_adopted", id=p.id)
             adopted = await require_version(session, p.adopted_version_id)
             p.locked_hash = adopted.content_hash
+            p.updated_at = utcnow()
+            session.add(p)
+            await session.commit()
+        await self._announce(p)
+        return await self.get(p.id)
+
+    async def update_settings(self, product_id: str, changes: dict[str, Any]) -> ProductOut:
+        """Merge ``changes`` into the product's settings (refused while locked: changing what
+        a locked product was made from goes through the impact preview)."""
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+            if p.locked_hash:
+                raise PipelineError(409, "product_locked", id=p.id)
+            p.settings_json = {**(p.settings_json or {}), **changes}
             p.updated_at = utcnow()
             session.add(p)
             await session.commit()

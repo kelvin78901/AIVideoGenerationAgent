@@ -7,11 +7,12 @@ start): the novel (``tests/fixtures/demo/雨停之前.txt``), its enrichment sug
 v1 local → v2 DeepSeek, adopted, the first suggestion accepted; ``enrich.json``) and its story
 bible (设定提取 v1, read with that accepted addition; ``extract.json``) and its episode plan
 (分集规划 v1 on DeepSeek, three episodes with a $15 budget each; ``split.json``) and episode 1's
-script (剧本化 v1 local → v2 「不满意换一个」 on Kimi, adopted; ``script.json``), each assembled
-exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``. Then the
-novel gate and episode 1's script gate are confirmed, once: a gate the user reopened stays open.
-``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset`` deletes the demo
-series first.
+script (剧本化 v1 local → v2 「不满意换一个」 on Kimi, adopted; ``script.json``) and its asset
+list (素材分析 v1 on DeepSeek, the prototype's 13 assets with their ids; ``assets.json``), each
+assembled exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``.
+Then the novel gate and episode 1's script gate are confirmed, once: a gate the user reopened
+stays open. ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset``
+deletes the demo series first.
 """
 
 from __future__ import annotations
@@ -22,6 +23,7 @@ from datetime import UTC, datetime
 from loguru import logger
 from sqlmodel import select
 
+from drama_series_agent.assets import ops as asset_ops
 from drama_series_agent.bible.service import BIBLE_SLOT, bible_slicer, materialize
 from drama_series_agent.core.config import SpecConfig, get_config
 from drama_series_agent.core.db import Database, migrate
@@ -32,7 +34,7 @@ from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes
 from drama_series_agent.episodes.service import latest_gate
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
-from drama_series_agent.pipeline.components import enrich, script, split
+from drama_series_agent.pipeline.components import assets, enrich, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
 from drama_series_agent.pipeline.drafts import VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
@@ -76,6 +78,25 @@ SCRIPT_VERSIONS = (
     ("v1", "local/qwen3.6-27b", "local", "run", datetime(2026, 10, 14, 2, 12, tzinfo=UTC)),
     ("v2", "moonshot/kimi-k2.6", "api", "switch", datetime(2026, 10, 14, 2, 20, tzinfo=UTC)),
 )  # fmt: skip
+# 素材分析 of episode 1 on DeepSeek, 10:25 +08:00.
+ASSETS_MODEL = "deepseek/v4.1-flash"
+ASSETS_AT = datetime(2026, 10, 14, 2, 25, tzinfo=UTC)
+# The prototype's asset ids (MSW fixtures/demo/assets.ts), by analysis key.
+DEMO_ASSET_IDS = {
+    "character:c-linwan": "linwan",
+    "character:c-zhouyu": "zhouyu",
+    "scene:l-stairs:night": "hall",
+    "scene:l-flat:night": "room",
+    "scene:l-store:night": "store",
+    "prop:p-umbrella": "umbrella",
+    "prop:p-note": "note",
+    "prop:p-hairtie": "band",
+    "prop:p-phone": "phone",
+    "text:name:便利贴手写": "txt1",
+    "text:name:手机锁屏时间": "txt2",
+    "voice:c-linwan": "vlinwan",
+    "voice:c-zhouyu": "vzhouyu",
+}
 # Confirmed by the seed (the prototype's demo: 小说 and episode 1's 剧本 已确认).
 CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 
@@ -83,6 +104,16 @@ CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 def script_product_id(episode_id: str) -> str:
     """``demo-e1`` → ``demo-p-script-e1`` (MSW ``scriptProductId``)."""
     return f"demo-p-script-{episode_id.removeprefix('demo-')}"
+
+
+def assets_product_id(episode_id: str) -> str:
+    """``demo-e1`` → ``demo-p-assets-e1``: the episode's 素材分析."""
+    return f"demo-p-assets-{episode_id.removeprefix('demo-')}"
+
+
+def asset_product_id(asset_id: str) -> str:
+    """``linwan`` → ``demo-p-asset-linwan`` (MSW ``assetProductId``)."""
+    return f"demo-p-asset-{asset_id}"
 
 
 async def seed_demo(
@@ -116,12 +147,21 @@ async def seed_demo(
                     component_id=episodes.SCRIPT_COMPONENT,
                     product_id=script_product_id(e["id"]),
                 )
+                await products.ensure(
+                    series_id=DEMO_SERIES_ID,
+                    owner_type="episode",
+                    owner_id=e["id"],
+                    slot=assets.ASSET_LIST_SLOT,
+                    component_id=assets.AssetsComponent.id,
+                    product_id=assets_product_id(e["id"]),
+                )
         await _seed_novel(novel)
         if products is not None and compiler is not None:
             await _seed_enrich(db, novel, products, compiler)
             await _seed_bible(db, novel, products, compiler)
             await _seed_split(db, novel, products, compiler)
             await _seed_script(db, novel, products, compiler)
+            await _seed_assets(db, products, compiler)
         if gates is not None:
             await _seed_gates(db, gates)
     return created
@@ -204,6 +244,7 @@ def slicers() -> Invalidation:
     invalidation.slicer(BIBLE_SLOT, bible_slicer)
     invalidation.slicer(suggestions.SUGGESTIONS_SLOT, suggestions.suggestions_slicer)
     invalidation.slicer(episodes.EPISODES_SLOT, episodes.episodes_slicer)
+    invalidation.slicer(episodes.SCRIPT_SLOT, script_service.script_slicer)
     return invalidation
 
 
@@ -401,6 +442,48 @@ async def _seed_script(
             parent = v.id
         assert parent is not None
         await products.adopt(parent)
+
+
+async def _seed_assets(db: Database, products: ProductService, compiler: PromptCompiler) -> None:
+    """Episode 1's asset list, with the prototype's ids; each asset's product first, so the
+    list's mirror finds them instead of making ones with random ids."""
+    product_id = assets_product_id("demo-e1")
+    async with db.session() as session:
+        product = await session.get(Product, product_id)
+        if product is None or product.current_version_id is not None:
+            return
+        try:
+            inputs = await assets.gather(session, slicers(), DEMO_SERIES_ID, "demo-e1")
+        except PipelineError:
+            return  # the script is not there yet
+    inputs.context["known"] = [
+        {"id": asset_id, "key": key, "kind": key.split(":")[0], "name": ""}
+        for key, asset_id in DEMO_ASSET_IDS.items()
+    ]
+    payload = assets.build(assets.demo_fixture()["answer"], inputs.context)
+    for a in asset_ops.assets_of(payload):
+        await products.ensure(
+            series_id=DEMO_SERIES_ID,
+            owner_type="asset",
+            owner_id=a["id"],
+            slot=asset_ops.slot_of(a["kind"]),
+            component_id=asset_ops.component_of(a["kind"]),
+            product_id=asset_product_id(a["id"]),
+        )
+    intent = compiler.default_intent("assets", "zh-CN")
+    draft = VersionDraft(
+        payload=payload,
+        intent=intent,
+        compiled=compiler.compile("assets", intent, ASSETS_MODEL),
+        model_key=ASSETS_MODEL,
+        where="api",
+        seed=1101,
+        params={"mode": "run", "calls": 1},
+        dependencies=list(inputs.deps),
+        id=f"{product_id}-v1",
+        created_at=ASSETS_AT,
+    )
+    await products.append(product_id, draft, origin="run")
 
 
 async def _seed_gates(db: Database, gates: GateService) -> None:

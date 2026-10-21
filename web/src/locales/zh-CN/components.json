@@ -193,7 +193,11 @@
       "videos_not_generated": "视频 · {{from}} 到 {{to}}（未生成）",
       "dub_lines": "配音 · {{count}} 条",
       "video_audio_swap": "视频 · {{id}} 换音轨",
-      "shot_refs": "分镜 · {{ids}}，共 {{count}} 个镜头用它做参考"
+      "shot_refs": "分镜 · {{ids}}，共 {{count}} 个镜头用它做参考",
+      "self_asset_list": "第 {{n}} 集的素材清单会改成新内容",
+      "stale_asset_list": "第 {{n}} 集素材清单 · 会重新分析",
+      "then_asset_list": "第 {{n}} 集素材清单 · 上游真的有变化才重新分析",
+      "edited_asset_list": "第 {{n}} 集素材清单里手动改过的地方，可能会按新的内容重写"
     },
     "unaffected": {
       "unaffected_spec": "剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。",

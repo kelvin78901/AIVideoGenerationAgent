@@ -379,7 +379,7 @@ class RunService:
                 draft,
                 origin=origin,
                 parent_version_id=parent,
-                adopt=None if comp.auto_adopt else False,
+                adopt=True if comp.adopt_every_run else None if comp.auto_adopt else False,
             )
         assert last is not None
         spec = self.services.registry.spec(last.model_key or model)
