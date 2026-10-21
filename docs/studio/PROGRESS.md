@@ -27,7 +27,7 @@
 
 ## 下一步
 
-- **第 14 步：真实冒烟**（计划 `plans/M3.md` 第 14 步，`scripts/smoke/live_assets.py`，`DRAMA_LIVE=1`，**跑之前先给 Kelvin 清单和预估**）：Google 终版 1 张、OpenAI 画面文字 1 张 + OCR、Seedream 1 张；MiniMax（国内站）设计 1 个音色 + 5 个变体 + 配 2 句。按现在的价格约 $0.13 + $0.23 + $0.02 + $1.40 ≈ $1.8（计划写的 $4 是国际站价），上限 $5；单次超过 $0.20 照旧先问。可选、没排期：画表情前把锁定图的头肩裁出来当参考（脸更大）。写法照 `scripts/smoke/live_script.py`（自起后端、临时目录），密钥从钥匙串读；可以复用 `local_assets.py` 的步骤和报告写法。
+- **第 14 步：真实冒烟**（计划 `plans/M3.md` 第 14 步）：脚本 `scripts/smoke/live_assets.py` 已写好（本提交，`--mock` 全程走通，估价合计 $1.78），**等 Kelvin 点头再真跑**：`DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/live_assets.py`（上限 `--cap` 默认 $3；ComfyUI 和工作台要开着）。内容：林晚出租屋本地草稿 → Nano Banana Pro 终版 1 张（$0.134）+ Seedream 终版 1 张（$0.017）；便利贴手写本地草稿 → GPT Image 2 终版 1 张（$0.23）+ OCR；林晚音色解锁 → Qwen3-TTS 试听 → MiniMax 设计 + 5 个情绪（$1.40）→ 锁定；她的两句台词 MiniMax 配音（耳语那句走 2.6 HD，$0.0006）。每个组件的单次上限临时设成该步的额度（`LIMITS`），超了就停；花费超过上限就取消任务。跑完写 `reports/m3-live-smoke.txt`。可选、没排期：画表情前把锁定图的头肩裁出来当参考（脸更大）。
 - **提醒 Kelvin 重启后端**：第 3–12 步的新接口和配置（锁定、上传；画面文字、OCR、音色、配音，`config/voice.yaml`，`/episodes/{id}/dub`，事件的 `slot`；素材闸门、`asset_edit`；`providers.yaml` 的新价格、测试连接的 `media`；ComfyUI 适配器、清单四项；补视图改 40 步）。不重启的话热更新后的前端读旧后端：画面文字的候选显示「OCR 未检查」，配音那一行加载失败。已经有版本的素材重启后不动；要看第 5–7 步的示例，停掉后端后跑 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset` 再启动。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -76,5 +76,5 @@
 
 - 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
 - **定一下**：确认过的任务真实花费超过确认金额时现在直接停（`budget_exceeded`），多步流程（比如音色终版 = 设计 + 5 次合成）会停在半路、前面花的白花。要不要留余量（比如确认金额的 10% 或 $0.05，取大的）？没定之前靠估价往高估（DECISIONS「第 11 步」）。
-- 第 14 步真实冒烟的花费要你点头（约 $1.8，上限 $5）。
+- 第 14 步真实冒烟的花费要你点头（约 $1.78，脚本上限 $3；清单见「下一步」）。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。
