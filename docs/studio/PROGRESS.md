@@ -26,7 +26,8 @@
 
 ## 下一步
 
-- **第 14 步：真实冒烟**（计划 `plans/M3.md` 第 14 步，`scripts/smoke/live_assets.py`，`DRAMA_LIVE=1`，**跑之前先给 Kelvin 清单和预估**）：Google 终版 1 张、OpenAI 画面文字 1 张 + OCR、Seedream 1 张；MiniMax（国内站）设计 1 个音色 + 5 个变体 + 配 2 句。按现在的价格约 $0.13 + $0.23 + $0.02 + $1.40 ≈ $1.8（计划写的 $4 是国际站价），上限 $5；单次超过 $0.20 照旧先问。写法照 `scripts/smoke/live_script.py`（自起后端、临时目录），密钥从钥匙串读；可以复用 `local_assets.py` 的步骤和报告写法。
+- **先做：补视图不用加速**（Kelvin 2026-10-21 定，计划第 13 步追加项）。现在两个工作流都开 lightx2v 的 4 步 Lightning LoRA（cfg 1.0：负面提示不起作用，皮肤偏塑料、边缘发软、夸张表情易变形，角落偶尔有水印样的字）。做法：① `scripts/smoke/local_assets.py --only views` 的思路，同一张锁定参考图分别用 4 步和 40 步（去掉 LoRA，steps 40、cfg 4.0，负面提示写上「低画质、畸形、模糊、水印、文字」）各出 6 张视图，记单张耗时，图给 Kelvin 对比；② Kelvin 点头后加 `workflows/qwen-image-edit-hq/`（官方模板 40 步版）和 `comfy/qwen-image-edit-hq`，`components.yaml` 里补视图的本地模型改过去，草稿和画面文字仍是 4 步；DECISIONS 记一条。之后可选：画表情前把锁定图的头肩裁出来当参考（脸更大）。
+- **然后第 14 步：真实冒烟**（计划 `plans/M3.md` 第 14 步，`scripts/smoke/live_assets.py`，`DRAMA_LIVE=1`，**跑之前先给 Kelvin 清单和预估**）：Google 终版 1 张、OpenAI 画面文字 1 张 + OCR、Seedream 1 张；MiniMax（国内站）设计 1 个音色 + 5 个变体 + 配 2 句。按现在的价格约 $0.13 + $0.23 + $0.02 + $1.40 ≈ $1.8（计划写的 $4 是国际站价），上限 $5；单次超过 $0.20 照旧先问。写法照 `scripts/smoke/live_script.py`（自起后端、临时目录），密钥从钥匙串读；可以复用 `local_assets.py` 的步骤和报告写法。
 - **提醒 Kelvin 重启后端**：第 3–12 步的新接口和配置（锁定、上传；画面文字、OCR、音色、配音，`config/voice.yaml`，`/episodes/{id}/dub`，事件的 `slot`；素材闸门、`asset_edit`；`providers.yaml` 的新价格、测试连接的 `media`；ComfyUI 适配器、清单四项）。不重启的话热更新后的前端读旧后端：画面文字的候选显示「OCR 未检查」，配音那一行加载失败。已经有版本的素材重启后不动；要看第 5–7 步的示例，停掉后端后跑 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset` 再启动。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -49,7 +50,6 @@
 - **Chromium 新版 `scrollIntoView()` 返回 Promise**：`useEffect(() => el.scrollIntoView())` 这种箭头表达式会把 Promise 当清理函数，整页白屏（jsdom 里测不出来）。effect 一律写花括号；滚动日志用容器的 `scrollTop`。
 - 页面里有演示事件驱动的长流程时，用临时的 `e2e/tmp-*-shots.spec.ts`（`--project=shots` 能匹配）在真浏览器里走一遍、截图到 scratchpad，跑完删掉。
 - `test_restart_resume` 偶发失败（2026-10-18、10-20）的原因：Windows 上 `.venv/Scripts/python.exe` 是启动器，真正的解释器是它的子进程，`kill()` 后还要零点几秒才退出，期间读数据库报 disk I/O error。第 13 步起 `tests/e2e/conftest.py:Backend.kill()` 等端口关掉再返回（连跑 5 次都过）。
-- Playwright 冒烟收尾时后端会打印 aiosqlite「Task was destroyed but it is pending」，不影响结果，还没查。
 - **全部 pytest 约 10 分钟**（超过 Bash 前台 10 分钟上限）：用 `run_in_background` 跑，输出写到 scratchpad。
 - **单元测试绝不能触网**：`test_steps.py` 的 `_install` 默认离线 transport；别给 RealRunner 的测试传 `transport=None`（清单有真实下载地址，曾真的下了 30 GB 到 pytest 临时目录）。
 - **示例机器切换**：点已选中的那台不会触发切换；e2e 里切 Mac 再切回 PC 要等前一次 `aria-checked` 变了再点。
