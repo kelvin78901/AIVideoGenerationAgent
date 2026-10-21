@@ -18,6 +18,8 @@ from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
 from typing import Any, Literal, Protocol
 
+from loguru import logger
+
 from drama_series_agent.core.capabilities import Capabilities
 from drama_series_agent.core.config import Resolved, StudioConfig, get_config
 from drama_series_agent.core.db import Database
@@ -250,9 +252,12 @@ class Router:
             await asyncio.shield(self._log_failure(row, "canceled", "canceled", billed=False))
             raise
         except ModelError as exc:
+            # The provider's own words, which model_call (a code only) does not keep.
+            logger.warning("{} failed: {} {}", key, exc.code, str(exc)[:500])
             await self._log_failure(row, "error", exc.code, billed=exc.billed)
             raise
         except Exception as exc:
+            logger.exception("{} crashed", key)
             await self._log_failure(row, "error", "adapter_crash", billed=False)
             raise ModelError("adapter_crash", str(exc)[:300]) from exc
 

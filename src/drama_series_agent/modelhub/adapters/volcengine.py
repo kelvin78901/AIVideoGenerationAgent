@@ -7,7 +7,9 @@ guide) on 2026-10-21 (DECISIONS 同日「第 10 步」):
   lite, and its 1K–2K range (921,600–4,624,220 pixels) covers our draft and delivery frames;
   lite starts at 3.7 MP.
 - ``size`` as ``WxH`` (the frame rounded to 16, scaled into the pixel range); no ``n`` (group
-  pictures are lite-only), so n pictures are n requests at once.
+  pictures are lite-only), so n pictures are n requests at once. No
+  ``sequential_image_generation`` either: flash refuses it outright (400 ``InvalidParameter``,
+  the live smoke on 2026-10-21).
 - Up to 10 reference pictures as data URIs in ``image``.
 - Always ``watermark: false`` (the API reference defaults it to true, the guide to false) and
   ``response_format: b64_json`` (URLs would need a second download and expire in 24 h).
@@ -57,6 +59,8 @@ def _error(status: int, body: str) -> ModelError:
     code = _code(body)
     if "SensitiveContent" in code:  # Input / OutputImage / InputText SensitiveContentDetected
         return ModelError("content_blocked", body[:300], status=status)
+    if code == "SetLimitExceeded":  # the console's usage limit (安全体验模式): the model is paused
+        return ModelError("quota_exceeded", body[:300], status=status)
     if "NotFound" in code:  # InvalidEndpointOrModel.NotFound comes as a 400 / 404
         return ModelError("model_not_found", body[:300], status=status)
     return error_for(status, body)
@@ -70,7 +74,6 @@ class SeedreamAdapter(ImageApiAdapter):
             "model": self._model_id(),
             "prompt": req.prompt or "",
             "size": f"{w}x{h}",
-            "sequential_image_generation": "disabled",
             "response_format": "b64_json",
             "watermark": False,
         }

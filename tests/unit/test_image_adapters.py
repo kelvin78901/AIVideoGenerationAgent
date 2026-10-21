@@ -194,6 +194,23 @@ async def test_gemini_retries_rate_limits(store: BlobStore) -> None:
     assert "seed" not in json.loads(route.calls.last.request.content)["generationConfig"]
 
 
+@respx.mock
+async def test_gemini_without_billing_is_out_of_quota_not_retried(store: BlobStore) -> None:
+    """The live smoke (2026-10-21): a key whose project has no billing gets a 429 with
+    ``limit: 0`` for the image model; waiting will not help."""
+    message = (
+        "You exceeded your current quota, please check your plan and billing details.\n"
+        "* Quota exceeded for metric: generativelanguage.googleapis.com/"
+        "generate_content_free_tier_requests, limit: 0, model: gemini-3-pro-image"
+    )
+    body = {"error": {"code": 429, "message": message, "status": "RESOURCE_EXHAUSTED"}}
+    route = respx.post(f"{GEMINI}:generateContent")
+    route.mock(return_value=httpx.Response(429, json=body))
+    with pytest.raises(ModelError) as exc:
+        await _adapter("google/nano-banana-pro", store).run(_req(), CallContext())
+    assert (exc.value.code, exc.value.retryable, route.call_count) == ("quota_exceeded", False, 1)
+
+
 # ---------------------------------------------------------------------------- GPT Image 2
 
 
@@ -281,7 +298,8 @@ async def test_seedream_no_watermark_b64_and_one_request_per_picture(store: Blob
     sent = json.loads(route.calls.last.request.content)
     assert sent["model"] == "doubao-seedream-5-0-flash-260915"
     assert sent["watermark"] is False and sent["response_format"] == "b64_json"
-    assert sent["size"] == "1088x1920" and sent["sequential_image_generation"] == "disabled"
+    assert sent["size"] == "1088x1920"
+    assert "sequential_image_generation" not in sent  # flash refuses it (only lite groups)
     assert sent["image"].startswith("data:image/png;base64,")
     assert route.calls.last.request.headers["authorization"] == "Bearer ark-SECRET"
     assert len(result.files) == 2 and result.usage.images == 2
@@ -302,6 +320,14 @@ async def test_seedream_sensitive_content_and_failed_items(store: BlobStore) -> 
     with pytest.raises(ModelError) as exc:
         await adapter.run(_req(), CallContext())
     assert exc.value.code == "content_blocked"
+    # The console's usage limit (安全体验模式) pauses the model: not a rate limit to wait out.
+    limit = {"error": {"code": "SetLimitExceeded", "message": "reached the set usage limit"}}
+    route.mock(return_value=httpx.Response(429, json=limit))
+    calls = route.call_count
+    with pytest.raises(ModelError) as exc:
+        await adapter.run(_req(), CallContext())
+    assert (exc.value.code, exc.value.retryable) == ("quota_exceeded", False)
+    assert route.call_count == calls + 1
 
 
 # ---------------------------------------------------------------------------- health

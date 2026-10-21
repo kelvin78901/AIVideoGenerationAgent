@@ -1,0 +1,80 @@
+M3 第 14 步 · 真实冒烟（2026-10-21，scripts/smoke/live_assets.py）
+
+跑了三次，合计花费 $1.5702（Kelvin 批准的清单约 $1.78，上限 $3）：
+- 第 1 次（全部步骤）：停在 img。Nano Banana Pro 429，兜底到 Seedream 又 400
+  InvalidParameter（适配器带了 5.0 flash 不支持的 sequential_image_generation）。花费 $0。
+- 第 2 次（全部步骤，去掉那个参数、路由把失败原文写进日志）：仍停在 img，花费 $0。
+  · Google：429 RESOURCE_EXHAUSTED，generate_content_free_tier_requests limit: 0，
+    model gemini-3-pro-image —— 这把 Gemini 密钥的项目没开通付费（免费层不含出图模型）。
+  · 火山方舟：SetLimitExceeded，账号开着「安全体验模式」，doubao-seedream-5-0-flash 到了设定的
+    用量上限，模型服务被暂停。
+  · 两种都被当成可重试的 rate_limited，任务重试了 3 遍；之后改成 quota_exceeded，不重试。
+- 第 3 次（--only text,voice,dub）：全部成功，下面是这次的完整输出。
+- 没验证：Nano Banana Pro、Seedream 5.0 flash 的真实出图（等 Kelvin 在两家控制台处理后
+  再跑 --only img，约 $0.15）。
+
+M3 live smoke · 2026-10-21 10:41 · LIVE, cap $3.0 · steps ['text', 'voice', 'dub']
+ComfyUI 0.41.2 at http://127.0.0.1:8188; models C:\Users\kelvin\DramaStudio
+connection openai_llm: ok (openai/gpt-image-2)
+connection minimax_llm: ok (minimax/speech-2.8-hd)
+== text: 便利贴手写 · local draft → GPT Image 2, RapidOCR
+   text settings: {'exact': '楼下便利店，等你到十二点。', 'method': 'model', 'style': 'handwritten'}
+   note draft: done in 20.1 s
+   model comfy/qwen-image [local], files: note-draft-candidate-0.png (928x1664), note-draft-candidate-1.png (928x1664), note-draft-candidate-2.png (928x1664), note-draft-candidate-3.png (928x1664)
+   OCR #0: '楼下便利店，等你到十二点。' ok=True
+   OCR #1: '楼下便利店，等你到十二点。' ok=True
+   OCR #2: '楼下便利店，等你到十二点。' ok=True
+   OCR #3: '楼下便利店，等你到十二点。' ok=True
+   note final gpt-image-2: done in 64.2 s
+   model openai/gpt-image-2 [api], files: note-gpt-candidate-0.png (1088x1920)
+   OCR #0: '楼下便利店，等你到十二点' ok=False
+== voice: 林晚 · unlocked, Qwen3-TTS audition → MiniMax design + 5 emotions
+   voice audition draft: done in 48.5 s
+   model local/qwen3-tts [local], files: linwan-audition-candidate-0-0.wav (0.84s), linwan-audition-candidate-0-1.wav (2.44s), linwan-audition-candidate-1-0.wav (0.95s), linwan-audition-candidate-1-1.wav (2.26s), linwan-audition-candidate-2-0.wav (0.78s), linwan-audition-candidate-2-1.wav (2.15s)
+   voice final minimax: done in 25.7 s
+   voice_id ttv-voice-2026102201432926-mx9ucOz1, emotions ['calm', 'angry', 'crying', 'whisper', 'shout']
+   model minimax/speech-2.8-hd [api], files: linwan-voice-anchor.wav (3.19s), linwan-voice-variant-0-0-calm.wav (0.85s), linwan-voice-variant-1-0-angry.wav (1.03s), linwan-voice-variant-2-0-crying.wav (0.91s), linwan-voice-variant-3-0-whisper.wav (1.16s), linwan-voice-variant-4-0-shout.wav (1.19s)
+   lock: locked
+== dub: 林晚's two lines · MiniMax
+   dub line 0: done in 2.5 s
+   dub line 1: done in 0.5 s
+   line 0: ……周屿？ (whisper, 0.74 s)
+   model minimax/speech-2.6-hd [api], files: dub-0-audio.wav (0.74s)
+   line 1: 三年了。他凭什么。 (calm, 1.80 s)
+   model minimax/speech-2.8-hd [api], files: dub-1-audio.wav (1.80s)
+
+== model_call
+id   component  model                       where  status   fb  out        cost
+1    text       comfy/qwen-image            local  success  -   4 img      $0.0000
+2    ocr        local/rapidocr              local  success  -   1 img      $0.0000
+3    ocr        local/rapidocr              local  success  -   1 img      $0.0000
+4    ocr        local/rapidocr              local  success  -   1 img      $0.0000
+5    ocr        local/rapidocr              local  success  -   1 img      $0.0000
+6    text       openai/gpt-image-2          api    success  -   1 img      $0.1721
+7    ocr        local/rapidocr              local  success  -   1 img      $0.0000
+8    voice      local/qwen3-tts             local  success  -   5 chars    $0.0000
+9    voice      local/qwen3-tts             local  success  -   9 chars    $0.0000
+10   voice      local/qwen3-tts             local  success  -   5 chars    $0.0000
+11   voice      local/qwen3-tts             local  success  -   9 chars    $0.0000
+12   voice      local/qwen3-tts             local  success  -   5 chars    $0.0000
+13   voice      local/qwen3-tts             local  success  -   9 chars    $0.0000
+14   voice      minimax/speech-2.8-hd       api    success  -   0 chars    $0.0008
+15   voice      minimax/speech-2.8-hd       api    success  -   7 chars    $1.3947
+16   voice      minimax/speech-2.8-hd       api    success  -   7 chars    $0.0003
+17   voice      minimax/speech-2.8-hd       api    success  -   7 chars    $0.0003
+18   voice      minimax/speech-2.6-hd       api    success  -   7 chars    $0.0003
+19   voice      minimax/speech-2.8-hd       api    success  -   7 chars    $0.0003
+20   dub        minimax/speech-2.6-hd       api    success  -   7 chars    $0.0003
+21   dub        minimax/speech-2.8-hd       api    success  -   16 chars   $0.0008
+total $1.5702 over 21 calls; failures 0
+
+job                          estimate   spent      seconds
+note draft                   $0.0000    $0.0000    20.1
+note final gpt-image-2       $0.2262    $0.1721    64.2
+voice audition draft         $0.0000    $0.0000    48.5
+voice final minimax          $1.3976    $1.3969    25.7
+dub line 0                   $0.0005    $0.0003    2.5
+dub line 1                   $0.0009    $0.0008    0.5
+
+result: all steps ran
+files: C:\Users\kelvin\AppData\Local\Temp\drama-live-smoke-g41t4kie\out

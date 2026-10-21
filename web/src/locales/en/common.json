@@ -162,6 +162,7 @@
     "no_image": "the model answered in text without a picture",
     "no_audio": "the model returned no audio",
     "insufficient_balance": "the provider account is out of credit",
+    "quota_exceeded": "the provider account is out of quota or hit a usage limit set in its console (billing not enabled, a trial limit); check the provider console",
     "voice_not_found": "the provider has no such voice",
     "voice_id_missing": "this voice has no provider voice ID; it can only be spoken locally",
     "ref_unreadable": "a reference picture could not be read",

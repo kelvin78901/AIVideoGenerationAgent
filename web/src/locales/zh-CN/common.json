@@ -162,6 +162,7 @@
     "no_image": "模型只回了文字，没出图",
     "no_audio": "模型没返回音频",
     "insufficient_balance": "这家账户余额不足",
+    "quota_exceeded": "这家账户的额度用完了，或者在控制台设了用量上限（比如没开通付费、开着安全体验模式）；去厂商控制台处理",
     "voice_not_found": "厂商那边找不到这个音色",
     "voice_id_missing": "这个音色没有厂商的音色 ID，只能本地配",
     "ref_unreadable": "参考图读不出来",

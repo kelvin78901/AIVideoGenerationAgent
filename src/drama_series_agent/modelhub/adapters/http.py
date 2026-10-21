@@ -1,7 +1,8 @@
 """What the HTTP adapters share: error codes by status, and one request with retries.
 
 Retried: timeouts, network errors and ``RETRY_STATUSES`` (rate limits, 5xx), with exponential
-backoff or the provider's ``Retry-After``. Anything else fails at once with a stable code.
+backoff or the provider's ``Retry-After``, unless the error mapper calls it final (a 429 that
+is out of quota, ``quota_exceeded``). Anything else fails at once with a stable code.
 """
 
 from __future__ import annotations
@@ -15,6 +16,10 @@ import httpx
 from drama_series_agent.modelhub.adapters.base import ModelError
 
 RETRY_STATUSES = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
+# A 429 that is out of quota rather than too fast, so retrying will not help: Gemini's free
+# tier has no quota for some models at all ("limit: 0", billing not enabled), OpenAI's
+# ``insufficient_quota`` (no credit).
+QUOTA_MARKERS = ("limit: 0", "insufficient_quota")
 KeyGetter = Callable[[str], str | None]
 ErrorMapper = Callable[[int, str], ModelError]
 
@@ -26,6 +31,8 @@ def error_for(status: int, body: str) -> ModelError:
     if status == 404:
         return ModelError("model_not_found", snippet, status=status)
     if status == 429:
+        if any(marker in body for marker in QUOTA_MARKERS):
+            return ModelError("quota_exceeded", snippet, status=status)
         return ModelError("rate_limited", snippet, status=status, retryable=True)
     if status >= 500:
         return ModelError("provider_error", snippet, status=status, retryable=True)
@@ -64,7 +71,8 @@ async def send(
             if resp.is_success:
                 return resp
             error = errors(resp.status_code, resp.text)
-            if resp.status_code not in RETRY_STATUSES:
+            # The mapper has the last word: a 429 that is out of quota is not retried.
+            if resp.status_code not in RETRY_STATUSES or not error.retryable:
                 raise error
         attempt += 1
         if attempt > max_retries:
