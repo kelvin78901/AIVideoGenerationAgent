@@ -22,12 +22,12 @@
 - 第 11 步：MiniMax 适配器（0931412，DECISIONS「第 11 步」）：`/t2a_v2`、`/voice_design`、`base_resp` 错误码、按计费字数记账；`common:modelError` 把错误码翻成人话。之后改国内站 + 人民币价（0ee236c，DECISIONS「MiniMax 用国内站」）。
 - 第 12 步（上）：本地 Python 运行时（783045c，DECISIONS「第 12 步（上）」）：`adapters/local_python.py`、`modelhub/vram.py`、三个 worker。
 - 第 12 步（下）（本提交，DECISIONS 2026-10-21「第 12 步（下）」）：`modelhub/workflows.py`（工作流目录、按标题绑定）、`adapters/comfyui.py`（上传 → `/prompt` → 轮询 `/history` → `/view`，超时 `/interrupt` + 删排队，`comfy_lost`，租约 `/free`）、`workflows/qwen-image{,-edit}/`（官方模板改写，Lightning 4 步，9:16 → 928×1664）；版本记 `workflow_id` / `workflow_sha256` / `comfy_env_hash`；安装器 `uv_sync`（`UV_PROJECT_ENVIRONMENT`）、`runtimes/{qwentts,ocr}/`（pyproject + uv.lock）；清单 `rt_qwentts`、`rt_indextts`（index-tts `d9e41aa`、Python 3.11）、`rt_ocr`、`w_img_t2i`，IndexTTS 辅助模型并进 `w_tts`（8.3 GB）；`py_import` 的 `gpu: true` 查 CUDA 版和 sm_120；`needs`。worker 修正：IndexTTS 必填 `lang`、`use_cuda_kernel=False`；Qwen3-TTS 按本地文件夹加载。Setup 页多 4 行（原型没有）。测试：`test_comfyui_adapter.py` 12 个、`test_asset_refs_api.py` 真实 ComfyUI 适配器 + 假 ComfyUI 出草稿。pytest 645、Vitest 278、Playwright 34 全过。
+- 第 13 步：本机真装真跑（工具 6812db1；结果本提交，DECISIONS 2026-10-21「第 13 步」，`reports/m3-local-smoke.txt`）：五项经真实安装器装好（18 分钟，没动 Anaconda）；冒烟六步全部本地成功；画面文字提示词去掉「4 张候选」和 [核对] 行（原来画成拼图）。
 
 ## 下一步
 
-- **第 13 步：本机真装真跑**（进行中；Kelvin 2026-10-21 同意下载。工具已提交（本提交）：`scripts/smoke/local_assets.py`（`--only img,text,views,voice,voice_final,dub`），`DRAMA_REAL_LOCAL=1` = 本地真跑、API 仍 Mock；`views` 已真跑通：3 张 928×1664，首张 26 s 含加载、之后 6–8 s，显存峰值 31.7 GB）。要装：`w_img_t2i`（已装 `w_img`，新下约 22 GB）、`rt_qwentts`（模型 4.5 GB + 环境约 3 GB）、`rt_indextts`（环境约 3 GB）、`rt_ocr`（几十 MB）、`w_tts`（8.3 GB，没装过的话）。装的时候 ComfyUI 要开着、Kelvin 要先重启后端（第 12 步新加了适配器和清单）。然后真跑：本地草稿（`comfy/qwen-image`）→ 补视图（`comfy/qwen-image-edit`）→ 本地试听（Qwen3-TTS）→ IndexTTS 配两句 → OCR，记耗时和显存，写 `reports/m3-local-smoke.txt`。没在真机上验证过的：三个 worker 的真实调用、Windows 上 torch 2.8 cu128 是否有 sm_120（装完的检测会说）、PreviewImage 的 `/view?type=temp`、`/interrupt` 带 prompt_id、Linux 上 WeTextProcessing 首次运行建缓存。
+- **第 14 步：真实冒烟**（计划 `plans/M3.md` 第 14 步，`scripts/smoke/live_assets.py`，`DRAMA_LIVE=1`，**跑之前先给 Kelvin 清单和预估**）：Google 终版 1 张、OpenAI 画面文字 1 张 + OCR、Seedream 1 张；MiniMax（国内站）设计 1 个音色 + 5 个变体 + 配 2 句。按现在的价格约 $0.13 + $0.23 + $0.02 + $1.40 ≈ $1.8（计划写的 $4 是国际站价），上限 $5；单次超过 $0.20 照旧先问。写法照 `scripts/smoke/live_script.py`（自起后端、临时目录），密钥从钥匙串读；可以复用 `local_assets.py` 的步骤和报告写法。
 - **提醒 Kelvin 重启后端**：第 3–12 步的新接口和配置（锁定、上传；画面文字、OCR、音色、配音，`config/voice.yaml`，`/episodes/{id}/dub`，事件的 `slot`；素材闸门、`asset_edit`；`providers.yaml` 的新价格、测试连接的 `media`；ComfyUI 适配器、清单四项）。不重启的话热更新后的前端读旧后端：画面文字的候选显示「OCR 未检查」，配音那一行加载失败。已经有版本的素材重启后不动；要看第 5–7 步的示例，停掉后端后跑 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset` 再启动。
-- **`w_img` 已装好**（2026-10-21）：31 GB 用了 14 分钟（约 37 MB/s），sha256 都校验过，剩余时间预估误差在 ±20% 以内。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -76,5 +76,5 @@
 
 - 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
 - **定一下**：确认过的任务真实花费超过确认金额时现在直接停（`budget_exceeded`），多步流程（比如音色终版 = 设计 + 5 次合成）会停在半路、前面花的白花。要不要留余量（比如确认金额的 10% 或 $0.05，取大的）？没定之前靠估价往高估（DECISIONS「第 11 步」）。
-- 第 13 步还要下约 20 GB 的 Qwen-Image-2512 和约 15 GB 的 TTS 环境（到时再问）。
+- 听一下第 13 步本地生成的声音、看看图（`reports/m3-local-smoke.txt` 末尾写了文件夹，临时目录，会被清理）；第 14 步真实冒烟的花费要你点头。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。

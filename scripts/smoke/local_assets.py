@@ -10,9 +10,10 @@ Steps, in this order (ComfyUI first, then the TTS models, so the VRAM lease chan
 - ``img``: 「林晚出租屋」 drafts on Qwen-Image-2512 (``comfy/qwen-image``), four candidates;
 - ``text``: 「便利贴手写」 drafts on Qwen-Image-2512, each read back by RapidOCR;
 - ``views``: 林晚's three views from her locked picture on Qwen-Image-Edit-2511;
-- ``voice``: 周屿's three auditions on Qwen3-TTS VoiceDesign;
-- ``voice_final``: his local final from the first audition: five emotions on IndexTTS-2.5;
-- ``dub``: two of 林晚's lines on IndexTTS-2.5 (after a Mock 「全部配音」 creates the products).
+- ``voice``: 林晚's voice unlocked (the demo's is a Mock tone) and auditioned again on Qwen3-TTS
+  VoiceDesign: three drafts reading her first two lines;
+- ``voice_final``: her local final from the first draft: five emotions on IndexTTS-2.5, locked;
+- ``dub``: 「全部配音」: her lines go to IndexTTS-2.5 (a local voice has no MiniMax voice_id).
 
 The install folder and the ComfyUI address come from the studio you have open (its last scan;
 the studio itself is not touched). The script runs in a temporary data directory with its own
@@ -124,7 +125,6 @@ class Smoke:
         self.meter = meter
         self.lines: list[str] = []
         self.ok = True
-        self.dub_products: list[str] = []
 
     def say(self, text: str = "") -> None:
         print(text, flush=True)
@@ -217,7 +217,8 @@ class Smoke:
             ext = {"image/png": ".png", "image/jpeg": ".jpg", "audio/wav": ".wav"}.get(
                 f["mime"], ""
             )
-            parts = [label, f["role"], str(f.get("idx", "")), f.get("emotion") or f.get("view")]
+            idx, line = f.get("idx", ""), f.get("line")
+            parts = [label, f["role"], idx, line, f.get("emotion") or f.get("view")]
             name = "-".join(str(p) for p in parts if p not in (None, "")) + ext
             shutil.copyfile(store.path_for(f["sha256"]), self.out / name)
             size = f"{f['w']}x{f['h']}" if f.get("w") else f"{f.get('duration_s') or 0:.2f}s"
@@ -298,49 +299,54 @@ def main() -> int:
             if smoke.step("views", "林晚三视图 · Qwen-Image-Edit-2511",
                           lambda: [smoke.run(pid)["id"]]):  # fmt: skip
                 smoke.keep_files("linwan-views", smoke.latest(pid))
-        voice = "demo-p-asset-vzhouyu"
-        if "voice" in only and smoke.step("voice", "周屿试听 · Qwen3-TTS VoiceDesign",
-                                          lambda: [smoke.run(voice)["id"]]):  # fmt: skip
-            smoke.keep_files("zhouyu-audition", smoke.latest(voice))
+        voice = "demo-p-asset-vlinwan"
+        if "voice" in only:
+
+            def audition() -> list[str]:
+                # The demo's voice is a Mock tone: unlock it (lines marked stale) and redo it.
+                target = {"kind": "asset_unlock", "target_id": "vlinwan", "patch": {}}
+                impact = smoke.post("/impact/preview", target)
+                smoke.post("/impact/apply", {"impact_id": impact["id"], "action": "mark"})
+                return [smoke.run(voice)["id"]]
+
+            if smoke.step("voice", "林晚重新试听（先解锁）· Qwen3-TTS VoiceDesign", audition):
+                smoke.keep_files("linwan-audition", smoke.latest(voice))
         if "voice_final" in only:
             draft = next(
                 (v for v in reversed(smoke.get(f"/products/{voice}")["versions"])
-                 if v.get("stage") == "draft"), None,
+                 if v.get("stage") == "draft" and v["model_key"] == "local/qwen3-tts"), None,
             )  # fmt: skip
             if draft is None:
-                smoke.say("== voice_final: skipped (no audition; run the voice step first)")
+                smoke.say("== voice_final: skipped (no local audition; run the voice step first)")
             else:
                 params = {"source_version_id": draft["id"], "source_idx": 0}
-                start = lambda: [  # noqa: E731
-                    smoke.run(voice, model="local/indextts2", params=params)["id"]
-                ]
-                if smoke.step("voice_final", "周屿本地终版 · IndexTTS-2.5 五个情绪", start):
-                    smoke.keep_files("zhouyu-final", smoke.latest(voice))
+
+                def final() -> list[str]:
+                    return [smoke.run(voice, model="local/indextts2", params=params)["id"]]
+
+                if smoke.step("voice_final", "林晚本地终版 · IndexTTS-2.5 五个情绪", final):
+                    smoke.keep_files("linwan-final", smoke.latest(voice))
+                    locked = smoke.post("/assets/vlinwan/lock", {})
+                    smoke.say(f"   lock: {locked.get('status')}")
         if "dub" in only:
 
-            def dub_two() -> list[str]:
-                started = smoke.post("/episodes/demo-e1/dub")  # Mock MiniMax: makes the products
-                for job_id in started.get("jobs") or []:
-                    smoke.wait(job_id)
-                lines = [x for x in smoke.get("/episodes/demo-e1/dub")["lines"]
-                         if x["voice_asset_id"] == "vlinwan"][:2]  # fmt: skip
-                smoke.dub_products = [x["product_id"] for x in lines]
-                return [
-                    smoke.post(f"/products/{p}/run", {"mode": "rerun", "model": "local/indextts2"})[
-                        "id"
-                    ]
-                    for p in smoke.dub_products
-                ]
+            def dub_all() -> list[str]:
+                return list(smoke.post("/episodes/demo-e1/dub").get("jobs") or [])
 
-            if smoke.step("dub", "林晚两句台词 · IndexTTS-2.5", dub_two):
-                for i, p in enumerate(smoke.dub_products):
-                    smoke.keep_files(f"dub-{i}", smoke.latest(p))
+            # A local voice has no MiniMax voice_id, so its lines go to IndexTTS (local_final).
+            if smoke.step("dub", "全部配音 · 林晚的本地音色走 IndexTTS-2.5", dub_all):
+                lines = smoke.get("/episodes/demo-e1/dub")["lines"]
+                for i, x in enumerate(lines[:3]):
+                    smoke.say(f"   line {i}: {x['text']} ({x['emotion']})")
+                    smoke.keep_files(f"dub-{i}", smoke.latest(x["product_id"]))
         smoke.say()
         smoke.say(f"result: {'all local steps ran' if smoke.ok else 'SOME STEPS FAILED'}")
         smoke.say(f"files: {out}")
     meter.stop()
-    REPORT.write_text("\n".join(smoke.lines) + "\n", encoding="utf-8", newline="\n")
-    print(f"report: {REPORT}")
+    # Only a run of every step replaces the report; a partial run writes next to its files.
+    report = REPORT if set(only) == set(STEPS) else out / "report.txt"
+    report.write_text("\n".join(smoke.lines) + "\n", encoding="utf-8", newline="\n")
+    print(f"report: {report}")
     if not args.keep:
         shutil.rmtree(tmp / "home", ignore_errors=True)
     return 0 if smoke.ok else 1
