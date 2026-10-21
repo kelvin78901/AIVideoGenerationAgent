@@ -19,7 +19,7 @@
 
 - 第 8 步：素材闸门、影响范围、级联。后端（bb1b47d，DECISIONS 2026-10-21「第 8 步（后端）」）。整集素材闸门（`GateService.members`、`reopen_using`，409 `assets_not_locked`）、进度「素材」真实计数（`EpisodeService.counters`，示例 7 / 10）、级联停止集（候选类组件不重跑）、影响行按槽位合并（`count`、花费相加）、`line_audio` 进流水线顺序、`asset_edit`（`PlannedChange.rerun`：确认并同步 = 这条素材重出候选）、解锁音色列出配音句数。`tests/api/test_asset_sync_api.py` 8 个。前端（333bdc6，CI 绿，DECISIONS 同日「第 8 步（前端）」）：闸门和「素材」进度改走后端（MSW 不再叠加）、已锁定素材的修改走 `asset_edit` 影响范围、新影响行文案、影响行价格用 `formatCost`、示例剧集去掉重复的 `dub_lines`、假后端算素材计数和闸门；Playwright 无示例数据一轮加闸门和改已锁定素材。截图 `assets-{gate-refused,edit-locked}`、`script-dub-impact`，11 页全部重截（导航「素材」7/10）。pytest 598、Vitest 275、Playwright 34 全过。
 - Kelvin 看过第 7、8 步（cf66b26，DECISIONS 2026-10-21「Kelvin 看过第 7、8 步」）：计数定为 7 / 10；候选卡、补视图卡改成定宽小卡 + 放大看（`components/MediaLightbox.tsx`、`status.ts:CARD_WIDTH`），素材页和出终版、补视图、画面文字截图重截。Vitest 276、Playwright 34 全过。
-- 第 9 步：Mock 端到端（本提交）。`tests/e2e/test_script_to_dub.py`：起真实后端进程，新剧导入示例小说 → 剧本确认 → 素材分析（13 条，本集用 10 条）→ 每条出候选、音色出终版 → 全部锁定（每条 `gate_decision` 有 `sha256:` 哈希）→ 素材闸门（没锁时 409）→ 全部配音 → 每句有音频、场时长 = 音频之和；`Api.raw`。Playwright `seeded` 加真的播放（按钮变「暂停」）。ROADMAP 勾参考图（Mock）和三条 Mock 下能验的验收。pytest 599、Vitest 276、Playwright 34 全过。
+- 第 9 步：Mock 端到端（c6c1761；Linux CI 红在一个旧的时序问题上，下一条修）。`tests/e2e/test_script_to_dub.py`：起真实后端进程，新剧导入示例小说 → 剧本确认 → 素材分析（13 条，本集用 10 条）→ 每条出候选、音色出终版 → 全部锁定（每条 `gate_decision` 有 `sha256:` 哈希）→ 素材闸门（没锁时 409）→ 全部配音 → 每句有音频、场时长 = 音频之和；`Api.raw`。Playwright `seeded` 加真的播放（按钮变「暂停」）。ROADMAP 勾参考图（Mock）和三条 Mock 下能验的验收。pytest 599、Vitest 276、Playwright 34 全过。
 
 ## 下一步
 
@@ -38,6 +38,7 @@
 
 ## 踩过的坑 / 临时绕过
 
+- **测试别在「档案写完」后立刻断言任务状态**：任务结束比档案写入晚一点，CI 慢机器上会读到 running（`test_rescan_replaces_a_running_scan`，2026-10-21 修：等任务都结束再比）。
 - **同一次物化建的行 `created_at` 可能相同**（Windows 时钟粗，Linux 细，结果相反）：别拿它排序或当次序；出场矩阵改成按分析里的顺序（`seed_json.order`）再按 id。
 - 有 `upstream` remote（`binwu1/drama-series-agent`）；Kelvin 已把 `gh` 默认仓库设成 `kelvin78901/AIVideoGenerationAgent`，保险起见 `gh pr` 仍带 `-R`。
 - 演示里逐步推进的流程（检测、安装、同步）用 `mocks/events.ts:repeatDemo`；测试把对应的 `demoTiming` 设成 0，所有步骤在一个任务里跑完，不要靠放宽等待时间。

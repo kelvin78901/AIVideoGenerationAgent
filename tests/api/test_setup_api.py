@@ -186,7 +186,14 @@ def test_rescan_replaces_a_running_scan(
     monkeypatch.setenv("DRAMA_SETUP_FAKE_DELAY_MS", "0")
     p = _wait_scanned(client)
     assert len(p["items"]) == 30 and "checking" not in _counts(p)
-    jobs = [j for j in client.get("/api/v1/jobs").json() if j["kind"] == SCAN_JOB]
+    # The profile is written a moment before its job ends (slow CI machines see it running).
+    deadline = time.monotonic() + 10
+    while True:
+        jobs = [j for j in client.get("/api/v1/jobs").json() if j["kind"] == SCAN_JOB]
+        if all(j["state"] not in ("queued", "running") for j in jobs):
+            break
+        assert time.monotonic() < deadline, jobs
+        time.sleep(0.02)
     assert sorted(j["state"] for j in jobs) == ["canceled", "succeeded"]
 
 
