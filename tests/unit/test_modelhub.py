@@ -226,7 +226,7 @@ async def test_hybrid_defaults_to_local_draft_and_api_on_request(
     assert router.store.exists(draft.files[0].sha256)
     final = await router.call("img", ModelRequest(kind="image", prompt="林晚"), where="api")
     assert final.model_key == "google/nano-banana-pro"
-    assert final.cost_usd == pytest.approx(0.14)
+    assert final.cost_usd == pytest.approx(0.134)
 
 
 async def test_override_and_explicit_model(hub: tuple[Router, Registry, EventBus]) -> None:

@@ -107,17 +107,28 @@ function KeyForm({ provider: p }: { provider: Provider }) {
         {p.key_source === "env" ? (
           <p className="text-xs text-muted-foreground">{t("key.envNote")}</p>
         ) : null}
-        {result ? (
-          <p
-            role="status"
-            className={result.ok ? "text-sm text-tone-info-fg" : "text-sm text-tone-warn-fg"}
-          >
-            {result.ok
-              ? result.models.length
-                ? t("key.testOk", { count: result.models.length })
-                : t("key.testOkNoList")
-              : t("key.testFail", { detail: result.detail ?? "" })}
+        {p.media.length ? (
+          <p className="text-xs text-muted-foreground">
+            {t("key.sharedWith", { names: p.media.map((m) => m.display).join(t("key.listSep")) })}
           </p>
+        ) : null}
+        {result ? (
+          <div role="status" className="flex flex-col gap-1 text-sm">
+            <p className={result.ok ? "text-tone-info-fg" : "text-tone-warn-fg"}>
+              {result.ok
+                ? result.models.length
+                  ? t("key.testOk", { count: result.models.length })
+                  : t("key.testOkNoList")
+                : t("key.testFail", { detail: result.detail ?? "" })}
+            </p>
+            {result.media.map((m) => (
+              <p key={m.key} className={m.ok ? "text-tone-info-fg" : "text-tone-warn-fg"}>
+                {m.ok
+                  ? t("key.mediaOk", { name: m.display })
+                  : t("key.mediaFail", { name: m.display, detail: m.detail ?? "" })}
+              </p>
+            ))}
+          </div>
         ) : null}
       </div>
       <DialogFooter className="gap-2 sm:justify-between">

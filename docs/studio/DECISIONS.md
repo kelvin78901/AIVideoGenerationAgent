@@ -2,6 +2,31 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-21 · M3 第 10 步：图像 API 适配器（三家）
+
+三家都按官方文档核对过（2026-10-21），`providers.yaml` 去掉 `verify`，自动化测试全部用 respx，不触网、不花钱。真调用在第 14 步冒烟。
+
+- **模型和接口**
+  - Nano Banana Pro：`gemini-3-pro-image`（稳定版，不再是 `-preview`），走原生 `POST /v1beta/models/{id}:generateContent`，头 `x-goog-api-key`。账号还是 `google_llm`、同一个密钥，但地址另写（账号的是 OpenAI 兼容地址，出不了图）。官方文档现在的示例都换成了新的 Interactions API；`generateContent` 仍列在核心接口里，计划定的就是它，没换。
+  - GPT Image 2：`gpt-image-2`（快照 `gpt-image-2-2026-04-21`）。没参考图走 `/images/generations`（JSON），有参考图走 `/images/edits`（multipart，每张一个 `image[]`）。不能传 `input_fidelity`（它总是高保真读参考图），`quality: high` 写在 `caps.request`。
+  - Seedream 5.0：选 **5.0 flash**（`doubao-seedream-5-0-flash-260915`）。三档里最便宜（约 $0.018 / 张，pro 约 ¥0.3、lite 约 ¥0.22），1K–2K（92 万–462 万像素）正好覆盖草稿档和交付档；lite 最少 369 万像素，出草稿浪费。总是带 `watermark: false`（接口参考写默认 true，教程写默认 false，两处矛盾）和 `response_format: b64_json`（URL 要二次下载、24 小时过期）。
+- **尺寸**：宽高还是从成片规格算（硬规则 10），每家换成自己支持的最近尺寸（`adapters/images.py:fit_size`），返回图按实际像素记 `w` / `h`。
+  - Gemini：画幅原样传（成片规格的 5 种画幅它都支持），`imageSize` 取能盖住画面的最小档（草稿 1K，1080p / 2K 交付都是 2K）。模型按档出自己的像素，9:16 2K 是 1536×2752。
+  - GPT Image 2：官方允许任意 `宽x高`（两边 16 的倍数、最长边 ≤ 3840、长短边比 ≤ 3:1、65.5 万–829 万像素），所以直接按画面尺寸向上取 16：1080×1920 → 1088×1920。**和计划不同**：计划写「9:16 用 1152x2048」，那是按第三方渠道的固定尺寸写的。
+  - Seedream：`宽x高` 向上取 16，再缩放进像素范围（1:1 草稿 768×768 → 960×960）。
+- **n 张**：GPT Image 2 一次请求出 n 张；Gemini 和 Seedream 一次只出一张，n 张就同时发 n 个请求（`one_per_request`），Gemini 的种子用 `seed + i`。部分失败时，出来的几张照实记张数和花费，`raw.failed` 记失败的错误码；全部失败才报错。
+- **按 token 计费的照 token 记账**：Gemini 和 GPT Image 2 都按 token 收费（Gemini 的思考按文本输出另算，GPT Image 2 的价格随尺寸、质量、参考图变）。`Pricing` 加 `token_rates`（每百万 token，按 `text_in` / `image_in` / `text_out` / `image_out`），`Usage` 加 `tokens`；返回了分项用量就按 token 算实际花费，没返回（或出现没有单价的种类）就按每张价格算。每张价格只用来估价：
+  - Gemini $0.134 / 张（1K、2K 都是 1120 个输出 token；4K $0.24，我们最高用 2K）。
+  - GPT Image 2 按尺寸估：每百万像素约 3600 个输出 token（high；1024×1536 high 约 $0.165，来自第三方实测，官方只有交互式计算器），每张参考图估 2000 个输入 token。1080p 竖屏约 $0.23 / 张，2K 约 $0.40。
+  - Seedream $0.018 / 张，按 `usage.generated_images` 计数。这是 BytePlus 的美元价；火山引擎的人民币价页面是脚本渲染的，没读到，第 14 步冒烟时看账单核对。
+- **兼容表跟着变（和原型不同）**：
+  - 「带字关键帧 · GPT Image 2」从「转换：部分接入渠道只到 1K，本地超分」变成「原生」（`max_short_edge: 1024` 删掉）。我们直连 OpenAI，官方能直接出交付尺寸。
+  - 21:9 下「关键帧 · Nano Banana Pro」从「不支持：先出 16:9 再外扩」变成「原生」，官方画幅列表里有 21:9。
+  - 原型里这两行是按第三方渠道的限制画的；规格页布局和文案不变，只是这两行的状态按真实能力显示。
+- **出错**：内容审核拦下统一成 `content_blocked`（OpenAI `moderation_blocked`，Gemini `blockReason` / `finishReason` 是安全类，方舟 `*SensitiveContentDetected`），不重试；只回了文字没出图是 `no_image`。429、5xx、超时按退避重试 2 次（`adapters/http.py`，`openai_compat.py` 也改用它）。
+- **测试连接**：`POST /providers/{id}/test` 除了 `GET /models`，再逐个检查用这个账号密钥的出图模型（结果在 `media` 里），只发不花钱的请求：Gemini、OpenAI 查 `GET /models/{id}`；方舟没有文档写明的免费列表接口，发一个它一定拒绝的请求（空提示词、1×1），回 400 就说明密钥和模型 ID 都对。`GET /providers` 每家带 `media`，密钥弹窗写「这个密钥也用于：Nano Banana Pro」。
+- **加适配器 = 填配置**：媒体模型在 `providers.yaml` 写 `adapter`（`gemini_image` / `openai_images` / `seedream`），`modelhub/media_adapters.py` 按它挑类；没写 `adapter` 的媒体模型还是「暂不可用」。
+
 ## 2026-10-21 · Kelvin 看过第 7、8 步：素材计数、候选卡太大
 
 - **「素材」按本集用到的素材算（7 / 10）**：Kelvin 定，不改回原型按整张清单算的 7 / 13。第 8 步（后端）那条的「等 Kelvin 定」到此结束。

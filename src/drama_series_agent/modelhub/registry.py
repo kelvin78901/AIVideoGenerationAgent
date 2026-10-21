@@ -69,6 +69,7 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                 model_id=media.model_id,
                 base_url=media.base_url or (account.base_url if account else None),
                 key_name=account.key_name if account else None,
+                adapter=media.adapter,
                 pricing=pricing_for_media(media, prov.as_of),
                 caps=Caps.model_validate(media.caps),
             )

@@ -23,9 +23,10 @@ from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes_service
 from drama_series_agent.episodes.service import EPISODES_SLOT, EpisodeService
-from drama_series_agent.modelhub.adapters.base import ModelSpec
+from drama_series_agent.modelhub.adapters.base import ModelAdapter, ModelSpec
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
+from drama_series_agent.modelhub.media_adapters import has_media_adapter, media_adapter
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
@@ -198,6 +199,13 @@ class StudioState:
             )
 
         registry.add_factory(lambda spec: spec.kind == "llm" and bool(spec.base_url), openai_compat)
+
+        def media(spec: ModelSpec) -> ModelAdapter:
+            return media_adapter(
+                spec, get_key=secrets.get_secret, store=state.store, transport=state.http_transport
+            )
+
+        registry.add_factory(has_media_adapter, media)
 
         from drama_series_agent.api.handlers import register_handlers
 

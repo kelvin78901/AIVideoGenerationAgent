@@ -106,8 +106,8 @@ def test_compat(client: TestClient) -> None:
     }
     data = client.get(f"{SPEC}/compat", params={"aspect": "21:9"}).json()
     assert data["aspect"] == "21:9"
-    assert data["rows"][0]["status"] == "unsupported"
-    assert data["rows"][0]["how"]["code"] == "outpaint_from_16_9"
+    assert data["rows"][0]["status"] == "native"  # Nano Banana Pro makes 21:9 itself
+    assert data["rows"][5]["how"]["code"] == "upscale_from_720p"  # Seedance
     assert client.get(f"{SPEC}/compat", params={"aspect": "4:3"}).status_code == 422
     resp = client.get("/api/v1/series/nope/spec/compat")
     assert resp.status_code == 404 and _code(resp) == "series_not_found"

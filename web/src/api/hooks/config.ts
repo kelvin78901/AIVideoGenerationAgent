@@ -175,8 +175,19 @@ export const ProviderTestSchema = z.object({
   ok: z.boolean(),
   detail: z.string().nullable(),
   models: z.array(z.string()),
+  media: z
+    .array(
+      z.object({
+        key: z.string(),
+        display: z.string(),
+        ok: z.boolean(),
+        detail: z.string().nullable(),
+      }),
+    )
+    .default([]),
 });
 
-/** 「测试连接」: lists the provider's models with the stored key. */
+/** 「测试连接」: lists the provider's models with the stored key, then checks each media model
+ * on that key (free calls, nothing is generated). */
 export const useTestProvider = (id: string) =>
   useMutation({ mutationFn: () => post(`/providers/${enc(id)}/test`, ProviderTestSchema) });

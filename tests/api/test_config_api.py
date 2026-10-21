@@ -38,7 +38,7 @@ def test_components_catalog(client: TestClient) -> None:
     assert enrich["unavailable"] == {}  # never scanned: nothing filtered
     prices = {m["key"]: m["price"] for m in data["models"]}
     assert prices["deepseek/v4-pro"] == {"unit": "mtok", "in": 1.32, "out": 3.96, "currency": "USD"}
-    assert prices["google/nano-banana-pro"] == {"unit": "image", "amount": 0.14, "currency": "USD"}
+    assert prices["google/nano-banana-pro"] == {"unit": "image", "amount": 0.134, "currency": "USD"}
     assert prices["minimax/h3-api"]["amount"] == 0.08  # from the draft tier
     assert prices["volc/seedance-2.5"]["unit"] == "second"
     assert prices["minimax/speech-2.8-hd"] == {"unit": "mchar", "amount": 100.0, "currency": "USD"}

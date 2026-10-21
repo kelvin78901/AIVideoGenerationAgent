@@ -310,7 +310,7 @@ describe("AssetsPage", () => {
     );
     await user.click(within(cands).getByRole("radio", { name: "v1 · C" }));
     await waitFor(() => expect(asset("room")?.pick).toBe(2));
-    await user.click(screen.getByRole("button", { name: "用 API 出终版 · 约 $0.14" }));
+    await user.click(screen.getByRole("button", { name: "用 API 出终版 · 约 $0.13" }));
     await waitFor(() => expect(productOf("room")?.versions).toHaveLength(2));
     const final = productOf("room")?.versions.at(-1);
     expect(final).toMatchObject({ stage: "final", parent_version_id: draft?.id });

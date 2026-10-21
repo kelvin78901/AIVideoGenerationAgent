@@ -54,9 +54,8 @@ const presets: SpecPresets = {
   dims: Object.fromEntries(AspectSchema.options.map((a) => [a, dimsOf(a)])) as SpecPresets["dims"],
 };
 
-/** `spec/compat.py`'s table for the default route (tests/unit/test_compat.py). */
-function compatRows(aspect: Aspect): CompatRow[] {
-  const is21 = aspect === "21:9";
+/** `spec/compat.py`'s table for the default route (tests/unit/test_compat.py): the same for every aspect. */
+function compatRows(): CompatRow[] {
   const row = (stage: string, keys: string[], status: CompatRow["status"], code: string) => ({
     stage,
     model_keys: keys,
@@ -64,13 +63,8 @@ function compatRows(aspect: Aspect): CompatRow[] {
     how: { code, params: {} },
   });
   return [
-    row(
-      "keyframe",
-      ["google/nano-banana-pro"],
-      is21 ? "unsupported" : "native",
-      is21 ? "outpaint_from_16_9" : "native_4k",
-    ),
-    row("text_keyframe", ["openai/gpt-image-2"], "convert", "upscale_from_1k"),
+    row("keyframe", ["google/nano-banana-pro"], "native", "native_4k"),
+    row("text_keyframe", ["openai/gpt-image-2"], "native", "native"),
     row("sketch", ["volc/seedream-5.0"], "native", "cheap_sketch"),
     row("video_draft", ["comfy/h3"], "native", "h3_aspects"),
     row("video_final", ["minimax/h3-regenerate-2k"], "native", "follow_draft"),
@@ -157,7 +151,7 @@ function seriesHandlers() {
       if (!known(params.id)) return error(404, "series_not_found");
       const q = AspectSchema.safeParse(new URL(request.url).searchParams.get("aspect"));
       const aspect = q.success ? q.data : (specOf(params.id)?.aspect ?? "9:16");
-      return HttpResponse.json({ aspect, rows: compatRows(aspect) });
+      return HttpResponse.json({ aspect, rows: compatRows() });
     }),
     http.get("*/api/v1/spec/presets", () => HttpResponse.json(presets)),
     ...novelHandlers(known),

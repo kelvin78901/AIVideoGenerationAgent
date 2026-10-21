@@ -66,7 +66,7 @@ describe("SpecPage", () => {
     expect(screen.getByRole("button", { name: "改，并自动重做（约 $4.02）" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /自定义/ })).toHaveAttribute("aria-pressed", "true");
     await waitFor(() =>
-      expect(compatRow("关键帧")).toHaveTextContent("不支持先出 16:9，再外扩或裁切成 21:9"),
+      expect(compatRow("视频（备选）")).toHaveTextContent("支持这个画幅；部分渠道只到 720p"),
     );
     expect(screen.getByTestId("zone-controlsWide")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "保存规格" }));

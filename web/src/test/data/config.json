@@ -544,7 +544,7 @@
         "where": "api",
         "price": {
           "unit": "image",
-          "amount": 0.14,
+          "amount": 0.134,
           "currency": "USD"
         }
       },
@@ -554,7 +554,7 @@
         "where": "api",
         "price": {
           "unit": "image",
-          "amount": 0.28,
+          "amount": 0.23,
           "currency": "USD"
         }
       },
@@ -564,7 +564,7 @@
         "where": "api",
         "price": {
           "unit": "image",
-          "amount": 0.03,
+          "amount": 0.018,
           "currency": "USD"
         }
       },

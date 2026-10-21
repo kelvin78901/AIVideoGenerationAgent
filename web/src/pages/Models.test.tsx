@@ -205,4 +205,51 @@ describe("ModelsPage", () => {
     await user.keyboard("{Escape}");
     expect(await screen.findByRole("button", { name: "DeepSeek · 已配置" })).toBeInTheDocument();
   });
+
+  it("tests the image models that share a provider's key", async () => {
+    const user = userEvent.setup();
+    const google = {
+      id: "google_llm",
+      name: "Google（Gemini）",
+      where: "api",
+      base_url: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      docs: null,
+      verify: false,
+      needs_key: true,
+      has_key: true,
+      key_source: "keyring",
+      enabled: true,
+      models: [],
+      media: [{ key: "google/nano-banana-pro", display: "Nano Banana Pro" }],
+    };
+    server.use(
+      http.get("*/api/v1/providers", () =>
+        HttpResponse.json({ providers: [google], llm_ui_order: [] }),
+      ),
+      http.post("*/api/v1/providers/google_llm/test", () =>
+        HttpResponse.json({
+          ok: true,
+          detail: null,
+          models: ["gemini-3.6-flash"],
+          media: [
+            {
+              key: "google/nano-banana-pro",
+              display: "Nano Banana Pro",
+              ok: false,
+              detail: "model_not_found",
+            },
+          ],
+        }),
+      ),
+    );
+    renderModels();
+    await user.click(await screen.findByRole("button", { name: "Google（Gemini） · 已配置" }));
+    const dialog = await screen.findByRole("dialog", { name: "Google（Gemini） 的 API 密钥" });
+    expect(within(dialog).getByText("这个密钥也用于：Nano Banana Pro")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "测试连接" }));
+    expect(await within(dialog).findByText("连接正常，能看到 1 个模型。")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Nano Banana Pro：不能用（model_not_found）"),
+    ).toBeInTheDocument();
+  });
 });

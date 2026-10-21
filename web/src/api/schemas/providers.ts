@@ -23,6 +23,8 @@ export const ProviderSchema = z.object({
       json_mode: z.boolean(),
     }),
   ),
+  /** Media models that use this provider's key (pictures, voices). */
+  media: z.array(z.object({ key: z.string(), display: z.string() })).default([]),
 });
 export type Provider = z.infer<typeof ProviderSchema>;
 

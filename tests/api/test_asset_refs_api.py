@@ -167,7 +167,7 @@ def test_draft_then_api_final_then_lock(client: TestClient) -> None:
     room = _product(client, "room")
     final = room["versions"][-1]
     assert (final["stage"], final["parent_version_id"]) == ("final", draft["id"])
-    assert final["model_key"] == "google/nano-banana-pro" and final["cost_usd"] == 0.14
+    assert final["model_key"] == "google/nano-banana-pro" and final["cost_usd"] == 0.134
     (one,) = [f for f in final["files"] if f["role"] == "candidate"]
     assert (one["w"], one["h"]) == (1080, 1920)  # the delivery tier
     assert room["adopted_version_id"] is None  # nothing adopted before the lock
@@ -353,7 +353,7 @@ def test_a_retried_call_does_not_pay_again(client: TestClient) -> None:
         return first, again
 
     first, again = client.portal.call(twice)  # type: ignore[union-attr]
-    assert not first.cached and first.cost_usd == 0.06
+    assert not first.cached and first.cost_usd == 0.036
     assert again.cached and again.cost_usd == 0 and again.files == first.files
     calls = [c for c in _rows(client, ModelCall) if c.model_key == "volc/seedream-5.0"]
     assert len(calls) == 1

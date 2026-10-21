@@ -181,10 +181,48 @@ llm_ui_order:
 media_models:
   # account：用哪个 llm_providers 账号的密钥（和它的 base_url，除非这里另写 base_url）；
   # 同一家的写作、出图、配音共用一个密钥（M3）。
-  # 图像
-  - { key: google/nano-banana-pro, kind: image, display: Nano Banana Pro, account: google_llm, unit: image, price: 0.14, currency: USD, caps: { aspects: ["1:1", "3:4", "4:3", "9:16", "16:9"], max_res: 4K, max_refs: null }, verify: true }
-  - { key: openai/gpt-image-2,     kind: image, display: GPT Image 2,     account: openai_llm, unit: image, price: 0.28, currency: USD, caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_short_edge: 1024, note: "部分渠道 9:16 只到 1K" }, verify: true }
-  - { key: volc/seedream-5.0,      kind: image, display: Seedream 5.0,    account: volcengine, unit: image, price: 0.03, currency: USD, verify: true }
+  # 图像（2026-10-21 按官方文档核对，M3 第 10 步，DECISIONS 同日「第 10 步」）
+  # adapter：哪个真实适配器（modelhub/media_adapters.py）；model_id 是厂商的模型 ID。
+  # Google、OpenAI 按 token 计费：token_rates 是每百万 token 的价格，实际花费按返回的用量算；
+  # price（每张）只用来估价。宽高按成片规格换成各家支持的尺寸（见各适配器文件头）。
+  - key: google/nano-banana-pro
+    kind: image
+    display: Nano Banana Pro
+    account: google_llm
+    adapter: gemini_image
+    base_url: https://generativelanguage.googleapis.com/v1beta   # 原生 generateContent，不是账号的 OpenAI 兼容地址
+    model_id: gemini-3-pro-image
+    unit: image
+    price: 0.134            # 1K、2K 每张（1120 个输出 token）；4K 是 $0.24，我们最高用 2K
+    token_rates: { text_in: 2.00, image_in: 2.00, text_out: 12.00, image_out: 120.00 }   # 思考按 text_out 计
+    currency: USD
+    caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"], max_refs: 14 }
+    docs: https://ai.google.dev/gemini-api/docs/pricing
+  - key: openai/gpt-image-2
+    kind: image
+    display: GPT Image 2
+    account: openai_llm
+    adapter: openai_images
+    model_id: gpt-image-2   # 快照 gpt-image-2-2026-04-21
+    unit: image
+    price: 0.23             # 估价参考：1088×1920、high 约 7.5k 输出 token
+    token_rates: { text_in: 5.00, image_in: 8.00, image_out: 30.00 }
+    currency: USD
+    # est_tokens_per_mp：high 每百万像素约多少输出 token（1024×1536 high 约 $0.165，第三方实测）；
+    # est_ref_tokens：每张参考图的输入 token（估）。max_refs 文档没写，按 gpt-image-1 的 16。
+    caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_refs: 16, est_tokens_per_mp: 3600, est_ref_tokens: 2000, request: { quality: high } }
+    docs: https://developers.openai.com/api/docs/guides/image-generation
+  - key: volc/seedream-5.0
+    kind: image
+    display: Seedream 5.0
+    account: volcengine
+    adapter: seedream
+    model_id: doubao-seedream-5-0-flash-260915   # 5.0 flash：三档里最便宜，1K–2K 覆盖草稿和交付档
+    unit: image
+    price: 0.018            # BytePlus 的美元价（1K / 1.5K / 2K 同价，参考图不另收）；火山引擎的人民币价第 14 步冒烟时核对
+    currency: USD
+    caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_refs: 10 }
+    docs: https://docs.volcengine.com/docs/82379/1541523
   # 视频
   - key: minimax/h3-api
     kind: video

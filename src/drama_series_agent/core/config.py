@@ -86,6 +86,8 @@ class MediaModel(_Loose):
     # The ``llm_providers`` account whose key it uses (one MiniMax / Google / OpenAI key for
     # writing, pictures and voices); its base URL too unless ``base_url`` says otherwise.
     account: str | None = None
+    # Which real adapter runs it (``modelhub/media_adapters.py``); none yet → unavailable.
+    adapter: str | None = None
     model_id: str | None = None
     base_url: str | None = None
     unit: str | None = None
