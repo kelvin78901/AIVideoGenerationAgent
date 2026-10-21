@@ -129,8 +129,9 @@ def test_real_mode_uses_openai_compat_for_llms(client: TestClient) -> None:
     assert isinstance(registry.get("local/qwen3.6-27b"), OpenAICompatAdapter)
 
 
-def test_real_mode_uses_the_image_adapters(client: TestClient) -> None:
+def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
     from drama_series_agent.modelhub.adapters.google import GeminiImageAdapter
+    from drama_series_agent.modelhub.adapters.minimax import MiniMaxSpeechAdapter
     from drama_series_agent.modelhub.adapters.openai_images import OpenAIImageAdapter
     from drama_series_agent.modelhub.adapters.volcengine import SeedreamAdapter
     from drama_series_agent.modelhub.registry import UnavailableAdapter
@@ -141,4 +142,13 @@ def test_real_mode_uses_the_image_adapters(client: TestClient) -> None:
     assert isinstance(registry.get("google/nano-banana-pro"), GeminiImageAdapter)
     assert isinstance(registry.get("openai/gpt-image-2"), OpenAIImageAdapter)
     assert isinstance(registry.get("volc/seedream-5.0"), SeedreamAdapter)
+    assert isinstance(registry.get("minimax/speech-2.8-hd"), MiniMaxSpeechAdapter)
+    assert isinstance(registry.get("minimax/speech-2.6-hd"), MiniMaxSpeechAdapter)
+    minimax = next(
+        p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "minimax_llm"
+    )
+    assert [m["key"] for m in minimax["media"]] == [
+        "minimax/speech-2.8-hd",
+        "minimax/speech-2.6-hd",
+    ]
     assert isinstance(registry.get("minimax/h3-api"), UnavailableAdapter)  # not yet

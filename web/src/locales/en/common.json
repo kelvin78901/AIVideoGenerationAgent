@@ -146,5 +146,28 @@
     "run_failed": "Generation failed ({{error}}). Earlier versions are still in History; rerun or switch models.",
     "cascade_done": "Synced: {{count}} outputs updated and adopted. Older versions are still in the history.",
     "cascade_done_failed": "Sync finished: {{count}} outputs updated, {{failed}} failed (left as outdated; rerun them on their own)."
+  },
+  "modelError": {
+    "auth_failed": "the key is wrong or lacks access; check it under Models & fallback",
+    "missing_key": "no key for this provider yet",
+    "model_not_found": "the provider has no such model",
+    "model_id_missing": "no model ID in the config",
+    "base_url_missing": "no API address in the config",
+    "rate_limited": "rate limited; try again later",
+    "provider_error": "the provider had an error; try again later",
+    "bad_request": "the provider refused the request (bad parameters)",
+    "timeout": "timed out",
+    "network_error": "cannot reach the provider",
+    "content_blocked": "blocked by the provider's moderation; change the description",
+    "no_image": "the model answered in text without a picture",
+    "no_audio": "the model returned no audio",
+    "insufficient_balance": "the provider account is out of credit",
+    "voice_not_found": "the provider has no such voice",
+    "voice_id_missing": "this voice has no provider voice ID; it can only be spoken locally",
+    "ref_unreadable": "a reference picture could not be read",
+    "invalid_response": "the provider's answer could not be read",
+    "adapter_unavailable": "this model is not connected yet",
+    "adapter_crash": "the call crashed",
+    "budget_exceeded": "over the confirmed spending limit"
   }
 }

@@ -2,6 +2,23 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-21 · M3 第 11 步：MiniMax 适配器
+
+按 platform.minimax.io（国际）和 platform.minimax.cn（国内）的文档核对（2026-10-21），`providers.yaml` 去掉 `verify`，测试全用 respx。
+
+- **一个适配器两种调用**（`adapters/minimax.py`，`adapter: minimax_speech`）：`kind="tts"` 走 `POST /v1/t2a_v2`，`kind="voice_design"` 走 `POST /v1/voice_design`。模型 ID `speech-2.8-hd`、`speech-2.6-hd`（耳语只有 2.6 有，2.8 明确不支持 whisper；`fluent` 也只有 2.6）。
+- **地址**：跟 `minimax_llm` 账号走。国际 `https://api.minimax.io/v1`，国内现在是 `https://api.minimax.cn/v1`（原来的 `minimaxi.com` 文档站已跳到 `minimax.cn`），国内国际是两个账号，密钥不通用；切国内改 `providers.yaml` 里账号的 `base_url`。两边接口一样，不用 GroupId。
+- **请求**：不流式，`output_format: hex`，WAV 44.1 kHz 单声道（之后统一处理成 48 kHz、−18 LUFS）；`voice_setting` 只带 `voice_id`、`emotion`、`vol`（以及 `speed`、`pitch` 的默认值），组件给本地兜底准备的 `speaker`、`emotion_text` 这些不发；`language_boost: auto` 写在 `caps.request`。音色设计：描述做 `prompt`，台词做 `preview_text`（最多 500 字，多了截掉）。
+- **出错**：MiniMax 出错也回 HTTP 200，看 `base_resp.status_code`。1000 / 1001 / 1002 / 1013 / 1039 / 1041 / 2045 重试；1004、2049 → `auth_failed`；1008 → `insufficient_balance`；1026、1027 → `content_blocked`；2042、2054 → `voice_not_found`；2056（5 小时额度用完）不重试。没有 `voice_id` 的音色（本地音色）调 API 直接 `voice_id_missing`。
+- **计费**
+  - 合成按返回的 `extra_info.usage_characters`（MiniMax 的计费字数）。估价时非 ASCII 字符（汉字、全角标点）都按 2 个算，宁可估高：确认过的任务每次调用前都检查「已花 + 这次估价 ≤ 确认金额」，真实字数比估价多一点，6 步的音色流程会在最后一步被拦下（见下面「等 Kelvin 定」）。
+  - 音色设计 $3：官方写明「设计出的音色第一次合成时收，不是设计时」，合成的返回里有 `usage_voice_count`。所以实际花费按 `usage_voice_count` 记在那次合成上；估价仍按组件的 `charge_design`（第一个情绪变体）算进 $3。
+  - 设计时的试听另收字数费：价格页写 $60 / 百万字，接口文档写 $30，按高的记（`extras.design_preview_char: 0.00006`，`Usage.calls` 计字数）。
+- **测试连接**：MiniMax 没有免费检查模型 ID 的接口，用 `POST /v1/get_voice`（列出自己设计过的音色，不收费）确认密钥能用。
+- **整套流程测试**：`test_asset_voice_api.py` 加了一条，Mock 试听之后切到真实适配器 + respx 假 MiniMax，出终版走 1 次设计 + 5 次合成（耳语在 2.6、喊叫 `vol: 2.0`），$3 记在 MiniMax 收费的那次合成上，总花费等于估价。
+- **失败提示翻成人话**：`run_failed` 的 toast 原来直接显示错误码（「生成失败（auth_failed）」），现在按 `common:modelError.<code>` 翻译（「密钥不对或没有权限，去「模型与兜底」检查密钥」），没翻译的码照旧显示原文。
+- **等 Kelvin 定**：确认过的任务真实花费超过确认金额时现在直接停（`budget_exceeded`），多步流程会停在半路、已经花的钱白花。要不要给确认金额留一点余量（比如 10% 或 $0.05，取大的）？没定之前不改，靠估价往高估。
+
 ## 2026-10-21 · M3 第 10 步：图像 API 适配器（三家）
 
 三家都按官方文档核对过（2026-10-21），`providers.yaml` 去掉 `verify`，自动化测试全部用 respx，不触网、不花钱。真调用在第 14 步冒烟。

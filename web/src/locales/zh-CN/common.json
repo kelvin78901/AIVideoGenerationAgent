@@ -146,5 +146,28 @@
     "run_failed": "生成失败（{{error}}）。之前的版本都还在历史里，可以重跑或换个模型。",
     "cascade_done": "已同步：{{count}} 个产物更新，新版本已采纳。旧版本都在历史里。",
     "cascade_done_failed": "同步结束：{{count}} 个产物更新，{{failed}} 个失败（停在「待更新」，可以单独重跑）。"
+  },
+  "modelError": {
+    "auth_failed": "密钥不对或没有权限，去「模型与兜底」检查密钥",
+    "missing_key": "还没填这家的密钥",
+    "model_not_found": "厂商那边找不到这个模型",
+    "model_id_missing": "配置里没填模型 ID",
+    "base_url_missing": "配置里没填接口地址",
+    "rate_limited": "调用太频繁被限流，稍后再试",
+    "provider_error": "厂商服务出错，稍后再试",
+    "bad_request": "厂商拒绝了这个请求（参数不对）",
+    "timeout": "超时",
+    "network_error": "连不上厂商的接口",
+    "content_blocked": "内容被厂商的审核拦下，改一下描述再试",
+    "no_image": "模型只回了文字，没出图",
+    "no_audio": "模型没返回音频",
+    "insufficient_balance": "这家账户余额不足",
+    "voice_not_found": "厂商那边找不到这个音色",
+    "voice_id_missing": "这个音色没有厂商的音色 ID，只能本地配",
+    "ref_unreadable": "参考图读不出来",
+    "invalid_response": "厂商返回的内容看不懂",
+    "adapter_unavailable": "这个模型还没接上",
+    "adapter_crash": "调用时程序出错",
+    "budget_exceeded": "超过了确认的花费上限"
   }
 }

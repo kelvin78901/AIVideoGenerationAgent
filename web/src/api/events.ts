@@ -77,8 +77,15 @@ export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType
     // 确认并同步 finished: the wording says how many failed, when some did.
     const code =
       ev.code === "cascade_done" && Number(ev.params?.failed) > 0 ? "cascade_done_failed" : ev.code;
+    const params = { ...ev.params };
+    // A failed run says why in words (modelError.<code>); unknown codes stay as they are.
+    if (code === "run_failed" && typeof params.error === "string") {
+      params.error = t(`modelError.${params.error}` as "modelError.timeout", {
+        defaultValue: params.error,
+      });
+    }
     const text = t(`toast.${code}` as "toast.generic", {
-      ...ev.params,
+      ...params,
       code: ev.code,
       defaultValue: t("toast.generic", { code: ev.code }),
     });

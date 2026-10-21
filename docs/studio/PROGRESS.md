@@ -15,19 +15,18 @@
 - 第 3–4 步：参考图、补视图、上传、锁定（f0e07e6：组件 `img` / `views`、`asset_unlock`、示例 7 / 13 锁定）；素材页接后端 + 出场矩阵（70a1200，截图 `assets-{draft,views,matrix}`）。
 - 第 5 步：画面文字 + OCR（4461791，矩阵排序修在 68c9cdc）：组件 `text` / `ocr`、`ocr_mismatch`。截图 `assets-{text,text-composite,ocr-confirm}`。
 - 第 6 步：音色（ea5fd19）：试听 → MiniMax 终版 + 5 个情绪 → 整版锁定、`config/voice.yaml`。截图 `assets-voice-{final,drafts}`。
-- 第 7 步：台词配音 + 时长。后端（1d94c66，CI 绿）：组件 `dub`、`assets/dub.py`、`pipeline/timing.py`。前端（49215a9，CI 绿，DECISIONS 2026-10-21「第 7 步（前端）」）：事件带 `slot`、`line_audio` 只刷 `["dub"]`、配音不逐条 toast；`POST /dub` 加 `line_ids`、每句加 `tone_emotion`；`api/{schemas,hooks}/dub.ts`、`test/fakes/dub.ts` + `test/data/dub.json`；素材页进度卡「台词配音 n / m · 全部配音」（先估价确认）、音色详情「第 N 集的台词配音」（播放、情绪、配音 / 重配）、剧本页播放 + 真实时长 + 场标题下的台词总时长；`AudioPlayer` `compact`；Playwright 新项目 `seeded`（`smoke` 依赖它，最先跑）。截图 `assets-dub-{confirm,voice}`、`script-dub{,-table}`，`assets`、`script` 重截。ROADMAP 勾「台词配音」。pytest 590、Vitest 272、Playwright 33 全过。
-
-- 第 8 步：素材闸门、影响范围、级联。后端（bb1b47d，DECISIONS 2026-10-21「第 8 步（后端）」）。整集素材闸门（`GateService.members`、`reopen_using`，409 `assets_not_locked`）、进度「素材」真实计数（`EpisodeService.counters`，示例 7 / 10）、级联停止集（候选类组件不重跑）、影响行按槽位合并（`count`、花费相加）、`line_audio` 进流水线顺序、`asset_edit`（`PlannedChange.rerun`：确认并同步 = 这条素材重出候选）、解锁音色列出配音句数。`tests/api/test_asset_sync_api.py` 8 个。前端（333bdc6，CI 绿，DECISIONS 同日「第 8 步（前端）」）：闸门和「素材」进度改走后端（MSW 不再叠加）、已锁定素材的修改走 `asset_edit` 影响范围、新影响行文案、影响行价格用 `formatCost`、示例剧集去掉重复的 `dub_lines`、假后端算素材计数和闸门；Playwright 无示例数据一轮加闸门和改已锁定素材。截图 `assets-{gate-refused,edit-locked}`、`script-dub-impact`，11 页全部重截（导航「素材」7/10）。pytest 598、Vitest 275、Playwright 34 全过。
-- Kelvin 看过第 7、8 步（cf66b26，DECISIONS 2026-10-21「Kelvin 看过第 7、8 步」）：计数定为 7 / 10；候选卡、补视图卡改成定宽小卡 + 放大看（`components/MediaLightbox.tsx`、`status.ts:CARD_WIDTH`），素材页和出终版、补视图、画面文字截图重截。Vitest 276、Playwright 34 全过。
-- 第 9 步：Mock 端到端（c6c1761；Linux CI 红在一个旧的时序问题上，5fc2940 修好，CI 绿）。`tests/e2e/test_script_to_dub.py`：起真实后端进程，新剧导入示例小说 → 剧本确认 → 素材分析（13 条，本集用 10 条）→ 每条出候选、音色出终版 → 全部锁定（每条 `gate_decision` 有 `sha256:` 哈希）→ 素材闸门（没锁时 409）→ 全部配音 → 每句有音频、场时长 = 音频之和；`Api.raw`。Playwright `seeded` 加真的播放（按钮变「暂停」）。ROADMAP 勾参考图（Mock）和三条 Mock 下能验的验收。pytest 599、Vitest 276、Playwright 34 全过。
-
-- 第 10 步：图像 API 适配器（本提交，DECISIONS 2026-10-21「第 10 步」）。三家按官方文档核对：`gemini-3-pro-image`（原生 `generateContent`）、`gpt-image-2`（generations / edits）、Seedream 选 5.0 flash `doubao-seedream-5-0-flash-260915`；`adapters/{http,images,google,openai_images,volcengine}.py`、`modelhub/media_adapters.py`（按 `providers.yaml` 的 `adapter` 挑类）；`Pricing.token_rates` + `Usage.tokens`（Gemini、GPT Image 按 token 记账）；测试连接带上同账号的出图模型（`media`），密钥弹窗显示「这个密钥也用于」。价格改成 0.134 / 0.23（估）/ 0.018；兼容表两行变原生（和原型不同），`spec` 重截。`tests/unit/test_image_adapters.py` 13 个（respx，不触网）。pytest 614、Vitest 278、Playwright 34 全过。
+- 第 7 步：台词配音 + 时长（后端 1d94c66、前端 49215a9，DECISIONS 2026-10-21「第 7 步」）：组件 `dub`、`pipeline/timing.py`、`POST /episodes/{id}/dub`；素材页「台词配音 n / m · 全部配音」、音色详情的台词配音、剧本页播放和真实时长；Playwright 项目 `seeded`。
+- 第 8 步：素材闸门、影响范围、级联（后端 bb1b47d、前端 333bdc6，DECISIONS 同日「第 8 步」）：整集素材闸门 409 `assets_not_locked`、「素材」真实计数 7 / 10、级联停止集、影响行按槽位合并、`asset_edit`。
+- Kelvin 看过第 7、8 步（cf66b26）：计数定 7 / 10；候选卡改定宽小卡 + 放大看（`components/MediaLightbox.tsx`）。
+- 第 9 步：Mock 端到端（c6c1761，时序修复 5fc2940，CI 绿）：`tests/e2e/test_script_to_dub.py` 从导入小说走到每句配音、场时长 = 音频之和。
+- 第 10 步：图像 API 适配器（489516e，CI 绿，DECISIONS 2026-10-21「第 10 步」）。三家按官方文档核对：`gemini-3-pro-image`（原生 `generateContent`）、`gpt-image-2`（generations / edits）、Seedream 选 5.0 flash `doubao-seedream-5-0-flash-260915`；`adapters/{http,images,google,openai_images,volcengine}.py`、`modelhub/media_adapters.py`（按 `providers.yaml` 的 `adapter` 挑类）；`Pricing.token_rates` + `Usage.tokens`（Gemini、GPT Image 按 token 记账）；测试连接带上同账号的出图模型（`media`），密钥弹窗显示「这个密钥也用于」。价格改成 0.134 / 0.23（估）/ 0.018；兼容表两行变原生（和原型不同），`spec` 重截。`tests/unit/test_image_adapters.py` 13 个（respx，不触网）。pytest 614、Vitest 277、Playwright 34 全过。
+- 第 11 步：MiniMax 适配器（本提交，DECISIONS 2026-10-21「第 11 步」）。`adapters/minimax.py`（`adapter: minimax_speech`）：`/t2a_v2`（hex WAV）和 `/voice_design`；`base_resp` 错误码；按 `usage_characters` 记字数，$3 按 `usage_voice_count` 记在 MiniMax 收费的那次合成上，试听 $60 / 百万字（`extras.design_preview_char`）；估价非 ASCII 按 2 字；测试连接用免费的 `/get_voice`。国内地址改成 `api.minimax.cn`。`run_failed` toast 的错误码翻成人话（`common:modelError`）。`tests/unit/test_minimax_adapter.py` 7 个 + 音色出终版走真实适配器的集成测试。pytest 622、Vitest 278、Playwright 34 全过。
 
 ## 下一步
 
-- **第 11 步：MiniMax 适配器**（计划 `plans/M3.md` 第 11 步、「多次调用的组件」「音色」两节）：T2A v2（返回十六进制音频）、音色设计、错误码；国内 `api.minimaxi.com`、国际 `api.minimax.io` 两个地址都能配，按官方文档核对（`providers.yaml` 里 `minimax/speech-2.6-hd` 还有 `verify: true`）。照第 10 步的样子：`adapters/minimax.py`，`providers.yaml` 写 `adapter`，`media_adapters.py` 登记，respx 测试，测试连接走 `media`。音色设计 $3 记在设计那次调用上（`Usage.calls`）。
-- **提醒 Kelvin 重启后端**：第 3–8 步的新接口和配置（锁定、上传；画面文字、OCR、音色、配音，`config/voice.yaml`，`/episodes/{id}/dub`，事件的 `slot`；素材闸门、`asset_edit`）。不重启的话热更新后的前端读旧后端：画面文字的候选显示「OCR 未检查」，配音那一行加载失败。已经有版本的素材重启后不动；要看第 5–7 步的示例，停掉后端后跑 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset` 再启动。
-- **`w_img` 已装好**（2026-10-21，Kelvin 用 `DRAMA_SETUP=real` 在 Setup 页装；本次安装记录见下面「等 Kelvin 的事」上一条）：31 GB 用了 14 分钟，平均约 37 MB/s；按文件算 36–42 MB/s，sha256 都校验过；装之前存了 ComfyUI-Manager 快照。剩余时间预估误差在 ±20% 以内：开头 822 秒，实际 807 秒；中途 598 / 685、621 / 532、173 / 213；最后一分钟准确。连接数没写进事件，记录里看不出来；速度比 2026-10-18 单连接实测的 25–30 MB/s 快，可能用了多连接。
+- **第 12 步：本地运行时 + ComfyUI 适配器**（计划 `plans/M3.md` 第 12 步、「本地 Python 运行时」「图像适配器 · ComfyUI 最小适配器」两节）：`local_python` 适配器（worker 子进程、请求带 id、超时杀掉重启）、显存租约（整个进程一把锁）、三个 worker（`src/drama_series_agent/workers/`，不进 mypy）、`comfyui.py` + `workflows/qwen-image/`、`workflows/qwen-image-edit/`、`uv_sync` 安装步骤、清单四项（`rt_qwentts`、`rt_indextts`、`rt_ocr`、`w_img_t2i`）。测试用假 worker、假 ComfyUI。这一步大，可以拆成两次提交（本地 Python 运行时 / ComfyUI）。
+- **提醒 Kelvin 重启后端**：第 3–11 步的新接口和配置（锁定、上传；画面文字、OCR、音色、配音，`config/voice.yaml`，`/episodes/{id}/dub`，事件的 `slot`；素材闸门、`asset_edit`；`providers.yaml` 的新价格、测试连接的 `media`）。不重启的话热更新后的前端读旧后端：画面文字的候选显示「OCR 未检查」，配音那一行加载失败。已经有版本的素材重启后不动；要看第 5–7 步的示例，停掉后端后跑 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset` 再启动。
+- **`w_img` 已装好**（2026-10-21）：31 GB 用了 14 分钟（约 37 MB/s），sha256 都校验过，剩余时间预估误差在 ±20% 以内。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -68,13 +67,12 @@
 - **Radix 下拉菜单里打开对话框要 `modal={false}`**，否则对话框关掉后 `body` 留着 `pointer-events: none`（jsdom 里表现为后面的测试点不动）。
 - **ESLint `no-irregular-whitespace`**：全角空格（U+3000）在正则、注释里会报错（字符串里不报）——正则写 `\s`，注释别用；**`react-hooks/set-state-in-effect`**：不要在 effect 里同步 URL 参数到 state，在渲染时推出来（见 `Script.tsx` 的 `picked`）。
 - 再出现 os error 4551，就是 Windows 智能应用控制（Kelvin 2026-10-20 已关掉）。
+- **Vitest 里 `vi.mock("sonner")` 对 `api/events.ts` 不生效**（setup 已经先加载了真的 sonner）：看 toast 用 `vi.spyOn(toast, "error")`。
 - **改代码前先看 ruff 有没有已经改过行**：`ruff format` 会把长行拆开，之后用 sed 按原行号替换会留下碎片（第 4 步踩过）。
 
 ## 等 Kelvin 的事
 
-- 看第 7、8 步的截图（配音没有原型）：`assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；候选卡改小后的 `assets`、`assets-{draft,views,text,text-composite}`。
-- 看第 4 步的素材页截图（原型没有的三块：出终版和上传 `reports/ui/assets-draft.light.jpg`、补视图 `assets-views`、出场矩阵 `assets-matrix`），有要改的告诉我。
-- 看第 6 步的音色截图：终版（样音 + 情绪变体）`assets-voice-final`、试听 `assets-voice-drafts`（原型只有试听，没有终版和情绪变体）。
-- 看第 5 步的画面文字截图：模型出字 `assets-text`、后期贴字叠字预览 `assets-text-composite`、锁定不一致的确认框 `assets-ocr-confirm`（原型只写「不能直接采纳」）。Mock 的图不会真的画字，只把字记在文件里给 Mock OCR 读。
+- 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
+- **定一下**：确认过的任务真实花费超过确认金额时现在直接停（`budget_exceeded`），多步流程（音色终版 = 设计 + 5 次合成）会停在半路、前面的 $3 白花。要不要留余量（比如确认金额的 10% 或 $0.05，取大的）？没定之前靠估价往高估（DECISIONS「第 11 步」）。
 - 第 13 步还要下约 20 GB 的 Qwen-Image-2512 和约 15 GB 的 TTS 环境（到时再问）。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。

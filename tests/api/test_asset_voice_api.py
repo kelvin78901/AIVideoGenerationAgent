@@ -7,12 +7,15 @@ A, locked whole. 周屿 (vzhouyu) has no lines in episode 1, so his auditions re
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Iterator
 from pathlib import Path
 from typing import Any
 
+import httpx
 import pytest
+import respx
 from fastapi.testclient import TestClient
 from sqlmodel import select
 
@@ -21,6 +24,7 @@ from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.models_db import GateDecision, ModelCall, Product
 from drama_series_agent.media.audio import measure
+from drama_series_agent.modelhub.adapters.mock import sine_wav
 from drama_series_agent.pipeline.component import RunContext
 from drama_series_agent.pipeline.components.voice import VoiceComponent
 from drama_series_agent.pipeline.hashing import hash_json
@@ -266,3 +270,61 @@ def test_samples_are_levelled(client: TestClient, monkeypatch: pytest.MonkeyPatc
     path = Path(_state(client).store.path_for(clip["sha256"]))
     lufs = measure(path).lufs
     assert lufs is not None and abs(lufs - get_config().components.audio.dialogue.lufs) <= 0.5
+
+
+MINIMAX = "https://api.minimax.io/v1"
+
+
+@respx.mock(assert_all_called=False)
+def test_the_minimax_final_through_the_real_adapter(
+    client: TestClient, respx_mock: respx.MockRouter
+) -> None:
+    """The same final against a fake MiniMax: one design, five syntheses (whisper on 2.6), the
+    $3 on the synthesis MiniMax bills it on, characters as MiniMax counts them."""
+    respx_mock.route(host="127.0.0.1").pass_through()
+    _done(client, "vzhouyu")  # Mock auditions
+    draft = _latest(client, "vzhouyu")
+    client.post(f"{V1}/providers/minimax_llm/key", json={"api_key": "mm-test"}).raise_for_status()
+    registry = _state(client).registry
+    registry.mock = False
+    registry._adapters.clear()
+
+    wav = sine_wav(0.6).hex()
+    design = respx_mock.post(f"{MINIMAX}/voice_design").mock(
+        return_value=httpx.Response(
+            200,
+            json={"voice_id": "ttv-zhouyu", "trial_audio": wav, "base_resp": {"status_code": 0}},
+        )
+    )
+    billed = 2 * len(get_config().voice.sample_text)  # all CJK: counted twice
+    first = {"usage_characters": billed, "audio_length": 600, "usage_voice_count": 1}
+    rest = {"usage_characters": billed, "audio_length": 600}
+    t2a = respx_mock.post(f"{MINIMAX}/t2a_v2").mock(
+        side_effect=[
+            httpx.Response(
+                200,
+                json={"data": {"audio": wav}, "extra_info": info, "base_resp": {"status_code": 0}},
+            )
+            for info in (first, rest, rest, rest, rest)
+        ]
+    )
+    job = _final(client, "vzhouyu", draft, 0)
+
+    assert design.call_count == 1 and t2a.call_count == 5
+    bodies = [json.loads(c.request.content) for c in t2a.calls]
+    assert {b["voice_setting"]["voice_id"] for b in bodies} == {"ttv-zhouyu"}
+    assert [(b["model"], b["voice_setting"].get("emotion")) for b in bodies] == [
+        ("speech-2.8-hd", "calm"),
+        ("speech-2.8-hd", "angry"),
+        ("speech-2.8-hd", "sad"),
+        ("speech-2.6-hd", "whisper"),
+        ("speech-2.8-hd", "angry"),
+    ]
+    assert bodies[4]["voice_setting"]["vol"] == 2.0  # shout
+    final = _latest(client, "vzhouyu")
+    assert final["payload"]["voice_id"] == "ttv-zhouyu"
+    calls = [c for c in _rows(client, ModelCall) if c.job_id == job["id"]]
+    assert len(calls) == 6 and all(c.status == "success" for c in calls)
+    expected = billed * 60 / 1e6 + 3 + 5 * billed * PER_CHAR  # the trial clip, $3, five lines
+    assert final["cost_usd"] == pytest.approx(expected)
+    assert job["est_cost_usd"] == pytest.approx(expected)

@@ -3,7 +3,8 @@
 # 流程：「重跑」= 本地试听（Qwen3-TTS 按描述设计，免费）→ 选一个「用 MiniMax 出终版」
 # = 音色设计拿到 voice_id，紧接着用 T2A 出下面 5 个情绪变体 → 统一响度 → 锁定。
 # 「本地」来源（或 API 失败兜底）：锚点就是选中的试听，变体由 local_final 按情绪文字出。
-# MiniMax 的参数（emotion、vol、model）第 11 步按官方文档核对。
+# MiniMax 的参数（emotion、vol、model）2026-10-21 按官方文档核对：情绪有 happy、sad、angry、fearful、
+# disgusted、surprised、calm、fluent、whisper，fluent 和 whisper 只有 2.6 有；vol 范围 (0, 10]，默认 1。
 
 lines: 2                           # 试听读这个角色的前几句台词
 sample_text: 你好，我在这儿。等我一下。   # 角色还没有台词时读这句
