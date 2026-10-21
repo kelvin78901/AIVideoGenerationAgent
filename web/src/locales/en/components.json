@@ -247,5 +247,14 @@
     "play": "Play: {{label}}",
     "pause": "Pause: {{label}}",
     "seconds": "{{s}} s"
+  },
+  "lightbox": {
+    "zoom": "Enlarge: {{label}}",
+    "close": "Close",
+    "prev": "Previous",
+    "next": "Next",
+    "position": "{{n}} / {{total}}",
+    "hint": "Press Esc to close",
+    "hintMany": "← → to switch, Esc to close"
   }
 }

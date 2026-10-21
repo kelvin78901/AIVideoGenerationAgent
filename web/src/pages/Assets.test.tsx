@@ -339,12 +339,36 @@ describe("AssetsPage", () => {
     expect(screen.getByRole("button", { name: "上传参考图" })).toBeDisabled();
   });
 
-  it("a locked character shows the views drawn from it", async () => {
+  it("candidates are small cards; 放大 shows one at screen size, ← → the others", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/林晚出租屋/));
+    const cands = screen.getByRole("radiogroup", { name: "候选" });
+    expect(within(cands).getAllByRole("radio")).toHaveLength(4);
+    await user.click(within(cands).getByRole("button", { name: "放大看：v1 · B" }));
+    const box = await screen.findByRole("dialog", { name: "v1 · B" });
+    expect(within(box).getByRole("img", { name: "v1 · B" })).toBeInTheDocument();
+    expect(box).toHaveTextContent("2 / 4");
+    await user.keyboard("{ArrowRight}");
+    expect(await screen.findByRole("dialog", { name: "v1 · C" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "上一张" }));
+    expect(await screen.findByRole("dialog", { name: "v1 · B" })).toBeInTheDocument();
+    // Zooming is not picking.
+    expect(asset("room")?.pick).toBe(0);
+    await user.keyboard("{Escape}");
+    await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+  });
+
+  it("a locked character shows the views drawn from it; a view opens at screen size", async () => {
+    const user = userEvent.setup();
     renderAssets();
     await ready();
     const views = await screen.findByRole("region", { name: "补视图" });
     for (const name of ["侧面", "背面", "表情"])
       expect(await within(views).findByRole("img", { name })).toBeInTheDocument();
+    await user.click(within(views).getByRole("button", { name: "放大看：背面" }));
+    expect(await screen.findByRole("dialog", { name: "背面" })).toHaveTextContent("2 / 3");
   });
 
   it("「出现在」 lists the scenes, linked to the script", async () => {

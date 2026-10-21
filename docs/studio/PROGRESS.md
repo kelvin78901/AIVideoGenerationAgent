@@ -17,7 +17,8 @@
 - 第 6 步：音色（ea5fd19）：试听 → MiniMax 终版 + 5 个情绪 → 整版锁定、`config/voice.yaml`。截图 `assets-voice-{final,drafts}`。
 - 第 7 步：台词配音 + 时长。后端（1d94c66，CI 绿）：组件 `dub`、`assets/dub.py`、`pipeline/timing.py`。前端（49215a9，CI 绿，DECISIONS 2026-10-21「第 7 步（前端）」）：事件带 `slot`、`line_audio` 只刷 `["dub"]`、配音不逐条 toast；`POST /dub` 加 `line_ids`、每句加 `tone_emotion`；`api/{schemas,hooks}/dub.ts`、`test/fakes/dub.ts` + `test/data/dub.json`；素材页进度卡「台词配音 n / m · 全部配音」（先估价确认）、音色详情「第 N 集的台词配音」（播放、情绪、配音 / 重配）、剧本页播放 + 真实时长 + 场标题下的台词总时长；`AudioPlayer` `compact`；Playwright 新项目 `seeded`（`smoke` 依赖它，最先跑）。截图 `assets-dub-{confirm,voice}`、`script-dub{,-table}`，`assets`、`script` 重截。ROADMAP 勾「台词配音」。pytest 590、Vitest 272、Playwright 33 全过。
 
-- 第 8 步：素材闸门、影响范围、级联。后端（bb1b47d，DECISIONS 2026-10-21「第 8 步（后端）」）。整集素材闸门（`GateService.members`、`reopen_using`，409 `assets_not_locked`）、进度「素材」真实计数（`EpisodeService.counters`，示例 7 / 10）、级联停止集（候选类组件不重跑）、影响行按槽位合并（`count`、花费相加）、`line_audio` 进流水线顺序、`asset_edit`（`PlannedChange.rerun`：确认并同步 = 这条素材重出候选）、解锁音色列出配音句数。`tests/api/test_asset_sync_api.py` 8 个。前端（本提交，DECISIONS 同日「第 8 步（前端）」）：闸门和「素材」进度改走后端（MSW 不再叠加）、已锁定素材的修改走 `asset_edit` 影响范围、新影响行文案、影响行价格用 `formatCost`、示例剧集去掉重复的 `dub_lines`、假后端算素材计数和闸门；Playwright 无示例数据一轮加闸门和改已锁定素材。截图 `assets-{gate-refused,edit-locked}`、`script-dub-impact`，11 页全部重截（导航「素材」7/10）。pytest 598、Vitest 275、Playwright 34 全过。
+- 第 8 步：素材闸门、影响范围、级联。后端（bb1b47d，DECISIONS 2026-10-21「第 8 步（后端）」）。整集素材闸门（`GateService.members`、`reopen_using`，409 `assets_not_locked`）、进度「素材」真实计数（`EpisodeService.counters`，示例 7 / 10）、级联停止集（候选类组件不重跑）、影响行按槽位合并（`count`、花费相加）、`line_audio` 进流水线顺序、`asset_edit`（`PlannedChange.rerun`：确认并同步 = 这条素材重出候选）、解锁音色列出配音句数。`tests/api/test_asset_sync_api.py` 8 个。前端（333bdc6，CI 绿，DECISIONS 同日「第 8 步（前端）」）：闸门和「素材」进度改走后端（MSW 不再叠加）、已锁定素材的修改走 `asset_edit` 影响范围、新影响行文案、影响行价格用 `formatCost`、示例剧集去掉重复的 `dub_lines`、假后端算素材计数和闸门；Playwright 无示例数据一轮加闸门和改已锁定素材。截图 `assets-{gate-refused,edit-locked}`、`script-dub-impact`，11 页全部重截（导航「素材」7/10）。pytest 598、Vitest 275、Playwright 34 全过。
+- Kelvin 看过第 7、8 步（本提交，DECISIONS 2026-10-21「Kelvin 看过第 7、8 步」）：计数定为 7 / 10；候选卡、补视图卡改成定宽小卡 + 放大看（`components/MediaLightbox.tsx`、`status.ts:CARD_WIDTH`），素材页和出终版、补视图、画面文字截图重截。Vitest 276、Playwright 34 全过。
 
 ## 下一步
 
@@ -67,8 +68,7 @@
 
 ## 等 Kelvin 的事
 
-- 定「素材」的计数：现在按本集用到的素材算（示例 7 / 10），原型 7 / 13 算的是整张清单（DECISIONS 2026-10-21「第 8 步（后端）」）。截图 `reports/ui/assets.light.jpg`。
-- 看第 7、8 步的截图（配音没有原型）：`assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`。
+- 看第 7、8 步的截图（配音没有原型）：`assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；候选卡改小后的 `assets`、`assets-{draft,views,text,text-composite}`。
 - 看第 4 步的素材页截图（原型没有的三块：出终版和上传 `reports/ui/assets-draft.light.jpg`、补视图 `assets-views`、出场矩阵 `assets-matrix`），有要改的告诉我。
 - 看第 6 步的音色截图：终版（样音 + 情绪变体）`assets-voice-final`、试听 `assets-voice-drafts`（原型只有试听，没有终版和情绪变体）。
 - 看第 5 步的画面文字截图：模型出字 `assets-text`、后期贴字叠字预览 `assets-text-composite`、锁定不一致的确认框 `assets-ocr-confirm`（原型只写「不能直接采纳」）。Mock 的图不会真的画字，只把字记在文件里给 Mock OCR 读。

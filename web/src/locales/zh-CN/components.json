@@ -247,5 +247,14 @@
     "play": "播放：{{label}}",
     "pause": "暂停：{{label}}",
     "seconds": "{{s}} 秒"
+  },
+  "lightbox": {
+    "zoom": "放大看：{{label}}",
+    "close": "关闭",
+    "prev": "上一张",
+    "next": "下一张",
+    "position": "{{n}} / {{total}}",
+    "hint": "按 Esc 关闭",
+    "hintMany": "← → 切换，按 Esc 关闭"
   }
 }
