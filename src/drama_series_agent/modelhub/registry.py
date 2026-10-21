@@ -1,7 +1,9 @@
 """Model registry: ``providers.yaml`` → ``ModelSpec`` → adapter.
 
 In mock mode every model is served by ``MockAdapter`` with the real model's key and prices.
-Mock mode is the default; real calls need ``DRAMA_MOCK=0`` explicitly.
+Mock mode is the default; real calls need ``DRAMA_MOCK=0`` explicitly. ``DRAMA_REAL_LOCAL=1``
+keeps Mock but runs the local ComfyUI workflows and Python workers for real: free local
+models on this machine, while API and writing models stay Mock (the local smoke test).
 """
 
 from __future__ import annotations
@@ -28,8 +30,16 @@ from drama_series_agent.modelhub.pricing import pricing_for_llm, pricing_for_med
 AdapterFactory = Callable[[ModelSpec], ModelAdapter]
 
 
+# Runtimes ``DRAMA_REAL_LOCAL=1`` runs for real in Mock mode (not local LLM servers).
+REAL_LOCAL_RUNTIMES = frozenset({"comfyui", "python"})
+
+
 def is_mock_mode() -> bool:
     return os.environ.get("DRAMA_MOCK", "1") != "0"
+
+
+def is_real_local() -> bool:
+    return os.environ.get("DRAMA_REAL_LOCAL") == "1"
 
 
 def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
@@ -122,9 +132,11 @@ class Registry:
         *,
         mock: bool | None = None,
         mock_settings: MockSettings | None = None,
+        real_local: bool | None = None,
     ) -> None:
         self._specs = {s.key: s for s in specs}
         self.mock = is_mock_mode() if mock is None else mock
+        self.real_local = is_real_local() if real_local is None else real_local
         self.mock_settings = mock_settings or MockSettings()
         self._factories: list[tuple[Callable[[ModelSpec], bool], AdapterFactory]] = []
         self._adapters: dict[str, ModelAdapter] = {}
@@ -169,7 +181,8 @@ class Registry:
                 await stop()
 
     def _build(self, spec: ModelSpec) -> ModelAdapter:
-        if self.mock:
+        real = self.real_local and spec.where == "local" and spec.runtime in REAL_LOCAL_RUNTIMES
+        if self.mock and not real:
             return MockAdapter(spec, self.mock_settings)
         for matches, factory in self._factories:
             if matches(spec):

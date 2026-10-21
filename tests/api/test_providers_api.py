@@ -159,3 +159,22 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
     for key in ("comfy/qwen-image", "comfy/qwen-image-edit"):
         assert isinstance(registry.get(key), ComfyUIAdapter)
     assert isinstance(registry.get("comfy/h3"), UnavailableAdapter)  # no workflow folder yet
+
+
+def test_real_local_runs_local_models_for_real_and_keeps_the_rest_mock(
+    client: TestClient,
+) -> None:
+    """``DRAMA_REAL_LOCAL=1`` (the local smoke test): ComfyUI workflows and Python workers are
+    real, API and writing models (local LLM servers included) stay Mock."""
+    from drama_series_agent.modelhub.adapters.comfyui import ComfyUIAdapter
+    from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
+    from drama_series_agent.modelhub.adapters.mock import MockAdapter
+
+    registry = client.app.state.studio.registry  # type: ignore[attr-defined]
+    assert registry.mock and not registry.real_local
+    registry.real_local = True
+    registry._adapters.clear()
+    assert isinstance(registry.get("comfy/qwen-image"), ComfyUIAdapter)
+    assert isinstance(registry.get("local/rapidocr"), LocalPythonAdapter)
+    for key in ("google/nano-banana-pro", "minimax/speech-2.8-hd", "local/qwen3.6-27b"):
+        assert isinstance(registry.get(key), MockAdapter), key
