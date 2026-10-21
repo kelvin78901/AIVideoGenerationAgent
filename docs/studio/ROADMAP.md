@@ -101,7 +101,7 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 - [x] 素材分析（assets）：素材清单 + 场景 × 角色出场矩阵
 - [ ] 图像适配器：Nano Banana Pro、GPT Image 2、Seedream 5.0；ComfyUI 适配器的最小版本（Qwen-Image 出图、Qwen-Image-Edit 补视图）
 - [ ] 参考图（img）：候选、混合模式出终版、上传、锁定、锁定后补齐侧面和背面
-- [ ] 画面文字（text）：逐字内容、字体风格、OCR 核对
+- [x] 画面文字（text）：逐字内容、字体风格、OCR 核对（Mock；真装 RapidOCR 归下面的「本地运行时」）
 - [ ] 音色（voice）：本地试听 → MiniMax 音色设计 → 情绪变体 → 统一响度 → 锁定
 - [ ] 台词配音（dub）+ 音频先行定时长（M3 算到台词和场，镜头 M4 接上）
 - [ ] 本地运行时：Qwen3-TTS、IndexTTS-2.5、RapidOCR，和 ComfyUI 一起在本机真装真跑

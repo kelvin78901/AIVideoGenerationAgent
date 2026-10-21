@@ -48,6 +48,7 @@ from drama_series_agent.modelhub.adapters.mock import MOCK_TEXT_KEY, mock_pictur
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
 from drama_series_agent.pipeline.components import assets, enrich, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
+from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, VIEWS, ViewsComponent
 from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
@@ -55,6 +56,7 @@ from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
+from drama_series_agent.qa import ocr
 from drama_series_agent.script import service as script_service
 from drama_series_agent.spec.dims import dims
 from drama_series_agent.spec.schema import default_row
@@ -535,10 +537,10 @@ def _demo_time(hhmm: str) -> datetime:
 
 
 def _text_reads(exact: str, method: str) -> list[str]:
-    """What OCR reads on each of the four text pictures (MSW ``candidatesFor``): drawn by the
-    model, B misreads 点 as 占 and D drops the last character; composited, all four match."""
+    """What OCR reads on each of the four text pictures (the prototype's): drawn by the model,
+    B misreads 点 as 占 and D drops the last character; a base for compositing has none."""
     if method == "composite":
-        return [exact] * 4
+        return [""] * 4
     return [exact, exact.replace("点", "占"), exact, exact[:-1]]
 
 
@@ -563,10 +565,10 @@ def _asset_files(
         ]
         return {"candidates": candidates}, files
     size = dims("9:16", "draft" if stage == "draft" else "1080p")
-    text = (asset.seed_json or {}).get("text") or {}
+    text = text_settings(asset, None)
     reads: list[str | None] = [None] * (1 if stage == "final" else 4)
     if asset.kind == "text":
-        reads = list(_text_reads(str(text.get("exact", "")), str(text.get("method", ""))))
+        reads = list(_text_reads(text["exact"], text["method"]))
     files = []
     for i, read in enumerate(reads):
         texts = {MOCK_TEXT_KEY: read} if read else None
@@ -574,7 +576,8 @@ def _asset_files(
         sha = store.put_bytes(png)
         files.append(file_entry("candidate", sha, "image/png", w=size.w, h=size.h, idx=i))
     if asset.kind == "text":
-        return {"candidates": [{"ocr": r} for r in reads]}, files
+        checks = [ocr.check(text["exact"], r, text["method"]) for r in reads]
+        return {"candidates": checks, "aspect": "9:16", "refs": [], "text": text}, files
     return {"candidates": [{} for _ in reads], "aspect": "9:16", "refs": []}, files
 
 

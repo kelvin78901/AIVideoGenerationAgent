@@ -108,6 +108,7 @@
     "scope_id_required": "An item-level setting needs the item",
     "component_not_ready": "Generation for this step is not wired up yet",
     "component_off": "This step is skipped under the current preset (no usable model)",
+    "ocr_mismatch": "OCR mismatch: it reads “{{read}}”, it should say “{{exact}}”",
     "no_model_configured": "No model is selected for this step yet",
     "no_alternative": "There is no other model to switch to; add alternatives in Run settings",
     "invalid_output": "The model twice failed to answer in the required format; its raw answer is kept",

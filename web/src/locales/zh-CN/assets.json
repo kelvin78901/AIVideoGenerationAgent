@@ -61,6 +61,8 @@
   "cands": {
     "title": "候选",
     "noteText": "每张都做了 OCR，和上面的字逐字比对",
+    "noteComposite": "每张都做了 OCR，确认底图上没有字；上面叠的字是后期贴字的预览",
+    "madeWith": "这一版是按「{{method}}」出的「{{text}}」；字或做法改了，点「重跑」按现在的设置出",
     "noteCharacter": "锁定后自动补齐侧面、背面和表情",
     "noteOther": "点一张选中，再锁定",
     "label": "v{{n}} · {{letter}}",
@@ -73,6 +75,9 @@
     "ocrOk": "OCR 一致",
     "ocrMissing": "OCR 不一致：缺字或缺标点",
     "ocrWrong": "OCR 不一致：有错字",
+    "ocrBlank": "OCR 确认底图没有字",
+    "ocrHasText": "OCR 在底图上读到了字：「{{read}}」",
+    "ocrUnchecked": "OCR 未检查：这台电脑上没有可用的 OCR",
     "emptyImage": "还没生成。点上方或右侧的「重跑」出 4 张候选。",
     "emptyVoice": "还没生成。点上方或右侧的「重跑」出 3 个音色候选。"
   },
@@ -97,6 +102,15 @@
     "lines": "用剧本里的台词试读",
     "tryLine": "试读：{{text}}",
     "trying": "试读「{{text}}」（{{tone}}）。"
+  },
+  "lockMismatch": {
+    "title": "候选 {{letter}} 的字和要求不一致",
+    "read": "OCR 读出来是「{{read}}」",
+    "nothing": "OCR 在这张上没读出字",
+    "exact": "要求是「{{exact}}」",
+    "hint": "锁定后，后面的镜头都按这张来。确认字没问题再锁定。",
+    "confirm": "仍然锁定",
+    "cancel": "取消"
   },
   "reanalyzing": "已开始重新分析剧本，分析完清单会自动更新；新增的素材会出现在清单里。",
   "view": {

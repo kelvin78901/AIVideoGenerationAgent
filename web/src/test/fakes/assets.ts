@@ -5,8 +5,10 @@
  * as the page needs them:
  * - 选这个 / 改描述 / 画面文字 / 音色来源 on the asset (refused once locked);
  * - 锁定为参考 turns the picked candidate of the version on screen into an adopted, locked
- *   `pick` version (the version on screen stays);
- * - 重跑 adds a version with fresh candidates; 「用 API 出终版」 one picture from the draft;
+ *   `pick` version (the version on screen stays); on-screen text OCR read differently is
+ *   refused (409 `ocr_mismatch`) unless `force`;
+ * - 重跑 adds a version with fresh candidates (on-screen text: every one OCR-checked and
+ *   matching); 「用 API 出终版」 one picture from the draft;
  * - 上传参考图 adds a version with that one candidate, picked;
  * - 解锁 is the impact preview's `asset_unlock` (`test/fakes/impact.ts`): what uses the locked
  *   picture, then unlocked.
@@ -14,7 +16,15 @@
 import { http, HttpResponse } from "msw";
 
 import { injectEvent } from "@/api/events";
-import { AssetMatrixSchema, AssetPatchSchema, AssetSchema, type Asset } from "@/api/schemas/assets";
+import {
+  AssetLockSchema,
+  AssetMatrixSchema,
+  AssetPatchSchema,
+  AssetSchema,
+  CandidatesPayloadSchema,
+  type Asset,
+  type AssetLock,
+} from "@/api/schemas/assets";
 import type { Impact } from "@/api/schemas/impact";
 import type { Job } from "@/api/schemas/jobs";
 import {
@@ -73,12 +83,23 @@ function announce(p: Product) {
 }
 
 /** 锁定为参考: the picked candidate of the version on screen, as a locked `pick` version. */
-function lock(a: Asset, p: Product): Response {
+function lock(a: Asset, p: Product, body: AssetLock): Response {
   if (p.locked_hash) return error(409, "product_locked", { id: p.id });
   const source = current(p);
   if (!source) return error(409, "nothing_to_lock", { id: a.id });
   const file = source.files.find((f) => f.role === "candidate" && f.idx === a.pick);
   if (!file) return error(422, "no_such_candidate", { id: source.id, idx: a.pick });
+  const parsed = CandidatesPayloadSchema.safeParse(source.payload);
+  const made = parsed.success ? parsed.data : null;
+  const cand = made?.candidates[a.pick];
+  if (cand?.ocr_ok === false && !body.force)
+    return error(409, "ocr_mismatch", {
+      id: a.id,
+      idx: a.pick,
+      read: cand.ocr ?? "",
+      exact: made?.text?.exact ?? "",
+      issue: cand.ocr_issue ?? "",
+    });
   const n = p.versions.length + 1;
   const pick: ProductVersion = {
     ...structuredClone(source),
@@ -101,6 +122,19 @@ function lock(a: Asset, p: Product): Response {
   return HttpResponse.json(withStatus(a));
 }
 
+/** What the candidates of a new version are: on-screen text is read by OCR, and the fake's
+ * always matches (a base for compositing is blank). */
+function candidatesOf(p: Product, count: number) {
+  const a = fakeAssets.assets.find((x) => x.product_id === p.id);
+  const text = a?.text;
+  if (!text) return { candidates: Array.from({ length: count }, () => ({})) };
+  const ocr = text.method === "composite" ? "" : text.exact;
+  return {
+    candidates: Array.from({ length: count }, () => ({ ocr, ocr_ok: true, ocr_issue: null })),
+    text: { ...text },
+  };
+}
+
 /** A new current version of `p` with `count` candidates (a run's, or one uploaded picture). */
 function addVersion(
   p: Product,
@@ -115,7 +149,7 @@ function addVersion(
     n,
     origin: v.origin,
     parent_version_id: p.current_version_id,
-    payload: { candidates: Array.from({ length: count }, () => ({})) },
+    payload: candidatesOf(p, count),
     files: Array.from({ length: count }, (_, i) => ({
       role: "candidate",
       path: `blobs/sha256/00/${id}-${i}`,
@@ -256,11 +290,12 @@ export function assetHandlers() {
       return HttpResponse.json(withStatus(a));
     }),
 
-    http.post("*/api/v1/assets/:id/lock", ({ params }) => {
+    http.post("*/api/v1/assets/:id/lock", async ({ params, request }) => {
       const a = findAsset(params.id);
       const p = a && productOf(a);
       if (!a || !p) return error(404, "asset_not_found", { id: params.id });
-      return lock(a, p);
+      const body = AssetLockSchema.safeParse(await request.json().catch(() => ({})));
+      return lock(a, p, body.success ? body.data : {});
     }),
 
     http.post("*/api/v1/assets/:id/upload", async ({ params, request }) => {

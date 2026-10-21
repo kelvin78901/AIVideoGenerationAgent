@@ -5,7 +5,8 @@ for audio and solid-colour MP4s (FFmpeg) for video. A mock keeps the real model'
 prices, so cost accounting in mock mode matches what the real call would have cost.
 
 A picture asked to show text (``params["text"]``, M3 画面文字) carries it in an ``iTXt`` chunk
-(``MOCK_TEXT_KEY``), so Mock OCR can read back what the "model drew".
+(``MOCK_TEXT_KEY``), so Mock OCR (kind ``ocr``, the picture at ``params["path"]``) reads back
+what the "model drew": nothing on any other picture.
 """
 
 from __future__ import annotations
@@ -42,6 +43,7 @@ LLM_KINDS = {"llm", "llm_aux", "vlm"}
 IMAGE_KINDS = {"image"}
 AUDIO_KINDS = {"tts", "voice_design", "music"}
 VIDEO_KINDS = {"video", "upscale", "lipsync"}
+OCR_KINDS = {"ocr"}
 
 # Answers a writing request in Mock mode: JSON-able data for ``json_mode``, else text.
 Responder = Callable[[ModelRequest], Any]
@@ -61,6 +63,8 @@ class MockSettings:
     responders: dict[tuple[str, str], Responder] = field(default_factory=dict)
     # The next N JSON answers are broken (exercises a component's retry-once path).
     bad_json: int = 0
+    # OCR misses the last character of what a picture shows (exercises 「OCR 不一致」).
+    ocr_mismatch: bool = False
 
 
 def estimate_tokens(text: str) -> int:
@@ -223,6 +227,8 @@ class MockAdapter:
             return self._audio(req)
         if kind in VIDEO_KINDS:
             return await self._video(req)
+        if kind in OCR_KINDS:
+            return self._ocr(req)
         return ModelResult(json={"mock": True, "kind": kind}, raw={"mock": True})
 
     # ------------------------------------------------------------------ helpers
@@ -240,6 +246,8 @@ class MockAdapter:
             return Usage(chars=len(req.text()))
         if kind in VIDEO_KINDS:
             return Usage(output_seconds=float(req.params.get("duration_s", 2.0)))
+        if kind in OCR_KINDS:
+            return Usage(images=1)
         return Usage()
 
     def _llm(self, req: ModelRequest) -> ModelResult:
@@ -283,6 +291,19 @@ class MockAdapter:
             for i in range(n)
         ]
         return ModelResult(files=files, usage=Usage(images=n), raw={"mock": True})
+
+    def _ocr(self, req: ModelRequest) -> ModelResult:
+        """What the picture at ``params["path"]`` says it shows (its ``iTXt``)."""
+        try:
+            data = Path(str(req.params["path"])).read_bytes()
+        except (KeyError, OSError) as exc:
+            raise ModelError("ocr_no_image", str(exc)) from exc
+        text = png_texts(data).get(MOCK_TEXT_KEY, "")
+        if self.settings.ocr_mismatch:
+            text = text[:-1]
+        return ModelResult(
+            text=text, json={"text": text}, usage=Usage(images=1), raw={"mock": True}
+        )
 
     def _audio(self, req: ModelRequest) -> ModelResult:
         text = req.text()

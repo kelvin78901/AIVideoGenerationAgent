@@ -111,6 +111,7 @@ class ImgComponent(MediaComponent):
             seed=ctx.seed,
             task="final" if source else "ref",
             refs=[r["sha256"] for r in refs],
+            extra=self.picture_params(inputs),
         )
         call = await self.media_call(
             ctx, req, None, model=ctx.model_key, fallback_reason=ctx.fallback_reason
@@ -140,8 +141,13 @@ class ImgComponent(MediaComponent):
             aspect=frame["aspect"],
             seed=None,
             task="final" if source else "ref",
+            extra=self.picture_params(inputs),
         )
         return self.services.registry.get(model).estimate(req)
+
+    def picture_params(self, inputs: Inputs) -> dict[str, Any]:
+        """Extra request params (画面文字: the characters to draw)."""
+        return {}
 
     # ------------------------------------------------------------------ internals
 

@@ -3,7 +3,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import type { Asset, CandidatesPayload } from "@/api/schemas/assets";
+import type { Asset, CandidatesPayload, TextSettings } from "@/api/schemas/assets";
 import type { Aspect } from "@/api/schemas/spec";
 import { MediaThumb } from "@/components/MediaThumb";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -13,21 +13,48 @@ import { cn } from "@/lib/utils";
 const LETTERS = "ABCD";
 
 /** Paper / screen colours of on-screen text tiles: they depict the medium, not UI chrome. */
-const TEXT_TILE: Record<NonNullable<Asset["text"]>["style"], string> = {
+const TEXT_TILE: Record<TextSettings["style"], string> = {
   handwritten: "bg-[#EFE2A6] text-[#2B2412] font-serif",
   printed: "bg-[#F4F3EF] text-[#1A1B1E]",
   screen: "bg-[#26282C] text-[#F2F2EF] font-sans",
 };
 
 type Candidate = CandidatesPayload["candidates"][number];
+type Tone = "ok" | "bad" | "none";
+const OCR_TONE: Record<Tone, string> = {
+  ok: "text-tone-info-fg",
+  bad: "text-tone-warn-fg",
+  none: "text-muted-foreground",
+};
 
-/** 候选: 4 reference images, or 4 on-screen text images with their OCR check. */
+/** What the backend's OCR check says about a text candidate (`ocr_ok`, `ocr_issue`). */
+function useOcrLine() {
+  const { t } = useTranslation("assets");
+  return (c: Candidate, method: TextSettings["method"]): { text: string; tone: Tone } => {
+    if (c.ocr_ok === true)
+      return { text: t(method === "composite" ? "cands.ocrBlank" : "cands.ocrOk"), tone: "ok" };
+    if (c.ocr_ok === false) {
+      const text =
+        c.ocr_issue === "has_text"
+          ? t("cands.ocrHasText", { read: c.ocr ?? "" })
+          : c.ocr_issue === "missing"
+            ? t("cands.ocrMissing")
+            : t("cands.ocrWrong");
+      return { text, tone: "bad" };
+    }
+    return { text: t("cands.ocrUnchecked"), tone: "none" };
+  };
+}
+
+/** 候选: 4 reference images, or 4 on-screen text images with their OCR check. A base for
+ * compositing shows the text laid over it, as post will paste it (M7). */
 export function ImageCandidates({
   asset,
   versionNo,
   candidates,
   srcs,
   aspect,
+  madeWith,
   locked,
   onPick,
 }: {
@@ -37,11 +64,15 @@ export function ImageCandidates({
   /** Each candidate's picture (`files[]` with its `idx`), when the version has files. */
   srcs: (string | null)[];
   aspect: Aspect;
+  /** On-screen text: the settings the version was made with (`payload.text`). */
+  madeWith?: TextSettings | null;
   locked: boolean;
   onPick: (i: number) => void;
 }) {
   const { t } = useTranslation("assets");
+  const ocrLine = useOcrLine();
   const text = asset.text;
+  const method = madeWith?.method ?? text?.method ?? "composite";
   return (
     <div
       role="radiogroup"
@@ -51,14 +82,8 @@ export function ImageCandidates({
       {candidates.map((c, i) => {
         const on = asset.pick === i;
         const label = t("cands.label", { n: versionNo, letter: LETTERS[i] });
-        const ocrOk = !text || text.method === "composite" || c.ocr === text.exact;
-        const ocr = !text
-          ? null
-          : ocrOk
-            ? t("cands.ocrOk")
-            : (c.ocr ?? "").length < text.exact.length
-              ? t("cands.ocrMissing")
-              : t("cands.ocrWrong");
+        const ocr = text ? ocrLine(c, method) : null;
+        const src = srcs[i];
         return (
           <button
             key={i}
@@ -74,14 +99,14 @@ export function ImageCandidates({
             )}
           >
             <div className="relative">
-              {text ? (
+              {text && !src ? (
                 <div
                   className={cn(
                     "flex aspect-square items-center justify-center rounded-md p-3 text-center text-sm leading-relaxed",
                     TEXT_TILE[text.style],
                   )}
                 >
-                  {text.method === "composite"
+                  {method === "composite"
                     ? t("cands.compositeSample", { text: text.exact })
                     : (c.ocr ?? "")}
                 </div>
@@ -89,9 +114,21 @@ export function ImageCandidates({
                 <MediaThumb
                   aspect={aspect}
                   seed={`${asset.id}-${versionNo}-${i}`}
-                  src={srcs[i]}
+                  src={src}
                   alt={label}
                   label={LETTERS[i]}
+                  overlay={
+                    text && method === "composite" ? (
+                      <div
+                        className={cn(
+                          "absolute inset-x-3 top-1/2 -translate-y-1/2 rounded px-2 py-1.5 text-center text-sm leading-relaxed shadow-md",
+                          TEXT_TILE[text.style],
+                        )}
+                      >
+                        {text.exact}
+                      </div>
+                    ) : null
+                  }
                 />
               )}
               {on ? (
@@ -103,16 +140,12 @@ export function ImageCandidates({
             <span className="text-xs font-medium">{label}</span>
             <span className="text-xs text-muted-foreground">
               {text
-                ? t(text.method === "composite" ? "cands.metaComposite" : "cands.metaModel")
+                ? t(method === "composite" ? "cands.metaComposite" : "cands.metaModel")
                 : asset.kind === "character"
                   ? t("cands.metaCharacter")
                   : t("cands.metaOther", { aspect })}
             </span>
-            {ocr ? (
-              <span className={cn("text-xs", ocrOk ? "text-tone-info-fg" : "text-tone-warn-fg")}>
-                {ocr}
-              </span>
-            ) : null}
+            {ocr ? <span className={cn("text-xs", OCR_TONE[ocr.tone])}>{ocr.text}</span> : null}
           </button>
         );
       })}

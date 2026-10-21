@@ -236,3 +236,4 @@ local_models:
   - { key: local/mmaudio,           kind: sfx,     display: MMAudio（本地）,          runtime: python, verify: true }
   - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python }
   - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }
+  - { key: local/rapidocr,          kind: ocr,     display: RapidOCR（本地）,         runtime: python, caps: { langs: [zh, en] } }

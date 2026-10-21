@@ -24,6 +24,16 @@ export type AssetStatus = z.infer<typeof AssetStatusSchema>;
 
 export const TextMethodSchema = z.enum(["composite", "model"]);
 export const TextStyleSchema = z.enum(["handwritten", "printed", "screen"]);
+/** On-screen text: the exact characters, how they are made, and the lettering. */
+export const TextSettingsSchema = z.object({
+  exact: z.string(),
+  method: TextMethodSchema,
+  style: TextStyleSchema,
+});
+export type TextSettings = z.infer<typeof TextSettingsSchema>;
+/** Why OCR does not match: characters or punctuation left out, some read as others, or text
+ * on a base meant for compositing. */
+export const OcrIssueSchema = z.enum(["missing", "wrong", "has_text"]);
 export const VoiceMethodSchema = z.enum(["design", "clone", "local"]);
 
 /** A scene of the episode asked for that the asset appears in, and its lines there. */
@@ -54,10 +64,7 @@ export const AssetSchema = z.object({
   status: AssetStatusSchema,
   /** Candidate picked in the current version (0-based); the reference once locked. */
   pick: z.number().int().nonnegative(),
-  /** On-screen text: the exact characters, how they are made, and the lettering. */
-  text: z
-    .object({ exact: z.string(), method: TextMethodSchema, style: TextStyleSchema })
-    .nullable(),
+  text: TextSettingsSchema.nullable(),
   /** Voices: how the voice is made, and script lines to audition it with. */
   voice: z
     .object({
@@ -76,7 +83,7 @@ export type Asset = z.infer<typeof AssetSchema>;
 export const AssetPatchSchema = z.object({
   intent: z.string().optional(),
   pick: z.number().int().nonnegative().optional(),
-  text: AssetSchema.shape.text.unwrap().partial().optional(),
+  text: TextSettingsSchema.partial().optional(),
   voice: z.object({ method: VoiceMethodSchema }).optional(),
 });
 export type AssetPatch = z.infer<typeof AssetPatchSchema>;
@@ -85,20 +92,28 @@ export type AssetPatch = z.infer<typeof AssetPatchSchema>;
 export const CandidatesPayloadSchema = z.object({
   candidates: z.array(
     z.object({
-      /** OCR of an on-screen-text candidate. */
+      /** On-screen text: what OCR read (null: not checked, no OCR on this machine)… */
       ocr: z.string().nullable().optional(),
+      /** …whether it is what the text must say (a base for compositing: blank)… */
+      ocr_ok: z.boolean().nullable().optional(),
+      /** …and why not. */
+      ocr_issue: OcrIssueSchema.nullable().optional(),
       /** Voice candidates: a short description and a static waveform (0–1). */
       label: z.string().nullable().optional(),
       waveform: z.array(z.number()).nullable().optional(),
     }),
   ),
+  /** On-screen text: the settings the candidates were made with. */
+  text: TextSettingsSchema.nullable().optional(),
 });
 export type CandidatesPayload = z.infer<typeof CandidatesPayloadSchema>;
 
-/** `POST /assets/{id}/lock`: by default the picked candidate of the version on screen. */
+/** `POST /assets/{id}/lock`: by default the picked candidate of the version on screen.
+ * On-screen text OCR read differently is refused (409 `ocr_mismatch`) unless `force`. */
 export const AssetLockSchema = z.object({
   version_id: z.string().optional(),
   idx: z.number().int().nonnegative().optional(),
+  force: z.boolean().optional(),
 });
 export type AssetLock = z.infer<typeof AssetLockSchema>;
 

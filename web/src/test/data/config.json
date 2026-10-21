@@ -175,6 +175,16 @@
         "unavailable": {}
       },
       {
+        "id": "ocr",
+        "stage": "assets",
+        "kind": "ocr",
+        "api_models": [],
+        "local_models": [
+          "local/rapidocr"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "voice",
         "stage": "assets",
         "kind": "tts",
@@ -803,6 +813,12 @@
         "display": "Paraformer（本地）",
         "where": "local",
         "price": null
+      },
+      {
+        "key": "local/rapidocr",
+        "display": "RapidOCR（本地）",
+        "where": "local",
+        "price": null
       }
     ],
     "local_runtime_ok": true
@@ -1053,6 +1069,25 @@
           "google/nano-banana-pro"
         ],
         "per_call_cap_usd": 1.2
+      },
+      "ocr": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "local/rapidocr",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "voice": {
         "mode": "api",
@@ -1590,6 +1625,25 @@
           "openai/gpt-image-2"
         ],
         "per_call_cap_usd": 1.2
+      },
+      "ocr": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "local/rapidocr",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "voice": {
         "mode": "hybrid",
@@ -2135,6 +2189,25 @@
         ],
         "per_call_cap_usd": 1.2
       },
+      "ocr": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "local/rapidocr",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
+      },
       "voice": {
         "mode": "local",
         "api_model": "minimax/speech-2.8-hd",
@@ -2598,6 +2671,25 @@
         },
         "alt_order": [],
         "per_call_cap_usd": 1.2
+      },
+      "ocr": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "local/rapidocr",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "voice": {
         "mode": "local",

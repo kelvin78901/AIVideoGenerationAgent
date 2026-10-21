@@ -116,3 +116,34 @@ test("assets: real candidate pictures, the matrix, lock and unlock", async ({ pa
   note(missing);
   expect(errors).toEqual([]);
 });
+
+test("on-screen text: the backend's OCR check, a mismatch asks before locking", async ({
+  page,
+}) => {
+  const { errors, missing } = trackContract(page);
+  await setUi(page, {});
+  await openPage(page, "/s/demo/e/1/assets");
+  const note1 = page
+    .getByRole("region", { name: "素材清单" })
+    .getByRole("button", { name: /便利贴手写/ });
+  await note1.click();
+  const cands = page.getByRole("radiogroup", { name: "候选" });
+  const b = cands.getByRole("radio", { name: "v1 · B" });
+  await expect(b).toContainText("OCR 不一致：有错字");
+  await expect(cands.getByRole("radio", { name: "v1 · A" })).toContainText("OCR 一致");
+  await expect
+    .poll(() => b.getByRole("img").evaluate((img) => (img as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0);
+  await b.click();
+  // The pick is saved before locking, or the lock takes the candidate picked before.
+  await expect(b).toHaveAttribute("aria-checked", "true");
+  await page.getByRole("button", { name: "锁定为参考" }).click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("候选 B 的字和要求不一致");
+  await expect(dialog).toContainText("OCR 读出来是「楼下便利店，等你到十二占。」");
+  await dialog.getByRole("button", { name: "取消" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(note1).toContainText("待选");
+  note(missing);
+  expect(errors).toEqual([]);
+});

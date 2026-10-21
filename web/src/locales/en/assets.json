@@ -61,6 +61,8 @@
   "cands": {
     "title": "Candidates",
     "noteText": "Every candidate is OCR-checked against the text above",
+    "noteComposite": "Every plate is OCR-checked to be free of text; the text on top previews what post will add",
+    "madeWith": "This version shows “{{text}}”, made with “{{method}}”; the text or method has changed since, so rerun to use the current settings",
     "noteCharacter": "Side, back and expression views are filled in after locking",
     "noteOther": "Pick one, then lock it",
     "label": "v{{n}} · {{letter}}",
@@ -73,6 +75,9 @@
     "ocrOk": "OCR matches",
     "ocrMissing": "OCR mismatch: missing characters or punctuation",
     "ocrWrong": "OCR mismatch: wrong characters",
+    "ocrBlank": "OCR: no text on the plate",
+    "ocrHasText": "OCR found text on the plate: “{{read}}”",
+    "ocrUnchecked": "Not OCR-checked: no OCR available on this computer",
     "emptyImage": "Not generated yet. Click Rerun above or on the right for 4 candidates.",
     "emptyVoice": "Not generated yet. Click Rerun above or on the right for 3 voice candidates."
   },
@@ -97,6 +102,15 @@
     "lines": "Audition with lines from the script",
     "tryLine": "Audition: {{text}}",
     "trying": "Auditioning “{{text}}” ({{tone}})."
+  },
+  "lockMismatch": {
+    "title": "Candidate {{letter}} does not show the required text",
+    "read": "OCR reads “{{read}}”",
+    "nothing": "OCR reads no text here",
+    "exact": "It should say “{{exact}}”",
+    "hint": "Once locked, every later shot follows this picture. Lock it only if the text is right.",
+    "confirm": "Lock anyway",
+    "cancel": "Cancel"
   },
   "reanalyzing": "Analysing the script again; the list updates when it is done and new assets show up in it.",
   "view": {

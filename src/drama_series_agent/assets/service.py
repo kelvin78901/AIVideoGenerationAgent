@@ -23,6 +23,10 @@ then gets its side, back and expressions drawn (``views``). **Unlocking** goes t
 impact preview (kind ``asset_unlock``): it changes no content, so the preview lists what uses
 the locked picture straight from the dependency graph. **Uploading** a picture adds a version
 with that one candidate (``origin: upload``), to lock or to start an API final from.
+
+**On-screen text** is checked by OCR (``pipeline/components/text.py``): a candidate OCR read
+differently from what it must say locks only with ``force`` (409 ``ocr_mismatch``); one not
+checked (no OCR on this machine) locks as usual. An uploaded picture is read too.
 """
 
 from __future__ import annotations
@@ -68,6 +72,11 @@ from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes.service import latest_gate, scene_counts
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_info
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
+from drama_series_agent.pipeline.components.text import (
+    TEXT_IMAGE_SLOT,
+    TextComponent,
+    text_settings,
+)
 from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, ViewsComponent
 from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
@@ -80,9 +89,9 @@ KIND_ORDER = {k: i for i, k in enumerate(ops.KINDS)}
 VOICE_LINES = 2  # script lines shown to audition a voice with
 ASSET_GATE = "assets"
 # Slots a picture can be uploaded to as a candidate.
-UPLOAD_SLOTS = ("ref_image", "text_image")
+UPLOAD_SLOTS = ("ref_image", TEXT_IMAGE_SLOT)
 # The product each asset owns (its views are another one, ``ref_views``).
-ASSET_SLOTS = ("ref_image", "text_image", "voice")
+ASSET_SLOTS = ("ref_image", TEXT_IMAGE_SLOT, "voice")
 
 
 async def asset_product(session: AsyncSession, asset_id: str) -> Product | None:
@@ -199,6 +208,7 @@ class AssetService:
         bus: EventBus,
         store: BlobStore,
         invalidation: Invalidation,
+        text: TextComponent | None = None,
     ) -> None:
         self._db = db
         self._products = products
@@ -206,6 +216,7 @@ class AssetService:
         self._bus = bus
         self._store = store
         self._invalidation = invalidation
+        self._text = text  # OCR of uploaded on-screen text
 
     def register(self, impact: ImpactService) -> None:
         """The changes to assets the impact preview knows (M3 step 3: unlocking)."""
@@ -293,9 +304,7 @@ class AssetService:
             if product.locked_hash and (body.intent is not None or body.text or body.voice):
                 raise PipelineError(409, "product_locked", id=product.id)
             current = product.current_version_id
-            text_now = dict(
-                (product.settings_json or {}).get("text") or asset.seed_json.get("text") or {}
-            )
+            text_now = text_settings(asset, product.settings_json) if asset.kind == "text" else {}
         if body.intent is not None:
             await self._runs.save_prompt(product.id, body.intent, None)
             async with self._db.session() as session:
@@ -335,7 +344,8 @@ class AssetService:
 
     async def lock(self, asset_id: str, body: AssetLockIn | None = None) -> AssetOut:
         """「锁定为参考」: the picked candidate of the version on screen (or of ``body``'s), with
-        the asset's gate decision; then a character's views are drawn."""
+        the asset's gate decision; then a character's views are drawn. On-screen text OCR read
+        differently takes ``force``."""
         body = body or AssetLockIn()
         async with self._db.session() as session:
             asset = await self._require(session, asset_id)
@@ -352,6 +362,8 @@ class AssetService:
             if idx is None:
                 idx = int(pick.get("idx") or 0) if pick.get("version_id") == version_id else 0
             kind = asset.kind
+            if product.slot == TEXT_IMAGE_SLOT and not body.force:
+                await _refuse_ocr_mismatch(session, product, version_id, idx)
 
         async def record(session: AsyncSession, p: Product, v: ProductVersion) -> None:
             await record_asset_gate(session, self._invalidation, p, "confirm")
@@ -380,8 +392,12 @@ class AssetService:
             intent = (product.prompt_json or {}).get("intent") or asset.seed_json.get("description")
         sha = self._store.put_bytes(data)
         name = filename[:200]
+        payload: dict[str, Any] = {"candidates": [{}]}
+        if product.slot == TEXT_IMAGE_SLOT and self._text is not None:
+            checked, text = await self._text.check_upload(asset, product, sha)
+            payload = {"candidates": [checked], "text": text}
         draft = VersionDraft(
-            payload={"candidates": [{}]},
+            payload=payload,
             files=[file_entry("candidate", sha, info.mime, w=info.w, h=info.h, idx=0)],
             intent=str(intent or ""),
             params={"filename": name},
@@ -593,6 +609,28 @@ class AssetService:
         return [o for _, o in ranked]
 
 
+async def _refuse_ocr_mismatch(
+    session: AsyncSession, product: Product, version_id: str, idx: int
+) -> None:
+    """409 ``ocr_mismatch`` when OCR read the candidate differently from what it must say."""
+    v = await session.get(ProductVersion, version_id)
+    if v is None or v.product_id != product.id:
+        return  # lock_pick says what is wrong
+    candidates = (v.payload_json or {}).get("candidates") or []
+    entry = candidates[idx] if 0 <= idx < len(candidates) else {}
+    if isinstance(entry, dict) and entry.get("ocr_ok") is False:
+        exact = str(((v.payload_json or {}).get("text") or {}).get("exact") or "")
+        raise PipelineError(
+            409,
+            "ocr_mismatch",
+            id=product.owner_id,
+            idx=idx,
+            read=entry.get("ocr") or "",
+            exact=exact,
+            issue=entry.get("ocr_issue") or "",
+        )
+
+
 async def _scene_numbers(session: AsyncSession, series_id: str) -> dict[str, int]:
     """Scene id → its series-wide 场号 (as the script page numbers them)."""
     offsets: dict[str, int] = {}
@@ -640,15 +678,7 @@ def _source(
 def _text(asset: Asset, settings: dict[str, Any]) -> TextOut | None:
     if asset.kind != "text":
         return None
-    seed = (asset.seed_json or {}).get("text") or {}
-    merged = {
-        "exact": "",
-        "method": "composite",
-        "style": "printed",
-        **seed,
-        **(settings.get("text") or {}),
-    }
-    return TextOut.model_validate(merged)
+    return TextOut.model_validate(text_settings(asset, settings))
 
 
 def _voice(

@@ -68,6 +68,12 @@ export function AssetDetail({
   const version = product.data ? currentVersion(product.data) : undefined;
   const payload = CandidatesPayloadSchema.safeParse(version?.payload);
   const candidates = payload.success ? payload.data.candidates : [];
+  // On-screen text: the version was made with other characters or another method.
+  const madeWith = payload.success ? payload.data.text : null;
+  const outdated =
+    !!asset.text &&
+    !!madeWith &&
+    (madeWith.exact !== asset.text.exact || madeWith.method !== asset.text.method);
   const srcs = candidates.map((_, i) => {
     const f = version?.files.find((x) => x.role === "candidate" && x.idx === i);
     return f ? fileUrl(f.sha256) : null;
@@ -276,7 +282,11 @@ export function AssetDetail({
             <h3 className="text-sm font-bold">{t("cands.title")}</h3>
             <span className="text-xs text-muted-foreground">
               {asset.text
-                ? t("cands.noteText")
+                ? t(
+                    (madeWith?.method ?? asset.text.method) === "composite"
+                      ? "cands.noteComposite"
+                      : "cands.noteText",
+                  )
                 : asset.kind === "character"
                   ? t("cands.noteCharacter")
                   : t("cands.noteOther")}
@@ -293,6 +303,14 @@ export function AssetDetail({
               </span>
             ) : null}
           </div>
+          {outdated && madeWith ? (
+            <p className="text-xs text-tone-warn-fg">
+              {t("cands.madeWith", {
+                method: t(`text.methods.${madeWith.method}`),
+                text: madeWith.exact,
+              })}
+            </p>
+          ) : null}
           {version && candidates.length ? (
             <ImageCandidates
               asset={asset}
@@ -300,6 +318,7 @@ export function AssetDetail({
               candidates={candidates}
               srcs={srcs}
               aspect={aspect}
+              madeWith={madeWith}
               locked={locked}
               onPick={(pick) => save({ pick })}
             />

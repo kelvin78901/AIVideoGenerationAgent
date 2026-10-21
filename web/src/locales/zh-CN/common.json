@@ -108,6 +108,7 @@
     "scope_id_required": "单项设置要指明是哪一项",
     "component_not_ready": "这一步的生成功能还没接上",
     "component_off": "这一步在当前预设下不跑（没有可用的模型）",
+    "ocr_mismatch": "OCR 不一致：读出来是「{{read}}」，要求是「{{exact}}」",
     "no_model_configured": "这一步还没选模型",
     "no_alternative": "没有可以换的其他模型，去「运行设置」里加备选",
     "invalid_output": "模型两次都没按要求的格式回答，原始回答已保存",

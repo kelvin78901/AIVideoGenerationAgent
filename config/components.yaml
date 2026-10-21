@@ -130,7 +130,17 @@ components:
     balanced: { mode: hybrid, api: openai/gpt-image-2, local: comfy/qwen-image, fallback_to: google/nano-banana-pro }
     per_call_cap_usd: 1.2
     cheap_api: google/nano-banana-pro
+    candidates: 4
     gate: assets
+
+  - id: ocr
+    stage: assets
+    name: { zh: 文字核对（OCR）, en: Text check (OCR) }
+    kind: ocr
+    api: []
+    local: [local/rapidocr]
+    balanced: { mode: local, local: local/rapidocr }
+    note: 画面文字的每张候选都读一遍，和要求的字逐字比对；只用 CPU、不花钱，不做 API 兜底，没装时标「未检查」
 
   - id: voice
     stage: assets

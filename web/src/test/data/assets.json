@@ -1574,18 +1574,33 @@
           "payload": {
             "candidates": [
               {
-                "ocr": "楼下便利店，等你到十二点。"
+                "ocr": "楼下便利店，等你到十二点。",
+                "ocr_ok": true,
+                "ocr_issue": null
               },
               {
-                "ocr": "楼下便利店，等你到十二占。"
+                "ocr": "楼下便利店，等你到十二占。",
+                "ocr_ok": false,
+                "ocr_issue": "wrong"
               },
               {
-                "ocr": "楼下便利店，等你到十二点。"
+                "ocr": "楼下便利店，等你到十二点。",
+                "ocr_ok": true,
+                "ocr_issue": null
               },
               {
-                "ocr": "楼下便利店，等你到十二点"
+                "ocr": "楼下便利店，等你到十二点",
+                "ocr_ok": false,
+                "ocr_issue": "missing"
               }
-            ]
+            ],
+            "aspect": "9:16",
+            "refs": [],
+            "text": {
+              "exact": "楼下便利店，等你到十二点。",
+              "method": "model",
+              "style": "handwritten"
+            }
           },
           "files": [
             {
@@ -1633,9 +1648,9 @@
               "view": null
             }
           ],
-          "content_hash": "sha256:6e4a01da63b0f8e77ff28b8e320fb7c68d54691f91578d79d4bed1683cd23f7e",
+          "content_hash": "sha256:cf3a1f4797ad8a9cb820a6d55d7a482d0af769af616c4d83ca48d1428d956b1a",
           "intent": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
-          "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。\n\n# 目标模型：openai/gpt-image-2",
+          "compiled": "[任务] 画面文字素材，4 张候选：手写纸条、手机屏幕、招牌这类画面里必须一字不差的字\n[描述] 黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。\n[风格] 写实电影感，竖屏短剧的画面质感\n[约束] 除了要求的字，画面里不要出现别的文字、水印或标志\n[核对] 每张出图后 OCR，与要求的字逐字比对；不一致的标红，不自动采纳\n\n# 目标模型：openai/gpt-image-2",
           "compiled_overridden": false,
           "model_key": "openai/gpt-image-2",
           "where": "api",
@@ -1656,12 +1671,17 @@
         }
       ],
       "prompt": {
-        "intent": "",
-        "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n\n\n# 目标模型：comfy/qwen-image",
+        "intent": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
+        "compiled": "[任务] 画面文字素材，4 张候选：手写纸条、手机屏幕、招牌这类画面里必须一字不差的字\n[描述] 黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。\n[风格] 写实电影感，竖屏短剧的画面质感\n[约束] 除了要求的字，画面里不要出现别的文字、水印或标志\n[核对] 每张出图后 OCR，与要求的字逐字比对；不一致的标红，不自动采纳\n\n# 目标模型：comfy/qwen-image",
         "compiled_overridden": false,
         "model_key": "comfy/qwen-image"
       },
-      "estimate": null,
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
       "running": null,
       "pick": null,
       "settings": null,
@@ -1676,7 +1696,7 @@
       "component_id": "text",
       "current_version_id": "demo-p-asset-txt2-v1",
       "adopted_version_id": "demo-p-asset-txt2-v2",
-      "locked_hash": "sha256:ce8e917f67354385960ac77755c4eeb2b7f97ac30a32254b84e97ffabd76046f",
+      "locked_hash": "sha256:a2b7374d0721d2047106d86ab580a4163bd81d8b152fd1d4ac143d93a59407a1",
       "status": "locked",
       "versions": [
         {
@@ -1688,24 +1708,39 @@
           "payload": {
             "candidates": [
               {
-                "ocr": "23:52"
+                "ocr": "",
+                "ocr_ok": true,
+                "ocr_issue": null
               },
               {
-                "ocr": "23:52"
+                "ocr": "",
+                "ocr_ok": true,
+                "ocr_issue": null
               },
               {
-                "ocr": "23:52"
+                "ocr": "",
+                "ocr_ok": true,
+                "ocr_issue": null
               },
               {
-                "ocr": "23:52"
+                "ocr": "",
+                "ocr_ok": true,
+                "ocr_issue": null
               }
-            ]
+            ],
+            "aspect": "9:16",
+            "refs": [],
+            "text": {
+              "exact": "23:52",
+              "method": "composite",
+              "style": "screen"
+            }
           },
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/9e/9e04460796f86d2de131486cd00a506903cfeb676854eb623b54c070ff893614",
-              "sha256": "9e04460796f86d2de131486cd00a506903cfeb676854eb623b54c070ff893614",
+              "path": "blobs/sha256/e7/e7b784ee8b7bd5500d76232165badfb789923ec4dc394fc42694ac8e3de53b30",
+              "sha256": "e7b784ee8b7bd5500d76232165badfb789923ec4dc394fc42694ac8e3de53b30",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1715,8 +1750,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/ec/ec53628075374f613b06cb5f23d7345f7699bff2bd70bf326cbb65fe81f531ae",
-              "sha256": "ec53628075374f613b06cb5f23d7345f7699bff2bd70bf326cbb65fe81f531ae",
+              "path": "blobs/sha256/88/882df52bccbc1876d66c5131d04e071020eeb07aa8a08d81a4415aa798c40952",
+              "sha256": "882df52bccbc1876d66c5131d04e071020eeb07aa8a08d81a4415aa798c40952",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1726,8 +1761,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/f5/f5f4801bd4a397c235c7732ecbe75dd65c1cb647c7c1bbe4bcbc0a7d2730edf4",
-              "sha256": "f5f4801bd4a397c235c7732ecbe75dd65c1cb647c7c1bbe4bcbc0a7d2730edf4",
+              "path": "blobs/sha256/7c/7c2f8724b7237f16883d4ea9871090eb2e36766bb1f2f36c4191e36c3e7f225f",
+              "sha256": "7c2f8724b7237f16883d4ea9871090eb2e36766bb1f2f36c4191e36c3e7f225f",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1737,8 +1772,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/ed/edeb4dd4761f6bac612582af0d9757a317217a2c0d44c827c37c4f785ad6d4c7",
-              "sha256": "edeb4dd4761f6bac612582af0d9757a317217a2c0d44c827c37c4f785ad6d4c7",
+              "path": "blobs/sha256/ed/ed486c5e007556c97df8149ca2f5b4239f61f6caaf5cc1ed6450ab8df001728e",
+              "sha256": "ed486c5e007556c97df8149ca2f5b4239f61f6caaf5cc1ed6450ab8df001728e",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1747,9 +1782,9 @@
               "view": null
             }
           ],
-          "content_hash": "sha256:1875d415c4d00f2ca5d609e3145fc3e709dc0fe60a4fd4d2a242782f14cb162d",
+          "content_hash": "sha256:4fe3f583e9aec9197ebf8a461dfd43d2cb68a19fcde16e7ee77933cf3abee3ac",
           "intent": "手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。",
-          "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。\n\n# 目标模型：openai/gpt-image-2",
+          "compiled": "[任务] 画面文字素材，4 张候选：手写纸条、手机屏幕、招牌这类画面里必须一字不差的字\n[描述] 手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。\n[风格] 写实电影感，竖屏短剧的画面质感\n[约束] 除了要求的字，画面里不要出现别的文字、水印或标志\n[核对] 每张出图后 OCR，与要求的字逐字比对；不一致的标红，不自动采纳\n\n# 目标模型：openai/gpt-image-2",
           "compiled_overridden": false,
           "model_key": "openai/gpt-image-2",
           "where": "api",
@@ -1776,14 +1811,16 @@
           "parent_version_id": "demo-p-asset-txt2-v1",
           "payload": {
             "candidate": {
-              "ocr": "23:52"
+              "ocr": "",
+              "ocr_ok": true,
+              "ocr_issue": null
             }
           },
           "files": [
             {
               "role": "ref",
-              "path": "blobs/sha256/9e/9e04460796f86d2de131486cd00a506903cfeb676854eb623b54c070ff893614",
-              "sha256": "9e04460796f86d2de131486cd00a506903cfeb676854eb623b54c070ff893614",
+              "path": "blobs/sha256/e7/e7b784ee8b7bd5500d76232165badfb789923ec4dc394fc42694ac8e3de53b30",
+              "sha256": "e7b784ee8b7bd5500d76232165badfb789923ec4dc394fc42694ac8e3de53b30",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1792,9 +1829,9 @@
               "view": null
             }
           ],
-          "content_hash": "sha256:ce8e917f67354385960ac77755c4eeb2b7f97ac30a32254b84e97ffabd76046f",
+          "content_hash": "sha256:a2b7374d0721d2047106d86ab580a4163bd81d8b152fd1d4ac143d93a59407a1",
           "intent": "手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。",
-          "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。\n\n# 目标模型：openai/gpt-image-2",
+          "compiled": "[任务] 画面文字素材，4 张候选：手写纸条、手机屏幕、招牌这类画面里必须一字不差的字\n[描述] 手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。\n[风格] 写实电影感，竖屏短剧的画面质感\n[约束] 除了要求的字，画面里不要出现别的文字、水印或标志\n[核对] 每张出图后 OCR，与要求的字逐字比对；不一致的标红，不自动采纳\n\n# 目标模型：openai/gpt-image-2",
           "compiled_overridden": false,
           "model_key": "openai/gpt-image-2",
           "where": "api",
@@ -1815,12 +1852,17 @@
         }
       ],
       "prompt": {
-        "intent": "",
-        "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n\n\n# 目标模型：comfy/qwen-image",
+        "intent": "手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。",
+        "compiled": "[任务] 画面文字素材，4 张候选：手写纸条、手机屏幕、招牌这类画面里必须一字不差的字\n[描述] 手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。\n[风格] 写实电影感，竖屏短剧的画面质感\n[约束] 除了要求的字，画面里不要出现别的文字、水印或标志\n[核对] 每张出图后 OCR，与要求的字逐字比对；不一致的标红，不自动采纳\n\n# 目标模型：comfy/qwen-image",
         "compiled_overridden": false,
         "model_key": "comfy/qwen-image"
       },
-      "estimate": null,
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
       "running": null,
       "pick": {
         "version_id": "demo-p-asset-txt2-v1",
@@ -2207,14 +2249,14 @@
         "name": "林晚出租屋 · 夜"
       },
       {
-        "id": "umbrella",
-        "kind": "prop",
-        "name": "红色长柄伞"
-      },
-      {
         "id": "note",
         "kind": "prop",
         "name": "黄色便利贴"
+      },
+      {
+        "id": "umbrella",
+        "kind": "prop",
+        "name": "红色长柄伞"
       },
       {
         "id": "band",
