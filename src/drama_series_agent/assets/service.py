@@ -69,9 +69,16 @@ from drama_series_agent.core.models_db import (
     utcnow,
 )
 from drama_series_agent.core.storage import BlobStore
-from drama_series_agent.episodes.service import latest_gate, scene_counts
+from drama_series_agent.episodes.schema import StepProgressOut
+from drama_series_agent.episodes.service import (
+    EpisodeService,
+    gate_confirmed,
+    latest_gate,
+    scene_counts,
+)
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_info
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
+from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
 from drama_series_agent.pipeline.components.text import (
     TEXT_IMAGE_SLOT,
     TextComponent,
@@ -81,6 +88,7 @@ from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, ViewsCo
 from drama_series_agent.pipeline.components.voice import VOICE_SLOT
 from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.impact import ImpactService, series_graph
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
@@ -218,14 +226,87 @@ class AssetService:
         self._store = store
         self._invalidation = invalidation
         self._text = text  # OCR of uploaded on-screen text
+        self._gates: GateService | None = None  # set by ``register``
 
-    def register(self, impact: ImpactService) -> None:
-        """The changes to assets the impact preview knows (M3 step 3: unlocking)."""
+    def register(self, impact: ImpactService, gates: GateService, episodes: EpisodeService) -> None:
+        """The changes to assets the impact preview knows (unlocking), the episode's assets
+        gate (the assets it uses) and its 素材 badge."""
 
         async def asset_unlock(target: str, patch: dict[str, Any]) -> PlannedChange:
             return await self.plan_unlock(target)
 
+        async def asset_edit(target: str, patch: dict[str, Any]) -> PlannedChange:
+            return await self.plan_edit(target, AssetPatch.model_validate(patch))
+
         impact.kind("asset_unlock", asset_unlock)
+        impact.kind("asset_edit", asset_edit)
+        gates.members(ASSET_GATE, self.episode_assets)
+        episodes.counters["assets"] = self.badge
+        self._gates = gates
+
+    async def episode_assets(
+        self, session: AsyncSession, episode_id: str
+    ) -> list[tuple[str, Product]]:
+        """The assets an episode uses (its 出场), in the analysis' order, with their products."""
+        ids = set(
+            (
+                await session.exec(
+                    select(AssetUse.asset_id).where(AssetUse.episode_id == episode_id)
+                )
+            ).all()
+        )
+        assets = [
+            a
+            for a in (await session.exec(select(Asset).where(col(Asset.id).in_(ids)))).all()
+            if not a.retired
+        ]
+        assets.sort(key=lambda a: (int((a.seed_json or {}).get("order", 0)), a.id))
+        products = {
+            p.owner_id: p
+            for p in (
+                await session.exec(
+                    select(Product).where(
+                        Product.owner_type == "asset",
+                        col(Product.owner_id).in_(ids),
+                        col(Product.slot).in_(ASSET_SLOTS),
+                    )
+                )
+            ).all()
+        }
+        return [(a.name, products[a.id]) for a in assets if a.id in products]
+
+    async def badge(self, session: AsyncSession, episode_id: str) -> StepProgressOut:
+        """素材 n / m: the episode's assets locked; 待更新: those and its lines' dubbing."""
+        members = [p for _, p in await self.episode_assets(session, episode_id)]
+        line_ids = list(
+            (
+                await session.exec(
+                    select(ScriptLine.id).where(
+                        ScriptLine.episode_id == episode_id, col(ScriptLine.retired).is_(False)
+                    )
+                )
+            ).all()
+        )
+        dubs = list(
+            (
+                await session.exec(
+                    select(Product).where(
+                        Product.owner_type == "line",
+                        col(Product.owner_id).in_(line_ids),
+                        Product.slot == LINE_AUDIO_SLOT,
+                    )
+                )
+            ).all()
+        )
+        stale = await self._invalidation.stale_ids(session, [*members, *dubs])
+        confirmed = await gate_confirmed(session, ASSET_GATE, episode_id)
+        state = "confirmed" if confirmed else "in_progress" if members else "not_started"
+        return StepProgressOut(
+            state=state,
+            done=sum(1 for p in members if p.locked_hash),
+            total=len(members),
+            stale=len(stale),
+        )
 
     # ------------------------------------------------------------------ reads
 
@@ -305,12 +386,20 @@ class AssetService:
         the voice's source. A locked asset refuses (409 ``product_locked``): changing it goes
         through the impact preview."""
         async with self._db.session() as session:
-            asset = await self._require(session, asset_id)
+            await self._require(session, asset_id)
             product = await asset_product(session, asset_id)
             if product is None:
                 raise PipelineError(409, "product_missing", id=asset_id)
             if product.locked_hash and (body.intent is not None or body.text or body.voice):
                 raise PipelineError(409, "product_locked", id=product.id)
+        await self._write_patch(asset_id, body)
+        return await self.get(asset_id)
+
+    async def _write_patch(self, asset_id: str, body: AssetPatch) -> None:
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+            product = await asset_product(session, asset_id)
+            assert product is not None
             current = product.current_version_id
             text_now = text_settings(asset, product.settings_json) if asset.kind == "text" else {}
         if body.intent is not None:
@@ -330,7 +419,6 @@ class AssetService:
             await self._products.update_settings(product.id, {"text": {**text_now, **changes}})
         if body.voice is not None:
             await self._products.update_settings(product.id, {"voice": body.voice.model_dump()})
-        return await self.get(asset_id)
 
     async def analyze(self, episode_id: str) -> Job:
         """「重新分析剧本」: run the episode's 素材分析 (every run is adopted; the list only
@@ -453,26 +541,7 @@ class AssetService:
             product = await asset_product(session, asset_id)
             if product is None or not product.locked_hash:
                 raise PipelineError(409, "not_locked", id=asset_id)
-            nodes, edges = await series_graph(session, product.series_id)
-            users = sorted({down for down, up, _ in edges if up == product.id})
-            owners = {nodes[u].owner_id for u in users if u in nodes}
-            names = {
-                a.id: a.name
-                for a in (await session.exec(select(Asset).where(col(Asset.id).in_(owners))))
-            }
-        by_slot: dict[str, list[str]] = {}
-        for u in users:
-            node = nodes.get(u)
-            if node is not None:
-                by_slot.setdefault(node.slot, []).append(names.get(node.owner_id, node.owner_id))
-        lines: list[dict[str, Any]] = []
-        for slot, who in by_slot.items():
-            params: dict[str, Any] = {"count": len(who), "names": "、".join(who)}
-            if slot == REF_VIEWS_SLOT:
-                params = {"name": asset.name}
-            lines.append({"code": f"uses_{slot}", "params": params, "cost_usd": None})
-        for line in lines:
-            line["optional"] = False
+            lines = await self._uses(session, asset, product)
         locked_hash = product.locked_hash
 
         async def commit() -> None:
@@ -483,6 +552,9 @@ class AssetService:
                 await record_asset_gate(session, self._invalidation, p, "reopen")
                 await session.commit()
             await self._gate_updated(product, "reopen")
+            # The episodes that use it were confirmed with it locked.
+            if self._gates is not None:
+                await self._gates.reopen_using(ASSET_GATE, product.id)
 
         return PlannedChange(
             product_id=product.id,
@@ -495,7 +567,95 @@ class AssetService:
             relock=False,
         )
 
+    async def plan_edit(self, asset_id: str, body: AssetPatch) -> PlannedChange:
+        """改一条已锁定的素材 (kind ``asset_edit``: its description, on-screen text settings or
+        voice source). The locked reference stays until the user locks a new one, so the lines
+        are the redraw (确认并同步 makes new candidates), what follows a new lock, and the scenes
+        it is in."""
+        if body.pick is not None:
+            raise PipelineError(422, "invalid_patch", kind="asset_edit", issues="pick")
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+            product = await asset_product(session, asset_id)
+            if product is None or not product.locked_hash:
+                raise PipelineError(409, "not_locked", id=asset_id)
+            uses = await self._uses(session, asset, product)
+            numbers = await _scene_numbers(session, product.series_id)
+            scenes = sorted(
+                {
+                    numbers.get(u.scene_id, 0)
+                    for u in (
+                        await session.exec(select(AssetUse).where(AssetUse.asset_id == asset_id))
+                    ).all()
+                }
+            )
+        _, est = await self._runs.describe(product)
+        lines: list[dict[str, Any]] = [
+            {
+                "code": "asset_redraw",
+                "params": {"name": asset.name, "kind": asset.kind},
+                "cost_usd": est.cost_usd if est is not None else None,
+                "optional": False,
+            },
+            *uses,
+        ]
+        if scenes:
+            lines.append(
+                {
+                    "code": "asset_in_scenes",
+                    "params": {"scenes": "、".join(str(n) for n in scenes), "count": len(scenes)},
+                    "cost_usd": None,
+                    "optional": False,
+                }
+            )
+
+        async def commit() -> None:
+            await self._write_patch(asset_id, body)
+
+        async def redraw() -> list[str]:
+            return [(await self._runs.start(product.id, "rerun")).id]
+
+        return PlannedChange(
+            product_id=product.id,
+            series_id=product.series_id,
+            base_version_id=product.adopted_version_id,
+            commit=commit,
+            content=body.model_dump(exclude_none=True),
+            lines=lines,
+            unaffected={"code": "edit_keeps_ref", "params": {"name": asset.name}},
+            rerun=redraw,
+        )
+
     # ------------------------------------------------------------------ internals
+
+    async def _uses(
+        self, session: AsyncSession, asset: Asset, product: Product
+    ) -> list[dict[str, Any]]:
+        """Impact lines for what reads the locked reference: views, assets drawn from it
+        (names), the lines dubbed in a voice (how many)."""
+        nodes, edges = await series_graph(session, product.series_id)
+        users = sorted({down for down, up, _ in edges if up == product.id})
+        owners = {nodes[u].owner_id for u in users if u in nodes}
+        names = {
+            a.id: a.name
+            for a in (await session.exec(select(Asset).where(col(Asset.id).in_(owners))))
+        }
+        by_slot: dict[str, list[str]] = {}
+        for u in users:
+            node = nodes.get(u)
+            if node is not None:
+                by_slot.setdefault(node.slot, []).append(names.get(node.owner_id, node.owner_id))
+        lines: list[dict[str, Any]] = []
+        for slot, who in by_slot.items():
+            params: dict[str, Any] = {"count": len(who), "names": "、".join(who)}
+            if slot == REF_VIEWS_SLOT:
+                params = {"name": asset.name}
+            elif slot == LINE_AUDIO_SLOT:
+                params = {"name": asset.name, "count": len(who)}
+            lines.append({"code": f"uses_{slot}", "params": params, "cost_usd": None})
+        for line in lines:
+            line["optional"] = False
+        return lines
 
     async def _gate_updated(self, product: Product, action: str) -> None:
         await self._bus.publish(

@@ -167,7 +167,7 @@ class StudioState:
             episodes=episodes,
             script=script_svc,
         )
-        assets.register(impact)
+        assets.register(impact, gates, episodes)
         state = cls(
             db=db,
             bus=bus,

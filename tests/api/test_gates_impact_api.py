@@ -197,7 +197,7 @@ def test_script_gate_is_per_episode(client: TestClient) -> None:
 
 
 def test_gate_errors(client: TestClient) -> None:
-    resp = client.post(f"{V1}/gates/assets/confirm", json={"scope_id": "demo-e1"})
+    resp = client.post(f"{V1}/gates/storyboard/confirm", json={"scope_id": "demo-e1"})
     assert resp.status_code == 404 and _code(resp) == "unknown_gate"
     resp = client.post(f"{V1}/gates/script/confirm", json={"scope_id": "demo"})
     assert resp.status_code == 404 and _code(resp) == "episode_not_found"

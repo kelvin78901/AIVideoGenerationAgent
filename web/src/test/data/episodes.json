@@ -740,9 +740,9 @@
           "stale": 0
         },
         "assets": {
-          "state": "not_started",
-          "done": null,
-          "total": null,
+          "state": "in_progress",
+          "done": 7,
+          "total": 10,
           "stale": 0
         },
         "storyboard": {
@@ -782,8 +782,8 @@
         },
         "assets": {
           "state": "not_started",
-          "done": null,
-          "total": null,
+          "done": 0,
+          "total": 0,
           "stale": 0
         },
         "storyboard": {
@@ -823,8 +823,8 @@
         },
         "assets": {
           "state": "not_started",
-          "done": null,
-          "total": null,
+          "done": 0,
+          "total": 0,
           "stale": 0
         },
         "storyboard": {

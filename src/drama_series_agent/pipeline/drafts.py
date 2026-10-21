@@ -90,3 +90,6 @@ class PlannedChange:
     unaffected: dict[str, Any] | None = None
     # False when the change is the unlock itself: the product stays unlocked after ``commit``.
     relock: bool = True
+    # 确认并同步 of a change whose follow-up is not a rerun of what it made stale (M3: editing a
+    # locked asset draws new candidates of it): returns the job ids it started.
+    rerun: Callable[[], Awaitable[list[str]]] | None = None

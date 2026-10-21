@@ -20,6 +20,10 @@ restart picks it up again: nothing else is stored). Each step is worked out from
   cascade, which bounds the cost.
 - Every rerun goes through the usual budget check (``RunService.start``): over a cap it waits
   in 「等你确认」.
+- **Stop set** (M3): a product whose takes wait for the user's pick (candidates: reference
+  pictures, on-screen text, voices; ``Component.auto_adopt`` off) is never rerun by a cascade,
+  since settling would adopt a take nobody picked and unlock what was locked. A script change
+  never redraws or unlocks an asset; the dubbing still follows the lines.
 - When nothing is left running, a toast says how many products were updated.
 """
 
@@ -164,6 +168,7 @@ class CascadeService:
                 (await session.exec(select(Product).where(Product.series_id == series_id))).all()
             )
             stale = await self._invalidation.stale_ids(session, products)
+        products_by_id = {p.id: p for p in products}
         below: dict[str, set[str]] = {}
         above: dict[str, set[str]] = {}
         for down, up, _ in edges:
@@ -180,6 +185,7 @@ class CascadeService:
             if j.product_id and (j.state in ACTIVE_JOB_STATES or j.state in _STOPPED)
         }
         todo = (_closure(origin, below) & stale) - done - holding - {origin}
+        todo = {pid for pid in todo if self._cascades(products_by_id.get(pid))}
         waiting = todo | holding
         ready = [
             pid
@@ -201,6 +207,11 @@ class CascadeService:
                 continue
             started.append(job.id)
         return started
+
+    def _cascades(self, p: Product | None) -> bool:
+        """Not in the stop set: its reruns are adopted as they come."""
+        comp = self._runs.components.get(p.component_id) if p is not None else None
+        return comp is not None and (comp.auto_adopt or comp.adopt_every_run)
 
 
 def _closure(start: str, graph: dict[str, set[str]]) -> set[str]:

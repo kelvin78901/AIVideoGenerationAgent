@@ -74,6 +74,7 @@ PIPELINE_ORDER = {
     "text_image": 6,
     "voice": 6,
     "ref_views": 7,
+    "line_audio": 8,
 }
 _STEP = {
     NOVEL_SLOT: "novel",
@@ -86,6 +87,7 @@ _STEP = {
     "text_image": "assets",
     "voice": "assets",
     "ref_views": "assets",
+    "line_audio": "assets",
 }
 _KEPT = 100  # previews kept in memory
 
@@ -254,7 +256,9 @@ class ImpactService:
             raise PipelineError(409, "impact_outdated", id=body.impact_id)
         await self._write(planned)
         jobs: list[str] = []
-        if body.action == "rerun" and self.cascade is not None:
+        if body.action == "rerun" and planned.rerun is not None:
+            jobs = await planned.rerun()
+        elif body.action == "rerun" and self.cascade is not None:
             jobs = await self.cascade.start(planned.series_id, planned.product_id)
         return ImpactApplyOut(action=body.action, stale=preview.stale, job_ids=jobs)
 
@@ -371,11 +375,8 @@ class ImpactService:
         me = nodes.get(planned.product_id)
         if me is not None and me.locked and not found.noop:
             lines.append(line(f"self_{me.slot}", me))
-        lines += [line(f"stale_{nodes[i].slot}", nodes[i], cost=costs.get(i)) for i in found.direct]
-        lines += [
-            line(f"then_{nodes[i].slot}", nodes[i], cost=costs.get(i), optional=True)
-            for i in found.further
-        ]
+        lines += self._grouped("stale", found.direct, nodes, costs, optional=False)
+        lines += self._grouped("then", found.further, nodes, costs, optional=True)
         gates: dict[tuple[str, str], Node] = {}
         for i in ids:
             node = nodes[i]
@@ -391,8 +392,40 @@ class ImpactService:
             step = _STEP.get(nodes[i].slot)
             if step:
                 stale[step] = stale.get(step, 0) + 1
-        total = round(sum(c for c in costs.values() if c), 4)
+        # Lines the planner worked out (an edited asset's redraw) are priced by it.
+        planned_costs = [c for x in planned.lines if (c := x.get("cost_usd"))]
+        total = round(sum(c for c in costs.values() if c) + sum(planned_costs), 4)
         return lines, stale, total
+
+    def _grouped(
+        self,
+        prefix: str,
+        ids: list[str],
+        nodes: dict[str, Node],
+        costs: dict[str, float | None],
+        *,
+        optional: bool,
+    ) -> list[ImpactLineOut]:
+        """One line per slot (and episode): 60 lines of dubbing are 「配音 · 60 句」, with their
+        costs added up. Slots made by the dozen always say how many."""
+        groups: dict[tuple[str, int | None], list[str]] = {}
+        for i in ids:
+            groups.setdefault((nodes[i].slot, nodes[i].n), []).append(i)
+        out: list[ImpactLineOut] = []
+        for (slot, n), members in groups.items():
+            params: dict[str, Any] = {"n": n} if n is not None else {}
+            if len(members) > 1 or slot in self._products.quiet_slots:
+                params["count"] = len(members)
+            priced = [c for i in members if (c := costs.get(i)) is not None]
+            out.append(
+                ImpactLineOut(
+                    code=f"{prefix}_{slot}",
+                    params=params,
+                    cost_usd=round(sum(priced), 6) if priced else None,
+                    optional=optional,
+                )
+            )
+        return out
 
 
 # ------------------------------------------------------------------ the kinds of change
