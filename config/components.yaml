@@ -35,10 +35,11 @@ fallback_defaults:
   notify: after            # after = 直接兜底事后通知；ask = 兜底前先问
 
 # 台词音频（音色样本、台词配音）统一处理（M3，media/audio.py）：48 kHz 单声道，裁首尾静音
-# （低于 trim_db 算静音），响度拉到 lufs，真峰值不超过 peak_dbtp。对白比成片的 -14 LUFS 低，
-# 给 M7 的音乐、音效和最终响度留余量。
+# （按拉响度之后的音量算，低于 trim_db 算静音），响度拉到 lufs，真峰值不超过 peak_dbtp。对白比成片的
+# -14 LUFS 低，给 M7 的音乐、音效和最终响度留余量。tail_s：结尾的缓冲，一半留最后一个音的自然收尾
+# （最后 50 ms 淡出），一半补静音，免得一句话在音还没落下时就断掉。
 audio:
-  dialogue: { lufs: -18, peak_dbtp: -1.5, trim_db: -45, sample_rate: 48000 }
+  dialogue: { lufs: -18, peak_dbtp: -1.5, trim_db: -45, sample_rate: 48000, tail_s: 0.3 }
 
 # 单次花费上限（美元，硬规则 6）：预计花费超过它的调用先进 waiting_confirm 等确认。
 # 组件里的 per_call_cap_usd 覆盖这个默认值；数值取自原型各页 Inspector。

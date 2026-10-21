@@ -42,7 +42,8 @@ from tempfile import TemporaryDirectory
 from drama_series_agent.core.config import get_config
 
 WAVEFORM_BARS = 64
-KEEP_S = 0.05  # silence kept at each end after trimming
+KEEP_S = 0.05  # silence kept before the first sound
+FADE_S = 0.05  # fade-out at the end of the sound, before the padding
 SHORTEST_GATED_S = 0.4  # BS.1770 gating blocks are 400 ms
 _I = re.compile(r"\bI:\s+(-?inf|-?\d+(?:\.\d+)?) LUFS")
 _PEAK = re.compile(r"\bPeak:\s+(-?inf|-?\d+(?:\.\d+)?) dBFS")
@@ -62,13 +63,21 @@ class DialogueTarget:
 
     lufs: float = -18.0
     peak_dbtp: float = -1.5
-    trim_db: float = -45.0  # quieter than this at either end counts as silence
+    trim_db: float = -45.0  # quieter than this at either end counts as silence (after levelling)
     sample_rate: int = 48000
+    # After the last sound: half kept of what follows it (its decay), half added as silence.
+    tail_s: float = 0.3
 
     @classmethod
     def from_config(cls) -> DialogueTarget:
         d = get_config().components.audio.dialogue
-        return cls(lufs=d.lufs, peak_dbtp=d.peak_dbtp, trim_db=d.trim_db, sample_rate=d.sample_rate)
+        return cls(
+            lufs=d.lufs,
+            peak_dbtp=d.peak_dbtp,
+            trim_db=d.trim_db,
+            sample_rate=d.sample_rate,
+            tail_s=d.tail_s,
+        )
 
 
 @dataclass(frozen=True)
@@ -169,24 +178,49 @@ async def prepare_dialogue(data: bytes, target: DialogueTarget | None = None) ->
     return await asyncio.to_thread(_prepare, data, target or DialogueTarget.from_config())
 
 
+def _level(path: Path, tmp: str) -> float | None:
+    """Integrated loudness, or the RMS level of a clip too short to gate."""
+    lufs = measure(path).lufs
+    if lufs is None or lufs <= -69.0:  # too short to gate (or silent): use the RMS level
+        plain = Path(tmp, "plain.wav")
+        _ffmpeg("-i", str(path), "-c:a", "pcm_s16le", "-y", str(plain))
+        samples, _ = _samples(plain.read_bytes())
+        return rms_db(samples)
+    return lufs
+
+
 def _prepare(data: bytes, t: DialogueTarget) -> PreparedAudio:
-    trim = f"silenceremove=start_periods=1:start_threshold={t.trim_db}dB:start_silence={KEEP_S}"
     with TemporaryDirectory(prefix="drama-audio-") as tmp:
         src, trimmed, out = Path(tmp, "in"), Path(tmp, "trimmed.wav"), Path(tmp, "out.wav")
         src.write_bytes(data)
-        # Float in between, so the gain below never works on clipped samples.
+        # Silence is judged as it will sound after levelling: a whispered line raised by 15 dB
+        # keeps its soft ending, which a fixed threshold on the raw clip would cut off.
+        raw = _level(src, tmp)
+        if raw is None:
+            raise AudioError("audio_silent")
+        threshold = max(t.trim_db - max(t.lufs - raw, 0.0), -90.0)
+        tail = t.tail_s / 2
+
+        def trim(keep: float) -> str:
+            return (
+                "silenceremove=start_periods=1"
+                f":start_threshold={threshold:.1f}dB:start_silence={keep}"
+            )
+
+        # Float in between, so the gain below never works on clipped samples. The end keeps
+        # half the tail of what follows the last sound, fades its last FADE_S out and gets
+        # the other half as silence: a line never stops on a sound still ringing.
+        chain = (
+            f"{trim(KEEP_S)},areverse,{trim(tail)},afade=t=in:d={FADE_S},areverse,"
+            f"apad=pad_dur={tail}"
+        )
         _ffmpeg(
             "-i", str(src),
-            "-af", f"{trim},areverse,{trim},areverse",
+            "-af", chain,
             "-ac", "1", "-ar", str(t.sample_rate), "-c:a", "pcm_f32le", "-y", str(trimmed),
         )  # fmt: skip
         before = measure(trimmed)
-        lufs = before.lufs
-        if lufs is None or lufs <= -69.0:  # too short to gate (or silent): use the RMS level
-            plain = Path(tmp, "plain.wav")
-            _ffmpeg("-i", str(trimmed), "-c:a", "pcm_s16le", "-y", str(plain))
-            samples, _ = _samples(plain.read_bytes())
-            lufs = rms_db(samples)
+        lufs = _level(trimmed, tmp)
         if lufs is None:
             raise AudioError("audio_silent")
         gain = t.lufs - lufs

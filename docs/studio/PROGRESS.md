@@ -22,7 +22,7 @@
 - 第 11 步：MiniMax 适配器（0931412，DECISIONS「第 11 步」）：`/t2a_v2`、`/voice_design`、`base_resp` 错误码、按计费字数记账；`common:modelError` 把错误码翻成人话。之后改国内站 + 人民币价（0ee236c，DECISIONS「MiniMax 用国内站」）。
 - 第 12 步（上）：本地 Python 运行时（783045c，DECISIONS「第 12 步（上）」）：`adapters/local_python.py`、`modelhub/vram.py`、三个 worker。
 - 第 12 步（下）（本提交，DECISIONS 2026-10-21「第 12 步（下）」）：`modelhub/workflows.py`（工作流目录、按标题绑定）、`adapters/comfyui.py`（上传 → `/prompt` → 轮询 `/history` → `/view`，超时 `/interrupt` + 删排队，`comfy_lost`，租约 `/free`）、`workflows/qwen-image{,-edit}/`（官方模板改写，Lightning 4 步，9:16 → 928×1664）；版本记 `workflow_id` / `workflow_sha256` / `comfy_env_hash`；安装器 `uv_sync`（`UV_PROJECT_ENVIRONMENT`）、`runtimes/{qwentts,ocr}/`（pyproject + uv.lock）；清单 `rt_qwentts`、`rt_indextts`（index-tts `d9e41aa`、Python 3.11）、`rt_ocr`、`w_img_t2i`，IndexTTS 辅助模型并进 `w_tts`（8.3 GB）；`py_import` 的 `gpu: true` 查 CUDA 版和 sm_120；`needs`。worker 修正：IndexTTS 必填 `lang`、`use_cuda_kernel=False`；Qwen3-TTS 按本地文件夹加载。Setup 页多 4 行（原型没有）。测试：`test_comfyui_adapter.py` 12 个、`test_asset_refs_api.py` 真实 ComfyUI 适配器 + 假 ComfyUI 出草稿。pytest 645、Vitest 278、Playwright 34 全过。
-- 第 13 步：本机真装真跑（工具 6812db1；结果本提交，DECISIONS 2026-10-21「第 13 步」，`reports/m3-local-smoke.txt`）：五项经真实安装器装好（18 分钟，没动 Anaconda）；冒烟六步全部本地成功；画面文字提示词去掉「4 张候选」和 [核对] 行（原来画成拼图）。
+- 第 13 步：本机真装真跑（工具 6812db1；结果本提交，DECISIONS 2026-10-21「第 13 步」，`reports/m3-local-smoke.txt`）：五项经真实安装器装好（18 分钟，没动 Anaconda）；冒烟六步全部本地成功。跑时修了四处：画面文字提示词（原来画成拼图）、台词结尾留缓冲（`tail_s`，Kelvin 听出尾音被切）、Qwen3-TTS 限长（一次说了 78 s）、补视图改用本地出图锁定后的真实参考图。
 
 ## 下一步
 
@@ -76,5 +76,5 @@
 
 - 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
 - **定一下**：确认过的任务真实花费超过确认金额时现在直接停（`budget_exceeded`），多步流程（比如音色终版 = 设计 + 5 次合成）会停在半路、前面花的白花。要不要留余量（比如确认金额的 10% 或 $0.05，取大的）？没定之前靠估价往高估（DECISIONS「第 11 步」）。
-- 听一下第 13 步本地生成的声音、看看图（`reports/m3-local-smoke.txt` 末尾写了文件夹，临时目录，会被清理）；第 14 步真实冒烟的花费要你点头。
+- 第 14 步真实冒烟的花费要你点头；补视图的「表情」要不要改成每种表情单独一张（现在要 2×2 四格，2511 出成一大两小三种）。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。

@@ -168,6 +168,7 @@ class DialogueAudio(_Loose):
     peak_dbtp: float = -1.5
     trim_db: float = -45.0
     sample_rate: int = 48000
+    tail_s: float = 0.3
 
 
 class AudioDefaults(_Loose):

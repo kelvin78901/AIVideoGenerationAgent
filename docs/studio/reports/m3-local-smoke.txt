@@ -1,5 +1,5 @@
-M3 local smoke · 2026-10-21 08:21
-GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 610.47; in use before 3705 MiB
+M3 local smoke · 2026-10-21 09:06
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 610.47; in use before 2793 MiB
 ComfyUI 0.41.2 at http://127.0.0.1:8188
 models C:\Users\kelvin\DramaStudio · envs C:\Users\kelvin\.drama-studio\envs
 env qwentts: 3.12.14 2.11.0+cu130 13.0 (12, 0) ['sm_75', 'sm_80', 'sm_86', 'sm_90', 'sm_100', 'sm_120']
@@ -7,90 +7,95 @@ env indextts: 3.11.16 2.8.0+cu128 12.8 (12, 0) ['sm_61', 'sm_70', 'sm_75', 'sm_8
 env ocr: installed
 
 == img: 林晚出租屋 · Qwen-Image-2512
-   1 job(s) in 32.8 s, GPU memory peak 31361 MiB
-   call comfy/qwen-image [local] success 32.4 s images=4
+   1 job(s) in 32.9 s, GPU memory peak 30902 MiB
+   call comfy/qwen-image [local] success 32.3 s images=4
    model comfy/qwen-image [local], files: room-candidate-0.png (928x1664), room-candidate-1.png (928x1664), room-candidate-2.png (928x1664), room-candidate-3.png (928x1664)
 == text: 便利贴手写 · Qwen-Image-2512 + RapidOCR
-   1 job(s) in 20.3 s, GPU memory peak 31550 MiB
-   call comfy/qwen-image [local] success 14.2 s images=4
+   1 job(s) in 19.8 s, GPU memory peak 30819 MiB
+   call comfy/qwen-image [local] success 13.2 s images=4
    call local/rapidocr [local] success 2.3 s images=1
    call local/rapidocr [local] success 0.9 s images=1
+   call local/rapidocr [local] success 1.4 s images=1
    call local/rapidocr [local] success 1.3 s images=1
-   call local/rapidocr [local] success 1.2 s images=1
    model comfy/qwen-image [local], files: txt1-candidate-0.png (928x1664), txt1-candidate-1.png (928x1664), txt1-candidate-2.png (928x1664), txt1-candidate-3.png (928x1664)
    OCR #0: '楼下便利店，等你到十二点。' ok=True
    OCR #1: '楼下便利店，等你到十二点。' ok=True
    OCR #2: '楼下便利店，等你到十二点。' ok=True
    OCR #3: '楼下便利店，等你到十二点。' ok=True
-== views: 林晚三视图 · Qwen-Image-Edit-2511
-   1 job(s) in 43.4 s, GPU memory peak 31624 MiB
-   call comfy/qwen-image-edit [local] success 25.5 s images=1
-   call comfy/qwen-image-edit [local] success 8.1 s images=1
-   call comfy/qwen-image-edit [local] success 9.3 s images=1
-   model comfy/qwen-image-edit [local], files: linwan-views-view-0-side.png (928x1664), linwan-views-view-1-back.png (928x1664), linwan-views-view-2-expressions.png (928x1664)
+== views: 周屿三视图（先本地出图、锁定）· Qwen-Image-Edit-2511
+   1 job(s) in 51.0 s, GPU memory peak 31484 MiB
+   call comfy/qwen-image-edit [local] success 25.4 s images=1
+   call comfy/qwen-image-edit [local] success 6.2 s images=1
+   call comfy/qwen-image-edit [local] success 6.1 s images=1
+   model comfy/qwen-image [local], files: zhouyu-ref-ref-0.png (928x1664)
+   model comfy/qwen-image-edit [local], files: zhouyu-views-view-0-side.png (928x1664), zhouyu-views-view-1-back.png (928x1664), zhouyu-views-view-2-expressions.png (928x1664)
 == voice: 林晚重新试听（先解锁）· Qwen3-TTS VoiceDesign
-   1 job(s) in 44.4 s, GPU memory peak 7917 MiB
-   call local/qwen3-tts [local] success 17.5 s audio=0.64s
-   call local/qwen3-tts [local] success 8.8 s audio=3.68s
-   call local/qwen3-tts [local] success 4.0 s audio=1.68s
-   call local/qwen3-tts [local] success 4.3 s audio=1.84s
-   call local/qwen3-tts [local] success 2.7 s audio=1.12s
-   call local/qwen3-tts [local] success 6.1 s audio=2.64s
-   model local/qwen3-tts [local], files: linwan-audition-candidate-0-0.wav (0.56s), linwan-audition-candidate-0-1.wav (2.13s), linwan-audition-candidate-1-0.wav (0.64s), linwan-audition-candidate-1-1.wav (1.76s), linwan-audition-candidate-2-0.wav (0.76s), linwan-audition-candidate-2-1.wav (2.06s)
+   1 job(s) in 39.0 s, GPU memory peak 7350 MiB
+   call local/qwen3-tts [local] success 20.3 s audio=1.84s
+   call local/qwen3-tts [local] success 4.3 s audio=2.32s
+   call local/qwen3-tts [local] success 1.5 s audio=0.8s
+   call local/qwen3-tts [local] success 5.3 s audio=2.88s
+   call local/qwen3-tts [local] success 2.4 s audio=1.28s
+   call local/qwen3-tts [local] success 4.0 s audio=2.16s
+   model local/qwen3-tts [local], files: linwan-audition-candidate-0-0.wav (1.05s), linwan-audition-candidate-0-1.wav (2.20s), linwan-audition-candidate-1-0.wav (0.90s), linwan-audition-candidate-1-1.wav (2.84s), linwan-audition-candidate-2-0.wav (1.07s), linwan-audition-candidate-2-1.wav (2.28s)
 == voice_final: 林晚本地终版 · IndexTTS-2.5 五个情绪
-   1 job(s) in 55.0 s, GPU memory peak 10102 MiB
-   call local/indextts2 [local] success 36.2 s audio=0.8359183673469388s
-   call local/indextts2 [local] success 4.1 s audio=1.3119274376417234s
-   call local/indextts2 [local] success 4.7 s audio=2.066575963718821s
-   call local/indextts2 [local] success 4.2 s audio=1.5905668934240362s
-   call local/indextts2 [local] success 4.2 s audio=1.555736961451247s
-   model local/indextts2 [local], files: linwan-final-anchor-0.wav (0.56s), linwan-final-anchor-1.wav (2.13s), linwan-final-variant-0-0-calm.wav (0.62s), linwan-final-variant-1-0-angry.wav (0.98s), linwan-final-variant-2-0-crying.wav (1.23s), linwan-final-variant-3-0-whisper.wav (1.25s), linwan-final-variant-4-0-shout.wav (1.29s)
+   1 job(s) in 51.9 s, GPU memory peak 9801 MiB
+   call local/indextts2 [local] success 34.2 s audio=0.7546485260770975s
+   call local/indextts2 [local] success 4.0 s audio=1.3119274376417234s
+   call local/indextts2 [local] success 4.2 s audio=1.3467573696145125s
+   call local/indextts2 [local] success 3.9 s audio=1.3931972789115645s
+   call local/indextts2 [local] success 4.0 s audio=1.4280272108843537s
+   model local/indextts2 [local], files: linwan-final-anchor-0.wav (1.05s), linwan-final-anchor-1.wav (2.20s), linwan-final-variant-0-0-calm.wav (0.88s), linwan-final-variant-1-0-angry.wav (1.02s), linwan-final-variant-2-0-crying.wav (1.09s), linwan-final-variant-3-0-whisper.wav (1.31s), linwan-final-variant-4-0-shout.wav (1.35s)
    lock: locked
 == dub: 全部配音 · 林晚的本地音色走 IndexTTS-2.5
-   2 job(s) in 3.6 s, GPU memory peak 10034 MiB
-   call local/indextts2 [local] success 1.5 s audio=1.2770975056689342s
-   call local/indextts2 [local] success 3.0 s audio=1.3119274376417234s
+   2 job(s) in 3.6 s, GPU memory peak 9807 MiB
+   call local/indextts2 [local] success 1.3 s audio=1.1145578231292517s
+   call local/indextts2 [local] success 3.0 s audio=1.7531065759637188s
    line 0: ……周屿？ (whisper)
-   model local/indextts2 [local], files: dub-0-audio.wav (0.80s)
+   model local/indextts2 [local], files: dub-0-audio.wav (1.05s)
    line 1: 三年了。他凭什么。 (calm)
-   model local/indextts2 [local], files: dub-1-audio.wav (1.31s)
+   model local/indextts2 [local], files: dub-1-audio.wav (1.83s)
 
 result: all local steps ran
-files: C:\Users\kelvin\AppData\Local\Temp\drama-local-smoke-mpnk30h1\out
+files: C:\Users\kelvin\AppData\Local\Temp\drama-local-smoke-j_r1kurb\out
 
 ---- 备注（M3 第 13 步，2026-10-21）----
 
-安装（通过工作台「环境与安装」的真实安装器，Kelvin 的 PC，07:48 → 08:06，共 18 分钟，装完都按检测复查过）：
+安装（工作台「环境与安装」的真实安装器，Kelvin 的 PC，07:48 → 08:06，共 18 分钟，装完都按检测复查过）：
   rt_qwentts   4 分钟（uv_sync：qwen-tts 0.1.1 + PyTorch 2.11 cu130；VoiceDesign 1.7B 4.5 GB）
   rt_indextts  2 分钟（git clone index-tts d9e41aa + uv_sync：Python 3.11、PyTorch 2.8 cu128）
   rt_ocr       几秒（rapidocr 3.10 + onnxruntime 1.31，CPU）
-  w_img_t2i    11 分钟（2512 fp8 20.4 GB + Lightning LoRA 1.7 GB；文本编码器、VAE 已有，校验后跳过）约 25–37 MB/s
+  w_img_t2i    11 分钟（2512 fp8 20.4 GB + Lightning LoRA 1.7 GB；文本编码器、VAE 已有，校验后跳过），约 25–37 MB/s
   w_tts        1 分钟（补 w2v-bert、CAMPPlus、BigVGAN 共 2.8 GB；原有 5.5 GB 校验后跳过）
-  两个 TTS 环境的 PyTorch 都是 CUDA 版并且带 sm_120（上面 env 行），检测的 gpu: true 检查通过。
-  没动 Anaconda（C:\Users\kelvin\anaconda3 在安装期间没有任何文件变化）和系统 Python。
+  两个 TTS 环境的 PyTorch 都是 CUDA 版并带 sm_120（上面 env 行）。没动 Anaconda（C:\Users\kelvin\anaconda3 在安装期间
+  没有文件变化）和系统 Python。
 
-怎么跑的：scripts/smoke/local_assets.py，临时数据目录里的 Mock 示例剧集，DRAMA_REAL_LOCAL=1（本地模型真跑，
-API 和写作模型仍是 Mock，没花钱）。每步都核对了 model_call：全部 [local] success，没有兜底到 API。
+怎么跑的：scripts/smoke/local_assets.py，临时数据目录里的 Mock 示例剧集，DRAMA_REAL_LOCAL=1（本地模型真跑，API 和写作
+模型仍是 Mock，没花钱）。每步核对 model_call：全部 [local] success，没有兜底到 API。
 
-结论
-  - Qwen-Image-2512（Lightning 4 步）：4 张 928×1664 约 13–14 s（模型已在显存）；被 TTS 让出显存后重新加载约 +20 s。
-  - Qwen-Image-Edit-2511：首张 25–27 s（含加载），之后 6–9 s / 张。
-  - RapidOCR：首次 2 s，之后约 1 s / 张，读得一字不差。
-  - Qwen3-TTS VoiceDesign：首次 17–29 s（加载），之后 3–9 s / 句。
-  - IndexTTS-2.5：首次 32–38 s（加载 GPT、w2v-bert、Qwen 情绪模型等），之后约 4 s / 句；配音 1.5–3 s / 句。
-  - 显存租约按设计换手：ComfyUI 跑完占着约 28–31 GB（它自己缓存模型），TTS 一拿租约 ComfyUI 就 /free，
-    试听峰值约 8 GB，换 IndexTTS 时 Qwen3-TTS worker 先退出，峰值约 10–11 GB。
+耗时（首次 = 含加载模型）
+  Qwen-Image-2512（Lightning 4 步）：4 张 928×1664 约 13 s；被 TTS 让出显存后重新加载约 +15–20 s。
+  Qwen-Image-Edit-2511：首张约 25 s，之后 6–9 s / 张。
+  RapidOCR：首次约 2 s，之后约 1 s / 张，读得一字不差。
+  Qwen3-TTS VoiceDesign：首次 17–29 s，之后 2–9 s / 句。
+  IndexTTS-2.5：首次 32–38 s（GPT、w2v-bert、Qwen 情绪模型等），之后约 4 s / 句；配音 1–3 s / 句。
+  显存租约按设计换手：ComfyUI 跑完占着约 28–31 GB（它自己缓存模型），TTS 拿租约时 ComfyUI /free；试听峰值约 7–9 GB，
+  换 IndexTTS 时 Qwen3-TTS worker 先退出，峰值约 10–11 GB。
 
 跑的过程中发现并修掉的
-  - 画面文字的提示词（prompts/templates/text/default.j2）第一行原来写「4 张候选：手写纸条、手机屏幕、招牌这类…」，
-    还有一行写给人看的「[核对] 每张出图后 OCR…」：Qwen-Image 照字面画成了 3–4 格的拼图（还画了一格手机），
-    OCR 读到同一句话三四遍，逐字比对全部不一致。改成「一张画面，里面只有下面这一处字」+「单幅画面，不拼图、不分格」
-    后，4 张都是单张便利贴，OCR 全部一致。
-  - 配音原来用示例里林晚的 Mock 音色（正弦波）当 IndexTTS 的说话人样本，克隆出来近乎静音，一句被电平检查拦下
-    （audio_silent）。冒烟改成真实流程：解锁林晚的音色 → Qwen3-TTS 重新试听 → IndexTTS 本地终版 → 锁定 →
-    「全部配音」（本地音色没有 MiniMax 的 voice_id，台词自动走 IndexTTS）。
+  1. 画面文字画成拼图：提示词（prompts/templates/text/default.j2）第一行写「4 张候选：手写纸条、手机屏幕、招牌…」，还有
+     一行给人看的「[核对] 每张出图后 OCR…」。Qwen-Image 照字面画了 3–4 格（还有一格手机），OCR 读到同一句话几遍，逐字比对
+     全部不一致。改成「一张画面，里面只有下面这一处字」+「单幅画面，不拼图、不分格」后，4 张都是单张便利贴，OCR 全部一致。
+  2. 台词结尾被切（Kelvin 听出来的）：原来在拉响度之前按固定 −45 dB 裁静音、结尾只留 50 ms，耳语和轻声的尾音被切掉
+     （「……周屿？」原始 1.28 s 存成 0.80 s）。现在按拉响度之后的音量判断静音，结尾留 0.15 s 自然收尾 + 50 ms 淡出 +
+     0.15 s 静音（components.yaml 的 audio.dialogue.tail_s）。这次「……周屿？」原始 1.11 s → 存 1.05 s。
+  3. Qwen3-TTS 停不下来：一次试听里 9 个字的台词生成了 78 s（模型没给结束，一直说到 qwen-tts 默认上限），还被带进
+     本地终版当锚点。worker 现在按字数限长（3 s + 0.8 s / 字），碰到上限重来一次，再碰到报 tts_runaway。
+  4. 补视图拿 Mock 占位图（色块 + 名字）当参考，只能乱编：四格四个不同的人、占位图上的字被画成标签（Kelvin 看到的
+     linwan-views-view-2-expressions.png）。冒烟改成先用 2512 本地给周屿出图、锁定第一张，锁定自动补视图：侧面、背面和
+     参考图是同一个人同一身衣服；表情图是同一张脸、没有乱字，但要的「2×2 四种表情」出成了一大两小三种（待定：改成每种
+     表情单独一张？）。
+  5. 配音不再用示例里林晚的 Mock 音色（正弦波，克隆出来近乎静音，被电平检查拦下）：先解锁 → Qwen3-TTS 重新试听 →
+     IndexTTS 本地终版 → 锁定 → 全部配音（本地音色没有 MiniMax 的 voice_id，台词自动走 IndexTTS）。
 
-还没覆盖的
-  - 补视图的参考图是示例里 Mock 的占位图（纯色 + 名字），所以出来的人不像林晚；这一步只证明工作流和适配器能用，
-    画得像不像要等真实参考图（第 14 步 API 终版之后，或本地草稿锁定后再补视图）。
-  - 声音好不好听没人听过：音频在上面 files 那个临时文件夹里（*.wav）。
+还没覆盖：声音好不好听、图好不好看由 Kelvin 判断（冒烟只核对跑通、尺寸、时长、OCR）。文件在上面 files 那个临时文件夹。

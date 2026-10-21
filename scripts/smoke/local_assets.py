@@ -9,7 +9,8 @@ Steps, in this order (ComfyUI first, then the TTS models, so the VRAM lease chan
 
 - ``img``: 「林晚出租屋」 drafts on Qwen-Image-2512 (``comfy/qwen-image``), four candidates;
 - ``text``: 「便利贴手写」 drafts on Qwen-Image-2512, each read back by RapidOCR;
-- ``views``: 林晚's three views from her locked picture on Qwen-Image-Edit-2511;
+- ``views``: 周屿 drawn on Qwen-Image-2512 and locked (the demo's locked pictures are Mock
+  placeholders), then his three views from that picture on Qwen-Image-Edit-2511;
 - ``voice``: 林晚's voice unlocked (the demo's is a Mock tone) and auditioned again on Qwen3-TTS
   VoiceDesign: three drafts reading her first two lines;
 - ``voice_final``: her local final from the first draft: five emotions on IndexTTS-2.5, locked;
@@ -295,10 +296,22 @@ def main() -> int:
                           lambda: [smoke.run(pid)["id"]]):  # fmt: skip
                 smoke.keep_files("txt1", smoke.latest(pid))
         if "views" in only:
-            pid = smoke.product_of("asset:linwan", "ref_views")
-            if smoke.step("views", "林晚三视图 · Qwen-Image-Edit-2511",
-                          lambda: [smoke.run(pid)["id"]]):  # fmt: skip
-                smoke.keep_files("linwan-views", smoke.latest(pid))
+            views: list[str] = []
+
+            def from_a_real_picture() -> list[str]:
+                # The demo's locked pictures are Mock placeholders (a colour and a name): draw
+                # 周屿 locally first, lock his first candidate, then draw his views from it.
+                smoke.wait(smoke.run("demo-p-asset-zhouyu")["id"])
+                smoke.client.patch(f"{V1}/assets/zhouyu", json={"pick": 0}).raise_for_status()
+                smoke.post("/assets/zhouyu/lock", {})  # starts his views (补视图)
+                views.append(smoke.product_of("asset:zhouyu", "ref_views"))
+                jobs = [j for j in smoke.get("/jobs", limit=50) if j["product_id"] == views[0]]
+                return [jobs[0]["id"]] if jobs else [smoke.run(views[0])["id"]]
+
+            title = "周屿三视图（先本地出图、锁定）· Qwen-Image-Edit-2511"
+            if smoke.step("views", title, from_a_real_picture):
+                smoke.keep_files("zhouyu-ref", smoke.latest("demo-p-asset-zhouyu"))
+                smoke.keep_files("zhouyu-views", smoke.latest(views[0]))
         voice = "demo-p-asset-vlinwan"
         if "voice" in only:
 
