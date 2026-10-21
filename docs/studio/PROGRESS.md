@@ -4,20 +4,19 @@
 
 ## 当前
 
-- 里程碑：**M2 小说 → 剧本，已做完**（计划 [`plans/M2.md`](plans/M2.md) 全部勾完；报告 [`reports/M2.md`](reports/M2.md) 也是 PR 描述）。
-- 分支：`m2-novel-script`；**PR #4**（https://github.com/kelvin78901/AIVideoGenerationAgent/pull/4），Linux、Windows CI 都绿，等 Kelvin 审完合并。
+- 里程碑：**M3 素材与配音**，计划 [`plans/M3.md`](plans/M3.md)（2026-10-20 批准；Kelvin 定的七项见 DECISIONS 同日）。
+- 分支：`m3-assets-voice`（从合并 PR #4 后的 main 3ffd6a2 开出）。M2 已合并，报告 [`reports/M2.md`](reports/M2.md)。
 
 ## 已完成的小步
 
-- M2 第 0–14 步（含 7b、12a–12d）：每步做了什么、提交、测试结果见 `reports/M2.md` 和 `git log main..m2-novel-script`。最后：pytest 515、Vitest 255、e2e 29 全过，Linux CI 绿。
-- 13 的真实冒烟：第一章 $0.0078（`reports/m2-live-smoke.txt`）、整本 5 集 $0.0530（`reports/m2-live-smoke-book.txt`），都没有兜底和失败。
-- 14：SPEC 4.2 / 6.2 / 7.6 / 9.1 补 M2 的实际做法，ROADMAP M2 全部勾上，`reports/M2.md`，CLAUDE.md 加 `demo`、冒烟脚本命令（43cdab9）。
+- M3 第 0 步（进行中）：开分支、存计划、DECISIONS 七项、ROADMAP（文件夹同步挪 M9、验收里镜头部分挪 M4）（本提交）。
 
 ## 下一步
 
-- **等 Kelvin 审 PR #4、合并**。
-- 合并后开始 **M3 素材与配音**：先进 plan mode 出计划给 Kelvin（CLAUDE.md「工作方式」），批准后存 `plans/M3.md`、开分支 `m3-assets-voice`。
-- M3 开工前先处理：设定提取输出上限 4000 对长小说可能不够（整本 3000 字已输出约 3000 token；见报告「遗留问题」）。
+- 第 0 步剩下两件：
+  1. **问 Kelvin 能不能开始下 `w_img`（31 GB）**：用 Setup 页安装器，ComfyUI 要开着；顺便看 M1 留下的问题（速度、剩余时间、连接数）。
+  2. **设定提取输出上限**（M2 遗留，单独提交）：按输出量估算分块，`max_tokens` 跟着块走，加长小说测试。看 `pipeline/components/extract.py`、`chunks.py`。
+- 然后第 1 步「框架和媒体基础」（计划里列了要改的 `ProductService`、切片器、`RunService`、router、注册表、文件接口、`media/audio.py`）。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。heredoc 里 Python 字符串的 `\n` 会被写成真换行（第 5 步踩了两次）：要写进代码的 `\n` 用 Edit 工具。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -59,5 +58,5 @@
 
 ## 等 Kelvin 的事
 
-- **审 M2 的 PR**（报告 `reports/M2.md`「需要你动手的事」）：截图（第 8 步 `script-board*`、第 9 步 `script-trace` / `novel-trace` / `storyboard-lines`、第 10 步 `novel-impact` / `novel-syncing` / `novel-synced` / `script-impact`）；看真实冒烟的剧本，定要不要调提示词、开思考；重启后端；合并。
-- M1 留下的：下次真装大文件（如 Qwen-Image-Edit 31 GB）时看速度、剩余时间准不准，连接数是否停在 1 个。
+- **同意开始下载 `w_img`（31 GB）**，ComfyUI 要开着（第 0 步；第 13 步还有约 20 GB 的 Qwen-Image-2512 和约 15 GB 的 TTS 环境）。下载时看 M1 留下的问题：速度、剩余时间准不准、连接数是否停在 1 个。
+- M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。

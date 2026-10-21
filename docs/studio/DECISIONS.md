@@ -2,6 +2,20 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-20 · M3 计划：Kelvin 定的七项和范围
+
+计划见 `plans/M3.md`（2026-10-20 批准）。
+
+1. **镜头留给 M4**：M3 只把配音时长算到台词和场；镜头时长的计算函数（`pipeline/timing.py:shot_seconds`）在 M3 写好、测好，M4 出镜头时直接用。改素材时影响范围列出用到它的场和台词配音，示例剧集的镜头行仍由 MSW 叠加。ROADMAP M3 验收里的「镜头」那一半挪到 M4。原因：镜头表是 M4 分镜规划的产物，M3 先建会让分镜页（仍读示例数据）和后端各有一份镜头。
+2. **本地部分在 M3 真装真跑**：ComfyUI（Qwen-Image-2512 出图、Qwen-Image-Edit-2511 补视图）、Qwen3-TTS（本地试听）、IndexTTS-2.5（本地配音）、RapidOCR，都在 Kelvin 的 PC 上装好、各真跑一次。Qwen-Image-Edit-2511 只能编辑，文生图另下 Qwen-Image-2512（约 20 GB，文本编码器和 VAE 共用）。
+3. **本地文件夹同步挪到 M9**：M3 范围已经很大；同步页在 M9 之前仍是示例数据。
+4. **真实冒烟用四家**：Google、OpenAI、火山引擎、MiniMax（Kelvin 都有密钥）。
+5. **混合模式出终版**：本地出 4 张草稿，选一张后 API 以它为参考出 1 张终版（约 $0.14 / 素材），看过再锁定；草稿够用也可以直接锁定草稿。原型里 v2 的 $0.56（4 张终版）不照做。
+6. **上传参考图**：要做，上传的图出一个 `origin: upload` 的版本，当一个候选。
+7. **声音克隆先不做**：界面上「声音克隆」灰掉，写「之后支持」。
+
+**不在 M3 做**：文件夹同步（M9）、镜头表和镜头时长落库（M4）、声音克隆（之后）、ElevenLabs 适配器（没有密钥；音色和配音的兜底改成本地 IndexTTS，和原型一致）、OCR 的 API 兜底（只用本地 RapidOCR，没装时标「未检查」）、后期贴字的真正合成（M7）、预演配音 `pv`（M4）、ComfyUI 的 WebSocket 进度（M5；M3 轮询 `/history`）、没有说话人的旁白配音（之后）。
+
 ## 2026-10-20 · M2 第 13 步：真实冒烟
 
 - **按官方文档核对了 DeepSeek、Kimi、通义千问的模型 ID**（M2 四个组件的主模型、兜底和备选都在这三家）：`deepseek-v4-pro`、`deepseek-flash`（V4.1 Flash；旧名 `deepseek-v4-flash` 已退役）、`kimi-k2.6`、`qwen3.8-max` / `qwen3.7-plus` / `qwen3.8-flash`。价格和 `providers.yaml` 一致（Kimi 的价格页没读到表格，价格没核对）；DeepSeek 的「测试连接」（`GET /models`）也返回了这两个 ID。这三家改成 `verify: false`；火山、智谱、MiniMax、Google、OpenAI、OpenRouter 等后面的里程碑用到时再核对。
