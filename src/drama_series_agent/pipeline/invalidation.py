@@ -92,7 +92,9 @@ class Invalidation:
         return DependencyDraft(upstream_product_id=upstream_product_id, upstream_hash=h, slice=name)
 
     async def stale_ids(self, session: AsyncSession, products: Iterable[Product]) -> set[str]:
-        """Products whose adopted (else current) version was built from slices that changed."""
+        """Products whose adopted (else current) version was built from slices that changed.
+        A retired product (its line left the script) is never stale."""
+        products = [p for p in products if not p.retired]
         by_version = {
             v: p.id
             for p in products

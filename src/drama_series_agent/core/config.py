@@ -239,6 +239,15 @@ class VoiceConfig(_Loose):
     local_final: str = "local/indextts2"  # variants of a local voice; the API flow's fallback
     drafts: list[VoiceDraft] = Field(default_factory=list)
     emotions: list[VoiceEmotion] = Field(default_factory=list)
+    # 台词配音: words in a line's tone → its emotion, the first match in this order.
+    tones: dict[str, list[str]] = Field(default_factory=dict)
+
+    def emotion_of(self, tone: str | None) -> str:
+        """The emotion a line's tone asks for; ``calm`` when none matches."""
+        for emotion, words in self.tones.items():
+            if tone and any(w in tone for w in words):
+                return emotion
+        return "calm"
 
 
 @dataclass(frozen=True)

@@ -1692,13 +1692,13 @@
           ],
           "qa_fail_n": 2,
           "timeout_s": 600,
-          "to": "elevenlabs/v3",
+          "to": "local/indextts2",
           "notify": "after"
         },
         "alt_order": [
-          "elevenlabs/v3",
           "local/indextts2",
-          "local/cosyvoice"
+          "local/cosyvoice",
+          "elevenlabs/v3"
         ],
         "per_call_cap_usd": 0.5
       },

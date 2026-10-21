@@ -32,3 +32,11 @@ emotions:
   - id: shout
     instruct: 大声喊出来
     minimax: { emotion: angry, vol: 2.0 }                        # 没有 shout：angry + 调高音量
+
+# 台词配音：剧本里这句的语气含有这些词，就用对应的情绪。从上往下找，第一个对上的算；都没有就是 calm。
+# 每句也可以在界面上手动改。
+tones:
+  shout: [喊, 吼, 嚷, 尖叫]
+  whisper: [低声, 耳语, 小声, 轻声, 悄声]
+  crying: [哭, 哽咽, 抽泣, 泣]
+  angry: [怒, 火, 气, 恨, 咬牙]

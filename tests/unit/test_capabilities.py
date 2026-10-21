@@ -90,8 +90,15 @@ def test_a_hand_picked_local_model_is_dropped_too() -> None:
     assert resolve("vid", picked, caps=PC_READY).values["local_model"] == "comfy/wan-2.2"
 
 
+def test_an_api_component_loses_a_local_fallback_it_cannot_run() -> None:
+    """台词配音 falls back to IndexTTS: kept where it is installed, dropped on a Mac."""
+    assert resolve("dub", []).values["fallback"]["to"] == "local/indextts2"
+    on_mac = resolve("dub", [], caps=MAC)
+    assert on_mac.values["mode"] == "api" and on_mac.values["fallback"]["to"] is None
+
+
 def test_components_on_the_api_keep_their_route() -> None:
-    for component in ("enrich", "dub", "world"):
+    for component in ("enrich", "split", "world"):
         before, after = resolve(component, []).values, resolve(component, [], caps=MAC).values
         for key in ("mode", "api_model", "fallback"):
             assert after[key] == before[key], (component, key)

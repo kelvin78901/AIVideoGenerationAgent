@@ -31,6 +31,7 @@ from drama_series_agent.core.models_db import (
     Product,
     ProductVersion,
 )
+from drama_series_agent.media.audio import prepare_clip
 from drama_series_agent.modelhub.adapters.base import ModelError, ModelRequest
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm, Router, StoredFile
 from drama_series_agent.pipeline.component import (
@@ -236,6 +237,16 @@ class MediaComponent(Component):
             if settings.values["fallback"].get("notify") == "ask" and ctx.job_id is not None:
                 raise NeedsConfirm(ctx.model_key, target, exc.code) from exc
             return await flow(target, exc.code), version_fallback(exc.code)
+
+    async def audio_file(self, call: MediaCall, role: str, **extra: Any) -> dict[str, Any]:
+        """The call's clip, levelled (``media/audio.py``) and stored, as a ``files[]`` entry with
+        its duration and waveform."""
+        raw = self.services.store.path_for(call.files[0].sha256).read_bytes()
+        clip = await prepare_clip(raw)
+        sha = self.services.store.put_bytes(clip.data)
+        return file_entry(
+            role, sha, "audio/wav", duration_s=clip.duration_s, waveform=clip.waveform, **extra
+        )
 
     def media_draft(
         self,

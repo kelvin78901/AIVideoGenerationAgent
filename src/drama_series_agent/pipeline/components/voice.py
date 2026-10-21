@@ -40,11 +40,10 @@ from drama_series_agent.core.models_db import (
     Scene,
     ScriptLine,
 )
-from drama_series_agent.media.audio import prepare_clip
 from drama_series_agent.modelhub.adapters.base import Estimate, ModelRequest
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.media import MediaCall, MediaComponent, prompt_text
-from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
+from drama_series_agent.pipeline.drafts import VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.prompts.compiler import Block
 
@@ -129,12 +128,12 @@ class VoiceComponent(MediaComponent):
                     req = self._tts(line, task=f"draft:{i}:{j}", seed=ctx.seed, design=design)
                     call = await self._call(ctx, req, ctx.model_key, ctx.fallback_reason)
                     calls.append(call)
-                    files.append(await self._clip(call, "candidate", idx=i, line=j))
+                    files.append(await self.audio_file(call, "candidate", idx=i, line=j))
             else:
                 req = self._design(lines, design, task=f"draft:{i}", seed=ctx.seed)
                 call = await self._call(ctx, req, ctx.model_key, ctx.fallback_reason)
                 calls.append(call)
-                files.append(await self._clip(call, "candidate", idx=i, line=None))
+                files.append(await self.audio_file(call, "candidate", idx=i, line=None))
                 entry["voice_id"] = (call.data or {}).get("voice_id")
             entry["waveform"] = next(f["waveform"] for f in files if f["idx"] == i)
             candidates.append(entry)
@@ -198,7 +197,7 @@ class VoiceComponent(MediaComponent):
             voice_id = (call.data or {}).get("voice_id")
             if not voice_id:
                 raise ComponentError("voice_design_failed")
-            files.append(await self._clip(call, "anchor", idx=None, line=None))
+            files.append(await self.audio_file(call, "anchor", idx=None, line=None))
         for k, emotion in enumerate(self.config.emotions):
             how = dict(emotion.minimax) if model.startswith("minimax/") else {}
             use = str(how.pop("model", model))
@@ -212,7 +211,7 @@ class VoiceComponent(MediaComponent):
             )
             call = await self._call(ctx, req, use, reason)
             calls.append(call)
-            files.append(await self._clip(call, "variant", idx=k, line=0, emotion=emotion.id))
+            files.append(await self.audio_file(call, "variant", idx=k, line=0, emotion=emotion.id))
         payload = {"provider": model.split("/", 1)[0], "voice_id": voice_id}
         return calls, {"files": files, "payload": self._with_emotions(payload)}
 
@@ -242,7 +241,7 @@ class VoiceComponent(MediaComponent):
             )
             call = await self._call(ctx, req, model, reason)
             calls.append(call)
-            files.append(await self._clip(call, "variant", idx=k, line=0, emotion=emotion.id))
+            files.append(await self.audio_file(call, "variant", idx=k, line=0, emotion=emotion.id))
         payload = {"provider": "local", "voice_id": None}
         return calls, {"files": files, "payload": self._with_emotions(payload)}
 
@@ -320,12 +319,3 @@ class VoiceComponent(MediaComponent):
         if not call.files:
             raise ComponentError("no_audio")
         return call
-
-    async def _clip(self, call: MediaCall, role: str, **extra: Any) -> dict[str, Any]:
-        """The call's clip, levelled and stored, as a ``files[]`` entry with its waveform."""
-        raw = self.services.store.path_for(call.files[0].sha256).read_bytes()
-        clip = await prepare_clip(raw)
-        sha = self.services.store.put_bytes(clip.data)
-        return file_entry(
-            role, sha, "audio/wav", duration_s=clip.duration_s, waveform=clip.waveform, **extra
-        )

@@ -7,6 +7,7 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, File, Query, UploadFile
 
 from drama_series_agent.api.state import StudioState, get_state
+from drama_series_agent.assets.dub import DubIn, DubLineOut, DubOut, DubStartOut, LineDubPatch
 from drama_series_agent.assets.schema import AssetLockIn, AssetOut, AssetPatch, MatrixOut
 from drama_series_agent.core.jobs import job_public
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES
@@ -59,3 +60,21 @@ async def analyze(episode_id: str, state: State) -> dict[str, Any]:
 async def matrix(episode_id: str, state: State) -> MatrixOut:
     """出场矩阵: the episode's scenes × the assets it uses."""
     return await state.assets.matrix(episode_id)
+
+
+@router.get("/episodes/{episode_id}/dub")
+async def episode_dub(episode_id: str, state: State) -> DubOut:
+    """台词配音: the episode's spoken lines with their audio, and the scenes' lengths."""
+    return await state.dub.status(episode_id)
+
+
+@router.post("/episodes/{episode_id}/dub")
+async def dub_episode(episode_id: str, state: State, body: DubIn | None = None) -> DubStartOut:
+    """「全部配音」: the estimate (``dry_run``), or one run per line without current audio."""
+    return await state.dub.dub(episode_id, body or DubIn())
+
+
+@router.patch("/lines/{line_id}/dub")
+async def set_line_emotion(line_id: str, body: LineDubPatch, state: State) -> DubLineOut:
+    """A line's emotion by hand (None: from its tone again); the next take uses it."""
+    return await state.dub.set_emotion(line_id, body)

@@ -10,6 +10,7 @@ import httpx
 from fastapi import Request
 
 from drama_series_agent.assets import service as assets_service
+from drama_series_agent.assets.dub import DubService
 from drama_series_agent.assets.service import AssetService
 from drama_series_agent.bible.service import BIBLE_SLOT, BibleService, bible_slicer, materialize
 from drama_series_agent.core import secrets
@@ -31,6 +32,7 @@ from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_sli
 from drama_series_agent.pipeline.cascade import CascadeService
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, AssetsComponent
+from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, DubComponent
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
 from drama_series_agent.pipeline.components.img import ImgComponent
@@ -71,6 +73,7 @@ class StudioState:
     episodes: EpisodeService
     script: ScriptService
     assets: AssetService
+    dub: DubService
     gates: GateService
     impact: ImpactService
     cascade: CascadeService
@@ -132,6 +135,10 @@ class StudioState:
         text = TextComponent(components.services)
         components.add(text)
         components.add(VoiceComponent(components.services))
+        dub = DubComponent(components.services)
+        components.add(dub)
+        # A line's audio is one of dozens: lists of them skip the per-product estimate.
+        products.quiet_slots.add(LINE_AUDIO_SLOT)
         episodes = EpisodeService(db, products, invalidation)
         budget.episode_budget = episodes.budget
         runs = RunService(components, products, jobs, bus, budget)
@@ -147,6 +154,7 @@ class StudioState:
         assets = AssetService(
             db, products, runs, bus=bus, store=store, invalidation=invalidation, text=text
         )
+        dub_service = DubService(db, products, runs, invalidation, dub)
         impact = ImpactService(db, products, invalidation, estimate)
         gates = GateService(db, bus, products, invalidation)
         cascade = CascadeService(db, bus, products, invalidation, runs, gates)
@@ -178,6 +186,7 @@ class StudioState:
             episodes=episodes,
             script=script_svc,
             assets=assets,
+            dub=dub_service,
             gates=gates,
             impact=impact,
             cascade=cascade,

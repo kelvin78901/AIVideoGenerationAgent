@@ -161,8 +161,8 @@ components:
     kind: tts
     api: [minimax/speech-2.8-hd, elevenlabs/v3]
     local: [local/indextts2, local/cosyvoice]
-    balanced: { mode: api, api: minimax/speech-2.8-hd, fallback_to: elevenlabs/v3 }
-    note: 原型里没有单独一行，界面放在素材页；用锁定的音色包，决定镜头时长
+    balanced: { mode: api, api: minimax/speech-2.8-hd, fallback_to: local/indextts2 }
+    note: 原型里没有单独一行，界面放在素材页；用锁定的音色包，决定镜头时长；失败改用本地 IndexTTS
 
   - id: plan
     stage: storyboard

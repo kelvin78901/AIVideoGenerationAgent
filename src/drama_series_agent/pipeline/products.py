@@ -177,6 +177,8 @@ class ProductService:
         self._invalidation = invalidation
         self._materializers: dict[str, Materializer] = {}
         self.describer: Describer | None = None
+        # Slots whose products are listed without the next run's prompt and estimate.
+        self.quiet_slots: set[str] = set()
 
     def on_adopt(self, slot: str, materializer: Materializer) -> None:
         """Rebuild the domain rows of ``slot`` from a newly adopted version (same transaction)."""
@@ -543,7 +545,7 @@ class ProductService:
         out = []
         for p in products:
             prompt = estimate = None
-            if self.describer is not None:
+            if self.describer is not None and p.slot not in self.quiet_slots:
                 prompt, estimate = await self.describer(p)
             out.append(
                 product_public(
