@@ -8,7 +8,9 @@
  *   `pick` version (the version on screen stays); on-screen text OCR read differently is
  *   refused (409 `ocr_mismatch`) unless `force`;
  * - 重跑 adds a version with fresh candidates (on-screen text: every one OCR-checked and
- *   matching); 「用 API 出终版」 one picture from the draft;
+ *   matching; a voice: three auditions reading its lines); 「用 API 出终版」 one picture from
+ *   the draft, or a voice's final (its sample and five emotions), which is locked whole while
+ *   an audition cannot be (409 `voice_needs_final`);
  * - 上传参考图 adds a version with that one candidate, picked;
  * - 解锁 is the impact preview's `asset_unlock` (`test/fakes/impact.ts`): what uses the locked
  *   picture, then unlocked.
@@ -87,6 +89,16 @@ function lock(a: Asset, p: Product, body: AssetLock): Response {
   if (p.locked_hash) return error(409, "product_locked", { id: p.id });
   const source = current(p);
   if (!source) return error(409, "nothing_to_lock", { id: a.id });
+  if (!source.files.some((f) => f.role === "candidate")) {
+    Object.assign(p, {
+      adopted_version_id: source.id,
+      locked_hash: source.content_hash,
+      status: "locked",
+    });
+    announce(p);
+    return HttpResponse.json(withStatus(a));
+  }
+  if (a.kind === "voice") return error(409, "voice_needs_final", { id: a.id });
   const file = source.files.find((f) => f.role === "candidate" && f.idx === a.pick);
   if (!file) return error(422, "no_such_candidate", { id: source.id, idx: a.pick });
   const parsed = CandidatesPayloadSchema.safeParse(source.payload);
@@ -211,7 +223,61 @@ function job(p: Product, id: string, model: string, mode: string): Job {
 
 /** 重跑: fresh candidates (4 pictures, 3 voices); 「用 API 出终版」 (`where: api` with the draft
  * as `params.source_version_id`): one picture on the API model, its parent the draft. */
+const EMOTIONS = ["calm", "angry", "crying", "whisper", "shout"];
+const audio = (id: string, role: string, extra: Partial<ProductVersion["files"][number]>) => ({
+  role,
+  path: `blobs/sha256/00/${id}`,
+  sha256: id,
+  mime: "audio/wav",
+  duration_s: 1.5,
+  w: null,
+  h: null,
+  idx: null,
+  waveform: Array.from({ length: 64 }, (_, i) => ((i * 7) % 10) / 10),
+  ...extra,
+});
+
+/** A voice's run: three auditions reading its lines, or (from one of them) its final. */
+function runVoice(p: Product, body: RunRequest): Job {
+  const source = body.params?.source_version_id;
+  const local = body.where === "local";
+  const model = !source
+    ? "local/qwen3-tts"
+    : local
+      ? "local/indextts2"
+      : (fakeResolve("voice", null)?.values.api_model ?? "minimax/speech-2.8-hd");
+  const v = addVersion(p, 3, { origin: body.mode, model, stage: source ? "final" : "draft" });
+  const a = fakeAssets.assets.find((x) => x.product_id === p.id);
+  const lines = Math.max(1, a?.voice?.lines.length ?? 0);
+  if (!source) {
+    v.payload = {
+      candidates: ["偏低沉", "更清亮", "带一点沙哑"].map((label) => ({ label })),
+    };
+    v.files = [0, 1, 2].flatMap((i) =>
+      Array.from({ length: lines }, (_, j) =>
+        audio(`${v.id}-${i}-${j}`, "candidate", { idx: i, line: j }),
+      ),
+    );
+  } else {
+    v.parent_version_id = source;
+    v.payload = {
+      provider: local ? "local" : "minimax",
+      voice_id: local ? null : `voice-${v.id}`,
+      emotions: EMOTIONS,
+      label: "偏低沉",
+    };
+    v.files = [
+      audio(`${v.id}-anchor`, "anchor", {}),
+      ...EMOTIONS.map((emotion, k) =>
+        audio(`${v.id}-${emotion}`, "variant", { idx: k, line: 0, emotion }),
+      ),
+    ];
+  }
+  return job(p, v.id, model, body.mode);
+}
+
 function run(p: Product, body: RunRequest): Job {
+  if (p.component_id === "voice") return runVoice(p, body);
   const route = fakeResolve(p.component_id, null)?.values ?? null;
   const source = body.where === "api" ? body.params?.source_version_id : undefined;
   const model = source

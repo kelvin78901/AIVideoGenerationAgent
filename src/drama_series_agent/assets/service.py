@@ -78,6 +78,7 @@ from drama_series_agent.pipeline.components.text import (
     text_settings,
 )
 from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, ViewsComponent
+from drama_series_agent.pipeline.components.voice import VOICE_SLOT
 from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.impact import ImpactService, series_graph
@@ -91,7 +92,7 @@ ASSET_GATE = "assets"
 # Slots a picture can be uploaded to as a candidate.
 UPLOAD_SLOTS = ("ref_image", TEXT_IMAGE_SLOT)
 # The product each asset owns (its views are another one, ``ref_views``).
-ASSET_SLOTS = ("ref_image", TEXT_IMAGE_SLOT, "voice")
+ASSET_SLOTS = ("ref_image", TEXT_IMAGE_SLOT, VOICE_SLOT)
 
 
 async def asset_product(session: AsyncSession, asset_id: str) -> Product | None:
@@ -352,7 +353,8 @@ class AssetService:
     async def lock(self, asset_id: str, body: AssetLockIn | None = None) -> AssetOut:
         """「锁定为参考」: the picked candidate of the version on screen (or of ``body``'s), with
         the asset's gate decision; then a character's views are drawn. On-screen text OCR read
-        differently takes ``force``."""
+        differently takes ``force``. A version without candidates (a voice's final) is locked
+        as a whole; a voice's auditions cannot be (409 ``voice_needs_final``)."""
         body = body or AssetLockIn()
         async with self._db.session() as session:
             asset = await self._require(session, asset_id)
@@ -365,11 +367,19 @@ class AssetService:
             if version_id is None:
                 raise PipelineError(409, "nothing_to_lock", id=asset_id)
             pick = product.pick_json or {}
-            idx = body.idx
+            idx: int | None = body.idx
             if idx is None:
                 idx = int(pick.get("idx") or 0) if pick.get("version_id") == version_id else 0
             kind = asset.kind
-            if product.slot == TEXT_IMAGE_SLOT and not body.force:
+            v = await session.get(ProductVersion, version_id)
+            has_candidates = v is not None and any(
+                f.get("role") == "candidate" for f in v.files_json
+            )
+            if product.slot == VOICE_SLOT and has_candidates:
+                raise PipelineError(409, "voice_needs_final", id=asset_id)
+            if v is not None and v.product_id == product.id and not has_candidates:
+                idx = None
+            if product.slot == TEXT_IMAGE_SLOT and not body.force and idx is not None:
                 await _refuse_ocr_mismatch(session, product, version_id, idx)
 
         async def record(session: AsyncSession, p: Product, v: ProductVersion) -> None:

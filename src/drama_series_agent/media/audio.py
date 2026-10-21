@@ -19,6 +19,9 @@ The gain is the smaller of two amounts:
 
 Nothing is compressed or clipped. A very peaky clip (a scream) ends up a little quieter than the
 target instead of distorted.
+
+Components call ``prepare_clip``: with ``DRAMA_FAST_AUDIO=1`` (most tests) it skips FFmpeg and
+only measures the clip, a 16-bit mono WAV as the Mock makes.
 """
 
 from __future__ import annotations
@@ -27,6 +30,7 @@ import array
 import asyncio
 import io
 import math
+import os
 import re
 import subprocess
 import sys
@@ -145,6 +149,18 @@ def measure(path: Path) -> Measured:
     """Integrated loudness (LUFS) and true peak (dBTP) of a file."""
     text = _ffmpeg("-i", str(path), "-af", "ebur128=peak=true", "-f", "null", "-")
     return Measured(lufs=_number(_I, text), peak_db=_number(_PEAK, text))
+
+
+async def prepare_clip(data: bytes) -> PreparedAudio:
+    """What a voice sample or a dubbed line goes through: ``prepare_dialogue``, or under
+    ``DRAMA_FAST_AUDIO=1`` the clip as it is, measured (no loudness)."""
+    if os.environ.get("DRAMA_FAST_AUDIO") == "1":
+        samples, rate = _samples(data)
+        if not samples:
+            raise AudioError("audio_silent")
+        duration = round(len(samples) / rate, 3)
+        return PreparedAudio(data, duration, None, None, waveform(samples))
+    return await prepare_dialogue(data)
 
 
 async def prepare_dialogue(data: bytes, target: DialogueTarget | None = None) -> PreparedAudio:

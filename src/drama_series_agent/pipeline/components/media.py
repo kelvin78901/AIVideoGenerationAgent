@@ -5,8 +5,8 @@
   draft tier (short side 768), an API run at the delivery tier (1080p / 2K). Adapters map it to
   what their model supports.
 - **One call** (``media_call``) goes through ``router.call()`` like every call (hard rule 1); its
-  stored files are cached by request (in ``llm_cache``), so a retried or resumed job does not
-  pay twice for what it already has.
+  stored files (and its JSON, e.g. a designed voice's id) are cached by request (in
+  ``llm_cache``), so a retried or resumed job does not pay twice for what it already has.
 - **A flow of calls** (three views, a voice's design and its variants) calls with
   ``fallback=False`` and falls back as a whole (``run_flow``), so the pieces of one version
   never come from different models.
@@ -33,7 +33,13 @@ from drama_series_agent.core.models_db import (
 )
 from drama_series_agent.modelhub.adapters.base import ModelError, ModelRequest
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm, Router, StoredFile
-from drama_series_agent.pipeline.component import Component, Inputs, RunContext, version_fallback
+from drama_series_agent.pipeline.component import (
+    Component,
+    ComponentError,
+    Inputs,
+    RunContext,
+    version_fallback,
+)
 from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
 from drama_series_agent.pipeline.hashing import canonical_json
 from drama_series_agent.pipeline.runs import item_of
@@ -51,6 +57,7 @@ class MediaCall:
     cost_usd: float
     fallback_reason: str | None = None  # error / timeout when the router fell back
     cached: bool = False
+    data: Any = None  # the call's JSON (a voice design's ``voice_id``)
 
 
 async def output_frame(session: AsyncSession, series_id: str) -> dict[str, str]:
@@ -166,7 +173,8 @@ class MediaComponent(Component):
             files = [StoredFile(**f) for f in row.value_json.get("files") or []]
             if all(self.services.store.exists(f.sha256) for f in files):
                 where = self.services.registry.spec(row.model_key).where
-                return MediaCall(files, row.model_key, where, 0.0, cached=True)
+                data = row.value_json.get("json")
+                return MediaCall(files, row.model_key, where, 0.0, cached=True, data=data)
         routed = await self.services.router.call(
             self.id,
             req,
@@ -177,7 +185,7 @@ class MediaComponent(Component):
         )
         async with self.services.db.session() as session:
             if await session.get(LlmCache, key) is None:
-                value = {"files": [asdict(f) for f in routed.files]}
+                value = {"files": [asdict(f) for f in routed.files], "json": routed.json}
                 session.add(LlmCache(key=key, model_key=routed.model_key, value_json=value))
                 await session.commit()
         return MediaCall(
@@ -186,7 +194,24 @@ class MediaComponent(Component):
             routed.where,
             routed.cost_usd,
             version_fallback(routed.fallback_reason),
+            data=routed.json,
         )
+
+    async def source_candidate(
+        self, product: Product, params: dict[str, Any]
+    ) -> tuple[ProductVersion, int] | None:
+        """The draft an API final starts from (``params.source_version_id / source_idx``)."""
+        version_id = params.get("source_version_id")
+        if not version_id:
+            return None
+        idx = int(params.get("source_idx") or 0)
+        async with self.services.db.session() as session:
+            v = await session.get(ProductVersion, str(version_id))
+        if v is None or v.product_id != product.id:
+            raise ComponentError("version_not_found", id=version_id)
+        if not any(f.get("role") == "candidate" and f.get("idx") == idx for f in v.files_json):
+            raise ComponentError("no_such_candidate", id=v.id, idx=idx)
+        return v, idx
 
     async def run_flow(
         self, ctx: RunContext, flow: Callable[[str, str | None], Awaitable[T]]

@@ -203,6 +203,8 @@ media_models:
   - { key: google/veo-3.1, kind: video, display: Veo 3.1, unit: second, price: null, verify: true }
   # 配音
   - { key: minimax/speech-2.8-hd, kind: tts, display: MiniMax Speech 2.8 HD, account: minimax_llm, unit: char, price_per_million: 100, currency: USD, extras: { voice_design: 3.00, voice_clone: 1.50 } }
+  # 只用来出耳语变体（2.8 没有 whisper，config/voice.yaml）；不在「模型与兜底」的可选列表里。
+  - { key: minimax/speech-2.6-hd, kind: tts, display: MiniMax Speech 2.6 HD, account: minimax_llm, unit: char, price_per_million: 100, currency: USD, extras: { voice_design: 3.00 }, verify: true }
   - { key: elevenlabs/v3, kind: tts, display: ElevenLabs v3, unit: char, price: null, docs: https://invideo.io/blog/ai-voice-model-pricing/, verify: true }
   # 口型、超分、配乐、字幕、3D
   - { key: sync/lipsync-2-pro, kind: lipsync, display: sync lipsync-2-pro, unit: second, price_range: [0.067, 0.083], currency: USD }

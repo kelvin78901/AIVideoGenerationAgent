@@ -123,7 +123,7 @@ def test_the_demo_locks_seven_with_their_gate_decisions(client: TestClient) -> N
     assert linwan["adopted_version_id"] == pick["id"]
     ref = _locked_file(linwan)
     assert ref["sha256"] == v2["files"][0]["sha256"]
-    for asset_id in LOCKED:
+    for asset_id in LOCKED - {"vlinwan"}:
         product = _product(client, asset_id)
         (decision,) = _gates(client, asset_id)
         assert decision.action == "confirm"
@@ -133,6 +133,15 @@ def test_the_demo_locks_seven_with_their_gate_decisions(client: TestClient) -> N
                 _locked_file(product)["sha256"], adopted["payload"]["candidate"]
             )
         }
+    # A voice's final is locked whole: the anchor and every emotion.
+    voice = _product(client, "vlinwan")
+    final = next(v for v in voice["versions"] if v["id"] == voice["adopted_version_id"])
+    assert (final["stage"], final["origin"]) == ("final", "run")
+    shas = sorted(f["sha256"] for f in final["files"] if f["role"] != "prompt")
+    (decision,) = _gates(client, "vlinwan")
+    assert decision.product_hashes_json == {
+        voice["id"]: hash_json({"payload": final["payload"], "files": shas})
+    }
     views = _until(client, "demo-p-views-linwan", lambda p: p["status"] == "adopted")
     assert [f["view"] for f in views["versions"][0]["files"]] == ["side", "back", "expressions"]
     # The pictures are real files.

@@ -22,6 +22,13 @@
     "pick": "锁定的候选",
     "upload": "上传"
   },
+  "emotion": {
+    "calm": "平静",
+    "angry": "愤怒",
+    "crying": "哭腔",
+    "whisper": "耳语",
+    "shout": "喊叫"
+  },
   "component": {
     "extract": "设定提取",
     "enrich": "小说补全",

@@ -1,13 +1,10 @@
-import { Check, Pause, Play, Volume2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check } from "lucide-react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 
 import type { Asset, CandidatesPayload, TextSettings } from "@/api/schemas/assets";
 import type { Aspect } from "@/api/schemas/spec";
 import { MediaThumb } from "@/components/MediaThumb";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
 const LETTERS = "ABCD";
@@ -149,106 +146,6 @@ export function ImageCandidates({
           </button>
         );
       })}
-    </div>
-  );
-}
-
-/** 音色候选: static waveforms with a play toggle, a pick, and auditions with script lines. */
-export function VoiceCandidates({
-  asset,
-  versionNo,
-  candidates,
-  locked,
-  onPick,
-}: {
-  asset: Asset;
-  versionNo: number;
-  candidates: Candidate[];
-  locked: boolean;
-  onPick: (i: number) => void;
-}) {
-  const { t } = useTranslation("assets");
-  const [playing, setPlaying] = useState<number | null>(null);
-
-  // A demo clip "plays" for 2.5 s (no audio files until M3).
-  useEffect(() => {
-    if (playing === null) return;
-    const id = setTimeout(() => setPlaying(null), 2500);
-    return () => clearTimeout(id);
-  }, [playing]);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label={t("voice.cands")} className="flex flex-col gap-2">
-        {candidates.map((c, i) => {
-          const on = asset.pick === i;
-          const isPlaying = playing === i;
-          const letter = LETTERS[i] ?? "";
-          return (
-            <div
-              key={i}
-              className={cn(
-                "flex items-center gap-3 rounded-lg border px-3 py-2",
-                on && "border-primary bg-tone-info-bg/40",
-              )}
-            >
-              <Button
-                size="icon"
-                variant="outline"
-                aria-label={t(isPlaying ? "voice.pause" : "voice.play", { letter })}
-                aria-pressed={isPlaying}
-                onClick={() => setPlaying(isPlaying ? null : i)}
-              >
-                {isPlaying ? <Pause aria-hidden /> : <Play aria-hidden />}
-              </Button>
-              <div aria-hidden className="flex h-8 items-center gap-0.5">
-                {(c.waveform ?? []).map((h, j) => (
-                  <span
-                    key={j}
-                    className={cn(
-                      "w-1 rounded-full",
-                      isPlaying ? "bg-primary" : "bg-muted-foreground/40",
-                    )}
-                    style={{ height: `${Math.max(12, h * 100)}%` }}
-                  />
-                ))}
-              </div>
-              <span className="flex-1 text-sm">
-                {t("voice.label", { n: versionNo, letter, label: c.label ?? "" })}
-              </span>
-              <Button
-                size="sm"
-                role="radio"
-                aria-checked={on}
-                variant={on ? "default" : "outline"}
-                disabled={locked}
-                onClick={() => onPick(i)}
-              >
-                {t(on ? "voice.picked" : "voice.pick")}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-      {asset.voice?.lines.length ? (
-        <div className="flex flex-col gap-1.5">
-          <div className="text-xs font-medium">{t("voice.lines")}</div>
-          {asset.voice.lines.map((l) => (
-            <div key={l.text} className="flex items-center gap-2 text-sm">
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={t("voice.tryLine", { text: l.text })}
-                onClick={() => toast.info(t("voice.trying", { text: l.text, tone: l.tone }))}
-              >
-                <Volume2 aria-hidden />
-              </Button>
-              <span>{l.text}</span>
-              <span className="text-xs text-muted-foreground">{l.tone}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
     </div>
   );
 }

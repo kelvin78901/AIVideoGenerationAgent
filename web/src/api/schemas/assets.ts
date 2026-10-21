@@ -101,12 +101,25 @@ export const CandidatesPayloadSchema = z.object({
       /** Voice candidates: a short description and a static waveform (0–1). */
       label: z.string().nullable().optional(),
       waveform: z.array(z.number()).nullable().optional(),
+      /** …the voice described in words, and its id when it is already an API voice. */
+      design: z.string().nullable().optional(),
+      voice_id: z.string().nullable().optional(),
     }),
   ),
   /** On-screen text: the settings the candidates were made with. */
   text: TextSettingsSchema.nullable().optional(),
 });
 export type CandidatesPayload = z.infer<typeof CandidatesPayloadSchema>;
+
+/** A voice's final (`stage: final`): the voice the dubbing uses and its emotion variants
+ * (files `role: anchor` / `role: variant`). */
+export const VoiceFinalSchema = z.object({
+  provider: z.string(),
+  voice_id: z.string().nullable(),
+  emotions: z.array(z.string()),
+  /** The audition it was made from (content). */
+  label: z.string().nullable().optional(),
+});
 
 /** `POST /assets/{id}/lock`: by default the picked candidate of the version on screen.
  * On-screen text OCR read differently is refused (409 `ocr_mismatch`) unless `force`. */

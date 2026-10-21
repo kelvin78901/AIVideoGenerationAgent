@@ -38,6 +38,7 @@ from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.components.text import TextComponent
 from drama_series_agent.pipeline.components.views import ViewsComponent
+from drama_series_agent.pipeline.components.voice import VoiceComponent
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.impact import ImpactService, register_kinds
 from drama_series_agent.pipeline.invalidation import Invalidation
@@ -130,6 +131,7 @@ class StudioState:
         components.add(ViewsComponent(components.services))
         text = TextComponent(components.services)
         components.add(text)
+        components.add(VoiceComponent(components.services))
         episodes = EpisodeService(db, products, invalidation)
         budget.episode_budget = episodes.budget
         runs = RunService(components, products, jobs, bus, budget)

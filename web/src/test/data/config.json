@@ -647,6 +647,16 @@
         }
       },
       {
+        "key": "minimax/speech-2.6-hd",
+        "display": "MiniMax Speech 2.6 HD",
+        "where": "api",
+        "price": {
+          "unit": "mchar",
+          "amount": 100.0,
+          "currency": "USD"
+        }
+      },
+      {
         "key": "elevenlabs/v3",
         "display": "ElevenLabs v3",
         "where": "api",
@@ -1658,14 +1668,14 @@
           ],
           "qa_fail_n": 2,
           "timeout_s": 600,
-          "to": "elevenlabs/v3",
+          "to": "local/indextts2",
           "notify": "after"
         },
         "alt_order": [
-          "elevenlabs/v3",
           "local/indextts2",
           "local/cosyvoice",
-          "minimax/speech-2.8-hd"
+          "minimax/speech-2.8-hd",
+          "elevenlabs/v3"
         ],
         "per_call_cap_usd": 3.0
       },

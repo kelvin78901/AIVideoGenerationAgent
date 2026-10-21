@@ -37,6 +37,7 @@ class MemoryKeyring(KeyringBackend):
 @pytest.fixture(autouse=True)
 def _isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[None]:
     monkeypatch.setenv("DRAMA_MOCK", "1")
+    monkeypatch.setenv("DRAMA_FAST_AUDIO", "1")  # voice samples skip FFmpeg's loudness pass
     monkeypatch.delenv("DRAMA_LIVE", raising=False)
     monkeypatch.setenv("DRAMA_HOME", str(tmp_path / "drama-home"))
     monkeypatch.setenv("DRAMA_ENV_FILE", str(tmp_path / "no.env"))  # never read the real .env

@@ -213,11 +213,40 @@ class SpecConfig(_Loose):
     compat_stages: list[CompatStage] = Field(default_factory=list)
 
 
+# --------------------------------------------------------------------------- voice.yaml
+
+
+class VoiceDraft(_Loose):
+    """One of the free local auditions: a tendency added to the voice's description."""
+
+    label: str  # the candidate's description (content)
+    hint: str
+
+
+class VoiceEmotion(_Loose):
+    """One emotion variant of a finished voice; the UI names it ``enums:emotion.<id>``."""
+
+    id: str
+    instruct: str  # the emotion in words, for a local model (IndexTTS)
+    minimax: dict[str, Any] = Field(default_factory=dict)  # T2A overrides (emotion, vol, model)
+
+
+class VoiceConfig(_Loose):
+    """How a voice is auditioned and finished (M3 ``voice``): ``config/voice.yaml``."""
+
+    lines: int = 2  # script lines a voice reads to audition
+    sample_text: str = "你好。"  # what it reads when its character has no lines yet
+    local_final: str = "local/indextts2"  # variants of a local voice; the API flow's fallback
+    drafts: list[VoiceDraft] = Field(default_factory=list)
+    emotions: list[VoiceEmotion] = Field(default_factory=list)
+
+
 @dataclass(frozen=True)
 class StudioConfig:
     providers: ProvidersConfig
     components: ComponentsConfig
     spec: SpecConfig
+    voice: VoiceConfig = field(default_factory=VoiceConfig)
 
 
 class _Yaml12BoolLoader(yaml.SafeLoader):
@@ -253,6 +282,9 @@ def load_config(directory: Path | None = None) -> StudioConfig:
         providers=ProvidersConfig.model_validate(_read_yaml(base / "providers.yaml")),
         components=ComponentsConfig.model_validate(_read_yaml(base / "components.yaml")),
         spec=SpecConfig.model_validate(_read_yaml(base / "spec.yaml")),
+        voice=VoiceConfig.model_validate(
+            _read_yaml(base / "voice.yaml") if (base / "voice.yaml").exists() else {}
+        ),
     )
 
 

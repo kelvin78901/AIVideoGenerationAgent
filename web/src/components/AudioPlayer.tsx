@@ -89,7 +89,7 @@ export function AudioPlayer({
         {playing ? <Pause aria-hidden /> : <Play aria-hidden />}
       </Button>
       {bars ? (
-        <div aria-hidden className="flex h-8 min-w-0 flex-1 items-center gap-0.5">
+        <div aria-hidden className="flex h-8 min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
           {bars.map((h, i) => (
             <span
               key={i}

@@ -24,9 +24,10 @@ import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/form";
 import { currentVersion } from "@/lib/versions";
 import { AssetViews } from "@/pages/assets/AssetViews";
-import { ImageCandidates, VoiceCandidates } from "@/pages/assets/Candidates";
+import { ImageCandidates } from "@/pages/assets/Candidates";
 import { FinalButton } from "@/pages/assets/FinalButton";
-import { STATUS_TONE } from "@/pages/assets/status";
+import { isVoiceDraft, STATUS_TONE } from "@/pages/assets/status";
+import { VoicePanel } from "@/pages/assets/Voice";
 
 const LETTERS = "ABCD";
 // Pictures a reference can be uploaded as (the backend reads their size from the header).
@@ -80,6 +81,8 @@ export function AssetDetail({
   });
   const locked = asset.status === "locked";
   const pictures = asset.kind !== "voice";
+  // A voice's auditions are not a voice yet: its final is what gets locked.
+  const needsFinal = asset.kind === "voice" && isVoiceDraft(version);
   const componentId = asset.kind === "text" ? "text" : "img";
   const save = (p: AssetPatch, done?: string) =>
     patchAsset.mutate(
@@ -139,7 +142,8 @@ export function AssetDetail({
           ) : null}
           <Button
             variant={locked ? "outline" : "default"}
-            disabled={busy || !version}
+            disabled={busy || !version || (!locked && needsFinal)}
+            title={!locked && needsFinal ? t("voice.needsFinal") : undefined}
             onClick={locked ? onUnlock : onLock}
           >
             {locked ? <LockOpen aria-hidden /> : <Lock aria-hidden />}
@@ -260,15 +264,18 @@ export function AssetDetail({
               options={VoiceMethodSchema.options.map((m) => ({
                 value: m,
                 label: t(`voice.methods.${m}`),
+                // 声音克隆 comes later (Kelvin 2026-10-20).
+                disabled: m === "clone",
+                hint: m === "clone" ? t("voice.cloneLater") : undefined,
               }))}
             />
             <p className="text-xs text-muted-foreground">{t(`voice.hint.${asset.voice.method}`)}</p>
           </div>
-          {version && candidates.length ? (
-            <VoiceCandidates
+          {product.data && version ? (
+            <VoicePanel
               asset={asset}
-              versionNo={version.n}
-              candidates={candidates}
+              product={product.data}
+              version={version}
               locked={locked}
               onPick={(pick) => save({ pick })}
             />

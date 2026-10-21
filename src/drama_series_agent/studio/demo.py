@@ -113,11 +113,20 @@ DEMO_ASSET_VERSIONS: dict[str, tuple[tuple[tuple[str, str, str | None], ...], in
     "phone": ((("comfy/qwen-image", "10:33", "draft"),), 0),
     "txt1": ((("openai/gpt-image-2", "10:44", None),), None),
     "txt2": ((("openai/gpt-image-2", "10:44", None),), 0),
-    "vlinwan": ((("minimax/speech-2.8-hd", "10:40", None),), 0),
+    # Free local auditions, then the MiniMax final from A (design + five emotions), locked whole.
+    "vlinwan": (
+        (("local/qwen3-tts", "10:38", "draft"), ("minimax/speech-2.8-hd", "10:40", "final")),
+        0,
+    ),
 }
-# What each run cost (the API's price × pictures; a voice design is $3).
-DEMO_ASSET_COST = {"google/nano-banana-pro": 0.14, "openai/gpt-image-2": 1.12}
-VOICE_LABELS = ("偏低沉", "更清亮", "带一点沙哑")
+# What each run cost (the API's price × pictures; a voice final is its $3 design + characters).
+DEMO_ASSET_COST = {
+    "google/nano-banana-pro": 0.14,
+    "openai/gpt-image-2": 1.12,
+    "minimax/speech-2.8-hd": 3.004,  # 40 characters: the trial clip and the five emotions
+}
+# 林晚's first two lines (the script's), which her auditions read.
+VOICE_LINES = ("……周屿？", "三年了。他凭什么。")
 VOICE_WAVES = (
     (10, 18, 26, 14, 22, 30, 12, 20, 16, 28, 10, 18, 24, 12, 20, 14),
     (14, 22, 12, 28, 18, 10, 24, 30, 16, 12, 22, 18, 10, 26, 14, 20),
@@ -544,26 +553,67 @@ def _text_reads(exact: str, method: str) -> list[str]:
     return [exact, exact.replace("点", "占"), exact, exact[:-1]]
 
 
+def _demo_wave(i: int) -> list[float]:
+    """The prototype's 16-bar waveform of candidate ``i``, as the 64 bars a clip has."""
+    return [h / 30 for h in VOICE_WAVES[i % len(VOICE_WAVES)] for _ in range(4)]
+
+
+def _tone(store: BlobStore, text: str, freq: float, **extra: Any) -> dict[str, Any]:
+    """A clip (a tone as long as the line would take) as a ``files[]`` entry."""
+    seconds = round(max(0.5, len(text) * 0.25), 3)
+    sha = store.put_bytes(sine_wav(seconds, freq_hz=freq))
+    return file_entry(extra.pop("role"), sha, "audio/wav", duration_s=seconds, **extra)
+
+
+def _voice_files(
+    store: BlobStore, asset: Asset, stage: str | None
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """林晚's auditions (three drafts reading her two lines) or her final (the design's trial
+    clip and the five emotions)."""
+    cfg = get_config().voice
+    lines = VOICE_LINES
+    if stage == "draft":
+        files, candidates = [], []
+        for i, draft in enumerate(cfg.drafts[:3]):
+            wave = _demo_wave(i)
+            for j, text in enumerate(lines):
+                freq = 180 + 40 * i + 7 * j
+                files.append(
+                    _tone(store, text, freq, role="candidate", idx=i, line=j, waveform=wave)
+                )
+            design = f"{(asset.seed_json or {}).get('description', '')}；{draft.hint}"
+            candidates.append({"label": draft.label, "design": design, "waveform": wave})
+        return {"candidates": candidates}, files
+    trial = "\n".join(lines)
+    files = [_tone(store, trial, 185, role="anchor", idx=None, line=None, waveform=_demo_wave(0))]
+    for k, emotion in enumerate(cfg.emotions):
+        files.append(
+            _tone(
+                store,
+                lines[0],
+                200 + 30 * k,
+                role="variant",
+                idx=k,
+                line=0,
+                emotion=emotion.id,
+                waveform=_demo_wave(k),
+            )
+        )
+    payload = {
+        "provider": "minimax",
+        "voice_id": f"demo-voice-{asset.id}",
+        "emotions": [e.id for e in cfg.emotions],
+        "label": cfg.drafts[0].label,
+    }
+    return payload, files
+
+
 def _asset_files(
     store: BlobStore, asset: Asset, product_id: str, model: str, stage: str | None
 ) -> tuple[dict[str, Any], list[dict[str, Any]]]:
     """A demo version's payload and candidate files (Mock pictures, or tones for a voice)."""
     if asset.kind == "voice":
-        files = [
-            file_entry(
-                "candidate",
-                store.put_bytes(sine_wav(1.5, freq_hz=180 + 40 * i)),
-                "audio/wav",
-                duration_s=1.5,
-                idx=i,
-            )
-            for i in range(len(VOICE_LABELS))
-        ]
-        candidates = [
-            {"label": label, "waveform": [h / 30 for h in wave]}
-            for label, wave in zip(VOICE_LABELS, VOICE_WAVES, strict=True)
-        ]
-        return {"candidates": candidates}, files
+        return _voice_files(store, asset, stage)
     size = dims("9:16", "draft" if stage == "draft" else "1080p")
     text = text_settings(asset, None)
     reads: list[str | None] = [None] * (1 if stage == "final" else 4)
@@ -612,7 +662,7 @@ async def _seed_asset_versions(
                 where="local" if model.startswith("comfy/") else "api",
                 seed=1200 + n,
                 params={"mode": "run", "calls": 1},
-                cost_usd=3.0 if asset.kind == "voice" else DEMO_ASSET_COST.get(model, 0.0),
+                cost_usd=DEMO_ASSET_COST.get(model, 0.0),
                 stage=stage,
                 id=f"{product_id}-v{n}",
                 created_at=_demo_time(at),
@@ -623,7 +673,10 @@ async def _seed_asset_versions(
             parent = v.id
         if locked is None or parent is None:
             continue
-        await products.lock_pick(product_id, parent, locked, record=record)
+        # A voice's final has no candidates: it is locked whole.
+        await products.lock_pick(
+            product_id, parent, None if asset.kind == "voice" else locked, record=record
+        )
         if asset.kind == "character":
             await _seed_views(db, products, compiler, asset, store, invalidation)
 

@@ -91,17 +91,28 @@
     "hint": {
       "design": "Creates a new voice from the description above; no sample needed. MiniMax voice design is about $3 each.",
       "clone": "Upload at least 10 s of clean speech (with the speaker's consent). MiniMax cloning is about $1.5 each.",
-      "local": "Uses local TTS (IndexTTS2 / CosyVoice): free, quality depends on the reference audio."
+      "local": "All local and free: the chosen audition is the voice, and IndexTTS makes the emotion variants. Quality depends on the audition."
     },
     "cands": "Voice candidates",
-    "play": "Play {{letter}}",
-    "pause": "Pause {{letter}}",
     "label": "v{{n}} · {{letter}} · {{label}}",
     "pick": "Choose",
     "picked": "Chosen",
     "lines": "Audition with lines from the script",
-    "tryLine": "Audition: {{text}}",
-    "trying": "Auditioning “{{text}}” ({{tone}})."
+    "note": "Three free auditions first; choose one and make the final, which is what gets locked",
+    "needsFinal": "An audition cannot be locked: make the final first",
+    "cloneLater": "Coming later",
+    "finalApi": "Make the final with {{model}}",
+    "finalLocal": "Make the final locally (free)",
+    "finalStarted": "Making the final from candidate {{letter}}: the voice, then five emotion variants.",
+    "finalTitle": "Final",
+    "final": "Final · {{label}} · {{provider}}",
+    "provider": {
+      "api": "API voice design",
+      "local": "Local"
+    },
+    "anchor": "Sample",
+    "variants": "Emotion variants",
+    "variantsHint": "Dialogue audio uses the emotion that matches each line's delivery."
   },
   "lockMismatch": {
     "title": "Candidate {{letter}} does not show the required text",

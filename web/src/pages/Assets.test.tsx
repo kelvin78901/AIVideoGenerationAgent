@@ -188,19 +188,48 @@ describe("AssetsPage", () => {
     await waitFor(() => expect(item(/楼下便利店/)).toHaveTextContent("待选"));
   });
 
-  it("voices: three candidates to audition, script lines to try", async () => {
+  it("a locked voice shows its final: the sample, five emotions, lines to try", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
     await user.click(item(/^林晚\s*音色/));
     expect(screen.getByText("当前产物 · 林晚 · 音色候选 3 个")).toBeInTheDocument();
-    const voices = screen.getByRole("radiogroup", { name: "音色候选" });
-    expect(within(voices).getAllByRole("radio")).toHaveLength(3);
-    const play = screen.getByRole("button", { name: "试听 B" });
-    await user.click(play);
-    expect(screen.getByRole("button", { name: "暂停 B" })).toHaveAttribute("aria-pressed", "true");
-    expect(screen.getByRole("button", { name: "试读：……周屿？" })).toBeInTheDocument();
+    const final = await screen.findByRole("region", { name: "终版" });
+    expect(final).toHaveTextContent("终版 · 偏低沉 · API 音色设计");
+    expect(within(final).getByRole("button", { name: "播放：样音" })).toBeInTheDocument();
+    const variants = within(final).getByRole("list", { name: "情绪变体" });
+    expect(
+      within(variants)
+        .getAllByRole("listitem")
+        .map((li) => li.textContent),
+    ).toEqual(["平静", "愤怒", "哭腔", "耳语", "喊叫"].map((e) => expect.stringContaining(e)));
+    expect(screen.getByRole("button", { name: "播放：……周屿？" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "文字描述设计" })).toBeChecked();
+    // 声音克隆 comes later.
+    expect(screen.getByRole("radio", { name: "声音克隆" })).toBeDisabled();
+  });
+
+  it("a voice: free auditions, then the final, which is what gets locked", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/^周屿\s*音色/));
+    await user.click(screen.getAllByRole("button", { name: /^重跑/ })[0] as HTMLElement);
+    const voices = await screen.findByRole("radiogroup", { name: "音色候选" });
+    expect(within(voices).getAllByRole("radio")).toHaveLength(3);
+    expect(screen.getByRole("button", { name: "播放：v1 · B · 更清亮" })).toBeInTheDocument();
+    const lock = screen.getByRole("button", { name: "锁定为参考" });
+    expect(lock).toBeDisabled();
+    expect(lock).toHaveAttribute("title", "试听不能直接锁定：先出终版");
+    await user.click(within(voices).getAllByRole("radio")[1] as HTMLElement);
+    await waitFor(() => expect(asset("vzhouyu")?.pick).toBe(1));
+    await user.click(screen.getByRole("button", { name: "用 MiniMax Speech 2.8 HD 出终版" }));
+    expect(await screen.findByRole("region", { name: "终版" })).toBeInTheDocument();
+    const final = productOf("vzhouyu")?.versions.at(-1);
+    expect(final).toMatchObject({ stage: "final", model_key: "minimax/speech-2.8-hd" });
+    await user.click(screen.getByRole("button", { name: "锁定为参考" }));
+    await waitFor(() => expect(productOf("vzhouyu")?.adopted_version_id).toBe(final?.id));
+    expect(item(/^周屿\s*音色/)).toHaveTextContent("已锁定");
   });
 
   it("an Inspector chip of another kind shows the first asset of that kind", async () => {

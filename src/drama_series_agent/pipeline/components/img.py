@@ -98,7 +98,7 @@ class ImgComponent(MediaComponent):
     # ------------------------------------------------------------------ run
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
-        source = await self._source(ctx.product, inputs.params)
+        source = await self.source_candidate(ctx.product, inputs.params)
         refs, deps, blocks = self._refs(ctx.intent, inputs, source)
         frame = inputs.context["frame"]
         where = self.where_of(ctx.model_key)
@@ -150,22 +150,6 @@ class ImgComponent(MediaComponent):
         return {}
 
     # ------------------------------------------------------------------ internals
-
-    async def _source(
-        self, product: Product, params: dict[str, Any]
-    ) -> tuple[ProductVersion, int] | None:
-        """The draft an API final starts from (``params.source_version_id / source_idx``)."""
-        version_id = params.get("source_version_id")
-        if not version_id:
-            return None
-        idx = int(params.get("source_idx") or 0)
-        async with self.services.db.session() as session:
-            v = await session.get(ProductVersion, str(version_id))
-        if v is None or v.product_id != product.id:
-            raise ComponentError("version_not_found", id=version_id)
-        if not any(f.get("role") == "candidate" and f.get("idx") == idx for f in v.files_json):
-            raise ComponentError("no_such_candidate", id=v.id, idx=idx)
-        return v, idx
 
     @staticmethod
     def _refs(

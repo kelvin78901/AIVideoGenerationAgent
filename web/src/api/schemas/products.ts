@@ -76,6 +76,12 @@ export const VersionFileSchema = z.object({
   idx: z.number().int().nullable().optional(),
   /** Which view a `role: view` picture is: side / back / expressions (M3 补视图). */
   view: z.string().nullable().optional(),
+  /** A voice sample: which of the voice's audition lines it reads. */
+  line: z.number().int().nullable().optional(),
+  /** A voice's emotion variant (`enums:emotion.<id>`, config/voice.yaml). */
+  emotion: z.string().nullable().optional(),
+  /** Audio: 64 peaks, 0–1, measured by the backend. */
+  waveform: z.array(z.number()).nullable().optional(),
 });
 export type VersionFile = z.infer<typeof VersionFileSchema>;
 

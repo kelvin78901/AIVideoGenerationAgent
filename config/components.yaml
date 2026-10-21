@@ -148,11 +148,12 @@ components:
     kind: tts
     api: [minimax/speech-2.8-hd, elevenlabs/v3]
     local: [local/indextts2, local/cosyvoice, local/qwen3-tts]
-    balanced: { mode: hybrid, api: minimax/speech-2.8-hd, local: local/qwen3-tts, fallback_to: elevenlabs/v3 }
+    balanced: { mode: hybrid, api: minimax/speech-2.8-hd, local: local/qwen3-tts, fallback_to: local/indextts2 }
     per_call_cap_usd: 3
     cheap_api: minimax/speech-2.8-hd
     candidates: 3
     gate: assets
+    note: 「重跑」= 本地试听 3 个（Qwen3-TTS）；「用 MiniMax 出终版」= 音色设计 + 5 个情绪变体（config/voice.yaml），失败整套改用本地 IndexTTS
 
   - id: dub
     stage: assets

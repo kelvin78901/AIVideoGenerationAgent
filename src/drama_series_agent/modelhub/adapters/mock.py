@@ -7,6 +7,10 @@ prices, so cost accounting in mock mode matches what the real call would have co
 A picture asked to show text (``params["text"]``, M3 画面文字) carries it in an ``iTXt`` chunk
 (``MOCK_TEXT_KEY``), so Mock OCR (kind ``ocr``, the picture at ``params["path"]``) reads back
 what the "model drew": nothing on any other picture.
+
+A voice design (request kind ``voice_design``) answers a ``voice_id`` with its trial audio; a
+call with ``params["charge_design"]`` bills the design's flat price (``Usage.calls``), as
+MiniMax charges it on a designed voice's first synthesis.
 """
 
 from __future__ import annotations
@@ -71,6 +75,10 @@ def estimate_tokens(text: str) -> int:
     """Rough token count: ~1 token per CJK char, ~4 chars per token otherwise."""
     cjk = sum(1 for ch in text if "㐀" <= ch <= "鿿")
     return max(1, cjk + (len(text) - cjk) // 4)
+
+
+def _design_calls(req: ModelRequest) -> dict[str, int] | None:
+    return {"voice_design": 1} if req.params.get("charge_design") else None
 
 
 def _digest(*parts: object) -> bytes:
@@ -243,7 +251,7 @@ class MockAdapter:
         if kind in IMAGE_KINDS:
             return Usage(images=int(req.params.get("n", 1)))
         if kind in AUDIO_KINDS:
-            return Usage(chars=len(req.text()))
+            return Usage(chars=len(req.text()), calls=_design_calls(req))
         if kind in VIDEO_KINDS:
             return Usage(output_seconds=float(req.params.get("duration_s", 2.0)))
         if kind in OCR_KINDS:
@@ -306,13 +314,18 @@ class MockAdapter:
         )
 
     def _audio(self, req: ModelRequest) -> ModelResult:
+        """A tone whose pitch follows the model, the text and how it is spoken (the voice, the
+        emotion …), so different takes sound different."""
         text = req.text()
         duration = float(req.params.get("duration_s", max(0.5, len(text) * 0.25)))
-        freq = 220 + _digest(self.key, text)[0]
-        data = sine_wav(duration, freq_hz=freq)
+        how = json.dumps(req.params, sort_keys=True, ensure_ascii=False, default=str)
+        d = _digest(self.key, text, how, req.seed)
+        data = sine_wav(duration, freq_hz=160 + d[0] * 1.5)
+        voice = {"voice_id": f"mock-voice-{d.hex()[:12]}"} if req.kind == "voice_design" else None
         return ModelResult(
+            json=voice,
             files=[OutputFile(role="audio", mime="audio/wav", data=data, duration_s=duration)],
-            usage=Usage(chars=len(text), output_seconds=duration),
+            usage=Usage(chars=len(text), output_seconds=duration, calls=_design_calls(req)),
             raw={"mock": True},
         )
 

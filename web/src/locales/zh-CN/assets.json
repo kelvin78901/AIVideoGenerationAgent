@@ -91,17 +91,28 @@
     "hint": {
       "design": "按上面的描述生成全新音色，不需要样本。MiniMax 音色设计约 $3 / 个。",
       "clone": "上传 10 秒以上的干净人声样本（需本人授权）。MiniMax 克隆约 $1.5 / 个。",
-      "local": "用本地 TTS（IndexTTS2 / CosyVoice）生成，不产生费用，质量取决于参考音频。"
+      "local": "全程本地、不花钱：选中的试听就是这个音色，情绪变体由 IndexTTS 出。效果取决于试听的质量。"
     },
     "cands": "音色候选",
-    "play": "试听 {{letter}}",
-    "pause": "暂停 {{letter}}",
     "label": "v{{n}} · {{letter}} · {{label}}",
     "pick": "选这个",
     "picked": "已选",
     "lines": "用剧本里的台词试读",
-    "tryLine": "试读：{{text}}",
-    "trying": "试读「{{text}}」（{{tone}}）。"
+    "note": "先免费试听 3 个，选一个出终版；终版才能锁定",
+    "needsFinal": "试听不能直接锁定：先出终版",
+    "cloneLater": "之后支持",
+    "finalApi": "用 {{model}} 出终版",
+    "finalLocal": "用本地出终版（免费）",
+    "finalStarted": "已开始出终版：以候选 {{letter}} 为基础，定下音色，再出 5 个情绪变体。",
+    "finalTitle": "终版",
+    "final": "终版 · {{label}} · {{provider}}",
+    "provider": {
+      "api": "API 音色设计",
+      "local": "本地"
+    },
+    "anchor": "样音",
+    "variants": "情绪变体",
+    "variantsHint": "台词配音按每句的语气选用对应的情绪。"
   },
   "lockMismatch": {
     "title": "候选 {{letter}} 的字和要求不一致",
