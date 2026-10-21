@@ -14,7 +14,7 @@
 - M3 第 2 步：素材分析（后端）（d33cfec，DECISIONS 同日）。`assets/ops.py`（规则 + 合并 + id 沿用）、组件 `assets`（`adopt_every_run`）、`assets/service.py`（只增不删的物化、列表、修改、矩阵、分析）、接口四个、剧本切片 `assets`、迁移 `0017`（`product.settings_json`）、示例种子 13 条（MSW id）、`img` / `text` / `voice` 最简模板。pytest 541、Vitest 256 全过。M2 的级联、影响范围测试跟着改（剧本下游多了素材清单）。
 - M3 第 3 步：参考图、补视图、上传、锁定（Mock）+ MSW 放行（f0e07e6，DECISIONS 2026-10-21，CI 绿）。组件 `img`（4 张候选、API 终版 1 张、道具只拿已锁定的角色做参考）、`views`（锁定角色后自动出侧面 / 背面 / 表情，每次采纳、整套兜底）、`pipeline/components/media.py`（尺寸、调用缓存、整套兜底）、`POST /assets/{id}/lock|upload`、素材自己的 `gate_decision`、`asset_unlock`（`PlannedChange.lines / unaffected / relock`）、`media/image.py`、示例种子 7 / 13 已锁定 + 林晚补视图；前端素材改走后端（MSW 只叠镜头）、`test/fakes/assets.ts`、`versionStatus` 认 pick 的来源。pytest 560、Vitest 257、Playwright 29 全过。
 - M3 第 4 步：素材页接后端 + 出场矩阵（70a1200，DECISIONS 2026-10-21）。候选显示真图、「用 API 出终版 · 约 $0.14」（本地草稿、混合模式、没锁定时）、上传参考图、补视图（角色）、「出现在」改成场（链到剧本行）、「清单 / 出场矩阵」切换、重新分析改成任务；MSW 的 analyze 删掉，`useAssets(series, episode)`；假后端补上传、矩阵、分析、视图；Playwright 无示例数据一轮加素材页（真图、矩阵、锁定解锁）；截图 `reports/ui/assets-{draft,views,matrix}.*.jpg`（原型没有的三块，等 Kelvin 看）。ROADMAP 勾「素材分析」。pytest 560、Vitest 263、Playwright 31 全过。
-- M3 第 5 步：画面文字 + OCR（Mock）（本提交，DECISIONS 2026-10-21）。组件 `text`（继承 `img`，两种做法，payload 带 `text` 设置和每张的 `ocr / ocr_ok / ocr_issue`）、新组件 `ocr` + 模型 `local/rapidocr`（`qa/ocr.py`：走 router、$0、NFKC 去空白逐字比，`missing / wrong / has_text`，没 OCR 时「未检查」）、Mock OCR 读 `iTXt`（`MockSettings.ocr_mismatch`）、锁定不一致 409 `ocr_mismatch`（`force`）、上传的图也过 OCR、`text/default.j2`、`components.yaml` 补 `candidates: 4`；示例 txt2 改成空白底图。前端：候选显示真图、后期贴字叠字预览、OCR 六种标注、「这一版是按……出的」、锁定不一致先确认；「模型与兜底」多一行「文字核对（OCR）」。Playwright 无示例数据一轮加画面文字（OCR 标注、不一致先确认）。截图 `reports/ui/assets-{text,text-composite,ocr-confirm}.*.jpg`，`models.*.jpg` 重截（22 个组件）。ROADMAP 勾「画面文字」。pytest 573、Vitest 264、Playwright 32 全过。
+- M3 第 5 步：画面文字 + OCR（Mock）（4461791；Linux CI 红在出场矩阵的排序上，本提交修，DECISIONS 2026-10-21）。组件 `text`（继承 `img`，两种做法，payload 带 `text` 设置和每张的 `ocr / ocr_ok / ocr_issue`）、新组件 `ocr` + 模型 `local/rapidocr`（`qa/ocr.py`：走 router、$0、NFKC 去空白逐字比，`missing / wrong / has_text`，没 OCR 时「未检查」）、Mock OCR 读 `iTXt`（`MockSettings.ocr_mismatch`）、锁定不一致 409 `ocr_mismatch`（`force`）、上传的图也过 OCR、`text/default.j2`、`components.yaml` 补 `candidates: 4`；示例 txt2 改成空白底图。前端：候选显示真图、后期贴字叠字预览、OCR 六种标注、「这一版是按……出的」、锁定不一致先确认；「模型与兜底」多一行「文字核对（OCR）」。Playwright 无示例数据一轮加画面文字（OCR 标注、不一致先确认）。截图 `reports/ui/assets-{text,text-composite,ocr-confirm}.*.jpg`，`models.*.jpg` 重截（22 个组件）。ROADMAP 勾「画面文字」。pytest 573、Vitest 264、Playwright 32 全过。
 
 ## 下一步
 
@@ -33,6 +33,7 @@
 
 ## 踩过的坑 / 临时绕过
 
+- **同一次物化建的行 `created_at` 可能相同**（Windows 时钟粗，Linux 细，结果相反）：别拿它排序或当次序；出场矩阵改成按分析里的顺序（`seed_json.order`）再按 id。
 - 有 `upstream` remote（`binwu1/drama-series-agent`）；Kelvin 已把 `gh` 默认仓库设成 `kelvin78901/AIVideoGenerationAgent`，保险起见 `gh pr` 仍带 `-R`。
 - 演示里逐步推进的流程（检测、安装、同步）用 `mocks/events.ts:repeatDemo`；测试把对应的 `demoTiming` 设成 0，所有步骤在一个任务里跑完，不要靠放宽等待时间。
 - Kelvin 本机常开着 `start.ps1`（5173 前端 + 8000 后端，Mock 模式），Vite 会热更新，可以直接拿来做浏览器核对；不要往里发真实（非 Mock）调用。**后端不会自动重载**：改了后端接口要提醒 Kelvin 重启后端，否则热更新后的前端读旧后端，报「接口返回的数据和约定不符」。

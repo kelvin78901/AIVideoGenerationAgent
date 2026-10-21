@@ -2249,14 +2249,14 @@
         "name": "林晚出租屋 · 夜"
       },
       {
-        "id": "note",
-        "kind": "prop",
-        "name": "黄色便利贴"
-      },
-      {
         "id": "umbrella",
         "kind": "prop",
         "name": "红色长柄伞"
+      },
+      {
+        "id": "note",
+        "kind": "prop",
+        "name": "黄色便利贴"
       },
       {
         "id": "band",

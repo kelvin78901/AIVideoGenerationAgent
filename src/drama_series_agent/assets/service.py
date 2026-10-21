@@ -274,7 +274,14 @@ class AssetService:
                 for a in (await session.exec(select(Asset).where(col(Asset.id).in_(ids)))).all()
                 if not a.retired
             ]
-        assets.sort(key=lambda a: (KIND_ORDER.get(a.kind, 9), a.created_at, a.id))
+        # By kind, then as the analysis listed them (rows made in one go share a timestamp).
+        assets.sort(
+            key=lambda a: (
+                KIND_ORDER.get(a.kind, 9),
+                int((a.seed_json or {}).get("order") or 0),
+                a.id,
+            )
+        )
         live = {s.id for s in scenes}
         return MatrixOut(
             episode_id=episode_id,
