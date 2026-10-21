@@ -53,7 +53,7 @@ describe("AssetsPage", () => {
       screen.getByText("从剧本分析出：角色 2 · 场景 3 · 道具 4 · 画面文字 2 · 音色 2"),
     ).toBeInTheDocument();
     expect(within(list()).getAllByRole("button", { pressed: false })).toHaveLength(12);
-    expect(screen.getByText("当前产物 · 林晚 · 参考图 4 张候选")).toBeInTheDocument();
+    expect(await screen.findByText("当前产物 · 林晚 · 参考图 4 张候选")).toBeInTheDocument();
     // The API final v2 stays on screen; the picture locked from it is a version of its own.
     expect(screen.getByText(/v2 · Nano Banana Pro/)).toHaveTextContent("已锁定");
     expect(screen.getByRole("link", { name: "1-09" })).toBeInTheDocument();
@@ -186,5 +186,97 @@ describe("AssetsPage", () => {
     await user.tab();
     await waitFor(() => expect(asset("room")?.intent).toBe(NEW_DESC));
     expect(productOf("room")?.prompt?.intent).toBe(NEW_DESC);
+  });
+
+  it("shows each candidate's picture; 「用 API 出终版」 makes one picture from the picked draft", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/林晚出租屋/));
+    const cands = screen.getByRole("radiogroup", { name: "候选" });
+    const pictures = within(cands).getAllByRole("img");
+    expect(pictures).toHaveLength(4);
+    const draft = productOf("room")?.versions.at(-1);
+    const sha = draft?.files.find((f) => f.idx === 2)?.sha256 ?? "";
+    expect(within(cands).getByRole("img", { name: "v1 · C" })).toHaveAttribute(
+      "src",
+      `/api/v1/files/${sha}`,
+    );
+    await user.click(within(cands).getByRole("radio", { name: "v1 · C" }));
+    await waitFor(() => expect(asset("room")?.pick).toBe(2));
+    await user.click(screen.getByRole("button", { name: "用 API 出终版 · 约 $0.14" }));
+    await waitFor(() => expect(productOf("room")?.versions).toHaveLength(2));
+    const final = productOf("room")?.versions.at(-1);
+    expect(final).toMatchObject({ stage: "final", parent_version_id: draft?.id });
+    expect(final?.model_key).toBe("google/nano-banana-pro");
+    const now = await screen.findByRole("radio", { name: "v2 · A" });
+    expect(within(now).getByRole("img")).toBeInTheDocument();
+    // The final is not a draft: no second final from it.
+    expect(screen.queryByRole("button", { name: /用 API 出终版/ })).not.toBeInTheDocument();
+  });
+
+  it("uploads a reference picture as a picked candidate", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/旧黑发圈/));
+    const file = new File(["png"], "发圈.png", { type: "image/png" });
+    await user.upload(screen.getByLabelText("选择要上传的图片"), file);
+    await waitFor(() => expect(fakeAssets.uploads).toEqual([{ id: "band", name: "发圈.png" }]));
+    expect(productOf("band")?.versions.at(-1)?.origin).toBe("upload");
+    expect(await screen.findByRole("radio", { name: "v2 · A" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    // A locked asset takes no upload.
+    await user.click(item(/红色长柄伞/));
+    expect(screen.getByRole("button", { name: "上传参考图" })).toBeDisabled();
+  });
+
+  it("a locked character shows the views drawn from it", async () => {
+    renderAssets();
+    await ready();
+    const views = await screen.findByRole("region", { name: "补视图" });
+    for (const name of ["侧面", "背面", "表情"])
+      expect(await within(views).findByRole("img", { name })).toBeInTheDocument();
+  });
+
+  it("「出现在」 lists the scenes, linked to the script", async () => {
+    renderAssets();
+    await ready();
+    const linwan = asset("linwan");
+    const first = linwan?.scenes[0];
+    const link = screen.getByRole("link", { name: "场 1" });
+    expect(link).toHaveAttribute(
+      "href",
+      `/s/demo/e/1/script?line=${first?.line_ids[0] ?? first?.scene_id ?? ""}`,
+    );
+    expect(screen.getByRole("link", { name: "场 2" })).toBeInTheDocument();
+    expect(item(/^林晚\s*角色/)).toHaveTextContent("2 场 · 6 个镜头");
+  });
+
+  it("the matrix: one row per scene, a cell links to the line; a column picks the asset", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(screen.getByRole("radio", { name: "出场矩阵" }));
+    const table = await screen.findByRole("table", { name: "出场矩阵" });
+    const rows = within(table).getAllByRole("row");
+    expect(rows).toHaveLength(3); // the header and two scenes
+    const cell = within(table).getByRole("link", { name: /^角色「林晚」在场 1：/ });
+    expect(cell.getAttribute("href")).toMatch(/^\/s\/demo\/e\/1\/script\?line=/);
+    expect(
+      within(table).getByRole("link", { name: "场景「老小区楼道 · 夜」在场 1（整场）" }),
+    ).toHaveTextContent("整场");
+    await user.click(within(table).getByRole("button", { name: /红色长柄伞/ }));
+    expect(await screen.findByText("当前产物 · 红色长柄伞 · 参考图 4 张候选")).toBeInTheDocument();
+  });
+
+  it("「重新分析剧本」 starts the analysis job", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(screen.getByRole("button", { name: "重新分析剧本" }));
+    await waitFor(() => expect(fakeAssets.analyses).toEqual(["demo-e1"]));
   });
 });

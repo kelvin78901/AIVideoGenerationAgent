@@ -261,11 +261,19 @@ ASSETS_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "assets.json"
 
 
 def test_web_assets_fixture_is_current(client: TestClient) -> None:
-    """Episode 1's assets and each one's product with its candidates (``test/fakes/assets.ts``).
-    A lock's ``pick`` version gets a random id and the time it was made: pinned here."""
+    """Episode 1's assets, each one's product with its candidates, 林晚's views and the
+    episode's 出场矩阵 (``test/fakes/assets.ts``). A lock's ``pick`` version gets a random id and
+    the time it was made: pinned here."""
     assets = client.get(f"{V1}/series/demo/assets", params={"episode": "demo-e1"}).json()
     products = [client.get(f"{V1}/products/{a['product_id']}").json() for a in assets]
-    text = json.dumps(_fixed({"assets": assets, "products": products}), ensure_ascii=False)
+    owned = client.get(f"{V1}/products", params={"owner": "asset:linwan"}).json()
+    export = {
+        "assets": assets,
+        "products": products,
+        "views": [p for p in owned if p["slot"] == "ref_views"],
+        "matrix": client.get(f"{V1}/episodes/demo-e1/assets/matrix").json(),
+    }
+    text = json.dumps(_fixed(export), ensure_ascii=False)
     for p in products:
         for v in p["versions"]:
             if v["origin"] == "pick":

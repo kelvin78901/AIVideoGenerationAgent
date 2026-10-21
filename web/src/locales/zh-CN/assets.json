@@ -8,8 +8,6 @@
   "kindCount": "{{kind}} {{count}}",
   "summarySep": " · ",
   "reanalyze": "重新分析剧本",
-  "reanalyzed": "已重新分析剧本：没有新增素材。改过剧本后再分析，新增或变化的会标出来。",
-  "reanalyzedChanged": "已重新分析剧本：新增 {{added}} 项，变化 {{changed}} 项。",
   "what": {
     "image": "{{name}} · 参考图 4 张候选",
     "text": "{{name}} · 文字素材 4 张候选",
@@ -19,8 +17,9 @@
     "label": "素材清单",
     "filter": "按类别筛选",
     "all": "全部",
-    "shots": "{{count}} 个镜头",
-    "noShots": "本集未出镜"
+    "scenes": "出现在 {{count}} 场",
+    "scenesShots": "{{count}} 场 · {{shots}} 个镜头",
+    "notHere": "本集未出现"
   },
   "detail": {
     "label": "素材详情",
@@ -28,13 +27,18 @@
     "unlock": "解锁",
     "source": "来源：{{source}}",
     "appears": "出现在：",
-    "noShots": "本集暂无镜头",
     "desc": "描述（就是这条素材的提示词意图层）",
     "descHint": "改完点「重跑」生效；锁定的素材改描述后会提示哪些镜头受影响。",
     "descSaved": "描述已保存，下次重跑生效。",
     "locked": "「{{name}}」已锁定：候选 {{letter}} 成为参考。",
     "lockedCharacter": "「{{name}}」已锁定：候选 {{letter}} 成为参考，正在自动补齐侧面、背面和表情。",
-    "unlockTitle": "解锁「{{name}}」会影响用到它的镜头"
+    "unlockTitle": "解锁「{{name}}」会影响用到它的镜头",
+    "scene": "场 {{n}}",
+    "shots": "镜头：",
+    "noScenes": "本集未出现",
+    "upload": "上传参考图",
+    "uploadFile": "选择要上传的图片",
+    "uploaded": "已上传「{{name}}」，成为一张候选并已选中。"
   },
   "text": {
     "exact": "画面里的字（逐字核对）",
@@ -93,5 +97,35 @@
     "lines": "用剧本里的台词试读",
     "tryLine": "试读：{{text}}",
     "trying": "试读「{{text}}」（{{tone}}）。"
+  },
+  "reanalyzing": "已开始重新分析剧本，分析完清单会自动更新；新增的素材会出现在清单里。",
+  "view": {
+    "label": "显示方式",
+    "list": "清单",
+    "matrix": "出场矩阵"
+  },
+  "final": {
+    "button": "用 API 出终版",
+    "buttonCost": "用 API 出终版 · 约 {{cost}}",
+    "started": "已开始出终版：以候选 {{letter}} 为参考，用 {{model}} 出 1 张。"
+  },
+  "views": {
+    "title": "补视图",
+    "note": "锁定后按锁定的图自动补齐，换了锁定图会重画",
+    "running": "正在按锁定的图补齐侧面、背面和表情……",
+    "stale": "锁定的图换了，正在等重画",
+    "none": "锁定后自动补齐侧面、背面和表情。",
+    "side": "侧面",
+    "back": "背面",
+    "expressions": "表情"
+  },
+  "matrix": {
+    "label": "出场矩阵",
+    "hint": "一行一场，一列一样素材。数字是这一场里有它的台词行数，点一下跳到剧本里那一行。",
+    "scene": "场",
+    "whole": "整场",
+    "cellLines": "{{kind}}「{{asset}}」在场 {{n}}：{{count}} 行",
+    "cellScene": "{{kind}}「{{asset}}」在场 {{n}}（整场）",
+    "empty": "本集还没有分析出素材。"
   }
 }

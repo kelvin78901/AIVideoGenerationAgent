@@ -7,7 +7,18 @@
 import type { Asset } from "@/api/schemas/assets";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 
-type Seed = Omit<Asset, "series_id" | "product_id" | "status" | "pick" | "text" | "voice"> &
+type Seed = Omit<
+  Asset,
+  | "series_id"
+  | "product_id"
+  | "status"
+  | "pick"
+  | "text"
+  | "voice"
+  | "scenes"
+  | "note"
+  | "seed_changed"
+> &
   Partial<Pick<Asset, "text" | "voice">> & { state: "locked" | "choosing" | "none" };
 
 const msg = (code: string, params: Record<string, string | number> = {}) => ({ code, params });
@@ -153,9 +164,12 @@ export const assets: Asset[] = seeds.map(
     shots,
     series_id: DEMO_SERIES_ID,
     product_id: `demo-p-asset-${id}`,
+    scenes: [],
     status: "not_generated",
     pick: 0,
     text: text ?? null,
     voice: voice ?? null,
+    note: null,
+    seed_changed: false,
   }),
 );

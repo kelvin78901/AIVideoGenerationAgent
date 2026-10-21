@@ -37,7 +37,7 @@ export default function GeneratePage() {
   const { seriesId, episodeIdx, episode } = useRouteEpisode();
   const shots = useShots(episode?.id);
   const spec = useOutputSpec(seriesId);
-  const assets = useAssets(seriesId);
+  const assets = useAssets(seriesId, episode?.id);
   const videos = useProducts({ component: "vid" });
   const episodeProducts = useProducts({ owner: `episode:${episode?.id ?? ""}` });
   const catalog = useComponentCatalog();

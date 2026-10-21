@@ -1,11 +1,11 @@
-import { Lock, LockOpen } from "lucide-react";
-import { useId, useState } from "react";
+import { Lock, LockOpen, Upload } from "lucide-react";
+import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-import { errorMessage } from "@/api/client";
-import { usePatchAsset } from "@/api/hooks/assets";
+import { errorMessage, fileUrl } from "@/api/client";
+import { usePatchAsset, useUploadAsset } from "@/api/hooks/assets";
 import { useProduct } from "@/api/hooks/products";
 import {
   CandidatesPayloadSchema,
@@ -23,14 +23,21 @@ import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/form";
 import { currentVersion } from "@/lib/versions";
-import { STATUS_TONE } from "@/pages/assets/status";
+import { AssetViews } from "@/pages/assets/AssetViews";
 import { ImageCandidates, VoiceCandidates } from "@/pages/assets/Candidates";
+import { FinalButton } from "@/pages/assets/FinalButton";
+import { STATUS_TONE } from "@/pages/assets/status";
+
+const LETTERS = "ABCD";
+// Pictures a reference can be uploaded as (the backend reads their size from the header).
+const UPLOAD_TYPES = "image/png,image/jpeg,image/webp";
 
 /** 素材详情: what the asset is, how it is made, its candidates, and lock / unlock. */
 export function AssetDetail({
   asset,
   seriesId,
   aspect,
+  scriptPath,
   storyboardPath,
   busy,
   onLock,
@@ -39,6 +46,8 @@ export function AssetDetail({
   asset: Asset;
   seriesId: string;
   aspect: Aspect;
+  /** The episode's script page; a scene links to its first line there (`?line=`). */
+  scriptPath: string;
   storyboardPath: string;
   busy: boolean;
   onLock: () => void;
@@ -51,13 +60,21 @@ export function AssetDetail({
   const ids = useId();
   const product = useProduct(asset.product_id);
   const patchAsset = usePatchAsset(seriesId);
+  const upload = useUploadAsset(seriesId);
+  const fileInput = useRef<HTMLInputElement>(null);
   const [intent, setIntent] = useState(asset.intent);
   const [exact, setExact] = useState(asset.text?.exact ?? "");
 
   const version = product.data ? currentVersion(product.data) : undefined;
   const payload = CandidatesPayloadSchema.safeParse(version?.payload);
   const candidates = payload.success ? payload.data.candidates : [];
+  const srcs = candidates.map((_, i) => {
+    const f = version?.files.find((x) => x.role === "candidate" && x.idx === i);
+    return f ? fileUrl(f.sha256) : null;
+  });
   const locked = asset.status === "locked";
+  const pictures = asset.kind !== "voice";
+  const componentId = asset.kind === "text" ? "text" : "img";
   const save = (p: AssetPatch, done?: string) =>
     patchAsset.mutate(
       { id: asset.id, patch: p },
@@ -82,15 +99,47 @@ export function AssetDetail({
         <StatusBadge tone={STATUS_TONE[asset.status]} icon={null}>
           {te(`assetStatus.${asset.status}`)}
         </StatusBadge>
-        <Button
-          className="ml-auto"
-          variant={locked ? "outline" : "default"}
-          disabled={busy || !version}
-          onClick={locked ? onUnlock : onLock}
-        >
-          {locked ? <LockOpen aria-hidden /> : <Lock aria-hidden />}
-          {t(locked ? "detail.unlock" : "detail.lock")}
-        </Button>
+        <div className="ml-auto flex flex-wrap gap-2">
+          {pictures ? (
+            <>
+              <input
+                ref={fileInput}
+                type="file"
+                accept={UPLOAD_TYPES}
+                className="hidden"
+                aria-label={t("detail.uploadFile")}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (!file) return;
+                  upload.mutate(
+                    { id: asset.id, file },
+                    {
+                      onSuccess: () => toast.success(t("detail.uploaded", { name: file.name })),
+                      onError: (err) => toast.error(errorMessage(tc, err)),
+                    },
+                  );
+                }}
+              />
+              <Button
+                variant="outline"
+                disabled={locked || busy || upload.isPending}
+                onClick={() => fileInput.current?.click()}
+              >
+                <Upload aria-hidden />
+                {t("detail.upload")}
+              </Button>
+            </>
+          ) : null}
+          <Button
+            variant={locked ? "outline" : "default"}
+            disabled={busy || !version}
+            onClick={locked ? onUnlock : onLock}
+          >
+            {locked ? <LockOpen aria-hidden /> : <Lock aria-hidden />}
+            {t(locked ? "detail.unlock" : "detail.lock")}
+          </Button>
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-muted-foreground">
@@ -104,19 +153,34 @@ export function AssetDetail({
         </span>
         <span aria-hidden>·</span>
         <span>{t("detail.appears")}</span>
-        {asset.shots.length ? (
-          asset.shots.map((s) => (
+        {asset.scenes.length ? (
+          asset.scenes.map((s) => (
             <Link
-              key={s}
-              to={storyboardPath}
-              className="font-mono text-primary underline-offset-4 hover:underline"
+              key={s.scene_id}
+              to={`${scriptPath}?line=${encodeURIComponent(s.line_ids[0] ?? s.scene_id)}`}
+              className="text-primary underline-offset-4 hover:underline"
             >
-              {s}
+              {t("detail.scene", { n: s.number })}
             </Link>
           ))
         ) : (
-          <span>{t("detail.noShots")}</span>
+          <span>{asset.note ?? t("detail.noScenes")}</span>
         )}
+        {asset.shots.length ? (
+          <>
+            <span aria-hidden>·</span>
+            <span>{t("detail.shots")}</span>
+            {asset.shots.map((s) => (
+              <Link
+                key={s}
+                to={storyboardPath}
+                className="font-mono text-primary underline-offset-4 hover:underline"
+              >
+                {s}
+              </Link>
+            ))}
+          </>
+        ) : null}
       </div>
 
       <div className="flex flex-col gap-1.5">
@@ -217,12 +281,24 @@ export function AssetDetail({
                   ? t("cands.noteCharacter")
                   : t("cands.noteOther")}
             </span>
+            {product.data && version ? (
+              <span className="ml-auto">
+                <FinalButton
+                  componentId={componentId}
+                  product={product.data}
+                  version={version}
+                  pick={asset.pick}
+                  letter={LETTERS[asset.pick] ?? ""}
+                />
+              </span>
+            ) : null}
           </div>
           {version && candidates.length ? (
             <ImageCandidates
               asset={asset}
               versionNo={version.n}
               candidates={candidates}
+              srcs={srcs}
               aspect={aspect}
               locked={locked}
               onPick={(pick) => save({ pick })}
@@ -232,6 +308,8 @@ export function AssetDetail({
           )}
         </div>
       )}
+
+      {asset.kind === "character" ? <AssetViews asset={asset} aspect={aspect} /> : null}
     </section>
   );
 }

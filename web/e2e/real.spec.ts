@@ -1,8 +1,8 @@
 /**
- * The no-demo-data round (plan step 12, `VITE_DEMO_DATA=0`): the pages M2 put on the backend,
- * with nothing from MSW in between, so a response that does not match its zod contract shows up
- * here instead of behind the demo data. Endpoints of later milestones answer 404 (the page says
- * 加载失败 there); those are listed on the test, not failed.
+ * The no-demo-data round (plan step 12, `VITE_DEMO_DATA=0`): the pages M2 and M3 put on the
+ * backend, with nothing from MSW in between, so a response that does not match its zod contract
+ * shows up here instead of behind the demo data. Endpoints of later milestones answer 404 (the
+ * page says 加载失败 there); those are listed on the test, not failed.
  */
 import { expect, test, type Page } from "@playwright/test";
 
@@ -39,6 +39,7 @@ const PAGES = [
   { id: "novel", path: "/s/demo/e/1/novel" },
   { id: "script", path: "/s/demo/e/1/script" },
   { id: "script e2", path: "/s/demo/e/2/script" },
+  { id: "assets", path: "/s/demo/e/1/assets" },
   { id: "models", path: "/models" },
   { id: "dev jobs", path: "/dev/jobs" },
 ];
@@ -86,6 +87,32 @@ test("script: the beat board, the table, the plan and its history", async ({ pag
   await expect(page.getByText(/^当前产物 · 分集方案/)).toBeVisible();
   await page.getByRole("button", { name: /^历史 \d+$/ }).click();
   await expect(page.getByRole("tab", { name: /^历史 \d+$/, selected: true })).toBeVisible();
+  note(missing);
+  expect(errors).toEqual([]);
+});
+
+test("assets: real candidate pictures, the matrix, lock and unlock", async ({ page }) => {
+  const { errors, missing } = trackContract(page);
+  await setUi(page, {});
+  await openPage(page, "/s/demo/e/1/assets");
+  const list = page.getByRole("region", { name: "素材清单" });
+  await list.getByRole("button", { name: /林晚出租屋/ }).click();
+  const cands = page.getByRole("radiogroup", { name: "候选" });
+  const first = cands.getByRole("img", { name: "v1 · A" });
+  await expect(first).toBeVisible();
+  // The picture is the backend's Mock file, really loaded.
+  await expect
+    .poll(() => first.evaluate((img) => (img as HTMLImageElement).naturalWidth))
+    .toBeGreaterThan(0);
+  await page.getByRole("radio", { name: "出场矩阵" }).click();
+  await expect(page.getByRole("table", { name: "出场矩阵" })).toBeVisible();
+  await page.getByRole("radio", { name: "清单" }).click();
+  await cands.getByRole("radio", { name: "v1 · B" }).click();
+  await page.getByRole("button", { name: "锁定为参考" }).click();
+  await expect(list.getByRole("button", { name: /林晚出租屋/ })).toContainText("已锁定");
+  // Nothing uses this scene's picture yet: unlocking needs no dialog.
+  await page.getByRole("button", { name: "解锁" }).click();
+  await expect(list.getByRole("button", { name: /林晚出租屋/ })).toContainText("待选");
   note(missing);
   expect(errors).toEqual([]);
 });

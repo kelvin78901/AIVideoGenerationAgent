@@ -26,6 +26,7 @@ export function ImageCandidates({
   asset,
   versionNo,
   candidates,
+  srcs,
   aspect,
   locked,
   onPick,
@@ -33,6 +34,8 @@ export function ImageCandidates({
   asset: Asset;
   versionNo: number;
   candidates: Candidate[];
+  /** Each candidate's picture (`files[]` with its `idx`), when the version has files. */
+  srcs: (string | null)[];
   aspect: Aspect;
   locked: boolean;
   onPick: (i: number) => void;
@@ -86,6 +89,8 @@ export function ImageCandidates({
                 <MediaThumb
                   aspect={aspect}
                   seed={`${asset.id}-${versionNo}-${i}`}
+                  src={srcs[i]}
+                  alt={label}
                   label={LETTERS[i]}
                 />
               )}

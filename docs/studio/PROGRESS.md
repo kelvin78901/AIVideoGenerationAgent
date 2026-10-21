@@ -12,11 +12,12 @@
 - M3 第 0 步：开分支、存计划、DECISIONS 七项、ROADMAP（文件夹同步挪 M9、验收里镜头部分挪 M4）（ff125ed）；整本组件的分块也看输出上限（设定提取 `max_tokens` 8000，DECISIONS 同日）、长小说 + 1M 上下文的测试（848eaa8）。pytest 516、Vitest 255 全过。`w_img`（31 GB）由 Kelvin 在 Setup 页自己点安装（2026-10-20 定）。
 - M3 第 1 步：框架和媒体基础（58f5260，DECISIONS 同日）。迁移 `0016`（`asset`、`asset_use`、`product.pick_json` / `retired`）；`lock_pick` / `set_pick` / `make_current`、`auto_adopt`；`media_slicer`；`RunService` 的 `where` / `params`（`RunParams`）、`POST /products/{id}/pick`；router `fallback=False`；`extras`、图片 `price_by_res`；媒体模型 `account`；`GET /files/{sha}`；`media/audio.py`；Mock 渐变图 + `iTXt`；前端 `AudioPlayer`、`fileUrl`、契约。pytest 530、Vitest 256 全过。
 - M3 第 2 步：素材分析（后端）（d33cfec，DECISIONS 同日）。`assets/ops.py`（规则 + 合并 + id 沿用）、组件 `assets`（`adopt_every_run`）、`assets/service.py`（只增不删的物化、列表、修改、矩阵、分析）、接口四个、剧本切片 `assets`、迁移 `0017`（`product.settings_json`）、示例种子 13 条（MSW id）、`img` / `text` / `voice` 最简模板。pytest 541、Vitest 256 全过。M2 的级联、影响范围测试跟着改（剧本下游多了素材清单）。
-- M3 第 3 步：参考图、补视图、上传、锁定（Mock）+ MSW 放行（本提交，DECISIONS 2026-10-21）。组件 `img`（4 张候选、API 终版 1 张、道具只拿已锁定的角色做参考）、`views`（锁定角色后自动出侧面 / 背面 / 表情，每次采纳、整套兜底）、`pipeline/components/media.py`（尺寸、调用缓存、整套兜底）、`POST /assets/{id}/lock|upload`、素材自己的 `gate_decision`、`asset_unlock`（`PlannedChange.lines / unaffected / relock`）、`media/image.py`、示例种子 7 / 13 已锁定 + 林晚补视图；前端素材改走后端（MSW 只叠镜头）、`test/fakes/assets.ts`、`versionStatus` 认 pick 的来源。pytest 560、Vitest 257、Playwright 29 全过。
+- M3 第 3 步：参考图、补视图、上传、锁定（Mock）+ MSW 放行（f0e07e6，DECISIONS 2026-10-21，CI 绿）。组件 `img`（4 张候选、API 终版 1 张、道具只拿已锁定的角色做参考）、`views`（锁定角色后自动出侧面 / 背面 / 表情，每次采纳、整套兜底）、`pipeline/components/media.py`（尺寸、调用缓存、整套兜底）、`POST /assets/{id}/lock|upload`、素材自己的 `gate_decision`、`asset_unlock`（`PlannedChange.lines / unaffected / relock`）、`media/image.py`、示例种子 7 / 13 已锁定 + 林晚补视图；前端素材改走后端（MSW 只叠镜头）、`test/fakes/assets.ts`、`versionStatus` 认 pick 的来源。pytest 560、Vitest 257、Playwright 29 全过。
+- M3 第 4 步：素材页接后端 + 出场矩阵（本提交，DECISIONS 2026-10-21）。候选显示真图、「用 API 出终版 · 约 $0.14」（本地草稿、混合模式、没锁定时）、上传参考图、补视图（角色）、「出现在」改成场（链到剧本行）、「清单 / 出场矩阵」切换、重新分析改成任务；MSW 的 analyze 删掉，`useAssets(series, episode)`；假后端补上传、矩阵、分析、视图；Playwright 无示例数据一轮加素材页（真图、矩阵、锁定解锁）；截图 `reports/ui/assets-{draft,views,matrix}.*.jpg`（原型没有的三块，等 Kelvin 看）。ROADMAP 勾「素材分析」。pytest 560、Vitest 263、Playwright 31 全过。
 
 ## 下一步
 
-- **第 4 步「素材页接后端 + 出场矩阵（前端）」**：候选显示真图（`fileUrl(sha)`、`MediaThumb src`）；选择、「用 API 出终版」（带估价，`where: api` + `params.source_version_id / source_idx`）、锁定、上传（`POST /assets/{id}/upload`）、解锁都接上；「清单 / 出场矩阵」切换（`GET /episodes/{id}/assets/matrix`，点格子跳剧本行）；「出现在」改成场（`scenes`）；「重新分析剧本」改成跟任务，删掉 MSW 的 analyze；版本历史里 `pick` 版本怎么显示（现在是 v3「已锁定」）；补视图在详情里显示。截图给 Kelvin（矩阵、出终版按钮、上传）。先看 `web/src/pages/assets/AssetDetail.tsx`、`Candidates.tsx`、`web/src/test/fakes/assets.ts`。
+- **第 5 步「画面文字（`text`）+ OCR（Mock）」**：组件 `text`（两种贴字方式：「模型直接出字」出 4 张都过 OCR；「后期贴字」出无字底图，OCR 确认底图没字）、`ocr` 组件（`qa/ocr.py`，走 router，本地 RapidOCR 记 $0，Mock 读 PNG `iTXt` 的 `drama:text`）、比对（NFKC、去空白、逐字）、候选标 `ocr_ok`、锁定不一致返回 409 `ocr_mismatch`（带 `force` 才行）、没装 OCR 标「未检查」；前端改读后端的 `ocr_ok`，「后期贴字」叠字预览。参考 `pipeline/components/img.py`、`media.py`（`intent_from_asset`、`media_call`），示例种子 `studio/demo.py:_asset_files`（txt1 的 B、D 已经是 OCR 不一致的图）。
 - **提醒 Kelvin 重启后端**：迁移 0016、0017，第 3 步的新接口（锁定、上传、版本文件的 `idx`）。重启时示例自动补上候选、7 / 13 锁定和林晚的补视图（已经有版本的素材不动）。
 - **`w_img` 已装好**（2026-10-21，Kelvin 用 `DRAMA_SETUP=real` 在 Setup 页装；本次安装记录见下面「等 Kelvin 的事」上一条）：31 GB 用了 14 分钟，平均约 37 MB/s；按文件算 36–42 MB/s，sha256 都校验过；装之前存了 ComfyUI-Manager 快照。剩余时间预估误差在 ±20% 以内：开头 822 秒，实际 807 秒；中途 598 / 685、621 / 532、173 / 213；最后一分钟准确。连接数没写进事件，记录里看不出来；速度比 2026-10-18 单连接实测的 25–30 MB/s 快，可能用了多连接。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
@@ -61,5 +62,6 @@
 
 ## 等 Kelvin 的事
 
+- 看第 4 步的素材页截图（原型没有的三块：出终版和上传 `reports/ui/assets-draft.light.jpg`、补视图 `assets-views`、出场矩阵 `assets-matrix`），有要改的告诉我。
 - 第 13 步还要下约 20 GB 的 Qwen-Image-2512 和约 15 GB 的 TTS 环境（到时再问）。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。

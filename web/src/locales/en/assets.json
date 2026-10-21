@@ -8,8 +8,6 @@
   "kindCount": "{{count}} {{kind}}",
   "summarySep": " · ",
   "reanalyze": "Analyze the script again",
-  "reanalyzed": "Script analyzed again: no new assets. After editing the script, new or changed ones are marked.",
-  "reanalyzedChanged": "Script analyzed again: {{added}} new, {{changed}} changed.",
   "what": {
     "image": "{{name}} · 4 reference candidates",
     "text": "{{name}} · 4 text candidates",
@@ -19,8 +17,9 @@
     "label": "Asset list",
     "filter": "Filter by type",
     "all": "All",
-    "shots": "{{count}} shots",
-    "noShots": "Not in this episode"
+    "scenes": "In {{count}} scenes",
+    "scenesShots": "{{count}} scenes · {{shots}} shots",
+    "notHere": "Not in this episode"
   },
   "detail": {
     "label": "Asset details",
@@ -28,13 +27,18 @@
     "unlock": "Unlock",
     "source": "Source: {{source}}",
     "appears": "Appears in:",
-    "noShots": "No shots in this episode",
     "desc": "Description (the intent layer of this asset's prompt)",
     "descHint": "Click Rerun to apply changes; editing a locked asset shows which shots are affected.",
     "descSaved": "Description saved; it applies to the next rerun.",
     "locked": "“{{name}}” locked: candidate {{letter}} is the reference.",
     "lockedCharacter": "“{{name}}” locked: candidate {{letter}} is the reference; side, back and expression views are being filled in.",
-    "unlockTitle": "Unlocking “{{name}}” affects the shots that use it"
+    "unlockTitle": "Unlocking “{{name}}” affects the shots that use it",
+    "scene": "Scene {{n}}",
+    "shots": "Shots:",
+    "noScenes": "Not in this episode",
+    "upload": "Upload a reference",
+    "uploadFile": "Choose a picture to upload",
+    "uploaded": "Uploaded “{{name}}”: it is a candidate now, and picked."
   },
   "text": {
     "exact": "Text in the frame (checked letter by letter)",
@@ -93,5 +97,35 @@
     "lines": "Audition with lines from the script",
     "tryLine": "Audition: {{text}}",
     "trying": "Auditioning “{{text}}” ({{tone}})."
+  },
+  "reanalyzing": "Analysing the script again; the list updates when it is done and new assets show up in it.",
+  "view": {
+    "label": "View",
+    "list": "List",
+    "matrix": "Appearance matrix"
+  },
+  "final": {
+    "button": "Final via API",
+    "buttonCost": "Final via API · about {{cost}}",
+    "started": "Making the final: candidate {{letter}} as the reference, one picture on {{model}}."
+  },
+  "views": {
+    "title": "Extra views",
+    "note": "Drawn from the locked picture once it is locked; locking another one redraws them",
+    "running": "Drawing the side, back and expressions from the locked picture…",
+    "stale": "The locked picture changed; waiting to redraw",
+    "none": "The side, back and expressions are drawn once it is locked.",
+    "side": "Side",
+    "back": "Back",
+    "expressions": "Expressions"
+  },
+  "matrix": {
+    "label": "Appearance matrix",
+    "hint": "One row per scene, one column per asset. The number is how many lines of the scene have it; click to jump to that line in the script.",
+    "scene": "Scene",
+    "whole": "All",
+    "cellLines": "{{kind}} {{asset}} in scene {{n}}: {{count}} lines",
+    "cellScene": "{{kind}} {{asset}} in scene {{n}} (the whole scene)",
+    "empty": "No assets analysed for this episode yet."
   }
 }

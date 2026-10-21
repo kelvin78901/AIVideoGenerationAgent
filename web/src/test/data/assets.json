@@ -2073,5 +2073,263 @@
       "settings": null,
       "retired": false
     }
-  ]
+  ],
+  "views": [
+    {
+      "id": "demo-p-views-linwan",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "linwan",
+      "slot": "ref_views",
+      "component_id": "views",
+      "current_version_id": "demo-p-views-linwan-v1",
+      "adopted_version_id": "demo-p-views-linwan-v1",
+      "locked_hash": null,
+      "status": "adopted",
+      "versions": [
+        {
+          "id": "demo-p-views-linwan-v1",
+          "product_id": "demo-p-views-linwan",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "views": [
+              "side",
+              "back",
+              "expressions"
+            ],
+            "from": "sha256:dc98f914b84ea28f127498734acfb2789895b10b128497cdd758a22e938d8266"
+          },
+          "files": [
+            {
+              "role": "view",
+              "path": "blobs/sha256/41/4199328032022dcf06be4188337564e4b890a7d1bf2d925caf57b0ae59e59c7f",
+              "sha256": "4199328032022dcf06be4188337564e4b890a7d1bf2d925caf57b0ae59e59c7f",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": "side"
+            },
+            {
+              "role": "view",
+              "path": "blobs/sha256/8a/8a965e123b73abde6e8105d5450481e637b25f095202dcf13fd91b108a63ee7b",
+              "sha256": "8a965e123b73abde6e8105d5450481e637b25f095202dcf13fd91b108a63ee7b",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": "back"
+            },
+            {
+              "role": "view",
+              "path": "blobs/sha256/a5/a591068320e0e8e898f533fb79151d15e863e1212fa9e6a3e140d5bdcb1473fe",
+              "sha256": "a591068320e0e8e898f533fb79151d15e863e1212fa9e6a3e140d5bdcb1473fe",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": "expressions"
+            }
+          ],
+          "content_hash": "sha256:1421a0d1d694fae1ae78f870922c3689372ce0a46acbcf1b19d9774dd3b5a04e",
+          "intent": "和参考图是同一个人：脸、发型、身材和整套衣着都不变，只换角度和表情。",
+          "compiled": "[任务] 角色补视图：按参考图里这个人，画下面「视图」要的那一张\n[要求] 和参考图是同一个人：脸、发型、身材和整套衣着都不变，只换角度和表情。\n[风格] 写实电影感，干净背景，均匀柔光；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image-edit",
+          "where": "local",
+          "seed": 1301,
+          "params": {
+            "mode": "run",
+            "calls": 3
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "和参考图是同一个人：脸、发型、身材和整套衣着都不变，只换角度和表情。",
+        "compiled": "[任务] 角色补视图：按参考图里这个人，画下面「视图」要的那一张\n[要求] 和参考图是同一个人：脸、发型、身材和整套衣着都不变，只换角度和表情。\n[风格] 写实电影感，干净背景，均匀柔光；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image-edit"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image-edit",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    }
+  ],
+  "matrix": {
+    "episode_id": "demo-e1",
+    "scenes": [
+      {
+        "id": "demo-b1",
+        "number": 1,
+        "heading": "夜　内　老小区楼道 · 六楼林晚家门口"
+      },
+      {
+        "id": "demo-b7",
+        "number": 2,
+        "heading": "夜　内　林晚出租屋"
+      }
+    ],
+    "assets": [
+      {
+        "id": "linwan",
+        "kind": "character",
+        "name": "林晚"
+      },
+      {
+        "id": "hall",
+        "kind": "scene",
+        "name": "老小区楼道 · 夜"
+      },
+      {
+        "id": "room",
+        "kind": "scene",
+        "name": "林晚出租屋 · 夜"
+      },
+      {
+        "id": "umbrella",
+        "kind": "prop",
+        "name": "红色长柄伞"
+      },
+      {
+        "id": "note",
+        "kind": "prop",
+        "name": "黄色便利贴"
+      },
+      {
+        "id": "band",
+        "kind": "prop",
+        "name": "旧黑发圈"
+      },
+      {
+        "id": "phone",
+        "kind": "prop",
+        "name": "手机"
+      },
+      {
+        "id": "txt1",
+        "kind": "text",
+        "name": "便利贴手写"
+      },
+      {
+        "id": "txt2",
+        "kind": "text",
+        "name": "手机锁屏时间"
+      },
+      {
+        "id": "vlinwan",
+        "kind": "voice",
+        "name": "林晚"
+      }
+    ],
+    "cells": [
+      {
+        "asset_id": "hall",
+        "scene_id": "demo-b1",
+        "line_ids": []
+      },
+      {
+        "asset_id": "linwan",
+        "scene_id": "demo-b1",
+        "line_ids": [
+          "demo-b2",
+          "demo-b5",
+          "demo-b6"
+        ]
+      },
+      {
+        "asset_id": "linwan",
+        "scene_id": "demo-b7",
+        "line_ids": [
+          "demo-b8",
+          "demo-b10",
+          "demo-b11",
+          "demo-b12"
+        ]
+      },
+      {
+        "asset_id": "umbrella",
+        "scene_id": "demo-b1",
+        "line_ids": [
+          "demo-b3"
+        ]
+      },
+      {
+        "asset_id": "note",
+        "scene_id": "demo-b1",
+        "line_ids": [
+          "demo-b3",
+          "demo-b4",
+          "demo-b6"
+        ]
+      },
+      {
+        "asset_id": "vlinwan",
+        "scene_id": "demo-b1",
+        "line_ids": [
+          "demo-b5"
+        ]
+      },
+      {
+        "asset_id": "vlinwan",
+        "scene_id": "demo-b7",
+        "line_ids": [
+          "demo-b10"
+        ]
+      },
+      {
+        "asset_id": "band",
+        "scene_id": "demo-b1",
+        "line_ids": [
+          "demo-b6"
+        ]
+      },
+      {
+        "asset_id": "room",
+        "scene_id": "demo-b7",
+        "line_ids": []
+      },
+      {
+        "asset_id": "phone",
+        "scene_id": "demo-b7",
+        "line_ids": [
+          "demo-b9"
+        ]
+      },
+      {
+        "asset_id": "txt1",
+        "scene_id": "demo-b1",
+        "line_ids": [
+          "demo-b4"
+        ]
+      },
+      {
+        "asset_id": "txt2",
+        "scene_id": "demo-b7",
+        "line_ids": [
+          "demo-b9"
+        ]
+      }
+    ]
+  }
 }

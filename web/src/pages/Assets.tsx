@@ -7,7 +7,13 @@ import { Link } from "react-router";
 import { toast } from "sonner";
 
 import { errorMessage } from "@/api/client";
-import { assetKeys, useAnalyzeAssets, useAssets, useLockAsset } from "@/api/hooks/assets";
+import {
+  assetKeys,
+  useAnalyzeAssets,
+  useAssetMatrix,
+  useAssets,
+  useLockAsset,
+} from "@/api/hooks/assets";
 import { useComponentModels } from "@/api/hooks/config";
 import { useApplyImpact, useImpactPreview } from "@/api/hooks/impact";
 import { useProduct } from "@/api/hooks/products";
@@ -20,17 +26,20 @@ import { Inspector } from "@/components/Inspector";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState, Skeleton } from "@/components/QueryState";
 import { RunBar } from "@/components/RunBar";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { StepLayout } from "@/components/StepLayout";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { AssetDetail } from "@/pages/assets/AssetDetail";
 import { AssetList } from "@/pages/assets/AssetList";
+import { AssetMatrix } from "@/pages/assets/AssetMatrix";
 import { useInspectorStore } from "@/stores/inspector";
 
 const KINDS: AssetKind[] = ["character", "scene", "prop", "text", "voice"];
 const COMPONENTS = ["img", "text", "voice"] as const;
 const componentOf = (a: Asset) =>
   a.kind === "voice" ? "voice" : a.kind === "text" ? "text" : "img";
+type View = "list" | "matrix";
 
 export default function AssetsPage() {
   const { t } = useTranslation("assets");
@@ -38,7 +47,7 @@ export default function AssetsPage() {
   const { t: tc } = useTranslation();
   const client = useQueryClient();
   const { seriesId, episodeIdx, episode } = useRouteEpisode();
-  const assets = useAssets(seriesId);
+  const assets = useAssets(seriesId, episode?.id);
   const spec = useOutputSpec(seriesId);
   const progress = useEpisodeProgress(episode?.id);
   const lock = useLockAsset(seriesId, episode?.id);
@@ -50,6 +59,8 @@ export default function AssetsPage() {
   const [filter, setFilter] = useState<AssetKind | "all">("all");
   const [selectedId, setSelectedId] = useState("linwan");
   const [unlocking, setUnlocking] = useState<Asset | null>(null);
+  const [view, setView] = useState<View>("list");
+  const matrix = useAssetMatrix(episode?.id, view === "matrix");
 
   useEffect(() => useInspectorStore.getState().reset(), []);
 
@@ -64,6 +75,7 @@ export default function AssetsPage() {
   const product = useProduct(selected?.product_id);
   const models = useComponentModels(selectedComponent);
   const ep = String(episodeIdx);
+  const scriptPath = paths.step(seriesId, ep, "script");
 
   const select = (a: Asset) => {
     setSelectedId(a.id);
@@ -80,7 +92,7 @@ export default function AssetsPage() {
   const letter = (i: number) => "ABCD"[i] ?? "";
 
   const refresh = () => {
-    void client.invalidateQueries({ queryKey: assetKeys.list(seriesId) });
+    void client.invalidateQueries({ queryKey: assetKeys.all(seriesId) });
     setUnlocking(null);
     preview.reset();
   };
@@ -150,8 +162,7 @@ export default function AssetsPage() {
             disabled={analyze.isPending}
             onClick={() =>
               analyze.mutate(undefined, {
-                onSuccess: (r) =>
-                  toast.info(r.added || r.changed ? t("reanalyzedChanged", r) : t("reanalyzed")),
+                onSuccess: () => toast.info(t("reanalyzing")),
                 onError,
               })
             }
@@ -176,36 +187,71 @@ export default function AssetsPage() {
         />
       ) : null}
 
+      {assets.data?.length ? (
+        <SegmentedControl
+          label={t("view.label")}
+          value={view}
+          onChange={setView}
+          options={(["list", "matrix"] as const).map((v) => ({ value: v, label: t(`view.${v}`) }))}
+        />
+      ) : null}
+
       <QueryState query={assets} skeleton={<Skeleton className="h-96 w-full" />}>
         {(all) =>
           selected ? (
-            <div className="grid items-start gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-              <AssetList
-                assets={all}
-                kinds={KINDS}
-                filter={filter}
-                onFilter={setFilter}
-                selectedId={selected.id}
-                onSelect={select}
-              />
+            <div
+              className={
+                view === "list"
+                  ? "grid items-start gap-4 xl:grid-cols-[300px_minmax(0,1fr)]"
+                  : "flex flex-col gap-4"
+              }
+            >
+              {view === "list" ? (
+                <AssetList
+                  assets={all}
+                  kinds={KINDS}
+                  filter={filter}
+                  onFilter={setFilter}
+                  selectedId={selected.id}
+                  onSelect={select}
+                />
+              ) : (
+                <QueryState query={matrix} skeleton={<Skeleton className="h-48 w-full" />}>
+                  {(m) => (
+                    <AssetMatrix
+                      matrix={m}
+                      scriptPath={scriptPath}
+                      selectedId={selected.id}
+                      onSelect={(id) => {
+                        const a = all.find((x) => x.id === id);
+                        if (a) select(a);
+                      }}
+                    />
+                  )}
+                </QueryState>
+              )}
               <AssetDetail
                 key={selected.id}
                 asset={selected}
                 seriesId={seriesId}
                 aspect={spec.data?.aspect ?? "9:16"}
+                scriptPath={scriptPath}
                 storyboardPath={paths.step(seriesId, ep, "storyboard")}
                 busy={lock.isPending || preview.isPending}
                 onLock={() =>
-                  lock.mutate(selected.id, {
-                    onSuccess: (a) =>
-                      toast.success(
-                        t(a.kind === "character" ? "detail.lockedCharacter" : "detail.locked", {
-                          name: a.name,
-                          letter: letter(a.pick),
-                        }),
-                      ),
-                    onError,
-                  })
+                  lock.mutate(
+                    { id: selected.id },
+                    {
+                      onSuccess: (a) =>
+                        toast.success(
+                          t(a.kind === "character" ? "detail.lockedCharacter" : "detail.locked", {
+                            name: a.name,
+                            letter: letter(a.pick),
+                          }),
+                        ),
+                      onError,
+                    },
+                  )
                 }
                 onUnlock={() => startUnlock(selected)}
               />

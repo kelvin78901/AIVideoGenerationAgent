@@ -7,7 +7,8 @@ import { getDb } from "@/mocks/db";
 import { demoJson, v1 } from "@/mocks/http";
 
 /**
- * Assets are the backend's since M3 step 3 (list, edits, candidates, lock, unlock). The demo
+ * Assets are the backend's since M3 (list, matrix, analysis, edits, candidates, lock, upload,
+ * unlock). The demo
  * series only lays its shots over them: which shots of episode 1 use each asset (M4 makes shots
  * real), and what unlocking means for those shots in the impact preview.
  */
@@ -60,13 +61,5 @@ export const assetHandlers = [
     const real = await backendJson<Asset[] | null>(request.clone(), null);
     if (!real) return passthrough(); // backend down: let the page show the error
     return demoJson(real.map((a) => ({ ...a, shots: demoShots(a.id) })));
-  }),
-
-  // 重新分析剧本: the demo script has not changed since the last analysis (the backend's
-  // answer is a job; the page follows it in step 4).
-  http.post(v1("/episodes/:id/assets/analyze"), ({ params }) => {
-    const id = String(params.id);
-    if (!getDb().episodes.some((e) => e.id === id)) return passthrough();
-    return demoJson({ added: 0, changed: 0 });
   }),
 ];

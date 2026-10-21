@@ -169,6 +169,7 @@ export const productHandlers = [
     if (kind === "series" && ownerId && !getDb().series[ownerId]) return passthrough();
     if (kind === "episode" && ownerId && !getDb().episodes.some((e) => e.id === ownerId))
       return passthrough();
+    if (kind === "asset") return passthrough(); // assets are the backend's (M3)
     const list = Object.values(getDb().products).filter(
       (p) =>
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&

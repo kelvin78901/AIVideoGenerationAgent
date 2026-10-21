@@ -1,37 +1,55 @@
 /**
- * Fake assets for page tests: episode 1's 13 assets and their products as the Mock backend
- * answers them (`test/data/assets.json`, written by tests/api/test_web_fixtures.py), following
- * the backend's rules (`assets/service.py`) as far as the page needs them:
+ * Fake assets for page tests: episode 1's 13 assets, their products, 林晚's views and the
+ * episode's 出场矩阵 as the Mock backend answers them (`test/data/assets.json`, written by
+ * tests/api/test_web_fixtures.py), following the backend's rules (`assets/service.py`) as far
+ * as the page needs them:
  * - 选这个 / 改描述 / 画面文字 / 音色来源 on the asset (refused once locked);
  * - 锁定为参考 turns the picked candidate of the version on screen into an adopted, locked
  *   `pick` version (the version on screen stays);
- * - 重跑 adds a version with fresh candidates;
+ * - 重跑 adds a version with fresh candidates; 「用 API 出终版」 one picture from the draft;
+ * - 上传参考图 adds a version with that one candidate, picked;
  * - 解锁 is the impact preview's `asset_unlock` (`test/fakes/impact.ts`): what uses the locked
  *   picture, then unlocked.
  */
 import { http, HttpResponse } from "msw";
 
 import { injectEvent } from "@/api/events";
-import { AssetPatchSchema, AssetSchema, type Asset } from "@/api/schemas/assets";
+import { AssetMatrixSchema, AssetPatchSchema, AssetSchema, type Asset } from "@/api/schemas/assets";
 import type { Impact } from "@/api/schemas/impact";
 import type { Job } from "@/api/schemas/jobs";
-import { ProductSchema, type Product, type ProductVersion } from "@/api/schemas/products";
+import {
+  ProductSchema,
+  type Product,
+  type ProductVersion,
+  type RunRequest,
+} from "@/api/schemas/products";
 import { primaryModel } from "@/mocks/route";
 import data from "@/test/data/assets.json";
 import { fakeResolve } from "@/test/fakes/config";
 
 const demoAssets = data.assets.map((a) => AssetSchema.parse(a));
 const demoProducts = data.products.map((p) => ProductSchema.parse(p));
+const demoViews = data.views.map((p) => ProductSchema.parse(p));
+const demoMatrix = AssetMatrixSchema.parse(data.matrix);
 
 /** State of the fake; `resetFakeAssets()` (called by `backend()`) restores it. */
 export const fakeAssets = {
   assets: structuredClone(demoAssets),
   products: structuredClone(demoProducts),
+  /** 补视图 products (林晚's). */
+  views: structuredClone(demoViews),
+  /** Pictures uploaded, in order. */
+  uploads: [] as { id: string; name: string }[],
+  /** 重新分析剧本 requests, in order (episode ids). */
+  analyses: [] as string[],
 };
 
 export function resetFakeAssets() {
   fakeAssets.assets = structuredClone(demoAssets);
   fakeAssets.products = structuredClone(demoProducts);
+  fakeAssets.views = structuredClone(demoViews);
+  fakeAssets.uploads = [];
+  fakeAssets.analyses = [];
 }
 
 const error = (status: number, code: string, params: Record<string, unknown> = {}) =>
@@ -83,18 +101,19 @@ function lock(a: Asset, p: Product): Response {
   return HttpResponse.json(withStatus(a));
 }
 
-/** 重跑: a version with fresh candidates (4 pictures, 3 voices). */
-function run(p: Product, mode: string): Job {
+/** A new current version of `p` with `count` candidates (a run's, or one uploaded picture). */
+function addVersion(
+  p: Product,
+  count: number,
+  v: { origin: ProductVersion["origin"]; model: string | null; stage: ProductVersion["stage"] },
+): ProductVersion {
   const n = p.versions.length + 1;
-  const model =
-    primaryModel(fakeResolve(p.component_id, null)?.values ?? null) ?? "comfy/qwen-image";
-  const count = p.component_id === "voice" ? 3 : 4;
   const id = `${p.id}-v${n}`;
   const version: ProductVersion = {
     id,
     product_id: p.id,
     n,
-    origin: mode === "switch" ? "switch" : mode === "rerun" ? "rerun" : "run",
+    origin: v.origin,
     parent_version_id: p.current_version_id,
     payload: { candidates: Array.from({ length: count }, () => ({})) },
     files: Array.from({ length: count }, (_, i) => ({
@@ -111,14 +130,14 @@ function run(p: Product, mode: string): Job {
     intent: p.prompt?.intent ?? "",
     compiled: p.prompt?.compiled ?? "",
     compiled_overridden: false,
-    model_key: model,
-    where: model.startsWith("comfy/") ? "local" : "api",
+    model_key: v.model,
+    where: v.model ? (v.model.startsWith("comfy/") ? "local" : "api") : null,
     seed: n,
-    params: { mode },
+    params: {},
     qa: null,
     qa_pass: null,
     fallback_reason: null,
-    stage: model.startsWith("comfy/") ? "draft" : null,
+    stage: v.stage,
     rating: null,
     cost_usd: 0,
     job_id: `job-${id}`,
@@ -129,19 +148,23 @@ function run(p: Product, mode: string): Job {
   p.current_version_id = id;
   if (!p.locked_hash) p.status = "ready";
   announce(p);
+  return version;
+}
+
+function job(p: Product, id: string, model: string, mode: string): Job {
   return {
     id: `job-${id}`,
     series_id: p.series_id,
     product_id: p.id,
     component_id: p.component_id,
     kind: "product.run",
-    queue: version.where === "local" ? "gpu" : `api:${model.split("/")[0]}`,
+    queue: model.startsWith("comfy/") ? "gpu" : `api:${model.split("/")[0]}`,
     state: "succeeded",
     priority: 0,
     attempt: 1,
     max_attempts: 3,
     params: { mode, model_key: model },
-    result: { version_id: id, n },
+    result: { version_id: id },
     error: null,
     depends_on: [],
     est_cost_usd: 0,
@@ -150,6 +173,24 @@ function run(p: Product, mode: string): Job {
     started_at: "2026-10-20T10:00:00Z",
     finished_at: "2026-10-20T10:00:01Z",
   };
+}
+
+/** 重跑: fresh candidates (4 pictures, 3 voices); 「用 API 出终版」 (`where: api` with the draft
+ * as `params.source_version_id`): one picture on the API model, its parent the draft. */
+function run(p: Product, body: RunRequest): Job {
+  const route = fakeResolve(p.component_id, null)?.values ?? null;
+  const source = body.where === "api" ? body.params?.source_version_id : undefined;
+  const model = source
+    ? (route?.api_model ?? "google/nano-banana-pro")
+    : (primaryModel(route) ?? "comfy/qwen-image");
+  const count = source ? 1 : p.component_id === "voice" ? 3 : 4;
+  const v = addVersion(p, count, {
+    origin: body.mode,
+    model,
+    stage: source ? "final" : model.startsWith("comfy/") ? "draft" : null,
+  });
+  if (source) v.parent_version_id = source;
+  return job(p, v.id, model, body.mode);
 }
 
 /** The fake backend's asset list (the MSW demo lays its shots over it), or null. */
@@ -166,7 +207,7 @@ export function assetUnlockImpact(assetId: string): Pick<Impact, "lines" | "unaf
   const a = findAsset(assetId);
   const p = a && productOf(a);
   if (!a || !p?.locked_hash) return null;
-  const views = a.kind === "character" && a.id === "linwan";
+  const views = fakeAssets.views.some((v) => v.owner_id === a.id);
   return {
     lines: views
       ? [{ code: "uses_ref_views", params: { name: a.name }, cost_usd: null, optional: false }]
@@ -222,6 +263,45 @@ export function assetHandlers() {
       return lock(a, p);
     }),
 
+    http.post("*/api/v1/assets/:id/upload", async ({ params, request }) => {
+      const a = findAsset(params.id);
+      const p = a && productOf(a);
+      if (!a || !p) return error(404, "asset_not_found", { id: params.id });
+      if (a.kind === "voice") return error(422, "upload_not_supported", { kind: a.kind });
+      if (p.locked_hash) return error(409, "product_locked", { id: p.id });
+      const file = (await request.formData()).get("file");
+      const name = file instanceof File ? file.name : "";
+      fakeAssets.uploads.push({ id: a.id, name });
+      const v = addVersion(p, 1, { origin: "upload", model: null, stage: null });
+      v.note = name || null;
+      a.pick = 0;
+      p.pick = { version_id: v.id, idx: 0 };
+      return HttpResponse.json(withStatus(a));
+    }),
+
+    http.post("*/api/v1/episodes/:id/assets/analyze", ({ params }) => {
+      const id = String(params.id);
+      fakeAssets.analyses.push(id);
+      const p = fakeAssets.products[0];
+      return p
+        ? HttpResponse.json(job(p, `analyze-${id}`, "deepseek/v4.1-flash", "run"))
+        : undefined;
+    }),
+
+    http.get("*/api/v1/episodes/:id/assets/matrix", ({ params }) =>
+      params.id === demoMatrix.episode_id
+        ? HttpResponse.json(demoMatrix)
+        : error(404, "episode_not_found", { id: params.id }),
+    ),
+
+    http.get("*/api/v1/products", ({ request }) => {
+      const owner = new URL(request.url).searchParams.get("owner") ?? "";
+      if (!owner.startsWith("asset:")) return undefined;
+      const id = owner.slice("asset:".length);
+      const mine = [...fakeAssets.products, ...fakeAssets.views].filter((p) => p.owner_id === id);
+      return HttpResponse.json(mine);
+    }),
+
     http.get("*/api/v1/products/:id", ({ params }) => {
       const p = fakeAssets.products.find((x) => x.id === params.id);
       return p ? HttpResponse.json(p) : undefined;
@@ -230,8 +310,7 @@ export function assetHandlers() {
     http.post("*/api/v1/products/:id/run", async ({ params, request }) => {
       const p = fakeAssets.products.find((x) => x.id === params.id);
       if (!p) return undefined;
-      const body = (await request.json()) as { mode?: string };
-      return HttpResponse.json(run(p, body.mode ?? "run"));
+      return HttpResponse.json(run(p, (await request.json()) as RunRequest));
     }),
   ];
 }
