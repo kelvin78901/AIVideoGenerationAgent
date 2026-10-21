@@ -74,7 +74,8 @@ export const VersionFileSchema = z.object({
   h: z.number().int().nullable(),
   /** A candidate's or view's number in its version (0-based; M3). */
   idx: z.number().int().nullable().optional(),
-  /** Which view a `role: view` picture is: side / back / expressions (M3 补视图). */
+  /** Which view a `role: view` picture is: side / back / calm / smile / angry / sad (M3 补视图;
+   * versions before 2026-10-21 have one `expressions` sheet instead of the four). */
   view: z.string().nullable().optional(),
   /** A voice sample: which of the voice's audition lines it reads. */
   line: z.number().int().nullable().optional(),

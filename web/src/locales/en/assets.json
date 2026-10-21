@@ -144,7 +144,11 @@
     "none": "The side, back and expressions are drawn once it is locked.",
     "side": "Side",
     "back": "Back",
-    "expressions": "Expressions"
+    "expressions": "Expressions",
+    "calm": "Calm",
+    "smile": "Smile",
+    "angry": "Angry",
+    "sad": "Sad"
   },
   "matrix": {
     "label": "Appearance matrix",

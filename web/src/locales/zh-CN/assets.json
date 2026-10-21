@@ -144,7 +144,11 @@
     "none": "锁定后自动补齐侧面、背面和表情。",
     "side": "侧面",
     "back": "背面",
-    "expressions": "表情"
+    "expressions": "表情",
+    "calm": "平静",
+    "smile": "微笑",
+    "angry": "愤怒",
+    "sad": "难过"
   },
   "matrix": {
     "label": "出场矩阵",

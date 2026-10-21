@@ -689,7 +689,7 @@ async def _seed_views(
     store: BlobStore,
     invalidation: Invalidation,
 ) -> None:
-    """补视图 of a locked character: side, back and expressions, adopted."""
+    """补视图 of a locked character: side, back and four expressions, adopted."""
     ref_id = asset_product_id(asset.id)
     views_id = f"demo-p-views-{asset.id}"
     p = await products.ensure(

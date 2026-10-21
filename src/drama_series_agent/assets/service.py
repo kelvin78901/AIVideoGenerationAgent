@@ -19,7 +19,7 @@ not generated before.
 **Locking** (「锁定为参考」, ``lock``) turns the picked candidate into a ``pick`` version and
 locks it (``ProductService.lock_pick``), and in the same transaction writes the asset's own
 ``gate_decision`` (gate ``assets``, scope the asset id) with the hash of that file. A character
-then gets its side, back and expressions drawn (``views``). **Unlocking** goes through the
+then gets its side, back and four expressions drawn (``views``). **Unlocking** goes through the
 impact preview (kind ``asset_unlock``): it changes no content, so the preview lists what uses
 the locked picture straight from the dependency graph. **Uploading** a picture adds a version
 with that one candidate (``origin: upload``), to lock or to start an API final from.

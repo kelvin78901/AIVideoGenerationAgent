@@ -9,10 +9,21 @@ import { MediaLightbox } from "@/components/MediaLightbox";
 import { MediaThumb } from "@/components/MediaThumb";
 import { CARD_WIDTH } from "@/pages/assets/status";
 
-const VIEWS = ["side", "back", "expressions"] as const;
+/** The views a version lists (`payload.views`), in its order; versions before 2026-10-21 have
+ * one `expressions` sheet where newer ones have four expressions, one a picture. */
+const KNOWN = ["side", "back", "calm", "smile", "angry", "sad", "expressions"] as const;
+type View = (typeof KNOWN)[number];
+const VIEWS: View[] = ["side", "back", "calm", "smile", "angry", "sad"];
 
-/** 补视图 of a character: side, back and expressions, drawn from the locked picture once it is
- * locked (backend component `views`, adopted on every run). */
+const isView = (v: unknown): v is View => KNOWN.includes(v as View);
+
+function viewsOf(payload: Record<string, unknown> | undefined): View[] {
+  const listed = payload?.views;
+  return Array.isArray(listed) && listed.length > 0 && listed.every(isView) ? listed : VIEWS;
+}
+
+/** 补视图 of a character: side, back and four expressions, drawn from the locked picture once it
+ * is locked (backend component `views`, adopted on every run). */
 export function AssetViews({ asset, aspect }: { asset: Asset; aspect: Aspect }) {
   const { t } = useTranslation("assets");
   const { t: tc } = useTranslation("components");
@@ -23,7 +34,8 @@ export function AssetViews({ asset, aspect }: { asset: Asset; aspect: Aspect }) 
   const running = product?.status === "queued" || product?.status === "running";
   const stale = product?.status === "stale";
   const files = version?.files.filter((f) => f.role === "view") ?? [];
-  const pictures = VIEWS.flatMap((view) => {
+  const views = viewsOf(version?.payload);
+  const pictures = views.flatMap((view) => {
     const f = files.find((x) => x.view === view);
     return f ? [{ src: fileUrl(f.sha256), label: t(`views.${view}`), view }] : [];
   });
@@ -38,7 +50,7 @@ export function AssetViews({ asset, aspect }: { asset: Asset; aspect: Aspect }) 
       </div>
       {files.length ? (
         <div className="flex flex-wrap gap-3">
-          {VIEWS.map((view) => {
+          {views.map((view) => {
             const f = files.find((x) => x.view === view);
             const name = t(`views.${view}`);
             const at = pictures.findIndex((p) => p.view === view);

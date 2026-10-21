@@ -1,12 +1,17 @@
 """补视图 (M3 ``views``): once a character's reference is locked, its side view, back view and
-a sheet of expressions, drawn from that picture.
+four expressions, drawn from that picture.
+
+- **One expression a picture** (Kelvin 2026-10-21): a 2×2 sheet of expressions came back as
+  three or six small faces, warped (hands in mouths, seams) on the four-step model; one
+  head-and-shoulders face filling the frame keeps its pixels. Expressions are asked for
+  restrained, not exaggerated, which is also what keeps faces from warping.
 
 - Runs by itself after the lock (``AssetService.lock``) and every run is adopted
   (``adopt_every_run``): the views follow the locked picture, they are not chosen.
 - Depends on the locked reference (its picture's hash), so locking another picture makes the
   views 「待更新」 and the next lock draws them again.
 - One call per view with the locked picture as the reference, ``fallback=False``; if one fails
-  the three are drawn again on the fallback model (``run_flow``), so a set never mixes models.
+  the set is drawn again on the fallback model (``run_flow``), so a set never mixes models.
 - Locally it is the editing model (Qwen-Image-Edit), not the one that draws the references.
 """
 
@@ -34,10 +39,14 @@ from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.prompts.compiler import Block
 
 REF_VIEWS_SLOT = "ref_views"
+FACE = "正面头肩特写，只画这一个人、这一张脸，单幅画面不拼图"
 VIEWS = {
     "side": "侧面：人物转向左侧 90°，全身站姿。",
     "back": "背面：人物背对镜头，全身站姿，看得清发型和衣服背后。",
-    "expressions": "表情：同一张脸的平静、微笑、愤怒、难过四种表情，排成 2×2，只画头肩。",
+    "calm": f"表情 · 平静：{FACE}，表情平静自然。",
+    "smile": f"表情 · 微笑：{FACE}，自然的微笑。",
+    "angry": f"表情 · 愤怒：{FACE}，生气：皱眉、抿嘴，克制不夸张，五官不变形。",
+    "sad": f"表情 · 难过：{FACE}，难过：眼神低垂、嘴角下沉，克制不夸张，五官不变形。",
 }
 
 

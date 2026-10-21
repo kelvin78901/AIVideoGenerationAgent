@@ -30,6 +30,7 @@ from drama_series_agent.modelhub.adapters.mock import gradient_png
 from drama_series_agent.modelhub.workflows import shipped_workflow
 from drama_series_agent.pipeline.component import RunContext
 from drama_series_agent.pipeline.components.media import MediaCall, MediaComponent
+from drama_series_agent.pipeline.components.views import VIEWS
 from drama_series_agent.pipeline.hashing import hash_json
 from drama_series_agent.spec.dims import dims
 
@@ -152,7 +153,9 @@ def test_the_demo_locks_seven_with_their_gate_decisions(client: TestClient) -> N
         voice["id"]: hash_json({"payload": final["payload"], "files": shas})
     }
     views = _until(client, "demo-p-views-linwan", lambda p: p["status"] == "adopted")
-    assert [f["view"] for f in views["versions"][0]["files"]] == ["side", "back", "expressions"]
+    assert [f["view"] for f in views["versions"][0]["files"]] == [
+        "side", "back", "calm", "smile", "angry", "sad"
+    ]  # fmt: skip
     # The pictures are real files.
     resp = client.get(f"{V1}/files/{ref['sha256']}")
     assert resp.status_code == 200 and resp.headers["content-type"] == "image/png"
@@ -239,13 +242,13 @@ def test_views_follow_the_locked_hash(client: TestClient) -> None:
     first = _product(client, "zhouyu")
     views = _until(client, _views_id(client, "zhouyu"), lambda p: p["status"] == "adopted")
     v1 = views["versions"][-1]
-    assert len([f for f in v1["files"] if f["role"] == "view"]) == 3
+    assert len([f for f in v1["files"] if f["role"] == "view"]) == len(VIEWS)
     deps = [d for d in _rows(client, Dependency) if d.version_id == v1["id"]]
     assert [(d.upstream_product_id, d.upstream_hash) for d in deps] == [
         (first["id"], _file_hash(_locked_file(first)["sha256"]))
     ]
     calls = [c for c in _rows(client, ModelCall) if c.product_id == views["id"]]
-    assert len(calls) == 3 and {c.model_key for c in calls} == {"comfy/qwen-image-edit"}
+    assert len(calls) == len(VIEWS) and {c.model_key for c in calls} == {"comfy/qwen-image-edit"}
 
     # Unlock, lock another picture: the views are drawn again from it.
     preview = client.post(
@@ -320,7 +323,7 @@ def test_a_run_starts_from_the_description(client: TestClient) -> None:
 
 
 def test_views_fall_back_as_a_set(client: TestClient) -> None:
-    """One view failing locally draws all three again on the fallback model."""
+    """One view failing locally draws the whole set again on the fallback model."""
     _state(client).registry.mock_settings.fail_keys.add("comfy/qwen-image-edit")
     _run(client, "zhouyu")
     client.post(f"{V1}/assets/zhouyu/lock").raise_for_status()
@@ -330,7 +333,7 @@ def test_views_fall_back_as_a_set(client: TestClient) -> None:
     assert v["model_key"] == "google/nano-banana-pro"
     calls = [c for c in _rows(client, ModelCall) if c.product_id == views["id"]]
     ok = [c for c in calls if c.status == "success"]
-    assert len(ok) == 3 and {c.model_key for c in ok} == {"google/nano-banana-pro"}
+    assert len(ok) == len(VIEWS) and {c.model_key for c in ok} == {"google/nano-banana-pro"}
     assert all(c.is_fallback for c in ok)
     assert [c.model_key for c in calls if c.status != "success"] == ["comfy/qwen-image-edit"]
 

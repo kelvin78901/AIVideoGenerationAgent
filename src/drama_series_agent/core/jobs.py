@@ -4,9 +4,12 @@ Jobs live in the ``job`` table, so a restart picks up where it left off: jobs th
 ``running`` when the process died go back to ``queued`` and run again.
 
 Queues: ``gpu`` (concurrency 1), ``cpu`` (cores / 2) and ``api:<provider>`` (configurable,
-default 2). Within a queue, higher ``priority`` runs first, then oldest first. A job whose
-``depends_on`` jobs have not all succeeded waits; if one of them failed or was canceled the
-job fails with ``dependency_failed``.
+default 2). Within a queue, higher ``priority`` runs first, then oldest first. On the ``gpu``
+queue, among jobs of the same priority those on the model the last job used go first (hard
+rule 8): a loaded model runs everything queued for it before another one is loaded, instead of
+models swapping in and out of VRAM job by job. A job whose ``depends_on`` jobs have not all
+succeeded waits; if one of them failed or was canceled the job fails with
+``dependency_failed``.
 """
 
 from __future__ import annotations
@@ -64,6 +67,26 @@ class JobStateError(Exception):
         self.job_id = job_id
         self.state = state
         self.action = action
+
+
+# Queues that keep a loaded model busy before switching (the GPU: one model in VRAM at a time).
+GROUPED_QUEUES = frozenset({"gpu"})
+
+
+def _model_of(job: Job) -> str | None:
+    model = job.params_json.get("model_key")
+    return str(model) if model else None
+
+
+def grouped(candidates: list[Job], last_model: dict[str, str]) -> list[Job]:
+    """Priority first; then, on a grouped queue, the model it has loaded; then oldest (the
+    candidates come oldest first and the sort is stable)."""
+
+    def key(job: Job) -> tuple[int, int]:
+        last = last_model.get(job.queue) if job.queue in GROUPED_QUEUES else None
+        return (-job.priority, 0 if last and _model_of(job) == last else 1)
+
+    return sorted(candidates, key=key)
 
 
 @dataclass
@@ -140,6 +163,8 @@ class JobQueue:
         self._concurrency = {"gpu": 1, "cpu": max(1, (os.cpu_count() or 2) // 2)}
         self._concurrency.update(concurrency or {})
         self._slots: dict[str, _QueueSlots] = {}
+        # The model the last job started on each grouped queue used (``params.model_key``).
+        self._last_model: dict[str, str] = {}
         self._wake = asyncio.Event()
         self._poll_interval_s = poll_interval_s
         self._dispatcher: asyncio.Task[None] | None = None
@@ -338,7 +363,7 @@ class JobQueue:
                 .where(Job.state == QUEUED)
                 .order_by(col(Job.priority).desc(), col(Job.created_at), col(Job.id))
             )
-            candidates = list((await session.exec(stmt)).all())
+            candidates = grouped(list((await session.exec(stmt)).all()), self._last_model)
             dep_ids = {d for job in candidates for d in job.depends_on_json}
             dep_states: dict[str, str] = {}
             if dep_ids:
@@ -368,6 +393,8 @@ class JobQueue:
             slots.running[job.id] = asyncio.create_task(
                 self._run(job.id, handler, slots), name=f"job-{job.id}"
             )
+            if job.queue in GROUPED_QUEUES and (model := _model_of(job)):
+                self._last_model[job.queue] = model
 
     async def _run(self, job_id: str, handler: Handler, slots: _QueueSlots) -> None:
         try:

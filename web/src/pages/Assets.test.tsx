@@ -365,10 +365,11 @@ describe("AssetsPage", () => {
     renderAssets();
     await ready();
     const views = await screen.findByRole("region", { name: "补视图" });
-    for (const name of ["侧面", "背面", "表情"])
+    // One expression a picture (Kelvin 2026-10-21): side, back and four expressions.
+    for (const name of ["侧面", "背面", "平静", "微笑", "愤怒", "难过"])
       expect(await within(views).findByRole("img", { name })).toBeInTheDocument();
     await user.click(within(views).getByRole("button", { name: "放大看：背面" }));
-    expect(await screen.findByRole("dialog", { name: "背面" })).toHaveTextContent("2 / 3");
+    expect(await screen.findByRole("dialog", { name: "背面" })).toHaveTextContent("2 / 6");
   });
 
   it("「出现在」 lists the scenes, linked to the script", async () => {

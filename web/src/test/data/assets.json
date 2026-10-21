@@ -3318,7 +3318,10 @@
             "views": [
               "side",
               "back",
-              "expressions"
+              "calm",
+              "smile",
+              "angry",
+              "sad"
             ],
             "from": "sha256:dc98f914b84ea28f127498734acfb2789895b10b128497cdd758a22e938d8266"
           },
@@ -3353,20 +3356,62 @@
             },
             {
               "role": "view",
-              "path": "blobs/sha256/a5/a591068320e0e8e898f533fb79151d15e863e1212fa9e6a3e140d5bdcb1473fe",
-              "sha256": "a591068320e0e8e898f533fb79151d15e863e1212fa9e6a3e140d5bdcb1473fe",
+              "path": "blobs/sha256/da/daee760caa9f97478968abd2d905ccf6fca6b2b6d2fee78462daabcfbd67196e",
+              "sha256": "daee760caa9f97478968abd2d905ccf6fca6b2b6d2fee78462daabcfbd67196e",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
               "h": 1366,
               "idx": 2,
-              "view": "expressions",
+              "view": "calm",
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "view",
+              "path": "blobs/sha256/0e/0ee66fc7ca62d51746cd49b54cc03c60e7b4f333d4d21a4f053ae07909202519",
+              "sha256": "0ee66fc7ca62d51746cd49b54cc03c60e7b4f333d4d21a4f053ae07909202519",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 3,
+              "view": "smile",
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "view",
+              "path": "blobs/sha256/d9/d99b3de85d75f51fb756c94e912acb327e8100b2c3bb785627427c1f32b7bf3b",
+              "sha256": "d99b3de85d75f51fb756c94e912acb327e8100b2c3bb785627427c1f32b7bf3b",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 4,
+              "view": "angry",
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "view",
+              "path": "blobs/sha256/ec/ecf6de8f2b69755dd85dce5513a359ae127a59cc10277bcdd43199e0d53afaa1",
+              "sha256": "ecf6de8f2b69755dd85dce5513a359ae127a59cc10277bcdd43199e0d53afaa1",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 5,
+              "view": "sad",
               "line": null,
               "emotion": null,
               "waveform": null
             }
           ],
-          "content_hash": "sha256:1421a0d1d694fae1ae78f870922c3689372ce0a46acbcf1b19d9774dd3b5a04e",
+          "content_hash": "sha256:d2c5a56b32124df04dfac1bb282425ef79223447280507efbdb794cc1bc3106b",
           "intent": "和参考图是同一个人：脸、发型、身材和整套衣着都不变，只换角度和表情。",
           "compiled": "[任务] 角色补视图：按参考图里这个人，画下面「视图」要的那一张\n[要求] 和参考图是同一个人：脸、发型、身材和整套衣着都不变，只换角度和表情。\n[风格] 写实电影感，干净背景，均匀柔光；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
           "compiled_overridden": false,
@@ -3375,7 +3420,7 @@
           "seed": 1301,
           "params": {
             "mode": "run",
-            "calls": 3
+            "calls": 6
           },
           "qa": null,
           "qa_pass": null,

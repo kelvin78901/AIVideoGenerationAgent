@@ -27,7 +27,7 @@ class VersionFileOut(BaseModel):
     w: int | None = None
     h: int | None = None
     idx: int | None = None  # a candidate's or view's number in its version (M3)
-    view: str | None = None  # side / back / expressions (补视图)
+    view: str | None = None  # side / back / calm / smile / angry / sad (补视图)
     line: int | None = None  # a voice sample: which of its audition lines it reads
     emotion: str | None = None  # a voice's emotion variant (config/voice.yaml)
     waveform: list[float] | None = None  # audio: 64 peaks, 0–1 (media/audio.py)

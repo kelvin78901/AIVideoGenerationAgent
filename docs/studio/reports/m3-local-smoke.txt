@@ -99,3 +99,6 @@ files: C:\Users\kelvin\AppData\Local\Temp\drama-local-smoke-j_r1kurb\out
      IndexTTS 本地终版 → 锁定 → 全部配音（本地音色没有 MiniMax 的 voice_id，台词自动走 IndexTTS）。
 
 还没覆盖：声音好不好听、图好不好看由 Kelvin 判断（冒烟只核对跑通、尺寸、时长、OCR）。文件在上面 files 那个临时文件夹。
+  6. 表情一张一种（Kelvin 定）：之后又一次表情拼图出成 6 格且扭曲。补视图改成 6 张（侧面、背面、平静、微笑、愤怒、难过），
+     表情都是正面头肩特写、单人单脸、克制不夸张；只跑 views 复查：6 张都是同一个人，愤怒、难过都不变形
+     （那次测试同时跑着全部后端测试，单张 5–25 s）。难过那张左上角有一小块像水印的模糊字，Qwen-Image 偶尔会加。
