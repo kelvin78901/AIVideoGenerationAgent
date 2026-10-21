@@ -17,6 +17,7 @@ Usage: ./start.sh [options]
   --port PORT       Backend port (default: 8000; always bound to 127.0.0.1)
   --no-web          Backend only, no web workbench
   --skip-install    Do not run uv sync / pnpm install
+  --no-real-setup   Setup page shows the prototype's sample machines (default: this computer)
   -h, --help        Show this help
 
 Env:
@@ -30,6 +31,7 @@ while [[ $# -gt 0 ]]; do
     --port) PORT="$2"; shift 2 ;;
     --no-web) WITH_WEB=0; shift ;;
     --skip-install) SKIP_INSTALL=1; shift ;;
+    --no-real-setup) export DRAMA_SETUP=fake; shift ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unknown option: $1"; usage; exit 1 ;;
   esac
@@ -89,12 +91,17 @@ trap cleanup EXIT INT TERM
 
 MOCK="on"
 if [[ "${DRAMA_MOCK:-1}" == "0" ]]; then MOCK="off (real models)"; fi
+# The Setup page scans and installs on this computer unless --no-real-setup (models stay Mock).
+export DRAMA_SETUP="${DRAMA_SETUP:-real}"
+SETUP="sample machines (simulated)"
+if [[ "$DRAMA_SETUP" == "real" ]]; then SETUP="this computer (real scan and install)"; fi
 echo "========================================"
 echo "  AI Drama Studio"
 echo "========================================"
 echo "  API:   http://127.0.0.1:${PORT}   (docs: /docs)"
 if [[ "$WITH_WEB" -eq 1 ]]; then echo "  Web:   http://127.0.0.1:5173"; fi
 echo "  Mock:  $MOCK"
+echo "  Setup: $SETUP"
 echo "  Comfy: $COMFYUI_URL"
 echo "  Ctrl+C to stop"
 echo "========================================"

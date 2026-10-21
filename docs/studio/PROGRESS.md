@@ -18,7 +18,7 @@
 - **第 3 步「参考图（`img`）、补视图、上传（Mock）+ MSW 放行」**：组件 `img`（`auto_adopt = False`；候选 4 张、`params.n`、尺寸从 `output_spec` 算；混合模式「出终版」= `where: api` + `params.source_version_id / source_idx`，用草稿当参考出 1 张；参考素材只用已锁定的）、组件 `views`（锁定角色后自动跑：侧面、背面、表情，自动采纳，依赖锁定哈希）、`POST /assets/{id}/lock`（`lock_pick` + `record` 写 `gate_decision` gate=`assets` scope=素材 id）、`POST /assets/{id}/upload`、`asset_unlock` 影响种类（planner 从依赖图列行）；MSW 素材 handler 改成不认识的 id 放行，删掉 MSW 里素材的产物和锁定；示例种子补候选版本（Mock 文件）和 7 / 13 已锁定。先看 `pipeline/products.py:lock_pick`、`pipeline/gates.py`、`pipeline/impact.py:register_kinds`、`web/src/mocks/handlers/assets.ts`。
 - **加了迁移 0016、0017，提醒 Kelvin 重启后端。**
 - **`w_img` 已装好**（2026-10-21，Kelvin 用 `DRAMA_SETUP=real` 在 Setup 页装；本次安装记录见下面「等 Kelvin 的事」上一条）：31 GB 用了 14 分钟，平均约 37 MB/s；按文件算 36–42 MB/s，sha256 都校验过；装之前存了 ComfyUI-Manager 快照。剩余时间预估误差在 ±20% 以内：开头 822 秒，实际 807 秒；中途 598 / 685、621 / 532、173 / 213；最后一分钟准确。连接数没写进事件，记录里看不出来；速度比 2026-10-18 单连接实测的 25–30 MB/s 快，可能用了多连接。
-- **真实扫描、安装要 `DRAMA_SETUP=real`**（Mock 模式下 Setup 页是示例机器，M1 的设计）：`$env:DRAMA_SETUP = "real"` 再起 `start.ps1`。第 13 步装 TTS、OCR 也用它。之前答应 Kelvin 可以给 `start.ps1` 加 `-RealSetup` 开关，他还没回。
+- **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。heredoc 里 Python 字符串的 `\n` 会被写成真换行（第 5 步踩了两次）：要写进代码的 `\n` 用 Edit 工具。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
@@ -60,5 +60,5 @@
 
 ## 等 Kelvin 的事
 
-- 第 13 步还要下约 20 GB 的 Qwen-Image-2512 和约 15 GB 的 TTS 环境（到时再问）。要不要给 `start.ps1` 加 `-RealSetup` 开关。
+- 第 13 步还要下约 20 GB 的 Qwen-Image-2512 和约 15 GB 的 TTS 环境（到时再问）。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。

@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-21 · 启动脚本默认真实检测（Kelvin 定）
+
+- `start.ps1` 加 `-RealSetup` 开关，**默认开**：`DRAMA_SETUP=real`，Setup 页扫描、安装这台电脑，模型调用仍走 Mock、不花钱。`-RealSetup:$false` 换回原型的示例机器。没传开关、但已经设了 `$env:DRAMA_SETUP` 时，以环境变量为准。`start.sh` 同样默认真实，`--no-real-setup` 换回示例机器。启动横幅多一行「Setup: this computer / sample machines」。
+- 原因：Kelvin 用 `start.ps1` 起的工作台在 Mock 下一直显示示例机器，去 Setup 页装 Qwen-Image-Edit 时才发现不是本机。M3 第 13 步还要真装 TTS、OCR。
+- 只改启动脚本：直接 `drama-studio dev`、测试和 Playwright 仍按原规则（Mock 模式即示例机器）。
+
 ## 2026-10-20 · M3 第 2 步：素材分析（后端）
 
 **清单从哪来**
