@@ -130,5 +130,14 @@
     "color_off": "colour",
     "light_missing": "lighting",
     "text_mismatch": "text"
+  },
+  "dubStatus": {
+    "done": "Dubbed",
+    "stale": "Out of date",
+    "missing": "Not dubbed",
+    "running": "Dubbing",
+    "failed": "Dubbing failed",
+    "no_voice": "No voice",
+    "voice_not_locked": "Voice not locked"
   }
 }

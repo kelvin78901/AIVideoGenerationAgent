@@ -16,7 +16,7 @@ from sqlmodel import select
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
-from drama_series_agent.core.models_db import ModelCall, Product
+from drama_series_agent.core.models_db import Event, ModelCall, Product
 from drama_series_agent.pipeline.timing import shot_seconds
 
 LOCAL = "http://127.0.0.1"
@@ -114,6 +114,31 @@ def test_dub_the_whole_episode(client: TestClient) -> None:
     assert again["lines"] == 0
 
 
+def test_redub_given_lines_and_quiet_events(client: TestClient) -> None:
+    """「重配」 one line: ``line_ids`` dubs it again although its audio is current. Dozens of
+    lines dubbed at once send no toast each, and their events name the slot."""
+    _dub_all(client)
+    line = _dub(client)["lines"][0]
+    started = client.post(f"{V1}/episodes/{EP1}/dub", json={"line_ids": [line["line_id"]]}).json()
+    assert len(started["jobs"]) == 1 and started["lines"] == 1
+    _wait_all(client, started["jobs"])
+    product = client.get(f"{V1}/products/{line['product_id']}").json()
+    assert [v["n"] for v in product["versions"]] == [1, 2]
+    assert product["adopted_version_id"] == product["versions"][-1]["id"]
+    assert _dub(client)["lines"][0]["status"] == "done"
+    unknown = client.post(f"{V1}/episodes/{EP1}/dub", json={"line_ids": ["nope"]})
+    assert unknown.status_code == 404 and unknown.json()["detail"]["code"] == "line_not_found"
+
+    events = _rows(client, Event)
+    toasts = [e.data_json for e in events if e.type == "toast"]
+    assert not any(t["code"] == "version_created" for t in toasts)
+    updated = [e.data_json for e in events if e.type == "product.updated"]
+    mine = [e for e in updated if e["product_id"] == line["product_id"]]
+    assert mine and all(e["slot"] == "line_audio" for e in mine)
+    created = [e.data_json for e in events if e.type == "version.created"]
+    assert {e["slot"] for e in created if e["product_id"] == line["product_id"]} == {"line_audio"}
+
+
 def test_rewording_a_line_makes_only_its_audio_stale(client: TestClient) -> None:
     _dub_all(client)
     target = next(x for x in _dub(client)["lines"] if x["text"] == "……周屿？")
@@ -141,6 +166,7 @@ def test_a_lines_emotion_by_hand(client: TestClient) -> None:
     resp = client.patch(f"{V1}/lines/{line['line_id']}/dub", json={"emotion": "crying"})
     assert resp.status_code == 200, resp.text
     assert (resp.json()["emotion"], resp.json()["emotion_set"]) == ("crying", True)
+    assert resp.json()["tone_emotion"] == "whisper"  # what 「低声，愣住」 calls for
     _dub_all(client)
     product = next(p for p in _rows(client, Product) if p.owner_id == line["line_id"])
     version = client.get(f"{V1}/products/{product.id}").json()["versions"][-1]

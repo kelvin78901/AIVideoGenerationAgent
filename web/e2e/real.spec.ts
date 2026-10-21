@@ -4,34 +4,9 @@
  * shows up here instead of behind the demo data. Endpoints of later milestones answer 404 (the
  * page says 加载失败 there); those are listed on the test, not failed.
  */
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 
-import { openPage, setUi } from "./fixtures";
-
-/** Contract violations (api/client.ts, api/events.ts), page crashes and server errors. */
-function trackContract(page: Page): { errors: string[]; missing: Set<string> } {
-  const errors: string[] = [];
-  const missing = new Set<string>();
-  page.on("console", (msg) => {
-    const text = msg.text();
-    if (msg.type() === "error" && /does not match its schema|\[events\] /.test(text)) {
-      errors.push(text);
-    }
-  });
-  page.on("pageerror", (err) => errors.push(String(err)));
-  page.on("response", (resp) => {
-    const path = new URL(resp.url()).pathname;
-    if (resp.status() >= 500) errors.push(`HTTP ${resp.status()} ${path}`);
-    if (resp.status() === 404 && path.startsWith("/api/")) missing.add(path);
-  });
-  return { errors, missing };
-}
-
-function note(missing: Set<string>): void {
-  for (const path of [...missing].sort()) {
-    test.info().annotations.push({ type: "404 (later milestone)", description: path });
-  }
-}
+import { note, openPage, setUi, trackContract } from "./fixtures";
 
 const PAGES = [
   { id: "setup", path: "/setup" },

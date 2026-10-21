@@ -40,6 +40,7 @@ import { Progress } from "@/components/ui/progress";
 import { AssetDetail } from "@/pages/assets/AssetDetail";
 import { AssetList } from "@/pages/assets/AssetList";
 import { AssetMatrix } from "@/pages/assets/AssetMatrix";
+import { DubAllRow } from "@/pages/assets/Dub";
 import { useInspectorStore } from "@/stores/inspector";
 
 const KINDS: AssetKind[] = ["character", "scene", "prop", "text", "voice"];
@@ -183,18 +184,18 @@ export default function AssetsPage() {
       />
 
       {assets.data ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3">
+        // One grid for both rows (assets locked, lines dubbed), so their columns line up.
+        <div className="grid grid-cols-[max-content_minmax(4rem,10rem)_minmax(0,1fr)_max-content] items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3">
           <span className="text-sm font-medium tabular-nums">{t("progress", { done, total })}</span>
           <Progress
             value={total ? (done / total) * 100 : 0}
             aria-label={t("progress", { done, total })}
-            className="w-40"
           />
           <span className="text-xs text-muted-foreground">{t("analyzed", { summary })}</span>
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
+            className="justify-self-end"
             disabled={analyze.isPending}
             onClick={() =>
               analyze.mutate(undefined, {
@@ -205,6 +206,7 @@ export default function AssetsPage() {
           >
             {t("reanalyze")}
           </Button>
+          {episode ? <DubAllRow episodeId={episode.id} episodeIdx={episodeIdx} /> : null}
         </div>
       ) : null}
 
@@ -270,6 +272,7 @@ export default function AssetsPage() {
                 key={selected.id}
                 asset={selected}
                 seriesId={seriesId}
+                episode={episode ? { id: episode.id, idx: episodeIdx } : undefined}
                 aspect={spec.data?.aspect ?? "9:16"}
                 scriptPath={scriptPath}
                 storyboardPath={paths.step(seriesId, ep, "storyboard")}

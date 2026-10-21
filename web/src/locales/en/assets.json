@@ -152,5 +152,31 @@
     "cellLines": "{{kind}} {{asset}} in scene {{n}}: {{count}} lines",
     "cellScene": "{{kind}} {{asset}} in scene {{n}} (the whole scene)",
     "empty": "No assets analysed for this episode yet."
+  },
+  "dub": {
+    "progress": "Dialogue audio {{done}} / {{total}}",
+    "all": "Dub all",
+    "allDone": "Every line of this episode is dubbed",
+    "waiting": "{{names}}: voice not locked yet, lines waiting: {{count}}",
+    "confirmTitle": "Dub episode {{n}}",
+    "confirmLines": "Lines to dub: {{count}}, about {{cost}}.",
+    "confirmNothing": "No lines to dub.",
+    "skipLocked": "Skipped: {{count}} (voice not locked yet: {{names}}).",
+    "skipNoVoice": "Skipped: {{count}} (no voice yet: {{names}}).",
+    "skipBusy": "Being dubbed already: {{count}}.",
+    "confirmHint": "Each line uses its speaker's locked voice, with the emotion its tone calls for. Dubbed lengths replace the script's estimates.",
+    "cancel": "Cancel",
+    "start": "Start dubbing",
+    "started": "Dubbing started (lines: {{count}}); each appears on the script page and in its voice's details when done.",
+    "lines": "Episode {{n}} lines, dubbed",
+    "linesNone": "This character has no lines in this episode.",
+    "linesHint": "The emotion follows the tone; change it if you like, then redub to hear it.",
+    "lockFirst": "Lock {{name}}'s voice first",
+    "dub": "Dub",
+    "redub": "Redub",
+    "redubStarted": "Redubbing: {{text}}",
+    "emotion": "Emotion",
+    "emotionAuto": "From the tone ({{emotion}})",
+    "emotionSaved": "Emotion set to {{emotion}}; redub to hear it."
   }
 }

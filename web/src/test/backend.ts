@@ -15,6 +15,7 @@ import { setBackendFetch } from "@/mocks/backend";
 import { server } from "@/mocks/node";
 import { assetHandlers, assetsBackendFetch, resetFakeAssets } from "@/test/fakes/assets";
 import { bibleBackendFetch, bibleHandlers, resetFakeBible } from "@/test/fakes/bible";
+import { dubHandlers, resetFakeDub } from "@/test/fakes/dub";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { episodeHandlers, episodesBackendFetch, resetFakeEpisodes } from "@/test/fakes/episodes";
 import { gateHandlers, impactBackendFetch, resetFakeImpact } from "@/test/fakes/impact";
@@ -165,6 +166,7 @@ function seriesHandlers() {
     ...episodeHandlers(known),
     ...scriptHandlers(),
     ...assetHandlers(),
+    ...dubHandlers(),
     ...gateHandlers(),
   ];
 }
@@ -190,7 +192,7 @@ async function fakeBackendFetch(request: Request): Promise<Response> {
  * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`), bible
  * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), the
  * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`),
- * episode 1's assets (`test/fakes/assets.ts`), the novel and script gates and impact previews
+ * episode 1's assets (`test/fakes/assets.ts`) and 台词配音 (`test/fakes/dub.ts`), the novel and script gates and impact previews
  * (`test/fakes/impact.ts`), and the PC sample machine
  * before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
@@ -206,6 +208,7 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeEpisodes();
   resetFakeScript();
   resetFakeAssets();
+  resetFakeDub();
   resetFakeImpact();
   setBackendFetch(fakeBackendFetch);
   resetFakeSetup();

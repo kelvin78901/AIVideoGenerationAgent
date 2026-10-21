@@ -25,6 +25,7 @@ import { Input, Label, Textarea } from "@/components/ui/form";
 import { currentVersion } from "@/lib/versions";
 import { AssetViews } from "@/pages/assets/AssetViews";
 import { ImageCandidates } from "@/pages/assets/Candidates";
+import { VoiceDubLines } from "@/pages/assets/Dub";
 import { FinalButton } from "@/pages/assets/FinalButton";
 import { isVoiceDraft, STATUS_TONE } from "@/pages/assets/status";
 import { VoicePanel } from "@/pages/assets/Voice";
@@ -37,6 +38,7 @@ const UPLOAD_TYPES = "image/png,image/jpeg,image/webp";
 export function AssetDetail({
   asset,
   seriesId,
+  episode,
   aspect,
   scriptPath,
   storyboardPath,
@@ -46,6 +48,8 @@ export function AssetDetail({
 }: {
   asset: Asset;
   seriesId: string;
+  /** The episode on screen: a voice lists its lines there with their dubbing. */
+  episode: { id: string; idx: number } | undefined;
   aspect: Aspect;
   /** The episode's script page; a scene links to its first line there (`?line=`). */
   scriptPath: string;
@@ -282,6 +286,9 @@ export function AssetDetail({
           ) : (
             <EmptyState title={t("cands.emptyVoice")} />
           )}
+          {episode ? (
+            <VoiceDubLines asset={asset} episodeId={episode.id} episodeIdx={episode.idx} />
+          ) : null}
         </div>
       ) : (
         <div className="flex flex-col gap-2">

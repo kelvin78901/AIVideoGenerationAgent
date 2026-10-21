@@ -139,11 +139,12 @@ async def test_events(studio_db: Database) -> None:
     v = await svc.append(p.id, VersionDraft(payload={}), origin="run")
     async with studio_db.session() as s:
         events = [(e.type, e.data_json) for e in (await s.exec(select(Event))).all()]
-    created = {"product_id": p.id, "version_id": v.id, "n": 1, "origin": "run"}
+    # The slot lets the front end refresh only what shows it (a line's audio: the dubbing).
+    created = {"product_id": p.id, "slot": p.slot, "version_id": v.id, "n": 1, "origin": "run"}
     assert ("version.created", created) in events
     assert (
         "product.updated",
-        {"product_id": p.id, "series_id": "demo", "status": "adopted"},
+        {"product_id": p.id, "series_id": "demo", "slot": p.slot, "status": "adopted"},
     ) in events
 
 

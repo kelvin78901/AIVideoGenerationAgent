@@ -152,5 +152,31 @@
     "cellLines": "{{kind}}「{{asset}}」在场 {{n}}：{{count}} 行",
     "cellScene": "{{kind}}「{{asset}}」在场 {{n}}（整场）",
     "empty": "本集还没有分析出素材。"
+  },
+  "dub": {
+    "progress": "台词配音 {{done}} / {{total}}",
+    "all": "全部配音",
+    "allDone": "这一集的台词都配好了",
+    "waiting": "{{names}} 的音色还没锁定，{{count}} 句先等着",
+    "confirmTitle": "给第 {{n}} 集配音",
+    "confirmLines": "要配 {{count}} 句台词，约 {{cost}}。",
+    "confirmNothing": "没有要配的台词。",
+    "skipLocked": "跳过 {{count}} 句：{{names}} 的音色还没锁定。",
+    "skipNoVoice": "跳过 {{count}} 句：{{names}} 还没有音色。",
+    "skipBusy": "{{count}} 句正在配。",
+    "confirmHint": "每句用说话人锁定的音色，按语气选情绪。配好的时长会替换剧本里的估计。",
+    "cancel": "取消",
+    "start": "开始配音",
+    "started": "已开始配 {{count}} 句，配好的会出现在剧本页和音色详情里。",
+    "lines": "第 {{n}} 集的台词配音",
+    "linesNone": "这个角色在本集没有台词。",
+    "linesHint": "情绪按语气自动选，可以改；改完点「重配」才用上。",
+    "lockFirst": "先锁定「{{name}}」的音色",
+    "dub": "配音",
+    "redub": "重配",
+    "redubStarted": "已开始重配：{{text}}",
+    "emotion": "情绪",
+    "emotionAuto": "按语气（{{emotion}}）",
+    "emotionSaved": "情绪改成「{{emotion}}」，重配后生效。"
   }
 }

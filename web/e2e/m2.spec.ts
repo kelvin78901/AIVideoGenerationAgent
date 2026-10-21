@@ -144,11 +144,12 @@ test("a confirmed script line: 撤销, 只改这里, 确认并同步", async ({ 
   await expect(step(page, "剧本")).toContainText("已确认");
 
   // 确认并同步: written, and the sync starts.
-  dialog = await edit(/周屿？/, "……是你啊。");
+  // After the speaker's lead: a dubbed line also has a play button with its text.
+  dialog = await edit(/）：……周屿？/, "……是你啊。");
   await dialog.getByRole("button", { name: /^确认并同步 · 预计/ }).click();
   await expect(page.getByText(/^已开始同步/)).toBeVisible();
   await page.reload();
-  await expect(page.getByRole("button", { name: /……是你啊。/ })).toContainText("已修改");
+  await expect(page.getByRole("button", { name: /）：……是你啊。/ })).toContainText("已修改");
   expect(errors()).toEqual([]);
 });
 

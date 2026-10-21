@@ -9,6 +9,7 @@ import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import AssetsPage from "@/pages/Assets";
 import { backend } from "@/test/backend";
 import { fakeAssets } from "@/test/fakes/assets";
+import { fakeDub } from "@/test/fakes/dub";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
 
@@ -337,6 +338,76 @@ describe("AssetsPage", () => {
     ).toHaveTextContent("整场");
     await user.click(within(table).getByRole("button", { name: /红色长柄伞/ }));
     expect(await screen.findByText("当前产物 · 红色长柄伞 · 参考图 4 张候选")).toBeInTheDocument();
+  });
+
+  it("「全部配音」 shows the estimate first, then dubs every line; the voice lists them", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    expect(await screen.findByText("台词配音 0 / 2")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "全部配音" }));
+    const dialog = await screen.findByRole("dialog", { name: "给第 1 集配音" });
+    expect(dialog).toHaveTextContent("要配 2 句台词，约 $0.0014。");
+    expect(fakeDub.takes).toEqual([]);
+    await user.click(within(dialog).getByRole("button", { name: "开始配音" }));
+    expect(await screen.findByText("台词配音 2 / 2")).toBeInTheDocument();
+    expect(fakeDub.takes).toEqual(["demo-b5", "demo-b10"]);
+    const all = screen.getByRole("button", { name: "全部配音" });
+    expect(all).toBeDisabled();
+    expect(all).toHaveAttribute("title", "这一集的台词都配好了");
+
+    await user.click(item(/^林晚\s*音色/));
+    const lines = await screen.findByRole("region", { name: "第 1 集的台词配音" });
+    expect(within(lines).getByRole("button", { name: "播放：……周屿？" })).toBeInTheDocument();
+    expect(within(lines).getByText("1.3 秒")).toBeInTheDocument();
+    expect(within(lines).getAllByRole("button", { name: "重配" })).toHaveLength(2);
+  });
+
+  it("a line's emotion follows its tone or is chosen by hand; 配音 dubs that line", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/^林晚\s*音色/));
+    const lines = await screen.findByRole("region", { name: "第 1 集的台词配音" });
+    expect(
+      within(lines).getByText("情绪按语气自动选，可以改；改完点「重配」才用上。"),
+    ).toBeInTheDocument();
+    const first = (await within(lines).findAllByRole("listitem"))[0] as HTMLElement;
+    expect(first).toHaveTextContent("……周屿？低声，愣住未配音");
+    const emotion = within(first).getByRole("combobox", { name: "情绪" });
+    expect(emotion).toHaveDisplayValue("按语气（耳语）");
+    await user.selectOptions(emotion, "哭腔");
+    await waitFor(() =>
+      expect(fakeDub.dub.lines[0]).toMatchObject({ emotion: "crying", emotion_set: true }),
+    );
+    expect(emotion).toHaveDisplayValue("哭腔");
+    await user.click(within(first).getByRole("button", { name: "配音" }));
+    expect(
+      await within(first).findByRole("button", { name: "播放：……周屿？" }),
+    ).toBeInTheDocument();
+    expect(fakeDub.takes).toEqual(["demo-b5"]);
+    expect(within(first).getByRole("button", { name: "重配" })).toBeEnabled();
+    // Back to the tone.
+    await user.selectOptions(emotion, "按语气（耳语）");
+    await waitFor(() =>
+      expect(fakeDub.dub.lines[0]).toMatchObject({ emotion: "whisper", emotion_set: false }),
+    );
+  });
+
+  it("lines wait for their voice to be locked", async () => {
+    const user = userEvent.setup();
+    const p = productOf("vlinwan");
+    if (p) p.locked_hash = null;
+    renderAssets();
+    expect(await screen.findByText("林晚 的音色还没锁定，2 句先等着")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "全部配音" })).toBeDisabled();
+    await user.click(item(/^林晚\s*音色/));
+    const lines = await screen.findByRole("region", { name: "第 1 集的台词配音" });
+    expect(lines).toHaveTextContent("先锁定「林晚」的音色");
+    const dub = within(lines).getAllByRole("button", { name: "配音" });
+    expect(dub).toHaveLength(2);
+    for (const b of dub) expect(b).toBeDisabled();
+    expect(within(lines).getAllByText("音色未锁定")).toHaveLength(2);
   });
 
   it("「重新分析剧本」 starts the analysis job", async () => {

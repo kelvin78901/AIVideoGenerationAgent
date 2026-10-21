@@ -7,6 +7,7 @@ import type { QueryClient } from "@tanstack/react-query";
 import type { TFunction } from "i18next";
 import { toast } from "sonner";
 
+import { dubKeys } from "@/api/hooks/dub";
 import { generateKeys } from "@/api/hooks/generate";
 import { productKeys } from "@/api/hooks/products";
 import { applySetupProgress } from "@/api/hooks/setup";
@@ -83,8 +84,21 @@ export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType
     });
     toast[ev.level ?? "info"](text);
   }
-  for (const queryKey of invalidates[type] ?? []) void client.invalidateQueries({ queryKey });
+  for (const queryKey of invalidatesFor(type, data)) void client.invalidateQueries({ queryKey });
   for (const fn of listeners.get(type) ?? []) fn(data);
+}
+
+/** Slots made by the dozen refresh their own queries alone, not every product view. */
+const narrow: Record<string, readonly (readonly unknown[])[]> = {
+  line_audio: [dubKeys.all],
+};
+
+function invalidatesFor(type: EventType, data: unknown): readonly (readonly unknown[])[] {
+  if (type === "product.updated" || type === "version.created") {
+    const slot = (data as { slot?: unknown } | null)?.slot;
+    if (typeof slot === "string" && slot in narrow) return narrow[slot] ?? [];
+  }
+  return invalidates[type] ?? [];
 }
 
 type Sink = (type: EventType, data: unknown) => void;

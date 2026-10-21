@@ -388,14 +388,16 @@ class RunService:
             )
         assert last is not None
         spec = self.services.registry.spec(last.model_key or model)
-        await self.bus.publish(
-            EventType.TOAST,
-            {
-                "level": "success",
-                "code": "version_created",
-                "params": {"n": last.n, "model": spec.display},
-            },
-        )
+        # A line's audio is one of dozens dubbed at once: no toast for each.
+        if p.slot not in self.products.quiet_slots:
+            await self.bus.publish(
+                EventType.TOAST,
+                {
+                    "level": "success",
+                    "code": "version_created",
+                    "params": {"n": last.n, "model": spec.display},
+                },
+            )
         return {"version_id": last.id, "n": last.n, "model_key": last.model_key}
 
     async def _ask_fallback(self, product_id: str, exc: NeedsConfirm) -> JobNeedsConfirm:

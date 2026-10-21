@@ -177,7 +177,8 @@ class ProductService:
         self._invalidation = invalidation
         self._materializers: dict[str, Materializer] = {}
         self.describer: Describer | None = None
-        # Slots whose products are listed without the next run's prompt and estimate.
+        # Slots of products made by the dozen (a line's audio): listed without the next run's
+        # prompt and estimate, and a new take of one is not toasted.
         self.quiet_slots: set[str] = set()
 
     def on_adopt(self, slot: str, materializer: Materializer) -> None:
@@ -326,7 +327,13 @@ class ProductService:
             await session.refresh(p)
         await self._bus.publish(
             EventType.VERSION_CREATED,
-            {"product_id": p.id, "version_id": v.id, "n": v.n, "origin": v.origin},
+            {
+                "product_id": p.id,
+                "slot": p.slot,
+                "version_id": v.id,
+                "n": v.n,
+                "origin": v.origin,
+            },
         )
         await self._announce(p)
         return v
@@ -467,7 +474,13 @@ class ProductService:
         if created:
             await self._bus.publish(
                 EventType.VERSION_CREATED,
-                {"product_id": p.id, "version_id": v.id, "n": v.n, "origin": v.origin},
+                {
+                    "product_id": p.id,
+                    "slot": p.slot,
+                    "version_id": v.id,
+                    "n": v.n,
+                    "origin": v.origin,
+                },
             )
         await self._announce(p)
         return v
@@ -615,7 +628,12 @@ class ProductService:
     async def _announce(self, p: Product) -> None:
         await self._bus.publish(
             EventType.PRODUCT_UPDATED,
-            {"product_id": p.id, "series_id": p.series_id, "status": status_of(p)},
+            {
+                "product_id": p.id,
+                "series_id": p.series_id,
+                "slot": p.slot,
+                "status": status_of(p),
+            },
         )
 
 

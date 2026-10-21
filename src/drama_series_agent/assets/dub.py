@@ -49,6 +49,7 @@ class DubLineOut(BaseModel):
     status: DubStatus
     emotion: str
     emotion_set: bool  # chosen by hand (else from the tone)
+    tone_emotion: str  # what the tone calls for (config/voice.yaml tones)
     audio: VersionFileOut | None
     seconds: float  # the audio's length, else the script's estimate
 
@@ -73,6 +74,8 @@ class DubIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     dry_run: bool = False
+    # 「配音 / 重配」 of these lines, whatever their state; None: every line without current audio.
+    line_ids: list[str] | None = Field(default=None, max_length=500)
 
 
 class DubSkipOut(BaseModel):
@@ -202,6 +205,7 @@ class DubService:
                     status=status,
                     emotion=chosen or cfg.emotion_of(x.tone),
                     emotion_set=bool(chosen),
+                    tone_emotion=cfg.emotion_of(x.tone),
                     audio=audio,
                     seconds=line_seconds(x.text, x.duration_s, audio.duration_s if audio else None),
                 )
@@ -224,14 +228,29 @@ class DubService:
         )
 
     async def dub(self, episode_id: str, body: DubIn) -> DubStartOut:
-        """「全部配音」: every line without current audio whose voice is locked."""
+        """「全部配音」: every line without current audio whose voice is locked; with
+        ``line_ids``, those lines again (「重配」) as long as their voice is locked."""
         now = await self.status(episode_id)
+        lines = now.lines
+        if body.line_ids is not None:
+            wanted = set(body.line_ids)
+            known = {x.line_id for x in lines}
+            missing = [i for i in body.line_ids if i not in known]
+            if missing:
+                raise PipelineError(404, "line_not_found", id=missing[0])
+            lines = [x for x in lines if x.line_id in wanted]
         skipped = [
             DubSkipOut(line_id=x.line_id, code=x.status, name=x.voice_name or x.speaker)
-            for x in now.lines
+            for x in lines
             if x.status in ("no_voice", "voice_not_locked")
         ]
-        todo = [x for x in now.lines if x.status in TO_DUB]
+        skipped += [
+            DubSkipOut(line_id=x.line_id, code="product_busy", name="")
+            for x in lines
+            if x.status == "running"
+        ]
+        redo = TO_DUB if body.line_ids is None else (*TO_DUB, "done")
+        todo = [x for x in lines if x.status in redo]
         products = [await self._ensure(episode_id, x.line_id) for x in todo]
         total = 0.0
         for p in products:

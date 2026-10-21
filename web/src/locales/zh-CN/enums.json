@@ -130,5 +130,14 @@
     "color_off": "颜色",
     "light_missing": "灯光",
     "text_mismatch": "文字"
+  },
+  "dubStatus": {
+    "done": "已配音",
+    "stale": "待更新",
+    "missing": "未配音",
+    "running": "配音中",
+    "failed": "配音失败",
+    "no_voice": "没有音色",
+    "voice_not_locked": "音色未锁定"
   }
 }

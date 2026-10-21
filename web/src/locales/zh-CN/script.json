@@ -145,7 +145,8 @@
     "shots": "对应镜头",
     "shot": "镜头 {{label}}",
     "noShots": "还没拆到镜头",
-    "inNovel": "在小说里看"
+    "inNovel": "在小说里看",
+    "sceneSpoken": "台词 {{s}} 秒 · 已配音 {{dubbed}} / {{lines}}"
   },
   "other": {
     "title": "{{name}} 的剧本",

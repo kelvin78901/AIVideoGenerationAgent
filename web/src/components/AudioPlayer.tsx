@@ -17,6 +17,7 @@ export function AudioPlayer({
   waveform,
   duration,
   label,
+  compact = false,
   className,
 }: {
   src: string;
@@ -25,6 +26,8 @@ export function AudioPlayer({
   duration?: number | null;
   /** What is playing, for the button's accessible name. */
   label: string;
+  /** Just the button and the duration (a script line). */
+  compact?: boolean;
   className?: string;
 }) {
   const { t } = useTranslation("components");
@@ -88,7 +91,7 @@ export function AudioPlayer({
       >
         {playing ? <Pause aria-hidden /> : <Play aria-hidden />}
       </Button>
-      {bars ? (
+      {compact ? null : bars ? (
         <div aria-hidden className="flex h-8 min-w-0 flex-1 items-center gap-0.5 overflow-hidden">
           {bars.map((h, i) => (
             <span

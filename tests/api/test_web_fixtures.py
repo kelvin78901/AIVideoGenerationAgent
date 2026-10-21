@@ -1,5 +1,5 @@
-"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script,assets}.json``: what
-the Mock backend answers.
+"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script,assets,dub}.json``:
+what the Mock backend answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -13,6 +13,7 @@ and let the page tests show what that changes on screen.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -284,3 +285,38 @@ def test_web_assets_fixture_is_current(client: TestClient) -> None:
             f.write(text)
     current = ASSETS_FIXTURE.read_text(encoding="utf-8") if ASSETS_FIXTURE.exists() else ""
     assert current == text, f"{ASSETS_FIXTURE.name} is out of date: see this module's docstring"
+
+
+DUB_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "dub.json"
+
+
+def _wait_jobs(client: TestClient, job_ids: list[str], limit_s: float = 30) -> None:
+    deadline = time.monotonic() + limit_s
+    for job_id in job_ids:
+        while client.get(f"{V1}/jobs/{job_id}").json()["state"] != "succeeded":
+            assert time.monotonic() < deadline, "jobs did not finish"
+            time.sleep(0.02)
+
+
+def test_web_dub_fixture_is_current(client: TestClient) -> None:
+    """Episode 1's 台词配音 before 「全部配音」, its estimate, and after (``test/fakes/dub.ts``).
+    A line's audio product is made on its first take with a random id: pinned here."""
+    before = client.get(f"{V1}/episodes/demo-e1/dub").json()
+    estimate = client.post(f"{V1}/episodes/demo-e1/dub", json={"dry_run": True}).json()
+    started = client.post(f"{V1}/episodes/demo-e1/dub", json={}).json()
+    _wait_jobs(client, started["jobs"])
+    after = client.get(f"{V1}/episodes/demo-e1/dub").json()
+    export = {"before": before, "estimate": estimate, "after": after}
+    text = json.dumps(_fixed(export), ensure_ascii=False)
+    for x in after["lines"]:
+        text = text.replace(x["product_id"], f"dub-{x['line_id']}")
+        # The take's audio differs with its seed.
+        sha = hashlib.sha256(f"dub-{x['line_id']}".encode()).hexdigest()
+        text = text.replace(x["audio"]["path"], f"blobs/sha256/{sha[:2]}/{sha}")
+        text = text.replace(x["audio"]["sha256"], sha)
+    text = json.dumps(json.loads(text), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(DUB_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = DUB_FIXTURE.read_text(encoding="utf-8") if DUB_FIXTURE.exists() else ""
+    assert current == text, f"{DUB_FIXTURE.name} is out of date: see this module's docstring"
