@@ -133,6 +133,12 @@ class OpenAICompatAdapter:
             body["seed"] = req.seed
         if req.json_mode and self.spec.caps.json_mode:
             body["response_format"] = {"type": "json_object"}
+        extra = self.spec.caps.model_extra or {}
+        num_ctx = extra.get("num_ctx")
+        if num_ctx:
+            body["options"] = {"num_ctx": int(num_ctx)}
+        for name, value in (extra.get("request") or {}).items():
+            body.setdefault(name, value)  # providers.yaml ``request``, e.g. DeepSeek's thinking
         for name in ("temperature", "top_p", "stream"):
             if name in req.params:
                 body[name] = req.params[name]

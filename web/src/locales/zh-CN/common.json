@@ -23,6 +23,28 @@
     "gpuNamed": "本地 GPU：{{name}} {{vram}}GB · {{status}}",
     "episodeTitle": "第 {{n}} 集《{{title}}》"
   },
+  "seriesMenu": {
+    "label": "切换剧集或新建剧集",
+    "heading": "剧集",
+    "new": "新建剧集…",
+    "failed": "剧集列表没加载出来"
+  },
+  "newSeries": {
+    "title": "新建剧集",
+    "lead": "先起个剧名。接下来定成片规格（横竖版、分辨率、帧率），再导入小说。",
+    "name": "剧名",
+    "placeholder": "比如：雨停之前",
+    "required": "剧名不能为空",
+    "create": "创建，去定成片规格",
+    "cancel": "取消",
+    "done": "已新建《{{title}}》"
+  },
+  "noSeries": {
+    "title": "开始一部剧",
+    "lead": "一部剧从一本小说开始：新建剧集，定成片规格，再导入小说。",
+    "empty": "还没有剧集",
+    "emptyLead": "新建一部剧集，接下来会带你定成片规格、导入小说。"
+  },
   "placeholder": {
     "comingSoon": "这一页在后续里程碑实现（{{milestone}}）。",
     "prototype": "布局和文案以 {{file}} 为准。"
@@ -81,15 +103,41 @@
     "workflow_needs_trial": "要先试跑通过",
     "workflow_dramastudio_bindings": "用 DramaStudio 节点的工作流不用绑定",
     "workflow_unknown_node": "工作流里没有标题为「{{title}}」的节点",
-    "workflow_check_failed": "体检没通过：先装好缺的节点包和模型"
+    "workflow_check_failed": "体检没通过：先装好缺的节点包和模型",
+    "invalid_owner": "产物的归属写法不对（应为 类型:id）",
+    "scope_id_required": "单项设置要指明是哪一项",
+    "component_not_ready": "这一步的生成功能还没接上",
+    "component_off": "这一步在当前预设下不跑（没有可用的模型）",
+    "no_model_configured": "这一步还没选模型",
+    "no_alternative": "没有可以换的其他模型，去「运行设置」里加备选",
+    "invalid_output": "模型两次都没按要求的格式回答，原始回答已保存",
+    "budget_exceeded": "这次调用会超过上限（单次上限或已确认的金额），没有花钱就停下了",
+    "over_budget": "预计 ${{estimate_usd}}，超过上限 ${{limit_usd}}，确认后才会发出",
+    "rights_not_confirmed": "要先勾选「我拥有这部小说的改编权」才能导入",
+    "unsupported_file": "只支持 .txt 和 .docx（这个文件是 {{ext}}）",
+    "file_too_large": "文件超过 {{limit_mb}} MB",
+    "novel_unreadable": "读不出这个文件的文字：.txt 请存成 UTF-8 或 GBK，.docx 请确认不是损坏的文件",
+    "novel_empty": "文件里没有正文",
+    "chapter_not_found": "没有第 {{idx}} 章",
+    "chapter_empty": "一章至少要留一段",
+    "novel_not_found": "这部剧还没有导入小说",
+    "instruction_required": "先写下要怎么改",
+    "upstream_not_ready": "上一步还没有可用的结果，先把它做完",
+    "entity_not_found": "找不到这条设定 {{id}}",
+    "name_required": "名字不能为空",
+    "merge_needs_two": "至少要两条才能合并",
+    "merge_kinds_differ": "不同类别的设定不能合并",
+    "distinct_needs_two": "要两条不同的设定",
+    "split_needs_alias": "要说明拆出哪个别名",
+    "alias_not_found": "这条设定没有别名「{{alias}}」",
+    "source_missing": "找不到这份设定对应的原文 {{id}}"
   },
   "toast": {
     "generic": "通知：{{code}}",
     "version_created": "已生成 v{{n}}（{{model}}）。上一版还在历史里，满意就点「采纳」。",
-    "sync_done": "同步完成：检查了 {{files}} 个文件，新增 {{added}} 个，其余没有变化。"
-  },
-  "legacy": {
-    "banner": "旧界面：调用不记账、不受预算限制",
-    "detail": "这是上游 Hermes 界面，M2 之后删除。这里发起的模型调用不经过 router.call()，不写 model_call，也不检查预算。"
+    "sync_done": "同步完成：检查了 {{files}} 个文件，新增 {{added}} 个，其余没有变化。",
+    "run_failed": "生成失败（{{error}}）。之前的版本都还在历史里，可以重跑或换个模型。",
+    "cascade_done": "已同步：{{count}} 个产物更新，新版本已采纳。旧版本都在历史里。",
+    "cascade_done_failed": "同步结束：{{count}} 个产物更新，{{failed}} 个失败（停在「待更新」，可以单独重跑）。"
   }
 }

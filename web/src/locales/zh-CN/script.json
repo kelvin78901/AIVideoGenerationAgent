@@ -20,6 +20,74 @@
       "none": "剧本未生成",
       "draft": "剧本草稿",
       "confirmed": "剧本已确认"
+    },
+    "views": "分集显示方式",
+    "view": {
+      "cards": "卡片",
+      "board": "节拍看板"
+    },
+    "empty": {
+      "title": "还没有分集",
+      "lead": "分集规划把小说切成一集一集：每集一个钩子、一个卡点和几个节拍。先在小说页导入小说、跑完设定提取。",
+      "run": "开始分集规划"
+    }
+  },
+  "board": {
+    "lead": "一列一集。拖动节拍换集或调整顺序；点节拍改文字和情绪。",
+    "meta": "{{count}} 个节拍 · 约 {{clock}}",
+    "hook": "钩子：{{text}}",
+    "hookTbd": "钩子：待定",
+    "emotion": "情绪 {{value}}",
+    "editEpisode": "改第 {{n}} 集的集名、钩子和卡点",
+    "editBeat": "改节拍 {{n}}-{{idx}}：{{text}}",
+    "dropEnd": "拖到这里放在最后",
+    "emptyColumn": "这一集还没有节拍，把节拍拖到这里",
+    "moved": "已把节拍移到第 {{n}} 集第 {{idx}} 个。",
+    "saved": "已保存。",
+    "impactTitle": "改节拍会影响已确认的剧本",
+    "locked": "分集规划已锁定，节拍改不了。",
+    "busy": "分集规划正在运行，跑完再改。",
+    "unadopted": "分集规划有一版新结果还没采纳：这里是已采纳的方案，在「历史」里采纳后才会换。",
+    "openHistory": "看历史",
+    "beatDialog": {
+      "title": "改节拍",
+      "lead": "保存后出一个新的分集规划版本并采纳；用到这一集的剧本会变成待更新。",
+      "text": "节拍",
+      "emotion": "情绪：{{value}}",
+      "emotionLabel": "情绪（-1 最低落，1 最高涨）",
+      "low": "低落",
+      "high": "高涨",
+      "episode": "所在的集",
+      "save": "保存",
+      "cancel": "取消"
+    },
+    "episodeDialog": {
+      "title": "改第 {{n}} 集",
+      "lead": "保存后出一个新的分集规划版本并采纳；这一集的剧本会变成待更新。",
+      "name": "集名",
+      "hook": "钩子（开头抓人的一下）",
+      "cliffhanger": "卡点（结尾停在哪里）",
+      "seconds": "预计时长（秒）",
+      "save": "保存",
+      "cancel": "取消"
+    }
+  },
+  "curve": {
+    "title": "全剧情绪曲线",
+    "subtitle": "每个节拍一个点：-1 最低落，1 最高涨；竖线分开各集",
+    "high": "高涨",
+    "low": "低落",
+    "episode": "第 {{n}} 集",
+    "readout": "第 {{n}} 集 · 节拍 {{idx}}",
+    "readoutText": "{{text}} · 情绪 {{value}}",
+    "hint": "把鼠标移到曲线上看每个节拍",
+    "point": "第 {{n}} 集节拍 {{idx}}：{{text}}，情绪 {{value}}",
+    "table": "全剧情绪曲线（表）",
+    "col": {
+      "episode": "集",
+      "beat": "节拍",
+      "text": "内容",
+      "emotion": "情绪"
     }
   },
   "script": {
@@ -37,11 +105,13 @@
     "prov": {
       "source": "原文第 {{paras}} 段",
       "ai": "AI 新增",
-      "edited": "已修改"
+      "edited": "已修改",
+      "addition": "原文第 {{paras}} 段 · 补写"
     },
     "srcLabel": {
       "source": "来自原文第 {{paras}} 段",
-      "ai": "原文没有这句，是 AI 为了可拍加的"
+      "ai": "原文没有这句，是 AI 为了可拍加的",
+      "addition": "来自原文第 {{paras}} 段和已采纳的补写"
     },
     "paraSep": "、",
     "edit": "编辑",
@@ -65,13 +135,21 @@
     },
     "seconds": "{{n}} 秒",
     "overlay": "叠在 {{shot}}",
-    "none": "—"
+    "none": "—",
+    "sceneLead": "场 {{n}}　",
+    "editLabelDraft": "编辑这一段",
+    "saved": "已保存。",
+    "unadopted": "剧本化有一版新结果还没采纳：这里显示的是它，在「历史」里采纳后下游才会用。",
+    "openHistory": "看历史",
+    "rewriteAnyway": "仍然重写",
+    "shots": "对应镜头",
+    "shot": "镜头 {{label}}",
+    "noShots": "还没拆到镜头",
+    "inNovel": "在小说里看"
   },
   "other": {
     "title": "{{name}} 的剧本",
     "none": "这一集的剧本还没生成。会沿用第 1 集确认过的人物、设定和写法。",
-    "draft": "剧本草稿已生成（示例数据只展开第 1 集的内容）。确认前可以先在右侧改提示词或换模型。",
-    "generate": "生成这一集的剧本",
-    "regenerate": "重新生成这一集"
+    "generate": "生成这一集的剧本"
   }
 }

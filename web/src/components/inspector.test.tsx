@@ -14,6 +14,8 @@ import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { PRODUCT_ENRICH, PRODUCT_EXTRACT } from "@/mocks/fixtures/demo/products";
 import { useInspectorStore } from "@/stores/inspector";
 import { backend } from "@/test/backend";
+import { fakeConfig } from "@/test/fakes/config";
+import { fakeEpisodes } from "@/test/fakes/episodes";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
 
@@ -27,7 +29,7 @@ const NOVEL = [
 ];
 
 function override(component = "enrich") {
-  return getDb().config.component[component];
+  return fakeConfig.component[component];
 }
 
 beforeEach(() => {
@@ -64,7 +66,7 @@ describe("Inspector", () => {
 
 describe("ModelPicker", () => {
   it("greys out run locations that cannot be used and says why", async () => {
-    const def = getDb().config.components.find((c) => c.id === "enrich");
+    const def = fakeConfig.catalog.components.find((c) => c.id === "enrich");
     if (def) def.local_models = [];
     renderAt(<Panel />);
     await screen.findByRole("heading", { name: "小说补全" });
@@ -75,14 +77,14 @@ describe("ModelPicker", () => {
     expect(screen.getByText("这个组件没有可本地运行的模型。")).toBeInTheDocument();
   });
 
-  it("lists 6 API services and expands 「更多供应商（9）」", async () => {
+  it("lists 6 API services and expands 「更多供应商（8）」", async () => {
     const user = userEvent.setup();
     renderAt(<Panel />);
     const api = await screen.findByRole("radiogroup", { name: "API 服务" });
     expect(within(api).getAllByRole("radio")).toHaveLength(6);
     expect(within(api).getByRole("radio", { name: /DeepSeek V4 Pro/ })).toBeChecked();
-    await user.click(screen.getByRole("button", { name: "更多供应商（9）" }));
-    expect(within(api).getAllByRole("radio")).toHaveLength(15);
+    await user.click(screen.getByRole("button", { name: "更多供应商（8）" }));
+    expect(within(api).getAllByRole("radio")).toHaveLength(14);
     expect(screen.getByRole("button", { name: "收起" })).toBeInTheDocument();
   });
 
@@ -96,10 +98,10 @@ describe("ModelPicker", () => {
     await waitFor(() =>
       expect(screen.getAllByTestId("config-source")[1]).toHaveTextContent("组件"),
     );
-    // The rerun estimate follows the new route.
+    // The rerun estimate follows the new route (the backend prices it on read).
     await user.click(screen.getByRole("radio", { name: "本地" }));
     await waitFor(() => expect(override()?.mode).toBe("local"));
-    expect(await screen.findByText(/无 API 费用 · 约 40 秒/)).toBeInTheDocument();
+    expect(await screen.findByText(/^无 API 费用 · /)).toBeInTheDocument();
   });
 
   it("toggles fallback, its triggers and its target", async () => {
@@ -135,7 +137,7 @@ describe("ModelPicker", () => {
     const user = userEvent.setup();
     renderAt(<Panel item="shot:1-05" />);
     await user.click(await screen.findByRole("radio", { name: "混合" }));
-    await waitFor(() => expect(getDb().config.item["enrich|shot:1-05"]?.mode).toBe("hybrid"));
+    await waitFor(() => expect(fakeConfig.item["enrich|shot:1-05"]?.mode).toBe("hybrid"));
     expect(override()).toBeUndefined();
     await waitFor(() =>
       expect(screen.getAllByTestId("config-source")[0]).toHaveTextContent("单项"),
@@ -180,7 +182,7 @@ function SpecImpact({
 }
 
 describe("ImpactDialog", () => {
-  it("lists what is affected with costs; 「只标记」 marks the steps 待更新", async () => {
+  it("lists what is affected with costs; 「只改这里」 marks the steps 待更新", async () => {
     const user = userEvent.setup();
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="inline" onResolved={resolved} />);
@@ -189,30 +191,34 @@ describe("ImpactDialog", () => {
     expect(dialog).toHaveTextContent("API 终版 · 约 $2.76");
     expect(dialog).toHaveTextContent("建议重出（可选）");
     expect(dialog).toHaveTextContent("剧本、分镜表、配音和音色不受影响");
-    await user.click(within(dialog).getByRole("button", { name: "只标记待更新" }));
+    // 确认并同步 comes first (the filled button), then 只改这里 and 撤销.
+    expect(
+      within(dialog)
+        .getAllByRole("button")
+        .map((b) => b.textContent),
+    ).toEqual(["确认并同步 · 预计 $4.02", "只改这里，下游标待更新", "撤销"]);
+    await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("mark"));
     const steps = getDb().progress[EP1]?.steps;
     expect(steps?.storyboard.stale).toBe(9);
     expect(steps?.generate.stale).toBe(10);
   });
 
-  it("「自动重跑」 shows the total and queues the rerun", async () => {
+  it("「确认并同步」 shows the total and queues the rerun", async () => {
     const user = userEvent.setup();
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="modal" onResolved={resolved} />);
     const dialog = await screen.findByRole("alertdialog");
-    await user.click(
-      within(dialog).getByRole("button", { name: "自动重跑受影响的部分 · 预计 $4.02" }),
-    );
+    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $4.02" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("rerun"));
     expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(9);
   });
 
-  it("「撤销修改」 leaves everything as it was", async () => {
+  it("「撤销」 leaves everything as it was", async () => {
     const user = userEvent.setup();
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="inline" onResolved={resolved} />);
-    await user.click(await screen.findByRole("button", { name: "撤销修改" }));
+    await user.click(await screen.findByRole("button", { name: "撤销" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("undo"));
     expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(0);
   });
@@ -227,7 +233,7 @@ describe("GateButton", () => {
           element={
             <GateButton
               gate="assets"
-              episodeId={EP1}
+              scopeId={EP1}
               label={TO_STORYBOARD}
               to="/s/demo/e/1/storyboard"
             />
@@ -236,12 +242,7 @@ describe("GateButton", () => {
         <Route
           path="/s/demo/e/1/novel"
           element={
-            <GateButton
-              gate="novel"
-              episodeId={EP1}
-              label={CONFIRM_NOVEL}
-              to="/s/demo/e/1/script"
-            />
+            <GateButton gate="novel" scopeId="demo" label={CONFIRM_NOVEL} to="/s/demo/e/1/script" />
           }
         />
         <Route path="/s/demo/e/1/storyboard" element={<div data-testid="next-step" />} />
@@ -266,6 +267,7 @@ describe("GateButton", () => {
     expect(await screen.findByText("已确认")).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "重新打开" }));
     await waitFor(() => expect(screen.queryByText("已确认")).not.toBeInTheDocument());
-    expect(getDb().progress[EP1]?.steps.novel.state).toBe("in_progress");
+    // The novel gate is the backend's (M2) and the series': it shows on every episode.
+    expect(fakeEpisodes.progress[EP1]?.steps.novel.state).toBe("in_progress");
   });
 });

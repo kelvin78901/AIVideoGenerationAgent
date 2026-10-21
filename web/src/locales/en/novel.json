@@ -2,7 +2,34 @@
   "title": "Novel",
   "lead": "Paste or import your novel. AI only fills in what the camera cannot show and never changes the plot; you decide on every suggestion.",
   "import": "Import .txt / .docx",
-  "importHint": "Import is wired to the backend in M2; the demo uses the opening of “Before the Rain Stops”.",
+  "empty": {
+    "title": "No novel imported yet",
+    "lead": "Import a .txt or .docx. Chapters are found from headings like “Chapter 3”; a text without headings is split by length. Not a word of the text is changed.",
+    "action": "Import a novel"
+  },
+  "importDialog": {
+    "title": "Import a novel",
+    "lead": "Supports .txt (UTF-8 or GBK) and .docx, up to 30 MB. Check what was found before importing.",
+    "drop": "Drop the file here",
+    "pick": "Choose a file",
+    "reading": "Reading…",
+    "found": "Found {{chapters}} chapters · {{chars}} characters",
+    "foundParts": "No chapter headings; split by length into {{chapters}} parts · {{chars}} characters",
+    "encoding": {
+      "utf-8": "UTF-8",
+      "utf-16": "UTF-16",
+      "gb18030": "GBK / GB18030",
+      "docx": "Word document",
+      "edited": "Edited by hand"
+    },
+    "more": "{{count}} more chapters",
+    "replace": "This replaces the current text ({{filename}}): the old one stays in the history, and the bible, suggestions, episodes and scripts all become out of date.",
+    "rights": "I own the adaptation rights to this novel, or have permission",
+    "submit": "Import",
+    "cancel": "Cancel",
+    "done": "Imported {{filename}}: {{chapters}} chapters · {{chars}} characters",
+    "unchanged": "Same text as the current one; nothing changed"
+  },
   "gate": "Confirm the text, write the script",
   "what": {
     "enrich": "Suggestions · {{count}}",
@@ -20,6 +47,31 @@
     "diffHint": "Highlighted text marked “+” is an adopted addition.",
     "addedMark": "+",
     "added": "Adopted addition: "
+  },
+  "edit": {
+    "para": "Edit paragraph {{n}}",
+    "insert": "Insert a paragraph after {{n}}",
+    "delete": "Delete paragraph {{n}}",
+    "label": "Text of paragraph {{n}}",
+    "newLabel": "New paragraph after {{n}}",
+    "deleteConfirm": "Delete paragraph {{n}}?",
+    "deleteYes": "Delete",
+    "save": "Save",
+    "cancel": "Cancel",
+    "title": "Edit title",
+    "titleLabel": "Chapter title",
+    "saved": "Saved as a new version of the novel (the old text stays in the history).",
+    "downstream": "After saving, enrichment and extraction become out of date.",
+    "guarded": "Confirmed: saving shows what it affects first, then you choose to sync what depends on it or change only this.",
+    "switchHint": "Switch to Original to edit the text."
+  },
+  "chapter": {
+    "label": "Chapter",
+    "untitled": "Front matter",
+    "part": "Part {{n}}",
+    "option": "{{title}} · {{chars}} characters",
+    "book": "{{chapters}} chapters · {{chars}} characters in all",
+    "chars": "{{chars}} characters"
   },
   "suggestions": {
     "title": "Suggestions",
@@ -43,8 +95,12 @@
     "rewritePlaceholder": "E.g. no trench coat; she wears a work jacket today",
     "rewriteSubmit": "Rewrite this one",
     "rewriteDone": "The suggestion for paragraph {{n}} was rewritten as asked ({{model}}).",
+    "rewriteAnyway": "Confirm the cost and rewrite",
     "acceptAllDone": "Adopted every suggestion that was not ignored.",
-    "empty": "No suggestions yet. Click Rerun above to let the AI look for gaps."
+    "empty": "No suggestions yet. Click Rerun above to let the AI look for gaps.",
+    "unadopted": "Not adopted",
+    "unadoptedHint": "This version is not adopted yet: extraction and episode planning still use the additions of the adopted one.",
+    "lockedHint": "The novel is confirmed: accepting or ignoring one addition shows what it affects first; “Accept all” and rewrites on request need “Reopen” first."
   },
   "bible": {
     "title": "Extracted story bible",
@@ -56,6 +112,54 @@
       "prop": "Props",
       "event": "Timeline"
     },
-    "empty": "None yet"
+    "empty": "None yet",
+    "none": "Nothing extracted yet. Click Rerun above to have the AI go through the text.",
+    "unadopted": "Not adopted",
+    "unadoptedHint": "This version is not adopted yet: the script and asset steps still use the one adopted before.",
+    "frozen": "Frozen",
+    "show": "Mark “{{name}}” in the text",
+    "edit": "Edit “{{name}}”",
+    "shown": "“{{name}}” appears in {{count}} paragraphs, marked on the left.",
+    "shownNone": "No source paragraphs are marked for “{{name}}”.",
+    "same": {
+      "title": "Possibly the same",
+      "pair": "“{{a}}” and “{{b}}”",
+      "merge": "Merge",
+      "mergeLabel": "Merge “{{b}}” into “{{a}}”",
+      "distinct": "Not the same",
+      "distinctLabel": "“{{a}}” and “{{b}}” are not the same",
+      "merged": "Merged: “{{b}}” is now an alias of “{{a}}”."
+    },
+    "dialog": {
+      "title": "Edit entry",
+      "lead": "Changes are saved as a new version and adopted; earlier versions stay in the history.",
+      "name": "Name",
+      "aliases": "Aliases",
+      "aliasesHint": "Separate with commas",
+      "summary": "Summary",
+      "frozen": "Freeze: keep this entry as it is when extraction runs again",
+      "split": "Split off",
+      "splitLabel": "Make “{{alias}}” an entry of its own",
+      "splitDone": "“{{alias}}” is now an entry of its own.",
+      "save": "Save",
+      "cancel": "Cancel",
+      "saved": "Saved “{{name}}”."
+    }
+  },
+  "trace": {
+    "button": "Where paragraph {{n}} is in the script",
+    "title": "Paragraph {{n}} in the script",
+    "where": "Episode {{ep}} · scene {{scene}}",
+    "none": "This paragraph is not in the script yet.",
+    "noScript": "Episode {{ep}} has no script yet.",
+    "notPlanned": "The episode plan does not use this paragraph.",
+    "open": "Open the script",
+    "close": "Close"
+  },
+  "impact": {
+    "edit": "Editing the novel affects confirmed work",
+    "replace": "Replacing the novel affects confirmed work",
+    "bible": "Editing the story bible affects confirmed work",
+    "suggestion": "Changing the enrichment affects confirmed work"
   }
 }

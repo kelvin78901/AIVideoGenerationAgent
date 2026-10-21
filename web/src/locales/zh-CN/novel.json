@@ -2,7 +2,34 @@
   "title": "小说",
   "lead": "粘贴或导入你的小说。AI 只补镜头拍不出来的部分，不改剧情；每条建议都由你决定要不要。",
   "import": "导入 .txt / .docx",
-  "importHint": "导入在 M2 接上后端；示例里先用《雨停之前》的开头。",
+  "empty": {
+    "title": "还没有导入小说",
+    "lead": "导入 .txt 或 .docx。按「第 X 章」这样的标题自动分章，没有标题的按长度分段；原文一个字都不改。",
+    "action": "导入小说"
+  },
+  "importDialog": {
+    "title": "导入小说",
+    "lead": "支持 .txt（UTF-8 或 GBK）和 .docx，最大 30 MB。先看识别结果，确认没问题再导入。",
+    "drop": "把文件拖到这里",
+    "pick": "选择文件",
+    "reading": "正在识别…",
+    "found": "识别到 {{chapters}} 章 · {{chars}} 字",
+    "foundParts": "没找到章节标题，按长度分成 {{chapters}} 部分 · {{chars}} 字",
+    "encoding": {
+      "utf-8": "UTF-8",
+      "utf-16": "UTF-16",
+      "gb18030": "GBK / GB18030",
+      "docx": "Word 文档",
+      "edited": "手动编辑过"
+    },
+    "more": "还有 {{count}} 章",
+    "replace": "会替换现在的原文（{{filename}}）：旧文本留在历史里，设定、补全、分集、剧本都会变成「待更新」。",
+    "rights": "我拥有这部小说的改编权，或已经得到授权",
+    "submit": "导入",
+    "cancel": "取消",
+    "done": "已导入 {{filename}}：{{chapters}} 章 · {{chars}} 字",
+    "unchanged": "和现在的原文一模一样，没有变化"
+  },
   "gate": "确认原文，生成剧本",
   "what": {
     "enrich": "补全建议 · {{count}} 条",
@@ -20,6 +47,31 @@
     "diffHint": "蓝底带「＋」的是已采纳的补写。",
     "addedMark": "＋",
     "added": "已采纳的补写："
+  },
+  "edit": {
+    "para": "改第 {{n}} 段",
+    "insert": "在第 {{n}} 段后插入一段",
+    "delete": "删除第 {{n}} 段",
+    "label": "第 {{n}} 段的文字",
+    "newLabel": "第 {{n}} 段后的新段落",
+    "deleteConfirm": "删除第 {{n}} 段？",
+    "deleteYes": "删除",
+    "save": "保存",
+    "cancel": "取消",
+    "title": "改标题",
+    "titleLabel": "章节标题",
+    "saved": "已保存，出了一个新的小说版本（旧文本留在历史里）。",
+    "downstream": "保存后小说补全、设定提取会变成待更新。",
+    "guarded": "已确认：保存时先显示影响范围，你再决定同步下游还是只改这里。",
+    "switchHint": "要改原文，切到「原文」。"
+  },
+  "chapter": {
+    "label": "章节",
+    "untitled": "正文前",
+    "part": "第 {{n}} 部分",
+    "option": "{{title}} · {{chars}} 字",
+    "book": "全书 {{chapters}} 章 · {{chars}} 字",
+    "chars": "{{chars}} 字"
   },
   "suggestions": {
     "title": "补全建议",
@@ -43,8 +95,12 @@
     "rewritePlaceholder": "比如：别写风衣，她今天穿的是工装外套",
     "rewriteSubmit": "按要求重写这一条",
     "rewriteDone": "第 {{n}} 段的这条建议已按你的要求重写（{{model}}）。",
+    "rewriteAnyway": "确认花费，重写",
     "acceptAllDone": "已采纳全部未忽略的建议。",
-    "empty": "还没有补全建议。点上面的「重跑」让 AI 找一遍。"
+    "empty": "还没有补全建议。点上面的「重跑」让 AI 找一遍。",
+    "unadopted": "未采纳",
+    "unadoptedHint": "这一版还没采纳：设定提取和分集规划仍用之前采纳的那一版里的补写。",
+    "lockedHint": "小说已确认：逐条采纳、忽略会先显示影响范围；「全部采纳」和按要求重写要先「重新打开」。"
   },
   "bible": {
     "title": "提取到的设定",
@@ -56,6 +112,54 @@
       "prop": "道具",
       "event": "时间线"
     },
-    "empty": "还没有"
+    "empty": "还没有",
+    "none": "还没有提取设定。点上面的「重跑」让 AI 从原文里找一遍。",
+    "unadopted": "未采纳",
+    "unadoptedHint": "这一版还没采纳：剧本和素材两步仍用之前采纳的那一版。",
+    "frozen": "已冻结",
+    "show": "在原文里标出「{{name}}」",
+    "edit": "编辑「{{name}}」",
+    "shown": "「{{name}}」在原文里出现 {{count}} 段，已在左边标出。",
+    "shownNone": "「{{name}}」没有标出原文出处。",
+    "same": {
+      "title": "可能是同一个",
+      "pair": "「{{a}}」和「{{b}}」",
+      "merge": "合并",
+      "mergeLabel": "把「{{b}}」合并进「{{a}}」",
+      "distinct": "不是同一个",
+      "distinctLabel": "「{{a}}」和「{{b}}」不是同一个",
+      "merged": "已合并：「{{b}}」现在是「{{a}}」的别名。"
+    },
+    "dialog": {
+      "title": "编辑设定",
+      "lead": "改动会存成新的一版并直接采纳，之前的版本留在历史里。",
+      "name": "名字",
+      "aliases": "别名",
+      "aliasesHint": "用顿号或逗号隔开",
+      "summary": "简介",
+      "frozen": "冻结：重跑设定提取时，这一条保持现在的样子",
+      "split": "拆出来",
+      "splitLabel": "把「{{alias}}」拆成单独一条",
+      "splitDone": "已把「{{alias}}」拆成单独一条。",
+      "save": "保存",
+      "cancel": "取消",
+      "saved": "已保存「{{name}}」。"
+    }
+  },
+  "trace": {
+    "button": "第 {{n}} 段在剧本里的位置",
+    "title": "第 {{n}} 段在剧本里",
+    "where": "第 {{ep}} 集 · 场 {{scene}}",
+    "none": "这一段还没写进剧本。",
+    "noScript": "第 {{ep}} 集的剧本还没生成。",
+    "notPlanned": "分集规划没有用到这一段。",
+    "open": "去剧本页",
+    "close": "收起"
+  },
+  "impact": {
+    "edit": "改原文会影响已确认的内容",
+    "replace": "替换小说会影响已确认的内容",
+    "bible": "改设定会影响已确认的内容",
+    "suggestion": "改补全会影响已确认的内容"
   }
 }

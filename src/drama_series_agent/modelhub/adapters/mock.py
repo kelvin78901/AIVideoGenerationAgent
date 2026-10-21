@@ -16,9 +16,11 @@ import random
 import struct
 import wave
 import zlib
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from typing import Any
 
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
@@ -38,6 +40,9 @@ IMAGE_KINDS = {"image"}
 AUDIO_KINDS = {"tts", "voice_design", "music"}
 VIDEO_KINDS = {"video", "upscale", "lipsync"}
 
+# Answers a writing request in Mock mode: JSON-able data for ``json_mode``, else text.
+Responder = Callable[[ModelRequest], Any]
+
 
 @dataclass
 class MockSettings:
@@ -48,6 +53,10 @@ class MockSettings:
     # Keys that hang until the router's timeout fires.
     hang_keys: set[str] = field(default_factory=set)
     seed: int = 0
+    # (component, task) → responder; pipeline components register theirs through the registry.
+    responders: dict[tuple[str, str], Responder] = field(default_factory=dict)
+    # The next N JSON answers are broken (exercises a component's retry-once path).
+    bad_json: int = 0
 
 
 def estimate_tokens(text: str) -> int:
@@ -180,7 +189,19 @@ class MockAdapter:
     def _llm(self, req: ModelRequest) -> ModelResult:
         prompt = req.text()
         tag = _digest(self.key, prompt, req.seed).hex()[:8]
-        if req.json_mode:
+        meta = req.meta
+        responder = self.settings.responders.get(
+            (str(meta.get("component")), str(meta.get("task", "run")))
+        )
+        payload: Any
+        if req.json_mode and self.settings.bad_json > 0:
+            self.settings.bad_json -= 1
+            payload, text = None, '{"mock": broken'
+        elif responder is not None:
+            answer = responder(req)
+            payload = answer if req.json_mode else None
+            text = json.dumps(answer, ensure_ascii=False) if req.json_mode else str(answer)
+        elif req.json_mode:
             payload = {"mock": True, "model": self.key, "echo": prompt[:40], "tag": tag}
             text = json.dumps(payload, ensure_ascii=False)
         else:

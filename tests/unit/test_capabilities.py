@@ -93,8 +93,11 @@ def test_a_hand_picked_local_model_is_dropped_too() -> None:
 def test_components_on_the_api_keep_their_route() -> None:
     for component in ("enrich", "dub", "world"):
         before, after = resolve(component, []).values, resolve(component, [], caps=MAC).values
-        for key in ("mode", "api_model", "fallback", "alt_order"):
+        for key in ("mode", "api_model", "fallback"):
             assert after[key] == before[key], (component, key)
+        # 「不满意换一个」 keeps its order, minus the local models this machine cannot run.
+        gone = resolve(component, [], caps=MAC).unavailable
+        assert after["alt_order"] == [k for k in before["alt_order"] if k not in gone], component
     # The unused local pick is still cleared, so the route only names what can run here.
     assert resolve("enrich", [], caps=MAC).values["local_model"] is None
     assert resolve("world", [], caps=MAC).unavailable == {}

@@ -26,10 +26,13 @@ test("demo badge is shown while the page uses demo data", async ({ page }) => {
 test("real jobs still update live over SSE behind the demo worker", async ({ page }) => {
   await setUi(page, {});
   await openPage(page, "/dev/jobs");
+  const started = page.waitForResponse((r) => r.url().endsWith("/api/v1/dev/llm-test"));
   await page.getByRole("button", { name: "发起一次 Mock LLM 调用" }).click();
-  await expect(page.getByRole("cell", { name: "完成", exact: true })).toBeVisible({
-    timeout: 20_000,
-  });
+  // Its own row: earlier tests (m2.spec.ts) leave finished jobs in the list.
+  const { id } = (await (await started).json()) as { id: string };
+  await expect(
+    page.getByTestId(`job-${id}`).getByRole("cell", { name: "完成", exact: true }),
+  ).toBeVisible({ timeout: 20_000 });
 });
 
 test("a locked spec changes aspect through the impact dialog and keeps it after reload", async ({

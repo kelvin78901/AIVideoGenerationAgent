@@ -1,0 +1,2697 @@
+{
+  "bible": {
+    "series_id": "demo",
+    "product_id": "demo-p-extract",
+    "version_id": "demo-p-extract-v1",
+    "adopted": true,
+    "source_id": "demo-src",
+    "entities": [
+      {
+        "id": "c-linwan",
+        "series_id": "demo",
+        "kind": "character",
+        "name": "林晚",
+        "aliases": [],
+        "data": {
+          "age": "26 岁",
+          "occupation": "插画师",
+          "appearance": "左手腕上戴着一根磨旧的黑色发圈",
+          "summary": "26 岁 · 插画师"
+        },
+        "paras": [
+          0,
+          5,
+          15,
+          28,
+          33,
+          39,
+          44,
+          45,
+          48,
+          53,
+          64
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 8,
+            "end": 36
+          },
+          {
+            "source_id": "demo-src",
+            "start": 170,
+            "end": 225
+          },
+          {
+            "source_id": "demo-src",
+            "start": 789,
+            "end": 914
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1395,
+            "end": 1423
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1555,
+            "end": 1617
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1903,
+            "end": 2038
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2160,
+            "end": 2226
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2227,
+            "end": 2238
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2312,
+            "end": 2402
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2612,
+            "end": 2635
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2894,
+            "end": 2902
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "c-zhouyu",
+        "series_id": "demo",
+        "kind": "character",
+        "name": "周屿",
+        "aliases": [],
+        "data": {
+          "appearance": "瘦了，头发剪短了，白衬衫",
+          "summary": "林晚的旧恋人 · 三年前去了深圳"
+        },
+        "paras": [
+          1,
+          7,
+          10,
+          15,
+          24,
+          36,
+          47,
+          51,
+          52,
+          54,
+          56,
+          60,
+          63,
+          67
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 37,
+            "end": 97
+          },
+          {
+            "source_id": "demo-src",
+            "start": 264,
+            "end": 339
+          },
+          {
+            "source_id": "demo-src",
+            "start": 444,
+            "end": 532
+          },
+          {
+            "source_id": "demo-src",
+            "start": 789,
+            "end": 914
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1232,
+            "end": 1306
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1739,
+            "end": 1842
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2290,
+            "end": 2311
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2494,
+            "end": 2542
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2543,
+            "end": 2611
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2636,
+            "end": 2660
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2707,
+            "end": 2752
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2787,
+            "end": 2835
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2849,
+            "end": 2893
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2957,
+            "end": 2972
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "c-clerk",
+        "series_id": "demo",
+        "kind": "character",
+        "name": "便利店店员",
+        "aliases": [
+          "店员"
+        ],
+        "data": {
+          "summary": "值夜班 · 戴眼镜的年轻男孩"
+        },
+        "paras": [
+          20,
+          27,
+          31,
+          43
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 994,
+            "end": 1048
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1344,
+            "end": 1394
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1480,
+            "end": 1520
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2117,
+            "end": 2159
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "l-stairs",
+        "series_id": "demo",
+        "kind": "location",
+        "name": "老小区楼道（六楼）",
+        "aliases": [
+          "楼道"
+        ],
+        "data": {
+          "summary": "声控灯坏了"
+        },
+        "paras": [
+          0,
+          5,
+          6
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 8,
+            "end": 36
+          },
+          {
+            "source_id": "demo-src",
+            "start": 170,
+            "end": 225
+          },
+          {
+            "source_id": "demo-src",
+            "start": 226,
+            "end": 263
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "l-flat",
+        "series_id": "demo",
+        "kind": "location",
+        "name": "林晚出租屋",
+        "aliases": [],
+        "data": {
+          "summary": ""
+        },
+        "paras": [
+          1,
+          3,
+          6
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 37,
+            "end": 97
+          },
+          {
+            "source_id": "demo-src",
+            "start": 125,
+            "end": 145
+          },
+          {
+            "source_id": "demo-src",
+            "start": 226,
+            "end": 263
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "l-store",
+        "series_id": "demo",
+        "kind": "location",
+        "name": "楼下便利店",
+        "aliases": [
+          "便利店"
+        ],
+        "data": {
+          "summary": "小区门口两百米 · 靠窗有张高脚桌"
+        },
+        "paras": [
+          2,
+          12,
+          15,
+          16,
+          21,
+          22,
+          30,
+          33,
+          48
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 98,
+            "end": 124
+          },
+          {
+            "source_id": "demo-src",
+            "start": 606,
+            "end": 673
+          },
+          {
+            "source_id": "demo-src",
+            "start": 789,
+            "end": 914
+          },
+          {
+            "source_id": "demo-src",
+            "start": 915,
+            "end": 958
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1049,
+            "end": 1133
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1134,
+            "end": 1174
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1461,
+            "end": 1469
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1555,
+            "end": 1617
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2312,
+            "end": 2402
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "l-busstop",
+        "series_id": "demo",
+        "kind": "location",
+        "name": "公交站台",
+        "aliases": [],
+        "data": {
+          "summary": "便利店马路对面"
+        },
+        "paras": [
+          46,
+          49,
+          50,
+          69
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 2239,
+            "end": 2289
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2403,
+            "end": 2483
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2484,
+            "end": 2493
+          },
+          {
+            "source_id": "demo-src",
+            "start": 3007,
+            "end": 3092
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "p-note",
+        "series_id": "demo",
+        "kind": "prop",
+        "name": "便利贴",
+        "aliases": [],
+        "data": {
+          "summary": "“楼下便利店，等你到十二点。”"
+        },
+        "paras": [
+          1,
+          2,
+          7
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 37,
+            "end": 97
+          },
+          {
+            "source_id": "demo-src",
+            "start": 98,
+            "end": 124
+          },
+          {
+            "source_id": "demo-src",
+            "start": 264,
+            "end": 339
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "p-umbrella",
+        "series_id": "demo",
+        "kind": "prop",
+        "name": "红色长柄伞",
+        "aliases": [
+          "红伞"
+        ],
+        "data": {
+          "summary": "伞骨有一截缠着铁丝"
+        },
+        "paras": [
+          1,
+          4,
+          9,
+          10,
+          11,
+          13,
+          44,
+          48,
+          69,
+          70
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 37,
+            "end": 97
+          },
+          {
+            "source_id": "demo-src",
+            "start": 146,
+            "end": 159
+          },
+          {
+            "source_id": "demo-src",
+            "start": 403,
+            "end": 443
+          },
+          {
+            "source_id": "demo-src",
+            "start": 444,
+            "end": 532
+          },
+          {
+            "source_id": "demo-src",
+            "start": 533,
+            "end": 605
+          },
+          {
+            "source_id": "demo-src",
+            "start": 674,
+            "end": 732
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2160,
+            "end": 2226
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2312,
+            "end": 2402
+          },
+          {
+            "source_id": "demo-src",
+            "start": 3007,
+            "end": 3092
+          },
+          {
+            "source_id": "demo-src",
+            "start": 3093,
+            "end": 3104
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "p-phone",
+        "series_id": "demo",
+        "kind": "prop",
+        "name": "手机",
+        "aliases": [],
+        "data": {
+          "summary": ""
+        },
+        "paras": [
+          16,
+          35
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 915,
+            "end": 958
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1665,
+            "end": 1738
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "p-receipt",
+        "series_id": "demo",
+        "kind": "prop",
+        "name": "旧小票",
+        "aliases": [],
+        "data": {
+          "summary": "三年前 6 月 17 日 · 背面有周屿的字"
+        },
+        "paras": [
+          33,
+          40,
+          41
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 1555,
+            "end": 1617
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2039,
+            "end": 2063
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2064,
+            "end": 2079
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "p-black-hairtie",
+        "series_id": "demo",
+        "kind": "prop",
+        "name": "黑色发圈",
+        "aliases": [],
+        "data": {
+          "summary": "小票上写的那一根，两块钱"
+        },
+        "paras": [
+          33
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 1555,
+            "end": 1617
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "p-hairtie",
+        "series_id": "demo",
+        "kind": "prop",
+        "name": "旧发圈",
+        "aliases": [],
+        "data": {
+          "summary": "黑色 · 皮筋松了，珠子磨白"
+        },
+        "paras": [
+          34,
+          35,
+          56,
+          65,
+          67
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 1618,
+            "end": 1664
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1665,
+            "end": 1738
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2707,
+            "end": 2752
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2903,
+            "end": 2931
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2957,
+            "end": 2972
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "e-night",
+        "series_id": "demo",
+        "kind": "event",
+        "name": "雨夜 23:40 前后",
+        "aliases": [],
+        "data": {
+          "summary": ""
+        },
+        "paras": [
+          0,
+          16
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 8,
+            "end": 36
+          },
+          {
+            "source_id": "demo-src",
+            "start": 915,
+            "end": 958
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "e-deadline",
+        "series_id": "demo",
+        "kind": "event",
+        "name": "约定截止 24:00",
+        "aliases": [],
+        "data": {
+          "summary": ""
+        },
+        "paras": [
+          2,
+          17,
+          28
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 98,
+            "end": 124
+          },
+          {
+            "source_id": "demo-src",
+            "start": 959,
+            "end": 969
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1395,
+            "end": 1423
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "e-lastbus",
+        "series_id": "demo",
+        "kind": "event",
+        "name": "末班车开走",
+        "aliases": [],
+        "data": {
+          "summary": ""
+        },
+        "paras": [
+          31,
+          48
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 1480,
+            "end": 1520
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2312,
+            "end": 2402
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "e-june17",
+        "series_id": "demo",
+        "kind": "event",
+        "name": "三年前 6 月 17 日 · 毕业那晚",
+        "aliases": [],
+        "data": {
+          "summary": ""
+        },
+        "paras": [
+          36,
+          37,
+          38
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 1739,
+            "end": 1842
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1843,
+            "end": 1876
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1877,
+            "end": 1902
+          }
+        ],
+        "frozen": false
+      },
+      {
+        "id": "r-linwan-zhouyu",
+        "series_id": "demo",
+        "kind": "relation",
+        "name": "林晚 — 周屿",
+        "aliases": [],
+        "data": {
+          "between": "林晚、周屿",
+          "summary": "三年前没说出口就分开的恋人"
+        },
+        "paras": [
+          10,
+          15,
+          36,
+          39,
+          56
+        ],
+        "source_spans": [
+          {
+            "source_id": "demo-src",
+            "start": 444,
+            "end": 532
+          },
+          {
+            "source_id": "demo-src",
+            "start": 789,
+            "end": 914
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1739,
+            "end": 1842
+          },
+          {
+            "source_id": "demo-src",
+            "start": 1903,
+            "end": 2038
+          },
+          {
+            "source_id": "demo-src",
+            "start": 2707,
+            "end": 2752
+          }
+        ],
+        "frozen": false
+      }
+    ],
+    "merge_suggestions": [
+      {
+        "id": "m-dacf45a74ac9",
+        "kind": "prop",
+        "ids": [
+          "p-black-hairtie",
+          "p-hairtie"
+        ],
+        "reason": "小票上的黑色发圈就是她手腕上戴了三年的那根旧发圈。"
+      }
+    ]
+  },
+  "products": [
+    {
+      "id": "demo-p-enrich",
+      "series_id": "demo",
+      "owner_type": "series",
+      "owner_id": "demo",
+      "slot": "suggestions",
+      "component_id": "enrich",
+      "current_version_id": "demo-p-enrich-v2",
+      "adopted_version_id": "demo-p-enrich-v2",
+      "locked_hash": "sha256:12b869b209e63695ca60db091066067e18f7fd61763521ece68edb559836ec7d",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-enrich-v1",
+          "product_id": "demo-p-enrich",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "source_id": "demo-src",
+            "suggestions": [
+              {
+                "id": "s1",
+                "kind": "appearance",
+                "para_idx": 0,
+                "anchor_span": {
+                  "source_id": "demo-src",
+                  "start": 8,
+                  "end": 36
+                },
+                "reason": "林晚第一次出场没有外貌和穿着。后面做角色参考图要靠这一句。",
+                "text": "她的米色风衣湿了半边，头发随手扎着，肩上挎着装画板的帆布袋。"
+              },
+              {
+                "id": "s2",
+                "kind": "lighting",
+                "para_idx": 0,
+                "anchor_span": {
+                  "source_id": "demo-src",
+                  "start": 8,
+                  "end": 36
+                },
+                "reason": "“雨下得很大”拍不出楼道里的光。补一个看得见的光源，夜戏才有氛围。",
+                "text": "楼道的声控灯坏了一半，随着她的脚步忽明忽暗。"
+              },
+              {
+                "id": "s3",
+                "kind": "inner_to_action",
+                "para_idx": 1,
+                "anchor_span": {
+                  "source_id": "demo-src",
+                  "start": 37,
+                  "end": 97
+                },
+                "reason": "“她认得那个字迹”是心理活动，镜头拍不到。换成一个看得见的小动作。",
+                "text": "她的指尖停在便利贴上，下意识摸了摸左手腕上那根旧发圈。"
+              },
+              {
+                "id": "s4",
+                "kind": "cliffhanger",
+                "para_idx": 3,
+                "anchor_span": {
+                  "source_id": "demo-src",
+                  "start": 125,
+                  "end": 145
+                },
+                "reason": "这段犹豫适合做第 1 集的结尾卡点。加一个看得见时间的特写，观众会知道只剩 8 分钟。",
+                "text": "手机屏幕亮了一下：23:52。"
+              }
+            ]
+          },
+          "files": [],
+          "content_hash": "sha256:12b869b209e63695ca60db091066067e18f7fd61763521ece68edb559836ec7d",
+          "intent": "保留作者的文风和剧情，只补镜头拍不出来的缺口：人物外貌和穿着、光线和时间、把心理活动改成看得见的动作、每集结尾的卡点。每条建议说明理由。",
+          "compiled": "你是短剧改编编辑。下游是 AI 视频模型，它只能拍到看得见、听得见的东西。你给小说提补写建议，每条由作者决定要不要。\n\n[规则]\n保留作者的文风和剧情，只补镜头拍不出来的缺口：人物外貌和穿着、光线和时间、把心理活动改成看得见的动作、每集结尾的卡点。每条建议说明理由。\n- 不新增人物，不改变事件顺序；[设定] 里冻结的条目不许改动，补写也不能和它们冲突。\n- 原文每段前有段号，例如 [P12]。补写接在那一段的末尾，para 写段号，只能用原文里给出的段号。\n- 每条补写不超过 40 字，接在那一段后面能直接读下去；reason 用一两句话说明为什么要补。\n- kind 只能是：appearance（外貌和穿着）、lighting（光线和时间）、inner_to_action（心理外化）、cliffhanger（卡点）、motive（动机）、timeline（时间线）、consistency（前后一致）、gap（缺口）。\n- 宁缺毋滥：没有拍不出来的缺口就不要写。\n\n[输出 JSON]\n{\"suggestions\": [{\"kind\": \"appearance\", \"para\": 12, \"reason\": \"为什么要补\", \"text\": \"要接在这一段后面的文字\"}]}\n\n# 目标模型：local/qwen3.6-27b",
+          "compiled_overridden": false,
+          "model_key": "local/qwen3.6-27b",
+          "where": "local",
+          "seed": 1001,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-14T01:41:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-enrich-v2",
+          "product_id": "demo-p-enrich",
+          "n": 2,
+          "origin": "switch",
+          "parent_version_id": "demo-p-enrich-v1",
+          "payload": {
+            "source_id": "demo-src",
+            "suggestions": [
+              {
+                "id": "s1",
+                "kind": "appearance",
+                "para_idx": 0,
+                "anchor_span": {
+                  "source_id": "demo-src",
+                  "start": 8,
+                  "end": 36
+                },
+                "reason": "林晚第一次出场没有外貌和穿着。后面做角色参考图要靠这一句。",
+                "text": "她的米色风衣湿了半边，头发随手扎着，肩上挎着装画板的帆布袋。"
+              },
+              {
+                "id": "s2",
+                "kind": "lighting",
+                "para_idx": 0,
+                "anchor_span": {
+                  "source_id": "demo-src",
+                  "start": 8,
+                  "end": 36
+                },
+                "reason": "“雨下得很大”拍不出楼道里的光。补一个看得见的光源，夜戏才有氛围。",
+                "text": "楼道的声控灯坏了一半，随着她的脚步忽明忽暗。"
+              },
+              {
+                "id": "s3",
+                "kind": "inner_to_action",
+                "para_idx": 1,
+                "anchor_span": {
+                  "source_id": "demo-src",
+                  "start": 37,
+                  "end": 97
+                },
+                "reason": "“她认得那个字迹”是心理活动，镜头拍不到。换成一个看得见的小动作。",
+                "text": "她的指尖停在便利贴上，下意识摸了摸左手腕上那根旧发圈。"
+              },
+              {
+                "id": "s4",
+                "kind": "cliffhanger",
+                "para_idx": 3,
+                "anchor_span": {
+                  "source_id": "demo-src",
+                  "start": 125,
+                  "end": 145
+                },
+                "reason": "这段犹豫适合做第 1 集的结尾卡点。加一个看得见时间的特写，观众会知道只剩 8 分钟。",
+                "text": "手机屏幕亮了一下：23:52。"
+              }
+            ]
+          },
+          "files": [],
+          "content_hash": "sha256:12b869b209e63695ca60db091066067e18f7fd61763521ece68edb559836ec7d",
+          "intent": "保留作者的文风和剧情，只补镜头拍不出来的缺口：人物外貌和穿着、光线和时间、把心理活动改成看得见的动作、每集结尾的卡点。每条建议说明理由。",
+          "compiled": "你是短剧改编编辑。下游是 AI 视频模型，它只能拍到看得见、听得见的东西。你给小说提补写建议，每条由作者决定要不要。\n\n[规则]\n保留作者的文风和剧情，只补镜头拍不出来的缺口：人物外貌和穿着、光线和时间、把心理活动改成看得见的动作、每集结尾的卡点。每条建议说明理由。\n- 不新增人物，不改变事件顺序；[设定] 里冻结的条目不许改动，补写也不能和它们冲突。\n- 原文每段前有段号，例如 [P12]。补写接在那一段的末尾，para 写段号，只能用原文里给出的段号。\n- 每条补写不超过 40 字，接在那一段后面能直接读下去；reason 用一两句话说明为什么要补。\n- kind 只能是：appearance（外貌和穿着）、lighting（光线和时间）、inner_to_action（心理外化）、cliffhanger（卡点）、motive（动机）、timeline（时间线）、consistency（前后一致）、gap（缺口）。\n- 宁缺毋滥：没有拍不出来的缺口就不要写。\n\n[输出 JSON]\n{\"suggestions\": [{\"kind\": \"appearance\", \"para\": 12, \"reason\": \"为什么要补\", \"text\": \"要接在这一段后面的文字\"}]}\n\n# 目标模型：deepseek/v4-pro",
+          "compiled_overridden": false,
+          "model_key": "deepseek/v4-pro",
+          "where": "api",
+          "seed": 1002,
+          "params": {
+            "mode": "switch",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-14T02:02:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "保留作者的文风和剧情，只补镜头拍不出来的缺口：人物外貌和穿着、光线和时间、把心理活动改成看得见的动作、每集结尾的卡点。每条建议说明理由。",
+        "compiled": "你是短剧改编编辑。下游是 AI 视频模型，它只能拍到看得见、听得见的东西。你给小说提补写建议，每条由作者决定要不要。\n\n[规则]\n保留作者的文风和剧情，只补镜头拍不出来的缺口：人物外貌和穿着、光线和时间、把心理活动改成看得见的动作、每集结尾的卡点。每条建议说明理由。\n- 不新增人物，不改变事件顺序；[设定] 里冻结的条目不许改动，补写也不能和它们冲突。\n- 原文每段前有段号，例如 [P12]。补写接在那一段的末尾，para 写段号，只能用原文里给出的段号。\n- 每条补写不超过 40 字，接在那一段后面能直接读下去；reason 用一两句话说明为什么要补。\n- kind 只能是：appearance（外貌和穿着）、lighting（光线和时间）、inner_to_action（心理外化）、cliffhanger（卡点）、motive（动机）、timeline（时间线）、consistency（前后一致）、gap（缺口）。\n- 宁缺毋滥：没有拍不出来的缺口就不要写。\n\n[输出 JSON]\n{\"suggestions\": [{\"kind\": \"appearance\", \"para\": 12, \"reason\": \"为什么要补\", \"text\": \"要接在这一段后面的文字\"}]}\n\n# 目标模型：deepseek/v4-pro",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4-pro"
+      },
+      "estimate": {
+        "model_key": "deepseek/v4-pro",
+        "where": "api",
+        "cost_usd": 0.0163,
+        "seconds": 0.0
+      },
+      "running": null
+    },
+    {
+      "id": "demo-p-extract",
+      "series_id": "demo",
+      "owner_type": "series",
+      "owner_id": "demo",
+      "slot": "bible",
+      "component_id": "extract",
+      "current_version_id": "demo-p-extract-v1",
+      "adopted_version_id": "demo-p-extract-v1",
+      "locked_hash": "sha256:bb028a6b6707cf43d8bc06d3fdccac58c606b84f6e4fb946d6a5f5e05db93925",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-extract-v1",
+          "product_id": "demo-p-extract",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "source_id": "demo-src",
+            "entities": [
+              {
+                "id": "c-linwan",
+                "kind": "character",
+                "name": "林晚",
+                "aliases": [],
+                "data": {
+                  "age": "26 岁",
+                  "occupation": "插画师",
+                  "appearance": "左手腕上戴着一根磨旧的黑色发圈",
+                  "summary": "26 岁 · 插画师"
+                },
+                "paras": [
+                  0,
+                  5,
+                  15,
+                  28,
+                  33,
+                  39,
+                  44,
+                  45,
+                  48,
+                  53,
+                  64
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 8,
+                    "end": 36
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 170,
+                    "end": 225
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 789,
+                    "end": 914
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1395,
+                    "end": 1423
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1555,
+                    "end": 1617
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1903,
+                    "end": 2038
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2160,
+                    "end": 2226
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2227,
+                    "end": 2238
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2312,
+                    "end": 2402
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2612,
+                    "end": 2635
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2894,
+                    "end": 2902
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "c-zhouyu",
+                "kind": "character",
+                "name": "周屿",
+                "aliases": [],
+                "data": {
+                  "appearance": "瘦了，头发剪短了，白衬衫",
+                  "summary": "林晚的旧恋人 · 三年前去了深圳"
+                },
+                "paras": [
+                  1,
+                  7,
+                  10,
+                  15,
+                  24,
+                  36,
+                  47,
+                  51,
+                  52,
+                  54,
+                  56,
+                  60,
+                  63,
+                  67
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 37,
+                    "end": 97
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 264,
+                    "end": 339
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 444,
+                    "end": 532
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 789,
+                    "end": 914
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1232,
+                    "end": 1306
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1739,
+                    "end": 1842
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2290,
+                    "end": 2311
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2494,
+                    "end": 2542
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2543,
+                    "end": 2611
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2636,
+                    "end": 2660
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2707,
+                    "end": 2752
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2787,
+                    "end": 2835
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2849,
+                    "end": 2893
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2957,
+                    "end": 2972
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "c-clerk",
+                "kind": "character",
+                "name": "便利店店员",
+                "aliases": [
+                  "店员"
+                ],
+                "data": {
+                  "summary": "值夜班 · 戴眼镜的年轻男孩"
+                },
+                "paras": [
+                  20,
+                  27,
+                  31,
+                  43
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 994,
+                    "end": 1048
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1344,
+                    "end": 1394
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1480,
+                    "end": 1520
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2117,
+                    "end": 2159
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "l-stairs",
+                "kind": "location",
+                "name": "老小区楼道（六楼）",
+                "aliases": [
+                  "楼道"
+                ],
+                "data": {
+                  "summary": "声控灯坏了"
+                },
+                "paras": [
+                  0,
+                  5,
+                  6
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 8,
+                    "end": 36
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 170,
+                    "end": 225
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 226,
+                    "end": 263
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "l-flat",
+                "kind": "location",
+                "name": "林晚出租屋",
+                "aliases": [],
+                "data": {
+                  "summary": ""
+                },
+                "paras": [
+                  1,
+                  3,
+                  6
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 37,
+                    "end": 97
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 125,
+                    "end": 145
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 226,
+                    "end": 263
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "l-store",
+                "kind": "location",
+                "name": "楼下便利店",
+                "aliases": [
+                  "便利店"
+                ],
+                "data": {
+                  "summary": "小区门口两百米 · 靠窗有张高脚桌"
+                },
+                "paras": [
+                  2,
+                  12,
+                  15,
+                  16,
+                  21,
+                  22,
+                  30,
+                  33,
+                  48
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 98,
+                    "end": 124
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 606,
+                    "end": 673
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 789,
+                    "end": 914
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 915,
+                    "end": 958
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1049,
+                    "end": 1133
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1134,
+                    "end": 1174
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1461,
+                    "end": 1469
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1555,
+                    "end": 1617
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2312,
+                    "end": 2402
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "l-busstop",
+                "kind": "location",
+                "name": "公交站台",
+                "aliases": [],
+                "data": {
+                  "summary": "便利店马路对面"
+                },
+                "paras": [
+                  46,
+                  49,
+                  50,
+                  69
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 2239,
+                    "end": 2289
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2403,
+                    "end": 2483
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2484,
+                    "end": 2493
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 3007,
+                    "end": 3092
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "p-note",
+                "kind": "prop",
+                "name": "便利贴",
+                "aliases": [],
+                "data": {
+                  "summary": "“楼下便利店，等你到十二点。”"
+                },
+                "paras": [
+                  1,
+                  2,
+                  7
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 37,
+                    "end": 97
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 98,
+                    "end": 124
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 264,
+                    "end": 339
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "p-umbrella",
+                "kind": "prop",
+                "name": "红色长柄伞",
+                "aliases": [
+                  "红伞"
+                ],
+                "data": {
+                  "summary": "伞骨有一截缠着铁丝"
+                },
+                "paras": [
+                  1,
+                  4,
+                  9,
+                  10,
+                  11,
+                  13,
+                  44,
+                  48,
+                  69,
+                  70
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 37,
+                    "end": 97
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 146,
+                    "end": 159
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 403,
+                    "end": 443
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 444,
+                    "end": 532
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 533,
+                    "end": 605
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 674,
+                    "end": 732
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2160,
+                    "end": 2226
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2312,
+                    "end": 2402
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 3007,
+                    "end": 3092
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 3093,
+                    "end": 3104
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "p-phone",
+                "kind": "prop",
+                "name": "手机",
+                "aliases": [],
+                "data": {
+                  "summary": ""
+                },
+                "paras": [
+                  16,
+                  35
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 915,
+                    "end": 958
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1665,
+                    "end": 1738
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "p-receipt",
+                "kind": "prop",
+                "name": "旧小票",
+                "aliases": [],
+                "data": {
+                  "summary": "三年前 6 月 17 日 · 背面有周屿的字"
+                },
+                "paras": [
+                  33,
+                  40,
+                  41
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 1555,
+                    "end": 1617
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2039,
+                    "end": 2063
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2064,
+                    "end": 2079
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "p-black-hairtie",
+                "kind": "prop",
+                "name": "黑色发圈",
+                "aliases": [],
+                "data": {
+                  "summary": "小票上写的那一根，两块钱"
+                },
+                "paras": [
+                  33
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 1555,
+                    "end": 1617
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "p-hairtie",
+                "kind": "prop",
+                "name": "旧发圈",
+                "aliases": [],
+                "data": {
+                  "summary": "黑色 · 皮筋松了，珠子磨白"
+                },
+                "paras": [
+                  34,
+                  35,
+                  56,
+                  65,
+                  67
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 1618,
+                    "end": 1664
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1665,
+                    "end": 1738
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2707,
+                    "end": 2752
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2903,
+                    "end": 2931
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2957,
+                    "end": 2972
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "e-night",
+                "kind": "event",
+                "name": "雨夜 23:40 前后",
+                "aliases": [],
+                "data": {
+                  "summary": ""
+                },
+                "paras": [
+                  0,
+                  16
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 8,
+                    "end": 36
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 915,
+                    "end": 958
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "e-deadline",
+                "kind": "event",
+                "name": "约定截止 24:00",
+                "aliases": [],
+                "data": {
+                  "summary": ""
+                },
+                "paras": [
+                  2,
+                  17,
+                  28
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 98,
+                    "end": 124
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 959,
+                    "end": 969
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1395,
+                    "end": 1423
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "e-lastbus",
+                "kind": "event",
+                "name": "末班车开走",
+                "aliases": [],
+                "data": {
+                  "summary": ""
+                },
+                "paras": [
+                  31,
+                  48
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 1480,
+                    "end": 1520
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2312,
+                    "end": 2402
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "e-june17",
+                "kind": "event",
+                "name": "三年前 6 月 17 日 · 毕业那晚",
+                "aliases": [],
+                "data": {
+                  "summary": ""
+                },
+                "paras": [
+                  36,
+                  37,
+                  38
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 1739,
+                    "end": 1842
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1843,
+                    "end": 1876
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1877,
+                    "end": 1902
+                  }
+                ],
+                "frozen": false
+              },
+              {
+                "id": "r-linwan-zhouyu",
+                "kind": "relation",
+                "name": "林晚 — 周屿",
+                "aliases": [],
+                "data": {
+                  "between": "林晚、周屿",
+                  "summary": "三年前没说出口就分开的恋人"
+                },
+                "paras": [
+                  10,
+                  15,
+                  36,
+                  39,
+                  56
+                ],
+                "source_spans": [
+                  {
+                    "source_id": "demo-src",
+                    "start": 444,
+                    "end": 532
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 789,
+                    "end": 914
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1739,
+                    "end": 1842
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 1903,
+                    "end": 2038
+                  },
+                  {
+                    "source_id": "demo-src",
+                    "start": 2707,
+                    "end": 2752
+                  }
+                ],
+                "frozen": false
+              }
+            ],
+            "chapters": [
+              {
+                "idx": 0,
+                "title": "第一章 红伞",
+                "summary": "雨夜，林晚回家时发现门口靠着一把红伞和周屿留下的便利贴：楼下便利店，等你到十二点。她犹豫再三，拿起了伞。"
+              },
+              {
+                "idx": 1,
+                "title": "第二章 十二点",
+                "summary": "林晚撑着红伞跑去便利店，一路想起和周屿的往事。到店时 23:56，桌上留着两杯关东煮，周屿已经不在。"
+              },
+              {
+                "idx": 2,
+                "title": "第三章 旧发圈",
+                "summary": "店员转交一张三年前买发圈的旧小票，背面写着“欠你的那句话，雨停之前说”。林晚在公交站台追上周屿，让他再帮自己扎一次头发。"
+              }
+            ],
+            "merge_suggestions": [
+              {
+                "id": "m-dacf45a74ac9",
+                "kind": "prop",
+                "ids": [
+                  "p-black-hairtie",
+                  "p-hairtie"
+                ],
+                "reason": "小票上的黑色发圈就是她手腕上戴了三年的那根旧发圈。"
+              }
+            ],
+            "distinct": []
+          },
+          "files": [],
+          "content_hash": "sha256:bb028a6b6707cf43d8bc06d3fdccac58c606b84f6e4fb946d6a5f5e05db93925",
+          "intent": "列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。",
+          "compiled": "你负责从小说里抽取设定（人物、地点、道具、事件、人物关系），交给剧本和素材两步使用。\n\n[规则]\n列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。\n- 原文每段前有段号，例如 [P12]。每个条目在 paras 里列出它出现或被提到的段号，只能用原文里给出的段号。\n- 段落里【补写】后面的文字是作者已采纳的补写，和原文一样可以用；它属于那一段，引用时写那一段的段号。\n- 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。\n- 不要编造原文没有的信息；不知道的字段不写。\n- summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。\n- 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。\n\n[输出 JSON]\n{\n  \"entities\": [\n    {\"kind\": \"character | location | prop | event | relation\", \"name\": \"名字\", \"aliases\": [], \"summary\": \"一行简介\", \"details\": {\"age\": \"\", \"occupation\": \"\", \"appearance\": \"\"}, \"paras\": [12, 13]}\n  ],\n  \"chapters\": [{\"chapter\": 1, \"summary\": \"本章摘要\"}]\n}\n\n# 目标模型：local/qwen3.6-27b",
+          "compiled_overridden": false,
+          "model_key": "local/qwen3.6-27b",
+          "where": "local",
+          "seed": 1001,
+          "params": {
+            "mode": "run",
+            "calls": 2
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-14T02:05:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。",
+        "compiled": "你负责从小说里抽取设定（人物、地点、道具、事件、人物关系），交给剧本和素材两步使用。\n\n[规则]\n列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。\n- 原文每段前有段号，例如 [P12]。每个条目在 paras 里列出它出现或被提到的段号，只能用原文里给出的段号。\n- 段落里【补写】后面的文字是作者已采纳的补写，和原文一样可以用；它属于那一段，引用时写那一段的段号。\n- 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。\n- 不要编造原文没有的信息；不知道的字段不写。\n- summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。\n- 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。\n\n[输出 JSON]\n{\n  \"entities\": [\n    {\"kind\": \"character | location | prop | event | relation\", \"name\": \"名字\", \"aliases\": [], \"summary\": \"一行简介\", \"details\": {\"age\": \"\", \"occupation\": \"\", \"appearance\": \"\"}, \"paras\": [12, 13]}\n  ],\n  \"chapters\": [{\"chapter\": 1, \"summary\": \"本章摘要\"}]\n}\n\n# 目标模型：local/qwen3.6-27b",
+        "compiled_overridden": false,
+        "model_key": "local/qwen3.6-27b"
+      },
+      "estimate": {
+        "model_key": "local/qwen3.6-27b",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null
+    },
+    {
+      "id": "demo-p-split",
+      "series_id": "demo",
+      "owner_type": "series",
+      "owner_id": "demo",
+      "slot": "episodes",
+      "component_id": "split",
+      "current_version_id": "demo-p-split-v1",
+      "adopted_version_id": "demo-p-split-v1",
+      "locked_hash": null,
+      "status": "adopted",
+      "versions": [
+        {
+          "id": "demo-p-split-v1",
+          "product_id": "demo-p-split",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "source_id": "demo-src",
+            "episodes": [
+              {
+                "title": "红伞",
+                "hook": "门口那把红伞，和三年没见的字迹。",
+                "cliffhanger": "她拿起了那把伞",
+                "target_seconds": 34,
+                "scene_count": 2,
+                "id": "demo-e1",
+                "beats": [
+                  {
+                    "text": "雨夜，林晚加完班回老小区，一层层爬上六楼。",
+                    "emotion": -0.3,
+                    "paras": [
+                      0
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 8,
+                        "end": 36
+                      }
+                    ],
+                    "id": "demo-bt1",
+                    "idx": 1
+                  },
+                  {
+                    "text": "门口靠着一把红伞，便利贴上是周屿三年没见的字迹。",
+                    "emotion": 0.2,
+                    "paras": [
+                      1
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 37,
+                        "end": 97
+                      }
+                    ],
+                    "id": "demo-bt2",
+                    "idx": 2
+                  },
+                  {
+                    "text": "便利贴只有一句：楼下便利店，等你到十二点。",
+                    "emotion": 0.4,
+                    "paras": [
+                      2
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 98,
+                        "end": 124
+                      }
+                    ],
+                    "id": "demo-bt3",
+                    "idx": 3
+                  },
+                  {
+                    "text": "她把伞靠回墙边，进屋又出来，来回犹豫。",
+                    "emotion": -0.4,
+                    "paras": [
+                      3
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 125,
+                        "end": 145
+                      }
+                    ],
+                    "id": "demo-bt4",
+                    "idx": 4
+                  },
+                  {
+                    "text": "她还是拿起了那把伞。",
+                    "emotion": 0.5,
+                    "paras": [
+                      4
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 146,
+                        "end": 159
+                      }
+                    ],
+                    "id": "demo-bt5",
+                    "idx": 5
+                  }
+                ],
+                "idx": 1
+              },
+              {
+                "title": "十二点",
+                "hook": "她赶到便利店，离十二点还有四分钟。",
+                "cliffhanger": "便利店里没有他",
+                "target_seconds": 70,
+                "scene_count": 2,
+                "id": "demo-e2",
+                "beats": [
+                  {
+                    "text": "她攥着伞冲下楼，跑到三楼才发现鞋都没换。",
+                    "emotion": 0.3,
+                    "paras": [
+                      5,
+                      6
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 170,
+                        "end": 225
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 226,
+                        "end": 263
+                      }
+                    ],
+                    "id": "demo-bt6",
+                    "idx": 1
+                  },
+                  {
+                    "text": "单元门外撑开红伞，伞柄上那截缠过的铁丝还在。",
+                    "emotion": 0.1,
+                    "paras": [
+                      7,
+                      8,
+                      9,
+                      10,
+                      11
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 264,
+                        "end": 339
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 340,
+                        "end": 402
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 403,
+                        "end": 443
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 444,
+                        "end": 532
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 533,
+                        "end": 605
+                      }
+                    ],
+                    "id": "demo-bt7",
+                    "idx": 2
+                  },
+                  {
+                    "text": "一路狂奔两百米，泥水溅满小腿，差点撞上外卖员。",
+                    "emotion": 0.5,
+                    "paras": [
+                      12,
+                      13
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 606,
+                        "end": 673
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 674,
+                        "end": 732
+                      }
+                    ],
+                    "id": "demo-bt8",
+                    "idx": 3
+                  },
+                  {
+                    "text": "岗亭里的老歌，勾起三年前便利店的那个夏天。",
+                    "emotion": 0.1,
+                    "paras": [
+                      14,
+                      15
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 733,
+                        "end": 788
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 789,
+                        "end": 914
+                      }
+                    ],
+                    "id": "demo-bt9",
+                    "idx": 4
+                  },
+                  {
+                    "text": "推门前看手机：23:56，离十二点还有四分钟。",
+                    "emotion": 0.6,
+                    "paras": [
+                      16,
+                      17,
+                      18,
+                      19,
+                      20
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 915,
+                        "end": 958
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 959,
+                        "end": 969
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 970,
+                        "end": 985
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 986,
+                        "end": 993
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 994,
+                        "end": 1048
+                      }
+                    ],
+                    "id": "demo-bt10",
+                    "idx": 5
+                  },
+                  {
+                    "text": "高脚桌上两杯关东煮，玻璃的水汽上画着伞下两个小人。",
+                    "emotion": 0.3,
+                    "paras": [
+                      21,
+                      22,
+                      23,
+                      24
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 1049,
+                        "end": 1133
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1134,
+                        "end": 1174
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1175,
+                        "end": 1231
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1232,
+                        "end": 1306
+                      }
+                    ],
+                    "id": "demo-bt11",
+                    "idx": 6
+                  },
+                  {
+                    "text": "没开过的那杯已经凉透，店员说那人盯了门口一晚上。",
+                    "emotion": -0.2,
+                    "paras": [
+                      25,
+                      26,
+                      27
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 1307,
+                        "end": 1331
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1332,
+                        "end": 1343
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1344,
+                        "end": 1394
+                      }
+                    ],
+                    "id": "demo-bt12",
+                    "idx": 7
+                  },
+                  {
+                    "text": "电子钟跳到 00:00，她把整个店找了一遍。",
+                    "emotion": -0.6,
+                    "paras": [
+                      28,
+                      29
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 1395,
+                        "end": 1423
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1424,
+                        "end": 1460
+                      }
+                    ],
+                    "id": "demo-bt13",
+                    "idx": 8
+                  },
+                  {
+                    "text": "便利店里没有他。",
+                    "emotion": -0.9,
+                    "paras": [
+                      30
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 1461,
+                        "end": 1469
+                      }
+                    ],
+                    "id": "demo-bt14",
+                    "idx": 9
+                  }
+                ],
+                "idx": 2
+              },
+              {
+                "title": "旧发圈",
+                "hook": "他留下一张三年前的小票：黑色发圈，一个，两块钱。",
+                "cliffhanger": "红伞底下，雨还没有停",
+                "target_seconds": 80,
+                "scene_count": 3,
+                "id": "demo-e3",
+                "beats": [
+                  {
+                    "text": "店员递来他留下的信封，里面是三年前买发圈的小票。",
+                    "emotion": -0.3,
+                    "paras": [
+                      31,
+                      32,
+                      33
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 1480,
+                        "end": 1520
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1521,
+                        "end": 1554
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1555,
+                        "end": 1617
+                      }
+                    ],
+                    "id": "demo-bt15",
+                    "idx": 1
+                  },
+                  {
+                    "text": "她握住手腕上的旧发圈，想起毕业那晚他没说完的话。",
+                    "emotion": -0.5,
+                    "paras": [
+                      34,
+                      35,
+                      36,
+                      37,
+                      38,
+                      39
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 1618,
+                        "end": 1664
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1665,
+                        "end": 1738
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1739,
+                        "end": 1842
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1843,
+                        "end": 1876
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1877,
+                        "end": 1902
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 1903,
+                        "end": 2038
+                      }
+                    ],
+                    "id": "demo-bt16",
+                    "idx": 2
+                  },
+                  {
+                    "text": "小票背面：欠你的那句话，雨停之前说。",
+                    "emotion": 0.2,
+                    "paras": [
+                      40,
+                      41,
+                      42
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 2039,
+                        "end": 2063
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2064,
+                        "end": 2079
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2080,
+                        "end": 2116
+                      }
+                    ],
+                    "id": "demo-bt17",
+                    "idx": 3
+                  },
+                  {
+                    "text": "他空着手走进了雨里；马路对面的站台下，站着周屿。",
+                    "emotion": 0.4,
+                    "paras": [
+                      43,
+                      44,
+                      45,
+                      46,
+                      47
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 2117,
+                        "end": 2159
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2160,
+                        "end": 2226
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2227,
+                        "end": 2238
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2239,
+                        "end": 2289
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2290,
+                        "end": 2311
+                      }
+                    ],
+                    "id": "demo-bt18",
+                    "idx": 4
+                  },
+                  {
+                    "text": "她冲进雨里，末班车开走了，站台下的人还在。",
+                    "emotion": 0.6,
+                    "paras": [
+                      48,
+                      49,
+                      50
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 2312,
+                        "end": 2402
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2403,
+                        "end": 2483
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2484,
+                        "end": 2493
+                      }
+                    ],
+                    "id": "demo-bt19",
+                    "idx": 5
+                  },
+                  {
+                    "text": "红伞举过他头顶，三年没说的话一句一句说出口。",
+                    "emotion": 0.3,
+                    "paras": [
+                      51,
+                      52,
+                      53,
+                      54,
+                      55,
+                      59,
+                      60,
+                      61,
+                      62
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 2494,
+                        "end": 2542
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2543,
+                        "end": 2611
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2612,
+                        "end": 2635
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2636,
+                        "end": 2660
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2661,
+                        "end": 2706
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2776,
+                        "end": 2786
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2787,
+                        "end": 2835
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2836,
+                        "end": 2843
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2844,
+                        "end": 2848
+                      }
+                    ],
+                    "id": "demo-bt20",
+                    "idx": 6
+                  },
+                  {
+                    "text": "他看见那根发圈；她背过身，让他再扎一次头发。",
+                    "emotion": 0.7,
+                    "paras": [
+                      56,
+                      57,
+                      58,
+                      63,
+                      64,
+                      65,
+                      66,
+                      67,
+                      68
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 2707,
+                        "end": 2752
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2753,
+                        "end": 2760
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2761,
+                        "end": 2775
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2849,
+                        "end": 2893
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2894,
+                        "end": 2902
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2903,
+                        "end": 2931
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2932,
+                        "end": 2956
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2957,
+                        "end": 2972
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 2973,
+                        "end": 3006
+                      }
+                    ],
+                    "id": "demo-bt21",
+                    "idx": 7
+                  },
+                  {
+                    "text": "红伞底下，雨还没有停。",
+                    "emotion": 0.8,
+                    "paras": [
+                      69,
+                      70
+                    ],
+                    "source_spans": [
+                      {
+                        "source_id": "demo-src",
+                        "start": 3007,
+                        "end": 3092
+                      },
+                      {
+                        "source_id": "demo-src",
+                        "start": 3093,
+                        "end": 3104
+                      }
+                    ],
+                    "id": "demo-bt22",
+                    "idx": 8
+                  }
+                ],
+                "idx": 3
+              }
+            ]
+          },
+          "files": [],
+          "content_hash": "sha256:4b39691595f22438e390a25e1657b67bff0985bb6e6046ddbf2558670038716b",
+          "intent": "每集 1 分钟左右，结尾必须有卡点；第 1 集前 3 秒要有钩子。按原文顺序切，不打乱时间线。",
+          "compiled": "你负责给竖屏短剧分集，并为每一集列出节拍（剧情一步一步怎么走）。下游按节拍写剧本、拆镜头。\n\n[规则]\n每集 1 分钟左右，结尾必须有卡点；第 1 集前 3 秒要有钩子。按原文顺序切，不打乱时间线。\n- 每集时长按 [成片规格]；每集结尾停在一个卡点（悬念或情绪的顶点），第 1 集开头就要有钩子。\n- 原文每段前有段号，例如 [P12]；段落里【补写】后面是作者已采纳的补写，属于那一段。节拍的 paras 写它来自哪几段，只能用原文里给出的段号。\n- 按原文顺序切，每一段原文只属于一集；不新增人物和情节。\n- 每集 3–10 个节拍，每个节拍一句话（不超过 30 字），写看得见、听得见的事。\n- emotion 是这个节拍的情绪强度，-1（最低落、最压抑）到 1（最高涨、最紧张），用来画全剧的情绪曲线。\n- seconds 是这一集的预计时长（秒），scenes 是预计场数。\n- [上一块] 有内容时，原文是接着上一块往下的：上一块的最后一集没讲完就接着写它（ep 用同一个号），否则 ep 往后编号。\n\n[输出 JSON]\n{\"episodes\": [{\"ep\": 1, \"title\": \"集名\", \"hook\": \"开头的钩子\", \"cliffhanger\": \"结尾的卡点\", \"seconds\": 60, \"scenes\": 2, \"beats\": [{\"text\": \"一句话的节拍\", \"emotion\": 0.3, \"paras\": [1, 2]}]}]}\n\n# 目标模型：deepseek/v4.1-flash",
+          "compiled_overridden": false,
+          "model_key": "deepseek/v4.1-flash",
+          "where": "api",
+          "seed": 1001,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-14T02:08:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "每集 1 分钟左右，结尾必须有卡点；第 1 集前 3 秒要有钩子。按原文顺序切，不打乱时间线。",
+        "compiled": "你负责给竖屏短剧分集，并为每一集列出节拍（剧情一步一步怎么走）。下游按节拍写剧本、拆镜头。\n\n[规则]\n每集 1 分钟左右，结尾必须有卡点；第 1 集前 3 秒要有钩子。按原文顺序切，不打乱时间线。\n- 每集时长按 [成片规格]；每集结尾停在一个卡点（悬念或情绪的顶点），第 1 集开头就要有钩子。\n- 原文每段前有段号，例如 [P12]；段落里【补写】后面是作者已采纳的补写，属于那一段。节拍的 paras 写它来自哪几段，只能用原文里给出的段号。\n- 按原文顺序切，每一段原文只属于一集；不新增人物和情节。\n- 每集 3–10 个节拍，每个节拍一句话（不超过 30 字），写看得见、听得见的事。\n- emotion 是这个节拍的情绪强度，-1（最低落、最压抑）到 1（最高涨、最紧张），用来画全剧的情绪曲线。\n- seconds 是这一集的预计时长（秒），scenes 是预计场数。\n- [上一块] 有内容时，原文是接着上一块往下的：上一块的最后一集没讲完就接着写它（ep 用同一个号），否则 ep 往后编号。\n\n[输出 JSON]\n{\"episodes\": [{\"ep\": 1, \"title\": \"集名\", \"hook\": \"开头的钩子\", \"cliffhanger\": \"结尾的卡点\", \"seconds\": 60, \"scenes\": 2, \"beats\": [{\"text\": \"一句话的节拍\", \"emotion\": 0.3, \"paras\": [1, 2]}]}]}\n\n# 目标模型：deepseek/v4.1-flash",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4.1-flash"
+      },
+      "estimate": {
+        "model_key": "deepseek/v4.1-flash",
+        "where": "api",
+        "cost_usd": 0.0059,
+        "seconds": 0.0
+      },
+      "running": null
+    },
+    {
+      "id": "demo-novel",
+      "series_id": "demo",
+      "owner_type": "series",
+      "owner_id": "demo",
+      "slot": "novel",
+      "component_id": "import",
+      "current_version_id": "demo-novel-v1",
+      "adopted_version_id": "demo-novel-v1",
+      "locked_hash": "sha256:b657e79533a387b34805a5332f406eaa23fd5056db5595218f2353706ff7ef7c",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-novel-v1",
+          "product_id": "demo-novel",
+          "n": 1,
+          "origin": "import",
+          "parent_version_id": null,
+          "payload": {
+            "source_id": "demo-src",
+            "filename": "雨停之前.txt",
+            "sha256": "c13a63efdd411e75a1cf113816478e218e3f4c7705aa1e6fe71d1b9b9d280947",
+            "chapters": [
+              {
+                "idx": 0,
+                "title": "第一章 红伞",
+                "hash": "sha256:05a36822f0dc04c93daa0f08a7860dc9b45eeb8fb936e26d1f624b02aa249c5f"
+              },
+              {
+                "idx": 1,
+                "title": "第二章 十二点",
+                "hash": "sha256:a5b5849733183024bc507b64a1c98d83ece79f5c203da97a9a40c4edfa83f26a"
+              },
+              {
+                "idx": 2,
+                "title": "第三章 旧发圈",
+                "hash": "sha256:d5fb3ed792734cc4ca275c238a48687e0ad0daf57973d3178937defce05f322b"
+              }
+            ]
+          },
+          "files": [],
+          "content_hash": "sha256:b657e79533a387b34805a5332f406eaa23fd5056db5595218f2353706ff7ef7c",
+          "intent": null,
+          "compiled": null,
+          "compiled_overridden": false,
+          "model_key": null,
+          "where": null,
+          "seed": null,
+          "params": {},
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-14T01:22:00Z",
+          "note": "雨停之前.txt"
+        }
+      ],
+      "prompt": null,
+      "estimate": null,
+      "running": null
+    }
+  ]
+}

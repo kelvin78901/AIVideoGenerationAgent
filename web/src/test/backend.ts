@@ -1,6 +1,6 @@
 import { http, HttpResponse } from "msw";
 
-import type { Series } from "@/api/schemas/series";
+import { SeriesCreateSchema, type Series } from "@/api/schemas/series";
 import {
   AspectSchema,
   SpecPatchSchema,
@@ -11,7 +11,15 @@ import {
 } from "@/api/schemas/spec";
 import { series as demoSeries } from "@/mocks/fixtures/demo/series";
 import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
+import { setBackendFetch } from "@/mocks/backend";
 import { server } from "@/mocks/node";
+import { bibleBackendFetch, bibleHandlers, resetFakeBible } from "@/test/fakes/bible";
+import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
+import { episodeHandlers, episodesBackendFetch, resetFakeEpisodes } from "@/test/fakes/episodes";
+import { gateHandlers, impactBackendFetch, resetFakeImpact } from "@/test/fakes/impact";
+import { novelHandlers, resetFakeNovel } from "@/test/fakes/novel";
+import { resetFakeScript, scriptBackendFetch, scriptHandlers } from "@/test/fakes/script";
+import { resetFakeSuggestions, suggestionHandlers } from "@/test/fakes/suggestions";
 import { resetFakeSetup, setupHandlers } from "@/test/setupBackend";
 
 type Dims = { w: number; h: number };
@@ -69,29 +77,72 @@ function compatRows(aspect: Aspect): CompatRow[] {
   ];
 }
 
-/** State of the fake backend; reset by every `backend()` call. Tests read and change it. */
-export const fake: { series: Series; spec: OutputSpec } = {
+/**
+ * State of the fake backend; reset by every `backend()` call. Tests read and change it.
+ * `series` is the demo series; `created` the ones made with `POST /series` (newest last), each
+ * with the default spec in `specs`.
+ */
+export const fake: {
+  series: Series;
+  spec: OutputSpec;
+  created: Series[];
+  specs: Record<string, OutputSpec>;
+} = {
   series: structuredClone(demoSeries),
   spec: structuredClone(demoSpec),
+  created: [],
+  specs: {},
 };
+
+const known = (id: unknown) => id === fake.series.id || fake.created.some((s) => s.id === id);
+const seriesOf = (id: unknown) =>
+  id === fake.series.id ? fake.series : fake.created.find((s) => s.id === id);
+const specOf = (id: unknown) => (id === fake.series.id ? fake.spec : fake.specs[String(id)]);
 
 const error = (status: number, code: string, params: Record<string, unknown> = {}) =>
   HttpResponse.json({ detail: { code, params } }, { status });
 
 function seriesHandlers() {
-  const known = (id: unknown) => id === fake.series.id;
   return [
-    http.get("*/api/v1/series/:id", ({ params }) =>
-      known(params.id) ? HttpResponse.json(fake.series) : error(404, "series_not_found"),
+    http.get("*/api/v1/series", () =>
+      HttpResponse.json([...fake.created].reverse().concat(fake.series)),
     ),
+    http.post("*/api/v1/series", async ({ request }) => {
+      const body = SeriesCreateSchema.safeParse(await request.json());
+      if (!body.success) return error(422, "invalid_request");
+      const id = `s${fake.created.length + 1}`;
+      const created: Series = {
+        id,
+        slug: id,
+        title: body.data.title,
+        ui_lang: body.data.ui_lang ?? "zh-CN",
+        created_at: "2026-10-19T10:00:00Z",
+      };
+      fake.created.push(created);
+      fake.specs[id] = { ...structuredClone(demoSpec), series_id: id, locked_at: null };
+      return HttpResponse.json(created, { status: 201 });
+    }),
+    http.get("*/api/v1/series/:id", ({ params }) => {
+      const s = seriesOf(params.id);
+      return s ? HttpResponse.json(s) : error(404, "series_not_found");
+    }),
     http.get("*/api/v1/series/:id/spec", ({ params }) =>
-      known(params.id) ? HttpResponse.json(fake.spec) : error(404, "series_not_found"),
+      known(params.id) ? HttpResponse.json(specOf(params.id)) : error(404, "series_not_found"),
     ),
+    // Series other than the demo have no products yet (the demo's are MSW's and the backend's).
+    http.get("*/api/v1/products", ({ request }) => {
+      const owner = new URL(request.url).searchParams.get("owner") ?? "";
+      const [kind, id] = owner.split(":");
+      return kind === "series" && id !== fake.series.id && known(id)
+        ? HttpResponse.json([])
+        : undefined;
+    }),
     http.put("*/api/v1/series/:id/spec", async ({ params, request }) => {
       if (!known(params.id)) return error(404, "series_not_found");
       const body = SpecPatchSchema.safeParse(await request.json());
       if (!body.success) return error(422, "invalid_request");
-      const spec = fake.spec;
+      const spec = specOf(params.id);
+      if (!spec) return error(404, "series_not_found");
       const confirmed = new URL(request.url).searchParams.get("confirmed_impact");
       if (spec.locked_at && body.data.aspect && body.data.aspect !== spec.aspect && !confirmed)
         return error(409, "spec_locked", { aspect: spec.aspect });
@@ -103,27 +154,63 @@ function seriesHandlers() {
     http.get("*/api/v1/series/:id/spec/compat", ({ params, request }) => {
       if (!known(params.id)) return error(404, "series_not_found");
       const q = AspectSchema.safeParse(new URL(request.url).searchParams.get("aspect"));
-      const aspect = q.success ? q.data : fake.spec.aspect;
+      const aspect = q.success ? q.data : (specOf(params.id)?.aspect ?? "9:16");
       return HttpResponse.json({ aspect, rows: compatRows(aspect) });
     }),
     http.get("*/api/v1/spec/presets", () => HttpResponse.json(presets)),
+    ...novelHandlers(known),
+    ...bibleHandlers(known),
+    ...suggestionHandlers(known),
+    ...episodeHandlers(known),
+    ...scriptHandlers(),
+    ...gateHandlers(),
   ];
 }
 
 /**
+ * What the MSW demo merges in from the backend (`mocks/backend.ts`): products, the plan, and
+ * the impact previews it lays its downstream over.
+ */
+async function fakeBackendFetch(request: Request): Promise<Response> {
+  const url = new URL(request.url);
+  return (
+    (await impactBackendFetch(request)) ??
+    bibleBackendFetch(url) ??
+    episodesBackendFetch(url) ??
+    scriptBackendFetch(url) ??
+    HttpResponse.json({ detail: { code: "http_404", params: {} } }, { status: 404 })
+  );
+}
+
+/**
  * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, the
- * demo series with its output spec, and the PC sample machine before its first scan
+ * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`), bible
+ * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), the
+ * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`), the
+ * novel and script gates and impact previews (`test/fakes/impact.ts`), and the PC sample machine
+ * before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
  */
 export function backend({ mock = true }: { mock?: boolean } = {}) {
   fake.series = structuredClone(demoSeries);
   fake.spec = structuredClone(demoSpec);
+  fake.created = [];
+  fake.specs = {};
+  resetFakeNovel();
+  resetFakeBible();
+  resetFakeSuggestions();
+  resetFakeEpisodes();
+  resetFakeScript();
+  resetFakeImpact();
+  setBackendFetch(fakeBackendFetch);
   resetFakeSetup();
+  resetFakeConfig();
   server.use(
     http.get("*/api/v1/health", () => HttpResponse.json({ status: "ok", version: "0", mock })),
     http.get("*/api/v1/jobs", () => HttpResponse.json([])),
     ...seriesHandlers(),
     ...setupHandlers(),
+    ...configHandlers(),
     http.get("*/api/v1/providers", () =>
       HttpResponse.json({
         providers: [

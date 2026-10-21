@@ -10,6 +10,8 @@ export const OwnerTypeSchema = z.enum(["series", "episode", "scene", "shot", "as
 export type OwnerType = z.infer<typeof OwnerTypeSchema>;
 
 export const ProductSlotSchema = z.enum([
+  // The imported novel: one `import` version per import (DECISIONS 2026-10-19 · M2 step 5).
+  "novel",
   "bible",
   "suggestions",
   "episodes",
@@ -179,7 +181,16 @@ export const ProductSchema = z.object({
   prompt: ProductPromptSchema.nullable(),
   estimate: RunEstimateSchema.nullable(),
   /** The job producing the next version while status is queued / running. */
-  running: z.object({ job_id: z.string(), model_key: z.string() }).nullable(),
+  running: z
+    .object({
+      job_id: z.string(),
+      model_key: z.string(),
+      /** `waiting_confirm`: over a spending limit or an ask-first fallback (ConfirmJobs). */
+      state: z.enum(["queued", "waiting_confirm", "running"]).optional(),
+      /** The 确认并同步 this run is part of (「同步中」); null for a run of its own. */
+      cascade_id: z.string().nullable().optional(),
+    })
+    .nullable(),
 });
 export type Product = z.infer<typeof ProductSchema>;
 
@@ -217,8 +228,20 @@ export type CompileResult = z.infer<typeof CompileResultSchema>;
 export const VersionPatchSchema = z.object({ rating: z.number().int().min(1).max(5).nullable() });
 export type VersionPatch = z.infer<typeof VersionPatchSchema>;
 
-/** Payload of the `version.created` event. */
+/**
+ * Payload of the `version.created` event: just enough to refetch. The version itself (its
+ * payload can be a whole script) is read with `GET /products/{id}`.
+ */
 export const VersionCreatedEventSchema = z.object({
   product_id: z.string(),
-  version: ProductVersionSchema,
+  version_id: z.string(),
+  n: z.number().int().positive(),
+  origin: VersionOriginSchema,
+});
+
+/** Payload of the `product.updated` event. */
+export const ProductUpdatedEventSchema = z.object({
+  product_id: z.string(),
+  series_id: z.string(),
+  status: ProductStatusSchema,
 });

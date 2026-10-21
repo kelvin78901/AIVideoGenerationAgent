@@ -21,8 +21,8 @@ def test_lifespan_migrates_and_starts_queue(
         assert database_path().exists()
         state = client.app.state.studio  # type: ignore[attr-defined]
         assert state.jobs._dispatcher is not None
-        # upstream routes stay mounted under /api, unchanged
-        assert client.get("/api/series/conversations").status_code == 200
+        # the upstream /api routes are no longer served (M2 removed /legacy, their only user)
+        assert client.get("/api/series/conversations").status_code == 404
         assert client.get("/api/v1/health").json()["status"] == "ok"
     assert state.jobs._dispatcher is None  # stopped on shutdown
 

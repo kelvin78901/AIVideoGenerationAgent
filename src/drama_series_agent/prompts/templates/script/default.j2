@@ -1,0 +1,16 @@
+你负责把竖屏短剧的一集写成剧本：分场，每场写动作、对白、旁白和音效。下游按剧本拆镜头、配音。
+
+[规则]
+{{ intent }}
+- 只写 [本集] 这一集：按 [节拍] 的顺序，用 [原文] 里的情节和台词；场数参考预计场数，时长参考预计时长。
+- 原文每段前有段号，例如 [P12]；【补写1】这样的标记后面是作者已采纳的补写，属于那一段。每场、每行的 paras 写它来自哪几段，只能用原文里给出的段号；用到补写的行在 adds 里写补写的编号。
+- 每场一个标题 heading：时间　内/外　地点，例如「夜　内　林晚出租屋」，不写场号。time 写 day / night / dawn / dusk，location 写 [设定] 里的地点名。
+- 行的 type：action 写看得见的动作和画面；dialogue 是对白；vo 是旁白或内心独白（tone 写 OS）；sfx 是音效。对白和旁白写 character（用 [设定] 里的人物名）和 tone（语气，可以空）；动作行可以写 mood（情绪）。
+- seconds 是这一行在成片里大约占几秒。
+- 原文没有、为了好拍加的行，added 写 true；不新增人物，不改情节走向。
+- 本集结尾停在卡点上，卡点那一行 cliffhanger 写 true。
+
+[输出 JSON]
+{"scenes": [{"heading": "夜　内　林晚出租屋", "time": "night", "location": "林晚出租屋", "paras": [4], "lines": [{"type": "action", "character": "林晚", "text": "她拉开门，又关上。", "mood": "犹豫", "seconds": 4, "paras": [4]}, {"type": "dialogue", "character": "林晚", "tone": "低声", "text": "……周屿？", "seconds": 3, "paras": [2], "added": true}]}]}
+
+# 目标模型：{{ model_key }}

@@ -34,6 +34,10 @@ fallback_defaults:
   local_timeout_s: 600
   notify: after            # after = 直接兜底事后通知；ask = 兜底前先问
 
+# 单次花费上限（美元，硬规则 6）：预计花费超过它的调用先进 waiting_confirm 等确认。
+# 组件里的 per_call_cap_usd 覆盖这个默认值；数值取自原型各页 Inspector。
+per_call_cap_usd: 0.50
+
 components:
   - id: extract
     stage: novel
@@ -42,6 +46,7 @@ components:
     api: *llm_api
     local: *llm_local
     balanced: { mode: local, api: qwen/qwen3.8-flash, local: local/qwen3.6-27b, fallback_to: qwen/qwen3.8-flash }
+    per_call_cap_usd: 0.2
     cheap_api: qwen/qwen3.8-flash
 
   - id: enrich
@@ -51,6 +56,7 @@ components:
     api: *llm_api
     local: *llm_local
     balanced: { mode: api, api: deepseek/v4-pro, fallback_to: moonshot/kimi-k2.6 }
+    per_call_cap_usd: 0.5
     cheap_api: deepseek/v4.1-flash
     gate: novel
 
@@ -61,6 +67,7 @@ components:
     api: *llm_api
     local: *llm_local
     balanced: { mode: api, api: deepseek/v4.1-flash, fallback_to: qwen/qwen3.7-plus }
+    per_call_cap_usd: 0.3
     cheap_api: deepseek/v4.1-flash
 
   - id: script
@@ -70,6 +77,7 @@ components:
     api: *llm_api
     local: *llm_local
     balanced: { mode: api, api: deepseek/v4-pro, fallback_to: qwen/qwen3.8-max }
+    per_call_cap_usd: 0.8
     alt_order: [moonshot/kimi-k2.6, qwen/qwen3.8-max, qwen/qwen3.7-plus, local/qwen3.6-27b]
     cheap_api: deepseek/v4.1-flash
     gate: script
@@ -81,6 +89,7 @@ components:
     api: *llm_api
     local: *llm_local
     balanced: { mode: api, api: deepseek/v4.1-flash, fallback_to: qwen/qwen3.7-plus }
+    per_call_cap_usd: 0.3
     cheap_api: deepseek/v4.1-flash
 
   - id: img
@@ -90,6 +99,7 @@ components:
     api: *img_api
     local: *img_local
     balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image-edit, fallback_to: volc/seedream-5.0 }
+    per_call_cap_usd: 1.5
     cheap_api: volc/seedream-5.0
     candidates: 4
     gate: assets
@@ -101,6 +111,7 @@ components:
     api: [openai/gpt-image-2, google/nano-banana-pro]
     local: [comfy/qwen-image]
     balanced: { mode: hybrid, api: openai/gpt-image-2, local: comfy/qwen-image, fallback_to: google/nano-banana-pro }
+    per_call_cap_usd: 1.2
     cheap_api: google/nano-banana-pro
     gate: assets
 
@@ -111,6 +122,7 @@ components:
     api: [minimax/speech-2.8-hd, elevenlabs/v3]
     local: [local/indextts2, local/cosyvoice, local/qwen3-tts]
     balanced: { mode: hybrid, api: minimax/speech-2.8-hd, local: local/qwen3-tts, fallback_to: elevenlabs/v3 }
+    per_call_cap_usd: 3
     cheap_api: minimax/speech-2.8-hd
     candidates: 3
     gate: assets
@@ -131,6 +143,7 @@ components:
     api: *llm_api
     local: [local/qwen3.6-27b]
     balanced: { mode: api, api: deepseek/v4-pro, fallback_to: moonshot/kimi-k2.6 }
+    per_call_cap_usd: 0.8
     cheap_api: deepseek/v4.1-flash
 
   - id: kf
@@ -140,6 +153,7 @@ components:
     api: *img_api
     local: *img_local
     balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image-edit, fallback_to: volc/seedream-5.0 }
+    per_call_cap_usd: 1
     cheap_api: volc/seedream-5.0
     candidates: 3
     follows_output_spec: true
@@ -152,6 +166,7 @@ components:
     api: [worldlabs/marble]
     local: []
     balanced: { mode: off }
+    per_call_cap_usd: 1
     note: v1 只留接口
 
   - id: vid
@@ -161,6 +176,7 @@ components:
     api: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1, alibaba/wan-3.0, kling/kling-3.0, google/veo-3.1]
     local: [comfy/h3, comfy/wan-2.2, comfy/ltx]
     balanced: { mode: hybrid, api: minimax/h3-api, local: comfy/h3, fallback_to: minimax/h3-api }
+    per_call_cap_usd: 2
     alt_order: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1]
     candidates: 2
     follows_output_spec: true
@@ -181,6 +197,7 @@ components:
     api: [minimax/h3-regenerate-2k, topaz/starlight-precise-2.5]
     local: [comfy/seedvr2, comfy/flashvsr]
     balanced: { mode: local, local: comfy/seedvr2, api: minimax/h3-regenerate-2k, fallback_to: comfy/flashvsr }
+    per_call_cap_usd: 1
     cheap_api: minimax/h3-regenerate-2k
     note: 本地超分只放大不改内容；要补细节时用 H3 2K 重生成
 
@@ -191,6 +208,7 @@ components:
     api: [sync/lipsync-2-pro]
     local: [local/latentsync, local/infinitetalk]
     balanced: { mode: hybrid, api: sync/lipsync-2-pro, local: local/latentsync, fallback_to: local/infinitetalk }
+    per_call_cap_usd: 0.5
 
   - id: qa
     stage: generate
@@ -199,6 +217,7 @@ components:
     api: [google/gemini-3.6-flash, google/gemini-3.1-flash-lite]
     local: [local/qwen3-vl-32b]
     balanced: { mode: local, local: local/qwen3-vl-32b, api: google/gemini-3.6-flash, fallback_to: google/gemini-3.6-flash }
+    per_call_cap_usd: 0.2
     cheap_api: google/gemini-3.1-flash-lite
     thresholds: { face_sim: 0.75, syncnet_conf: 6, cer_max: 0.10, ocr: exact }
 
@@ -209,6 +228,17 @@ components:
     api: [elevenlabs/music]
     local: [local/ace-step]
     balanced: { mode: hybrid, api: elevenlabs/music, local: local/ace-step }
+    per_call_cap_usd: 0.5
+
+  - id: sfx
+    stage: post
+    name: { zh: 音效, en: Sound effects }
+    kind: sfx
+    api: [elevenlabs/sfx]
+    local: [local/mmaudio]
+    balanced: { mode: local, local: local/mmaudio, api: elevenlabs/sfx, fallback_to: elevenlabs/sfx }
+    per_call_cap_usd: 0.3
+    note: 原型后期页的「音效」（补视频模型没出好的声音），M0.5 加的组件，M7 实现
 
   - id: sub
     stage: post
@@ -217,4 +247,5 @@ components:
     api: [elevenlabs/scribe]
     local: [local/whisper-large-v3, local/paraformer]
     balanced: { mode: local, local: local/whisper-large-v3, fallback_to: elevenlabs/scribe }
+    per_call_cap_usd: 0.1
     note: 字幕文字取自剧本，识别只用来对齐时间（原型 presetCfg 会算成 hybrid，这里改为 local）

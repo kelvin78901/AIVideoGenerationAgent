@@ -8,12 +8,22 @@
  * Implemented and removed: GET /series/{id}, GET / PUT /series/{id}/spec,
  * GET /series/{id}/spec/compat, GET /spec/presets, GET /setup/profile, POST /setup/scan,
  * POST /setup/install, POST /setup/items/{id}/retry|skip, POST /demo/setup/machine (now the
- * backend's POST /dev/setup/machine) (M1).
+ * backend's POST /dev/setup/machine) (M1). GET /config/components, GET /config/resolve,
+ * PUT / DELETE /config/override, GET / PUT /config/defaults, GET /series/{id}/novel,
+ * GET /series/{id}/bible, PATCH /bible/{id}, POST /bible/merge, GET /series/{id}/suggestions,
+ * POST /series/{id}/suggestions/accept-all, POST /suggestions/{id}/accept|reject|reset|rewrite,
+ * PATCH /episodes/{id}, PATCH /beats/{id}, GET /episodes/{id}/script, PATCH /lines/{id},
+ * PATCH /scenes/{id}, POST /lines/{id}/rewrite, POST /scenes/{id}/rewrite (M2).
+ * GET /series/{id}/episodes and GET /episodes/{id}/progress are the backend's too; the demo
+ * series lays its later-step data over them (shots, the script gate, the badges after 剧本)
+ * until those steps are real.
+ * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
+ *
+ * Handlers that take a series answer only for the demo series; any other series passes through
+ * to the backend (plan M2「和 MSW 共存」).
  *
  * | Endpoint                         | Implemented in |
  * | -------------------------------- | -------------- |
- * | GET /series/{id}/episodes        | M2             |
- * | GET /episodes/{id}/progress      | M2             |
  * | GET /metrics/summary             | M8             |
  * | GET /metrics/kpis, spend-series, calls-series | M8 |
  * | GET /metrics/shots, components, speed, apis    | M8 |
@@ -25,18 +35,8 @@
  * | POST /products/{id}/lock, unlock | M2             |
  * | PUT /products/{id}/prompt        | M2             |
  * | POST /products/{id}/compile      | M2             |
- * | GET /config/components           | M2             |
- * | GET /config/resolve              | M2             |
- * | PUT /config/override             | M2             |
  * | POST /impact/preview, apply      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | GET /series/{id}/novel           | M2             |
- * | GET /series/{id}/suggestions     | M2             |
- * | POST /series/{id}/suggestions/accept-all | M2     |
- * | POST /suggestions/{id}/accept, reject, reset, rewrite | M2 |
- * | GET /series/{id}/bible           | M2             |
- * | GET /episodes/{id}/script        | M2             |
- * | POST /lines/{id}/rewrite, /scenes/{id}/rewrite | M2 |
  * | GET /series/{id}/assets, PATCH /assets/{id} | M3   |
  * | POST /assets/{id}/lock           | M3             |
  * | POST /episodes/{id}/assets/analyze | M3           |
@@ -48,8 +48,6 @@
  * | GET /episodes/{id}/timeline      | M7             |
  * | PATCH /clips/{id}, /subtitles/{id} | M7           |
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
- * | GET, PUT /config/defaults, DELETE /config/override | M2 |
- * | PATCH /episodes/{id}             | M2             |
  * | GET, PUT /sync/targets, POST /sync/targets/{id}/detect | M9 |
  * | POST /sync/run, GET /sync/log, GET /sync/board | M9 |
  * | GET /workflows, GET / PATCH /workflows/{id}, POST /workflows/import | M5 |
@@ -58,15 +56,12 @@
  * | GET /comfy/workflows (ComfyUI's own workflow list) | M5 |
  */
 import { assetHandlers } from "@/mocks/handlers/assets";
-import { configHandlers } from "@/mocks/handlers/config";
 import { gateHandlers } from "@/mocks/handlers/gates";
 import { generateHandlers } from "@/mocks/handlers/generate";
 import { impactHandlers } from "@/mocks/handlers/impact";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
-import { novelHandlers } from "@/mocks/handlers/novel";
 import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
-import { scriptHandlers } from "@/mocks/handlers/script";
 import { shotHandlers } from "@/mocks/handlers/shots";
 import { syncHandlers } from "@/mocks/handlers/sync";
 import { workflowHandlers } from "@/mocks/handlers/workflows";
@@ -76,11 +71,8 @@ export const handlers = [
   ...seriesHandlers,
   ...metricsHandlers,
   ...productHandlers,
-  ...configHandlers,
   ...impactHandlers,
   ...gateHandlers,
-  ...novelHandlers,
-  ...scriptHandlers,
   ...assetHandlers,
   ...shotHandlers,
   ...generateHandlers,

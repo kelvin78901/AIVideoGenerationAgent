@@ -2,15 +2,18 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useParams } from "react-router";
 import { z } from "zod";
 
-import { api, patch, put } from "@/api/client";
+import { api, patch, post, put } from "@/api/client";
+import { productKeys } from "@/api/hooks/products";
 import {
   EpisodeProgressSchema,
   EpisodeSchema,
+  SeriesProgressSchema,
+  type BeatPatch,
   type Episode,
   type EpisodePatch,
 } from "@/api/schemas/episodes";
 import { MetricsSummarySchema, type MetricsScope } from "@/api/schemas/metrics";
-import { SeriesSchema } from "@/api/schemas/series";
+import { SeriesSchema, type SeriesCreate } from "@/api/schemas/series";
 import {
   CompatSchema,
   OutputSpecSchema,
@@ -19,18 +22,50 @@ import {
   type SpecPatch,
 } from "@/api/schemas/spec";
 import { DEMO_EPISODE, DEMO_SERIES } from "@/app/paths";
+import { patchBeat } from "@/lib/beats";
+import { useUiStore } from "@/stores/ui";
 
 const enc = encodeURIComponent;
 
 export const seriesKeys = {
+  list: ["series-list"] as const,
   detail: (id: string) => ["series", id] as const,
   episodes: (id: string) => ["series", id, "episodes"] as const,
+  /** The series' badges (no episodes yet); `progress` is an episode's. */
+  seriesProgress: (id: string) => ["series", id, "progress"] as const,
   spec: (id: string) => ["series", id, "spec"] as const,
   compat: (id: string, aspect: string) => ["series", id, "spec", "compat", aspect] as const,
   presets: ["spec", "presets"] as const,
   progress: (episodeId: string) => ["episodes", episodeId, "progress"] as const,
   summary: (scope: MetricsScope, id: string) => ["metrics", "summary", scope, id] as const,
 };
+
+/** Newest first (the top bar's series menu). */
+export function useSeriesList() {
+  return useQuery({
+    queryKey: seriesKeys.list,
+    queryFn: () => api("/series", z.array(SeriesSchema)),
+  });
+}
+
+/** `POST /series`: a new series with the default output spec. */
+export function useCreateSeries() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: SeriesCreate) => post("/series", SeriesSchema, body),
+    onSuccess: (created) => {
+      client.setQueryData(seriesKeys.detail(created.id), created);
+      void client.invalidateQueries({ queryKey: seriesKeys.list });
+    },
+  });
+}
+
+/** The route's series, else the one opened last, else the demo series. */
+export function useSeriesId(): string {
+  const params = useParams();
+  const last = useUiStore((s) => s.lastSeries);
+  return params.series ?? last ?? DEMO_SERIES;
+}
 
 export function useSeries(id: string) {
   return useQuery({
@@ -46,7 +81,7 @@ export function useEpisodes(seriesId: string) {
   });
 }
 
-/** The route's series and episode: `/s/:series/e/:ep` (falls back to the demo episode). */
+/** The route's series and episode: `/s/:series/e/:ep` (else `useSeriesId()`, episode 1). */
 export function useRouteEpisode(): {
   seriesId: string;
   episodeIdx: number;
@@ -54,7 +89,7 @@ export function useRouteEpisode(): {
   isLoading: boolean;
 } {
   const params = useParams();
-  const seriesId = params.series ?? DEMO_SERIES;
+  const seriesId = useSeriesId();
   const episodeIdx = Number(params.ep ?? DEMO_EPISODE);
   const episodes = useEpisodes(seriesId);
   return {
@@ -70,6 +105,15 @@ export function useEpisodeProgress(episodeId: string | undefined) {
     queryKey: seriesKeys.progress(episodeId ?? ""),
     queryFn: () => api(`/episodes/${enc(episodeId ?? "")}/progress`, EpisodeProgressSchema),
     enabled: !!episodeId,
+  });
+}
+
+/** The badges of a series with no episodes yet; the novel gate's state at any time. */
+export function useSeriesProgress(seriesId: string | undefined) {
+  return useQuery({
+    queryKey: seriesKeys.seriesProgress(seriesId ?? ""),
+    queryFn: () => api(`/series/${enc(seriesId ?? "")}/progress`, SeriesProgressSchema),
+    enabled: !!seriesId,
   });
 }
 
@@ -117,7 +161,10 @@ export function useSaveSpec(seriesId: string) {
   });
 }
 
-/** `PATCH /episodes/{id}` (the budget, from the Models page); the top bar follows. */
+/**
+ * `PATCH /episodes/{id}`: the budget (Models page; the top bar follows) or the plan's 集名、钩子、
+ * 卡点 (an adopted edit of 分集规划, so its product changes too).
+ */
 export function useUpdateEpisode(episodeId: string | undefined) {
   const client = useQueryClient();
   return useMutation({
@@ -126,6 +173,34 @@ export function useUpdateEpisode(episodeId: string | undefined) {
     onSuccess: () => {
       void client.invalidateQueries({ queryKey: ["series"] });
       void client.invalidateQueries({ queryKey: ["metrics"] });
+      void client.invalidateQueries({ queryKey: productKeys.all });
+    },
+  });
+}
+
+/**
+ * `PATCH /beats/{id}`: 改节拍的文字、情绪, or drag it to another episode / place. The board shows
+ * the change at once and goes back if the backend refuses; afterwards the list is read again
+ * (the demo lays its overlay on it) with the new version of 分集规划.
+ */
+export function usePatchBeat(seriesId: string) {
+  const client = useQueryClient();
+  const key = seriesKeys.episodes(seriesId);
+  return useMutation({
+    mutationFn: ({ id, ...body }: { id: string } & BeatPatch) =>
+      patch(`/beats/${enc(id)}`, z.array(EpisodeSchema), body),
+    onMutate: async ({ id, ...body }) => {
+      await client.cancelQueries({ queryKey: key });
+      const before = client.getQueryData<Episode[]>(key);
+      if (before) client.setQueryData(key, patchBeat(before, id, body));
+      return { before };
+    },
+    onError: (_err, _vars, ctx) => {
+      if (ctx?.before) client.setQueryData(key, ctx.before);
+    },
+    onSettled: () => {
+      void client.invalidateQueries({ queryKey: key });
+      void client.invalidateQueries({ queryKey: productKeys.all });
     },
   });
 }

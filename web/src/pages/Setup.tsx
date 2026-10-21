@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { errorMessage } from "@/api/client";
 import { onEvent } from "@/api/events";
 import { useComfyEnv } from "@/api/hooks/comfy";
+import { useSeriesId } from "@/api/hooks/series";
 import {
   useCancelInstall,
   useConfirmInstall,
@@ -29,7 +30,7 @@ import {
   type SetupLog,
   type SetupPhase,
 } from "@/api/schemas/setup";
-import { DEMO_EPISODE, DEMO_SERIES, paths } from "@/app/paths";
+import { DEMO_EPISODE, paths } from "@/app/paths";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState, Skeleton } from "@/components/QueryState";
 import { SegmentedControl } from "@/components/SegmentedControl";
@@ -143,6 +144,8 @@ export default function SetupPage() {
 function SetupFlow({ profile: p }: { profile: MachineProfile }) {
   const { t } = useTranslation("setup");
   const { t: tc } = useTranslation();
+  // 跳过 / 进入工作台 go to the series opened last (else the demo series).
+  const seriesId = useSeriesId();
   const nameOf = useItemName();
   const units = useUnits();
   const scan = useScan();
@@ -352,7 +355,7 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
               </span>
             ) : null}
             <Link
-              to={paths.step(DEMO_SERIES, DEMO_EPISODE, "novel")}
+              to={paths.step(seriesId, DEMO_EPISODE, "novel")}
               className="ml-auto text-sm text-primary underline-offset-4 hover:underline"
             >
               {t("skip")}
@@ -404,7 +407,7 @@ function SetupFlow({ profile: p }: { profile: MachineProfile }) {
           ) : null}
           <div className="flex flex-wrap items-center gap-2.5">
             <Button size="lg" asChild>
-              <Link to={paths.spec(DEMO_SERIES)}>{t("done.enter")}</Link>
+              <Link to={paths.spec(seriesId)}>{t("done.enter")}</Link>
             </Button>
             <Link
               to={paths.models()}

@@ -11,6 +11,9 @@ currency_rates:            # 只用于把人民币单价折算成美元显示；
 # ---------------------------------------------------------------------------
 # 写作类 LLM：全部走 OpenAI 兼容协议（OpenAICompatAdapter）
 # price 单位：每百万 token，in / out
+# max_context：上下文窗口（token）。长小说按兜底链里最小的那个分块（每块不超过 60%）；
+# 没填的按 32k 算——宁可多分几块，也不按没核对过的数字塞满。
+# request：每次调用都带上的额外请求字段（如关掉「思考」），不会覆盖 model、messages 这些。
 # ---------------------------------------------------------------------------
 llm_providers:
   - id: deepseek
@@ -18,44 +21,59 @@ llm_providers:
     base_url: https://api.deepseek.com/v1
     key_name: DEEPSEEK_API_KEY
     docs: https://api-docs.deepseek.com/quick_start/pricing
-    verify: true
+    # 2026-10-20 按官方文档核对（M2 第 13 步）：模型 ID、价格（高峰价、缓存未命中）、上下文 1M。
+    # 两个模型默认开「思考」：思考过程按输出计费、也占 max_tokens（JSON 可能被截断），估价
+    # 也没算它，所以流水线调用默认关掉（request.thinking）；要开就在这里改成 enabled。
+    verify: false
     models:
       - key: deepseek/v4-pro
         display: DeepSeek V4 Pro
-        model_id: null
+        model_id: deepseek-v4-pro          # DeepSeek-V4-Pro-0813
         price: { in: 1.32, out: 3.96, currency: USD }
-        offpeak: { factor: 0.5, note: "闲时半价，时段以官方为准" }
+        offpeak: { factor: 0.5, note: "闲时半价：高峰是 UTC 周一至周五 01:00–04:00、06:00–10:00（中国法定假日全天闲时）" }
         json_mode: true
+        max_context: 1000000
+        request: { thinking: { type: disabled } }
       - key: deepseek/v4.1-flash
         display: DeepSeek V4.1 Flash
-        model_id: null
+        model_id: deepseek-flash           # DeepSeek-V4.1-Flash-1017（旧名 deepseek-v4-flash 已退役）
         price: { in: 0.30, out: 1.20, currency: USD }
-        offpeak: { factor: 0.5, note: "闲时半价，时段以官方为准" }
+        offpeak: { factor: 0.5, note: "闲时半价：高峰是 UTC 周一至周五 01:00–04:00、06:00–10:00（中国法定假日全天闲时）" }
         json_mode: true
+        max_context: 1000000
+        request: { thinking: { type: disabled } }
 
   - id: moonshot
     name: Moonshot（Kimi）
     base_url: https://api.moonshot.ai/v1        # 国内站：https://api.moonshot.cn/v1
     key_name: MOONSHOT_API_KEY
     docs: https://platform.kimi.ai/docs/pricing/chat
-    verify: true
+    # 2026-10-20 按官方 K2.6 quickstart 核对（M2 第 13 步）：模型 ID、上下文 256K、默认开思考
+    # （关掉见 DeepSeek 的说明）；temperature 固定，传别的值会报错（我们不传）。价格页的表格
+    # 没读到，价格仍是 2026-10-14 的来源；没有密钥，没真调过。
+    verify: false
     models:
       - key: moonshot/kimi-k2.6
         display: Kimi K2.6
-        model_id: null
+        model_id: kimi-k2.6
         price: { in: 0.95, out: 4.00, currency: USD }
         json_mode: true
+        max_context: 256000
+        request: { thinking: { type: disabled } }
 
   - id: dashscope
     name: 阿里云百炼（Qwen）
     base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1   # 国内：https://dashscope.aliyuncs.com/compatible-mode/v1
     key_name: DASHSCOPE_API_KEY
     docs: https://www.alibabacloud.com/help/en/model-studio/model-pricing
-    verify: true
+    # 2026-10-20 按官方价格页（新加坡）和「深度思考」页核对（M2 第 13 步）：模型 ID、价格
+    # （qwen3.7-plus 是 256K 以内那一档）；三个都默认开思考，enable_thinking: false 关掉。
+    # 上下文没写明，按 32k 分块；没有密钥，没真调过。
+    verify: false
     models:
-      - { key: qwen/qwen3.8-max,   display: Qwen3.8-max,   model_id: null, price: { in: 2.00, out: 6.00, currency: USD }, json_mode: true }
-      - { key: qwen/qwen3.7-plus,  display: Qwen3.7-plus,  model_id: null, price: { in: 0.40, out: 1.60, currency: USD }, json_mode: true }
-      - { key: qwen/qwen3.8-flash, display: Qwen3.8-flash, model_id: null, price: { in: 0.15, out: 0.47, currency: USD }, json_mode: true }
+      - { key: qwen/qwen3.8-max,   display: Qwen3.8-max,   model_id: qwen3.8-max,   price: { in: 2.00, out: 6.00, currency: USD }, json_mode: true, request: { enable_thinking: false } }
+      - { key: qwen/qwen3.7-plus,  display: Qwen3.7-plus,  model_id: qwen3.7-plus,  price: { in: 0.40, out: 1.60, currency: USD }, json_mode: true, request: { enable_thinking: false } }
+      - { key: qwen/qwen3.8-flash, display: Qwen3.8-flash, model_id: qwen3.8-flash, price: { in: 0.15, out: 0.47, currency: USD }, json_mode: true, request: { enable_thinking: false } }
 
   - id: volcengine
     name: 火山引擎（豆包）
@@ -132,9 +150,12 @@ llm_providers:
     base_url: http://127.0.0.1:11434/v1      # Ollama；llama.cpp server 默认 http://127.0.0.1:8080/v1
     key_name: null
     where: local
+    # 让 Ollama 按 max_context 开上下文（请求体 options.num_ctx；它的默认值只有 2–4k，会悄悄截断长提示词）。
+    # 是否被 OpenAI 兼容接口接受没有核对过（DECISIONS 2026-10-19 · 设定提取），本地冒烟时看 model_call 的输入 token。
+    send_num_ctx: true
     models:
-      - { key: local/qwen3.6-27b,   display: Qwen3.6-27B（本地）,   model_id: null, price: { in: 0, out: 0, currency: USD }, needs: [llmsrv, w_llm] }
-      - { key: local/qwen3-30b-a3b, display: Qwen3-30B-A3B（本地）, model_id: null, price: { in: 0, out: 0, currency: USD }, needs: [llmsrv] }
+      - { key: local/qwen3.6-27b,   display: Qwen3.6-27B（本地）,   model_id: null, price: { in: 0, out: 0, currency: USD }, max_context: 32768, needs: [llmsrv, w_llm] }
+      - { key: local/qwen3-30b-a3b, display: Qwen3-30B-A3B（本地）, model_id: null, price: { in: 0, out: 0, currency: USD }, max_context: 32768, needs: [llmsrv] }
 
 # 写作类组件在模型选择器里的顺序；前 6 个直接显示，其余收进「更多供应商」
 llm_ui_order:
@@ -185,6 +206,7 @@ media_models:
   - { key: sync/lipsync-2-pro, kind: lipsync, display: sync lipsync-2-pro, unit: second, price_range: [0.067, 0.083], currency: USD }
   - { key: topaz/starlight-precise-2.5, kind: upscale, display: Topaz Starlight Precise 2.5, unit: second, price: 0.12, currency: USD, note: "1080p，按积分换算" }
   - { key: elevenlabs/music, kind: music, display: ElevenLabs Music, unit: subscription, price: 22, currency: USD, period: month }
+  - { key: elevenlabs/sfx, kind: sfx, display: ElevenLabs Sound Effects, unit: call, price: null, verify: true }
   - { key: elevenlabs/scribe, kind: asr, display: ElevenLabs Scribe, unit: minute, price: null, verify: true }
   - { key: worldlabs/marble, kind: world, display: World Labs Marble, unit: world, price: 1.2, currency: USD, enabled_by_default: false }
 
@@ -209,5 +231,6 @@ local_models:
   - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python, requires_cuda: true }
   - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server, needs: [llmsrv] }
   - { key: local/ace-step,          kind: music,   display: ACE-Step（本地）,         runtime: python }
+  - { key: local/mmaudio,           kind: sfx,     display: MMAudio（本地）,          runtime: python, verify: true }
   - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python }
   - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }

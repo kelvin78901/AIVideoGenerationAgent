@@ -67,6 +67,11 @@
     "camera": "机位 · {{framing}}",
     "blockingItem": "{{label}}：横 {{x}}%，纵 {{y}}%",
     "text": "画面文字：{{text}}",
-    "textLink": "在素材里查看"
+    "textLink": "在素材里查看",
+    "lines": "剧本",
+    "noLines": "这个镜头没有对应的剧本行。",
+    "lineLink": "在剧本里看：{{text}}",
+    "paras": "原文第 {{paras}} 段",
+    "paraSep": "、"
   }
 }

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+from dataclasses import replace
 
 import httpx
 import pytest
@@ -72,6 +73,27 @@ async def test_chat_completion_request_and_usage() -> None:
     assert route.calls.last.request.headers["authorization"] == f"Bearer {KEY}"
     assert result.json == {"scenes": []}
     assert (result.usage.tokens_in, result.usage.tokens_out) == (12, 34)
+
+
+@respx.mock
+async def test_model_request_fields_are_sent_without_replacing_the_adapters() -> None:
+    # providers.yaml ``request`` (e.g. DeepSeek's thinking switch) goes into every body; it
+    # never replaces the model, and a request's own params still win.
+    route = respx.post(f"{BASE}/chat/completions").mock(
+        return_value=httpx.Response(200, json=_completion("ok"))
+    )
+    caps = Caps(
+        json_mode=True,
+        request={"thinking": {"type": "disabled"}, "model": "other", "temperature": 1.0},
+    )
+    adapter = OpenAICompatAdapter(
+        replace(_adapter().spec, caps=caps), get_key=lambda name: KEY, backoff_s=0
+    )
+    req = ModelRequest(kind="llm", prompt="写第一场", params={"temperature": 0.3})
+    await adapter.run(req, CallContext())
+    sent = json.loads(route.calls.last.request.content)
+    assert sent["thinking"] == {"type": "disabled"}
+    assert sent["model"] == "example-pro-2026" and sent["temperature"] == 0.3
 
 
 @respx.mock

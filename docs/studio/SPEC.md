@@ -118,6 +118,15 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 - 视频的多个 take 就是 `slot=video` 的多个 version；“推荐”取质检总分最高且通过的那个。
 - 每次构建下游 version 时写 `dependency`（上游 product + 当时的哈希）。
 
+**M2 的实际做法**（细节和理由见 `plans/M2.md`「设计要点」和 DECISIONS 里 M2 各步的条目）：
+
+- **版本是唯一真相**。`bible_entity`、`suggestion`、`episode`、`beat`、`scene`、`script_line` 是已采纳版本的**物化表**：采纳时按 id upsert，版本里没有了的行标 `retired`（不硬删），随时能从版本重建（有测试）。id 在出版本时定：重跑时和它出发时的已采纳版本逐项比对，对上的沿用 id（设定按类别 + 名字 / 别名，分集、场按序号，剧本行在同一场里按文字相似度）。页面读接口从**当前**版本的 payload 现算，当前 ≠ 采纳时标「未采纳」。
+- 小说也是产物：slot 多一个 `novel`（组件 `import`），每次导入、逐段编辑都出一个版本。
+- **采纳**：第一个成功的版本自动采纳，之后的重跑只变当前，要用户点「采纳」；手改（改设定、拖节拍、改剧本行……）从当前版本出一个 `origin=edit` 的版本并采纳。唯一的自动替换是用户在影响范围里确认的「确认并同步」（硬规则 5）。
+- **`dependency` 挂在版本上**，比上表多 `version_id`、`slice` 两列：一个版本读了上游哪几片就写几行，哈希是那一片的规范化 JSON（不含序号、「已修改」这类显示字段）。切片如 `chapter:<idx>`、`chapters`（小说各章 / 设定的章节摘要）、`names`（设定的名字和冻结条目）、`entities:<id,…>`、`adopted` / `adopted:<段号,…>`（已采纳的补写）、`episode:<id>`。「待更新」不存标志，每次比对切片哈希现算，改了再撤销就自动不旧。
+- 补全建议的决定单独存 `suggestion_decision`（不进版本，重跑后按 id 带过去）；补全的「有效哈希」只算已采纳的建议。
+- **`gate_decision`** 多 `series_id`；同一闸门同一范围以最后一条为准。小说闸门的 `scope_id` 是剧集 id，管小说、设定、补全；剧本闸门是集 id，管那一集的剧本；分集规划不归闸门。确认 = 锁定已采纳版本（`locked_hash`）并把有效哈希写进 `product_hashes_json`，重新打开 = 解锁。被锁的产物直接改返回 409 `product_locked`，要走 `/impact/preview` → `/impact/apply`（`mark` 解锁、写入、再锁上；`rerun` 级联重跑并采纳，被锁的先重新打开闸门）。
+
 ### 4.3 运行、配置、记账
 
 | 表 | 关键字段 |
@@ -209,7 +218,7 @@ class ModelAdapter(Protocol):
 ### 6.2 写作类 LLM
 
 - 一个 `OpenAICompatAdapter` 覆盖所有写作类模型（DeepSeek、Kimi、通义千问、豆包、GLM、MiniMax、Gemini 的 OpenAI 兼容端点、OpenAI、OpenRouter、本地 Ollama / llama.cpp、自定义）。
-- 供应商表 `providers.yaml`：base_url、密钥名、模型列表（model_id、显示名、输入 / 输出单价、闲时规则、上下文长度、是否支持 JSON 模式）。初始数据见 `seed/providers.yaml`，**模型 ID 要对照官方文档核对**；「测试连接」按钮调 `GET /models` 校验密钥并列出可用模型。
+- 供应商表 `providers.yaml`：base_url、密钥名、模型列表（model_id、显示名、输入 / 输出单价、闲时规则、上下文长度、是否支持 JSON 模式）。初始数据见 `seed/providers.yaml`，**模型 ID 要对照官方文档核对**；「测试连接」按钮调 `GET /models` 校验密钥并列出可用模型。模型还可以写 `request`：每次调用都带上的额外请求字段，不覆盖适配器自己设的字段（M2 用它默认关掉各家的「思考」：DeepSeek / Kimi `thinking: {type: disabled}`，千问 `enable_thinking: false`；DeepSeek、Kimi、千问的模型 ID 已在 M2 第 13 步按官方文档核对）。
 - 界面上写作类组件先列 6 家常用的，其余收进「更多供应商」（原型已实现这个交互）。
 - 支持流式输出，经 SSE 推到前端。
 
@@ -380,6 +389,14 @@ per_call_cap_usd: 0.50
 - 全局开关：本集预算用完后暂停所有 API 任务。
 - 表头的“本集 API 花费 / 预算”实时从 `model_call` 汇总。
 
+**M2 的实际做法**（`modelhub/budget.py`）：
+
+- **入队前**：整个任务的估价对比组件的单次上限（`per_call_cap_usd`，组件配置，出厂默认 $0.50）和本集剩余，任一超过就进 `waiting_confirm`，`job.params.confirm = {reason: per_call | episode, estimate_usd, limit_usd}`。本集剩余 = 本集预算 − 已花 − 排队和等确认任务的估价 − Σ（运行中任务的估价 − 它已花的，不小于 0）。设定、补全、分集不属于某一集，只查单次上限。本集预算存 `episode.budget_usd`，是设置，不进版本。
+- **每次模型调用前**（路由器的 `BudgetGuard`）：用户确认过的任务可以花到确认的金额（`job.confirmed_usd`，重启续跑不再问），其余每次调用都要在单次上限内；兜底换到更贵的模型超了就失败（`budget_exceeded`），不悄悄多花。兜底方式「先问」时任务进 `waiting_confirm`，确认后用兜底模型继续。
+- 同步接口的改写（剧本行 / 场、补全建议按要求重写）超限返回 409 `over_budget {estimate_usd, limit_usd}`，前端确认后带 `confirm_budget: true` 再发一次。
+- 估价按 `max_tokens` 算输出，是上限：真实花费通常低得多（第 13 步冒烟：剧本化估 $0.025，实花 $0.005）。各模型默认关掉「思考」，否则思考过程的 token 不在估价里（见 6.2 `providers.yaml` 的 `request`）。
+- 还没做：上面的「全局开关」（单独的暂停开关；超过本集剩余的新任务已经会先问），表头花费仍是示例数据（`/metrics/summary` 在 M8）。
+
 ### 7.7 混合模式
 
 本地出草稿（免费抽卡），用户点「采纳」时才用 API 出终版：视频走 H3 Regenerate-2K（输入为本地 768p take），LLM 走 API 模型重写定稿。终版作为同一 product 的新 version，origin=run，`parent_version_id` 指向草稿。
@@ -403,21 +420,22 @@ per_call_cap_usd: 0.50
 
 ### 9.1 HTTP 接口概览（`/api/v1`）
 
-标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面时页面需要，原表没有）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
+标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`unadopt`、打分、`upscale` 除外，M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；其余仍由 MSW 返回示例数据。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
 
 | 资源 | 接口 |
 | --- | --- |
-| 剧集 | `GET/POST /series`，`GET/PATCH /series/{id}`，`GET/PUT /series/{id}/spec`（成片规格，改画幅时返回影响范围；锁定后直接改画幅返回 409 `spec_locked`），`GET /series/{id}/spec/compat`⁺（模型兼容表），`GET /spec/presets`⁺（平台预设和各画幅尺寸），`GET /series/{id}/episodes`⁺ |
-| 小说与设定 | `POST /series/{id}/novel`（上传），`GET /series/{id}/novel`⁺（段落），`GET /series/{id}/bible`，`PATCH /bible/{entity_id}`，`GET /series/{id}/suggestions`⁺，`POST /suggestions/{id}/accept\|reject\|rewrite`，`POST /suggestions/{id}/reset`⁺，`POST /series/{id}/suggestions/accept-all`⁺ |
-| 分集、场、剧本、镜头 | `GET/PATCH /episodes/{id}`，`GET /episodes/{id}/progress`⁺（导航徽标），`GET /episodes/{id}/script`⁺，`PATCH /beats/{id}`（含拖动换集），`PATCH /lines/{id}`（返回影响范围），`POST /lines/{id}/rewrite`⁺，`POST /scenes/{id}/rewrite`⁺，`GET /episodes/{id}/shots`⁺，`PATCH /shots/{id}`⁺，`POST /shots/{id}/split\|merge` |
+| 剧集 | `GET/POST /series`，`GET/PATCH /series/{id}`，`GET/PUT /series/{id}/spec`（成片规格，改画幅时返回影响范围；锁定后直接改画幅返回 409 `spec_locked`），`GET /series/{id}/spec/compat`⁺（模型兼容表），`GET /spec/presets`⁺（平台预设和各画幅尺寸），`GET /series/{id}/episodes`⁺，`GET /series/{id}/progress`⁺（还没分集时的导航徽标；小说闸门的状态） |
+| 小说与设定 | `POST /series/{id}/novel`（上传；`dry_run` 只识别章节、返回 `upload_id`，正式导入要 `rights_confirmed`），`GET /series/{id}/novel`⁺（段落），`PUT /series/{id}/novel/chapters/{idx}`⁺（逐段编辑后整章提交），`GET /series/{id}/bible`（对象：条目 + 合并建议），`PATCH /bible/{entity_id}`，`POST /bible/merge`⁺（合并 / 不是同一个 / 拆出别名），`GET /series/{id}/suggestions`⁺，`POST /suggestions/{id}/accept\|reject\|rewrite`，`POST /suggestions/{id}/reset`⁺，`POST /series/{id}/suggestions/accept-all`⁺ |
+| 分集、场、剧本、镜头 | `GET/PATCH /episodes/{id}`，`GET /episodes/{id}/progress`⁺（导航徽标），`GET /episodes/{id}/script`⁺，`PATCH /beats/{id}`（含拖动换集，返回整个方案），`PATCH /lines/{id}`、`PATCH /scenes/{id}`⁺（只改文字 / 场标题；已确认时 409，前端改走影响范围），`POST /lines/{id}/rewrite`⁺，`POST /scenes/{id}/rewrite`⁺，`GET /episodes/{id}/shots`⁺，`PATCH /shots/{id}`⁺，`POST /shots/{id}/split\|merge` |
 | 资产 | `GET/POST /series/{id}/assets`，`PATCH /assets/{id}`，`POST /assets/{id}/lock`⁺（解锁走影响范围 `asset_unlock`），`POST /episodes/{id}/assets/analyze`⁺ |
 | 产物与版本 | `GET /products?owner=&component=`⁺，`GET /products/{id}`（含版本列表、`prompt`、`estimate`、`running`），`POST /products/{id}/run` `{mode: rerun\|switch\|run, model?, intent?, compiled?, count?}` → job，`POST /versions/{id}/set-current\|adopt`，`POST /products/{id}/lock`，`POST /products/{id}/unlock`⁺，`POST /products/{id}/unadopt`⁺，`PUT /products/{id}/prompt`⁺，`POST /products/{id}/compile`⁺，`PATCH /versions/{id}`⁺（打分），`POST /versions/{id}/upscale`⁺ → job |
 | 生成 | `GET/PUT /series/{id}/generate-rules`⁺（每镜候选数、质检不过自动重跑、单镜上限），`GET /episodes/{id}/generate-log`⁺（运行记录） |
 | 后期 | `GET /episodes/{id}/timeline`⁺，`PATCH /clips/{id}`⁺，`PATCH /subtitles/{id}`⁺，`GET /episodes/{id}/export/checks`⁺，`POST /episodes/{id}/export`⁺ `{format: mp4\|fcpxml\|otio\|srt}` → job |
 | 影响范围 | `POST /impact/preview`（给一个待改动，返回受影响的产物和预计花费），`POST /impact/apply` `{action: mark\|rerun\|undo}` |
 | 闸门 | `POST /gates/{gate}/confirm\|reopen` |
-| 任务 | `GET /jobs`，`POST /jobs/{id}/cancel\|confirm` |
-| 配置与模型 | `GET /config/components`⁺（组件目录、可选模型、`local_runtime_ok`），`GET /config/resolve`，`PUT /config/override`，`DELETE /config/override`⁺（恢复成预设），`GET/PUT /config/defaults`⁺（预设、兜底方式），`POST /config/preset`，`GET /providers`，`POST /providers/{id}/key`，`POST /providers/{id}/test`，`POST /custom-models` |
+| 任务 | `GET /jobs`，`GET /jobs/{id}`⁺，`POST /jobs/{id}/cancel\|confirm` |
+| 配置与模型 | `GET /config/components`⁺（组件目录、可选模型、`local_runtime_ok`），`GET /config/resolve`，`PUT /config/override`，`DELETE /config/override`⁺（恢复成预设），`GET/PUT /config/defaults`⁺（预设、兜底方式；代替原来的 `POST /config/preset`），`GET /providers`，`POST /providers/{id}/key`，`DELETE /providers/{id}/key`⁺，`POST /providers/{id}/test`，`POST /custom-models`（以后） |
+| 开发⁺ | `POST /dev/llm-test`（只在 Mock 下），`GET /dev/model-calls`（最近的 `model_call`，冒烟脚本也读它） |
 | 看板 | `GET /metrics/summary`⁺（顶栏花费），`GET /metrics/kpis\|spend-series\|calls-series\|shots\|components\|speed\|apis\|local-models\|qa\|episodes`⁺，`GET /metrics/export.csv`⁺（第 11 节） |
 | 同步 | `GET/PUT /sync/targets`，`POST /sync/targets/{id}/detect`⁺，`POST /sync/run`，`GET /sync/log`，`GET /sync/board?episode=`⁺（ComfyUI 素材板），`POST /ingest`（ComfyUI 节点存回，第 14.2 节） |
 | 首次启动 | `GET /setup/profile`（`simulated`：Mock 的示例机器；`download_bps`、`app_dir`；每项 `size_bytes`、`work_s`、`touches_comfy`，安装中的 `install`：`pct`、`bytes_done`、`bytes_total`、`speed`、`eta_s`、`verifying`），`POST /setup/scan` → 202，`POST /setup/install` `{items, mirror, dir}` → 202（要用户点头的列在 `install.confirm`，改 ComfyUI 的改动清单 `install.changes`，装前的快照 `install.snapshot` 或 `install.snapshot_error`），`POST /setup/install/confirm\|cancel`⁺，`POST /setup/items/{id}/retry\|skip`，`POST /dev/setup/machine`⁺ `{machine: pc\|mac}`（只在 Mock 下切示例机器，清空扫描和安装；真实模式 403 `setup_not_simulated`） |

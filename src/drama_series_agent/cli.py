@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-# Modified for AI Drama Studio: run_api_main serves api.app:create_app (upstream /api + studio /api/v1).
+# Modified for AI Drama Studio: run_api_main serves api.app:create_app (the studio /api/v1).
 """CLI entry points for drama-series-agent."""
 
 from __future__ import annotations

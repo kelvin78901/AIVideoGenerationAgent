@@ -1,0 +1,53 @@
+# M2 第 13 步真实冒烟的完整输出（2026-10-20，DRAMA_LIVE=1 uv run python scripts/smoke/live_script.py --cap 1.0 --ask-above 0.2）
+
+DEEPSEEK_API_KEY: from keyring
+data directory: C:\Users\kelvin\AppData\Local\Temp\drama-smoke-r58aun6f
+DeepSeek models: deepseek-flash, deepseek-v4-pro
+imported: 第一章 红伞 (160 chars)
+
+== enrich: deepseek/v4-pro, estimate $0.0125 (spent so far $0.0000)
+   done in 3.2s
+   4 suggestions; accepting all
+
+== extract: deepseek/v4.1-flash, estimate $0.0068 (spent so far $0.0016)
+   done in 3.2s
+   bible: 林晚, 周屿, 老小区, 楼下便利店, 便利贴, 红色长柄伞, 雨中赴约, 林晚与周屿
+
+== split: deepseek/v4.1-flash, estimate $0.0050 (spent so far $0.0023)
+   done in 3.2s
+   第 1 集 红伞（8 个节拍）
+
+== script: deepseek/v4-pro, estimate $0.0252 (spent so far $0.0030)
+   done in 5.3s
+
+== 第 1 集剧本
+
+场 1　夜　内　老小区楼道
+  [action] 林晚穿着米色风衣，头发湿漉漉地贴在脸侧，一步步爬上六楼。
+  [sfx] 楼道灯忽明忽暗的电流声，雨声敲打窗户
+  [action] 她走到家门口，停下脚步，低头看着门口靠着一把红色的长柄伞。
+  [action] 伞柄上贴着一张便利贴，伞柄滴着水，红色在昏暗里很扎眼。
+  [action] 她蹲下，拿起便利贴，看到上面的字迹，手指微微一顿。
+  林晚（OS）：三年了，周屿的字还是歪歪扭扭的，像他这个人一样不靠谱。
+  [action] 便利贴上写着：楼下便利店，等你到十二点。
+
+场 2　夜　内　林晚家门口
+  [action] 她站起身，把伞靠在墙边，打开门，进屋。
+  [action] 片刻后，她又拉开门出来，又进去。
+  [action] 手指在门把手上松了又紧，最后叹了口气。
+  [action] 她重新拿起那把红伞，转身走进雨夜。
+
+== model_call
+id  component  model                 status   fb  in      out     cost      secs
+1   enrich     deepseek/v4-pro       success  -   466     246     $0.0016   2.5
+2   extract    deepseek/v4.1-flash   success  -   576     483     $0.0008   2.6
+3   split      deepseek/v4.1-flash   success  -   770     380     $0.0007   2.2
+4   script     deepseek/v4-pro       success  -   1111    831     $0.0048   4.6
+
+total $0.0078 over 4 calls; fallbacks 0; failures 0
+  enrich   deepseek/v4-pro                          3.2s
+  extract  deepseek/v4.1-flash                      3.2s
+  split    deepseek/v4.1-flash                      3.2s
+  script   deepseek/v4-pro                          5.3s
+
+backend log: C:\Users\kelvin\AppData\Local\Temp\drama-smoke-r58aun6f\backend.log

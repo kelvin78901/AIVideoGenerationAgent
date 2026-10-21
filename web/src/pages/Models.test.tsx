@@ -3,11 +3,12 @@ import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 
 import { Toaster } from "@/components/ui/sonner";
-import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { server } from "@/mocks/node";
 import ModelsPage from "@/pages/Models";
 import { backend } from "@/test/backend";
+import { fakeConfig } from "@/test/fakes/config";
+import { fakeEpisodes } from "@/test/fakes/episodes";
 import { renderAt } from "@/test/render";
 
 const renderModels = () =>
@@ -40,10 +41,10 @@ describe("ModelsPage", () => {
     expect(preset(/^均衡/)).toHaveAttribute("aria-pressed", "true");
     expect(preset(/^均衡/)).toHaveTextContent("当前");
     const components = screen.getByRole("table", { name: "组件设置" });
-    expect(within(components).getAllByRole("rowgroup")).toHaveLength(19);
+    expect(within(components).getAllByRole("rowgroup")).toHaveLength(20);
     expect(mode("设定提取", "本地")).toBeChecked();
     expect(row("设定提取")).toHaveTextContent("Qwen3.6-27B");
-    expect(row("参考图生成")).toHaveTextContent("Qwen-Image-Edit → Nano Banana Pro");
+    expect(row("参考图生成")).toHaveTextContent("Qwen-Image-Edit（本地） → Nano Banana Pro");
     expect(row("3D 场景（可选）")).toHaveTextContent("这一步不跑");
     expect(mode("结构控制", "API")).toBeDisabled();
     expect(within(row("视频生成")).getByRole("button", { name: "收起 视频生成" })).toHaveAttribute(
@@ -51,7 +52,7 @@ describe("ModelsPage", () => {
       "true",
     );
     const order = within(row("视频生成")).getByRole("list", { name: "「不满意换一个」的顺序" });
-    expect(within(order).getAllByRole("listitem")).toHaveLength(5);
+    expect(within(order).getAllByRole("listitem")[0]).toHaveTextContent("Seedance 2.5");
     expect(screen.getByText(/本地：RTX 5090 32GB · ComfyUI 已连接/)).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "重新检测主机、补装缺少的组件" })).toHaveAttribute(
       "href",
@@ -79,7 +80,7 @@ describe("ModelsPage", () => {
     expect(await screen.findByText("已切到「省钱」。手动改过的组件保持不变。")).toBeInTheDocument();
     await waitFor(() => expect(mode("小说补全", "本地")).toBeChecked());
     expect(row("小说补全")).toHaveTextContent("DeepSeek V4.1 Flash");
-    expect(getDb().config.defaults.preset).toBe("cheap");
+    expect(fakeConfig.defaults.preset).toBe("cheap");
 
     await user.click(preset(/^全本地/));
     await waitFor(() =>
@@ -104,7 +105,7 @@ describe("ModelsPage", () => {
     expect(await screen.findByText("「小说补全」已恢复成预设。")).toBeInTheDocument();
     await waitFor(() => expect(mode("小说补全", "API")).toBeChecked());
     expect(within(row("小说补全")).queryByText("已手动改过，不跟随预设")).toBeNull();
-    expect(getDb().config.component.enrich).toBeUndefined();
+    expect(fakeConfig.component.enrich).toBeUndefined();
   });
 
   it("reorders alternatives and picks the fallback target", async () => {
@@ -112,24 +113,24 @@ describe("ModelsPage", () => {
     renderModels();
     await ready();
     const vid = row("视频生成");
-    await user.click(within(vid).getByRole("button", { name: "下移 Wan 2.2（本地）" }));
+    await user.click(within(vid).getByRole("button", { name: "下移 Seedance 2.5" }));
     await waitFor(() =>
-      expect(getDb().config.component.vid?.alt_order?.slice(0, 2)).toEqual([
-        "comfy/ltx",
-        "comfy/wan-2.2",
+      expect(fakeConfig.component.vid?.alt_order?.slice(0, 2)).toEqual([
+        "google/gemini-omni-flash-1.1",
+        "volc/seedance-2.5",
       ]),
     );
     const order = within(vid).getByRole("list", { name: "「不满意换一个」的顺序" });
     await waitFor(() =>
-      expect(within(order).getAllByRole("listitem")[0]).toHaveTextContent("LTX-2.3（本地）"),
+      expect(within(order).getAllByRole("listitem")[0]).toHaveTextContent("Gemini Omni Flash 1.1"),
     );
-    expect(within(order).getByRole("button", { name: "上移 LTX-2.3（本地）" })).toBeDisabled();
+    expect(
+      within(order).getByRole("button", { name: "上移 Gemini Omni Flash 1.1" }),
+    ).toBeDisabled();
 
     const targets = within(vid).getByRole("radiogroup", { name: "兜底到" });
     await user.click(within(targets).getByRole("radio", { name: "Seedance 2.5" }));
-    await waitFor(() =>
-      expect(getDb().config.component.vid?.fallback?.to).toBe("volc/seedance-2.5"),
-    );
+    await waitFor(() => expect(fakeConfig.component.vid?.fallback?.to).toBe("volc/seedance-2.5"));
     await user.click(within(row("小说补全")).getByRole("switch", { name: "小说补全 自动兜底" }));
     await waitFor(() => expect(row("小说补全")).toHaveTextContent("关闭"));
   });
@@ -141,15 +142,16 @@ describe("ModelsPage", () => {
     const policy = screen.getByRole("radiogroup", { name: "兜底方式" });
     await user.click(within(policy).getByRole("radio", { name: "兜底前先问我" }));
     expect(await screen.findByText(/先暂停这一步，弹出提示让你选/)).toBeInTheDocument();
-    expect(getDb().config.defaults.fallback_notify).toBe("ask");
+    expect(fakeConfig.defaults.fallback_notify).toBe("ask");
 
     const budget = screen.getByLabelText("本集 API 预算 $");
     expect(budget).toHaveValue(15);
     await user.clear(budget);
     await user.type(budget, "20{Enter}");
     expect(await screen.findByText("本集 API 预算改成 $20。")).toBeInTheDocument();
-    expect(getDb().episodes.find((e) => e.id === EP1)?.budget_usd).toBe(20);
-    expect(getDb().summary.episode.budget_usd).toBe(20);
+    // The backend keeps it; the top bar's summary reads it from there.
+    expect(fakeEpisodes.episodePatches).toEqual([{ id: EP1, budget_usd: 20 }]);
+    expect(fakeEpisodes.list.find((e) => e.id === EP1)?.budget_usd).toBe(20);
   });
 
   it("saves a provider key and tests the connection (real backend endpoints)", async () => {

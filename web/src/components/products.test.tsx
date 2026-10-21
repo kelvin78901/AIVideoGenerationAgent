@@ -10,7 +10,7 @@ import { VersionHistory } from "@/components/VersionHistory";
 import { getDb } from "@/mocks/db";
 import { demoTiming } from "@/mocks/events";
 import { llmModels } from "@/mocks/fixtures/demo/models";
-import { PRODUCT_ENRICH } from "@/mocks/fixtures/demo/products";
+import { demoAt, demoProduct, demoVersion } from "@/mocks/fixtures/demo/products";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
 
@@ -25,8 +25,29 @@ function at<T>(list: readonly T[], i: number): T {
   return item;
 }
 
+/**
+ * A product the MSW demo runs (rerun, switch, adopt, prompt): the prototype's 小说补全 history,
+ * v1 Qwen3.6-27B 本地 09:41 → v2 DeepSeek V4 Pro 10:02（不满意换一个）已采纳. (The demo series'
+ * real 小说补全 is the backend's now; these tests are about the shared product views.)
+ */
+const PRODUCT = "test-p-enrich";
+
+function seedProduct() {
+  const at = (n: number, origin: "run" | "switch", model: string, hhmm: string) =>
+    demoVersion(PRODUCT, "enrich", {
+      n,
+      origin,
+      model,
+      at: demoAt(hhmm),
+      payload: { suggestions: 4 },
+    });
+  const v1 = at(1, "run", "local/qwen3.6-27b", "09:41");
+  const v2 = { ...at(2, "switch", "deepseek/v4-pro", "10:02"), parent_version_id: v1.id };
+  getDb().products[PRODUCT] = demoProduct(PRODUCT, "enrich", "suggestions", [v1, v2], 40);
+}
+
 /** The novel page's wiring in miniature: events on, one product, the three product views. */
-function Harness({ id = PRODUCT_ENRICH }: { id?: string }) {
+function Harness({ id = PRODUCT }: { id?: string }) {
   useEventStream();
   const product = useProduct(id);
   if (!product.data) return null;
@@ -46,7 +67,7 @@ function Harness({ id = PRODUCT_ENRICH }: { id?: string }) {
 }
 
 function enrich() {
-  const p = getDb().products[PRODUCT_ENRICH];
+  const p = getDb().products[PRODUCT];
   if (!p) throw new Error("demo product missing");
   return p;
 }
@@ -57,6 +78,7 @@ const items = async () =>
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   demoTiming.runMs = 20;
+  seedProduct();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
@@ -70,6 +92,16 @@ describe("RunBar", () => {
     expect(screen.getByText(/v2 · DeepSeek V4 Pro/)).toHaveTextContent("已采纳");
     expect(screen.getByRole("button", { name: /^重跑/ })).toHaveTextContent("≈$0.02");
     expect(screen.getByRole("button", { name: "历史 2" })).toBeInTheDocument();
+  });
+
+  it("shows 同步中 while a 确认并同步 reruns it", async () => {
+    Object.assign(enrich(), {
+      status: "running",
+      running: { job_id: "j1", model_key: "deepseek/v4-pro", state: "running", cascade_id: "s1" },
+    });
+    renderAt(<Harness />);
+    expect(await screen.findByRole("status")).toHaveTextContent("同步中 · DeepSeek V4 Pro");
+    expect(screen.getByRole("button", { name: /^重跑/ })).toBeDisabled();
   });
 
   it("rerun appends v3 with the same model and origin=rerun", async () => {
@@ -86,7 +118,7 @@ describe("RunBar", () => {
     expect(v3).toMatchObject({ n: 3, origin: "rerun", model_key: "deepseek/v4-pro" });
     expect(enrich().current_version_id).toBe(v3.id);
     // The adopted version does not change by itself (hard rule 5).
-    expect(enrich().adopted_version_id).toBe(`${PRODUCT_ENRICH}-v2`);
+    expect(enrich().adopted_version_id).toBe(`${PRODUCT}-v2`);
     expect(screen.queryByRole("status", { name: /生成/ })).not.toBeInTheDocument();
   });
 
@@ -102,7 +134,7 @@ describe("RunBar", () => {
     expect(at(enrich().versions, 2)).toMatchObject({
       origin: "switch",
       model_key: "moonshot/kimi-k2.6",
-      parent_version_id: `${PRODUCT_ENRICH}-v2`,
+      parent_version_id: `${PRODUCT}-v2`,
     });
     expect(within(history()).getAllByRole("listitem")[0]).toHaveTextContent("不满意换一个");
   });
@@ -130,7 +162,7 @@ describe("VersionHistory", () => {
     const v2 = at(within(history()).getAllByRole("listitem"), 0);
     expect(v2).toHaveTextContent("草稿");
     expect(within(v2).getByRole("button", { name: "采纳这一版" })).toBeEnabled();
-    expect(enrich().adopted_version_id).toBe(`${PRODUCT_ENRICH}-v1`);
+    expect(enrich().adopted_version_id).toBe(`${PRODUCT}-v1`);
   });
 
   it("set current changes what is shown, not what is adopted", async () => {
@@ -139,7 +171,7 @@ describe("VersionHistory", () => {
     const v1 = at(await items(), 1);
     await user.click(within(v1).getByRole("button", { name: "设为当前" }));
     await waitFor(() => expect(screen.getByText(/v1 · Qwen3.6-27B/)).toBeInTheDocument());
-    expect(enrich().adopted_version_id).toBe(`${PRODUCT_ENRICH}-v2`);
+    expect(enrich().adopted_version_id).toBe(`${PRODUCT}-v2`);
   });
 
   it("disables adopting on a locked product", async () => {

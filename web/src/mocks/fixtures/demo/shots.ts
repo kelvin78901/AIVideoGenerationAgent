@@ -47,6 +47,8 @@ type Seed = Pick<
 > &
   Partial<Pick<Shot, "sound" | "audio_mode" | "tail_from" | "tail_note" | "confirmed">> & {
     label: string;
+    /** The script lines it films (fixture ids, as the backend's demo script). */
+    lines: string[];
     scene: 1 | 2;
     scene_label: string;
     assets: string[];
@@ -55,6 +57,7 @@ type Seed = Pick<
 const seeds: Seed[] = [
   {
     label: "1-01",
+    lines: ["demo-b2"],
     scene: 1,
     scene_label: "场 1 · 楼道",
     shot_type: "scene_change",
@@ -70,6 +73,7 @@ const seeds: Seed[] = [
   },
   {
     label: "1-02",
+    lines: ["demo-b3"],
     scene: 1,
     scene_label: "场 1 · 楼道",
     shot_type: "same_scene_cut",
@@ -84,6 +88,7 @@ const seeds: Seed[] = [
   },
   {
     label: "1-03",
+    lines: ["demo-b4"],
     scene: 1,
     scene_label: "场 1 · 楼道",
     shot_type: "same_scene_cut",
@@ -98,6 +103,7 @@ const seeds: Seed[] = [
   },
   {
     label: "1-04",
+    lines: ["demo-b5"],
     scene: 1,
     scene_label: "场 1 · 楼道",
     shot_type: "same_scene_cut",
@@ -111,6 +117,7 @@ const seeds: Seed[] = [
   },
   {
     label: "1-05",
+    lines: ["demo-b6"],
     scene: 1,
     scene_label: "场 1 · 楼道",
     shot_type: "same_scene_cut",
@@ -124,6 +131,7 @@ const seeds: Seed[] = [
   },
   {
     label: "1-06",
+    lines: ["demo-b8", "demo-b10"],
     scene: 2,
     scene_label: "场 2 · 出租屋",
     shot_type: "scene_change",
@@ -138,6 +146,7 @@ const seeds: Seed[] = [
   },
   {
     label: "1-07",
+    lines: ["demo-b9"],
     scene: 2,
     scene_label: "场 2 · 出租屋",
     shot_type: "same_scene_cut",
@@ -151,6 +160,7 @@ const seeds: Seed[] = [
   },
   {
     label: "1-08",
+    lines: ["demo-b11"],
     scene: 2,
     scene_label: "场 2 · 出租屋",
     shot_type: "continuous",
@@ -167,6 +177,7 @@ const seeds: Seed[] = [
   },
   {
     label: "1-09",
+    lines: ["demo-b12"],
     scene: 2,
     scene_label: "场 2 · 门外",
     shot_type: "continuous",
@@ -235,6 +246,7 @@ export const shots: Shot[] = seeds.map((s, i) => ({
   scene_label: s.scene_label,
   idx: i + 1,
   summary: s.summary,
+  line_ids: s.lines,
   intent: s.intent,
   shot_type: s.shot_type,
   framing: s.framing,

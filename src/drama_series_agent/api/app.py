@@ -1,7 +1,8 @@
 """FastAPI application factory for AI Drama Studio.
 
-Mounts the upstream drama-series-agent routes under ``/api`` unchanged and the studio
-routes under ``/api/v1``.
+Serves the studio routes under ``/api/v1``. The upstream drama-series-agent routes
+(``api/routers/series.py``, which call models without ``router.call()``) are no longer mounted:
+their only user, the ``/legacy`` UI, was removed in M2.
 """
 
 from __future__ import annotations
@@ -12,15 +13,34 @@ from contextlib import asynccontextmanager
 from typing import Annotated, Any
 from urllib.parse import urlsplit
 
-from fastapi import APIRouter, Depends, FastAPI
+from fastapi import APIRouter, Depends, FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from drama_series_agent import __version__
 from drama_series_agent.api import sse
-from drama_series_agent.api.routes import comfy, dev, jobs, providers, series, setup, spec
+from drama_series_agent.api.routes import (
+    bible,
+    comfy,
+    config,
+    dev,
+    episodes,
+    gates,
+    impact,
+    jobs,
+    novel,
+    products,
+    providers,
+    script,
+    series,
+    setup,
+    spec,
+    suggestions,
+)
 from drama_series_agent.api.security import CLIENT_HEADER, LocalOnlyGuard
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.secrets import install_log_redaction
+from drama_series_agent.pipeline.errors import PipelineError
 
 # The Vite dev server is the only browser origin allowed to call the backend.
 ALLOWED_ORIGINS = ["http://127.0.0.1:5173", "http://localhost:5173"]
@@ -58,10 +78,27 @@ def _v1_router() -> APIRouter:
     router.include_router(dev.router)
     router.include_router(providers.router)
     router.include_router(series.router)
+    router.include_router(novel.router)
+    router.include_router(bible.router)
+    router.include_router(suggestions.router)
+    router.include_router(episodes.router)
+    router.include_router(script.router)
+    router.include_router(gates.router)
+    router.include_router(impact.router)
     router.include_router(spec.router)
     router.include_router(setup.router)
     router.include_router(comfy.router)
+    router.include_router(products.router)
+    router.include_router(config.router)
     return router
+
+
+async def _pipeline_error(request: Request, exc: Exception) -> JSONResponse:
+    """Pipeline services raise ``PipelineError``; it reads like ``ApiError`` on the wire."""
+    assert isinstance(exc, PipelineError)
+    return JSONResponse(
+        status_code=exc.status, content={"detail": {"code": exc.code, "params": exc.params}}
+    )
 
 
 @asynccontextmanager
@@ -77,8 +114,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
 
 
 def create_app() -> FastAPI:
-    from drama_series_agent.api.routers.series import router as upstream_router
-
     app = FastAPI(title="AI Drama Studio", version=__version__, lifespan=lifespan)
     origins = allowed_origins()
     # Added first = runs inside CORS, so preflight requests are answered by CORS untouched.
@@ -90,6 +125,6 @@ def create_app() -> FastAPI:
         allow_methods=["*"],
         allow_headers=["content-type", CLIENT_HEADER, "last-event-id"],
     )
-    app.include_router(upstream_router, prefix="/api")
+    app.add_exception_handler(PipelineError, _pipeline_error)
     app.include_router(_v1_router())
     return app

@@ -15,12 +15,12 @@ function Page() {
   return <StoryboardPage />;
 }
 
-function renderBoard() {
+function renderBoard(path = "/s/demo/e/1/storyboard") {
   return renderAt(
     <Routes>
       <Route path="/s/:series/e/:ep/storyboard" element={<Page />} />
     </Routes>,
-    "/s/demo/e/1/storyboard",
+    path,
   );
 }
 
@@ -48,7 +48,31 @@ describe("StoryboardPage", () => {
     expect(await screen.findByText("当前产物 · 镜头 1-04 关键帧 · 3 张候选")).toBeInTheDocument();
     const frames = await screen.findByRole("radiogroup", { name: "首帧" });
     expect(within(frames).getAllByRole("radio")).toHaveLength(3);
-    expect(screen.getByText("林晚（低声，愣住）：……周屿？")).toBeInTheDocument();
+    expect(
+      screen.getByText("林晚（低声，愣住）：……周屿？", { selector: "div" }),
+    ).toBeInTheDocument();
+  });
+
+  it("lists the script lines the shot films, each a link to the script and the novel", async () => {
+    renderBoard();
+    await ready();
+    const line = await screen.findByRole("link", { name: "在剧本里看：……周屿？" });
+    expect(line).toHaveAttribute("href", "/s/demo/e/1/script?line=demo-b5");
+    expect(line).toHaveTextContent("林晚（低声，愣住）：……周屿？");
+    expect(screen.getByRole("link", { name: "原文第 2 段" })).toHaveAttribute(
+      "href",
+      "/s/demo/e/1/novel?para=1",
+    );
+  });
+
+  it("opens with the shot a link points at (1-06 films two lines)", async () => {
+    renderBoard("/s/demo/e/1/storyboard?shot=demo-shot-1-06");
+    expect(await screen.findByRole("heading", { name: "镜头 1-06" })).toBeInTheDocument();
+    expect(await screen.findByRole("link", { name: /在剧本里看：林晚把伞靠回墙边/ })).toBeVisible();
+    expect(screen.getByRole("link", { name: "在剧本里看：三年了。他凭什么。" })).toHaveAttribute(
+      "href",
+      "/s/demo/e/1/script?line=demo-b10",
+    );
   });
 
   it("marks references that are not locked yet", async () => {

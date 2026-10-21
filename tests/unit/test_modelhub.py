@@ -7,10 +7,10 @@ from collections.abc import AsyncIterator
 
 import pytest
 
-from drama_series_agent.core.config import Resolved, get_config
+from drama_series_agent.core.config import Defaults, Resolved, get_config
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus
-from drama_series_agent.core.overrides import put_override
+from drama_series_agent.core.overrides import put_override, save_defaults
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.modelhub import calllog
 from drama_series_agent.modelhub.adapters.base import (
@@ -170,13 +170,14 @@ async def test_call_uses_component_default_and_logs(hub: tuple[Router, Registry,
     )
     assert row.status == "success" and row.billed and row.provider_id == "deepseek"
     assert row.tokens_in and row.tokens_out
-    assert row.unit_prices_json == {
+    prices = dict(row.unit_prices_json or {})
+    assert prices.pop("offpeak")["factor"] == 0.5  # its note is providers.yaml's wording
+    assert prices == {
         "unit": "token",
         "price_in": 1.32,
         "price_out": 3.96,
         "currency": "USD",
         "as_of": "2026-10-14",
-        "offpeak": {"factor": 0.5, "note": "闲时半价，时段以官方为准"},
     }
     expected = (row.tokens_in * 1.32 + row.tokens_out * 3.96) / 1e6
     assert row.cost_usd == pytest.approx(expected)
@@ -288,3 +289,14 @@ async def test_unknown_component_and_model(hub: tuple[Router, Registry, EventBus
     with pytest.raises(ModelError) as err:
         await router.call("script", _llm_req(), model="nope/x")
     assert err.value.code == "unknown_model"
+
+
+async def test_component_switched_off(hub: tuple[Router, Registry, EventBus]) -> None:
+    """全本地 turns 3D 场景 off (no local version): calling it is an error, not a guess."""
+    router, _, _ = hub
+    async with router.db.session() as s:
+        await save_defaults(s, Defaults(preset="local"))
+    with pytest.raises(ModelError) as err:
+        await router.call("world", _llm_req())
+    assert err.value.code == "component_off"
+    assert await calllog.recent(router.db) == []

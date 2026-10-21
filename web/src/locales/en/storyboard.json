@@ -67,6 +67,11 @@
     "camera": "Camera · {{framing}}",
     "blockingItem": "{{label}}: {{x}}% across, {{y}}% down",
     "text": "On-screen text: {{text}}",
-    "textLink": "View in Assets"
+    "textLink": "View in Assets",
+    "lines": "Script",
+    "noLines": "No script line for this shot.",
+    "lineLink": "Show in the script: {{text}}",
+    "paras": "Novel paragraph {{paras}}",
+    "paraSep": ", "
   }
 }

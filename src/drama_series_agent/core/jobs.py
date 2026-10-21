@@ -47,6 +47,17 @@ class JobError(Exception):
         self.retryable = retryable
 
 
+class JobNeedsConfirm(Exception):
+    """Raised by a handler that must ask the user before going on (e.g. a fallback with
+    ``notify: ask``). The job goes back to ``waiting_confirm`` with ``params`` merged in and
+    this attempt not counted; confirming queues it again."""
+
+    def __init__(self, params: dict[str, Any], est_cost_usd: float | None = None) -> None:
+        super().__init__("needs_confirm")
+        self.params = params
+        self.est_cost_usd = est_cost_usd
+
+
 class JobStateError(Exception):
     def __init__(self, job_id: str, state: str, action: str):
         super().__init__(f"cannot {action} job {job_id} in state {state}")
@@ -82,6 +93,7 @@ def job_public(job: Job) -> dict[str, Any]:
     return {
         "id": job.id,
         "series_id": job.series_id,
+        "episode_id": job.episode_id,
         "product_id": job.product_id,
         "component_id": job.component_id,
         "kind": job.kind,
@@ -95,6 +107,7 @@ def job_public(job: Job) -> dict[str, Any]:
         "error": job.error_json,
         "depends_on": job.depends_on_json,
         "est_cost_usd": job.est_cost_usd,
+        "confirmed_usd": job.confirmed_usd,
         "fallback_from_job_id": job.fallback_from_job_id,
         "created_at": ts(job.created_at),
         "started_at": ts(job.started_at),
@@ -131,11 +144,16 @@ class JobQueue:
         self._poll_interval_s = poll_interval_s
         self._dispatcher: asyncio.Task[None] | None = None
         self._stopping = False
+        self._finished: list[Callable[[Job], Awaitable[None]]] = []
 
     # ------------------------------------------------------------------ registration
 
     def register(self, kind: str, handler: Handler) -> None:
         self._handlers[kind] = handler
+
+    def on_finished(self, hook: Callable[[Job], Awaitable[None]]) -> None:
+        """Called after a job ends (succeeded, failed or canceled); a failing hook is logged."""
+        self._finished.append(hook)
 
     def limit_for(self, queue: str) -> int:
         if queue in self._concurrency:
@@ -153,6 +171,7 @@ class JobQueue:
         params: dict[str, Any] | None = None,
         *,
         series_id: str | None = None,
+        episode_id: str | None = None,
         product_id: str | None = None,
         component_id: str | None = None,
         priority: int = 0,
@@ -167,6 +186,7 @@ class JobQueue:
             queue=queue,
             params_json=dict(params or {}),
             series_id=series_id,
+            episode_id=episode_id,
             product_id=product_id,
             component_id=component_id,
             priority=priority,
@@ -213,7 +233,8 @@ class JobQueue:
         job = await self._require(job_id)
         if job.state != WAITING_CONFIRM:
             raise JobStateError(job_id, job.state, "confirm")
-        job = await self._update(job_id, state=QUEUED)
+        # The yes covers the estimate it was shown (the router's budget guard reads it).
+        job = await self._update(job_id, state=QUEUED, confirmed_usd=job.est_cost_usd)
         self._wake.set()
         return job
 
@@ -292,7 +313,13 @@ class JobQueue:
         return job
 
     async def _finish(self, job_id: str, state: str, **fields: Any) -> Job:
-        return await self._update(job_id, state=state, finished_at=utcnow(), **fields)
+        job = await self._update(job_id, state=state, finished_at=utcnow(), **fields)
+        for hook in self._finished:
+            try:
+                await hook(job)
+            except Exception:
+                logger.exception("job {} finished hook failed", job_id)
+        return job
 
     async def _dispatch_loop(self) -> None:
         while not self._stopping:
@@ -350,6 +377,16 @@ class JobQueue:
             )
             try:
                 result = await handler(JobContext(job=job, queue=self))
+            except JobNeedsConfirm as exc:
+                await self._update(
+                    job_id,
+                    state=WAITING_CONFIRM,
+                    attempt=job.attempt - 1,
+                    params_json={**job.params_json, **exc.params},
+                    est_cost_usd=exc.est_cost_usd,
+                    confirmed_usd=None,
+                    started_at=None,
+                )
             except JobError as exc:
                 error = {"code": exc.code, "params": exc.params}
                 if exc.retryable and job.attempt < job.max_attempts:

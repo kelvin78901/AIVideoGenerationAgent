@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { api } from "@/api/client";
 import { onEvent } from "@/api/events";
 import { useEpisodes } from "@/api/hooks/series";
+import { useShots } from "@/api/hooks/shots";
 import { HealthSchema } from "@/api/schemas/jobs";
 import { useEventStream } from "@/api/useEventStream";
 import { emitDemoEvent } from "@/mocks/events";
@@ -20,17 +21,26 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe("demo data (MSW)", () => {
   it("answers unimplemented endpoints with demo data and the demo header", async () => {
-    useDemoStore.getState().setRoute("/s/demo/e/1/novel");
-    const { result } = renderHook(() => useEpisodes("demo"), { wrapper });
+    useDemoStore.getState().setRoute("/s/demo/e/1/storyboard");
+    const { result } = renderHook(() => useShots("demo-e1"), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data?.[0]?.title).toBe("红伞");
-    expect(useDemoStore.getState().routes["/s/demo/e/1/novel"]).toBe(true);
+    expect(result.current.data).toHaveLength(9);
+    expect(useDemoStore.getState().routes["/s/demo/e/1/storyboard"]).toBe(true);
   });
 
   it("returns translated errors for unknown ids", async () => {
-    const { result } = renderHook(() => useEpisodes("nope"), { wrapper });
+    const { result } = renderHook(() => useShots("nope"), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error).toMatchObject({ status: 404, code: "series_not_found" });
+    expect(result.current.error).toMatchObject({ status: 404, code: "episode_not_found" });
+  });
+
+  it("passes series other than the demo one through to the backend", async () => {
+    useDemoStore.getState().setRoute("/s/mine/e/1/novel");
+    const { result } = renderHook(() => useEpisodes("mine"), { wrapper });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    // No backend runs under Vitest: the request left MSW and failed on the network.
+    expect(result.current.error).toMatchObject({ code: "network" });
+    expect(useDemoStore.getState().routes).toEqual({});
   });
 
   it("lets implemented endpoints through to the backend", async () => {

@@ -1,6 +1,7 @@
-import { ArrowLeftRight, Pencil, RotateCw } from "lucide-react";
+import { ArrowLeftRight, Clapperboard, Pencil, RotateCw } from "lucide-react";
 import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { Link } from "react-router";
 
 import type { ModelOption } from "@/api/schemas/models";
 import { ModelSwitchMenu } from "@/components/ModelSwitchMenu";
@@ -17,34 +18,48 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import type { Block } from "@/pages/script/blocks";
+import { fromAddition, useBlockLead, type Block } from "@/pages/script/blocks";
 
 function useBlockText() {
   const { t } = useTranslation("script");
+  const lead = useBlockLead();
   const paras = (b: Block) => b.paras.map((i) => i + 1).join(t("script.paraSep"));
   const ai = (b: Block) => b.kind !== "scene" && b.line.ai_added;
+  const from = (b: Block) => (fromAddition(b) ? "addition" : "source");
   return {
-    lead: (b: Block) => {
-      if (b.kind === "action") return t("script.actionMark");
-      if (b.kind === "dialogue" || b.kind === "vo")
-        return t("script.speaker", { who: b.line.character_name ?? "", tone: b.line.tone ?? "" });
-      return "";
-    },
+    lead,
     prov: (b: Block, pending: boolean) =>
       pending || b.edited
         ? t("script.prov.edited")
         : ai(b)
           ? t("script.prov.ai")
-          : t("script.prov.source", { paras: paras(b) }),
+          : t(`script.prov.${from(b)}`, { paras: paras(b) }),
     srcLabel: (b: Block) =>
-      ai(b) ? t("script.srcLabel.ai") : t("script.srcLabel.source", { paras: paras(b) }),
+      ai(b) ? t("script.srcLabel.ai") : t(`script.srcLabel.${from(b)}`, { paras: paras(b) }),
     flagged: (b: Block, pending: boolean) => pending || b.edited || ai(b),
   };
 }
 
 export interface ScriptActions {
   onSave: (block: Block, text: string) => void;
-  onRewrite: (block: Block, model?: string) => void;
+  /** `confirmBudget`: the user agreed to a rewrite over the budget. */
+  onRewrite: (block: Block, model?: string, confirmBudget?: boolean) => void;
+}
+
+/** 镜头 ↔ 剧本行 and 剧本行 → 原文 (M2 step 9): where a selected block links to. */
+export interface ScriptLinks {
+  /** The shots that film this line (示例分镜 until M4). */
+  shotsOf: (block: Block) => { id: string; label: string }[];
+  shot: (shotId: string) => string;
+  /** The novel page with this paragraph (0-based) in view. */
+  para: (idx: number) => string;
+}
+
+/** A rewrite over the per-call cap or the episode's budget, waiting for the user's yes. */
+export interface OverBudget {
+  blockId: string;
+  model: string | undefined;
+  message: string;
 }
 
 function BlockRow({
@@ -53,8 +68,11 @@ function BlockRow({
   pending,
   rewriting,
   locked,
+  confirmed,
   models,
   routeModel,
+  overBudget,
+  links,
   onSelect,
   actions,
 }: {
@@ -63,8 +81,11 @@ function BlockRow({
   pending: boolean;
   rewriting: boolean;
   locked: boolean;
+  confirmed: boolean;
   models: readonly ModelOption[];
   routeModel: string | undefined;
+  overBudget: OverBudget | null;
+  links: ScriptLinks;
   onSelect: () => void;
   actions: ScriptActions;
 }) {
@@ -73,6 +94,8 @@ function BlockRow({
   const ids = useId();
   const [editing, setEditing] = useState<string | null>(null);
   const scene = block.kind === "scene";
+  const shots = scene ? [] : links.shotsOf(block);
+  const first = block.paras[0];
   return (
     <li
       data-block={block.id}
@@ -111,7 +134,7 @@ function BlockRow({
           {editing !== null ? (
             <div className="flex flex-col gap-1.5">
               <Label htmlFor={`${ids}-edit`} className="text-xs font-normal text-muted-foreground">
-                {t("script.editLabel")}
+                {t(confirmed ? "script.editLabel" : "script.editLabelDraft")}
               </Label>
               <Textarea
                 id={`${ids}-edit`}
@@ -134,6 +157,22 @@ function BlockRow({
                   {t("script.cancel")}
                 </Button>
               </div>
+            </div>
+          ) : overBudget ? (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center gap-2 rounded-md bg-tone-warn-bg px-3 py-2 text-sm text-tone-warn-fg"
+            >
+              <span>{overBudget.message}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+                disabled={rewriting}
+                onClick={() => actions.onRewrite(block, overBudget.model, true)}
+              >
+                {t("script.rewriteAnyway")}
+              </Button>
             </div>
           ) : (
             <div className="flex flex-wrap items-center gap-2">
@@ -166,9 +205,39 @@ function BlockRow({
                   {t("script.rewriteWith")}
                 </Button>
               </ModelSwitchMenu>
-              <span className="text-xs text-muted-foreground">{text.srcLabel(block)}</span>
+              {first !== undefined ? (
+                <Link
+                  to={links.para(first)}
+                  className="text-xs text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
+                  title={t("script.inNovel")}
+                >
+                  {text.srcLabel(block)}
+                </Link>
+              ) : (
+                <span className="text-xs text-muted-foreground">{text.srcLabel(block)}</span>
+              )}
             </div>
           )}
+          {!scene ? (
+            <div className="flex flex-wrap items-center gap-1.5 text-xs text-muted-foreground">
+              <Clapperboard aria-hidden className="size-3.5" />
+              <span>{t("script.shots")}</span>
+              {shots.length ? (
+                shots.map((s) => (
+                  <Link
+                    key={s.id}
+                    to={links.shot(s.id)}
+                    className="rounded-sm border px-1.5 py-0.5 font-mono text-foreground hover:border-primary hover:text-primary"
+                    aria-label={t("script.shot", { label: s.label })}
+                  >
+                    {s.label}
+                  </Link>
+                ))
+              ) : (
+                <span>{t("script.noShots")}</span>
+              )}
+            </div>
+          ) : null}
         </div>
       ) : null}
     </li>
@@ -183,8 +252,11 @@ export function ScriptScreenplay({
   pendingId,
   rewritingId,
   locked,
+  confirmed,
   models,
   routeModel,
+  overBudget,
+  links,
   onSelect,
   actions,
 }: {
@@ -196,8 +268,12 @@ export function ScriptScreenplay({
   rewritingId: string | null;
   /** A change is waiting in the impact dialog: no other edits until it is resolved. */
   locked: boolean;
+  /** The script gate is confirmed: an edit shows the impact first. */
+  confirmed: boolean;
   models: readonly ModelOption[];
   routeModel: string | undefined;
+  overBudget: OverBudget | null;
+  links: ScriptLinks;
   onSelect: (id: string) => void;
   actions: ScriptActions;
 }) {
@@ -238,8 +314,11 @@ export function ScriptScreenplay({
               pending={b.id === pendingId}
               rewriting={b.id === rewritingId}
               locked={locked}
+              confirmed={confirmed}
               models={models}
               routeModel={routeModel}
+              overBudget={overBudget?.blockId === b.id ? overBudget : null}
+              links={links}
               onSelect={() => onSelect(b.id)}
               actions={actions}
             />

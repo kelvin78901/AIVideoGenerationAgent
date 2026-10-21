@@ -23,6 +23,28 @@
     "gpuNamed": "Local GPU: {{name}} {{vram}} GB · {{status}}",
     "episodeTitle": "Ep. {{n}} “{{title}}”"
   },
+  "seriesMenu": {
+    "label": "Switch series or start a new one",
+    "heading": "Series",
+    "new": "New series…",
+    "failed": "Could not load the series list"
+  },
+  "newSeries": {
+    "title": "New series",
+    "lead": "Give it a title first. Next you set the output spec (portrait or landscape, resolution, frame rate), then import the novel.",
+    "name": "Title",
+    "placeholder": "e.g. Before the Rain Stops",
+    "required": "The title cannot be empty",
+    "create": "Create and set the output spec",
+    "cancel": "Cancel",
+    "done": "Created “{{title}}”"
+  },
+  "noSeries": {
+    "title": "Start a series",
+    "lead": "A series starts from a novel: create the series, set the output spec, then import the novel.",
+    "empty": "No series yet",
+    "emptyLead": "Create a series; you will set the output spec and import the novel next."
+  },
   "placeholder": {
     "comingSoon": "This page is built in a later milestone ({{milestone}}).",
     "prototype": "Layout and copy follow {{file}}."
@@ -81,15 +103,41 @@
     "workflow_needs_trial": "Pass a trial first",
     "workflow_dramastudio_bindings": "Workflows with DramaStudio nodes need no bindings",
     "workflow_unknown_node": "No node titled “{{title}}” in this workflow",
-    "workflow_check_failed": "The health check failed: install the missing node packs and models first"
+    "workflow_check_failed": "The health check failed: install the missing node packs and models first",
+    "invalid_owner": "The product owner must look like type:id",
+    "scope_id_required": "An item-level setting needs the item",
+    "component_not_ready": "Generation for this step is not wired up yet",
+    "component_off": "This step is skipped under the current preset (no usable model)",
+    "no_model_configured": "No model is selected for this step yet",
+    "no_alternative": "There is no other model to switch to; add alternatives in Run settings",
+    "invalid_output": "The model twice failed to answer in the required format; its raw answer is kept",
+    "budget_exceeded": "This call would go over a limit (the per-call cap or the confirmed amount); it stopped before spending",
+    "over_budget": "Estimated ${{estimate_usd}}, over the ${{limit_usd}} limit; it runs once you confirm",
+    "rights_not_confirmed": "Tick “I own the adaptation rights” before importing",
+    "unsupported_file": "Only .txt and .docx are supported (this file is {{ext}})",
+    "file_too_large": "The file is larger than {{limit_mb}} MB",
+    "novel_unreadable": "Cannot read the text of this file: save a .txt as UTF-8 or GBK, and check that a .docx is not damaged",
+    "novel_empty": "The file has no text",
+    "chapter_not_found": "There is no chapter {{idx}}",
+    "chapter_empty": "A chapter needs at least one paragraph",
+    "novel_not_found": "This series has no novel yet",
+    "instruction_required": "Say how it should change first",
+    "upstream_not_ready": "The previous step has no usable result yet; finish it first",
+    "entity_not_found": "Entry {{id}} not found",
+    "name_required": "The name cannot be empty",
+    "merge_needs_two": "Merging needs at least two entries",
+    "merge_kinds_differ": "Entries of different kinds cannot be merged",
+    "distinct_needs_two": "Pick two different entries",
+    "split_needs_alias": "Say which alias to split off",
+    "alias_not_found": "This entry has no alias “{{alias}}”",
+    "source_missing": "The text this bible was taken from ({{id}}) is missing"
   },
   "toast": {
     "generic": "Notice: {{code}}",
     "version_created": "Generated v{{n}} ({{model}}). The previous version is still in the history; adopt this one if you like it.",
-    "sync_done": "Sync done: {{files}} files checked, {{added}} new, the rest unchanged."
-  },
-  "legacy": {
-    "banner": "Legacy UI: calls are not logged and not budget-limited",
-    "detail": "This is the upstream Hermes UI, removed after M2. Model calls started here bypass router.call(): no model_call rows, no budget checks."
+    "sync_done": "Sync done: {{files}} files checked, {{added}} new, the rest unchanged.",
+    "run_failed": "Generation failed ({{error}}). Earlier versions are still in History; rerun or switch models.",
+    "cascade_done": "Synced: {{count}} outputs updated and adopted. Older versions are still in the history.",
+    "cascade_done_failed": "Sync finished: {{count}} outputs updated, {{failed}} failed (left as outdated; rerun them on their own)."
   }
 }

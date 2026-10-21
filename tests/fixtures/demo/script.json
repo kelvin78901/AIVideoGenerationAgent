@@ -1,0 +1,131 @@
+{
+  "_comment": "剧本化 of the demo novel, as a model would answer (paragraph numbers 1-based; 【补写1】 is the accepted addition s1). Episode 1 is the prototype's (Script.dc.html blocksData(): 2 scenes, 10 lines, 2 added by AI); ids and overlay_shot are the demo's (web/src/mocks/fixtures/demo/), not the model's. rewrites: what 「重写这一段」 proposes in Mock mode (prototype alt).",
+  "episodes": [
+    {
+      "episode": "demo-e1",
+      "paras": [1, 2, 3, 4, 5],
+      "scenes": [
+        {
+          "id": "demo-b1",
+          "heading": "夜　内　老小区楼道 · 六楼林晚家门口",
+          "time": "night",
+          "location": "老小区楼道（六楼）",
+          "paras": [1, 2],
+          "lines": [
+            {
+              "id": "demo-b2",
+              "type": "action",
+              "character": "林晚",
+              "text": "声控灯坏了一半，忽明忽暗。林晚（26，米色风衣湿了半边，挎帆布画板袋）走上六楼。",
+              "mood": "疲惫",
+              "seconds": 4,
+              "paras": [1],
+              "adds": [1]
+            },
+            {
+              "id": "demo-b3",
+              "type": "action",
+              "text": "门口靠着一把红色长柄伞，伞柄上贴着一张黄色便利贴。",
+              "seconds": 3,
+              "paras": [2]
+            },
+            {
+              "id": "demo-b4",
+              "type": "action",
+              "text": "特写：便利贴，字迹歪扭——“楼下便利店，等你到十二点。”",
+              "seconds": 3,
+              "paras": [3]
+            },
+            {
+              "id": "demo-b5",
+              "type": "dialogue",
+              "character": "林晚",
+              "tone": "低声，愣住",
+              "text": "……周屿？",
+              "seconds": 4,
+              "paras": [2],
+              "added": true
+            },
+            {
+              "id": "demo-b6",
+              "type": "action",
+              "character": "林晚",
+              "text": "她的指尖停在便利贴上，下意识摸了摸左手腕的旧发圈。",
+              "mood": "动摇",
+              "seconds": 3,
+              "paras": [2]
+            }
+          ]
+        },
+        {
+          "id": "demo-b7",
+          "heading": "夜　内　林晚出租屋",
+          "time": "night",
+          "location": "林晚出租屋",
+          "paras": [4],
+          "lines": [
+            {
+              "id": "demo-b8",
+              "type": "action",
+              "character": "林晚",
+              "text": "林晚把伞靠回墙边，进屋，关门，背靠着门。",
+              "mood": "强撑",
+              "seconds": 5,
+              "paras": [4]
+            },
+            {
+              "id": "demo-b9",
+              "type": "action",
+              "text": "特写：手机亮屏，23:52。",
+              "seconds": 2,
+              "paras": [4]
+            },
+            {
+              "id": "demo-b10",
+              "type": "vo",
+              "character": "林晚",
+              "tone": "OS",
+              "text": "三年了。他凭什么。",
+              "paras": [2],
+              "added": true,
+              "overlay_shot": "1-06"
+            },
+            {
+              "id": "demo-b11",
+              "type": "action",
+              "character": "林晚",
+              "text": "她拉开门，又关上。停了两秒，再拉开。",
+              "mood": "犹豫",
+              "seconds": 6,
+              "paras": [4]
+            },
+            {
+              "id": "demo-b12",
+              "type": "action",
+              "character": "林晚",
+              "text": "门外，她拿起了那把伞。",
+              "mood": "下定决心",
+              "seconds": 4,
+              "paras": [5],
+              "cliffhanger": true
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "rewrites": {
+    "demo-b1": "夜　内　老小区六楼楼道",
+    "demo-b2": "声控灯一闪一灭。林晚（26，米色风衣湿了半边）抱着帆布画板袋，一步一步走上六楼。",
+    "demo-b3": "门边的墙上斜靠着一把红色长柄伞，伞柄上粘着一张黄色便利贴。",
+    "demo-b4": "特写：黄色便利贴上一行歪扭的字——“楼下便利店，等你到十二点。”",
+    "demo-b5": "……是你啊。",
+    "demo-b6": "她的手指在便利贴上停住，又缩回来，攥住了左手腕的旧发圈。",
+    "demo-b7": "夜　内　林晚出租屋 · 门内",
+    "demo-b8": "她把伞留在门外，进屋反手关门，后背抵着门板。",
+    "demo-b9": "特写：手机锁屏亮起，23:52，没有新消息。",
+    "demo-b10": "三年了，一句话就想让我下去？",
+    "demo-b11": "她握住门把手，拉开一条缝，又关上。两秒后，再一次拉开。",
+    "demo-b12": "她弯下腰，从墙边拿起那把红伞。"
+  }
+}

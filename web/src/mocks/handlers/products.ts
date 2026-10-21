@@ -1,4 +1,4 @@
-import { http } from "msw";
+import { http, passthrough } from "msw";
 
 import type { Job } from "@/api/schemas/jobs";
 import {
@@ -9,19 +9,18 @@ import {
   type Product,
   type ProductVersion,
 } from "@/api/schemas/products";
+import { backendJson } from "@/mocks/backend";
 import { getDb } from "@/mocks/db";
 import { demoTiming, emitDemoEvent } from "@/mocks/events";
-import { primaryModel } from "@/mocks/fixtures/demo/config";
 import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
 import { keyframeCandidates } from "@/mocks/fixtures/demo/shots";
 import { assetPayload } from "@/mocks/handlers/assets";
-import { resolveConfig } from "@/mocks/handlers/config";
 import { demoTakeQa, logTake, shotOf, waitingOn } from "@/mocks/handlers/generate";
 import { demoError, demoJson, v1 } from "@/mocks/http";
+import { demoRoute, primaryModel } from "@/mocks/route";
 
-const notFound = (id: unknown) => demoError(404, "product_not_found", { id });
 const DEFAULT_MODEL = "local/qwen3.6-27b";
 
 function findVersion(id: string): { product: Product; version: ProductVersion } | undefined {
@@ -79,10 +78,9 @@ function nextModel(current: string): string {
 }
 
 /** The model a plain run uses: the component's configured route (Inspector「运行设置」). */
-function routeModel(p: Product): string {
-  const cfg = resolveConfig(p.component_id, null);
+async function routeModel(p: Product): Promise<string> {
   return (
-    (cfg && primaryModel(cfg.values)) ??
+    primaryModel(await demoRoute(p.component_id)) ??
     currentVersion(p)?.model_key ??
     p.prompt?.model_key ??
     DEFAULT_MODEL
@@ -90,9 +88,9 @@ function routeModel(p: Product): string {
 }
 
 /** `estimate` is computed on read, so it follows config changes (hard rule 6). */
-function withEstimate(p: Product): Product {
+async function withEstimate(p: Product): Promise<Product> {
   if (p.running) return p;
-  const model = routeModel(p);
+  const model = await routeModel(p);
   p.estimate = {
     model_key: model,
     where: modelByKey(model)?.where ?? "api",
@@ -141,13 +139,15 @@ function finishRun(
   p.current_version_id = last.id;
   p.running = null;
   settle(p);
-  // A first script for an episode makes it a draft (剧本草稿).
-  if (p.slot === "script" && p.owner_type === "episode") {
-    const ep = getDb().episodes.find((e) => e.id === p.owner_id);
-    if (ep?.script_status === "none") ep.script_status = "draft";
+  for (const v of created) {
+    emitDemoEvent("version.created", {
+      product_id: p.id,
+      version_id: v.id,
+      n: v.n,
+      origin: v.origin,
+    });
   }
-  for (const version of created) emitDemoEvent("version.created", { product_id: p.id, version });
-  emitDemoEvent("product.updated", p);
+  emitDemoEvent("product.updated", { product_id: p.id, series_id: p.series_id, status: p.status });
   emitDemoEvent("toast", {
     level: "success",
     code: "version_created",
@@ -161,26 +161,37 @@ function finishRun(
 
 export const productHandlers = [
   // ?owner=<type>:<id>&component=<id>
-  http.get(v1("/products"), ({ request }) => {
+  http.get(v1("/products"), async ({ request }) => {
     const q = new URL(request.url).searchParams;
     const owner = q.get("owner");
     const component = q.get("component");
+    // A series or an episode that is not the demo's is the backend's (plan「和 MSW 共存」).
+    const [kind, ownerId] = owner?.split(":") ?? [];
+    if (kind === "series" && ownerId && !getDb().series[ownerId]) return passthrough();
+    if (kind === "episode" && ownerId && !getDb().episodes.some((e) => e.id === ownerId))
+      return passthrough();
     const list = Object.values(getDb().products).filter(
       (p) =>
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&
         (!component || p.component_id === component),
     );
-    return demoJson(list.map(withEstimate));
+    // The backend's products of the demo series (the novel, 设定提取 …) and of its episodes
+    // (剧本化) come first.
+    const merged = (kind === "series" || kind === "episode") && !!ownerId;
+    const real = merged ? await backendJson<Product[]>(request.clone(), []) : [];
+    const demo = await Promise.all(list.map(withEstimate));
+    return demoJson([...real, ...demo.filter((p) => !real.some((r) => r.id === p.id))]);
   }),
 
-  http.get(v1("/products/:id"), ({ params }) => {
+  // Ids that are not in the demo data are the backend's.
+  http.get(v1("/products/:id"), async ({ params }) => {
     const p = getDb().products[String(params.id)];
-    return p ? demoJson(withEstimate(p)) : notFound(params.id);
+    return p ? demoJson(await withEstimate(p)) : passthrough();
   }),
 
   http.post(v1("/products/:id/run"), async ({ params, request }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     const body = RunRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     if (p.running) return demoError(409, "product_busy", { id: p.id });
@@ -192,7 +203,9 @@ export const productHandlers = [
     const req = body.data;
     // 重跑 uses the configured route; 不满意换一个 moves on from the version on screen.
     const base =
-      req.mode === "switch" ? (currentVersion(p)?.model_key ?? routeModel(p)) : routeModel(p);
+      req.mode === "switch"
+        ? (currentVersion(p)?.model_key ?? (await routeModel(p)))
+        : await routeModel(p);
     const model = req.model ?? (req.mode === "switch" ? nextModel(base) : base);
     if (!modelByKey(model)) return demoError(404, "unknown_model", { key: model });
 
@@ -226,14 +239,14 @@ export const productHandlers = [
 
   http.post(v1("/versions/:id/set-current"), ({ params }) => {
     const found = findVersion(String(params.id));
-    if (!found) return demoError(404, "version_not_found", { id: params.id });
+    if (!found) return passthrough();
     found.product.current_version_id = found.version.id;
     return demoJson(found.product);
   }),
 
   http.post(v1("/versions/:id/adopt"), ({ params }) => {
     const found = findVersion(String(params.id));
-    if (!found) return demoError(404, "version_not_found", { id: params.id });
+    if (!found) return passthrough();
     const { product: p, version } = found;
     if (p.locked_hash) return demoError(409, "product_locked", { id: p.id });
     // One adopted version per product: adopting replaces the previous one.
@@ -246,7 +259,7 @@ export const productHandlers = [
   // 取消采纳 (候选墙): nothing downstream uses this product until another version is adopted.
   http.post(v1("/products/:id/unadopt"), ({ params }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     if (p.locked_hash) return demoError(409, "product_locked", { id: p.id });
     p.adopted_version_id = null;
     settle(p);
@@ -256,7 +269,7 @@ export const productHandlers = [
   // 数字键打分 on the candidate wall.
   http.patch(v1("/versions/:id"), async ({ params, request }) => {
     const found = findVersion(String(params.id));
-    if (!found) return demoError(404, "version_not_found", { id: params.id });
+    if (!found) return passthrough();
     const body = VersionPatchSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     Object.assign(found.version, body.data);
@@ -265,7 +278,7 @@ export const productHandlers = [
 
   http.post(v1("/products/:id/lock"), ({ params }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     const adopted = p.versions.find((v) => v.id === p.adopted_version_id);
     if (!adopted) return demoError(409, "nothing_adopted", { id: p.id });
     p.locked_hash = adopted.content_hash;
@@ -275,7 +288,7 @@ export const productHandlers = [
 
   http.post(v1("/products/:id/unlock"), ({ params }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     p.locked_hash = null;
     settle(p);
     return demoJson(p);
@@ -283,7 +296,7 @@ export const productHandlers = [
 
   http.put(v1("/products/:id/prompt"), async ({ params, request }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     const body = SavePromptRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     const model = p.prompt?.model_key ?? currentVersion(p)?.model_key ?? DEFAULT_MODEL;
@@ -298,7 +311,7 @@ export const productHandlers = [
 
   http.post(v1("/products/:id/compile"), async ({ params, request }) => {
     const p = getDb().products[String(params.id)];
-    if (!p) return notFound(params.id);
+    if (!p) return passthrough();
     const body = CompileRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     const model = body.data.model ?? p.prompt?.model_key ?? DEFAULT_MODEL;

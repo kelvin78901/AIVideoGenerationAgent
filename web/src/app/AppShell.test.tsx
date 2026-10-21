@@ -7,12 +7,13 @@ import i18n from "@/i18n";
 import { series } from "@/mocks/fixtures/demo/series";
 import { server } from "@/mocks/node";
 import { useUiStore } from "@/stores/ui";
-import { backend } from "@/test/backend";
+import { backend, fake } from "@/test/backend";
+import { makeJob } from "@/test/fixtures";
 import { renderAt } from "@/test/render";
 import { fakeSetup, installState, resetFakeSetup } from "@/test/setupBackend";
 
 beforeEach(() => {
-  act(() => useUiStore.setState({ lang: "zh-CN", theme: "light" }));
+  act(() => useUiStore.setState({ lang: "zh-CN", theme: "light", lastSeries: null }));
   backend();
 });
 
@@ -33,6 +34,75 @@ describe("AppShell", () => {
     renderAt(<AppRoutes />, "/");
     expect(await screen.findByRole("heading", { level: 1, name: "小说" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /01\s*小说/ })).toHaveAttribute("aria-current", "page");
+  });
+
+  it("/ goes back to the series opened last, else the newest", async () => {
+    resetFakeSetup("pc", { scanned: true });
+    fake.created.push({ ...series, id: "s1", slug: "s1", title: "新剧" });
+    act(() => useUiStore.setState({ lastSeries: "demo" }));
+    const { unmount } = renderAt(<AppRoutes />, "/");
+    expect(await screen.findByText("177 字 · 5 段")).toBeInTheDocument();
+    expect(screen.getByTestId("shell-title")).toHaveTextContent("《雨停之前》");
+    unmount();
+    // A series that is gone: the newest one.
+    act(() => useUiStore.setState({ lastSeries: "gone" }));
+    renderAt(<AppRoutes />, "/");
+    expect(await screen.findByText("还没有导入小说")).toBeInTheDocument();
+    expect(screen.getByTestId("shell-title")).toHaveTextContent("《新剧》");
+    expect(useUiStore.getState().lastSeries).toBe("s1");
+  });
+
+  it("/ offers to start a series when there is none", async () => {
+    resetFakeSetup("pc", { scanned: true });
+    server.use(http.get("*/api/v1/series", () => HttpResponse.json([])));
+    renderAt(<AppRoutes />, "/");
+    expect(
+      await screen.findByRole("heading", { level: 1, name: "开始一部剧" }),
+    ).toBeInTheDocument();
+    await userEvent.click(screen.getByRole("button", { name: "新建剧集…" }));
+    expect(await screen.findByRole("dialog", { name: "新建剧集" })).toBeInTheDocument();
+  });
+
+  it("the series menu switches series and creates one, then opens its spec", async () => {
+    const user = userEvent.setup();
+    fake.created.push({ ...series, id: "s1", slug: "s1", title: "新剧" });
+    renderAt(<AppRoutes />, "/s/demo/e/1/novel");
+    await user.click(
+      await screen.findByRole("button", {
+        name: "《雨停之前》",
+        description: "切换剧集或新建剧集",
+      }),
+    );
+    const menu = await screen.findByRole("menu");
+    expect(
+      within(menu)
+        .getAllByRole("menuitem")
+        .map((i) => i.textContent),
+    ).toEqual(["《新剧》", "《雨停之前》", "新建剧集…"]);
+    expect(within(menu).getByRole("menuitem", { name: "《雨停之前》" })).toHaveAttribute(
+      "aria-current",
+      "true",
+    );
+    await user.click(within(menu).getByRole("menuitem", { name: "《新剧》" }));
+    expect(await screen.findByText("还没有导入小说")).toBeInTheDocument();
+    expect(screen.getByTestId("shell-title")).toHaveTextContent("《新剧》");
+
+    await user.click(screen.getByRole("button", { description: "切换剧集或新建剧集" }));
+    await user.click(await screen.findByRole("menuitem", { name: "新建剧集…" }));
+    const dialog = await screen.findByRole("dialog", { name: "新建剧集" });
+    await user.click(within(dialog).getByRole("button", { name: "创建，去定成片规格" }));
+    expect(within(dialog).getByText("剧名不能为空")).toBeInTheDocument();
+    await user.type(within(dialog).getByLabelText("剧名"), "  旧发圈 ");
+    await user.click(within(dialog).getByRole("button", { name: "创建，去定成片规格" }));
+    expect(await screen.findByRole("heading", { level: 1, name: "成片规格" })).toBeInTheDocument();
+    await waitFor(() => expect(screen.getByTestId("shell-title")).toHaveTextContent("《旧发圈》"));
+    expect(fake.created.at(-1)).toMatchObject({ id: "s2", title: "旧发圈" });
+    expect(useUiStore.getState().lastSeries).toBe("s2");
+    // The spec page leads on to importing the novel.
+    expect(screen.getByRole("link", { name: "下一步：导入小说" })).toHaveAttribute(
+      "href",
+      "/s/s2/e/1/novel",
+    );
   });
 
   it("deep links never jump to the first-run page", async () => {
@@ -146,6 +216,35 @@ describe("AppShell", () => {
     ]);
     await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
     expect(screen.getAllByTestId("step-badge")[5]).toHaveTextContent("Not started");
+  });
+
+  it("shows 同步中 on the steps a 确认并同步 is still rerunning", async () => {
+    const cascade = { id: "sync-1", origin: "demo-novel" };
+    server.use(
+      http.get("*/api/v1/jobs", () =>
+        HttpResponse.json([
+          makeJob({
+            id: "j1",
+            series_id: "demo",
+            component_id: "split",
+            state: "running",
+            params: { cascade },
+          }),
+          // Episode 2's script, and a run of its own: not this episode's sync.
+          makeJob({
+            id: "j2",
+            series_id: "demo",
+            episode_id: "demo-e2",
+            component_id: "script",
+            params: { cascade },
+          }),
+          makeJob({ id: "j3", series_id: "demo", component_id: "extract", state: "running" }),
+        ]),
+      ),
+    );
+    renderAt(<AppRoutes />, "/s/demo/e/1/novel");
+    await waitFor(() => expect(screen.getAllByTestId("step-badge")[1]).toHaveTextContent("同步中"));
+    expect(screen.getAllByTestId("step-badge")[0]).toHaveTextContent("已确认");
   });
 
   it("switches language from the top bar", async () => {

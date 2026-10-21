@@ -5,12 +5,11 @@ import type { Job } from "@/api/schemas/jobs";
 import type { Product, ProductVersion, QaCheck } from "@/api/schemas/products";
 import type { Shot } from "@/api/schemas/shots";
 import { getDb } from "@/mocks/db";
-import { primaryModel } from "@/mocks/fixtures/demo/config";
 import { modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost } from "@/mocks/fixtures/demo/products";
 import { qaResult } from "@/mocks/fixtures/demo/takes";
-import { resolveConfig } from "@/mocks/handlers/config";
 import { demoError, demoJson, v1 } from "@/mocks/http";
+import { demoRoute, primaryModel } from "@/mocks/route";
 
 export function shotOf(p: Product): Shot | undefined {
   return p.owner_type === "shot" ? getDb().shots.find((s) => s.id === p.owner_id) : undefined;
@@ -113,14 +112,13 @@ export const generateHandlers = [
   }),
 
   // 2K 精修: queue the take on the 2K finishing component's route → job.
-  http.post(v1("/versions/:id/upscale"), ({ params }) => {
+  http.post(v1("/versions/:id/upscale"), async ({ params }) => {
     const id = String(params.id);
     const product = Object.values(getDb().products).find((p) =>
       p.versions.some((v) => v.id === id),
     );
     if (!product || product.slot !== "video") return demoError(404, "version_not_found", { id });
-    const cfg = resolveConfig("up", null);
-    const model = (cfg && primaryModel(cfg.values)) ?? "comfy/seedvr2";
+    const model = primaryModel(await demoRoute("up")) ?? "comfy/seedvr2";
     const seconds = shotOf(product)?.duration_s ?? 4;
     const local = modelByKey(model)?.where === "local";
     const job: Job = {

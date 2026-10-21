@@ -17,6 +17,7 @@ from drama_series_agent.core.jobs import (
     WAITING_CONFIRM,
     JobContext,
     JobError,
+    JobNeedsConfirm,
     JobQueue,
     JobStateError,
 )
@@ -246,3 +247,36 @@ async def test_state_changes_are_published(queue: JobQueue) -> None:
             await asyncio.sleep(0.01)
             states = [e.data["state"] for e in await queue.bus.replay(0) if e.data["id"] == job.id]
     assert states == [QUEUED, RUNNING, SUCCEEDED]
+
+
+async def test_confirm_records_the_amount(queue: JobQueue) -> None:
+    queue.register("t", Tracker(0))
+    await queue.start()
+    job = await queue.enqueue("t", "api:x", {}, est_cost_usd=0.62, wait_for_confirm=True)
+    assert (await queue.confirm(job.id)).confirmed_usd == 0.62
+    await _until(queue, job.id, SUCCEEDED)
+
+
+async def test_handler_can_ask_before_going_on(queue: JobQueue) -> None:
+    """JobNeedsConfirm: back to waiting_confirm with new params, the attempt not counted."""
+    seen: list[dict[str, Any]] = []
+
+    async def handler(ctx: JobContext) -> dict[str, Any]:
+        seen.append(dict(ctx.params))
+        if "model" not in ctx.params:
+            raise JobNeedsConfirm({"model": "b", "confirm": {"reason": "fallback"}}, 0.3)
+        return {"model": ctx.params["model"]}
+
+    queue.register("ask", handler)
+    await queue.start()
+    job = await queue.enqueue("ask", "api:x", {"name": "q"}, max_attempts=1)
+    await _until(queue, job.id, WAITING_CONFIRM)
+    waiting = await queue.get(job.id)
+    assert waiting is not None
+    assert waiting.params_json["model"] == "b" and waiting.est_cost_usd == 0.3
+    assert waiting.attempt == 0  # max_attempts=1 still allows the confirmed run
+    await queue.confirm(job.id)
+    await _until(queue, job.id, SUCCEEDED)
+    done = await queue.get(job.id)
+    assert done is not None and done.result_json == {"model": "b"} and done.confirmed_usd == 0.3
+    assert [s.get("model") for s in seen] == [None, "b"]

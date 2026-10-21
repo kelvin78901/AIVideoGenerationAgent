@@ -56,7 +56,8 @@ export function RunBar({
         <div className="text-xs text-muted-foreground">{t("runBar.product", { what })}</div>
         {cur ? (
           <div className="text-sm font-medium">
-            v{cur.n} · {modelName(models, cur.model_key)}{" "}
+            {/* A hand edit or an import has no model: say what made it instead. */}v{cur.n} ·{" "}
+            {cur.model_key ? modelName(models, cur.model_key) : te(`origin.${cur.origin}`)}{" "}
             <span className="font-normal text-muted-foreground">
               {cur.where ? `· ${te(`where.${cur.where}`)} ` : ""}· {formatTime(cur.created_at)} ·{" "}
               {te(`versionStatus.${versionStatus(product, cur)}`)}
@@ -69,9 +70,16 @@ export function RunBar({
       {busy ? (
         <div role="status" className="flex items-center gap-1.5 text-sm text-primary">
           <Loader2 className="size-4 animate-spin" aria-hidden />
-          {t(product.status === "queued" ? "runBar.queued" : "runBar.running", {
-            model: modelName(models, busyModel),
-          })}
+          {t(
+            product.running?.state === "waiting_confirm"
+              ? "runBar.waiting"
+              : product.running?.cascade_id
+                ? "runBar.syncing"
+                : product.status === "queued"
+                  ? "runBar.queued"
+                  : "runBar.running",
+            { model: modelName(models, busyModel) },
+          )}
         </div>
       ) : null}
       <Button variant="outline" onClick={onEditPrompt}>

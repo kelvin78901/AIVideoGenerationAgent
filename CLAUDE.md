@@ -21,7 +21,7 @@
 2. **测试和开发默认用 Mock 适配器**（`DRAMA_MOCK=1`）。自动化测试里绝不调用付费 API。真实调用只在手动冒烟脚本里，需要 `DRAMA_LIVE=1` 并设花费上限（默认 $1）。
 3. **密钥**只存系统钥匙串（keyring），`.env` 兜底；不进数据库明文、不进日志、不经 API 返回、不进前端。`.env` 在 `.gitignore` 里。
 4. **界面文字全部走 i18n 词表**（`zh-CN`、`en`），不写死在组件里；新增 key 两种语言同时加。
-5. **版本只追加不覆盖**：每个产物都支持改提示词、重跑、不满意换一个、历史；已采纳或锁定的版本不会被自动替换，上游变化走失效传播。
+5. **版本只追加不覆盖**：每个产物都支持改提示词、重跑、不满意换一个、历史；已采纳或锁定的版本不会被自动替换，上游变化走失效传播。唯一例外是用户在影响范围弹窗里确认的「确认并同步」：受影响的下游自动重跑并采纳新版本（级联），旧版本都留在历史里，随时能换回。
 6. **花钱前先估价**：API 任务入队前 `estimate()`，超过单次 / 单镜头 / 本集预算就进 `waiting_confirm`，等用户确认。
 7. **加模型 = 加适配器或填配置**，不改流程代码。模型名、价格、默认路由放 `config/*.yaml`，不写死在代码里。
 8. **本地 GPU 队列并发 1**，同一模型的任务连续跑，切换大模型前释放显存。
@@ -47,13 +47,14 @@ uv run alembic revision --autogenerate -m "..."   # 新增数据表时生成迁�
 pnpm -C web install && pnpm -C web dev    # 前端 127.0.0.1:5173，/api 代理到后端
 pnpm -C web test                          # i18n key 检查 + Vitest
 pnpm -C web lint && pnpm -C web typecheck && pnpm -C web format:check
-pnpm -C web e2e                           # Playwright 冒烟（自起 Mock 后端 8765 + Vite 5183；首次先 pnpm -C web exec playwright install chromium）
+pnpm -C web e2e                           # Playwright 冒烟 + M2 流程 + 关掉示例数据的一轮（自起 Mock 后端 8765 + Vite 5183 / 5184；首次先 pnpm -C web exec playwright install chromium）
 pnpm -C web shots                         # 11 页亮 / 暗整页截图 → docs/studio/reports/ui/（-g "novel (light|dark)" 只截一页）
 VITE_DEMO_DATA=0 pnpm -C web dev          # 关掉 MSW 示例数据，只走真实后端（没实现的接口显示加载失败）
 # 前端默认用浏览器里的 MSW 返回示例数据（顶栏「示例数据」标记）；某个接口在后端实现后，删掉 web/src/mocks/handlers/ 里对应的 handler
 # 开发面板：http://127.0.0.1:5173/dev/jobs（发起 Mock LLM 调用、看任务和 model_call）
 # 脚本调写接口要带请求头 X-Drama-Studio: 1（见 api/security.py）
-# 示例项目 `uv run drama-studio demo` 还没做（随 M2 的产物 / 版本一起做）
+uv run drama-studio demo [--reset]           # Mock 示例剧集《雨停之前》：补上缺的（--reset 删掉重建）
+DRAMA_LIVE=1 uv run python scripts/smoke/live_script.py   # 真实冒烟（花真钱，上限 $1；--whole 整本，--mock 走 Mock）
 ```
 
 ## 工作方式

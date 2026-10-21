@@ -1,11 +1,15 @@
-import { http } from "msw";
+import { http, passthrough } from "msw";
 
 import { GATE_STEP, GateSchema } from "@/api/schemas/gates";
 import { getDb } from "@/mocks/db";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
+/** The backend's gates (M2); the demo answers the later ones until their milestones. */
+const BACKEND_GATES = new Set<string>(["novel", "script"]);
+
 function decide(action: "confirm" | "reopen") {
   return http.post(v1(`/gates/:gate/${action}`), async ({ params, request }) => {
+    if (BACKEND_GATES.has(String(params.gate))) return passthrough();
     const gate = GateSchema.safeParse(params.gate);
     if (!gate.success) return demoError(404, "unknown_gate", { gate: params.gate });
     const body = (await request.json()) as { scope_id?: unknown };

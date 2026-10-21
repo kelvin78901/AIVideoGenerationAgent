@@ -66,6 +66,9 @@ class ModelRequest(BaseModel):
     # Model-specific knobs (width, height, duration_s, voice, refs, ...). Mock adapters also
     # read ``mock_delay_s`` here.
     params: dict[str, Any] = Field(default_factory=dict)
+    # Who is asking, never sent to a provider: ``component`` and ``task`` (``run``,
+    # ``rewrite_line`` …). Mock mode answers with the responder registered for that pair.
+    meta: dict[str, Any] = Field(default_factory=dict)
 
     def text(self) -> str:
         """All prompt text, for estimates and mocks."""
@@ -134,6 +137,9 @@ class CallContext:
     job_id: str | None = None
     attempt: int = 1
     is_switch: bool = False
+    # A call made without a job that the user agreed to pay up to this much for (e.g. a
+    # rewrite proposal over the per-call cap); jobs carry it on the job row instead.
+    confirmed_usd: float | None = None
     # Streaming LLMs push text deltas here (e.g. to forward them over SSE).
     on_delta: Callable[[str], Awaitable[None]] | None = None
 

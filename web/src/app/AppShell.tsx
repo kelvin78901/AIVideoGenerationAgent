@@ -11,9 +11,9 @@ import {
   Wrench,
   type LucideIcon,
 } from "lucide-react";
-import { useLayoutEffect, type ReactNode } from "react";
+import { useEffect, useLayoutEffect, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
-import { NavLink, Outlet, useLocation } from "react-router";
+import { NavLink, Outlet, useLocation, useParams } from "react-router";
 
 import {
   useEpisodeProgress,
@@ -21,10 +21,14 @@ import {
   useOutputSpec,
   useRouteEpisode,
   useSeries,
+  useSeriesProgress,
 } from "@/api/hooks/series";
 import { useMachineProfile } from "@/api/hooks/setup";
+import { syncingSteps, useJobs } from "@/api/hooks/useJobs";
 import type { StepProgress } from "@/api/schemas/episodes";
 import { paths, STEPS } from "@/app/paths";
+import { ConfirmJobs } from "@/components/ConfirmJobs";
+import { SeriesMenu } from "@/components/SeriesMenu";
 import { Button } from "@/components/ui/button";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { formatSpecTag, formatUsd } from "@/lib/format";
@@ -73,6 +77,15 @@ function useTrackRoute(): void {
   useLayoutEffect(() => setRoute(pathname), [pathname, setRoute]);
 }
 
+/** Remembers the series on screen: `/` and pages outside a series go back to it. */
+function useTrackSeries(): void {
+  const { series } = useParams();
+  const setLastSeries = useUiStore((s) => s.setLastSeries);
+  useEffect(() => {
+    if (series) setLastSeries(series);
+  }, [series, setLastSeries]);
+}
+
 function TopBar({ status }: { status: ShellStatus }) {
   const { t } = useTranslation();
   const { seriesId, episode } = useRouteEpisode();
@@ -107,13 +120,13 @@ function TopBar({ status }: { status: ShellStatus }) {
         </span>
       ) : null}
       <DemoBadge />
-      <div className="text-sm text-topbar-muted" data-testid="shell-title">
-        {series.data ? t("shell.seriesTitle", { title: series.data.title }) : t("shell.noSeries")}
+      <div className="flex items-center text-sm text-topbar-muted" data-testid="shell-title">
+        <SeriesMenu current={series.data} />
         {series.data && episode ? (
-          <>
+          <span className="whitespace-pre">
             {" · "}
             {t("shell.episodeTitle", { n: episode.idx, title: episode.title })}
-          </>
+          </span>
         ) : null}
       </div>
       {specData ? (
@@ -209,13 +222,25 @@ function SetupBadge() {
   );
 }
 
-/** 已确认 / 7/13 / 未开始 / 待更新 N, as in the prototype's left nav. */
-function StepBadge({ progress }: { progress: StepProgress | undefined }) {
+/**
+ * 已确认 / 7/13 / 未开始 / 待更新 N, as in the prototype's left nav; 同步中 while a 确认并同步
+ * still reruns something of the step.
+ */
+function StepBadge({
+  progress,
+  syncing,
+}: {
+  progress: StepProgress | undefined;
+  syncing: boolean;
+}) {
   const { t } = useTranslation("nav");
   if (!progress) return null;
   let text: string;
   let tone = "bg-tone-neutral-bg text-tone-neutral-fg";
-  if (progress.stale > 0) {
+  if (syncing) {
+    text = t("badge.syncing");
+    tone = "bg-tone-info-bg text-tone-info-fg";
+  } else if (progress.stale > 0) {
     text = t("badge.stale", { count: progress.stale });
     tone = "bg-tone-warn-bg text-tone-warn-fg";
   } else if (progress.state === "confirmed") {
@@ -238,8 +263,13 @@ function StepBadge({ progress }: { progress: StepProgress | undefined }) {
 
 function SideNav() {
   const { t } = useTranslation("nav");
-  const { seriesId, episodeIdx, episode } = useRouteEpisode();
-  const progress = useEpisodeProgress(episode?.id);
+  const { seriesId, episodeIdx, episode, isLoading } = useRouteEpisode();
+  const episodeProgress = useEpisodeProgress(episode?.id);
+  // No such episode (before 分集规划): the series' badges, i.e. 小说 and its gate.
+  const seriesProgress = useSeriesProgress(episode || isLoading ? undefined : seriesId);
+  const progress = episode ? episodeProgress : seriesProgress;
+  const jobs = useJobs();
+  const syncing = syncingSteps(jobs.data, seriesId, episode?.id);
   const episodeKey = String(episodeIdx);
   return (
     <nav
@@ -253,7 +283,7 @@ function SideNav() {
             {String(i + 1).padStart(2, "0")}
           </span>
           <span>{t(`steps.${step}`)}</span>
-          <StepBadge progress={progress.data?.steps[step]} />
+          <StepBadge progress={progress.data?.steps[step]} syncing={syncing.has(step)} />
         </NavLink>
       ))}
       <div className="my-2 h-px bg-sidebar-border" />
@@ -276,6 +306,7 @@ function SideNav() {
 export function AppShell({ status = IDLE }: { status?: ShellStatus }) {
   const { t } = useTranslation();
   useTrackRoute();
+  useTrackSeries();
   return (
     <div className="flex min-h-screen flex-col">
       <a
@@ -291,6 +322,7 @@ export function AppShell({ status = IDLE }: { status?: ShellStatus }) {
           <Outlet />
         </main>
       </div>
+      <ConfirmJobs />
     </div>
   );
 }

@@ -126,7 +126,7 @@ export default function AssetsPage() {
             </Button>
             <GateButton
               gate="assets"
-              episodeId={episode?.id}
+              scopeId={episode?.id}
               label={t("gate")}
               to={paths.step(seriesId, ep, "storyboard")}
             />

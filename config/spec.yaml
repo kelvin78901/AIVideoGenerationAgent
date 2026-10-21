@@ -30,6 +30,14 @@ defaults:
   ai_mark: true
   derive: null
 
+# 每集时长的档位（秒，[最短, 最长]）：分集规划按这个切集。界面上的说明在
+# web/src/locales/*/spec.json 的 lenOption。
+episode_lengths:
+  short: [30, 90]
+  mid: [90, 180]
+  long: [180, 300]
+  xl: [540, 660]
+
 # 平台界面挡住画面的地方（画面的百分比，近似值，照原型 Spec.dc.html）。
 # 竖屏短剧 App：顶栏、右侧按钮列、底部标题区；其他播放器只有底部控件。
 # 成片规格页的预览目前用前端 pages/spec/SafeAreaPreview.tsx 里的同一份数字；

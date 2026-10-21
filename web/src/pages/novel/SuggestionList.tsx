@@ -2,7 +2,7 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
-import { errorMessage } from "@/api/client";
+import { ApiError, errorMessage } from "@/api/client";
 import {
   useAcceptAllSuggestions,
   useSuggestionAction,
@@ -11,7 +11,9 @@ import {
 import type { ModelOption } from "@/api/schemas/models";
 import type { Suggestion } from "@/api/schemas/novel";
 import { EmptyState } from "@/components/EmptyState";
+import { useImpactGuard } from "@/components/impactGuardContext";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label, Textarea } from "@/components/ui/form";
 import { cn } from "@/lib/utils";
@@ -21,11 +23,13 @@ function SuggestionCard({
   s,
   seriesId,
   models,
+  locked,
   onFocus,
 }: {
   s: Suggestion;
   seriesId: string;
   models: readonly ModelOption[];
+  locked: boolean;
   onFocus: (para: number) => void;
 }) {
   const { t } = useTranslation("novel");
@@ -33,14 +37,49 @@ function SuggestionCard({
   const { t: tc } = useTranslation();
   const ids = useId();
   const act = useSuggestionAction(seriesId);
+  const guard = useImpactGuard();
   const [editing, setEditing] = useState(false);
   const [instruction, setInstruction] = useState("");
+  // A rewrite over the per-call cap waits here for the user's yes (hard rule 6).
+  const [overBudget, setOverBudget] = useState<ApiError | null>(null);
   const accepted = s.status === "accepted";
   const ignored = s.status === "rejected";
   const para = s.para_idx + 1;
 
+  /** 采纳 / 撤销采纳 / 忽略 / 恢复; on confirmed work the impact preview comes first. */
+  const decide = (action: "accept" | "reject" | "reset", done?: () => void) =>
+    guard
+      ? guard({
+          change: { kind: "suggestion_decision", target_id: s.id, patch: { action } },
+          title: t("impact.suggestion"),
+          detail: t("suggestions.para", { n: para }),
+          onDone: done,
+        })
+      : run({ id: s.id, action }, done);
+
   const run = (a: SuggestionAction, done?: (updated: Suggestion) => void) =>
-    act.mutate(a, { onSuccess: done, onError: (err) => toast.error(errorMessage(tc, err)) });
+    act.mutate(a, {
+      onSuccess: done,
+      onError: (err) => {
+        if (err instanceof ApiError && err.code === "over_budget") setOverBudget(err);
+        else toast.error(errorMessage(tc, err));
+      },
+    });
+
+  const rewrite = (confirmBudget: boolean) => {
+    setOverBudget(null);
+    run({ id: s.id, action: "rewrite", instruction, confirm_budget: confirmBudget }, (updated) => {
+      setEditing(false);
+      setInstruction("");
+      onFocus(s.para_idx);
+      toast.success(
+        t("suggestions.rewriteDone", {
+          n: para,
+          model: modelName(models, updated.rewritten_by),
+        }),
+      );
+    });
+  };
 
   return (
     <article
@@ -95,44 +134,51 @@ function SuggestionCard({
             placeholder={t("suggestions.rewritePlaceholder")}
             onChange={(e) => setInstruction(e.target.value)}
           />
-          <Button
-            size="sm"
-            className="self-end"
-            disabled={!instruction.trim() || act.isPending}
-            onClick={() =>
-              run({ id: s.id, action: "rewrite", instruction }, (updated) => {
-                setEditing(false);
-                setInstruction("");
-                onFocus(s.para_idx);
-                toast.success(
-                  t("suggestions.rewriteDone", {
-                    n: para,
-                    model: modelName(models, updated.rewritten_by),
-                  }),
-                );
-              })
-            }
-          >
-            {t("suggestions.rewriteSubmit")}
-          </Button>
+          {overBudget ? (
+            <div
+              role="alert"
+              className="flex flex-wrap items-center gap-2 rounded-md bg-tone-warn-bg px-3 py-2 text-sm text-tone-warn-fg"
+            >
+              <span>{errorMessage(tc, overBudget)}</span>
+              <Button
+                size="sm"
+                variant="outline"
+                className="ml-auto"
+                disabled={act.isPending}
+                onClick={() => rewrite(true)}
+              >
+                {t("suggestions.rewriteAnyway")}
+              </Button>
+            </div>
+          ) : (
+            <Button
+              size="sm"
+              className="self-end"
+              disabled={!instruction.trim() || act.isPending}
+              onClick={() => rewrite(false)}
+            >
+              {t("suggestions.rewriteSubmit")}
+            </Button>
+          )}
         </div>
       ) : null}
       <div className="flex flex-wrap gap-2">
         <Button
           variant={accepted ? "outline" : "default"}
           disabled={act.isPending}
-          onClick={() =>
-            run({ id: s.id, action: accepted ? "reset" : "accept" }, () => onFocus(s.para_idx))
-          }
+          onClick={() => decide(accepted ? "reset" : "accept", () => onFocus(s.para_idx))}
         >
           {t(accepted ? "suggestions.unaccept" : "suggestions.accept")}
         </Button>
         <Button
           variant="outline"
           aria-expanded={editing}
+          // Rewriting on request calls a model; a confirmed novel is reopened first.
+          disabled={locked}
           onClick={() => {
             setEditing(!editing);
             setInstruction("");
+            setOverBudget(null);
           }}
         >
           {t(editing ? "suggestions.collapse" : "suggestions.rewrite")}
@@ -140,7 +186,7 @@ function SuggestionCard({
         <Button
           variant="outline"
           disabled={act.isPending}
-          onClick={() => run({ id: s.id, action: ignored ? "reset" : "reject" })}
+          onClick={() => decide(ignored ? "reset" : "reject")}
         >
           {t(ignored ? "suggestions.restore" : "suggestions.ignore")}
         </Button>
@@ -149,15 +195,24 @@ function SuggestionCard({
   );
 }
 
-/** 补全建议: decide on each addition; nothing reaches the text without 「采纳」. */
+/**
+ * 补全建议: decide on each addition; nothing reaches the text without 「采纳」. `adopted` false: the
+ * 小说补全 version on screen is not the adopted one (the bible still reads the adopted one).
+ */
 export function SuggestionList({
   seriesId,
   suggestions,
+  adopted = true,
+  locked = false,
   models,
   onFocus,
 }: {
   seriesId: string;
   suggestions: Suggestion[];
+  adopted?: boolean;
+  /** Confirmed with the novel: decisions preview their impact, 全部采纳 and rewrites wait for
+   * 重新打开 (the backend has no impact preview for them). */
+  locked?: boolean;
   models: readonly ModelOption[];
   onFocus: (para: number) => void;
 }) {
@@ -174,10 +229,11 @@ export function SuggestionList({
         <span className="text-xs text-muted-foreground tabular-nums">
           {t("suggestions.count", { accepted, total: suggestions.length })}
         </span>
+        {adopted ? null : <Badge variant="warn">{t("suggestions.unadopted")}</Badge>}
         <Button
           variant="outline"
           className="ml-auto"
-          disabled={acceptAll.isPending || suggestions.length === 0}
+          disabled={locked || acceptAll.isPending || suggestions.length === 0}
           onClick={() =>
             acceptAll.mutate(undefined, {
               onSuccess: () => toast.success(t("suggestions.acceptAllDone")),
@@ -188,9 +244,22 @@ export function SuggestionList({
           {t("suggestions.acceptAll")}
         </Button>
       </div>
+      {adopted ? null : (
+        <p className="text-xs text-muted-foreground">{t("suggestions.unadoptedHint")}</p>
+      )}
+      {locked ? (
+        <p className="text-xs text-muted-foreground">{t("suggestions.lockedHint")}</p>
+      ) : null}
       {suggestions.length === 0 ? <EmptyState title={t("suggestions.empty")} /> : null}
       {suggestions.map((s) => (
-        <SuggestionCard key={s.id} s={s} seriesId={seriesId} models={models} onFocus={onFocus} />
+        <SuggestionCard
+          key={s.id}
+          s={s}
+          seriesId={seriesId}
+          models={models}
+          locked={locked}
+          onFocus={onFocus}
+        />
       ))}
     </section>
   );
