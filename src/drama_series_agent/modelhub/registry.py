@@ -84,6 +84,10 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                 provider_id=local.key.split("/", 1)[0],
                 runtime=local.runtime,
                 workflow=local.workflow,
+                worker=local.worker,
+                env=local.env,
+                worker_args=dict(local.args),
+                gpu=local.gpu,
                 pricing=Pricing(unit="free", as_of=prov.as_of),
                 caps=Caps.model_validate(local.caps),
             )
@@ -156,6 +160,13 @@ class Registry:
             spec = self.spec(key)
             self._adapters[key] = self._build(spec)
         return self._adapters[key]
+
+    async def aclose(self) -> None:
+        """Stop what adapters keep running (local model workers)."""
+        for adapter in list(self._adapters.values()):
+            stop = getattr(adapter, "stop", None)
+            if stop is not None:
+                await stop()
 
     def _build(self, spec: ModelSpec) -> ModelAdapter:
         if self.mock:

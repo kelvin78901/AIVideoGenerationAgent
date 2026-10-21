@@ -2,6 +2,20 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-21 · M3 第 12 步（上）：本地 Python 运行时、显存租约
+
+第 12 步分两次提交：这次是本地 Python 运行时；安装（`uv_sync`、清单四项、`needs`）和 ComfyUI 适配器下次做。
+
+- **一个模型一个常驻 worker**（`modelhub/adapters/local_python.py`）：`~/.drama-studio/envs/<env>/` 里的 Python 跑 `workers/<worker>.py`，第一次调用时启动、先发 `init` 加载模型，之后一直留着（模型常驻显存），直到显存租约让它走或者应用退出（`Registry.aclose()` 关掉 stdin，worker 自己退出）。
+- **协议**（`workers/worker_protocol.py`，只用标准库）：一行一个 JSON，每个请求带 id，回复带同一个 id；文件写到适配器给的临时文件夹，读回内存后马上删掉。worker 启动时把 fd 1 转到 stderr，库（包括 C 代码）打印的东西都进 stderr，stdout 只有回复；stderr 最后几行在 worker 崩溃时进错误信息（`worker_crashed`）。
+- **超时、取消就杀掉 worker**：路由的本地超时会取消这次调用，适配器随即杀掉 worker，下次调用重新启动，所以绝不会把上一个请求迟到的回复当成这次的。
+- **环境变量**：`PYTHONUTF8=1`、`HF_HUB_OFFLINE=1`、`HF_HOME=<安装位置>/hf`（安装器先把要用的模型下好，运行时不联网），`PYTHONPATH` 指向应用的 `workers/`（worker 要导入协议文件）。
+- **配置**：`providers.yaml` 的本地模型写 `worker`、`env`、`args`（`{models}` 是 Setup 页选的安装位置，`{envs}` 是环境目录）、`gpu`。`local/qwen3-tts`、`local/indextts2`、`local/rapidocr` 已经写上；环境由下一次提交的安装项建，没装时调用报 `not_installed`、照常兜底。
+- **worker 文件名都带 `worker_` 前缀**：脚本所在目录在 `sys.path` 最前面，叫 `rapidocr.py` 的话 `import rapidocr` 会导入它自己。
+- **三个 worker 按官方 README 写，第 13 步在本机第一次真跑**：Qwen3-TTS `Qwen3TTSModel.generate_voice_design(text, language, instruct)`；IndexTTS-2.5 `indextts.infer_v2_5.IndexTTS2(..., use_bf16=True, use_qwen_emo=True)`（用文字描述情绪必须开 `use_qwen_emo`），说话人用锚点、情绪优先用变体音频、没有就用文字；RapidOCR 3.x `RapidOCR()(path).txts`。不进 mypy（依赖只在各自环境里）。
+- **显存租约**（`modelhub/vram.py`）：整个进程一把锁，不看任务在哪个队列。拿锁时如果上一个占显存的是别人，先让它放手（worker 退出；ComfyUI 下次提交接 `/free`），放手失败只记日志、继续。租约本身不设超时：等锁的时间算在路由的本地超时里，超时就兜底。RapidOCR（`gpu: false`）不拿锁。
+- **测试**：`tests/fixtures/workers/worker_fake.py` 用真的协议文件，按台词模拟卡住、崩溃、出错；测试用基础解释器（`sys._base_executable`）起 worker，因为 Windows 上 venv 的 `python.exe` 是启动器，杀掉它后真正的解释器还会多活一会儿。
+
 ## 2026-10-21 · M3 第 11 步：MiniMax 适配器
 
 按 platform.minimax.io（国际）和 platform.minimax.cn（国内）的文档核对（2026-10-21），`providers.yaml` 去掉 `verify`，测试全用 respx。

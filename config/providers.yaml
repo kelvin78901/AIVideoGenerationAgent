@@ -290,9 +290,11 @@ local_models:
   - { key: comfy/flux2-dev,         kind: image,   display: FLUX.2 dev（本地）,       runtime: comfyui, needs: [comfy] }
   - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui, needs: [comfy, node_seedvr2, w_sr], requires_cuda: true }
   - { key: comfy/flashvsr,          kind: upscale, display: FlashVSR（本地）,         runtime: comfyui, needs: [comfy, node_flashvsr], requires_cuda: true }
-  - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python, needs: [w_tts] }
+  # runtime: python 的模型由 worker 跑（adapters/local_python.py）：worker 是 workers/ 下的脚本，env 是
+  # ~/.drama-studio/envs/ 下的环境，args 是它加载什么（{models} 是 Setup 页选的安装位置）；gpu: false 不占显存租约。
+  - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python, worker: worker_indextts, env: indextts, args: { model_dir: "{models}/IndexTTS-2.5", cwd: "{envs}/indextts-src", bf16: true }, needs: [w_tts] }
   - { key: local/cosyvoice,         kind: tts,     display: CosyVoice（本地）,        runtime: python }
-  - { key: local/qwen3-tts,         kind: tts,     display: Qwen3-TTS（本地试听）,     runtime: python }
+  - { key: local/qwen3-tts,         kind: tts,     display: Qwen3-TTS（本地试听）,     runtime: python, worker: worker_qwentts, env: qwentts, args: { model: Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign, language: Chinese } }
   - { key: local/latentsync,        kind: lipsync, display: LatentSync（本地）,       runtime: python, requires_cuda: true }
   - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python, requires_cuda: true }
   - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server, needs: [llmsrv] }
@@ -300,4 +302,4 @@ local_models:
   - { key: local/mmaudio,           kind: sfx,     display: MMAudio（本地）,          runtime: python, verify: true }
   - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python }
   - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }
-  - { key: local/rapidocr,          kind: ocr,     display: RapidOCR（本地）,         runtime: python, caps: { langs: [zh, en] } }
+  - { key: local/rapidocr,          kind: ocr,     display: RapidOCR（本地）,         runtime: python, worker: worker_rapidocr, env: ocr, gpu: false, caps: { langs: [zh, en] } }

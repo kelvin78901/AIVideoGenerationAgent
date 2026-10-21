@@ -29,6 +29,7 @@ import os
 from collections import Counter
 from collections.abc import Callable
 from datetime import datetime
+from pathlib import Path
 from typing import Any, Literal
 
 import httpx
@@ -49,6 +50,7 @@ from drama_series_agent.core.models_db import (
     utcnow,
 )
 from drama_series_agent.core.paths import drama_home
+from drama_series_agent.modelhub.adapters.local_python import RuntimePaths
 from drama_series_agent.modelhub.registry import is_mock_mode
 from drama_series_agent.setup.comfy import ComfyEnvInfo, ComfyScan, NodePack, identify
 from drama_series_agent.setup.detectors import (
@@ -276,6 +278,14 @@ class SetupService:
             return None
         gpu = data.machine.gpu
         return Capabilities.of(cuda=gpu is not None and gpu.backend == "cuda", found=data.found)
+
+    async def runtime_paths(self) -> RuntimePaths:
+        """Where local model workers run (``~/.drama-studio/envs``) and the install folder their
+        weights went to (``adapters/local_python.py``); no folder before setup."""
+        loaded = await self._load(self.profile_id)
+        data = loaded[1] if loaded is not None else None
+        folder = data.install.dir if data is not None and data.install is not None else None
+        return RuntimePaths(envs=drama_home() / "envs", models=Path(folder) if folder else None)
 
     async def comfy_env(self) -> ComfyView:
         """The ComfyUI the last finished scan found and its environment (SPEC 6.4.1)."""

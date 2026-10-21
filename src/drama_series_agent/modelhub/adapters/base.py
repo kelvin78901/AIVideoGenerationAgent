@@ -189,6 +189,12 @@ class ModelSpec:
     runtime: str | None = None
     workflow: str | None = None  # a ComfyUI model's workflow folder (SPEC 6.4)
     adapter: str | None = None  # a media model's real adapter (``modelhub/media_adapters.py``)
+    # A local Python model's worker (``adapters/local_python.py``): script, environment, what it
+    # loads, and whether it takes the VRAM lease.
+    worker: str | None = None
+    env: str | None = None
+    worker_args: dict[str, Any] = field(default_factory=dict)
+    gpu: bool = True
     pricing: Pricing = field(default_factory=Pricing)
     caps: Caps = field(default_factory=Caps)
 

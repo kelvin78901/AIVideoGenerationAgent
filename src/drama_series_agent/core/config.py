@@ -102,6 +102,13 @@ class LocalModel(_Loose):
     display: str
     runtime: str | None = None
     workflow: str | None = None
+    # ``runtime: python``: the worker script (``workers/<worker>.py``), the environment it runs in
+    # (``~/.drama-studio/envs/<env>``), what it loads (``args``, ``{models}`` / ``{envs}``
+    # expanded) and whether it needs the GPU (the VRAM lease; RapidOCR does not).
+    worker: str | None = None
+    env: str | None = None
+    args: dict[str, Any] = Field(default_factory=dict)
+    gpu: bool = True
     caps: dict[str, Any] = Field(default_factory=dict)
     verify: bool = False
     # What this machine must have to run it (core/capabilities.py): setup-manifest item ids.

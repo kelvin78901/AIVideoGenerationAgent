@@ -24,6 +24,7 @@ from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes_service
 from drama_series_agent.episodes.service import EPISODES_SLOT, EpisodeService
 from drama_series_agent.modelhub.adapters.base import ModelAdapter, ModelSpec
+from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
 from drama_series_agent.modelhub.media_adapters import has_media_adapter, media_adapter
@@ -207,6 +208,14 @@ class StudioState:
 
         registry.add_factory(has_media_adapter, media)
 
+        def local_python(spec: ModelSpec) -> ModelAdapter:
+            return LocalPythonAdapter(spec, paths=setup.runtime_paths)
+
+        registry.add_factory(
+            lambda spec: spec.where == "local" and spec.runtime == "python" and bool(spec.worker),
+            local_python,
+        )
+
         from drama_series_agent.api.handlers import register_handlers
 
         register_handlers(state)
@@ -225,6 +234,7 @@ class StudioState:
 
     async def stop(self) -> None:
         await self.jobs.stop()
+        await self.registry.aclose()  # local model workers exit with the app
         await self.db.dispose()
 
 
