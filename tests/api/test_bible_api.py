@@ -21,7 +21,13 @@ from drama_series_agent.bible.service import bible_product, materialize
 from drama_series_agent.core.models_db import BibleEntity, Dependency, ModelCall, ProductVersion
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.modelhub.adapters.mock import estimate_tokens
-from drama_series_agent.pipeline.components.chunks import chunk_book, render_chunk
+from drama_series_agent.pipeline.components.chunks import (
+    CHUNK_SHARE,
+    OUTPUT_HEADROOM,
+    chunk_book,
+    render_chunk,
+)
+from drama_series_agent.pipeline.components.extract import ExtractComponent
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -91,14 +97,31 @@ def _bible(client: TestClient, series: str = "demo") -> dict[str, Any]:
 
 
 def _new_series_with_demo_novel(client: TestClient) -> str:
+    return _new_series_with_novel(client, DEMO)
+
+
+def _new_series_with_novel(client: TestClient, text: bytes, name: str = "雨停之前.txt") -> str:
     series = str(client.post(f"{V1}/series", json={"title": "复刻"}).json()["id"])
     resp = client.post(
         f"{V1}/series/{series}/novel",
-        files={"file": ("雨停之前.txt", DEMO)},
+        files={"file": (name, text)},
         data={"rights_confirmed": "true"},
     )
     assert resp.status_code == 200, resp.text
     return series
+
+
+def _long_novel(chapters: int = 12, paras: int = 15) -> bytes:
+    """About 12k characters of a made-up novel (not the demo, so Mock answers by rules)."""
+    lines: list[str] = []
+    for c in range(1, chapters + 1):
+        lines.append(f"第{c}章 雨夜{c}")
+        for p in range(1, paras + 1):
+            lines.append(
+                f"林晚在第{c}章第{p}段撑着伞走过巷口，周屿站在便利店门口等她，"
+                f"两个人隔着雨幕说了很久的话，谁也没有先离开，直到路灯一盏盏熄灭。"
+            )
+    return "\n\n".join(lines).encode("utf-8")
 
 
 def _comparable(bible: dict[str, Any]) -> dict[str, Any]:
@@ -205,6 +228,34 @@ def test_a_long_novel_goes_in_chunks(client: TestClient) -> None:
     calls = [c for c in _rows(client, ModelCall) if c.product_id == product["id"]]
     assert len(calls) == len(chunks) + 1
     assert _comparable(_bible(client, series)) == _comparable(_bible(client))
+
+
+def test_the_answer_bounds_the_chunk_even_on_a_huge_window(client: TestClient) -> None:
+    """A 1M window would send a long novel in one call whose JSON answer gets cut off at
+    ``max_tokens`` (设定提取 writes about as much as it reads); chunks stay small enough that
+    the answer fits (M2 report, 遗留问题)."""
+    state = _state(client)
+    state.registry.spec(LOCAL_MODEL).caps.max_context = 1_000_000
+    series = _new_series_with_novel(client, _long_novel(), "长夜.txt")
+    limit = int(OUTPUT_HEADROOM * ExtractComponent.max_tokens / ExtractComponent.output_ratio)
+    assert limit < CHUNK_SHARE * 1_000_000
+
+    async def book_chunks() -> list[Any]:
+        async with state.db.session() as session:
+            book = await state.novel.book(session, series)
+        assert book is not None
+        return [(book, chunk) for chunk in chunk_book(book, limit)]
+
+    chunks = _call(client, book_chunks)
+    assert len(chunks) >= 3
+    for book, chunk in chunks:
+        assert estimate_tokens(render_chunk(book, chunk)) <= limit
+
+    product = _extract_product(client, series)
+    _run(client, product["id"])
+    calls = [c for c in _rows(client, ModelCall) if c.product_id == product["id"]]
+    assert len(chunks) <= len(calls) <= len(chunks) + 1  # plus the judging call, if any
+    assert _bible(client, series)["entities"]
 
 
 # --------------------------------------------------------------------------- edits

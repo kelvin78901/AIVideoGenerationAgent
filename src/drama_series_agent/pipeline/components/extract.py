@@ -194,7 +194,8 @@ class ExtractComponent(ChunkedComponent):
     id = "extract"
     slot = "bible"
     owner_type = "series"
-    max_tokens = 4000
+    max_tokens = 8000
+    output_ratio = 1.4  # 2999 out for 2741 in (M2 step 13)
 
     def __init__(self, services: Services, novel: NovelService) -> None:
         super().__init__(services)

@@ -9,14 +9,12 @@
 
 ## 已完成的小步
 
-- M3 第 0 步（进行中）：开分支、存计划、DECISIONS 七项、ROADMAP（文件夹同步挪 M9、验收里镜头部分挪 M4）（本提交）。
+- M3 第 0 步：开分支、存计划、DECISIONS 七项、ROADMAP（文件夹同步挪 M9、验收里镜头部分挪 M4）（ff125ed）；整本组件的分块也看输出上限（设定提取 `max_tokens` 8000，DECISIONS 同日）、长小说 + 1M 上下文的测试（本提交）。pytest 516、Vitest 255 全过。`w_img`（31 GB）由 Kelvin 在 Setup 页自己点安装（2026-10-20 定）。
 
 ## 下一步
 
-- 第 0 步剩下两件：
-  1. **问 Kelvin 能不能开始下 `w_img`（31 GB）**：用 Setup 页安装器，ComfyUI 要开着；顺便看 M1 留下的问题（速度、剩余时间、连接数）。
-  2. **设定提取输出上限**（M2 遗留，单独提交）：按输出量估算分块，`max_tokens` 跟着块走，加长小说测试。看 `pipeline/components/extract.py`、`chunks.py`。
-- 然后第 1 步「框架和媒体基础」（计划里列了要改的 `ProductService`、切片器、`RunService`、router、注册表、文件接口、`media/audio.py`）。
+- **第 1 步「框架和媒体基础」**：迁移 `0016`（`asset`、`asset_use`、`product.pick_json` / `retired`）；`ProductService`（`auto_adopt`、`lock_pick`、`pick` 来源）；带文件 sha 的切片器；`RunService` 的 `where` / `params`；router `fallback=False`；`extras` 计价；注册表补媒体模型账号和本地模型 caps；`GET /files/{sha}`；`media/audio.py`；前端 `AudioPlayer`、`MediaThumb src`。从 `pipeline/products.py`、`pipeline/runs.py`、`modelhub/router.py` 开始。
+- Kelvin 装 `w_img` 时问他速度、剩余时间准不准、连接数（M1 留下的），记进 PROGRESS。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。heredoc 里 Python 字符串的 `\n` 会被写成真换行（第 5 步踩了两次）：要写进代码的 `\n` 用 Edit 工具。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。

@@ -3,7 +3,10 @@
 
 Whole chapters are packed in order; a chunk is at most 60% of the smallest context window on
 the route (the model and its fallback), so a long novel never overflows and the fallback can
-take any chunk. A chapter longer than a chunk is split by paragraphs (「（续）」). Paragraphs are
+take any chunk. It is also small enough that the answer fits in the component's ``max_tokens``:
+the answer grows with the text (设定提取 wrote about as many tokens as it read in the M2 live
+run), and a 1M-token window would otherwise put a whole long novel in one call whose JSON gets
+cut off. A chapter longer than a chunk is split by paragraphs (「（续）」). Paragraphs are
 numbered across the book, 1-based in the prompt as on screen (``[P12]``); the model only cites
 numbers and the backend turns them into spans. Adopted additions (小说补全) follow their
 paragraph on the same line after ``ADDITION_MARK``, so the numbers never move.
@@ -16,6 +19,7 @@ from collections.abc import Mapping, Sequence
 from contextlib import suppress
 from dataclasses import dataclass
 from functools import cache
+from typing import ClassVar
 
 from drama_series_agent.core.models_db import Chapter
 from drama_series_agent.core.paths import REPO_ROOT
@@ -26,6 +30,7 @@ from drama_series_agent.novel.service import Book
 from drama_series_agent.pipeline.component import Component, Inputs
 
 CHUNK_SHARE = 0.6
+OUTPUT_HEADROOM = 0.8  # the answer to a chunk may use this much of max_tokens
 DEFAULT_CONTEXT = 32768  # a model whose window is not configured
 ADDITION_MARK = "【补写】"
 DEMO_NOVEL = REPO_ROOT / "tests" / "fixtures" / "demo" / "雨停之前.txt"
@@ -92,9 +97,13 @@ def render_chunk(book: Book, chunk: Sequence[Piece], additions: Additions | None
 class ChunkedComponent(Component):
     """A component that sends the whole book, chunk by chunk."""
 
+    # Answer tokens per chunk token (``estimate_tokens``), from the M2 live run with margin.
+    output_ratio: ClassVar[float] = 1.0
+
     def chunk_limit(self, inputs: Inputs, model: str) -> int:
         window = min(int(inputs.context["chain_context"]), self.context_of(model))
-        return int(CHUNK_SHARE * window)
+        by_output = int(OUTPUT_HEADROOM * self.max_tokens / self.output_ratio)
+        return min(int(CHUNK_SHARE * window), by_output)
 
     def context_of(self, model: str) -> int:
         try:

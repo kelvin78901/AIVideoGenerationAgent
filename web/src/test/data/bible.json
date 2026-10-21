@@ -2624,7 +2624,7 @@
       "estimate": {
         "model_key": "deepseek/v4.1-flash",
         "where": "api",
-        "cost_usd": 0.0059,
+        "cost_usd": 0.0083,
         "seconds": 0.0
       },
       "running": null
