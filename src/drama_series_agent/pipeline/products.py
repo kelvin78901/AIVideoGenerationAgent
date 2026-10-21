@@ -295,6 +295,9 @@ class ProductService:
                 fallback_reason=draft.fallback_reason,
                 stage=draft.stage,
                 note=draft.note,
+                workflow_id=draft.workflow_id,
+                workflow_sha256=draft.workflow_sha256,
+                comfy_env_hash=draft.comfy_env_hash,
             )
             if draft.id:
                 v.id = draft.id

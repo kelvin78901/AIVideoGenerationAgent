@@ -37,7 +37,7 @@ async function scan(user: User) {
 /** Ticks everything, installs, approves the ComfyUI changes and waits for the end. */
 async function installAll(user: User) {
   await user.click(screen.getByRole("button", { name: "全选" }));
-  await user.click(screen.getByRole("button", { name: "安装选中的 11 项" }));
+  await user.click(screen.getByRole("button", { name: "安装选中的 15 项" }));
   const dialog = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
   await user.click(within(dialog).getByRole("button", { name: "确认，开始安装" }));
   await screen.findByRole("heading", { name: "准备好了" });
@@ -80,7 +80,7 @@ describe("SetupPage", () => {
     renderSetup();
     await scan(user);
     expect(within(summary()).getByText("通过 10")).toBeInTheDocument();
-    expect(within(summary()).getByText("缺少 9")).toBeInTheDocument();
+    expect(within(summary()).getByText("缺少 13")).toBeInTheDocument();
     expect(within(summary()).getByText("需更新 2")).toBeInTheDocument();
     expect(within(summary()).getByText("可选 8")).toBeInTheDocument();
     expect(within(summary()).getByText("注意 1")).toBeInTheDocument();
@@ -110,22 +110,23 @@ describe("SetupPage", () => {
       screen.getByRole("checkbox", { name: "安装 MiniMax H3 权重（int8）" }),
     ).not.toBeChecked();
     expect(screen.getByRole("checkbox", { name: "安装 IndexTTS-2.5" })).toBeChecked();
-    expect(screen.getByRole("button", { name: "安装选中的 2 项" })).toBeEnabled();
-    // FFmpeg about a minute, IndexTTS 5.5 GB at the 22 MB/s the scan measured.
-    expect(screen.getByText("约 5.5 GB，预计 6 分钟")).toHaveAttribute(
+    expect(screen.getByRole("button", { name: "安装选中的 5 项" })).toBeEnabled();
+    // FFmpeg about a minute, three runtimes about 4 minutes each, the Qwen3-TTS model and
+    // IndexTTS 12.8 GB at the 22 MB/s the scan measured.
+    expect(screen.getByText("约 12.8 GB，预计 24 分钟")).toHaveAttribute(
       "title",
       "按这台机器测到的下载速度 22.0 MB/s 估算",
     );
 
     await user.click(screen.getByRole("button", { name: "全选" }));
-    expect(screen.getByRole("button", { name: "安装选中的 11 项" })).toBeInTheDocument();
-    expect(screen.getByText("约 110.3 GB，预计 1 小时 31 分钟")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "安装选中的 15 项" })).toBeInTheDocument();
+    expect(screen.getByText("约 149.4 GB，预计 2 小时 13 分钟")).toBeInTheDocument();
     await user.click(
       screen.getByRole("checkbox", { name: "安装（可选） FlashVSR 节点（快速超分）" }),
     );
-    expect(screen.getByRole("button", { name: "安装选中的 10 项" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "安装选中的 14 项" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "只选必需的" }));
-    expect(screen.getByRole("button", { name: "安装选中的 2 项" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "安装选中的 5 项" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "先跳过，进入工作台" })).toHaveAttribute(
       "href",
       "/s/demo/e/1/novel",
@@ -149,7 +150,7 @@ describe("SetupPage", () => {
     await user.clear(dir);
     await user.type(dir, "E:\\Studio");
     expect(screen.queryByText(/这是程序所在的文件夹/)).toBeNull();
-    await user.click(screen.getByRole("button", { name: "安装选中的 2 项" }));
+    await user.click(screen.getByRole("button", { name: "安装选中的 5 项" }));
     expect(fakeSetup.profile.install).toMatchObject({ mirror: "cn", dir: "E:\\Studio" });
     expect(await screen.findByText("下载源：国内镜像 · E:\\Studio")).toBeInTheDocument();
   });
@@ -158,10 +159,10 @@ describe("SetupPage", () => {
     const user = userEvent.setup();
     renderSetup();
     await scan(user);
-    await user.click(screen.getByRole("button", { name: "安装选中的 2 项" }));
+    await user.click(screen.getByRole("button", { name: "安装选中的 5 项" }));
     expect(await screen.findByRole("heading", { name: "准备好了" })).toBeInTheDocument();
-    expect(screen.queryByRole("alertdialog")).toBeNull(); // IndexTTS-2.5 is 5.5 GB
-    expect(screen.getByText("装好 2 项。")).toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).toBeNull(); // none over 10 GB (IndexTTS-2.5 8.3)
+    expect(screen.getByText("装好 5 项。")).toBeInTheDocument();
     expect(screen.getByText("开始：FFmpeg")).toBeInTheDocument();
     expect(screen.getByText("开始：IndexTTS-2.5")).toBeInTheDocument();
     expect(screen.queryByText(/已存 ComfyUI 快照/)).toBeNull();
@@ -173,9 +174,9 @@ describe("SetupPage", () => {
     renderSetup();
     await scan(user);
     await user.click(screen.getByRole("button", { name: "全选" }));
-    await user.click(screen.getByRole("button", { name: "安装选中的 11 项" }));
+    await user.click(screen.getByRole("button", { name: "安装选中的 15 项" }));
     const dialog = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
-    expect(within(dialog).getByText("会改动你的 ComfyUI（8 项）")).toBeInTheDocument();
+    expect(within(dialog).getByText("会改动你的 ComfyUI（9 项）")).toBeInTheDocument();
     expect(within(dialog).getByText("D:\\ComfyUI")).toBeInTheDocument();
     const change = (name: string) => within(dialog).getByRole("cell", { name }).closest("tr");
     expect(change("PyTorch")).toHaveTextContent(
@@ -191,19 +192,19 @@ describe("SetupPage", () => {
     expect(change("MiniMax H3 权重（int8）")).toHaveTextContent(
       "安装e5eb578Comfy-Org/MiniMax-H3约 49.3 GB",
     );
-    expect(within(dialog).getAllByRole("row")).toHaveLength(9);
+    expect(within(dialog).getAllByRole("row")).toHaveLength(10);
     expect(
       within(dialog).getByText("MiniMax H3 权重（int8） 要下载约 49.3 GB"),
     ).toBeInTheDocument();
     expect(within(dialog).getByText(/动手前先用 ComfyUI-Manager 存一份快照/)).toBeInTheDocument();
-    expect(within(dialog).getByText("约 110.3 GB，预计 1 小时 31 分钟")).toBeInTheDocument();
+    expect(within(dialog).getByText("约 149.4 GB，预计 2 小时 13 分钟")).toBeInTheDocument();
     expect(await screen.findByText("等你确认后开始安装")).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole("button", { name: "取消" }));
     await phaseIs("检测完成");
     expect(screen.queryByRole("alertdialog")).toBeNull();
     // Back at the scan result, the selection kept.
-    expect(screen.getByRole("button", { name: "安装选中的 11 项" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "安装选中的 15 项" })).toBeEnabled();
     expect(fakeSetup.profile.items.every((x) => x.install === null)).toBe(true);
     expect(fakeSetup.installed.size).toBe(0);
     expect(fakeSetup.snapshots).toHaveLength(0);
@@ -215,7 +216,7 @@ describe("SetupPage", () => {
     await scan(user);
     await installAll(user);
 
-    expect(screen.getByText("装好 10 项，失败 1 项（都是可选项）。")).toBeInTheDocument();
+    expect(screen.getByText("装好 14 项，失败 1 项（都是可选项）。")).toBeInTheDocument();
     expect(screen.getByText("均衡：草稿和重跑在本地跑，采纳前用 API 出终版")).toBeInTheDocument();
     const lines = within(screen.getByRole("region", { name: "安装日志" })).getAllByRole("listitem");
     const text = lines.map((l) => l.textContent);
@@ -224,7 +225,7 @@ describe("SetupPage", () => {
     expect(snapshotAt).toBeLessThan(text.indexOf("完成：PyTorch"));
     expect(text).toContain("失败（可选项，不影响使用）：SageAttention 加速");
     expect(text.at(-1)).toBe("全部结束。");
-    expect(within(summary()).getByText("已装好 10")).toBeInTheDocument();
+    expect(within(summary()).getByText("已装好 14")).toBeInTheDocument();
     expect(within(summary()).getByText("失败 1")).toBeInTheDocument();
     const sage = row("SageAttention 加速");
     expect(sage).toHaveTextContent("没有适合这台机器的预编译包");
@@ -348,7 +349,7 @@ describe("SetupPage", () => {
     fakeSetup.snapshotFail = "not_running";
     await user.click(screen.getByRole("button", { name: "只选必需的" }));
     await user.click(screen.getByRole("checkbox", { name: "安装 ComfyUI" }));
-    await user.click(screen.getByRole("button", { name: "安装选中的 3 项" }));
+    await user.click(screen.getByRole("button", { name: "安装选中的 6 项" }));
     const dialog = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
     expect(within(dialog).getByText("会改动你的 ComfyUI（1 项）")).toBeInTheDocument();
     await user.click(within(dialog).getByRole("button", { name: "确认，开始安装" }));
@@ -377,9 +378,9 @@ describe("SetupPage", () => {
     expect(row("显卡")).toHaveTextContent("不支持 CUDA：视频生成改走 API");
     expect(row("ComfyUI")).not.toHaveTextContent("会改动你的 ComfyUI");
     expect(screen.queryByRole("region", { name: "你的 ComfyUI" })).toBeNull();
-    await user.click(screen.getByRole("button", { name: "安装选中的 3 项" }));
+    await user.click(screen.getByRole("button", { name: "安装选中的 4 项" }));
     expect(await screen.findByText("均衡（视频走 API）")).toBeInTheDocument();
-    expect(screen.getByText("装好 3 项。")).toBeInTheDocument();
+    expect(screen.getByText("装好 4 项。")).toBeInTheDocument();
     expect(screen.queryByRole("alertdialog")).toBeNull();
   });
 
@@ -387,13 +388,13 @@ describe("SetupPage", () => {
     const user = userEvent.setup();
     renderSetup();
     await scan(user);
-    await user.click(screen.getByRole("button", { name: "安装选中的 2 项" }));
+    await user.click(screen.getByRole("button", { name: "安装选中的 5 项" }));
     await screen.findByRole("heading", { name: "准备好了" });
     await user.click(screen.getByRole("button", { name: "重新检测" }));
     await phaseIs("检测完成");
     expect(row("FFmpeg")).toHaveTextContent(/^通过/);
     expect(row("IndexTTS-2.5")).toHaveTextContent(/^通过/);
-    expect(within(summary()).getByText("通过 12")).toBeInTheDocument();
+    expect(within(summary()).getByText("通过 15")).toBeInTheDocument();
   });
 
   it("a running download shows bytes, speed and time left, then that it is checking", async () => {
@@ -450,9 +451,9 @@ describe("SetupPage", () => {
       expect(screen.getByRole("listitem", { name: "Model download network" })).toHaveTextContent(
         "Pick China mirror or Automatic below",
       );
-      expect(screen.getByRole("button", { name: "Install 2 selected" })).toBeInTheDocument();
+      expect(screen.getByRole("button", { name: "Install 5 selected" })).toBeInTheDocument();
       await user.click(screen.getByRole("checkbox", { name: "Install ComfyUI" }));
-      await user.click(screen.getByRole("button", { name: "Install 3 selected" }));
+      await user.click(screen.getByRole("button", { name: "Install 6 selected" }));
       const dialog = await screen.findByRole("alertdialog", { name: "Confirm before installing" });
       expect(within(dialog).getByText("Changes to your ComfyUI (1)")).toBeInTheDocument();
       expect(within(dialog).getByRole("row", { name: /ComfyUI Update/ })).toHaveTextContent(

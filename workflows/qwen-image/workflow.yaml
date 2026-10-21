@@ -1,0 +1,32 @@
+# Qwen-Image-2512 文生图（参考图草稿、画面文字草稿）。按官方模板 image_qwen_Image_2512（Comfy-Org/workflow_templates
+# d0e41fe，2026-10-21 核对）改写成 API 格式：打开 Lightning（4 步 LoRA，steps 4、cfg 1.0；关掉是 50 步、cfg 4.0），
+# 输出用 PreviewImage（临时文件夹，取回就不留在 ComfyUI 的 output 里）。格式见 modelhub/workflows.py。
+name: { zh: Qwen-Image-2512 文生图, en: Qwen-Image-2512 text to image }
+kind: image
+tier: recommended
+bindings:
+  - { slot: prompt, node: Prompt, field: text }
+  - { slot: negative, node: Negative prompt, field: text }
+  - { slot: width, node: Size, field: width }
+  - { slot: height, node: Size, field: height }
+  - { slot: seed, node: Sampler, field: seed }
+  - { slot: image_out, node: Output }
+# 加载器用到的文件（清单 w_img_t2i 下载）；健康检查向 ComfyUI 的 /models/<folder> 核对
+models:
+  - { folder: diffusion_models, name: qwen_image_2512_fp8_e4m3fn.safetensors }
+  - { folder: text_encoders, name: qwen_2.5_vl_7b_fp8_scaled.safetensors }
+  - { folder: vae, name: qwen_image_vae.safetensors }
+  - { folder: loras, name: Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors }
+caps:
+  max_refs: 0
+  est_seconds: 15
+  # 模型卡（Qwen/Qwen-Image-2512）推荐的各画幅尺寸；成片尺寸之后由超分、导出处理
+  sizes:
+    "1:1": [1328, 1328]
+    "16:9": [1664, 928]
+    "9:16": [928, 1664]
+    "4:3": [1472, 1104]
+    "3:4": [1104, 1472]
+    "3:2": [1584, 1056]
+    "2:3": [1056, 1584]
+  max_pixels: 1763584

@@ -83,6 +83,11 @@ class HttpResult:
 class PyModule:
     version: str | None
     cuda: str | None  # ``<module>.version.cuda`` (PyTorch's CUDA build), else None
+    # Asked with ``gpu=True``: the environment's PyTorch, its CUDA build and whether its kernels
+    # cover the first GPU (``sm_120`` for an RTX 5090); None when there is no PyTorch / no GPU.
+    torch_cuda: str | None = None
+    gpu_arch: str | None = None
+    arch_ok: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -112,7 +117,9 @@ class Probe(Protocol):
     async def exists(self, path: str) -> bool: ...
     async def read_text(self, path: str) -> str | None: ...
     async def list_dir(self, path: str) -> list[DirEntry] | None: ...
-    async def py_module(self, python: str, module: str) -> PyModule | None: ...
+    async def py_module(
+        self, python: str, module: str, *, gpu: bool = False
+    ) -> PyModule | None: ...
     async def has_secret(self, name: str) -> bool: ...
     async def resolve_app(self) -> AppInfo | None: ...
 
@@ -127,7 +134,20 @@ except Exception:
     print("null"); sys.exit(0)
 v = getattr(m, "__version__", None)
 cuda = getattr(getattr(m, "version", None), "cuda", None)
-print(json.dumps({"version": str(v) if v else None, "cuda": cuda}))
+out = {"version": str(v) if v else None, "cuda": cuda}
+if len(sys.argv) > 2:
+    try:
+        import torch
+        out["torch_cuda"] = torch.version.cuda
+        if torch.cuda.is_available():
+            major, minor = torch.cuda.get_device_capability(0)
+            arch = f"{major}{minor}"
+            out["gpu_arch"] = f"sm_{arch}"
+            built = torch.cuda.get_arch_list()
+            out["arch_ok"] = f"sm_{arch}" in built or f"compute_{arch}" in built
+    except Exception:
+        pass
+print(json.dumps(out))
 """
 
 _LOOPBACK = {"127.0.0.1", "localhost", "::1"}
@@ -363,9 +383,10 @@ class RealProbe:
     async def list_dir(self, path: str) -> list[DirEntry] | None:
         return await asyncio.to_thread(_list_dir, path)
 
-    async def py_module(self, python: str, module: str) -> PyModule | None:
+    async def py_module(self, python: str, module: str, *, gpu: bool = False) -> PyModule | None:
         # Importing torch takes a while on a cold start.
-        res = await self._exec([python, "-c", _PY_MODULE_SCRIPT, module], timeout_s=90)
+        argv = [python, "-c", _PY_MODULE_SCRIPT, module, *(["gpu"] if gpu else [])]
+        res = await self._exec(argv, timeout_s=90)
         if res is None or res.code != 0 or not res.out.strip():
             return None
         try:
@@ -374,7 +395,13 @@ class RealProbe:
             return None
         if not isinstance(data, dict):
             return None
-        return PyModule(version=data.get("version"), cuda=data.get("cuda"))
+        return PyModule(
+            version=data.get("version"),
+            cuda=data.get("cuda"),
+            torch_cuda=data.get("torch_cuda"),
+            gpu_arch=data.get("gpu_arch"),
+            arch_ok=data.get("arch_ok"),
+        )
 
     async def has_secret(self, name: str) -> bool:
         return await asyncio.to_thread(secrets.has_secret, name) != "none"
@@ -549,11 +576,19 @@ class FakeProbe:
         # Only files are listed in a fixture, so a folder without any is not there at all.
         return sorted(entries.values(), key=lambda d: d.name) if entries else None
 
-    async def py_module(self, python: str, module: str) -> PyModule | None:
+    async def py_module(self, python: str, module: str, *, gpu: bool = False) -> PyModule | None:
         if not await self.exists(python):
             return None
         mod = self.python.get(_norm(python), {}).get(module)
-        return PyModule(version=mod.get("version"), cuda=mod.get("cuda")) if mod else None
+        if not mod:
+            return None
+        return PyModule(
+            version=mod.get("version"),
+            cuda=mod.get("cuda"),
+            torch_cuda=mod.get("torch_cuda") if gpu else None,
+            gpu_arch=mod.get("gpu_arch") if gpu else None,
+            arch_ok=mod.get("arch_ok") if gpu else None,
+        )
 
     async def has_secret(self, name: str) -> bool:
         return name in (self.data.get("secrets") or [])

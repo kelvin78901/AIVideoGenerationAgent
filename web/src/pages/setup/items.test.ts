@@ -22,6 +22,7 @@ function installing(ids: string[], installs: Record<string, Partial<ItemInstall>
   };
   for (const x of p.items)
     x.install = ids.includes(x.id) ? { ...installState("queued"), ...installs[x.id] } : null;
+  itemOf(p, "w_tts").size_bytes = 5.5e9; // round numbers below (the manifest's is 8.3 GB)
   return p;
 }
 

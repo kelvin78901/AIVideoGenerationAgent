@@ -168,6 +168,17 @@
     "invalid_response": "the provider's answer could not be read",
     "adapter_unavailable": "this model is not connected yet",
     "adapter_crash": "the call crashed",
-    "budget_exceeded": "over the confirmed spending limit"
+    "budget_exceeded": "over the confirmed spending limit",
+    "comfy_not_running": "Cannot reach ComfyUI; open it and try again",
+    "comfy_model_missing": "ComfyUI lacks a model file this workflow needs; install it under Environment",
+    "comfy_node_missing": "ComfyUI lacks a node this workflow needs; update ComfyUI under Environment",
+    "workflow_invalid": "ComfyUI refused the workflow file",
+    "comfy_failed": "ComfyUI ran into an error",
+    "comfy_interrupted": "Interrupted in ComfyUI",
+    "comfy_lost": "The job left ComfyUI's queue (was the queue cleared?)",
+    "out_of_memory": "Not enough GPU memory",
+    "ref_missing": "This workflow needs a reference picture",
+    "not_installed": "The local runtime is not installed yet; install it under Environment",
+    "worker_crashed": "The local model process quit unexpectedly"
   }
 }

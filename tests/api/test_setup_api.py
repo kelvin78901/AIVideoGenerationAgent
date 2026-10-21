@@ -90,12 +90,12 @@ def test_scan_the_pc(client: TestClient) -> None:
     assert resp.status_code == 202
     started = resp.json()
     assert started["phase"] == "scanning"
-    assert len(started["items"]) == 30
+    assert len(started["items"]) == 34
     assert {x["status"] for x in started["items"]} == {"checking"}
     assert all(x["found"] is None and not x["installable"] for x in started["items"])
 
     p = _wait_scanned(client)
-    assert _counts(p) == {"ok": 10, "missing": 9, "old": 2, "optional": 8, "warn": 1}
+    assert _counts(p) == {"ok": 10, "missing": 13, "old": 2, "optional": 8, "warn": 1}
     assert [x["id"] for x in p["items"]] == [x["id"] for x in started["items"]]
     assert p["recommendation"] == {"preset": "balanced", "reason": "local_video"}
     assert p["scanned_at"].endswith("Z")
@@ -130,7 +130,7 @@ def test_scan_events(client: TestClient) -> None:
     assert events[0] == {"phase": "scanning", "item": None}
     assert all(e["phase"] == "scanning" and e["item"] for e in events[1:-1])
     assert [e["item"]["id"] for e in events[1:-1]][:3] == ["os", "gpu", "driver"]
-    assert len(events) == 30 + 2
+    assert len(events) == 34 + 2
     assert events[-1] == {"phase": "scanned", "item": None}
 
 
@@ -148,8 +148,8 @@ def test_switch_to_the_mac(client: TestClient) -> None:
     assert p["default_dir"] == "~/DramaStudio"
     client.post(SCAN)
     p = _wait_scanned(client)
-    assert len(p["items"]) == 29
-    assert _counts(p) == {"ok": 6, "warn": 3, "missing": 4, "optional": 8, "skip": 8}
+    assert len(p["items"]) == 33
+    assert _counts(p) == {"ok": 6, "warn": 3, "missing": 5, "optional": 9, "skip": 10}
     assert p["recommendation"] == {"preset": "balanced", "reason": "no_cuda"}
     assert p["download_bps"] == 12e6
     assert client.post(MACHINE, json={"machine": "amiga"}).status_code == 422
@@ -185,7 +185,7 @@ def test_rescan_replaces_a_running_scan(
     client.post(SCAN)
     monkeypatch.setenv("DRAMA_SETUP_FAKE_DELAY_MS", "0")
     p = _wait_scanned(client)
-    assert len(p["items"]) == 30 and "checking" not in _counts(p)
+    assert len(p["items"]) == 34 and "checking" not in _counts(p)
     # The profile is written a moment before its job ends (slow CI machines see it running).
     deadline = time.monotonic() + 10
     while True:

@@ -1,6 +1,6 @@
 # Kelvin's PC from the prototype (Setup.dc.html): Windows 11 + RTX 5090.
 # Read by setup/probe.py:FakeProbe (Mock mode and tests). Paths use "/"; "\" also matches.
-# Expected scan: ok 10 / missing 9 / old 2 / optional 8 / warn 1 (30 rows).
+# Expected scan: ok 10 / missing 13 / old 2 / optional 8 / warn 1 (34 rows).
 # Its ComfyUI (D:\ComfyUI, running) has two node packs, VideoHelperSuite (git clone) and
 # KJNodes (from the Registry), an extra_model_paths.yaml and three model files (step 4c), and
 # ComfyUI-Manager 4 (the pip package, --enable-manager) for snapshots (step 5c).

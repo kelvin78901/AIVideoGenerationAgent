@@ -14,7 +14,8 @@ PC_READY = Capabilities.of(
     found=[
         "os", "gpu", "driver", "python", "uv", "torch", "ffmpeg", "git", "comfy", "node_h3",
         "node_vhs", "node_seedvr2", "node_flashvsr", "node_ctrl", "node_dramastudio", "w_h3",
-        "w_te", "w_img", "w_sr", "w_tts", "w_llm", "llmsrv",
+        "w_te", "w_img", "w_img_t2i", "w_sr", "w_tts", "w_llm", "llmsrv", "rt_qwentts",
+        "rt_indextts", "rt_ocr",
     ],
 )  # fmt: skip
 # The Mac sample after its scan: no CUDA, no ComfyUI, no local LLM server.
@@ -36,7 +37,11 @@ def test_local_models_and_what_they_lack() -> None:
     assert local_model(providers, "minimax/h3-api") is None
     assert unmet(providers, MAC, "comfy/h3") == ["cuda", "comfy", "node_h3", "w_h3", "w_te"]
     assert unmet(providers, MAC, "minimax/h3-api") == []  # API models always run
-    assert unmet(providers, MAC, "local/qwen3-tts") == []  # no needs listed: assumed fine
+    assert unmet(providers, MAC, "local/qwen3-tts") == ["cuda", "rt_qwentts"]
+    assert unmet(providers, MAC, "local/rapidocr") == ["rt_ocr"]  # CPU: fine once installed
+    assert unmet(providers, MAC, "local/cosyvoice") == []  # no needs listed: assumed fine
+    for key in ("comfy/qwen-image", "comfy/qwen-image-edit", "local/indextts2"):
+        assert unmet(providers, PC_READY, key) == [], key
     assert unmet(providers, PC_READY, "comfy/h3-fun-controlnet") == []
 
 

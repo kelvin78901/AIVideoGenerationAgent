@@ -50,6 +50,8 @@ from drama_series_agent.core.models_db import (
     utcnow,
 )
 from drama_series_agent.core.paths import drama_home
+from drama_series_agent.modelhub.adapters.comfyui import DEFAULT_URL as COMFY_DEFAULT_URL
+from drama_series_agent.modelhub.adapters.comfyui import ComfyTarget
 from drama_series_agent.modelhub.adapters.local_python import RuntimePaths
 from drama_series_agent.modelhub.registry import is_mock_mode
 from drama_series_agent.setup.comfy import ComfyEnvInfo, ComfyScan, NodePack, identify
@@ -286,6 +288,16 @@ class SetupService:
         data = loaded[1] if loaded is not None else None
         folder = data.install.dir if data is not None and data.install is not None else None
         return RuntimePaths(envs=drama_home() / "envs", models=Path(folder) if folder else None)
+
+    async def comfy_target(self) -> ComfyTarget:
+        """The ComfyUI local workflows run on (``adapters/comfyui.py``): the one the last scan
+        found, at its port, and that scan's environment hash; the default port before a scan."""
+        loaded = await self._load(self.profile_id)
+        scan = loaded[1].comfy if loaded is not None else None
+        if scan is None:
+            return ComfyTarget(url=COMFY_DEFAULT_URL)
+        url = scan.url or (f"http://127.0.0.1:{scan.port}" if scan.port else COMFY_DEFAULT_URL)
+        return ComfyTarget(url=url, env_hash=scan.env_hash)
 
     async def comfy_env(self) -> ComfyView:
         """The ComfyUI the last finished scan found and its environment (SPEC 6.4.1)."""

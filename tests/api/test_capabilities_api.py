@@ -23,8 +23,8 @@ V1 = "/api/v1"
 PROFILE = f"{V1}/setup/profile"
 COMPAT = f"{V1}/series/demo/spec/compat"
 PC_INSTALLABLE = [
-    "torch", "ffmpeg", "comfy", "node_flashvsr", "sage", "w_h3", "w_te", "w_img", "w_sr",
-    "w_tts", "llmsrv",
+    "torch", "ffmpeg", "rt_qwentts", "rt_indextts", "rt_ocr", "comfy", "node_flashvsr", "sage",
+    "w_h3", "w_te", "w_img", "w_img_t2i", "w_sr", "w_tts", "llmsrv",
 ]  # fmt: skip
 # Not offered by the installer: the H3, ControlNet and SeedVR2 nodes come with a newer ComfyUI
 # (the sample has 0.3.40). The user updates ComfyUI.

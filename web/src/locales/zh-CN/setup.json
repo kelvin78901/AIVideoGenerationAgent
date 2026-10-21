@@ -82,6 +82,8 @@
     "no_keys": "还没填",
     "no_gpu": "没检测到可用的显卡",
     "check_failed": "检测出错",
+    "env_no_cuda": "已装，但里面的 PyTorch 不是 CUDA 版",
+    "env_gpu_arch": "已装，但里面的 PyTorch（CUDA {{cuda}}）不支持这块显卡（{{arch}}）",
     "running": "正在运行",
     "not_running": "没在运行",
     "reachable": "访问顺畅",
@@ -118,7 +120,8 @@
     "resolve_later": "用达芬奇做后期时再装",
     "update_comfy_native": "ComfyUI 自带：把 ComfyUI 更新到 {{version}} 或更新",
     "dramastudio_pending": "还没发布：随 ComfyUI 对接一起提供",
-    "weights_pending_p0": "等 P0 实测确定版本后再装"
+    "weights_pending_p0": "等 P0 实测确定版本后再装",
+    "env_torch_gpu": "锁定的 PyTorch 用不了这块显卡，重装也一样；先走 API，等清单更新"
   },
   "error": {
     "not_detected": "装完了，但重新检测还是找不到它（比如装上的包导入不了），详情看日志",

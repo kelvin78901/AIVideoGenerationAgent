@@ -7,18 +7,27 @@ decision, and 林晚's views drawn from her locked picture.
 
 from __future__ import annotations
 
+import json
 import time
 from collections.abc import Callable, Iterator
 from typing import Any
 
+import httpx
 import pytest
 from fastapi.testclient import TestClient
 from sqlmodel import select
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
-from drama_series_agent.core.models_db import Dependency, GateDecision, ModelCall, Product
+from drama_series_agent.core.models_db import (
+    Dependency,
+    GateDecision,
+    ModelCall,
+    Product,
+    ProductVersion,
+)
 from drama_series_agent.modelhub.adapters.mock import gradient_png
+from drama_series_agent.modelhub.workflows import shipped_workflow
 from drama_series_agent.pipeline.component import RunContext
 from drama_series_agent.pipeline.components.media import MediaCall, MediaComponent
 from drama_series_agent.pipeline.hashing import hash_json
@@ -357,3 +366,48 @@ def test_a_retried_call_does_not_pay_again(client: TestClient) -> None:
     assert again.cached and again.cost_usd == 0 and again.files == first.files
     calls = [c for c in _rows(client, ModelCall) if c.model_key == "volc/seedream-5.0"]
     assert len(calls) == 1
+
+
+def test_a_local_draft_through_the_real_comfyui_adapter(client: TestClient) -> None:
+    """The draft against a fake ComfyUI: four prompts on the shipped Qwen-Image workflow at its
+    9:16 size, and the version records which workflow made it (SPEC 6.4.5)."""
+    wf = shipped_workflow("qwen-image")
+    out = wf.output_nodes("image_out")[0]
+    prompts: list[dict[str, Any]] = []
+
+    def comfy(request: httpx.Request) -> httpx.Response:
+        assert request.url.port == 8188, request.url
+        path = request.url.path
+        if path == "/prompt":
+            prompts.append(json.loads(request.content)["prompt"])
+            return httpx.Response(200, json={"prompt_id": f"p{len(prompts)}", "number": 1})
+        if path.startswith("/history/"):
+            pid = path.rsplit("/", 1)[1]
+            image = {"filename": f"{pid}.png", "subfolder": "", "type": "temp"}
+            done = {"status_str": "success", "completed": True, "messages": []}
+            return httpx.Response(200, json={pid: {"outputs": {out: {"images": [image]}},
+                                                   "status": done}})  # fmt: skip
+        if path == "/view":
+            return httpx.Response(200, content=gradient_png(928, 1664, (90, 90, 120)))
+        return httpx.Response(404)
+
+    state = _state(client)
+    state.http_transport = httpx.MockTransport(comfy)
+    state.registry.mock = False
+    state.registry._adapters.clear()
+    job = _run(client, "room")
+    assert job["queue"] == "gpu"
+    draft = _product(client, "room")["versions"][-1]
+    assert (draft["stage"], draft["model_key"], draft["where"]) == (
+        "draft", "comfy/qwen-image", "local"
+    )  # fmt: skip
+    cands = [f for f in draft["files"] if f["role"] == "candidate"]
+    assert [(f["w"], f["h"]) for f in cands] == [(928, 1664)] * 4
+    size = wf.node_id("Size")
+    assert [(p[size]["inputs"]["width"], p[size]["inputs"]["height"]) for p in prompts] == [
+        (928, 1664)
+    ] * 4
+    row = next(v for v in _rows(client, ProductVersion) if v.id == draft["id"])
+    assert (row.workflow_id, row.workflow_sha256) == ("qwen-image", wf.sha256)
+    call = next(c for c in _rows(client, ModelCall) if c.job_id == job["id"])
+    assert (call.where, call.images, call.cost_usd) == ("local", 4, 0.0)

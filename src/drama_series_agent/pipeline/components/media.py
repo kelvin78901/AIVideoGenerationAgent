@@ -59,6 +59,8 @@ class MediaCall:
     fallback_reason: str | None = None  # error / timeout when the router fell back
     cached: bool = False
     data: Any = None  # the call's JSON (a voice design's ``voice_id``)
+    # A ComfyUI workflow's run: workflow_id, workflow_sha256, comfy_env_hash (SPEC 6.4.5).
+    comfy: dict[str, Any] | None = None
 
 
 async def output_frame(session: AsyncSession, series_id: str) -> dict[str, str]:
@@ -175,7 +177,10 @@ class MediaComponent(Component):
             if all(self.services.store.exists(f.sha256) for f in files):
                 where = self.services.registry.spec(row.model_key).where
                 data = row.value_json.get("json")
-                return MediaCall(files, row.model_key, where, 0.0, cached=True, data=data)
+                comfy = row.value_json.get("comfy")
+                return MediaCall(
+                    files, row.model_key, where, 0.0, cached=True, data=data, comfy=comfy
+                )
         routed = await self.services.router.call(
             self.id,
             req,
@@ -184,9 +189,12 @@ class MediaComponent(Component):
             fallback_reason=fallback_reason,
             fallback=fallback,
         )
+        comfy = routed.result.raw.get("comfy")
         async with self.services.db.session() as session:
             if await session.get(LlmCache, key) is None:
                 value = {"files": [asdict(f) for f in routed.files], "json": routed.json}
+                if comfy:
+                    value["comfy"] = comfy
                 session.add(LlmCache(key=key, model_key=routed.model_key, value_json=value))
                 await session.commit()
         return MediaCall(
@@ -196,6 +204,7 @@ class MediaComponent(Component):
             routed.cost_usd,
             version_fallback(routed.fallback_reason),
             data=routed.json,
+            comfy=comfy if isinstance(comfy, dict) else None,
         )
 
     async def source_candidate(
@@ -265,6 +274,7 @@ class MediaComponent(Component):
         sha = self.services.store.put_bytes(prompt.encode("utf-8"))
         last = calls[-1]
         reasons = [c.fallback_reason for c in calls if c.fallback_reason]
+        comfy = next((c.comfy for c in calls if c.comfy), None) or {}
         return VersionDraft(
             payload=payload,
             files=[*files, file_entry("prompt", sha, "text/plain; charset=utf-8")],
@@ -280,6 +290,9 @@ class MediaComponent(Component):
             fallback_reason=fallback_reason or (reasons[0] if reasons else None),
             stage=stage,
             dependencies=list(inputs.deps),
+            workflow_id=comfy.get("workflow_id"),
+            workflow_sha256=comfy.get("workflow_sha256"),
+            comfy_env_hash=comfy.get("comfy_env_hash"),
         )
 
 

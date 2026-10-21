@@ -168,6 +168,17 @@
     "invalid_response": "厂商返回的内容看不懂",
     "adapter_unavailable": "这个模型还没接上",
     "adapter_crash": "调用时程序出错",
-    "budget_exceeded": "超过了确认的花费上限"
+    "budget_exceeded": "超过了确认的花费上限",
+    "comfy_not_running": "连不上 ComfyUI，打开它后重试",
+    "comfy_model_missing": "ComfyUI 里缺这个工作流要的模型文件，去「环境与安装」装上",
+    "comfy_node_missing": "ComfyUI 里缺这个工作流要的节点，去「环境与安装」更新 ComfyUI",
+    "workflow_invalid": "工作流文件有问题，ComfyUI 不接受",
+    "comfy_failed": "ComfyUI 运行出错",
+    "comfy_interrupted": "在 ComfyUI 里被中断了",
+    "comfy_lost": "任务在 ComfyUI 的队列里不见了（队列被清空？）",
+    "out_of_memory": "显存不够",
+    "ref_missing": "这个工作流要参考图",
+    "not_installed": "本地运行环境还没装，去「环境与安装」装上",
+    "worker_crashed": "本地模型进程意外退出"
   }
 }

@@ -1,7 +1,7 @@
 """RapidOCR on the CPU (画面文字 checks): the text in a picture, read top to bottom.
 
-``rapidocr`` 3.x (``RapidOCR()(path).txts``) on onnxruntime; first run on the real machine in
-M3 step 13. args: none.
+``rapidocr`` 3.10 (``RapidOCR()(path).txts``, None when it finds no text) on onnxruntime; its
+models come in the wheel. First run on the real machine in M3 step 13. args: none.
 """
 
 from __future__ import annotations

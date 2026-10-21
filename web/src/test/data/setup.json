@@ -264,6 +264,81 @@
           "install": null
         },
         {
+          "id": "rt_qwentts",
+          "group": "rt",
+          "name": {
+            "zh": "Qwen3-TTS 运行环境（本地试听）",
+            "en": "Qwen3-TTS runtime (local auditions)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "Qwen3-TTS runtime (local auditions)"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 4500000000,
+          "work_s": 240.0,
+          "install": null
+        },
+        {
+          "id": "rt_indextts",
+          "group": "rt",
+          "name": {
+            "zh": "IndexTTS 运行环境（本地配音）",
+            "en": "IndexTTS runtime (local dubbing)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "IndexTTS runtime (local dubbing)"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 260.0,
+          "install": null
+        },
+        {
+          "id": "rt_ocr",
+          "group": "rt",
+          "name": {
+            "zh": "RapidOCR 运行环境（画面文字检查）",
+            "en": "RapidOCR runtime (on-screen text checks)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "RapidOCR runtime (on-screen text checks)"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 240.0,
+          "install": null
+        },
+        {
           "id": "comfy",
           "group": "comfy",
           "name": {
@@ -542,6 +617,29 @@
           "install": null
         },
         {
+          "id": "w_img_t2i",
+          "group": "w",
+          "name": {
+            "zh": "Qwen-Image-2512 文生图（fp8）",
+            "en": "Qwen-Image-2512 text to image (fp8)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 31800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_sr",
           "group": "w",
           "name": {
@@ -583,7 +681,7 @@
           "required": true,
           "installable": true,
           "touches_comfy": false,
-          "size_bytes": 5500000000,
+          "size_bytes": 8300000000,
           "work_s": 0.0,
           "install": null
         },
@@ -740,12 +838,16 @@
       "order": [
         "torch",
         "ffmpeg",
+        "rt_qwentts",
+        "rt_indextts",
+        "rt_ocr",
         "comfy",
         "node_flashvsr",
         "sage",
         "w_h3",
         "w_te",
         "w_img",
+        "w_img_t2i",
         "w_sr",
         "w_tts",
         "llmsrv"
@@ -821,6 +923,16 @@
         {
           "code": "comfy_change",
           "params": {
+            "item": "w_img_t2i",
+            "action": "install",
+            "to": "1f12b17",
+            "source": "Comfy-Org/Qwen-Image_ComfyUI",
+            "gb": 31.8
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
             "item": "w_sr",
             "action": "install",
             "to": "df48879",
@@ -847,6 +959,13 @@
           "params": {
             "item": "w_img",
             "gb": 31.0
+          }
+        },
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_img_t2i",
+            "gb": 31.8
           }
         }
       ]
@@ -1186,6 +1305,77 @@
           "install": null
         },
         {
+          "id": "rt_qwentts",
+          "group": "rt",
+          "name": {
+            "zh": "Qwen3-TTS 运行环境（本地试听）",
+            "en": "Qwen3-TTS runtime (local auditions)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 4500000000,
+          "work_s": 240.0,
+          "install": null
+        },
+        {
+          "id": "rt_indextts",
+          "group": "rt",
+          "name": {
+            "zh": "IndexTTS 运行环境（本地配音）",
+            "en": "IndexTTS runtime (local dubbing)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": true,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 260.0,
+          "install": null
+        },
+        {
+          "id": "rt_ocr",
+          "group": "rt",
+          "name": {
+            "zh": "RapidOCR 运行环境（画面文字检查）",
+            "en": "RapidOCR runtime (on-screen text checks)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "RapidOCR runtime (on-screen text checks)"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 240.0,
+          "install": null
+        },
+        {
           "id": "comfy",
           "group": "comfy",
           "name": {
@@ -1462,6 +1652,29 @@
           "install": null
         },
         {
+          "id": "w_img_t2i",
+          "group": "w",
+          "name": {
+            "zh": "Qwen-Image-2512 文生图（fp8）",
+            "en": "Qwen-Image-2512 text to image (fp8)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "mac_image_slow",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 31800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_sr",
           "group": "w",
           "name": {
@@ -1503,7 +1716,7 @@
           "required": false,
           "installable": true,
           "touches_comfy": false,
-          "size_bytes": 5500000000,
+          "size_bytes": 8300000000,
           "work_s": 0.0,
           "install": null
         },
@@ -1660,10 +1873,12 @@
       "order": [
         "torch",
         "ffmpeg",
+        "rt_ocr",
         "comfy",
         "comfy_manager",
         "node_vhs",
         "w_img",
+        "w_img_t2i",
         "w_tts",
         "llmsrv"
       ],
@@ -1673,6 +1888,13 @@
           "params": {
             "item": "w_img",
             "gb": 31.0
+          }
+        },
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_img_t2i",
+            "gb": 31.8
           }
         }
       ]

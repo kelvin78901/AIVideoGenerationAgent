@@ -2,6 +2,35 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-21 · M3 第 12 步（下）：ComfyUI 适配器、两个工作流、`uv_sync`、清单四项
+
+版本、文件、哈希都按官方仓库 / Hugging Face 接口核对（2026-10-21）；第 13 步在本机第一次真跑。
+
+**ComfyUI**
+- **工作流目录**（SPEC 6.4.2，`modelhub/workflows.py`）：`workflows/<slug>/workflow.api.json`（API 格式）+ `workflow.yaml`（`bindings`：槽位 → 节点标题 + 字段，标题必须唯一、字段必须存在，载入时就检查；`models`：加载器用到的文件；`caps.sizes`：各画幅的尺寸）。参考图槽位可以写 `optional: true`：参考图比节点少时，删掉空着的 LoadImage 和所有读它的输入。`providers.yaml` 的 `workflow:` 指向目录；目录还没有的（H3、SeedVR2 等）照旧不可用，M5 再改格式纳入。
+- **两个工作流**按官方模板（Comfy-Org/workflow_templates d0e41fe）改写：`qwen-image`（2512 fp8 文生图）、`qwen-image-edit`（2511 int8 按参考图编辑，最多 3 张参考图）。和模板不同：① 默认打开 Lightning 4 步 LoRA（steps 4、cfg 1.0；模板默认关，50 / 40 步）——草稿要快；② 输出用 PreviewImage（临时文件夹），不往用户的 ComfyUI output 里留文件；③ 编辑工作流的采样起点改成 `EmptySD3LatentImage`，输出按成片画幅（9:16 → 928×1664），模板是 VAEEncode 参考图 1，9:16 会变成 752×1392（denoise 1.0 时起点只决定尺寸）。int8 convrot 用自带的 UNETLoader（ComfyUI 0.27.0 起支持）。
+- **尺寸**：按模型卡推荐的各画幅尺寸（9:16 → 928×1664），不是成片的 1080×1920（不是 16 的倍数）；到成片尺寸靠之后的超分 / 导出。没有对应画幅时按 `max_pixels` 缩放到 16 的倍数。
+- **调用**（`adapters/comfyui.py`）：参考图上传到 `input/dramastudio/<sha256>.png` → `/prompt` → 每秒查 `/history/{id}`（不做 WebSocket，M5）→ `/view`。n 张候选 = n 个 prompt，种子 seed、seed+1…；没给种子就随机一个，用到的种子记在结果里。
+- **停下**：路由的本地超时 / 取消时调 `/interrupt`（带 prompt_id，只停我们的，用户在 ComfyUI 里手动跑的不受影响）并把它从队列删掉。每 10 次轮询看一次 `/queue`，任务既不在队列也不在历史里（用户清了队列）就报 `comfy_lost`，不用等 10 分钟超时。
+- **出错码**：`/prompt` 400 时缺模型文件（`value_not_in_list`）→ `comfy_model_missing`，缺节点类 → `comfy_node_missing`，其余 → `workflow_invalid`；运行出错 → `comfy_failed`，显存不够 → `out_of_memory`，被中断 → `comfy_interrupted`；连不上 → `comfy_not_running`。都会兜底到 API，提示文字在 `common:modelError`。
+- **显存租约**：每个工作流一个持有者（`comfy:<slug>`），换别的模型（TTS worker 或另一个工作流）时先让 ComfyUI `/free`（卸载模型、释放显存），对应 SPEC 6.4.7「切换大模型前 /free」。
+- **ComfyUI 地址**从上次扫描拿（`SetupService.comfy_target()`：扫描到的 URL，没有就按端口，扫描前 127.0.0.1:8188）。**可复现**：结果的 `raw["comfy"]` 带 `workflow_id`（目录名）、`workflow_sha256`（API JSON 的哈希）、`comfy_env_hash`（上次扫描的环境），写进 `product_version` 的同名三列（`media_draft` 取第一个本地调用的）；媒体缓存里也存一份，重试命中缓存时照样有。`model_call` 没有这三列，M5 接工作流库时再加（SPEC 9.x 的复现字段）。
+- **健康检查**：`/system_stats` 通、`/models/<folder>` 里有工作流要的每个文件。
+- **清单 `w_img_t2i`**（约 31.8 GB，已装 `w_img` 时文本编码器和 VAE 校验后跳过，实际新下约 22 GB）：Qwen-Image-2512 fp8（Comfy-Org 没有 2512 的 int8 版；lightx2v 的 int8 不是 ComfyUI 的量化格式）、Lightning 4 步 LoRA 用模板的 fp32 版。PC 必需、Mac 可选（同 `w_img`）。`comfy/qwen-image` 的 `needs` 改成 `[comfy, w_img_t2i]`。
+
+**本地 Python 运行时的安装**
+- **`uv_sync` 步骤**：`uv sync --locked --no-dev --project <项目> --python <版本>`，`UV_PROJECT_ENVIRONMENT={envs}/<env>`（环境变量是唯一能把环境放到项目外的办法，所以 `Exec` 加了 `env` 参数）。项目是仓库里的 `runtimes/<name>/`（我们写的 pyproject + uv.lock）或模板路径（`{envs}/indextts-src`，先 git clone）。`--locked`：锁文件和 pyproject 对不上就报错，不悄悄重新解析。**锁文件里写的是 wheel 的完整地址，PyPI 镜像对它不起作用**；国内装得慢的话，以后另出一份指向镜像的锁。改了 pyproject 要 `uv lock --project runtimes/<name>`。
+- **`rt_qwentts`**：qwen-tts 0.1.1、PyTorch / torchaudio 2.11.0 cu130（torchaudio 最高 2.11，配套用 2.11；cu130 的构建列表有 sm_120）、`librosa<1`；`exclude-dependencies = ["gradio"]`（只有它的演示命令用）。模型 VoiceDesign 1.7B（自带 12Hz 分词器）下到 `{models}/Qwen3-TTS-12Hz-1.7B-VoiceDesign`，worker 按文件夹加载：qwen-tts 锁死的 transformers 4.57.3 离线时按仓库名加载会去调 `model_info`（4.57.4 才修）。12Hz 用不到 SoX。只装 Windows、Linux x86_64，`requires_cuda`。
+- **`rt_indextts`**：index-tts 锁 main 的 `d9e41aa`（2026-09-29，v2.5.0 之后的修正），按它自带的 `uv.lock` 装：Python 3.11（它要求 <3.12）、PyTorch 2.8 cu128；不装 extras（DeepSpeed、flash-attn 要编译）。worker 改了两处：`infer()` 的 `lang` 是必填（默认 `zh`）；`use_cuda_kernel=False`（默认会在启动时编译 BigVGAN 的 CUDA 内核，要装 CUDA 工具链和 MSVC）。`requires_cuda`。
+- **IndexTTS 的辅助模型并进 `w_tts`**（5.5 → 8.3 GB）：w2v-bert-2.0（只要 config、preprocessor_config、model.safetensors，不要 2.3 GB 的 conformer_shaw.pt）、CAMPPlus、BigVGAN，放 `IndexTTS-2.5/hf_cache/`——index-tts 先找这里，找到就不联网（找不到时会先测 HF / ModelScope 再下）。放 `w_tts` 而不是 `rt_indextts`，是因为 `w_tts` 的检测会核对每个文件。
+- **`rt_ocr`**：rapidocr 3.10.0 + onnxruntime 1.31.0（RapidOCR 不带推理引擎），只用 CPU；默认模型（PP-OCRv6）在 wheel 里，不用下。OCR 没有 API 兜底，所以 Mac 上也必需。Windows、Linux x86_64、Mac arm64（onnxruntime 没有 Intel Mac 的包）。
+- **装完检查显卡**：`py_import` 检测加 `gpu: true`：除了能导入，还要环境里的 PyTorch 是 CUDA 版，并且它的内核覆盖这块显卡（`torch.cuda.get_device_capability()` 对应的 `sm_XY` 在 `get_arch_list()` 里，5090 是 sm_120）。不满足就是「需更新」（`env_no_cuda` / `env_gpu_arch`），提示重装没用、先走 API；安装后的复查也用它，所以装出一个用不了显卡的环境会显示安装失败（`not_detected`）。
+- **测速用权重**：扫描测速取第一个下载文件的前 16 MB，现在先找权重组（`rt_qwentts` 的模型文件夹以小配置文件开头，测不出速度）。
+- **`needs`**：`local/qwen3-tts` → `[rt_qwentts]`、`local/indextts2` → `[w_tts, rt_indextts]`（都加 `requires_cuda`）、`local/rapidocr` → `[rt_ocr]`。没装时能力过滤把试听切到 MiniMax、配音兜底去掉 IndexTTS、OCR 关掉。
+- **IndexTTS 的协议**：代码和模型都是「bilibili 模型使用协议」（不是 Apache）：可以商用，免费、全球；上个月月活超过 1 亿或上一年收入超过 10 亿元要先拿书面授权；要保留版权声明、不能用它或它的输出去改进别的 AI 模型；适用中国法律、上海仲裁。我们只在本机调用、不分发它的代码和权重，满足条件。Qwen3-TTS、w2v-bert、BigVGAN、CAMPPlus 是 Apache-2.0 / MIT。
+
+**界面**：Setup 页多了 4 行（运行环境 3 行、权重 1 行），原型里没有；PC 示例扫描「缺少」9 → 13，Mac「缺少」4 → 5、「可选」8 → 9、「跳过」8 → 10，默认勾选 2 → 5 项。没加新组件，没截新图。
+
 ## 2026-10-21 · MiniMax 用国内站，Seedream 按火山方舟人民币价
 
 - **MiniMax 改用国内站**（Kelvin 定）：`minimax_llm` 的地址换成 `https://api.minimax.cn/v1`。国内站配音 3.50 元 / 万字符（约 $49 / 百万字符，国际站 $100），音色设计 9.90 元（约 $1.39，国际站 $3），设计试听 2.00 元 / 万字符。国内文档写明「1 个汉字算 2 个字符」，和估价的算法一致。国内、国际是两个账号，密钥不通用；换站时地址和人民币单价一起改。

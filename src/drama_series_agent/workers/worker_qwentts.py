@@ -2,7 +2,9 @@
 
 ``qwen-tts`` (Qwen3TTSModel.generate_voice_design), checked against the QwenLM/Qwen3-TTS README on
 2026-10-21; first run on the real machine in M3 step 13.
-args: ``model`` (HF id or local folder), ``device``, ``language``, ``attn`` (optional).
+args: ``model`` (the local folder the installer downloaded it to: offline, transformers 4.57.3
+asks the Hub about a repo id even with everything cached), ``device``, ``language``, ``attn``
+(optional). Output is 24 kHz.
 """
 
 from __future__ import annotations

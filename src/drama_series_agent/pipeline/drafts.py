@@ -60,6 +60,10 @@ class VersionDraft:
     stage: str | None = None
     note: str | None = None
     dependencies: list[DependencyDraft] = field(default_factory=list)
+    # Made by a local ComfyUI workflow (SPEC 6.4.5).
+    workflow_id: str | None = None
+    workflow_sha256: str | None = None
+    comfy_env_hash: str | None = None
     # The demo seed inserts versions with the ids and times of the MSW fixtures.
     id: str | None = None
     created_at: datetime | None = None

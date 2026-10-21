@@ -130,6 +130,7 @@ def test_real_mode_uses_openai_compat_for_llms(client: TestClient) -> None:
 
 
 def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
+    from drama_series_agent.modelhub.adapters.comfyui import ComfyUIAdapter
     from drama_series_agent.modelhub.adapters.google import GeminiImageAdapter
     from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
     from drama_series_agent.modelhub.adapters.minimax import MiniMaxSpeechAdapter
@@ -155,4 +156,6 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
     assert isinstance(registry.get("minimax/h3-api"), UnavailableAdapter)  # not yet
     for key in ("local/qwen3-tts", "local/indextts2", "local/rapidocr"):
         assert isinstance(registry.get(key), LocalPythonAdapter)
-    assert isinstance(registry.get("comfy/qwen-image"), UnavailableAdapter)  # step 12b
+    for key in ("comfy/qwen-image", "comfy/qwen-image-edit"):
+        assert isinstance(registry.get(key), ComfyUIAdapter)
+    assert isinstance(registry.get("comfy/h3"), UnavailableAdapter)  # no workflow folder yet

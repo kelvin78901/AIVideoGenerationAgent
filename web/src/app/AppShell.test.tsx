@@ -128,11 +128,11 @@ describe("AppShell", () => {
   it("counts required items still missing or outdated, in both languages", async () => {
     resetFakeSetup("pc", { scanned: true });
     renderAt(<AppRoutes />, "/s/demo/spec");
-    expect(await screen.findByTestId("setup-badge")).toHaveTextContent("缺 11 项");
-    expect(screen.getByRole("link", { name: /^环境与安装\s*缺 11 项$/ })).toBeInTheDocument();
+    expect(await screen.findByTestId("setup-badge")).toHaveTextContent("缺 15 项");
+    expect(screen.getByRole("link", { name: /^环境与安装\s*缺 15 项$/ })).toBeInTheDocument();
     await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));
-    expect(screen.getByTestId("setup-badge")).toHaveTextContent("11 missing");
-    expect(screen.getByRole("link", { name: /^Environment\s*11 missing$/ })).toBeInTheDocument();
+    expect(screen.getByTestId("setup-badge")).toHaveTextContent("15 missing");
+    expect(screen.getByRole("link", { name: /^Environment\s*15 missing$/ })).toBeInTheDocument();
   });
 
   it("hides the badge once everything required is there", async () => {

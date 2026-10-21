@@ -1,10 +1,13 @@
 """IndexTTS-2.5 (local dubbing and voice variants): a line in the voice of a sample, with the
 emotion of a reference clip or described in words.
 
-``indextts.infer_v2_5.IndexTTS2``, checked against the index-tts README on 2026-10-21; first run
-on the real machine in M3 step 13. Text emotion needs ``use_qwen_emo=True``.
+``indextts.infer_v2_5.IndexTTS2``, checked against index-tts d9e41aa on 2026-10-21; first run on
+the real machine in M3 step 13. Text emotion needs ``use_qwen_emo=True``; ``infer`` needs
+``lang``; the fused BigVGAN kernel stays off (``use_cuda_kernel=False``: it would compile at
+start, which needs the CUDA toolkit). Its helper models are read from ``<model_dir>/hf_cache/``
+(the installer put them there), so nothing is downloaded.
 args: ``model_dir`` (the IndexTTS-2.5 checkpoint folder), ``cwd`` (the index-tts source, which
-reads some paths relative to it), ``bf16``, ``lang`` (optional).
+reads some paths relative to it), ``bf16``, ``lang`` (default ``zh``).
 """
 
 from __future__ import annotations
@@ -25,9 +28,10 @@ def init(args: dict[str, Any]) -> dict[str, Any]:
         cfg_path=os.path.join(model_dir, "config.yaml"),
         model_dir=model_dir,
         use_bf16=bool(args.get("bf16", True)),
+        use_cuda_kernel=False,
         use_qwen_emo=True,
     )
-    return {"tts": tts, "lang": args.get("lang")}
+    return {"tts": tts, "lang": str(args.get("lang") or "zh")}
 
 
 def speak(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
@@ -40,10 +44,9 @@ def speak(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
         "spk_audio_prompt": speaker,
         "text": msg.get("text") or "",
         "output_path": path,
+        "lang": state["lang"],
         "verbose": False,
     }
-    if state["lang"]:
-        kwargs["lang"] = state["lang"]
     if params.get("emotion_ref_path"):
         kwargs["emo_audio_prompt"] = params["emotion_ref_path"]
     elif params.get("emotion_text"):
