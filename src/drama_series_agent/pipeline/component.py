@@ -177,6 +177,11 @@ class Component(ABC):
         """(task → responder) for Mock mode; registered with the model registry."""
         return {}
 
+    async def default_intent(self, session: AsyncSession, product: Product, lang: str) -> str:
+        """The intent a product that never saved a prompt starts with (an asset's: its
+        description, M3)."""
+        return self.services.compiler.default_intent(self.id, lang)
+
     # ------------------------------------------------------------------ run
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:

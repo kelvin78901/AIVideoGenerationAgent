@@ -10,6 +10,7 @@ import { http, HttpResponse } from "msw";
 
 import { ApplyImpactRequestSchema, ImpactChangeSchema, type Impact } from "@/api/schemas/impact";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
+import { assetUnlockImpact, unlockFakeAsset } from "@/test/fakes/assets";
 import { fakeBible } from "@/test/fakes/bible";
 import { fakeEpisodes } from "@/test/fakes/episodes";
 import { fakeScript, findBlock } from "@/test/fakes/script";
@@ -142,14 +143,16 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
     const change = ImpactChangeSchema.safeParse(await request.json());
     if (!change.success) return error(422, "invalid_request");
     const { kind, target_id, patch } = change.data;
-    const lines = linesOf(kind, target_id, patch);
+    const unlock = kind === "asset_unlock" ? assetUnlockImpact(target_id) : undefined;
+    if (unlock === null) return error(409, "not_locked", { id: target_id });
+    const lines = unlock?.lines ?? linesOf(kind, target_id, patch);
     if (!lines) return error(422, "unknown_change_kind", { kind });
     const cost = lines.reduce((sum, l) => sum + (l.cost_usd ?? 0), 0);
     const impact: Impact = {
       id: `imp-${fakeImpact.previews.size + fakeImpact.applied.length + 1}`,
       change: change.data,
       lines,
-      unaffected: null,
+      unaffected: unlock?.unaffected ?? null,
       rerun_cost_usd: Math.round(cost * 100) / 100,
       stale: {},
     };
@@ -165,7 +168,8 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
     fakeImpact.previews.delete(id);
     const { kind, target_id, patch } = impact.change;
     fakeImpact.applied.push({ kind, target_id, action });
-    if (action !== "undo") {
+    if (action !== "undo" && kind === "asset_unlock") unlockFakeAsset(target_id);
+    else if (action !== "undo") {
       const failed = await write(kind, target_id, patch);
       if (failed) return failed;
     }

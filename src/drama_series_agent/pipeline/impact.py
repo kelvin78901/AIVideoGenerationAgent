@@ -70,6 +70,10 @@ PIPELINE_ORDER = {
     EPISODES_SLOT: 3,
     SCRIPT_SLOT: 4,
     ASSET_LIST_SLOT: 5,
+    "ref_image": 6,
+    "text_image": 6,
+    "voice": 6,
+    "ref_views": 7,
 }
 _STEP = {
     NOVEL_SLOT: "novel",
@@ -78,6 +82,10 @@ _STEP = {
     EPISODES_SLOT: "script",
     SCRIPT_SLOT: "script",
     ASSET_LIST_SLOT: "assets",
+    "ref_image": "assets",
+    "text_image": "assets",
+    "voice": "assets",
+    "ref_views": "assets",
 }
 _KEPT = 100  # previews kept in memory
 
@@ -219,6 +227,7 @@ class ImpactService:
         found = await self._affected(planned)
         lines, stale, total = await self._describe(planned, found)
         impact_id = f"imp-{new_id()}"
+        unaffected = planned.unaffected
         self._previews[impact_id] = _Preview(change, planned, stale)
         while len(self._previews) > _KEPT:
             self._previews.popitem(last=False)
@@ -226,7 +235,7 @@ class ImpactService:
             id=impact_id,
             change=change,
             lines=lines,
-            unaffected=None,
+            unaffected=MessageOut.model_validate(unaffected) if unaffected else None,
             rerun_cost_usd=total,
             stale=stale,
         )
@@ -254,6 +263,9 @@ class ImpactService:
         async with self._db.session() as session:
             p = await session.get(Product, planned.product_id)
         locked = p is not None and bool(p.locked_hash)
+        if not planned.relock:
+            await planned.commit()
+            return
         if locked:
             await self._products.unlock(planned.product_id)
         try:
@@ -372,6 +384,7 @@ class ImpactService:
                 gates.setdefault(under, node)
         lines += [line(f"gate_{gate}", node) for (gate, _), node in gates.items()]
         lines += [line(f"edited_{nodes[i].slot}", nodes[i]) for i in ids if nodes[i].edited]
+        lines += [ImpactLineOut.model_validate(x) for x in planned.lines]
 
         stale: dict[str, int] = {}
         for i in found.direct:

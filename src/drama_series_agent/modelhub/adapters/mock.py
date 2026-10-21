@@ -107,6 +107,17 @@ def gradient_png(
     )
 
 
+def mock_picture(
+    width: int, height: int, *parts: object, texts: dict[str, str] | None = None
+) -> bytes:
+    """The Mock picture for ``parts`` (model, prompt, seed, index …): soft colours (each channel
+    96–223), a lighter tone at the bottom."""
+    d = _digest(*parts)
+    top = (96 + d[0] % 128, 96 + d[1] % 128, 96 + d[2] % 128)
+    bottom = (min(top[0] + 32, 255), min(top[1] + 32, 255), min(top[2] + 32, 255))
+    return gradient_png(width, height, top, bottom, texts)
+
+
 def solid_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
     return gradient_png(width, height, rgb)
 
@@ -261,21 +272,16 @@ class MockAdapter:
         n = int(req.params.get("n", 1))
         text = req.params.get("text")
         texts = {MOCK_TEXT_KEY: str(text)} if text else None
-        files = []
-        for i in range(n):
-            d = _digest(self.key, req.text(), req.seed, i)
-            # Soft colours (each channel 96–223), a lighter tone at the bottom.
-            top = (96 + d[0] % 128, 96 + d[1] % 128, 96 + d[2] % 128)
-            bottom = (min(top[0] + 32, 255), min(top[1] + 32, 255), min(top[2] + 32, 255))
-            files.append(
-                OutputFile(
-                    role="image",
-                    mime="image/png",
-                    data=gradient_png(w, h, top, bottom, texts),
-                    w=w,
-                    h=h,
-                )
+        files = [
+            OutputFile(
+                role="image",
+                mime="image/png",
+                data=mock_picture(w, h, self.key, req.text(), req.seed, i, texts=texts),
+                w=w,
+                h=h,
             )
+            for i in range(n)
+        ]
         return ModelResult(files=files, usage=Usage(images=n), raw={"mock": True})
 
     def _audio(self, req: ModelRequest) -> ModelResult:

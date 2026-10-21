@@ -8,11 +8,12 @@ import { demoTiming } from "@/mocks/events";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import AssetsPage from "@/pages/Assets";
 import { backend } from "@/test/backend";
+import { fakeAssets } from "@/test/fakes/assets";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
 
 // Content typed by the user.
-const NEW_DESC = "27 岁，短发。";
+const NEW_DESC = "十来平米，只开一盏台灯。";
 
 function Page() {
   useEventStream();
@@ -30,8 +31,8 @@ function renderAssets() {
 
 const list = () => screen.getByRole("region", { name: "素材清单" });
 const item = (name: RegExp) => within(list()).getByRole("button", { name });
-const asset = (id: string) => getDb().assets.find((a) => a.id === id);
-const productOf = (id: string) => getDb().products[`demo-p-asset-${id}`];
+const asset = (id: string) => fakeAssets.assets.find((a) => a.id === id);
+const productOf = (id: string) => fakeAssets.products.find((p) => p.id === `demo-p-asset-${id}`);
 const ready = () => screen.findByText("已锁定 7 / 13");
 
 beforeEach(() => {
@@ -53,6 +54,7 @@ describe("AssetsPage", () => {
     ).toBeInTheDocument();
     expect(within(list()).getAllByRole("button", { pressed: false })).toHaveLength(12);
     expect(screen.getByText("当前产物 · 林晚 · 参考图 4 张候选")).toBeInTheDocument();
+    // The API final v2 stays on screen; the picture locked from it is a version of its own.
     expect(screen.getByText(/v2 · Nano Banana Pro/)).toHaveTextContent("已锁定");
     expect(screen.getByRole("link", { name: "1-09" })).toBeInTheDocument();
   });
@@ -111,6 +113,18 @@ describe("AssetsPage", () => {
     expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(3);
   });
 
+  it("unlocking a character lists the views drawn from it, then its shots", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(screen.getByRole("button", { name: "解锁" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent(
+      "补视图 · 「林晚」的侧面、背面和表情按这张参考图画，锁定新的一张后会重画",
+    );
+    expect(dialog).toHaveTextContent("分镜 · 1-01 1-04 1-05 1-06 1-08 1-09，共 6 个镜头用它做参考");
+  });
+
   it("「撤销」 keeps the asset locked", async () => {
     const user = userEvent.setup();
     renderAssets();
@@ -165,11 +179,12 @@ describe("AssetsPage", () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
+    await user.click(item(/林晚出租屋/));
     const desc = screen.getByLabelText("描述（就是这条素材的提示词意图层）");
     await user.clear(desc);
     await user.type(desc, NEW_DESC);
     await user.tab();
-    await waitFor(() => expect(asset("linwan")?.intent).toBe(NEW_DESC));
-    expect(productOf("linwan")?.prompt?.intent).toBe(NEW_DESC);
+    await waitFor(() => expect(asset("room")?.intent).toBe(NEW_DESC));
+    expect(productOf("room")?.prompt?.intent).toBe(NEW_DESC);
   });
 });

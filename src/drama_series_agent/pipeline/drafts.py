@@ -72,6 +72,8 @@ class PlannedChange:
 
     Most edits adopt a new version (``payload``, staged as the product's adopted version);
     an edit that is not a version (a suggestion's decision) stages itself with ``stage``.
+    A change that touches no content (unlocking an asset, M3) changes no hash, so its planner
+    lists what it affects itself (``lines``, ``unaffected``).
     """
 
     product_id: str
@@ -83,3 +85,8 @@ class PlannedChange:
     stage: Callable[[AsyncSession], Awaitable[None]] | None = None
     # What it writes, compared when it is applied (the payload, or the decision).
     content: Any = None
+    # Impact lines worked out by the planner: {code, params, cost_usd, optional}.
+    lines: list[dict[str, Any]] = field(default_factory=list)
+    unaffected: dict[str, Any] | None = None
+    # False when the change is the unlock itself: the product stays unlocked after ``commit``.
+    relock: bool = True

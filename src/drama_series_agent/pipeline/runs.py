@@ -171,17 +171,21 @@ class RunService:
         except ModelError:
             return None, None
         prompt = None
+        comp = self.components.get(product.component_id)
         async with self.services.db.session() as session:
             lang = await self._lang(session, product.series_id)
             if product.prompt_json:
                 compiled = str(product.prompt_json.get("compiled", ""))
             else:
-                intent = compiler.default_intent(product.component_id, lang)
+                intent = (
+                    await comp.default_intent(session, product, lang)
+                    if comp is not None
+                    else compiler.default_intent(product.component_id, lang)
+                )
                 compiled = compiler.compile(product.component_id, intent, model)
                 prompt = PromptOut(
                     intent=intent, compiled=compiled, compiled_overridden=False, model_key=model
                 )
-            comp = self.components.get(product.component_id)
             if comp is None:
                 return prompt, None
             try:
@@ -224,6 +228,7 @@ class RunService:
                 else None
             )
             lang = await self._lang(session, p.series_id)
+            starting = None if p.prompt_json else await comp.default_intent(session, p, lang)
         settings = await router.settings(comp.id, item_of(p))
         if mode == "switch":
             base = current.model_key if current and current.model_key else None
@@ -242,7 +247,7 @@ class RunService:
         keep = mode != "switch" and intent is None and compiled is None
         kept = saved.compiled if keep and saved is not None and saved.compiled_overridden else None
         if intent is None:
-            intent = saved.intent if saved else self.services.compiler.default_intent(comp.id, lang)
+            intent = saved.intent if saved else (starting or "")
         overridden = compiled is not None or kept is not None
         compiled = compiled if compiled is not None else kept
         if compiled is None:

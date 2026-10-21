@@ -155,9 +155,10 @@ def test_novel_gate_locks_the_novel_step_of_the_series(client: TestClient) -> No
 
     async def rows() -> list[GateDecision]:
         async with _state(client).db.session() as s:
-            return list((await s.exec(select(GateDecision))).all())
+            query = select(GateDecision).where(GateDecision.gate == "novel")
+            return list((await s.exec(query)).all())
 
-    (row,) = _call(client, rows)
+    (row,) = _call(client, rows)  # the demo's locked assets have gate decisions of their own
     assert set(row.product_hashes_json) == {NOVEL, BIBLE, ENRICH}
     # Confirming again is the same decision.
     assert _gate(client, "novel", "confirm", "demo")["id"] == decision["id"]

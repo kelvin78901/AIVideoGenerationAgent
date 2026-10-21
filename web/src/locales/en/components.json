@@ -194,6 +194,8 @@
       "dub_lines": "Dialogue audio · {{count}}",
       "video_audio_swap": "Video · {{id}} gets a new audio track",
       "shot_refs": "Shots · {{ids}}: {{count}} shots use it as a reference",
+      "uses_ref_views": "Extra views · {{name}}'s side, back and expressions are drawn from this picture; locking another one redraws them",
+      "uses_ref_image": "Assets · {{names}} use it as a reference ({{count}}); locking another one marks them as needing an update",
       "self_asset_list": "Episode {{n}}'s asset list will change",
       "stale_asset_list": "Episode {{n}} asset list · will be analysed again",
       "then_asset_list": "Episode {{n}} asset list · analysed again only if what it reads changes",
@@ -201,6 +203,7 @@
     },
     "unaffected": {
       "unaffected_spec": "Script, shot list, dialogue audio and voices are unaffected. Adopted videos are kept; new results arrive as new versions.",
+      "unlock_keeps_ref": "The current reference stays in use after unlocking; only locking a new one updates what uses it.",
       "unlock_keeps_adopted": "Adopted videos are kept; with the new reference these shots get new versions."
     }
   },

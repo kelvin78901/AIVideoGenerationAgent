@@ -1,5 +1,5 @@
-"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script}.json``: what the
-Mock backend answers.
+"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script,assets}.json``: what
+the Mock backend answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -255,3 +255,24 @@ def test_web_script_fixture_is_current(client: TestClient) -> None:
             f.write(text)
     current = path.read_text(encoding="utf-8") if path.exists() else ""
     assert current == text, f"{path.name} is out of date: see this module's docstring"
+
+
+ASSETS_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "assets.json"
+
+
+def test_web_assets_fixture_is_current(client: TestClient) -> None:
+    """Episode 1's assets and each one's product with its candidates (``test/fakes/assets.ts``).
+    A lock's ``pick`` version gets a random id and the time it was made: pinned here."""
+    assets = client.get(f"{V1}/series/demo/assets", params={"episode": "demo-e1"}).json()
+    products = [client.get(f"{V1}/products/{a['product_id']}").json() for a in assets]
+    text = json.dumps(_fixed({"assets": assets, "products": products}), ensure_ascii=False)
+    for p in products:
+        for v in p["versions"]:
+            if v["origin"] == "pick":
+                text = text.replace(v["id"], f"{p['id']}-v{v['n']}")
+    text = json.dumps(json.loads(text), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(ASSETS_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = ASSETS_FIXTURE.read_text(encoding="utf-8") if ASSETS_FIXTURE.exists() else ""
+    assert current == text, f"{ASSETS_FIXTURE.name} is out of date: see this module's docstring"

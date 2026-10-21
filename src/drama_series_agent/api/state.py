@@ -33,8 +33,10 @@ from drama_series_agent.pipeline.component import ComponentRegistry, Services
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, AssetsComponent
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
+from drama_series_agent.pipeline.components.img import ImgComponent
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
+from drama_series_agent.pipeline.components.views import ViewsComponent
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.impact import ImpactService, register_kinds
 from drama_series_agent.pipeline.invalidation import Invalidation
@@ -123,6 +125,8 @@ class StudioState:
         script = ScriptComponent(components.services, novel, budget)
         components.add(script)
         components.add(AssetsComponent(components.services))
+        components.add(ImgComponent(components.services))
+        components.add(ViewsComponent(components.services))
         episodes = EpisodeService(db, products, invalidation)
         budget.episode_budget = episodes.budget
         runs = RunService(components, products, jobs, bus, budget)
@@ -135,7 +139,7 @@ class StudioState:
         bible = BibleService(db, products, novel)
         suggestions = SuggestionService(db, products, novel, enrich)
         script_svc = ScriptService(db, products, script)
-        assets = AssetService(db, products, runs)
+        assets = AssetService(db, products, runs, bus=bus, store=store, invalidation=invalidation)
         impact = ImpactService(db, products, invalidation, estimate)
         gates = GateService(db, bus, products, invalidation)
         cascade = CascadeService(db, bus, products, invalidation, runs, gates)
@@ -148,6 +152,7 @@ class StudioState:
             episodes=episodes,
             script=script_svc,
         )
+        assets.register(impact)
         state = cls(
             db=db,
             bus=bus,

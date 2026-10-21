@@ -19,30 +19,44 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
+from typing import Any
 
 from loguru import logger
 from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.assets import ops as asset_ops
+from drama_series_agent.assets import service as assets_service
+from drama_series_agent.assets.service import record_asset_gate
 from drama_series_agent.bible.service import BIBLE_SLOT, bible_slicer, materialize
 from drama_series_agent.core.config import SpecConfig, get_config
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
-from drama_series_agent.core.models_db import Episode, Product, Series, SuggestionDecision
+from drama_series_agent.core.models_db import (
+    Asset,
+    Episode,
+    Product,
+    ProductVersion,
+    Series,
+    SuggestionDecision,
+)
 from drama_series_agent.core.paths import REPO_ROOT, database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes
 from drama_series_agent.episodes.service import latest_gate
+from drama_series_agent.modelhub.adapters.mock import MOCK_TEXT_KEY, mock_picture, sine_wav
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
 from drama_series_agent.pipeline.components import assets, enrich, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
-from drama_series_agent.pipeline.drafts import VersionDraft
+from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, VIEWS, ViewsComponent
+from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.script import service as script_service
+from drama_series_agent.spec.dims import dims
 from drama_series_agent.spec.schema import default_row
 from drama_series_agent.suggestions import service as suggestions
 
@@ -81,6 +95,32 @@ SCRIPT_VERSIONS = (
 # 素材分析 of episode 1 on DeepSeek, 10:25 +08:00.
 ASSETS_MODEL = "deepseek/v4.1-flash"
 ASSETS_AT = datetime(2026, 10, 14, 2, 25, tzinfo=UTC)
+# The prototype's candidates (MSW fixtures/demo/assets.ts): each asset's versions (model, time
+# +08:00 on the demo day, stage) and the candidate it is locked to (None: still to choose).
+# 林晚 is hybrid: a local draft, then the API final from its first picture (SPEC 7.7).
+DEMO_ASSET_VERSIONS: dict[str, tuple[tuple[tuple[str, str, str | None], ...], int | None]] = {
+    "linwan": (
+        (("comfy/qwen-image", "10:31", "draft"), ("google/nano-banana-pro", "10:36", "final")),
+        0,
+    ),
+    "hall": ((("comfy/qwen-image", "10:33", "draft"),), 0),
+    "room": ((("comfy/qwen-image", "10:33", "draft"),), None),
+    "umbrella": ((("comfy/qwen-image", "10:33", "draft"),), 0),
+    "note": ((("comfy/qwen-image", "10:33", "draft"),), 0),
+    "band": ((("comfy/qwen-image", "10:33", "draft"),), None),
+    "phone": ((("comfy/qwen-image", "10:33", "draft"),), 0),
+    "txt1": ((("openai/gpt-image-2", "10:44", None),), None),
+    "txt2": ((("openai/gpt-image-2", "10:44", None),), 0),
+    "vlinwan": ((("minimax/speech-2.8-hd", "10:40", None),), 0),
+}
+# What each run cost (the API's price × pictures; a voice design is $3).
+DEMO_ASSET_COST = {"google/nano-banana-pro": 0.14, "openai/gpt-image-2": 1.12}
+VOICE_LABELS = ("偏低沉", "更清亮", "带一点沙哑")
+VOICE_WAVES = (
+    (10, 18, 26, 14, 22, 30, 12, 20, 16, 28, 10, 18, 24, 12, 20, 14),
+    (14, 22, 12, 28, 18, 10, 24, 30, 16, 12, 22, 18, 10, 26, 14, 20),
+    (8, 16, 22, 30, 12, 18, 26, 10, 20, 28, 14, 10, 24, 16, 22, 12),
+)
 # The prototype's asset ids (MSW fixtures/demo/assets.ts), by analysis key.
 DEMO_ASSET_IDS = {
     "character:c-linwan": "linwan",
@@ -162,6 +202,7 @@ async def seed_demo(
             await _seed_split(db, novel, products, compiler)
             await _seed_script(db, novel, products, compiler)
             await _seed_assets(db, products, compiler)
+            await _seed_asset_versions(db, products, compiler)
         if gates is not None:
             await _seed_gates(db, gates)
     return created
@@ -189,6 +230,7 @@ async def build_demo(*, reset: bool) -> None:
         products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
         products.on_adopt(episodes.EPISODES_SLOT, episodes.materialize)
         products.on_adopt(episodes.SCRIPT_SLOT, script_service.materialize)
+        products.on_adopt(assets.ASSET_LIST_SLOT, assets_service.materialize)
         if reset:
             await delete_demo(db)
         novel = NovelService(db, BlobStore(), products)
@@ -484,6 +526,157 @@ async def _seed_assets(db: Database, products: ProductService, compiler: PromptC
         created_at=ASSETS_AT,
     )
     await products.append(product_id, draft, origin="run")
+
+
+def _demo_time(hhmm: str) -> datetime:
+    """``10:31`` on the demo day, +08:00."""
+    h, m = (int(x) for x in hhmm.split(":"))
+    return datetime(2026, 10, 14, h - 8, m, tzinfo=UTC)
+
+
+def _text_reads(exact: str, method: str) -> list[str]:
+    """What OCR reads on each of the four text pictures (MSW ``candidatesFor``): drawn by the
+    model, B misreads 点 as 占 and D drops the last character; composited, all four match."""
+    if method == "composite":
+        return [exact] * 4
+    return [exact, exact.replace("点", "占"), exact, exact[:-1]]
+
+
+def _asset_files(
+    store: BlobStore, asset: Asset, product_id: str, model: str, stage: str | None
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """A demo version's payload and candidate files (Mock pictures, or tones for a voice)."""
+    if asset.kind == "voice":
+        files = [
+            file_entry(
+                "candidate",
+                store.put_bytes(sine_wav(1.5, freq_hz=180 + 40 * i)),
+                "audio/wav",
+                duration_s=1.5,
+                idx=i,
+            )
+            for i in range(len(VOICE_LABELS))
+        ]
+        candidates = [
+            {"label": label, "waveform": [h / 30 for h in wave]}
+            for label, wave in zip(VOICE_LABELS, VOICE_WAVES, strict=True)
+        ]
+        return {"candidates": candidates}, files
+    size = dims("9:16", "draft" if stage == "draft" else "1080p")
+    text = (asset.seed_json or {}).get("text") or {}
+    reads: list[str | None] = [None] * (1 if stage == "final" else 4)
+    if asset.kind == "text":
+        reads = list(_text_reads(str(text.get("exact", "")), str(text.get("method", ""))))
+    files = []
+    for i, read in enumerate(reads):
+        texts = {MOCK_TEXT_KEY: read} if read else None
+        png = mock_picture(size.w, size.h, model, product_id, stage, i, texts=texts)
+        sha = store.put_bytes(png)
+        files.append(file_entry("candidate", sha, "image/png", w=size.w, h=size.h, idx=i))
+    if asset.kind == "text":
+        return {"candidates": [{"ocr": r} for r in reads]}, files
+    return {"candidates": [{} for _ in reads], "aspect": "9:16", "refs": []}, files
+
+
+async def _seed_asset_versions(
+    db: Database, products: ProductService, compiler: PromptCompiler
+) -> None:
+    """The prototype's candidates for the assets that have them, 7 of 13 locked (each with its
+    gate decision), and the views drawn from 林晚's locked picture."""
+    store = BlobStore()
+    invalidation = slicers()
+
+    async def record(session: AsyncSession, p: Product, v: ProductVersion) -> None:
+        await record_asset_gate(session, invalidation, p, "confirm")
+
+    for asset_id, (runs, locked) in DEMO_ASSET_VERSIONS.items():
+        product_id = asset_product_id(asset_id)
+        async with db.session() as session:
+            asset = await session.get(Asset, asset_id)
+            product = await session.get(Product, product_id)
+        if asset is None or product is None or product.current_version_id is not None:
+            continue
+        intent = str((asset.seed_json or {}).get("description") or "")
+        parent = None
+        for n, (model, at, stage) in enumerate(runs, 1):
+            payload, files = _asset_files(store, asset, product_id, model, stage)
+            draft = VersionDraft(
+                payload=payload,
+                files=files,
+                intent=intent,
+                compiled=compiler.compile(product.component_id, intent, model),
+                model_key=model,
+                where="local" if model.startswith("comfy/") else "api",
+                seed=1200 + n,
+                params={"mode": "run", "calls": 1},
+                cost_usd=3.0 if asset.kind == "voice" else DEMO_ASSET_COST.get(model, 0.0),
+                stage=stage,
+                id=f"{product_id}-v{n}",
+                created_at=_demo_time(at),
+            )
+            v = await products.append(
+                product_id, draft, origin="run", parent_version_id=parent, adopt=False
+            )
+            parent = v.id
+        if locked is None or parent is None:
+            continue
+        await products.lock_pick(product_id, parent, locked, record=record)
+        if asset.kind == "character":
+            await _seed_views(db, products, compiler, asset, store, invalidation)
+
+
+async def _seed_views(
+    db: Database,
+    products: ProductService,
+    compiler: PromptCompiler,
+    asset: Asset,
+    store: BlobStore,
+    invalidation: Invalidation,
+) -> None:
+    """补视图 of a locked character: side, back and expressions, adopted."""
+    ref_id = asset_product_id(asset.id)
+    views_id = f"demo-p-views-{asset.id}"
+    p = await products.ensure(
+        series_id=DEMO_SERIES_ID,
+        owner_type="asset",
+        owner_id=asset.id,
+        slot=REF_VIEWS_SLOT,
+        component_id=ViewsComponent.id,
+        product_id=views_id,
+    )
+    if p.current_version_id is not None:
+        return
+    async with db.session() as session:
+        dep = await invalidation.dependency(session, ref_id, "")
+    model = "comfy/qwen-image-edit"
+    size = dims("9:16", "draft")
+    files = [
+        file_entry(
+            "view",
+            store.put_bytes(mock_picture(size.w, size.h, model, views_id, view)),
+            "image/png",
+            w=size.w,
+            h=size.h,
+            idx=i,
+            view=view,
+        )
+        for i, view in enumerate(VIEWS)
+    ]
+    intent = compiler.default_intent(ViewsComponent.id, "zh-CN")
+    draft = VersionDraft(
+        payload={"views": list(VIEWS), "from": dep.upstream_hash},
+        files=files,
+        intent=intent,
+        compiled=compiler.compile(ViewsComponent.id, intent, model),
+        model_key=model,
+        where="local",
+        seed=1301,
+        params={"mode": "run", "calls": len(VIEWS)},
+        dependencies=[dep],
+        id=f"{views_id}-v1",
+        created_at=_demo_time("10:37"),
+    )
+    await products.append(views_id, draft, origin="run")
 
 
 async def _seed_gates(db: Database, gates: GateService) -> None:

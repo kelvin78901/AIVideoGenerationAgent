@@ -44,8 +44,12 @@ export const seriesHandlers = [
     if (demo) {
       const { assets, storyboard, generate, post } = structuredClone(demo.steps);
       Object.assign(steps, { assets, storyboard, generate, post });
-      // 素材 7/13 is the number of locked assets.
-      if (steps.assets.state !== "not_started") Object.assign(steps.assets, lockedAssetCount());
+      // 素材 7/13 is the number of locked assets (the backend's).
+      if (steps.assets.state !== "not_started") {
+        const series = getDb().episodes.find((e) => e.id === id)?.series_id ?? "";
+        const count = await lockedAssetCount(request, series);
+        if (count) Object.assign(steps.assets, count);
+      }
       // 分镜 3/9 is the number of confirmed shots.
       if (steps.storyboard.state !== "not_started")
         Object.assign(steps.storyboard, confirmedShotCount(id));

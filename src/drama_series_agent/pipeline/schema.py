@@ -26,6 +26,8 @@ class VersionFileOut(BaseModel):
     duration_s: float | None = None
     w: int | None = None
     h: int | None = None
+    idx: int | None = None  # a candidate's or view's number in its version (M3)
+    view: str | None = None  # side / back / expressions (补视图)
 
 
 class VersionOut(BaseModel):

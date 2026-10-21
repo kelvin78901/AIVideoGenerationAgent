@@ -72,6 +72,10 @@ export const VersionFileSchema = z.object({
   duration_s: z.number().nullable(),
   w: z.number().int().nullable(),
   h: z.number().int().nullable(),
+  /** A candidate's or view's number in its version (0-based; M3). */
+  idx: z.number().int().nullable().optional(),
+  /** Which view a `role: view` picture is: side / back / expressions (M3 补视图). */
+  view: z.string().nullable().optional(),
 });
 export type VersionFile = z.infer<typeof VersionFileSchema>;
 

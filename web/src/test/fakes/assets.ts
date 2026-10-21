@@ -1,0 +1,237 @@
+/**
+ * Fake assets for page tests: episode 1's 13 assets and their products as the Mock backend
+ * answers them (`test/data/assets.json`, written by tests/api/test_web_fixtures.py), following
+ * the backend's rules (`assets/service.py`) as far as the page needs them:
+ * - 选这个 / 改描述 / 画面文字 / 音色来源 on the asset (refused once locked);
+ * - 锁定为参考 turns the picked candidate of the version on screen into an adopted, locked
+ *   `pick` version (the version on screen stays);
+ * - 重跑 adds a version with fresh candidates;
+ * - 解锁 is the impact preview's `asset_unlock` (`test/fakes/impact.ts`): what uses the locked
+ *   picture, then unlocked.
+ */
+import { http, HttpResponse } from "msw";
+
+import { injectEvent } from "@/api/events";
+import { AssetPatchSchema, AssetSchema, type Asset } from "@/api/schemas/assets";
+import type { Impact } from "@/api/schemas/impact";
+import type { Job } from "@/api/schemas/jobs";
+import { ProductSchema, type Product, type ProductVersion } from "@/api/schemas/products";
+import { primaryModel } from "@/mocks/route";
+import data from "@/test/data/assets.json";
+import { fakeResolve } from "@/test/fakes/config";
+
+const demoAssets = data.assets.map((a) => AssetSchema.parse(a));
+const demoProducts = data.products.map((p) => ProductSchema.parse(p));
+
+/** State of the fake; `resetFakeAssets()` (called by `backend()`) restores it. */
+export const fakeAssets = {
+  assets: structuredClone(demoAssets),
+  products: structuredClone(demoProducts),
+};
+
+export function resetFakeAssets() {
+  fakeAssets.assets = structuredClone(demoAssets);
+  fakeAssets.products = structuredClone(demoProducts);
+}
+
+const error = (status: number, code: string, params: Record<string, unknown> = {}) =>
+  HttpResponse.json({ detail: { code, params } }, { status });
+
+const productOf = (a: Asset) => fakeAssets.products.find((p) => p.id === a.product_id);
+const findAsset = (id: unknown) => fakeAssets.assets.find((a) => a.id === String(id));
+const current = (p: Product) => p.versions.find((v) => v.id === p.current_version_id);
+
+/** 已锁定 / 待选 / 待生成, from the product (the backend's `_out`). */
+function withStatus(a: Asset): Asset {
+  const p = productOf(a);
+  a.status = p?.locked_hash ? "locked" : p?.versions.length ? "choosing" : "not_generated";
+  return a;
+}
+
+function announce(p: Product) {
+  setTimeout(() =>
+    injectEvent("product.updated", { product_id: p.id, series_id: p.series_id, status: p.status }),
+  );
+}
+
+/** 锁定为参考: the picked candidate of the version on screen, as a locked `pick` version. */
+function lock(a: Asset, p: Product): Response {
+  if (p.locked_hash) return error(409, "product_locked", { id: p.id });
+  const source = current(p);
+  if (!source) return error(409, "nothing_to_lock", { id: a.id });
+  const file = source.files.find((f) => f.role === "candidate" && f.idx === a.pick);
+  if (!file) return error(422, "no_such_candidate", { id: source.id, idx: a.pick });
+  const n = p.versions.length + 1;
+  const pick: ProductVersion = {
+    ...structuredClone(source),
+    id: `${p.id}-v${n}`,
+    n,
+    origin: "pick",
+    parent_version_id: source.id,
+    payload: { candidate: {} },
+    files: [{ ...file, role: "ref" }],
+    content_hash: `sha256:${file.sha256}`,
+  };
+  p.versions.push(pick);
+  Object.assign(p, {
+    adopted_version_id: pick.id,
+    locked_hash: pick.content_hash,
+    status: "locked",
+    pick: { version_id: source.id, idx: a.pick },
+  });
+  announce(p);
+  return HttpResponse.json(withStatus(a));
+}
+
+/** 重跑: a version with fresh candidates (4 pictures, 3 voices). */
+function run(p: Product, mode: string): Job {
+  const n = p.versions.length + 1;
+  const model =
+    primaryModel(fakeResolve(p.component_id, null)?.values ?? null) ?? "comfy/qwen-image";
+  const count = p.component_id === "voice" ? 3 : 4;
+  const id = `${p.id}-v${n}`;
+  const version: ProductVersion = {
+    id,
+    product_id: p.id,
+    n,
+    origin: mode === "switch" ? "switch" : mode === "rerun" ? "rerun" : "run",
+    parent_version_id: p.current_version_id,
+    payload: { candidates: Array.from({ length: count }, () => ({})) },
+    files: Array.from({ length: count }, (_, i) => ({
+      role: "candidate",
+      path: `blobs/sha256/00/${id}-${i}`,
+      sha256: `${id}-${i}`,
+      mime: p.component_id === "voice" ? "audio/wav" : "image/png",
+      duration_s: null,
+      w: 768,
+      h: 1366,
+      idx: i,
+    })),
+    content_hash: `sha256:${id}`,
+    intent: p.prompt?.intent ?? "",
+    compiled: p.prompt?.compiled ?? "",
+    compiled_overridden: false,
+    model_key: model,
+    where: model.startsWith("comfy/") ? "local" : "api",
+    seed: n,
+    params: { mode },
+    qa: null,
+    qa_pass: null,
+    fallback_reason: null,
+    stage: model.startsWith("comfy/") ? "draft" : null,
+    rating: null,
+    cost_usd: 0,
+    job_id: `job-${id}`,
+    created_at: "2026-10-20T10:00:00Z",
+    note: null,
+  };
+  p.versions.push(version);
+  p.current_version_id = id;
+  if (!p.locked_hash) p.status = "ready";
+  announce(p);
+  return {
+    id: `job-${id}`,
+    series_id: p.series_id,
+    product_id: p.id,
+    component_id: p.component_id,
+    kind: "product.run",
+    queue: version.where === "local" ? "gpu" : `api:${model.split("/")[0]}`,
+    state: "succeeded",
+    priority: 0,
+    attempt: 1,
+    max_attempts: 3,
+    params: { mode, model_key: model },
+    result: { version_id: id, n },
+    error: null,
+    depends_on: [],
+    est_cost_usd: 0,
+    fallback_from_job_id: null,
+    created_at: "2026-10-20T10:00:00Z",
+    started_at: "2026-10-20T10:00:00Z",
+    finished_at: "2026-10-20T10:00:01Z",
+  };
+}
+
+/** The fake backend's asset list (the MSW demo lays its shots over it), or null. */
+export function assetsBackendFetch(url: URL): Response | null {
+  const m = /\/api\/v1\/series\/([^/]+)\/assets$/.exec(url.pathname);
+  if (!m) return null;
+  const id = decodeURIComponent(m[1] ?? "");
+  return HttpResponse.json(fakeAssets.assets.filter((a) => a.series_id === id).map(withStatus));
+}
+
+/** `asset_unlock`: what uses the locked picture (`assets/service.py:plan_unlock`), or null
+ * when it is not locked. */
+export function assetUnlockImpact(assetId: string): Pick<Impact, "lines" | "unaffected"> | null {
+  const a = findAsset(assetId);
+  const p = a && productOf(a);
+  if (!a || !p?.locked_hash) return null;
+  const views = a.kind === "character" && a.id === "linwan";
+  return {
+    lines: views
+      ? [{ code: "uses_ref_views", params: { name: a.name }, cost_usd: null, optional: false }]
+      : [],
+    unaffected: { code: "unlock_keeps_ref", params: {} },
+  };
+}
+
+export function unlockFakeAsset(assetId: string) {
+  const a = findAsset(assetId);
+  const p = a && productOf(a);
+  if (!p) return;
+  p.locked_hash = null;
+  p.status = p.adopted_version_id ? "adopted" : "ready";
+  announce(p);
+}
+
+export function assetHandlers() {
+  return [
+    http.patch("*/api/v1/assets/:id", async ({ params, request }) => {
+      const a = findAsset(params.id);
+      const p = a && productOf(a);
+      if (!a || !p) return error(404, "asset_not_found", { id: params.id });
+      const body = AssetPatchSchema.safeParse(await request.json());
+      if (!body.success) return error(422, "invalid_request");
+      const { intent, pick, text, voice } = body.data;
+      if (p.locked_hash && (intent !== undefined || text || voice))
+        return error(409, "product_locked", { id: p.id });
+      if (intent !== undefined) {
+        a.intent = intent;
+        p.prompt = {
+          intent,
+          compiled: `[描述] ${intent}`,
+          compiled_overridden: false,
+          model_key: p.prompt?.model_key ?? "comfy/qwen-image",
+        };
+      }
+      if (pick !== undefined) {
+        if (!p.current_version_id) return error(409, "nothing_to_pick", { id: a.id });
+        if (p.locked_hash) return error(409, "product_locked", { id: p.id });
+        a.pick = pick;
+        p.pick = { version_id: p.current_version_id, idx: pick };
+      }
+      if (text && a.text) a.text = { ...a.text, ...text };
+      if (voice && a.voice) a.voice = { ...a.voice, ...voice };
+      return HttpResponse.json(withStatus(a));
+    }),
+
+    http.post("*/api/v1/assets/:id/lock", ({ params }) => {
+      const a = findAsset(params.id);
+      const p = a && productOf(a);
+      if (!a || !p) return error(404, "asset_not_found", { id: params.id });
+      return lock(a, p);
+    }),
+
+    http.get("*/api/v1/products/:id", ({ params }) => {
+      const p = fakeAssets.products.find((x) => x.id === params.id);
+      return p ? HttpResponse.json(p) : undefined;
+    }),
+
+    http.post("*/api/v1/products/:id/run", async ({ params, request }) => {
+      const p = fakeAssets.products.find((x) => x.id === params.id);
+      if (!p) return undefined;
+      const body = (await request.json()) as { mode?: string };
+      return HttpResponse.json(run(p, body.mode ?? "run"));
+    }),
+  ];
+}

@@ -1,0 +1,2077 @@
+{
+  "assets": [
+    {
+      "id": "linwan",
+      "series_id": "demo",
+      "kind": "character",
+      "name": "林晚",
+      "intent": "26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。",
+      "source": {
+        "code": "script_line",
+        "params": {
+          "scene": 1,
+          "line": 1
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b1",
+          "episode_id": "demo-e1",
+          "number": 1,
+          "line_ids": [
+            "demo-b2",
+            "demo-b5",
+            "demo-b6"
+          ]
+        },
+        {
+          "scene_id": "demo-b7",
+          "episode_id": "demo-e1",
+          "number": 2,
+          "line_ids": [
+            "demo-b8",
+            "demo-b10",
+            "demo-b11",
+            "demo-b12"
+          ]
+        }
+      ],
+      "product_id": "demo-p-asset-linwan",
+      "status": "locked",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "zhouyu",
+      "series_id": "demo",
+      "kind": "character",
+      "name": "周屿",
+      "intent": "外貌待定，第 2 集出场前再做。",
+      "source": {
+        "code": "note",
+        "params": {
+          "note": "本集只出现字迹"
+        }
+      },
+      "shots": [],
+      "scenes": [],
+      "product_id": "demo-p-asset-zhouyu",
+      "status": "not_generated",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": "本集只出现字迹",
+      "seed_changed": false
+    },
+    {
+      "id": "hall",
+      "series_id": "demo",
+      "kind": "scene",
+      "name": "老小区楼道 · 夜",
+      "intent": "六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。",
+      "source": {
+        "code": "scene_heading",
+        "params": {
+          "scene": 1
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b1",
+          "episode_id": "demo-e1",
+          "number": 1,
+          "line_ids": []
+        }
+      ],
+      "product_id": "demo-p-asset-hall",
+      "status": "locked",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "room",
+      "series_id": "demo",
+      "kind": "scene",
+      "name": "林晚出租屋 · 夜",
+      "intent": "十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。",
+      "source": {
+        "code": "scene_heading",
+        "params": {
+          "scene": 2
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b7",
+          "episode_id": "demo-e1",
+          "number": 2,
+          "line_ids": []
+        }
+      ],
+      "product_id": "demo-p-asset-room",
+      "status": "choosing",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "store",
+      "series_id": "demo",
+      "kind": "scene",
+      "name": "楼下便利店 · 夜",
+      "intent": "第 2 集才出现，到时再做。",
+      "source": {
+        "code": "note",
+        "params": {
+          "note": "第 2 集出场"
+        }
+      },
+      "shots": [],
+      "scenes": [],
+      "product_id": "demo-p-asset-store",
+      "status": "not_generated",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": "第 2 集出场",
+      "seed_changed": false
+    },
+    {
+      "id": "umbrella",
+      "series_id": "demo",
+      "kind": "prop",
+      "name": "红色长柄伞",
+      "intent": "正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。",
+      "source": {
+        "code": "script_line",
+        "params": {
+          "scene": 1,
+          "line": 2
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b1",
+          "episode_id": "demo-e1",
+          "number": 1,
+          "line_ids": [
+            "demo-b3"
+          ]
+        }
+      ],
+      "product_id": "demo-p-asset-umbrella",
+      "status": "locked",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "note",
+      "series_id": "demo",
+      "kind": "prop",
+      "name": "黄色便利贴",
+      "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
+      "source": {
+        "code": "script_line",
+        "params": {
+          "scene": 1,
+          "line": 2
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b1",
+          "episode_id": "demo-e1",
+          "number": 1,
+          "line_ids": [
+            "demo-b3",
+            "demo-b4",
+            "demo-b6"
+          ]
+        }
+      ],
+      "product_id": "demo-p-asset-note",
+      "status": "locked",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "band",
+      "series_id": "demo",
+      "kind": "prop",
+      "name": "旧黑发圈",
+      "intent": "洗旧了的黑色布发圈，戴在林晚左手腕上。",
+      "source": {
+        "code": "script_line",
+        "params": {
+          "scene": 1,
+          "line": 5
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b1",
+          "episode_id": "demo-e1",
+          "number": 1,
+          "line_ids": [
+            "demo-b6"
+          ]
+        }
+      ],
+      "product_id": "demo-p-asset-band",
+      "status": "choosing",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "phone",
+      "series_id": "demo",
+      "kind": "prop",
+      "name": "手机",
+      "intent": "普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。",
+      "source": {
+        "code": "script_line",
+        "params": {
+          "scene": 2,
+          "line": 2
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b7",
+          "episode_id": "demo-e1",
+          "number": 2,
+          "line_ids": [
+            "demo-b9"
+          ]
+        }
+      ],
+      "product_id": "demo-p-asset-phone",
+      "status": "locked",
+      "pick": 0,
+      "text": null,
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "txt1",
+      "series_id": "demo",
+      "kind": "text",
+      "name": "便利贴手写",
+      "intent": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
+      "source": {
+        "code": "script_line",
+        "params": {
+          "scene": 1,
+          "line": 3
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b1",
+          "episode_id": "demo-e1",
+          "number": 1,
+          "line_ids": [
+            "demo-b4"
+          ]
+        }
+      ],
+      "product_id": "demo-p-asset-txt1",
+      "status": "choosing",
+      "pick": 0,
+      "text": {
+        "exact": "楼下便利店，等你到十二点。",
+        "method": "model",
+        "style": "handwritten"
+      },
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "txt2",
+      "series_id": "demo",
+      "kind": "text",
+      "name": "手机锁屏时间",
+      "intent": "手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。",
+      "source": {
+        "code": "script_line",
+        "params": {
+          "scene": 2,
+          "line": 2
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b7",
+          "episode_id": "demo-e1",
+          "number": 2,
+          "line_ids": [
+            "demo-b9"
+          ]
+        }
+      ],
+      "product_id": "demo-p-asset-txt2",
+      "status": "locked",
+      "pick": 0,
+      "text": {
+        "exact": "23:52",
+        "method": "composite",
+        "style": "screen"
+      },
+      "voice": null,
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "vlinwan",
+      "series_id": "demo",
+      "kind": "voice",
+      "name": "林晚",
+      "intent": "二十多岁女声，偏低，克制，句尾轻，不要播音腔。",
+      "source": {
+        "code": "dialogue_count",
+        "params": {
+          "count": 2
+        }
+      },
+      "shots": [],
+      "scenes": [
+        {
+          "scene_id": "demo-b1",
+          "episode_id": "demo-e1",
+          "number": 1,
+          "line_ids": [
+            "demo-b5"
+          ]
+        },
+        {
+          "scene_id": "demo-b7",
+          "episode_id": "demo-e1",
+          "number": 2,
+          "line_ids": [
+            "demo-b10"
+          ]
+        }
+      ],
+      "product_id": "demo-p-asset-vlinwan",
+      "status": "locked",
+      "pick": 0,
+      "text": null,
+      "voice": {
+        "method": "design",
+        "lines": [
+          {
+            "text": "……周屿？",
+            "tone": "低声，愣住"
+          },
+          {
+            "text": "三年了。他凭什么。",
+            "tone": "OS"
+          }
+        ]
+      },
+      "note": null,
+      "seed_changed": false
+    },
+    {
+      "id": "vzhouyu",
+      "series_id": "demo",
+      "kind": "voice",
+      "name": "周屿",
+      "intent": "第 2 集出场前再定。",
+      "source": {
+        "code": "note",
+        "params": {
+          "note": "第 2 集出场"
+        }
+      },
+      "shots": [],
+      "scenes": [],
+      "product_id": "demo-p-asset-vzhouyu",
+      "status": "not_generated",
+      "pick": 0,
+      "text": null,
+      "voice": {
+        "method": "design",
+        "lines": []
+      },
+      "note": "第 2 集出场",
+      "seed_changed": false
+    }
+  ],
+  "products": [
+    {
+      "id": "demo-p-asset-linwan",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "linwan",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": "demo-p-asset-linwan-v2",
+      "adopted_version_id": "demo-p-asset-linwan-v3",
+      "locked_hash": "sha256:dc98f914b84ea28f127498734acfb2789895b10b128497cdd758a22e938d8266",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-asset-linwan-v1",
+          "product_id": "demo-p-asset-linwan",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": []
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/12/121f7d941e42ad6c03cadc29eece2e1626bd444b332d4908c14f3e0445053263",
+              "sha256": "121f7d941e42ad6c03cadc29eece2e1626bd444b332d4908c14f3e0445053263",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/56/56c1577425f4bd2715a795b96f44b42cd9b2a42ee66ad8d58ecebec25a37760e",
+              "sha256": "56c1577425f4bd2715a795b96f44b42cd9b2a42ee66ad8d58ecebec25a37760e",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ac/ac2662673a2ca975c49418b82b264219d8056680b9dbb58c00f79cafdd5dcd56",
+              "sha256": "ac2662673a2ca975c49418b82b264219d8056680b9dbb58c00f79cafdd5dcd56",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/fa/fa243ad189a864cd87a89f7ce5a2b1fc4f1ac6820b23b5215066bf55d65f74e4",
+              "sha256": "fa243ad189a864cd87a89f7ce5a2b1fc4f1ac6820b23b5215066bf55d65f74e4",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:6a069cda3bbf146c1a871f092ad6328a5a63e772bc9d9ce68d3a123c9532a4ee",
+          "intent": "26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-asset-linwan-v2",
+          "product_id": "demo-p-asset-linwan",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-asset-linwan-v1",
+          "payload": {
+            "candidates": [
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": []
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/b0/b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
+              "sha256": "b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:ed0e136a1c3d7f02290d5e63e1b72ce4a11f52971a3146a9aab84600bb61c223",
+          "intent": "26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：google/nano-banana-pro",
+          "compiled_overridden": false,
+          "model_key": "google/nano-banana-pro",
+          "where": "api",
+          "seed": 1202,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.14,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-asset-linwan-v3",
+          "product_id": "demo-p-asset-linwan",
+          "n": 3,
+          "origin": "pick",
+          "parent_version_id": "demo-p-asset-linwan-v2",
+          "payload": {
+            "candidate": {}
+          },
+          "files": [
+            {
+              "role": "ref",
+              "path": "blobs/sha256/b0/b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
+              "sha256": "b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:dc98f914b84ea28f127498734acfb2789895b10b128497cdd758a22e938d8266",
+          "intent": "26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：google/nano-banana-pro",
+          "compiled_overridden": false,
+          "model_key": "google/nano-banana-pro",
+          "where": "api",
+          "seed": 1202,
+          "params": {
+            "from_version": "demo-p-asset-linwan-v2",
+            "idx": 0
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-asset-linwan-v2",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-zhouyu",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "zhouyu",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "外貌待定，第 2 集出场前再做。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 外貌待定，第 2 集出场前再做。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-hall",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "hall",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": "demo-p-asset-hall-v1",
+      "adopted_version_id": "demo-p-asset-hall-v2",
+      "locked_hash": "sha256:bc83a948f5b733767fded73af6a809ae95e31a636a62910bde46590cc4885de3",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-asset-hall-v1",
+          "product_id": "demo-p-asset-hall",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": []
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/3d/3d1bac64001ee08a62abd0d952ac84882f1cd5ddbc9a8af40f73a32aff87f176",
+              "sha256": "3d1bac64001ee08a62abd0d952ac84882f1cd5ddbc9a8af40f73a32aff87f176",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/39/3997aa6390805d1974d057e68f4e07267b22481c20fc9fe68a68a4b1dce7b5c8",
+              "sha256": "3997aa6390805d1974d057e68f4e07267b22481c20fc9fe68a68a4b1dce7b5c8",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/cf/cf6d6cd8f9eb61ef31e3773d1032f40a58e9f9f92779b2937b2b83ccaa3aef74",
+              "sha256": "cf6d6cd8f9eb61ef31e3773d1032f40a58e9f9f92779b2937b2b83ccaa3aef74",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/2e/2e21a7ebad995e36ddda2cba808c2fcb50255c8d23e4da01bce64d39cc4600cc",
+              "sha256": "2e21a7ebad995e36ddda2cba808c2fcb50255c8d23e4da01bce64d39cc4600cc",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:f21ff4fe8194e05fe7fe0fb7d4c6236aff5cb6af3a0884b311f3b44ab5bf3189",
+          "intent": "六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-asset-hall-v2",
+          "product_id": "demo-p-asset-hall",
+          "n": 2,
+          "origin": "pick",
+          "parent_version_id": "demo-p-asset-hall-v1",
+          "payload": {
+            "candidate": {}
+          },
+          "files": [
+            {
+              "role": "ref",
+              "path": "blobs/sha256/3d/3d1bac64001ee08a62abd0d952ac84882f1cd5ddbc9a8af40f73a32aff87f176",
+              "sha256": "3d1bac64001ee08a62abd0d952ac84882f1cd5ddbc9a8af40f73a32aff87f176",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:bc83a948f5b733767fded73af6a809ae95e31a636a62910bde46590cc4885de3",
+          "intent": "六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "from_version": "demo-p-asset-hall-v1",
+            "idx": 0
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-asset-hall-v1",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-room",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "room",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": "demo-p-asset-room-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-asset-room-v1",
+          "product_id": "demo-p-asset-room",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": []
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/21/2143fa1090c548b97e5a15dce16257aeaa1bcbc34a2225f1728190c2b42a7ce3",
+              "sha256": "2143fa1090c548b97e5a15dce16257aeaa1bcbc34a2225f1728190c2b42a7ce3",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/96/9632702e54fc3bef49c48fc6cd8a10d0c6997949b33075aafdd4d58ef9f76d80",
+              "sha256": "9632702e54fc3bef49c48fc6cd8a10d0c6997949b33075aafdd4d58ef9f76d80",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/9f/9f9d482d1dac2ff7910f75095f7d935c5bf91460a0ff402cab535d95d8639ea3",
+              "sha256": "9f9d482d1dac2ff7910f75095f7d935c5bf91460a0ff402cab535d95d8639ea3",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/03/03c3fce857485e1ba398bb329eebf793e20c954972ff0e5641f79e2343c41bd7",
+              "sha256": "03c3fce857485e1ba398bb329eebf793e20c954972ff0e5641f79e2343c41bd7",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:967b29617d6a19309c739b73c5b67ca6b5230781136c2e7673ac7eea836de438",
+          "intent": "十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-store",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "store",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "第 2 集才出现，到时再做。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 第 2 集才出现，到时再做。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-umbrella",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "umbrella",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": "demo-p-asset-umbrella-v1",
+      "adopted_version_id": "demo-p-asset-umbrella-v2",
+      "locked_hash": "sha256:c4877fb1db9880bf4f34e14582233dc92dd17d0adfcd39924c390c02092ced25",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-asset-umbrella-v1",
+          "product_id": "demo-p-asset-umbrella",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": []
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/fe/fed6f377107156e5585df66831a4ef11c93d0eb1ce8b5901bdd2c9605d5cce5c",
+              "sha256": "fed6f377107156e5585df66831a4ef11c93d0eb1ce8b5901bdd2c9605d5cce5c",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/11/113d1997fa3f5a84ccd2f0e8f70c92e5691c5a4b4a3de5b467dbfae325cd5d99",
+              "sha256": "113d1997fa3f5a84ccd2f0e8f70c92e5691c5a4b4a3de5b467dbfae325cd5d99",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/c2/c298ada820abb90cf499839134af716b05860e91374fa6e6d89f14ef7eb6c0f2",
+              "sha256": "c298ada820abb90cf499839134af716b05860e91374fa6e6d89f14ef7eb6c0f2",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ed/ed1b81722915b26f332827f02d48174df1c68254053a4c553924db380852edc2",
+              "sha256": "ed1b81722915b26f332827f02d48174df1c68254053a4c553924db380852edc2",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:0fde71e4e421dad2e2a01bc8e24b5dcd58b3f035f311cefa183e2efc7bcb647f",
+          "intent": "正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-asset-umbrella-v2",
+          "product_id": "demo-p-asset-umbrella",
+          "n": 2,
+          "origin": "pick",
+          "parent_version_id": "demo-p-asset-umbrella-v1",
+          "payload": {
+            "candidate": {}
+          },
+          "files": [
+            {
+              "role": "ref",
+              "path": "blobs/sha256/fe/fed6f377107156e5585df66831a4ef11c93d0eb1ce8b5901bdd2c9605d5cce5c",
+              "sha256": "fed6f377107156e5585df66831a4ef11c93d0eb1ce8b5901bdd2c9605d5cce5c",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:c4877fb1db9880bf4f34e14582233dc92dd17d0adfcd39924c390c02092ced25",
+          "intent": "正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "from_version": "demo-p-asset-umbrella-v1",
+            "idx": 0
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-asset-umbrella-v1",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-note",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "note",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": "demo-p-asset-note-v1",
+      "adopted_version_id": "demo-p-asset-note-v2",
+      "locked_hash": "sha256:985495cc918ff8d9543c6403f87370a037be53ba9c1999b8653a1d137aaf665c",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-asset-note-v1",
+          "product_id": "demo-p-asset-note",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": []
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/4c/4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7",
+              "sha256": "4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/0e/0ef65181dbfd3d0a9e37e756b8963088abd63e39c7d427d135221082886ad568",
+              "sha256": "0ef65181dbfd3d0a9e37e756b8963088abd63e39c7d427d135221082886ad568",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/e1/e16c5aaf4cb0d5ea7edd64463f3cb66893fd9927609631f2d7be621deb1267a9",
+              "sha256": "e16c5aaf4cb0d5ea7edd64463f3cb66893fd9927609631f2d7be621deb1267a9",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/88/885ff91422eb6885ee078ca7c9b18d27bd11daf05cfa5cf944a5c5a7e6d6b5e6",
+              "sha256": "885ff91422eb6885ee078ca7c9b18d27bd11daf05cfa5cf944a5c5a7e6d6b5e6",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:00d8bfaf7a226b774b233c1d59d8ea82f9c26443c3e4e2d09f1c92e3e859f102",
+          "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-asset-note-v2",
+          "product_id": "demo-p-asset-note",
+          "n": 2,
+          "origin": "pick",
+          "parent_version_id": "demo-p-asset-note-v1",
+          "payload": {
+            "candidate": {}
+          },
+          "files": [
+            {
+              "role": "ref",
+              "path": "blobs/sha256/4c/4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7",
+              "sha256": "4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:985495cc918ff8d9543c6403f87370a037be53ba9c1999b8653a1d137aaf665c",
+          "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "from_version": "demo-p-asset-note-v1",
+            "idx": 0
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-asset-note-v1",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-band",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "band",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": "demo-p-asset-band-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-asset-band-v1",
+          "product_id": "demo-p-asset-band",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": []
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/d2/d2eb8297c3007a1e31c6341e72d2dbbe14c1f5db6efa8dab4e6b16ba29702816",
+              "sha256": "d2eb8297c3007a1e31c6341e72d2dbbe14c1f5db6efa8dab4e6b16ba29702816",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/50/509fa803241b46f19358dfeb83489686cebb046f16c26a3b4d700ff3aa0ea65e",
+              "sha256": "509fa803241b46f19358dfeb83489686cebb046f16c26a3b4d700ff3aa0ea65e",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/d4/d4c82c84c2b06026e24505dfd299a2f7f36040d75eb8a1b5a2dde04418cc22d6",
+              "sha256": "d4c82c84c2b06026e24505dfd299a2f7f36040d75eb8a1b5a2dde04418cc22d6",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/24/24049d413a42700ebb105f750843703344f1c5a697214e7bb57ca4faa2baca7e",
+              "sha256": "24049d413a42700ebb105f750843703344f1c5a697214e7bb57ca4faa2baca7e",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:08090053ad6045ce4021babbecf67659b6a701ea036d1d2aea9d5153905bc28c",
+          "intent": "洗旧了的黑色布发圈，戴在林晚左手腕上。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 洗旧了的黑色布发圈，戴在林晚左手腕上。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "洗旧了的黑色布发圈，戴在林晚左手腕上。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 洗旧了的黑色布发圈，戴在林晚左手腕上。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-phone",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "phone",
+      "slot": "ref_image",
+      "component_id": "img",
+      "current_version_id": "demo-p-asset-phone-v1",
+      "adopted_version_id": "demo-p-asset-phone-v2",
+      "locked_hash": "sha256:ef9b0a175b77c28a28d70a4bf75f73e2ccbf5efb4765d1dfbf642310b9084be8",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-asset-phone-v1",
+          "product_id": "demo-p-asset-phone",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": []
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/4c/4ce66d8d81225b36b40be468865af6a09af3de641a143ffbab69a57b64675701",
+              "sha256": "4ce66d8d81225b36b40be468865af6a09af3de641a143ffbab69a57b64675701",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/28/28a01df3aec182019fab43b226ae42b9e186229e44801367f5765f822b9a929a",
+              "sha256": "28a01df3aec182019fab43b226ae42b9e186229e44801367f5765f822b9a929a",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/89/892e5c53984f6a9d1024084ab19ac64028c46500dab79d76b80624ba95549ed7",
+              "sha256": "892e5c53984f6a9d1024084ab19ac64028c46500dab79d76b80624ba95549ed7",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/16/162d4be889a2ca1efba0e4f284100bf081bdd3703cab07858b007ae1f3925c50",
+              "sha256": "162d4be889a2ca1efba0e4f284100bf081bdd3703cab07858b007ae1f3925c50",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:87f3c09d4c5d713356051b79995a5e3691cc4a31e004ba57d87775bacea1d33a",
+          "intent": "普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-asset-phone-v2",
+          "product_id": "demo-p-asset-phone",
+          "n": 2,
+          "origin": "pick",
+          "parent_version_id": "demo-p-asset-phone-v1",
+          "payload": {
+            "candidate": {}
+          },
+          "files": [
+            {
+              "role": "ref",
+              "path": "blobs/sha256/4c/4ce66d8d81225b36b40be468865af6a09af3de641a143ffbab69a57b64675701",
+              "sha256": "4ce66d8d81225b36b40be468865af6a09af3de641a143ffbab69a57b64675701",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:ef9b0a175b77c28a28d70a4bf75f73e2ccbf5efb4765d1dfbf642310b9084be8",
+          "intent": "普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。",
+          "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image",
+          "where": "local",
+          "seed": 1201,
+          "params": {
+            "from_version": "demo-p-asset-phone-v1",
+            "idx": 0
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。",
+        "compiled": "[任务] 素材参考图：后面每个镜头都拿它当参考，样子要一直一样\n[描述] 普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-asset-phone-v1",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-txt1",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "txt1",
+      "slot": "text_image",
+      "component_id": "text",
+      "current_version_id": "demo-p-asset-txt1-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-asset-txt1-v1",
+          "product_id": "demo-p-asset-txt1",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {
+                "ocr": "楼下便利店，等你到十二点。"
+              },
+              {
+                "ocr": "楼下便利店，等你到十二占。"
+              },
+              {
+                "ocr": "楼下便利店，等你到十二点。"
+              },
+              {
+                "ocr": "楼下便利店，等你到十二点"
+              }
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/83/838f07b74d34613e8d61bfe4677ee465561ffaee9cce85870d61f5ebd70b6617",
+              "sha256": "838f07b74d34613e8d61bfe4677ee465561ffaee9cce85870d61f5ebd70b6617",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/b2/b289083ebd33df717d5cc6cbadb0cd2b937d16c06eb0cedffe7100c699d594c5",
+              "sha256": "b289083ebd33df717d5cc6cbadb0cd2b937d16c06eb0cedffe7100c699d594c5",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/16/16aac4ad4d7b86c20b2d5db25d50ab30ce70575d72c4d91a2e81ae199e62560c",
+              "sha256": "16aac4ad4d7b86c20b2d5db25d50ab30ce70575d72c4d91a2e81ae199e62560c",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/67/6726c2ab79de096629a6d5c6f94a86147edc794eb4bbeded8e44126991ba4981",
+              "sha256": "6726c2ab79de096629a6d5c6f94a86147edc794eb4bbeded8e44126991ba4981",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:6e4a01da63b0f8e77ff28b8e320fb7c68d54691f91578d79d4bed1683cd23f7e",
+          "intent": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
+          "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。\n\n# 目标模型：openai/gpt-image-2",
+          "compiled_overridden": false,
+          "model_key": "openai/gpt-image-2",
+          "where": "api",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 1.12,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "",
+        "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-txt2",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "txt2",
+      "slot": "text_image",
+      "component_id": "text",
+      "current_version_id": "demo-p-asset-txt2-v1",
+      "adopted_version_id": "demo-p-asset-txt2-v2",
+      "locked_hash": "sha256:ce8e917f67354385960ac77755c4eeb2b7f97ac30a32254b84e97ffabd76046f",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-asset-txt2-v1",
+          "product_id": "demo-p-asset-txt2",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {
+                "ocr": "23:52"
+              },
+              {
+                "ocr": "23:52"
+              },
+              {
+                "ocr": "23:52"
+              },
+              {
+                "ocr": "23:52"
+              }
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/9e/9e04460796f86d2de131486cd00a506903cfeb676854eb623b54c070ff893614",
+              "sha256": "9e04460796f86d2de131486cd00a506903cfeb676854eb623b54c070ff893614",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ec/ec53628075374f613b06cb5f23d7345f7699bff2bd70bf326cbb65fe81f531ae",
+              "sha256": "ec53628075374f613b06cb5f23d7345f7699bff2bd70bf326cbb65fe81f531ae",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/f5/f5f4801bd4a397c235c7732ecbe75dd65c1cb647c7c1bbe4bcbc0a7d2730edf4",
+              "sha256": "f5f4801bd4a397c235c7732ecbe75dd65c1cb647c7c1bbe4bcbc0a7d2730edf4",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 2,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ed/edeb4dd4761f6bac612582af0d9757a317217a2c0d44c827c37c4f785ad6d4c7",
+              "sha256": "edeb4dd4761f6bac612582af0d9757a317217a2c0d44c827c37c4f785ad6d4c7",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 3,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:1875d415c4d00f2ca5d609e3145fc3e709dc0fe60a4fd4d2a242782f14cb162d",
+          "intent": "手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。",
+          "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。\n\n# 目标模型：openai/gpt-image-2",
+          "compiled_overridden": false,
+          "model_key": "openai/gpt-image-2",
+          "where": "api",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 1.12,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-asset-txt2-v2",
+          "product_id": "demo-p-asset-txt2",
+          "n": 2,
+          "origin": "pick",
+          "parent_version_id": "demo-p-asset-txt2-v1",
+          "payload": {
+            "candidate": {
+              "ocr": "23:52"
+            }
+          },
+          "files": [
+            {
+              "role": "ref",
+              "path": "blobs/sha256/9e/9e04460796f86d2de131486cd00a506903cfeb676854eb623b54c070ff893614",
+              "sha256": "9e04460796f86d2de131486cd00a506903cfeb676854eb623b54c070ff893614",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:ce8e917f67354385960ac77755c4eeb2b7f97ac30a32254b84e97ffabd76046f",
+          "intent": "手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。",
+          "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。\n\n# 目标模型：openai/gpt-image-2",
+          "compiled_overridden": false,
+          "model_key": "openai/gpt-image-2",
+          "where": "api",
+          "seed": 1201,
+          "params": {
+            "from_version": "demo-p-asset-txt2-v1",
+            "idx": 0
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "",
+        "compiled": "为竖屏短剧画一张带字的画面素材：字要逐字准确，包括标点。\n\n[这条素材]\n\n\n# 目标模型：comfy/qwen-image",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-asset-txt2-v1",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-vlinwan",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "vlinwan",
+      "slot": "voice",
+      "component_id": "voice",
+      "current_version_id": "demo-p-asset-vlinwan-v1",
+      "adopted_version_id": "demo-p-asset-vlinwan-v2",
+      "locked_hash": "sha256:b797be3ce614c39ae3ab13498f74a57b96f67ec4c3c91dbcf09b6262a67a4638",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-asset-vlinwan-v1",
+          "product_id": "demo-p-asset-vlinwan",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {
+                "label": "偏低沉",
+                "waveform": [
+                  0.3333333333333333,
+                  0.6,
+                  0.8666666666666667,
+                  0.4666666666666667,
+                  0.7333333333333333,
+                  1.0,
+                  0.4,
+                  0.6666666666666666,
+                  0.5333333333333333,
+                  0.9333333333333333,
+                  0.3333333333333333,
+                  0.6,
+                  0.8,
+                  0.4,
+                  0.6666666666666666,
+                  0.4666666666666667
+                ]
+              },
+              {
+                "label": "更清亮",
+                "waveform": [
+                  0.4666666666666667,
+                  0.7333333333333333,
+                  0.4,
+                  0.9333333333333333,
+                  0.6,
+                  0.3333333333333333,
+                  0.8,
+                  1.0,
+                  0.5333333333333333,
+                  0.4,
+                  0.7333333333333333,
+                  0.6,
+                  0.3333333333333333,
+                  0.8666666666666667,
+                  0.4666666666666667,
+                  0.6666666666666666
+                ]
+              },
+              {
+                "label": "带一点沙哑",
+                "waveform": [
+                  0.26666666666666666,
+                  0.5333333333333333,
+                  0.7333333333333333,
+                  1.0,
+                  0.4,
+                  0.6,
+                  0.8666666666666667,
+                  0.3333333333333333,
+                  0.6666666666666666,
+                  0.9333333333333333,
+                  0.4666666666666667,
+                  0.3333333333333333,
+                  0.8,
+                  0.5333333333333333,
+                  0.7333333333333333,
+                  0.4
+                ]
+              }
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/68/68087d75f438fb9130915350e4a66d4a48908600142a6e6cb9c981466a44e49a",
+              "sha256": "68087d75f438fb9130915350e4a66d4a48908600142a6e6cb9c981466a44e49a",
+              "mime": "audio/wav",
+              "duration_s": 1.5,
+              "w": null,
+              "h": null,
+              "idx": 0,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/f9/f9ec4d9e2a987de742d385307721041676ccf7ff0ab3144cb2657c52b1af5878",
+              "sha256": "f9ec4d9e2a987de742d385307721041676ccf7ff0ab3144cb2657c52b1af5878",
+              "mime": "audio/wav",
+              "duration_s": 1.5,
+              "w": null,
+              "h": null,
+              "idx": 1,
+              "view": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/73/73e8d9136ee3de21c14b79417e50a92a2d4f7e9c1f5e40b1400dbdf7b6f399b3",
+              "sha256": "73e8d9136ee3de21c14b79417e50a92a2d4f7e9c1f5e40b1400dbdf7b6f399b3",
+              "mime": "audio/wav",
+              "duration_s": 1.5,
+              "w": null,
+              "h": null,
+              "idx": 2,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:f909f2232127863e61e48f75e2af4942b2130786f3a8448d79bbb2ccc70b22e6",
+          "intent": "二十多岁女声，偏低，克制，句尾轻，不要播音腔。",
+          "compiled": "为竖屏短剧的一个角色设计音色：后面这个角色的每句台词都用它。\n\n[声音描述]\n二十多岁女声，偏低，克制，句尾轻，不要播音腔。\n\n- 自然、不要播音腔；保留气声和停顿。\n\n# 目标模型：minimax/speech-2.8-hd",
+          "compiled_overridden": false,
+          "model_key": "minimax/speech-2.8-hd",
+          "where": "api",
+          "seed": 1201,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 3.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-asset-vlinwan-v2",
+          "product_id": "demo-p-asset-vlinwan",
+          "n": 2,
+          "origin": "pick",
+          "parent_version_id": "demo-p-asset-vlinwan-v1",
+          "payload": {
+            "candidate": {
+              "label": "偏低沉",
+              "waveform": [
+                0.3333333333333333,
+                0.6,
+                0.8666666666666667,
+                0.4666666666666667,
+                0.7333333333333333,
+                1.0,
+                0.4,
+                0.6666666666666666,
+                0.5333333333333333,
+                0.9333333333333333,
+                0.3333333333333333,
+                0.6,
+                0.8,
+                0.4,
+                0.6666666666666666,
+                0.4666666666666667
+              ]
+            }
+          },
+          "files": [
+            {
+              "role": "ref",
+              "path": "blobs/sha256/68/68087d75f438fb9130915350e4a66d4a48908600142a6e6cb9c981466a44e49a",
+              "sha256": "68087d75f438fb9130915350e4a66d4a48908600142a6e6cb9c981466a44e49a",
+              "mime": "audio/wav",
+              "duration_s": 1.5,
+              "w": null,
+              "h": null,
+              "idx": 0,
+              "view": null
+            }
+          ],
+          "content_hash": "sha256:b797be3ce614c39ae3ab13498f74a57b96f67ec4c3c91dbcf09b6262a67a4638",
+          "intent": "二十多岁女声，偏低，克制，句尾轻，不要播音腔。",
+          "compiled": "为竖屏短剧的一个角色设计音色：后面这个角色的每句台词都用它。\n\n[声音描述]\n二十多岁女声，偏低，克制，句尾轻，不要播音腔。\n\n- 自然、不要播音腔；保留气声和停顿。\n\n# 目标模型：minimax/speech-2.8-hd",
+          "compiled_overridden": false,
+          "model_key": "minimax/speech-2.8-hd",
+          "where": "api",
+          "seed": 1201,
+          "params": {
+            "from_version": "demo-p-asset-vlinwan-v1",
+            "idx": 0
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "",
+        "compiled": "为竖屏短剧的一个角色设计音色：后面这个角色的每句台词都用它。\n\n[声音描述]\n\n\n- 自然、不要播音腔；保留气声和停顿。\n\n# 目标模型：local/qwen3-tts",
+        "compiled_overridden": false,
+        "model_key": "local/qwen3-tts"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-asset-vlinwan-v1",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-asset-vzhouyu",
+      "series_id": "demo",
+      "owner_type": "asset",
+      "owner_id": "vzhouyu",
+      "slot": "voice",
+      "component_id": "voice",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "",
+        "compiled": "为竖屏短剧的一个角色设计音色：后面这个角色的每句台词都用它。\n\n[声音描述]\n\n\n- 自然、不要播音腔；保留气声和停顿。\n\n# 目标模型：local/qwen3-tts",
+        "compiled_overridden": false,
+        "model_key": "local/qwen3-tts"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    }
+  ]
+}

@@ -194,6 +194,8 @@
       "dub_lines": "配音 · {{count}} 条",
       "video_audio_swap": "视频 · {{id}} 换音轨",
       "shot_refs": "分镜 · {{ids}}，共 {{count}} 个镜头用它做参考",
+      "uses_ref_views": "补视图 · 「{{name}}」的侧面、背面和表情按这张参考图画，锁定新的一张后会重画",
+      "uses_ref_image": "素材 · 「{{names}}」用它做参考（{{count}} 个），锁定新的一张后变「待更新」",
       "self_asset_list": "第 {{n}} 集的素材清单会改成新内容",
       "stale_asset_list": "第 {{n}} 集素材清单 · 会重新分析",
       "then_asset_list": "第 {{n}} 集素材清单 · 上游真的有变化才重新分析",
@@ -201,6 +203,7 @@
     },
     "unaffected": {
       "unaffected_spec": "剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。",
+      "unlock_keeps_ref": "解锁后原来的参考图照常在用；锁定新的一张后，用到它的才会更新。",
       "unlock_keeps_adopted": "已采纳的视频不会被删；换了新参考后，这些镜头会出新版本。"
     }
   },

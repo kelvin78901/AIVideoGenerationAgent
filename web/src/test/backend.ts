@@ -13,6 +13,7 @@ import { series as demoSeries } from "@/mocks/fixtures/demo/series";
 import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
 import { setBackendFetch } from "@/mocks/backend";
 import { server } from "@/mocks/node";
+import { assetHandlers, assetsBackendFetch, resetFakeAssets } from "@/test/fakes/assets";
 import { bibleBackendFetch, bibleHandlers, resetFakeBible } from "@/test/fakes/bible";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { episodeHandlers, episodesBackendFetch, resetFakeEpisodes } from "@/test/fakes/episodes";
@@ -163,6 +164,7 @@ function seriesHandlers() {
     ...suggestionHandlers(known),
     ...episodeHandlers(known),
     ...scriptHandlers(),
+    ...assetHandlers(),
     ...gateHandlers(),
   ];
 }
@@ -178,6 +180,7 @@ async function fakeBackendFetch(request: Request): Promise<Response> {
     bibleBackendFetch(url) ??
     episodesBackendFetch(url) ??
     scriptBackendFetch(url) ??
+    assetsBackendFetch(url) ??
     HttpResponse.json({ detail: { code: "http_404", params: {} } }, { status: 404 })
   );
 }
@@ -186,8 +189,9 @@ async function fakeBackendFetch(request: Request): Promise<Response> {
  * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, the
  * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`), bible
  * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), the
- * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`), the
- * novel and script gates and impact previews (`test/fakes/impact.ts`), and the PC sample machine
+ * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`),
+ * episode 1's assets (`test/fakes/assets.ts`), the novel and script gates and impact previews
+ * (`test/fakes/impact.ts`), and the PC sample machine
  * before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
  */
@@ -201,6 +205,7 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeSuggestions();
   resetFakeEpisodes();
   resetFakeScript();
+  resetFakeAssets();
   resetFakeImpact();
   setBackendFetch(fakeBackendFetch);
   resetFakeSetup();

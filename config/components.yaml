@@ -103,12 +103,23 @@ components:
     name: { zh: 参考图生成, en: Reference images }
     kind: image
     api: *img_api
-    local: *img_local
-    balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image-edit, fallback_to: volc/seedream-5.0 }
+    local: [comfy/qwen-image, comfy/qwen-image-edit, comfy/flux2-dev]
+    balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image, fallback_to: volc/seedream-5.0 }
     per_call_cap_usd: 1.5
     cheap_api: volc/seedream-5.0
     candidates: 4
     gate: assets
+
+  - id: views
+    stage: assets
+    name: { zh: 补视图, en: Extra views }
+    kind: image
+    api: *img_api
+    local: [comfy/qwen-image-edit]
+    balanced: { mode: local, local: comfy/qwen-image-edit, api: google/nano-banana-pro, fallback_to: google/nano-banana-pro }
+    per_call_cap_usd: 1
+    cheap_api: volc/seedream-5.0
+    note: 角色锁定后自动补侧面、背面和表情（以锁定的参考图为准，本地用编辑模型）；自动采纳
 
   - id: text
     stage: assets

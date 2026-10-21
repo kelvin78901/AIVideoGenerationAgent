@@ -15,18 +15,29 @@ the asset differently (``seed_changed``).
 
 The status is worked out from the product: locked once locked, choosing once it has a version,
 not generated before.
+
+**Locking** (「锁定为参考」, ``lock``) turns the picked candidate into a ``pick`` version and
+locks it (``ProductService.lock_pick``), and in the same transaction writes the asset's own
+``gate_decision`` (gate ``assets``, scope the asset id) with the hash of that file. A character
+then gets its side, back and expressions drawn (``views``). **Unlocking** goes through the
+impact preview (kind ``asset_unlock``): it changes no content, so the preview lists what uses
+the locked picture straight from the dependency graph. **Uploading** a picture adds a version
+with that one candidate (``origin: upload``), to lock or to start an API final from.
 """
 
 from __future__ import annotations
 
 from collections.abc import Sequence
+from datetime import timedelta
 from typing import Any
 
+from loguru import logger
 from sqlmodel import col, delete, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.assets import ops
 from drama_series_agent.assets.schema import (
+    AssetLockIn,
     AssetOut,
     AssetPatch,
     AssetSceneOut,
@@ -40,10 +51,12 @@ from drama_series_agent.assets.schema import (
     VoiceOut,
 )
 from drama_series_agent.core.db import Database
+from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.models_db import (
     Asset,
     AssetUse,
     Episode,
+    GateDecision,
     Job,
     Product,
     ProductVersion,
@@ -51,18 +64,33 @@ from drama_series_agent.core.models_db import (
     ScriptLine,
     utcnow,
 )
-from drama_series_agent.episodes.service import scene_counts
+from drama_series_agent.core.storage import BlobStore
+from drama_series_agent.episodes.service import latest_gate, scene_counts
+from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_info
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
+from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, ViewsComponent
+from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.impact import ImpactService, series_graph
+from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
 
 KIND_ORDER = {k: i for i, k in enumerate(ops.KINDS)}
 VOICE_LINES = 2  # script lines shown to audition a voice with
+ASSET_GATE = "assets"
+# Slots a picture can be uploaded to as a candidate.
+UPLOAD_SLOTS = ("ref_image", "text_image")
+# The product each asset owns (its views are another one, ``ref_views``).
+ASSET_SLOTS = ("ref_image", "text_image", "voice")
 
 
 async def asset_product(session: AsyncSession, asset_id: str) -> Product | None:
-    query = select(Product).where(Product.owner_type == "asset", Product.owner_id == asset_id)
+    query = select(Product).where(
+        Product.owner_type == "asset",
+        Product.owner_id == asset_id,
+        col(Product.slot).in_(ASSET_SLOTS),
+    )
     return (await session.exec(query)).first()
 
 
@@ -121,6 +149,32 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
             )
 
 
+async def record_asset_gate(
+    session: AsyncSession, invalidation: Invalidation, product: Product, action: str
+) -> None:
+    """The asset's own ``gate_decision`` (scope: the asset): on ``confirm`` the hash of what is
+    locked, which is the file's (media slicer). Written in the caller's transaction."""
+    hashes: dict[str, str] = {}
+    if action == "confirm":
+        h = await invalidation.current_hash(session, product.id, "")
+        if h:
+            hashes[product.id] = h
+    last = await latest_gate(session, ASSET_GATE, product.owner_id)
+    at = utcnow()
+    if last is not None and at <= last.decided_at:  # keep them in order
+        at = last.decided_at + timedelta(microseconds=1)
+    session.add(
+        GateDecision(
+            series_id=product.series_id,
+            gate=ASSET_GATE,
+            scope_id=product.owner_id,
+            action=action,
+            product_hashes_json=hashes,
+            decided_at=at,
+        )
+    )
+
+
 async def _has_versions(session: AsyncSession, asset_id: str) -> bool:
     p = await asset_product(session, asset_id)
     if p is None:
@@ -136,10 +190,30 @@ async def _has_versions(session: AsyncSession, asset_id: str) -> bool:
 
 
 class AssetService:
-    def __init__(self, db: Database, products: ProductService, runs: RunService) -> None:
+    def __init__(
+        self,
+        db: Database,
+        products: ProductService,
+        runs: RunService,
+        *,
+        bus: EventBus,
+        store: BlobStore,
+        invalidation: Invalidation,
+    ) -> None:
         self._db = db
         self._products = products
         self._runs = runs
+        self._bus = bus
+        self._store = store
+        self._invalidation = invalidation
+
+    def register(self, impact: ImpactService) -> None:
+        """The changes to assets the impact preview knows (M3 step 3: unlocking)."""
+
+        async def asset_unlock(target: str, patch: dict[str, Any]) -> PlannedChange:
+            return await self.plan_unlock(target)
+
+        impact.kind("asset_unlock", asset_unlock)
 
     # ------------------------------------------------------------------ reads
 
@@ -259,7 +333,147 @@ class AssetService:
             )
         return await self._runs.start(product.id, "run")
 
+    async def lock(self, asset_id: str, body: AssetLockIn | None = None) -> AssetOut:
+        """「锁定为参考」: the picked candidate of the version on screen (or of ``body``'s), with
+        the asset's gate decision; then a character's views are drawn."""
+        body = body or AssetLockIn()
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+            product = await asset_product(session, asset_id)
+            if product is None:
+                raise PipelineError(409, "product_missing", id=asset_id)
+            if product.locked_hash:
+                raise PipelineError(409, "product_locked", id=product.id)
+            version_id = body.version_id or product.current_version_id
+            if version_id is None:
+                raise PipelineError(409, "nothing_to_lock", id=asset_id)
+            pick = product.pick_json or {}
+            idx = body.idx
+            if idx is None:
+                idx = int(pick.get("idx") or 0) if pick.get("version_id") == version_id else 0
+            kind = asset.kind
+
+        async def record(session: AsyncSession, p: Product, v: ProductVersion) -> None:
+            await record_asset_gate(session, self._invalidation, p, "confirm")
+
+        await self._products.lock_pick(product.id, version_id, idx, record=record)
+        await self._gate_updated(product, "confirm")
+        if kind == "character":
+            await self.draw_views(asset_id)
+        return await self.get(asset_id)
+
+    async def upload(self, asset_id: str, filename: str, data: bytes) -> AssetOut:
+        """「上传参考图」: the picture becomes a version with that one candidate, picked."""
+        if len(data) > MAX_UPLOAD_BYTES:
+            raise PipelineError(413, "file_too_large", limit=MAX_UPLOAD_BYTES)
+        try:
+            info = image_info(data)
+        except NotAnImage:
+            raise PipelineError(422, "not_an_image", filename=filename) from None
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+            product = await asset_product(session, asset_id)
+            if product is None or product.slot not in UPLOAD_SLOTS:
+                raise PipelineError(422, "upload_not_supported", kind=asset.kind)
+            if product.locked_hash:
+                raise PipelineError(409, "product_locked", id=product.id)
+            intent = (product.prompt_json or {}).get("intent") or asset.seed_json.get("description")
+        sha = self._store.put_bytes(data)
+        name = filename[:200]
+        draft = VersionDraft(
+            payload={"candidates": [{}]},
+            files=[file_entry("candidate", sha, info.mime, w=info.w, h=info.h, idx=0)],
+            intent=str(intent or ""),
+            params={"filename": name},
+            note=name or None,
+        )
+        v = await self._products.append(product.id, draft, origin="upload", adopt=False)
+        await self._products.set_pick(product.id, v.id, 0)
+        return await self.get(asset_id)
+
+    async def draw_views(self, asset_id: str) -> Job | None:
+        """补视图 of a locked character, unless the views already follow this picture."""
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+        p = await self._products.ensure(
+            series_id=asset.series_id,
+            owner_type="asset",
+            owner_id=asset.id,
+            slot=REF_VIEWS_SLOT,
+            component_id=ViewsComponent.id,
+        )
+        async with self._db.session() as session:
+            stale = await self._invalidation.stale_ids(session, [p])
+        if p.adopted_version_id and p.id not in stale:
+            return None
+        try:
+            return await self._runs.start(p.id, "run")
+        except PipelineError as exc:  # already drawing, or no model for it here
+            logger.warning("views of {} not started: {}", asset_id, exc.code)
+            return None
+
+    async def plan_unlock(self, asset_id: str) -> PlannedChange:
+        """解锁 (kind ``asset_unlock``): nothing changes until another picture is locked, so the
+        lines are what uses the locked one (from the dependency graph)."""
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+            product = await asset_product(session, asset_id)
+            if product is None or not product.locked_hash:
+                raise PipelineError(409, "not_locked", id=asset_id)
+            nodes, edges = await series_graph(session, product.series_id)
+            users = sorted({down for down, up, _ in edges if up == product.id})
+            owners = {nodes[u].owner_id for u in users if u in nodes}
+            names = {
+                a.id: a.name
+                for a in (await session.exec(select(Asset).where(col(Asset.id).in_(owners))))
+            }
+        by_slot: dict[str, list[str]] = {}
+        for u in users:
+            node = nodes.get(u)
+            if node is not None:
+                by_slot.setdefault(node.slot, []).append(names.get(node.owner_id, node.owner_id))
+        lines: list[dict[str, Any]] = []
+        for slot, who in by_slot.items():
+            params: dict[str, Any] = {"count": len(who), "names": "、".join(who)}
+            if slot == REF_VIEWS_SLOT:
+                params = {"name": asset.name}
+            lines.append({"code": f"uses_{slot}", "params": params, "cost_usd": None})
+        for line in lines:
+            line["optional"] = False
+        locked_hash = product.locked_hash
+
+        async def commit() -> None:
+            await self._products.unlock(product.id)
+            async with self._db.session() as session:
+                p = await session.get(Product, product.id)
+                assert p is not None
+                await record_asset_gate(session, self._invalidation, p, "reopen")
+                await session.commit()
+            await self._gate_updated(product, "reopen")
+
+        return PlannedChange(
+            product_id=product.id,
+            series_id=product.series_id,
+            base_version_id=product.adopted_version_id,
+            commit=commit,
+            content=locked_hash,
+            lines=lines,
+            unaffected={"code": "unlock_keeps_ref", "params": {}},
+            relock=False,
+        )
+
     # ------------------------------------------------------------------ internals
+
+    async def _gate_updated(self, product: Product, action: str) -> None:
+        await self._bus.publish(
+            EventType.GATE_UPDATED,
+            {
+                "gate": ASSET_GATE,
+                "scope_id": product.owner_id,
+                "series_id": product.series_id,
+                "action": action,
+            },
+        )
 
     async def _require(self, session: AsyncSession, asset_id: str) -> Asset:
         asset = await session.get(Asset, asset_id)
@@ -280,7 +494,9 @@ class AssetService:
             for p in (
                 await session.exec(
                     select(Product).where(
-                        Product.owner_type == "asset", col(Product.owner_id).in_(ids)
+                        Product.owner_type == "asset",
+                        col(Product.owner_id).in_(ids),
+                        col(Product.slot).in_(ASSET_SLOTS),
                     )
                 )
             ).all()
@@ -329,6 +545,10 @@ class AssetService:
             here = [u for u in mine if episode_id is None or u.episode_id == episode_id]
             settings = p.settings_json or {}
             seed = a.seed_json or {}
+            # 「选这个」 is about the version on screen.
+            pick = p.pick_json or {}
+            on_screen = pick.get("version_id") == p.current_version_id
+            picked = int(pick.get("idx") or 0) if on_screen else 0
             intent = str((p.prompt_json or {}).get("intent") or seed.get("description") or "")
             # Each kind in order of first appearance; unused ones last, in the list's order.
             first = at(mine[0]) if mine else (10**9, 0, 0)
@@ -361,7 +581,7 @@ class AssetService:
                             if p.id in made
                             else "not_generated"
                         ),
-                        pick=int((p.pick_json or {}).get("idx") or 0),
+                        pick=picked,
                         text=_text(a, settings),
                         voice=_voice(a, settings, here or mine, lines),
                         note=seed.get("note"),

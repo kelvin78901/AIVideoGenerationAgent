@@ -2,6 +2,65 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-21 · M3 第 3 步：参考图、补视图、上传、锁定
+
+**参考图（组件 `img`）**
+- 一次运行出 4 张候选，不自动采纳。
+- 尺寸只从成片规格来：本地草稿用草稿档（9:16 是 768×1366），API 用交付档（1080×1920）。
+- 「用 API 出终版」= `where: api` + `params.source_version_id / source_idx`：
+  - 以那张草稿为参考出 **1 张**（Kelvin 定的第 5 项，约 $0.14），`stage: final`，父版本是草稿；
+  - 上传的图也能当来源。
+- 本地默认模型改成 `comfy/qwen-image`（2512，文生图）；2511（`qwen-image-edit`）只能编辑，留给补视图。
+- **「参考素材只用已锁定的」的具体做法**：
+  - 道具的描述里提到的角色，如果已锁定，就拿它的锁定图做参考，并依赖它。所以给角色锁定另一张图，这个道具会变「待更新」。例：旧黑发圈「戴在林晚左手腕上」。
+  - 场景画空景，不带人；角色本身不带参考。
+- 素材产物第一次运行的意图就是素材的描述：新增 `Component.default_intent`，以前是空的。
+
+**补视图（新组件 `views`）**
+- 角色锁定后自动跑：以锁定图为参考，出侧面、背面、表情各一张。
+- **每次都采纳**（`adopt_every_run`）：视图跟着锁定图走，不用挑。
+- 依赖锁定图的哈希。重新锁定同一张图时，视图不过期，就不重跑。
+- 三张都用 `fallback=False`；任一张失败，就整套换到兜底模型重出，所以一套视图不会混用两个模型。
+- `components.yaml` 加一行：本地默认 `comfy/qwen-image-edit`，API 兜底 Nano Banana Pro，单次上限 $1。「模型与兜底」页因此多一行「补视图」，和「台词配音」一样，原型里没有这一行。
+
+**媒体调用缓存**
+- 每次出图（以后还有配音）的结果文件，按请求记在 `llm_cache` 里（key 前缀 `media:`）。任务重试或重启续跑时，已经出过的不再花钱。
+
+**锁定 `POST /assets/{id}/lock`**
+- 默认锁定屏幕上那一版里选中的候选；body 可以指定 `version_id`、`idx`。
+- 走 `lock_pick`，在同一个事务里写这条素材自己的 `gate_decision`：gate `assets`，scope 是素材 id，哈希是 pick 版本的媒体切片，也就是这张图本身。
+- 素材的 `pick` 只在它指向屏幕上那一版时才返回，换了一版就从 0 算。
+- 解锁写 `reopen`。整集的素材闸门（scope 是集 id）在第 8 步做。
+
+**上传 `POST /assets/{id}/upload`**
+- 接受 PNG、JPEG、WebP，不超过 20 MB。宽高从文件头读（`media/image.py`），不引入 Pillow。
+- 上传后出一个 `origin: upload` 的版本，里面只有这一张候选，并且自动选中。
+- 只有参考图和画面文字能上传；音色返回 422 `upload_not_supported`。
+
+**解锁 = 影响范围 `asset_unlock`**
+- 解锁不改内容，比哈希找不出受影响的东西，所以由 planner 直接从依赖图列行。为此 `PlannedChange` 加了三个字段：`lines`、`unaffected`、`relock=False`（应用后不再锁回去）。
+- 列出的行：
+  - `uses_ref_views`：这个角色的补视图；
+  - `uses_ref_image`：用它做参考的道具。
+- `unaffected` 是 `unlock_keeps_ref`：解锁后原图照常在用，锁定新的一张后，用到它的才更新。
+- 示例剧集的镜头行仍由 MSW 叠加，M4 删。
+- `PIPELINE_ORDER` 加上 `ref_image` / `text_image` / `voice`（6）和 `ref_views`（7），都算在导航的「素材」那一步。
+
+**接口和示例**
+- 版本文件加 `idx`、`view` 两个字段（前端契约同步）。
+- 示例种子：照原型补上候选版本，文件用 Mock 现生成，7 / 13 已锁定，每条都有闸门记录；林晚补好了视图。
+  - 林晚 v1 是本地草稿（Qwen-Image），v2 是 API 终版，只有 1 张：原型写的 4 张 $0.56 是 Kelvin 定第 5 项之前的。
+  - 锁定出的 pick 版本是 v3。
+- 顺手修了第 2 步的漏洞：`drama-studio demo` 没注册素材清单的物化，命令行建的示例没有素材行。
+- 前端：版本状态把「pick 的来源版本」也算作已采纳 / 已锁定（`lib/versions.ts:versionStatus`）。否则锁定后，运行条上的当前版本会显示「草稿」。
+
+**MSW**
+- 素材列表、改动、锁定、产物都改走后端，删掉 MSW 里素材的产物、锁定和解锁。
+- 示例剧集只叠加「出现在」的镜头，以及解锁预览里的镜头和关键帧行（`mocks/handlers/assets.ts`）。
+- 进度里「素材 7/13」改读后端列表。
+- 「重新分析剧本」对示例剧集仍由 MSW 回答：前端第 4 步才改成跟任务。
+- 页面测试用新的假后端 `test/fakes/assets.ts`，数据由 `tests/api/test_web_fixtures.py` 导出到 `test/data/assets.json`。
+
 ## 2026-10-21 · 启动脚本默认真实检测（Kelvin 定）
 
 - `start.ps1` 加 `-RealSetup` 开关，**默认开**：`DRAMA_SETUP=real`，Setup 页扫描、安装这台电脑，模型调用仍走 Mock、不花钱。`-RealSetup:$false` 换回原型的示例机器。没传开关、但已经设了 `$env:DRAMA_SETUP` 时，以环境变量为准。`start.sh` 同样默认真实，`--no-real-setup` 换回示例机器。启动横幅多一行「Setup: this computer / sample machines」。

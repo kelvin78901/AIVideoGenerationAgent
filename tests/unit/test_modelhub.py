@@ -221,7 +221,7 @@ async def test_hybrid_defaults_to_local_draft_and_api_on_request(
 ) -> None:
     router, _, _ = hub
     draft = await router.call("img", ModelRequest(kind="image", prompt="林晚"))
-    assert draft.model_key == "comfy/qwen-image-edit" and draft.where == "local"
+    assert draft.model_key == "comfy/qwen-image" and draft.where == "local"
     assert draft.cost_usd == 0
     assert router.store.exists(draft.files[0].sha256)
     final = await router.call("img", ModelRequest(kind="image", prompt="林晚"), where="api")

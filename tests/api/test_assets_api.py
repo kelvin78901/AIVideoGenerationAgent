@@ -77,7 +77,8 @@ def test_the_demo_has_the_prototypes_thirteen_assets(client: TestClient) -> None
     assert list(assets) == DEMO_IDS  # characters, scenes, props, text, voices
     linwan = assets["linwan"]
     assert (linwan["kind"], linwan["name"]) == ("character", "林晚")
-    assert linwan["status"] == "not_generated"
+    assert linwan["status"] == "locked"  # the demo's candidates (step 3)
+    assert assets["store"]["status"] == "not_generated"
     assert linwan["intent"].startswith("26 岁女性，插画师。")
     assert linwan["product_id"] == "demo-p-asset-linwan"
     assert linwan["source"] == {"code": "script_line", "params": {"scene": 1, "line": 1}}
@@ -133,11 +134,11 @@ def test_a_mock_run_on_the_demo_matches_the_seed(client: TestClient) -> None:
 
 
 def test_edits_live_on_the_assets_product(client: TestClient) -> None:
-    resp = client.patch(f"{V1}/assets/linwan", json={"intent": "26 岁，短发。"})
+    resp = client.patch(f"{V1}/assets/room", json={"intent": "十来平米，开着台灯。"})
     assert resp.status_code == 200, resp.text
-    assert resp.json()["intent"] == "26 岁，短发。"
-    product = client.get(f"{V1}/products/demo-p-asset-linwan").json()
-    assert product["prompt"]["intent"] == "26 岁，短发。"
+    assert resp.json()["intent"] == "十来平米，开着台灯。"
+    product = client.get(f"{V1}/products/demo-p-asset-room").json()
+    assert product["prompt"]["intent"] == "十来平米，开着台灯。"
     resp = client.patch(f"{V1}/assets/txt1", json={"text": {"method": "composite"}})
     assert resp.json()["text"] == {
         "exact": "楼下便利店，等你到十二点。", "method": "composite", "style": "handwritten"
@@ -145,18 +146,21 @@ def test_edits_live_on_the_assets_product(client: TestClient) -> None:
     assert client.get(f"{V1}/products/demo-p-asset-txt1").json()["settings"]["text"]["method"] == (
         "composite"
     )
-    resp = client.patch(f"{V1}/assets/vlinwan", json={"voice": {"method": "local"}})
+    resp = client.patch(f"{V1}/assets/vzhouyu", json={"voice": {"method": "local"}})
     assert resp.json()["voice"]["method"] == "local"
+    # Locked: changing it goes through the impact preview.
+    locked = client.patch(f"{V1}/assets/linwan", json={"intent": "26 岁，短发。"})
+    assert _code(locked) == "product_locked"
     # A re-analysis keeps them: they are not in the list's payload.
     _wait(client, client.post(f"{V1}/episodes/demo-e1/assets/analyze").json()["id"])
     assets = _assets(client)
-    assert assets["linwan"]["intent"] == "26 岁，短发。"
+    assert assets["room"]["intent"] == "十来平米，开着台灯。"
     assert assets["txt1"]["text"]["method"] == "composite"
-    assert assets["vlinwan"]["voice"]["method"] == "local"
+    assert assets["vzhouyu"]["voice"]["method"] == "local"
 
 
 def test_patch_errors(client: TestClient) -> None:
-    assert _code(client.patch(f"{V1}/assets/linwan", json={"pick": 1})) == "nothing_to_pick"
+    assert _code(client.patch(f"{V1}/assets/store", json={"pick": 1})) == "nothing_to_pick"
     assert client.patch(f"{V1}/assets/nope", json={"intent": "x"}).status_code == 404
     bad = client.patch(f"{V1}/assets/txt1", json={"text": {"exact": "x", "font": "宋体"}})
     assert bad.status_code == 422

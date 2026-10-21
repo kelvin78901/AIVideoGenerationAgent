@@ -35,7 +35,7 @@ def test_factory_defaults_follow_balanced_preset() -> None:
 def test_hybrid_when_both_sides_exist() -> None:
     res = resolve("img", [])
     assert res.values["mode"] == "hybrid"
-    assert res.values["local_model"] == "comfy/qwen-image-edit"
+    assert res.values["local_model"] == "comfy/qwen-image"
 
 
 def test_layers_apply_in_order_and_report_source() -> None:

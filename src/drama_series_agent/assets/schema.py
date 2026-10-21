@@ -87,6 +87,15 @@ class AssetPatch(BaseModel):
     voice: VoicePatch | None = None
 
 
+class AssetLockIn(BaseModel):
+    """``POST /assets/{id}/lock``: by default the picked candidate of the version on screen."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    version_id: str | None = Field(default=None, max_length=64)
+    idx: int | None = Field(default=None, ge=0)
+
+
 class MatrixSceneOut(BaseModel):
     id: str
     number: int

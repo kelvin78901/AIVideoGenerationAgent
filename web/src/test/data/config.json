@@ -141,8 +141,23 @@
           "volc/seedream-5.0"
         ],
         "local_models": [
+          "comfy/qwen-image",
           "comfy/qwen-image-edit",
           "comfy/flux2-dev"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "views",
+        "stage": "assets",
+        "kind": "image",
+        "api_models": [
+          "openai/gpt-image-2",
+          "google/nano-banana-pro",
+          "volc/seedream-5.0"
+        ],
+        "local_models": [
+          "comfy/qwen-image-edit"
         ],
         "unavailable": {}
       },
@@ -972,6 +987,31 @@
       "img": {
         "mode": "api",
         "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/qwen-image",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/qwen-image",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/qwen-image",
+          "comfy/qwen-image-edit",
+          "comfy/flux2-dev",
+          "google/nano-banana-pro",
+          "volc/seedream-5.0"
+        ],
+        "per_call_cap_usd": 1.5
+      },
+      "views": {
+        "mode": "api",
+        "api_model": "openai/gpt-image-2",
         "local_model": "comfy/qwen-image-edit",
         "fallback": {
           "enabled": true,
@@ -987,11 +1027,10 @@
         },
         "alt_order": [
           "comfy/qwen-image-edit",
-          "comfy/flux2-dev",
           "google/nano-banana-pro",
           "volc/seedream-5.0"
         ],
-        "per_call_cap_usd": 1.5
+        "per_call_cap_usd": 1.0
       },
       "text": {
         "mode": "api",
@@ -1485,7 +1524,7 @@
       "img": {
         "mode": "hybrid",
         "api_model": "google/nano-banana-pro",
-        "local_model": "comfy/qwen-image-edit",
+        "local_model": "comfy/qwen-image",
         "fallback": {
           "enabled": true,
           "on": [
@@ -1500,11 +1539,35 @@
         },
         "alt_order": [
           "volc/seedream-5.0",
+          "comfy/qwen-image-edit",
           "comfy/flux2-dev",
           "openai/gpt-image-2",
           "google/nano-banana-pro"
         ],
         "per_call_cap_usd": 1.5
+      },
+      "views": {
+        "mode": "local",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/nano-banana-pro",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/nano-banana-pro",
+          "openai/gpt-image-2",
+          "volc/seedream-5.0"
+        ],
+        "per_call_cap_usd": 1.0
       },
       "text": {
         "mode": "hybrid",
@@ -2005,6 +2068,31 @@
       "img": {
         "mode": "local",
         "api_model": "volc/seedream-5.0",
+        "local_model": "comfy/qwen-image",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "volc/seedream-5.0",
+          "notify": "after"
+        },
+        "alt_order": [
+          "volc/seedream-5.0",
+          "comfy/qwen-image-edit",
+          "comfy/flux2-dev",
+          "openai/gpt-image-2",
+          "google/nano-banana-pro"
+        ],
+        "per_call_cap_usd": 1.5
+      },
+      "views": {
+        "mode": "local",
+        "api_model": "volc/seedream-5.0",
         "local_model": "comfy/qwen-image-edit",
         "fallback": {
           "enabled": true,
@@ -2020,11 +2108,10 @@
         },
         "alt_order": [
           "volc/seedream-5.0",
-          "comfy/flux2-dev",
           "openai/gpt-image-2",
           "google/nano-banana-pro"
         ],
-        "per_call_cap_usd": 1.5
+        "per_call_cap_usd": 1.0
       },
       "text": {
         "mode": "local",
@@ -2455,7 +2542,7 @@
       "img": {
         "mode": "local",
         "api_model": "google/nano-banana-pro",
-        "local_model": "comfy/qwen-image-edit",
+        "local_model": "comfy/qwen-image",
         "fallback": {
           "enabled": false,
           "on": [
@@ -2469,9 +2556,29 @@
           "notify": "after"
         },
         "alt_order": [
+          "comfy/qwen-image-edit",
           "comfy/flux2-dev"
         ],
         "per_call_cap_usd": 1.5
+      },
+      "views": {
+        "mode": "local",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image-edit",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 1.0
       },
       "text": {
         "mode": "local",
