@@ -25,7 +25,14 @@ test("dialogue audio: 全部配音 on the backend; the lines play on the script 
   // Each take arrives over SSE (`product.updated`, slot `line_audio`).
   await expect(page.getByText("台词配音 2 / 2")).toBeVisible({ timeout: 30_000 });
   await openPage(page, "/s/demo/e/1/script");
-  await expect(page.getByRole("button", { name: "播放：……周屿？" })).toBeVisible();
+  const play = page.getByRole("button", { name: "播放：……周屿？" });
+  await expect(play).toBeVisible();
+  // It really plays: the button turns into 暂停 while the clip runs.
+  await play.click();
+  await expect(page.getByRole("button", { name: "暂停：……周屿？" })).toHaveAttribute(
+    "aria-pressed",
+    "true",
+  );
   await expect(page.getByText(/^台词 \d+\.\d 秒 · 已配音 1 \/ 1$/)).toHaveCount(2);
   // The audio is the backend's file.
   const dub = await (await page.request.get("/api/v1/episodes/demo-e1/dub")).json();
