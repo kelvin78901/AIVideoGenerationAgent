@@ -156,7 +156,7 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
     assert isinstance(registry.get("minimax/h3-api"), UnavailableAdapter)  # not yet
     for key in ("local/qwen3-tts", "local/indextts2", "local/rapidocr"):
         assert isinstance(registry.get(key), LocalPythonAdapter)
-    for key in ("comfy/qwen-image", "comfy/qwen-image-edit"):
+    for key in ("comfy/qwen-image", "comfy/qwen-image-edit", "comfy/qwen-image-edit-hq"):
         assert isinstance(registry.get(key), ComfyUIAdapter)
     assert isinstance(registry.get("comfy/h3"), UnavailableAdapter)  # no workflow folder yet
 

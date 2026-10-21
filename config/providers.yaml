@@ -289,6 +289,7 @@ local_models:
   - { key: comfy/wan-2.2,           kind: video,   display: Wan 2.2（本地）,          runtime: comfyui, needs: [comfy], requires_cuda: true }
   - { key: comfy/ltx,               kind: video,   display: LTX（本地）,              runtime: comfyui, verify: true, needs: [comfy], requires_cuda: true }
   - { key: comfy/qwen-image-edit,   kind: image,   display: Qwen-Image-Edit（本地）,  runtime: comfyui, workflow: qwen-image-edit, needs: [comfy, w_img] }
+  - { key: comfy/qwen-image-edit-hq, kind: image, display: Qwen-Image-Edit 40 步（本地）, runtime: comfyui, workflow: qwen-image-edit-hq, needs: [comfy, w_img] }
   - { key: comfy/qwen-image,        kind: image,   display: Qwen-Image（本地）,       runtime: comfyui, workflow: qwen-image, needs: [comfy, w_img_t2i] }
   - { key: comfy/flux2-dev,         kind: image,   display: FLUX.2 dev（本地）,       runtime: comfyui, needs: [comfy] }
   - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui, needs: [comfy, node_seedvr2, w_sr], requires_cuda: true }

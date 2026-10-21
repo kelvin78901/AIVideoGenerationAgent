@@ -49,7 +49,12 @@ from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService,
 from drama_series_agent.pipeline.components import assets, enrich, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
 from drama_series_agent.pipeline.components.text import text_settings
-from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, VIEWS, ViewsComponent
+from drama_series_agent.pipeline.components.views import (
+    REF_VIEWS_SLOT,
+    VIEWS,
+    ViewsComponent,
+    negative_for,
+)
 from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
@@ -704,7 +709,7 @@ async def _seed_views(
         return
     async with db.session() as session:
         dep = await invalidation.dependency(session, ref_id, "")
-    model = "comfy/qwen-image-edit"
+    model = "comfy/qwen-image-edit-hq"
     size = dims("9:16", "draft")
     files = [
         file_entry(
@@ -720,7 +725,11 @@ async def _seed_views(
     ]
     intent = compiler.default_intent(ViewsComponent.id, "zh-CN")
     draft = VersionDraft(
-        payload={"views": list(VIEWS), "from": dep.upstream_hash},
+        payload={
+            "views": list(VIEWS),
+            "from": dep.upstream_hash,
+            "negative": {view: negative_for(view) for view in VIEWS},
+        },
         files=files,
         intent=intent,
         compiled=compiler.compile(ViewsComponent.id, intent, model),

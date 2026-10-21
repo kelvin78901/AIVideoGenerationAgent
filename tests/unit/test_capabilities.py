@@ -40,8 +40,9 @@ def test_local_models_and_what_they_lack() -> None:
     assert unmet(providers, MAC, "local/qwen3-tts") == ["cuda", "rt_qwentts"]
     assert unmet(providers, MAC, "local/rapidocr") == ["rt_ocr"]  # CPU: fine once installed
     assert unmet(providers, MAC, "local/cosyvoice") == []  # no needs listed: assumed fine
-    for key in ("comfy/qwen-image", "comfy/qwen-image-edit", "local/indextts2"):
+    for key in ("comfy/qwen-image", "comfy/qwen-image-edit", "comfy/qwen-image-edit-hq"):
         assert unmet(providers, PC_READY, key) == [], key
+    assert unmet(providers, PC_READY, "local/indextts2") == []
     assert unmet(providers, PC_READY, "comfy/h3-fun-controlnet") == []
 
 

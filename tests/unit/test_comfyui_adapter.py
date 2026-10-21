@@ -202,7 +202,7 @@ def test_an_unfilled_optional_reference_goes_with_its_links(root: Path) -> None:
         load_workflow("fake-edit", root).fill({}, [])
 
 
-@pytest.mark.parametrize("slug", ["qwen-image", "qwen-image-edit"])
+@pytest.mark.parametrize("slug", ["qwen-image", "qwen-image-edit", "qwen-image-edit-hq"])
 def test_shipped_workflows_load(slug: str) -> None:
     wf = shipped_workflow(slug)
     assert wf.meta.kind == "image" and wf.output_nodes("image_out")

@@ -116,11 +116,11 @@ components:
     name: { zh: 补视图, en: Extra views }
     kind: image
     api: *img_api
-    local: [comfy/qwen-image-edit]
-    balanced: { mode: local, local: comfy/qwen-image-edit, api: google/nano-banana-pro, fallback_to: google/nano-banana-pro }
+    local: [comfy/qwen-image-edit-hq, comfy/qwen-image-edit]
+    balanced: { mode: local, local: comfy/qwen-image-edit-hq, api: google/nano-banana-pro, fallback_to: google/nano-banana-pro }
     per_call_cap_usd: 1
     cheap_api: volc/seedream-5.0
-    note: 角色锁定后自动补侧面、背面和表情（以锁定的参考图为准，本地用编辑模型）；自动采纳
+    note: 角色锁定后自动补侧面、背面和表情（以锁定的参考图为准，本地用编辑模型的官方 40 步，不用 4 步加速）；自动采纳
 
   - id: text
     stage: assets

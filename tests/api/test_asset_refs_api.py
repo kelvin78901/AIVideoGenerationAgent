@@ -30,7 +30,7 @@ from drama_series_agent.modelhub.adapters.mock import gradient_png
 from drama_series_agent.modelhub.workflows import shipped_workflow
 from drama_series_agent.pipeline.component import RunContext
 from drama_series_agent.pipeline.components.media import MediaCall, MediaComponent
-from drama_series_agent.pipeline.components.views import VIEWS
+from drama_series_agent.pipeline.components.views import NEGATIVE, VIEWS
 from drama_series_agent.pipeline.hashing import hash_json
 from drama_series_agent.spec.dims import dims
 
@@ -248,7 +248,7 @@ def test_views_follow_the_locked_hash(client: TestClient) -> None:
         (first["id"], _file_hash(_locked_file(first)["sha256"]))
     ]
     calls = [c for c in _rows(client, ModelCall) if c.product_id == views["id"]]
-    assert len(calls) == len(VIEWS) and {c.model_key for c in calls} == {"comfy/qwen-image-edit"}
+    assert len(calls) == len(VIEWS) and {c.model_key for c in calls} == {"comfy/qwen-image-edit-hq"}
 
     # Unlock, lock another picture: the views are drawn again from it.
     preview = client.post(
@@ -324,7 +324,7 @@ def test_a_run_starts_from_the_description(client: TestClient) -> None:
 
 def test_views_fall_back_as_a_set(client: TestClient) -> None:
     """One view failing locally draws the whole set again on the fallback model."""
-    _state(client).registry.mock_settings.fail_keys.add("comfy/qwen-image-edit")
+    _state(client).registry.mock_settings.fail_keys.add("comfy/qwen-image-edit-hq")
     _run(client, "zhouyu")
     client.post(f"{V1}/assets/zhouyu/lock").raise_for_status()
     views = _until(client, _views_id(client, "zhouyu"), lambda p: p["status"] == "adopted")
@@ -335,7 +335,7 @@ def test_views_fall_back_as_a_set(client: TestClient) -> None:
     ok = [c for c in calls if c.status == "success"]
     assert len(ok) == len(VIEWS) and {c.model_key for c in ok} == {"google/nano-banana-pro"}
     assert all(c.is_fallback for c in ok)
-    assert [c.model_key for c in calls if c.status != "success"] == ["comfy/qwen-image-edit"]
+    assert [c.model_key for c in calls if c.status != "success"] == ["comfy/qwen-image-edit-hq"]
 
 
 def test_a_retried_call_does_not_pay_again(client: TestClient) -> None:
@@ -371,16 +371,16 @@ def test_a_retried_call_does_not_pay_again(client: TestClient) -> None:
     assert len(calls) == 1
 
 
-def test_a_local_draft_through_the_real_comfyui_adapter(client: TestClient) -> None:
-    """The draft against a fake ComfyUI: four prompts on the shipped Qwen-Image workflow at its
-    9:16 size, and the version records which workflow made it (SPEC 6.4.5)."""
-    wf = shipped_workflow("qwen-image")
-    out = wf.output_nodes("image_out")[0]
+def _fake_comfy(client: TestClient, out: str) -> list[dict[str, Any]]:
+    """A ComfyUI on 8188 that draws every prompt at once; returns the graphs it was sent. The
+    registry goes real (Mock off) so the ComfyUI adapters talk to it."""
     prompts: list[dict[str, Any]] = []
 
     def comfy(request: httpx.Request) -> httpx.Response:
         assert request.url.port == 8188, request.url
         path = request.url.path
+        if path == "/upload/image":
+            return httpx.Response(200, json={"name": "ref.png", "subfolder": "dramastudio"})
         if path == "/prompt":
             prompts.append(json.loads(request.content)["prompt"])
             return httpx.Response(200, json={"prompt_id": f"p{len(prompts)}", "number": 1})
@@ -398,6 +398,14 @@ def test_a_local_draft_through_the_real_comfyui_adapter(client: TestClient) -> N
     state.http_transport = httpx.MockTransport(comfy)
     state.registry.mock = False
     state.registry._adapters.clear()
+    return prompts
+
+
+def test_a_local_draft_through_the_real_comfyui_adapter(client: TestClient) -> None:
+    """The draft against a fake ComfyUI: four prompts on the shipped Qwen-Image workflow at its
+    9:16 size, and the version records which workflow made it (SPEC 6.4.5)."""
+    wf = shipped_workflow("qwen-image")
+    prompts = _fake_comfy(client, wf.output_nodes("image_out")[0])
     job = _run(client, "room")
     assert job["queue"] == "gpu"
     draft = _product(client, "room")["versions"][-1]
@@ -414,3 +422,29 @@ def test_a_local_draft_through_the_real_comfyui_adapter(client: TestClient) -> N
     assert (row.workflow_id, row.workflow_sha256) == ("qwen-image", wf.sha256)
     call = next(c for c in _rows(client, ModelCall) if c.job_id == job["id"])
     assert (call.where, call.images, call.cost_usd) == ("local", 4, 0.0)
+
+
+def test_views_on_the_forty_step_workflow_with_negative_prompts(client: TestClient) -> None:
+    """补视图 locally is Qwen-Image-Edit on the official 40 steps at cfg 4.0, no Lightning LoRA
+    (Kelvin 2026-10-21), and every view sends its negative prompt."""
+    wf = shipped_workflow("qwen-image-edit-hq")
+    prompts = _fake_comfy(client, wf.output_nodes("image_out")[0])
+    png = gradient_png(60, 100, (200, 40, 40))
+    upload = client.post(f"{V1}/assets/zhouyu/upload", files={"file": ("z.png", png, "image/png")})
+    assert upload.status_code == 200, upload.text
+    assert client.post(f"{V1}/assets/zhouyu/lock").status_code == 200  # starts the views
+    views = _until(client, _views_id(client, "zhouyu"), lambda p: p["status"] == "adopted")
+    v = views["versions"][-1]
+    assert (v["model_key"], v["where"]) == ("comfy/qwen-image-edit-hq", "local")
+    assert [f["view"] for f in v["files"] if f["role"] == "view"] == list(VIEWS)
+    assert len(prompts) == len(VIEWS)
+    sampler, negative = wf.node_id("Sampler"), wf.node_id("Negative prompt")
+    for graph in prompts:
+        assert (graph[sampler]["inputs"]["steps"], graph[sampler]["inputs"]["cfg"]) == (40, 4.0)
+        assert not any(n["class_type"] == "LoraLoaderModelOnly" for n in graph.values())
+    sent = [graph[negative]["inputs"]["prompt"] for graph in prompts]
+    assert all(n.startswith(NEGATIVE) for n in sent)
+    assert "龇牙" in sent[list(VIEWS).index("angry")] and "龇牙" not in sent[0]
+    assert v["payload"]["negative"] == dict(zip(VIEWS, sent, strict=True))
+    row = next(r for r in _rows(client, ProductVersion) if r.id == v["id"])
+    assert (row.workflow_id, row.workflow_sha256) == ("qwen-image-edit-hq", wf.sha256)

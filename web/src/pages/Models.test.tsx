@@ -45,8 +45,8 @@ describe("ModelsPage", () => {
     expect(mode("设定提取", "本地")).toBeChecked();
     expect(row("设定提取")).toHaveTextContent("Qwen3.6-27B");
     expect(row("参考图生成")).toHaveTextContent("Qwen-Image（本地） → Nano Banana Pro");
-    // 补视图 edits the locked picture: the editing model, locally.
-    expect(row("补视图")).toHaveTextContent("Qwen-Image-Edit（本地）");
+    // 补视图 edits the locked picture: the editing model, locally, on the official 40 steps.
+    expect(row("补视图")).toHaveTextContent("Qwen-Image-Edit 40 步（本地）");
     // OCR runs on this computer only: no API to switch to.
     expect(row("文字核对（OCR）")).toHaveTextContent("RapidOCR（本地）");
     expect(mode("文字核对（OCR）", "API")).toBeDisabled();
