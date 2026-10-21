@@ -38,7 +38,9 @@
     "noScenes": "Not in this episode",
     "upload": "Upload a reference",
     "uploadFile": "Choose a picture to upload",
-    "uploaded": "Uploaded “{{name}}”: it is a candidate now, and picked."
+    "uploaded": "Uploaded “{{name}}”: it is a candidate now, and picked.",
+    "editTitle": "{{name}} is locked: the change reaches downstream",
+    "editWhat": "New description: {{text}}"
   },
   "text": {
     "exact": "Text in the frame (checked letter by letter)",

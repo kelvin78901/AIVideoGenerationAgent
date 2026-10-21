@@ -8,7 +8,7 @@ import { useApplyImpact } from "@/api/hooks/impact";
 import type { Impact, ImpactAction, ApplyImpactResult } from "@/api/schemas/impact";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
-import { formatUsd } from "@/lib/format";
+import { formatCost } from "@/lib/format";
 import { cn } from "@/lib/utils";
 
 type Labels = Partial<Record<ImpactAction, string>>;
@@ -27,7 +27,7 @@ function ImpactBody({
   const { t } = useTranslation("components");
   const { t: tc } = useTranslation();
   const apply = useApplyImpact();
-  const cost = formatUsd(impact.rerun_cost_usd, { cents: true });
+  const cost = formatCost(impact.rerun_cost_usd);
   const sync = impact.rerun_cost_usd > 0 ? t("impact.sync", { cost }) : t("impact.syncFree");
   const done: Record<ImpactAction, string> = {
     mark: t("impact.marked"),
@@ -56,7 +56,7 @@ function ImpactBody({
               defaultValue: line.code,
             })}
             {line.cost_usd !== null
-              ? ` · ${t("impact.lineCost", { cost: formatUsd(line.cost_usd, { cents: true }) })}`
+              ? ` · ${t("impact.lineCost", { cost: formatCost(line.cost_usd) })}`
               : ""}
             {line.optional ? t("impact.optional") : ""}
           </li>

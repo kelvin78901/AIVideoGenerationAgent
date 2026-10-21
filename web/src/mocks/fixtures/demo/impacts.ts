@@ -121,8 +121,8 @@ function scriptImpacts(): Record<string, Preview> {
     ),
     "line_edit:demo-b10": p(
       [
+        // Its dubbing (once dubbed) is the backend's line now (M3).
         line("shot_vo", { id: "1-06" }),
-        line("dub_lines", { count: 1 }),
         line("video_audio_swap", { id: "1-06" }),
       ],
       0.01,

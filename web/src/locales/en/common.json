@@ -136,7 +136,8 @@
     "distinct_needs_two": "Pick two different entries",
     "split_needs_alias": "Say which alias to split off",
     "alias_not_found": "This entry has no alias “{{alias}}”",
-    "source_missing": "The text this bible was taken from ({{id}}) is missing"
+    "source_missing": "The text this bible was taken from ({{id}}) is missing",
+    "assets_not_locked": "{{count}} asset(s) not locked yet: {{names}}"
   },
   "toast": {
     "generic": "Notice: {{code}}",

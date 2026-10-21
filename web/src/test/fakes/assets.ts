@@ -13,7 +13,11 @@
  *   an audition cannot be (409 `voice_needs_final`);
  * - 上传参考图 adds a version with that one candidate, picked;
  * - 解锁 is the impact preview's `asset_unlock` (`test/fakes/impact.ts`): what uses the locked
- *   picture, then unlocked.
+ *   picture, then unlocked (and episode 1's assets gate reopened);
+ * - editing a locked asset is the impact preview's `asset_edit`: saved, the lock kept; 确认并同步
+ *   draws new candidates;
+ * - episode 1's 素材 badge counts the assets it uses (those with scenes) and their locks, and
+ *   its gate needs them all locked (409 `assets_not_locked`).
  */
 import { http, HttpResponse } from "msw";
 
@@ -54,7 +58,12 @@ export const fakeAssets = {
   uploads: [] as { id: string; name: string }[],
   /** 重新分析剧本 requests, in order (episode ids). */
   analyses: [] as string[],
+  /** Episodes whose assets gate is confirmed. */
+  confirmed: new Set<string>(),
 };
+
+/** The episode the fixture's assets are about (their `scenes`). */
+const EPISODE = "demo-e1";
 
 export function resetFakeAssets() {
   fakeAssets.assets = structuredClone(demoAssets);
@@ -62,6 +71,83 @@ export function resetFakeAssets() {
   fakeAssets.views = structuredClone(demoViews);
   fakeAssets.uploads = [];
   fakeAssets.analyses = [];
+  fakeAssets.confirmed = new Set();
+}
+
+const used = () => fakeAssets.assets.filter((a) => a.scenes.length > 0);
+
+/** 素材 n / m of episode 1 (`AssetService.badge`), or null for another episode. */
+export function fakeAssetsBadge(episodeId: string) {
+  if (episodeId !== EPISODE) return null;
+  const mine = used();
+  const done = mine.filter((a) => productOf(a)?.locked_hash).length;
+  const state = fakeAssets.confirmed.has(episodeId)
+    ? ("confirmed" as const)
+    : ("in_progress" as const);
+  return { state, done, total: mine.length, stale: 0 };
+}
+
+/** `POST /gates/assets/confirm|reopen` (scope: the episode). */
+export function fakeAssetsGate(episodeId: string, action: string): Response | null {
+  if (episodeId !== EPISODE) return error(404, "episode_not_found", { id: episodeId });
+  if (action === "confirm") {
+    const open = used().filter((a) => !productOf(a)?.locked_hash);
+    if (open.length)
+      return error(409, "assets_not_locked", {
+        gate: "assets",
+        scope_id: episodeId,
+        count: open.length,
+        names: open.map((a) => a.name).join("、"),
+      });
+    fakeAssets.confirmed.add(episodeId);
+  } else fakeAssets.confirmed.delete(episodeId);
+  return null;
+}
+
+/** `asset_edit` of a locked asset (`AssetService.plan_edit`), or null when it is not locked. */
+export function assetEditImpact(assetId: string): Pick<Impact, "lines" | "unaffected"> | null {
+  const a = findAsset(assetId);
+  const p = a && productOf(a);
+  if (!a || !p?.locked_hash) return null;
+  const line = (code: string, params: Record<string, string | number>, cost: number | null) => ({
+    code,
+    params,
+    cost_usd: cost,
+    optional: false,
+  });
+  const scenes = a.scenes.map((s) => s.number);
+  return {
+    lines: [
+      line("asset_redraw", { name: a.name, kind: a.kind }, p.estimate?.cost_usd || null),
+      ...(fakeAssets.views.some((v) => v.owner_id === a.id)
+        ? [line("uses_ref_views", { name: a.name }, null)]
+        : []),
+      ...(scenes.length
+        ? [line("asset_in_scenes", { scenes: scenes.join("、"), count: scenes.length }, null)]
+        : []),
+    ],
+    unaffected: { code: "edit_keeps_ref", params: { name: a.name } },
+  };
+}
+
+/** Applying `asset_edit`: the edit saved (the lock kept); 确认并同步 also redraws. */
+export function editFakeAsset(assetId: string, patch: Record<string, unknown>, redraw: boolean) {
+  const a = findAsset(assetId);
+  const p = a && productOf(a);
+  if (!a || !p) return;
+  const body = AssetPatchSchema.parse(patch);
+  if (body.intent !== undefined) {
+    a.intent = body.intent;
+    p.prompt = {
+      intent: body.intent,
+      compiled: `[描述] ${body.intent}`,
+      compiled_overridden: false,
+      model_key: p.prompt?.model_key ?? "comfy/qwen-image",
+    };
+  }
+  if (body.text && a.text) a.text = { ...a.text, ...body.text };
+  if (body.voice && a.voice) a.voice = { ...a.voice, ...body.voice };
+  if (redraw) run(p, { mode: "rerun" });
 }
 
 const error = (status: number, code: string, params: Record<string, unknown> = {}) =>
@@ -322,6 +408,7 @@ export function unlockFakeAsset(assetId: string) {
   if (!p) return;
   p.locked_hash = null;
   p.status = p.adopted_version_id ? "adopted" : "ready";
+  if (a.scenes.length) fakeAssets.confirmed.delete(EPISODE);
   announce(p);
 }
 

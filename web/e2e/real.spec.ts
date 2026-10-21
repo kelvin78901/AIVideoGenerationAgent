@@ -122,3 +122,25 @@ test("on-screen text: the backend's OCR check, a mismatch asks before locking", 
   note(missing);
   expect(errors).toEqual([]);
 });
+
+test("assets gate and a locked asset's edit, on the backend", async ({ page }) => {
+  const { errors, missing } = trackContract(page);
+  await setUi(page, {});
+  await openPage(page, "/s/demo/e/1/assets");
+  await page.getByRole("button", { name: "去做分镜" }).click();
+  await expect(page.getByText(/^还有 \d+ 条素材没锁定：/)).toBeVisible();
+  await expect(page).toHaveURL(/\/assets$/);
+  // 林晚 (locked) is selected first: a new description shows the impact first.
+  const desc = page.getByLabel("描述（就是这条素材的提示词意图层）");
+  await desc.fill("二十六岁，齐耳短发。");
+  await desc.blur();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("「林晚」已锁定，改动会影响下游");
+  await expect(dialog).toContainText("「林晚」按新的设置重新出候选");
+  await expect(dialog).toContainText("出现在场 1、2");
+  await dialog.getByRole("button", { name: "撤销" }).click();
+  await expect(dialog).toBeHidden();
+  await expect(desc).not.toHaveValue("二十六岁，齐耳短发。");
+  note(missing);
+  expect(errors).toEqual([]);
+});

@@ -3,7 +3,6 @@ import { http, passthrough } from "msw";
 import type { Episode, EpisodeProgress, StepId } from "@/api/schemas/episodes";
 import { backendJson } from "@/mocks/backend";
 import { getDb } from "@/mocks/db";
-import { lockedAssetCount } from "@/mocks/handlers/assets";
 import { adoptedTakeCount } from "@/mocks/handlers/generate";
 import { confirmedShotCount } from "@/mocks/handlers/shots";
 import { demoJson, v1 } from "@/mocks/http";
@@ -26,7 +25,7 @@ export const seriesHandlers = [
     );
   }),
 
-  // The backend's badges (小说, 剧本 and their gates) with the demo's steps after 剧本.
+  // The backend's badges (小说, 剧本, 素材 and their gates) with the demo's steps after 素材.
   http.get(v1("/episodes/:id/progress"), async ({ params, request }) => {
     const id = String(params.id);
     if (!getDb().episodes.some((e) => e.id === id)) return passthrough();
@@ -42,14 +41,8 @@ export const seriesHandlers = [
     };
     const demo = getDb().progress[id];
     if (demo) {
-      const { assets, storyboard, generate, post } = structuredClone(demo.steps);
-      Object.assign(steps, { assets, storyboard, generate, post });
-      // 素材 7/13 is the number of locked assets (the backend's).
-      if (steps.assets.state !== "not_started") {
-        const series = getDb().episodes.find((e) => e.id === id)?.series_id ?? "";
-        const count = await lockedAssetCount(request, series);
-        if (count) Object.assign(steps.assets, count);
-      }
+      const { storyboard, generate, post } = structuredClone(demo.steps);
+      Object.assign(steps, { storyboard, generate, post });
       // 分镜 3/9 is the number of confirmed shots.
       if (steps.storyboard.state !== "not_started")
         Object.assign(steps.storyboard, confirmedShotCount(id));

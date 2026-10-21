@@ -6,6 +6,7 @@ import { toast } from "sonner";
 
 import { errorMessage, fileUrl } from "@/api/client";
 import { usePatchAsset, useUploadAsset } from "@/api/hooks/assets";
+import { useImpactPreview } from "@/api/hooks/impact";
 import { useProduct } from "@/api/hooks/products";
 import {
   CandidatesPayloadSchema,
@@ -18,6 +19,7 @@ import {
 import type { Aspect } from "@/api/schemas/spec";
 import { Chip } from "@/components/Chip";
 import { EmptyState } from "@/components/EmptyState";
+import { ImpactDialog } from "@/components/ImpactDialog";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -34,7 +36,9 @@ const LETTERS = "ABCD";
 // Pictures a reference can be uploaded as (the backend reads their size from the header).
 const UPLOAD_TYPES = "image/png,image/jpeg,image/webp";
 
-/** 素材详情: what the asset is, how it is made, its candidates, and lock / unlock. */
+/** 素材详情: what the asset is, how it is made, its candidates, and lock / unlock. Changing a
+ * locked asset (its description, text settings, voice source) shows the impact first
+ * (`asset_edit`): the lock stays, 确认并同步 draws new candidates. */
 export function AssetDetail({
   asset,
   seriesId,
@@ -69,6 +73,9 @@ export function AssetDetail({
   const fileInput = useRef<HTMLInputElement>(null);
   const [intent, setIntent] = useState(asset.intent);
   const [exact, setExact] = useState(asset.text?.exact ?? "");
+  const preview = useImpactPreview();
+  // A change to the locked asset, waiting in the impact dialog.
+  const [editing, setEditing] = useState<AssetPatch | null>(null);
 
   const version = product.data ? currentVersion(product.data) : undefined;
   const payload = CandidatesPayloadSchema.safeParse(version?.payload);
@@ -98,6 +105,28 @@ export function AssetDetail({
         onError: (err) => toast.error(errorMessage(tc, err)),
       },
     );
+  // Unlocked: written in place. Locked: the impact preview first.
+  const change = (p: AssetPatch, done?: string) => {
+    if (!locked) {
+      save(p, done);
+      return;
+    }
+    preview.mutate(
+      { kind: "asset_edit", target_id: asset.id, patch: p },
+      {
+        onSuccess: () => setEditing(p),
+        onError: (err) => toast.error(errorMessage(tc, err)),
+      },
+    );
+  };
+  const closeEdit = (keep: boolean) => {
+    if (!keep) {
+      setIntent(asset.intent);
+      setExact(asset.text?.exact ?? "");
+    }
+    setEditing(null);
+    preview.reset();
+  };
 
   return (
     <section
@@ -205,7 +234,7 @@ export function AssetDetail({
           value={intent}
           onChange={(e) => setIntent(e.target.value)}
           onBlur={() => {
-            if (intent !== asset.intent) save({ intent }, t("detail.descSaved"));
+            if (intent !== asset.intent) change({ intent }, t("detail.descSaved"));
           }}
         />
         <p className="text-xs text-muted-foreground">{t("detail.descHint")}</p>
@@ -220,7 +249,7 @@ export function AssetDetail({
               value={exact}
               onChange={(e) => setExact(e.target.value)}
               onBlur={() => {
-                if (exact !== asset.text?.exact) save({ text: { exact } });
+                if (exact !== asset.text?.exact) change({ text: { exact } });
               }}
             />
           </div>
@@ -229,7 +258,7 @@ export function AssetDetail({
             <SegmentedControl
               label={t("text.method")}
               value={asset.text.method}
-              onChange={(method) => save({ text: { method } })}
+              onChange={(method) => change({ text: { method } })}
               options={TextMethodSchema.options.map((m) => ({
                 value: m,
                 label: t(`text.methods.${m}`),
@@ -248,7 +277,7 @@ export function AssetDetail({
                 key={s}
                 role="radio"
                 selected={asset.text?.style === s}
-                onClick={() => save({ text: { style: s } })}
+                onClick={() => change({ text: { style: s } })}
               >
                 {t(`text.styles.${s}`)}
               </Chip>
@@ -264,7 +293,7 @@ export function AssetDetail({
             <SegmentedControl
               label={t("voice.source")}
               value={asset.voice.method}
-              onChange={(method) => save({ voice: { method } })}
+              onChange={(method) => change({ voice: { method } })}
               options={VoiceMethodSchema.options.map((m) => ({
                 value: m,
                 label: t(`voice.methods.${m}`),
@@ -343,6 +372,23 @@ export function AssetDetail({
       )}
 
       {asset.kind === "character" ? <AssetViews asset={asset} aspect={aspect} /> : null}
+
+      {editing && preview.data ? (
+        <ImpactDialog
+          variant="modal"
+          impact={preview.data}
+          title={t("detail.editTitle", { name: asset.name })}
+          detail={
+            editing.intent !== undefined
+              ? t("detail.editWhat", { text: editing.intent })
+              : undefined
+          }
+          onOpenChange={(open) => {
+            if (!open) closeEdit(false);
+          }}
+          onResolved={(action) => closeEdit(action !== "undo")}
+        />
+      ) : null}
     </section>
   );
 }

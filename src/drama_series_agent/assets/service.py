@@ -594,7 +594,8 @@ class AssetService:
             {
                 "code": "asset_redraw",
                 "params": {"name": asset.name, "kind": asset.kind},
-                "cost_usd": est.cost_usd if est is not None else None,
+                # None when free (a local draft), as the impact's other lines.
+                "cost_usd": est.cost_usd if est is not None and est.cost_usd else None,
                 "optional": False,
             },
             *uses,

@@ -38,7 +38,9 @@
     "noScenes": "本集未出现",
     "upload": "上传参考图",
     "uploadFile": "选择要上传的图片",
-    "uploaded": "已上传「{{name}}」，成为一张候选并已选中。"
+    "uploaded": "已上传「{{name}}」，成为一张候选并已选中。",
+    "editTitle": "「{{name}}」已锁定，改动会影响下游",
+    "editWhat": "新描述：{{text}}"
   },
   "text": {
     "exact": "画面里的字（逐字核对）",

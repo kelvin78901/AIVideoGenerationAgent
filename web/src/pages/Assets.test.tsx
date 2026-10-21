@@ -15,6 +15,7 @@ import { renderAt } from "@/test/render";
 
 // Content typed by the user.
 const NEW_DESC = "十来平米，只开一盏台灯。";
+const NEW_LOOK = "二十六岁，齐耳短发。";
 
 function Page() {
   useEventStream();
@@ -34,7 +35,7 @@ const list = () => screen.getByRole("region", { name: "素材清单" });
 const item = (name: RegExp) => within(list()).getByRole("button", { name });
 const asset = (id: string) => fakeAssets.assets.find((a) => a.id === id);
 const productOf = (id: string) => fakeAssets.products.find((p) => p.id === `demo-p-asset-${id}`);
-const ready = () => screen.findByText("已锁定 7 / 13");
+const ready = () => screen.findByText("已锁定 7 / 10");
 
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
@@ -118,12 +119,12 @@ describe("AssetsPage", () => {
     await user.click(screen.getByRole("button", { name: "锁定为参考" }));
     dialog = await screen.findByRole("alertdialog");
     await user.click(within(dialog).getByRole("button", { name: "仍然锁定" }));
-    expect(await screen.findByText("已锁定 8 / 13")).toBeInTheDocument();
+    expect(await screen.findByText("已锁定 8 / 10")).toBeInTheDocument();
     expect(productOf("txt1")?.locked_hash).not.toBeNull();
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
-  it("picks a candidate and locks it; the count goes to 8 / 13", async () => {
+  it("picks a candidate and locks it; the count goes to 8 / 10", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
@@ -131,7 +132,7 @@ describe("AssetsPage", () => {
     await user.click(screen.getByRole("radio", { name: "v1 · C" }));
     await waitFor(() => expect(asset("band")?.pick).toBe(2));
     await user.click(screen.getByRole("button", { name: "锁定为参考" }));
-    expect(await screen.findByText("已锁定 8 / 13")).toBeInTheDocument();
+    expect(await screen.findByText("已锁定 8 / 10")).toBeInTheDocument();
     expect(item(/旧黑发圈/)).toHaveTextContent("已锁定");
     expect(productOf("band")?.locked_hash).not.toBeNull();
     expect(screen.getByRole("radio", { name: "v1 · C" })).toBeDisabled();
@@ -147,7 +148,7 @@ describe("AssetsPage", () => {
     expect(dialog).toHaveTextContent("解锁「红色长柄伞」会影响用到它的镜头");
     expect(dialog).toHaveTextContent("分镜 · 1-02 1-08 1-09，共 3 个镜头用它做参考");
     await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
-    expect(await screen.findByText("已锁定 6 / 13")).toBeInTheDocument();
+    expect(await screen.findByText("已锁定 6 / 10")).toBeInTheDocument();
     expect(item(/红色长柄伞/)).toHaveTextContent("待选");
     expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(3);
   });
@@ -254,6 +255,43 @@ describe("AssetsPage", () => {
     await user.tab();
     await waitFor(() => expect(asset("room")?.intent).toBe(NEW_DESC));
     expect(productOf("room")?.prompt?.intent).toBe(NEW_DESC);
+  });
+
+  it("a locked asset's new description shows the impact first; 只改这里 keeps the lock", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    const before = productOf("linwan")?.locked_hash;
+    const desc = screen.getByLabelText("描述（就是这条素材的提示词意图层）");
+    await user.clear(desc);
+    await user.type(desc, NEW_LOOK);
+    await user.tab();
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("「林晚」已锁定，改动会影响下游");
+    expect(dialog).toHaveTextContent(`新描述：${NEW_LOOK}`);
+    expect(dialog).toHaveTextContent("「林晚」按新的设置重新出候选；锁定的还是现在这个");
+    expect(dialog).toHaveTextContent("补视图 · 「林晚」的侧面、背面和表情按这张参考图画");
+    expect(dialog).toHaveTextContent("出现在场 1、2：剧本不用改");
+    expect(dialog).toHaveTextContent("锁定的「林晚」照常在用");
+    await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+    await waitFor(() => expect(asset("linwan")?.intent).toBe(NEW_LOOK));
+    expect(productOf("linwan")?.locked_hash).toBe(before);
+    expect(item(/^林晚\s*角色/)).toHaveTextContent("已锁定");
+  });
+
+  it("「撤销」 puts the locked asset's description back", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    const desc = screen.getByLabelText("描述（就是这条素材的提示词意图层）");
+    const old = (desc as HTMLTextAreaElement).value;
+    await user.clear(desc);
+    await user.type(desc, NEW_LOOK);
+    await user.tab();
+    const dialog = await screen.findByRole("alertdialog");
+    await user.click(within(dialog).getByRole("button", { name: "撤销" }));
+    await waitFor(() => expect(desc).toHaveValue(old));
+    expect(asset("linwan")?.intent).toBe(old);
   });
 
   it("shows each candidate's picture; 「用 API 出终版」 makes one picture from the picked draft", async () => {

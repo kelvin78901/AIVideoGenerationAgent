@@ -199,12 +199,18 @@
       "self_asset_list": "第 {{n}} 集的素材清单会改成新内容",
       "stale_asset_list": "第 {{n}} 集素材清单 · 会重新分析",
       "then_asset_list": "第 {{n}} 集素材清单 · 上游真的有变化才重新分析",
-      "edited_asset_list": "第 {{n}} 集素材清单里手动改过的地方，可能会按新的内容重写"
+      "edited_asset_list": "第 {{n}} 集素材清单里手动改过的地方，可能会按新的内容重写",
+      "stale_line_audio": "台词配音 · {{count}} 句按新台词重配",
+      "then_line_audio": "台词配音 · {{count}} 句 · 上游真的有变化才重配",
+      "uses_line_audio": "台词配音 · 「{{name}}」的 {{count}} 句用这个音色，锁定新的音色后变「待更新」",
+      "asset_redraw": "「{{name}}」按新的设置重新出候选；锁定的还是现在这个，选好新的再锁定",
+      "asset_in_scenes": "出现在场 {{scenes}}：剧本不用改"
     },
     "unaffected": {
       "unaffected_spec": "剧本、分镜表、配音和音色不受影响。已采纳的视频不会被删，新结果作为新版本出现。",
       "unlock_keeps_ref": "解锁后原来的参考图照常在用；锁定新的一张后，用到它的才会更新。",
-      "unlock_keeps_adopted": "已采纳的视频不会被删；换了新参考后，这些镜头会出新版本。"
+      "unlock_keeps_adopted": "已采纳的视频不会被删；换了新参考后，这些镜头会出新版本。",
+      "edit_keeps_ref": "锁定的「{{name}}」照常在用；选好新候选并锁定后，用到它的才会更新。"
     }
   },
   "gate": {

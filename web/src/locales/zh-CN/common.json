@@ -136,7 +136,8 @@
     "distinct_needs_two": "要两条不同的设定",
     "split_needs_alias": "要说明拆出哪个别名",
     "alias_not_found": "这条设定没有别名「{{alias}}」",
-    "source_missing": "找不到这份设定对应的原文 {{id}}"
+    "source_missing": "找不到这份设定对应的原文 {{id}}",
+    "assets_not_locked": "还有 {{count}} 条素材没锁定：{{names}}"
   },
   "toast": {
     "generic": "通知：{{code}}",

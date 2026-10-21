@@ -10,7 +10,13 @@ import { http, HttpResponse } from "msw";
 
 import { ApplyImpactRequestSchema, ImpactChangeSchema, type Impact } from "@/api/schemas/impact";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
-import { assetUnlockImpact, unlockFakeAsset } from "@/test/fakes/assets";
+import {
+  assetEditImpact,
+  assetUnlockImpact,
+  editFakeAsset,
+  fakeAssetsGate,
+  unlockFakeAsset,
+} from "@/test/fakes/assets";
 import { fakeBible } from "@/test/fakes/bible";
 import { fakeEpisodes } from "@/test/fakes/episodes";
 import { fakeScript, findBlock } from "@/test/fakes/script";
@@ -143,7 +149,12 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
     const change = ImpactChangeSchema.safeParse(await request.json());
     if (!change.success) return error(422, "invalid_request");
     const { kind, target_id, patch } = change.data;
-    const unlock = kind === "asset_unlock" ? assetUnlockImpact(target_id) : undefined;
+    const unlock =
+      kind === "asset_unlock"
+        ? assetUnlockImpact(target_id)
+        : kind === "asset_edit"
+          ? assetEditImpact(target_id)
+          : undefined;
     if (unlock === null) return error(409, "not_locked", { id: target_id });
     const lines = unlock?.lines ?? linesOf(kind, target_id, patch);
     if (!lines) return error(422, "unknown_change_kind", { kind });
@@ -169,6 +180,8 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
     const { kind, target_id, patch } = impact.change;
     fakeImpact.applied.push({ kind, target_id, action });
     if (action !== "undo" && kind === "asset_unlock") unlockFakeAsset(target_id);
+    else if (action !== "undo" && kind === "asset_edit")
+      editFakeAsset(target_id, patch, action === "rerun");
     else if (action !== "undo") {
       const failed = await write(kind, target_id, patch);
       if (failed) return failed;
@@ -179,14 +192,25 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
   return null;
 }
 
-/** `POST /gates/novel|script/confirm|reopen`; the later gates fall through to the MSW demo. */
+/** `POST /gates/novel|script|assets/confirm|reopen`; the later gates fall through to the MSW demo. */
 export function gateHandlers() {
   return [
     http.post("*/api/v1/gates/:gate/:action", async ({ params, request }) => {
       const gate = String(params.gate);
       const action = String(params.action);
-      if (gate !== "novel" && gate !== "script") return undefined;
+      if (gate !== "novel" && gate !== "script" && gate !== "assets") return undefined;
       const { scope_id: scope } = (await request.json()) as { scope_id: string };
+      if (gate === "assets") {
+        const refused = fakeAssetsGate(scope, action);
+        if (refused) return refused;
+        return HttpResponse.json({
+          id: `gate-assets-${action}`,
+          gate,
+          scope_id: scope,
+          action,
+          decided_at: "2026-10-21T10:00:00Z",
+        });
+      }
       const ep = fakeEpisodes.list.find((e) => e.id === scope);
       if (!ep && gate === "script") return error(404, "episode_not_found", { id: scope });
       const state = action === "confirm" ? "confirmed" : "in_progress";

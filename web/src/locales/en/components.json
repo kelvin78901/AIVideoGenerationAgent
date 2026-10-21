@@ -199,12 +199,18 @@
       "self_asset_list": "Episode {{n}}'s asset list will change",
       "stale_asset_list": "Episode {{n}} asset list · will be analysed again",
       "then_asset_list": "Episode {{n}} asset list · analysed again only if what it reads changes",
-      "edited_asset_list": "Hand edits in episode {{n}}'s asset list may be rewritten"
+      "edited_asset_list": "Hand edits in episode {{n}}'s asset list may be rewritten",
+      "stale_line_audio": "Dialogue audio · {{count}} line(s) redubbed with the new wording",
+      "then_line_audio": "Dialogue audio · {{count}} line(s) · redubbed only if upstream really changes",
+      "uses_line_audio": "Dialogue audio · {{count}} line(s) of {{name}} use this voice; they go out of date once a new voice is locked",
+      "asset_redraw": "{{name}} gets new candidates with the new settings; the locked one stays until you lock a new one",
+      "asset_in_scenes": "Appears in scene(s) {{scenes}}: the script needs no change"
     },
     "unaffected": {
       "unaffected_spec": "Script, shot list, dialogue audio and voices are unaffected. Adopted videos are kept; new results arrive as new versions.",
       "unlock_keeps_ref": "The current reference stays in use after unlocking; only locking a new one updates what uses it.",
-      "unlock_keeps_adopted": "Adopted videos are kept; with the new reference these shots get new versions."
+      "unlock_keeps_adopted": "Adopted videos are kept; with the new reference these shots get new versions.",
+      "edit_keeps_ref": "The locked {{name}} stays in use; what uses it updates once you lock a new candidate."
     }
   },
   "gate": {

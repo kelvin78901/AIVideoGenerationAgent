@@ -209,7 +209,7 @@ describe("AppShell", () => {
     expect(screen.getAllByTestId("step-badge").map((b) => b.textContent)).toEqual([
       "已确认",
       "已确认",
-      "7/13",
+      "7/10", // the 10 assets episode 1 uses (M3: the backend's count)
       "3/9",
       "3/9",
       "未开始",

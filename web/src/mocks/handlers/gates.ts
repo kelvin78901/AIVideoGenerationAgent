@@ -4,8 +4,8 @@ import { GATE_STEP, GateSchema } from "@/api/schemas/gates";
 import { getDb } from "@/mocks/db";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
-/** The backend's gates (M2); the demo answers the later ones until their milestones. */
-const BACKEND_GATES = new Set<string>(["novel", "script"]);
+/** The backend's gates (M2, M3); the demo answers the later ones until their milestones. */
+const BACKEND_GATES = new Set<string>(["novel", "script", "assets"]);
 
 function decide(action: "confirm" | "reopen") {
   return http.post(v1(`/gates/:gate/${action}`), async ({ params, request }) => {

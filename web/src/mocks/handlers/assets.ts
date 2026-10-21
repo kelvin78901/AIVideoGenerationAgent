@@ -20,16 +20,6 @@ export async function backendAssets(request: Request, seriesId: string): Promise
   return backendJson<Asset[] | null>(new Request(url), null);
 }
 
-/** 素材 n/m: the locked ones among the series' assets (the backend's). */
-export async function lockedAssetCount(
-  request: Request,
-  seriesId: string,
-): Promise<{ done: number; total: number } | null> {
-  const list = await backendAssets(request, seriesId);
-  if (!list) return null;
-  return { done: list.filter((a) => a.status === "locked").length, total: list.length };
-}
-
 /** Unlocking a demo asset: the shots that use it as a reference go stale (laid over the
  * backend's preview). */
 export function assetUnlockOverlay(assetId: string): Omit<Impact, "id" | "change"> | undefined {
