@@ -18,7 +18,9 @@
     "fallback": "自动兜底",
     "import": "导入",
     "auto_qa_rerun": "质检不过自动重跑",
-    "comfy_ingest": "从 ComfyUI 存回"
+    "comfy_ingest": "从 ComfyUI 存回",
+    "pick": "锁定的候选",
+    "upload": "上传"
   },
   "component": {
     "extract": "设定提取",

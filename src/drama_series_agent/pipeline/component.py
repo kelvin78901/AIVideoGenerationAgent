@@ -33,7 +33,7 @@ from drama_series_agent.modelhub.adapters.base import CallContext, Estimate, Mod
 from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
-from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
+from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft, file_entry
 from drama_series_agent.pipeline.hashing import canonical_json
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.prompts.compiler import Block, PromptCompiler
@@ -68,6 +68,9 @@ class Inputs:
     episode_id: str | None = None
     # Anything ``build_payload`` needs that is not in the prompt (paragraph offsets, ids …).
     context: dict[str, Any] = field(default_factory=dict)
+    # What this run was asked for besides the prompt (M3: a task such as ``views``, the draft
+    # an API final starts from …); set by RunService, read by ``run`` and ``estimate``.
+    params: dict[str, Any] = field(default_factory=dict)
 
 
 @dataclass
@@ -146,6 +149,9 @@ class Component(ABC):
     slot: ClassVar[str]
     owner_type: ClassVar[str]
     max_tokens: ClassVar[int] = 4000
+    # False for candidate components (M3: four pictures to choose from): a run never adopts by
+    # itself, the user picks one and locks it (``ProductService.lock_pick``).
+    auto_adopt: ClassVar[bool] = True
 
     def __init__(self, services: Services) -> None:
         self.services = services
@@ -191,17 +197,7 @@ class Component(ABC):
         reasons = [r.fallback_reason for r in results if r.fallback_reason]
         return VersionDraft(
             payload=payload,
-            files=[
-                {
-                    "role": "prompt",
-                    "path": f"blobs/{sha}",
-                    "sha256": sha,
-                    "mime": "text/plain; charset=utf-8",
-                    "duration_s": None,
-                    "w": None,
-                    "h": None,
-                }
-            ],
+            files=[file_entry("prompt", sha, "text/plain; charset=utf-8")],
             intent=ctx.intent,
             compiled=ctx.compiled,
             compiled_overridden=ctx.compiled_overridden,

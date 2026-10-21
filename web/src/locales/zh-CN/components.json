@@ -229,5 +229,10 @@
     "models": "模型与兜底",
     "confirm": "确认，开始运行（{{estimate}}）",
     "cancel": "取消这次运行"
+  },
+  "audio": {
+    "play": "播放：{{label}}",
+    "pause": "暂停：{{label}}",
+    "seconds": "{{s}} 秒"
   }
 }

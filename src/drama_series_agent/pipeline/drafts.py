@@ -18,6 +18,29 @@ class DependencyDraft:
     slice: str = ""
 
 
+def file_entry(
+    role: str,
+    sha256: str,
+    mime: str,
+    *,
+    w: int | None = None,
+    h: int | None = None,
+    duration_s: float | None = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    """One ``files[]`` item of a version (SPEC 4.2); ``extra`` e.g. a candidate's ``idx``."""
+    return {
+        "role": role,
+        "path": f"blobs/sha256/{sha256[:2]}/{sha256}",
+        "sha256": sha256,
+        "mime": mime,
+        "duration_s": duration_s,
+        "w": w,
+        "h": h,
+        **extra,
+    }
+
+
 @dataclass
 class VersionDraft:
     """What a run or an edit produced; ``append`` turns it into a version."""

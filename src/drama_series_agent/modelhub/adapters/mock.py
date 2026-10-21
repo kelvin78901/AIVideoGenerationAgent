@@ -1,8 +1,11 @@
 """Deterministic mock adapters for every model kind (``DRAMA_MOCK=1``, always on in tests).
 
-Outputs: fixed JSON / text for LLMs, solid-colour PNGs for images, sine-wave WAVs for audio
-and solid-colour MP4s (FFmpeg) for video. A mock keeps the real model's key and prices, so
-cost accounting in mock mode matches what the real call would have cost.
+Outputs: fixed JSON / text for LLMs, soft two-colour gradient PNGs for images, sine-wave WAVs
+for audio and solid-colour MP4s (FFmpeg) for video. A mock keeps the real model's key and
+prices, so cost accounting in mock mode matches what the real call would have cost.
+
+A picture asked to show text (``params["text"]``, M3 画面文字) carries it in an ``iTXt`` chunk
+(``MOCK_TEXT_KEY``), so Mock OCR can read back what the "model drew".
 """
 
 from __future__ import annotations
@@ -42,6 +45,7 @@ VIDEO_KINDS = {"video", "upscale", "lipsync"}
 
 # Answers a writing request in Mock mode: JSON-able data for ``json_mode``, else text.
 Responder = Callable[[ModelRequest], Any]
+MOCK_TEXT_KEY = "drama:text"
 
 
 @dataclass
@@ -69,21 +73,62 @@ def _digest(*parts: object) -> bytes:
     return hashlib.sha256("|".join(map(str, parts)).encode("utf-8")).digest()
 
 
-def solid_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
-    row = b"\x00" + bytes(rgb) * width
-    raw = row * height
+def _png_chunk(tag: bytes, data: bytes) -> bytes:
+    body = tag + data
+    return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
 
-    def chunk(tag: bytes, data: bytes) -> bytes:
-        body = tag + data
-        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
 
+def gradient_png(
+    width: int,
+    height: int,
+    top: tuple[int, int, int],
+    bottom: tuple[int, int, int] | None = None,
+    texts: dict[str, str] | None = None,
+) -> bytes:
+    """A top-to-bottom gradient (solid when ``bottom`` is None); ``texts`` become UTF-8
+    ``iTXt`` chunks."""
+    bottom = bottom or top
+    rows = []
+    for y in range(height):
+        f = y / max(height - 1, 1)
+        rgb = bytes(round(a + (b - a) * f) for a, b in zip(top, bottom, strict=True))
+        rows.append(b"\x00" + rgb * width)
     header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    extra = b"".join(
+        _png_chunk(b"iTXt", key.encode("latin-1") + b"\x00\x00\x00\x00\x00" + value.encode())
+        for key, value in (texts or {}).items()
+    )
     return (
         b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", header)
-        + chunk(b"IDAT", zlib.compress(raw, 9))
-        + chunk(b"IEND", b"")
+        + _png_chunk(b"IHDR", header)
+        + extra
+        + _png_chunk(b"IDAT", zlib.compress(b"".join(rows), 9))
+        + _png_chunk(b"IEND", b"")
     )
+
+
+def solid_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
+    return gradient_png(width, height, rgb)
+
+
+def png_texts(data: bytes) -> dict[str, str]:
+    """The ``iTXt`` chunks of a PNG (uncompressed ones, as ``gradient_png`` writes)."""
+    out: dict[str, str] = {}
+    pos = 8
+    while pos + 8 <= len(data):
+        (length,) = struct.unpack(">I", data[pos : pos + 4])
+        tag = data[pos + 4 : pos + 8]
+        body = data[pos + 8 : pos + 8 + length]
+        if tag == b"iTXt":
+            key, _, rest = body.partition(b"\x00")
+            if rest[:1] == b"\x00":  # not compressed
+                _, _, rest = rest[2:].partition(b"\x00")  # language tag
+                _, _, text = rest.partition(b"\x00")  # translated keyword
+                out[key.decode("latin-1")] = text.decode("utf-8", errors="replace")
+        if tag == b"IEND":
+            break
+        pos += 12 + length
+    return out
 
 
 def sine_wav(duration_s: float, freq_hz: float = 440.0, rate: int = 48000) -> bytes:
@@ -214,14 +259,19 @@ class MockAdapter:
         w = int(req.params.get("width", 108))
         h = int(req.params.get("height", 192))
         n = int(req.params.get("n", 1))
+        text = req.params.get("text")
+        texts = {MOCK_TEXT_KEY: str(text)} if text else None
         files = []
         for i in range(n):
             d = _digest(self.key, req.text(), req.seed, i)
+            # Soft colours (each channel 96–223), a lighter tone at the bottom.
+            top = (96 + d[0] % 128, 96 + d[1] % 128, 96 + d[2] % 128)
+            bottom = (min(top[0] + 32, 255), min(top[1] + 32, 255), min(top[2] + 32, 255))
             files.append(
                 OutputFile(
                     role="image",
                     mime="image/png",
-                    data=solid_png(w, h, (d[0], d[1], d[2])),
+                    data=gradient_png(w, h, top, bottom, texts),
                     w=w,
                     h=h,
                 )

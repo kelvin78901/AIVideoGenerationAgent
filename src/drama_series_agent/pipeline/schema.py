@@ -11,8 +11,10 @@ OwnerType = Literal["series", "episode", "scene", "shot", "asset", "line"]
 ProductStatus = Literal[
     "empty", "queued", "running", "ready", "stale", "adopted", "locked", "failed"
 ]  # fmt: skip
+# ``pick``: the candidate the user locked, alone (M3); ``upload``: the user's own file.
 VersionOrigin = Literal[
-    "run", "rerun", "switch", "edit", "fallback", "import", "auto_qa_rerun", "comfy_ingest"
+    "run", "rerun", "switch", "edit", "fallback", "import", "auto_qa_rerun", "comfy_ingest",
+    "pick", "upload",
 ]  # fmt: skip
 
 
@@ -75,6 +77,13 @@ class RunningOut(BaseModel):
     cascade_id: str | None = None
 
 
+class PickOut(BaseModel):
+    """「选这个」: candidate ``idx`` (0-based, its ``files[].idx``) of version ``version_id``."""
+
+    version_id: str
+    idx: int
+
+
 class ProductOut(BaseModel):
     id: str
     series_id: str
@@ -90,3 +99,5 @@ class ProductOut(BaseModel):
     prompt: PromptOut | None
     estimate: EstimateOut | None
     running: RunningOut | None
+    pick: PickOut | None = None
+    retired: bool = False

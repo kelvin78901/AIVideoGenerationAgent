@@ -18,7 +18,9 @@
     "fallback": "Automatic fallback",
     "import": "Imported",
     "auto_qa_rerun": "Rerun after failed QA",
-    "comfy_ingest": "Saved back from ComfyUI"
+    "comfy_ingest": "Saved back from ComfyUI",
+    "pick": "Locked candidate",
+    "upload": "Uploaded"
   },
   "component": {
     "extract": "Story bible extraction",

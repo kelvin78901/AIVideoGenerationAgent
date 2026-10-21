@@ -229,5 +229,10 @@
     "models": "Models & fallback",
     "confirm": "Confirm and run ({{estimate}})",
     "cancel": "Cancel this run"
+  },
+  "audio": {
+    "play": "Play: {{label}}",
+    "pause": "Pause: {{label}}",
+    "seconds": "{{s}} s"
   }
 }

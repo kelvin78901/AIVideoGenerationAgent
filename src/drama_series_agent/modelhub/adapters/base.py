@@ -40,6 +40,9 @@ class Pricing(BaseModel):
     price: float | None = None
     input_price_per_second: float | None = None
     price_by_res: dict[str, float] | None = None
+    # Flat prices of extra services billed per use (MiniMax's voice design $3), counted by
+    # ``Usage.calls``.
+    extras: dict[str, float] | None = None
     currency: str = "USD"
     as_of: str | None = None
     offpeak: dict[str, Any] | None = None
@@ -87,6 +90,8 @@ class Usage(BaseModel):
     output_seconds: float | None = None
     chars: int | None = None
     input_seconds: float | None = None
+    # Extra services used, priced by ``Pricing.extras`` (e.g. ``{"voice_design": 1}``).
+    calls: dict[str, int] | None = None
 
 
 @dataclass
@@ -176,6 +181,7 @@ class ModelSpec:
     base_url: str | None = None
     key_name: str | None = None
     runtime: str | None = None
+    workflow: str | None = None  # a ComfyUI model's workflow folder (SPEC 6.4)
     pricing: Pricing = field(default_factory=Pricing)
     caps: Caps = field(default_factory=Caps)
 

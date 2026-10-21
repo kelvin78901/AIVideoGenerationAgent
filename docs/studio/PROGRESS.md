@@ -9,11 +9,13 @@
 
 ## 已完成的小步
 
-- M3 第 0 步：开分支、存计划、DECISIONS 七项、ROADMAP（文件夹同步挪 M9、验收里镜头部分挪 M4）（ff125ed）；整本组件的分块也看输出上限（设定提取 `max_tokens` 8000，DECISIONS 同日）、长小说 + 1M 上下文的测试（本提交）。pytest 516、Vitest 255 全过。`w_img`（31 GB）由 Kelvin 在 Setup 页自己点安装（2026-10-20 定）。
+- M3 第 0 步：开分支、存计划、DECISIONS 七项、ROADMAP（文件夹同步挪 M9、验收里镜头部分挪 M4）（ff125ed）；整本组件的分块也看输出上限（设定提取 `max_tokens` 8000，DECISIONS 同日）、长小说 + 1M 上下文的测试（848eaa8）。pytest 516、Vitest 255 全过。`w_img`（31 GB）由 Kelvin 在 Setup 页自己点安装（2026-10-20 定）。
+- M3 第 1 步：框架和媒体基础（本提交，DECISIONS 同日）。迁移 `0016`（`asset`、`asset_use`、`product.pick_json` / `retired`）；`lock_pick` / `set_pick` / `make_current`、`auto_adopt`；`media_slicer`；`RunService` 的 `where` / `params`（`RunParams`）、`POST /products/{id}/pick`；router `fallback=False`；`extras`、图片 `price_by_res`；媒体模型 `account`；`GET /files/{sha}`；`media/audio.py`；Mock 渐变图 + `iTXt`；前端 `AudioPlayer`、`fileUrl`、契约。pytest 530、Vitest 256 全过。
 
 ## 下一步
 
-- **第 1 步「框架和媒体基础」**：迁移 `0016`（`asset`、`asset_use`、`product.pick_json` / `retired`）；`ProductService`（`auto_adopt`、`lock_pick`、`pick` 来源）；带文件 sha 的切片器；`RunService` 的 `where` / `params`；router `fallback=False`；`extras` 计价；注册表补媒体模型账号和本地模型 caps；`GET /files/{sha}`；`media/audio.py`；前端 `AudioPlayer`、`MediaThumb src`。从 `pipeline/products.py`、`pipeline/runs.py`、`modelhub/router.py` 开始。
+- **第 2 步「素材分析（后端）」**：组件 `assets`（矩阵按规则从剧本行的 `character_id`、场的 `location_id` 算，模型只写描述、找道具和画面文字、每个说话角色一条音色）、Mock 应答器 + `tests/fixtures/demo/assets.json`、物化（只增不删，按 `bible_id` 或类别 + 名字沿用 id；示例 id 用 MSW 的 `linwan` …）、每条素材 `ensure` 产物（img / text / voice）、接口 `GET /series/{id}/assets`（加 `scenes`）、`PATCH /assets/{id}`、`POST /episodes/{id}/assets/analyze`、`GET /episodes/{id}/assets/matrix`、示例种子 13 条。参考 `pipeline/components/script.py`、`script/service.py`；前端契约 `web/src/api/schemas/assets.ts`、MSW `web/src/mocks/fixtures/demo/assets.ts`。
+- **加了迁移 0016，提醒 Kelvin 重启后端。**
 - Kelvin 装 `w_img` 时问他速度、剩余时间准不准、连接数（M1 留下的），记进 PROGRESS。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

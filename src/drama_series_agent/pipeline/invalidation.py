@@ -7,7 +7,9 @@ again. Only direct dependencies count here; what lies further down is listed by 
 preview.
 
 A slot whose slices are not just keys of the payload registers a slicer (``slicer()``); the
-default reads ``payload[slice]`` (``""`` = the whole payload).
+default reads ``payload[slice]`` (``""`` = the whole payload). Media slots (M3: pictures and
+audio) use ``media_slicer``, which adds the content of the files, so a gate or a downstream
+dependency changes when the picture does.
 """
 
 from __future__ import annotations
@@ -47,9 +49,22 @@ async def _default_slicer(
     return version.payload_json if name == "" else version.payload_json.get(name)
 
 
+# Slots whose versions are files more than JSON (M3).
+MEDIA_SLOTS = ("ref_image", "ref_views", "text_image", "voice", "line_audio")
+
+
+async def media_slicer(
+    session: AsyncSession, product: Product, version: ProductVersion, name: str
+) -> Any:
+    """The payload (or ``payload[name]``) plus the files' content, not the prompt sent."""
+    shas = sorted(str(f.get("sha256")) for f in version.files_json if f.get("role") != "prompt")
+    payload = version.payload_json if name == "" else version.payload_json.get(name)
+    return {"payload": payload, "files": shas}
+
+
 class Invalidation:
     def __init__(self) -> None:
-        self._slicers: dict[str, Slicer] = {}
+        self._slicers: dict[str, Slicer] = dict.fromkeys(MEDIA_SLOTS, media_slicer)
 
     def slicer(self, slot: str, fn: Slicer) -> None:
         self._slicers[slot] = fn

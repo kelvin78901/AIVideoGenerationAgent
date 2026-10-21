@@ -338,6 +338,11 @@ class Product(SQLModel, table=True):
     # The prompt the next run uses: {intent, compiled, compiled_overridden, model_key}.
     prompt_json: dict[str, Any] | None = _json()
     running_job_id: str | None = None
+    # 「选这个」 on a candidate (M3): {version_id, idx}; kept here, not in a mirror table, so
+    # rebuilding the mirrors never loses it.
+    pick_json: dict[str, Any] | None = _json()
+    # Its owner left (a script line a rerun dropped): never stale, not in progress or cascades.
+    retired: bool = False
     created_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
@@ -661,3 +666,48 @@ class ScriptLine(SQLModel, table=True):
     updated_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
+
+
+# --------------------------------------------------------------------------- M3: assets
+
+
+class Asset(SQLModel, table=True):
+    """Something made once and reused in every shot (SPEC 4.1): a character's look, a scene, a
+    prop, on-screen text or a voice.
+
+    Mirrors the adopted ``asset_list`` versions of the series' episodes, add-only: analysing
+    episode 2 never retires what only episode 1 uses (M3 plan). ``seed_json`` is what the
+    analysis suggested (description, the text's exact characters …); what the user edits lives
+    on the asset's product (prompt intent and params), so a new analysis never overwrites it.
+    """
+
+    __tablename__ = "asset"
+
+    id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    kind: str  # character / scene / prop / text / voice
+    name: str
+    bible_id: str | None = None  # the bible entry it was drawn from
+    seed_json: dict[str, Any] = _json(dict)
+    retired: bool = False
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class AssetUse(SQLModel, table=True):
+    """Where an asset appears (the 出场矩阵): one row per (asset, scene) of an episode, from
+    that episode's adopted ``asset_list``."""
+
+    __tablename__ = "asset_use"
+
+    id: str = Field(default_factory=new_id, primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    asset_id: str = Field(index=True)
+    episode_id: str = Field(index=True)
+    scene_id: str
+    version_id: str  # the asset_list version it came from
+    line_ids_json: list[str] = _json(list)  # the lines it is in (speaker, or named in action)

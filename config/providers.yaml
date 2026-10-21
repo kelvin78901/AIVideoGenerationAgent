@@ -179,10 +179,12 @@ llm_ui_order:
 # 媒体类 API：各写一个适配器。unit 决定怎么记用量。
 # ---------------------------------------------------------------------------
 media_models:
+  # account：用哪个 llm_providers 账号的密钥（和它的 base_url，除非这里另写 base_url）；
+  # 同一家的写作、出图、配音共用一个密钥（M3）。
   # 图像
-  - { key: google/nano-banana-pro, kind: image, display: Nano Banana Pro, unit: image, price: 0.14, currency: USD, caps: { aspects: ["1:1", "3:4", "4:3", "9:16", "16:9"], max_res: 4K, max_refs: null }, verify: true }
-  - { key: openai/gpt-image-2,     kind: image, display: GPT Image 2,     unit: image, price: 0.28, currency: USD, caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_short_edge: 1024, note: "部分渠道 9:16 只到 1K" }, verify: true }
-  - { key: volc/seedream-5.0,      kind: image, display: Seedream 5.0,    unit: image, price: 0.03, currency: USD, verify: true }
+  - { key: google/nano-banana-pro, kind: image, display: Nano Banana Pro, account: google_llm, unit: image, price: 0.14, currency: USD, caps: { aspects: ["1:1", "3:4", "4:3", "9:16", "16:9"], max_res: 4K, max_refs: null }, verify: true }
+  - { key: openai/gpt-image-2,     kind: image, display: GPT Image 2,     account: openai_llm, unit: image, price: 0.28, currency: USD, caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_short_edge: 1024, note: "部分渠道 9:16 只到 1K" }, verify: true }
+  - { key: volc/seedream-5.0,      kind: image, display: Seedream 5.0,    account: volcengine, unit: image, price: 0.03, currency: USD, verify: true }
   # 视频
   - key: minimax/h3-api
     kind: video
@@ -200,7 +202,7 @@ media_models:
   - { key: kling/kling-3.0, kind: video, display: Kling 3.0, unit: second, price: null, verify: true }
   - { key: google/veo-3.1, kind: video, display: Veo 3.1, unit: second, price: null, verify: true }
   # 配音
-  - { key: minimax/speech-2.8-hd, kind: tts, display: MiniMax Speech 2.8 HD, unit: char, price_per_million: 100, currency: USD, extras: { voice_design: 3.00, voice_clone: 1.50 } }
+  - { key: minimax/speech-2.8-hd, kind: tts, display: MiniMax Speech 2.8 HD, account: minimax_llm, unit: char, price_per_million: 100, currency: USD, extras: { voice_design: 3.00, voice_clone: 1.50 } }
   - { key: elevenlabs/v3, kind: tts, display: ElevenLabs v3, unit: char, price: null, docs: https://invideo.io/blog/ai-voice-model-pricing/, verify: true }
   # 口型、超分、配乐、字幕、3D
   - { key: sync/lipsync-2-pro, kind: lipsync, display: sync lipsync-2-pro, unit: second, price_range: [0.067, 0.083], currency: USD }

@@ -2,6 +2,66 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-20 · M3 第 1 步：框架和媒体基础
+
+**候选与锁定**
+- **候选类组件不自动采纳**（`Component.auto_adopt = False`）：一次运行出一个版本，4 张候选都在 `files[]`（`role: candidate`，带 `idx`），由用户挑一张锁定。
+- 「选这个」记在产物上（`product.pick_json = {version_id, idx}`，新接口 `POST /products/{id}/pick`）。不放物化表，重建物化表或 `demo --reset` 都不会丢。
+- **锁定 = `ProductService.lock_pick()`**，在同一个事务里做三件事：
+  - 出一个新来源类型 `pick` 的版本：只含选中那张（`role: ref`），沿用来源版本的模型、提示词、依赖；
+  - 采纳并锁定；
+  - 调用 `record` 钩子，写闸门记录（第 3 步的素材闸门）。
+- 锁定**不改当前版本**，候选网格仍显示它来自哪一版。
+- pick 版本的 payload 只有 `{candidate: 候选的说明}`，来源版本和第几张记在 `params`（不进哈希）。所以同一张图不管从哪一版锁定，哈希都一样。
+- `idx` 为空时直接锁定整个版本：上传的图、API 终版、音色。
+- 新来源类型 `upload`（上传的文件）。
+- `product.retired`：所属对象已经不在了（剧本重跑后被删掉的台词）。这类产物不算待更新，也不进进度和级联（第 7 步用）。
+- 这两列和 `asset`、`asset_use` 两张表都在迁移 `0016` 里一次建好。
+
+**哈希含文件**
+- 媒体槽位（`ref_image`、`ref_views`、`text_image`、`voice`、`line_audio`）默认用 `media_slicer`：切片 = payload + 文件 sha（不含提示词）。
+- 这样闸门记的、下游依赖的都是图片或音频本身，换了图就变。
+
+**运行参数**
+- `POST /products/{id}/run` 加两个参数：
+  - `where`：`api` 就是混合模式的「用 API 出终版」，走路由里的 API 模型；
+  - `params`：带类型的 `RunParams`，包括 `task`、`source_version_id`、`source_idx`，未知字段 422。
+- `params` 进任务参数和 `Inputs.params`，组件的 `run` 和 `estimate` 都读得到。
+- 终版的 `parent_version_id` 是它出发的草稿。
+
+**多次调用的组件**
+- `router.call(..., fallback=False)`：作为流程一步的调用不自己兜底，由组件为整个流程统一兜底。
+- 价格加 `Pricing.extras`（按次的附加服务，如音色设计 $3），按 `Usage.calls` 计费。
+- 图片也支持 `price_by_res`（Gemini 4K 更贵）。
+
+**账号**
+- 媒体模型用 `account` 指向 `llm_providers` 里的账号，沿用它的密钥和地址（可用 `base_url` 另写）。
+- 同一家的写作、出图、配音共用一个密钥。
+- 本地模型注册时带上 `caps` 和 `workflow`。
+
+**取文件**
+- `GET /api/v1/files/{sha256}`：只接受 64 位十六进制。
+- 类型按文件头判断（BlobStore 不存元数据）。
+- 支持 Range（音频拖进度），缓存头 `immutable`。
+- 版本里的 `files[].path` 改成实际的相对位置 `blobs/sha256/<ab>/<sha>`。原来写的 `blobs/<sha>` 不对；旧记录不改，界面只用 sha。
+
+**台词音频**（`media/audio.py`）
+- 解码成 48 kHz 单声道，裁首尾静音（低于 −45 dB）。每头留 50 ms，避免切掉第一个辅音。
+- 响度目标 −18 LUFS、真峰值 −1.5 dBTP，配置在 `components.yaml` 的 `audio.dialogue`。对白比成片的 −14 LUFS 低，给 M7 的音乐、音效留余量。
+- 增益取两者中较小的：拉到目标响度要的增益，和让真峰值不超的增益。不压缩、不削波：尖峰很大的片段（喊叫）宁可比目标轻一点，也不失真。
+- 短于 0.4 秒（BS.1770 门限块）的片段按 RMS 估响度。
+- 后端算好 64 段波形峰值，前端直接画，不引入 wavesurfer.js。
+- 用 ffmpeg 处理（`imageio-ffmpeg` 自带），在线程里跑；没有用 SPEC 写的 pyloudnorm，因为它会把 numpy、scipy 带进主环境。
+
+**Mock**
+- Mock 图片改成柔和的双色渐变。
+- 要求画字的图（`params.text`），把字写进 PNG 的 `iTXt` 块（`drama:text`），第 5 步的 Mock OCR 从这里读回。
+
+**前端**
+- 新增共用组件 `AudioPlayer`：播放 / 暂停、后端给的波形随播放点亮、时长；整页同时只放一个。
+- 新增 `fileUrl(sha)`。
+- 契约加上：槽位 `ref_views`、来源类型 `pick` / `upload`、产物的 `pick` / `retired`、运行的 `where` / `params`。
+
 ## 2026-10-20 · M3 第 0 步：整本组件的分块也看输出上限
 
 - **一块原文还要小到让回答装得进 `max_tokens`**：`chunk_limit = min(60% × 最小上下文, 0.8 × max_tokens ÷ output_ratio)`。`output_ratio` 是「回答 token ÷ 原文 token（按 `estimate_tokens` 估）」，取 M2 第 13 步真实冒烟的实测值再留余量：设定提取 1.4（实测 2999 / 2741）、分集规划 0.9（1854 / 2741）、补全 0.3（429 / 2741）。原因：DeepSeek 的上下文是 1M，原来只按上下文切，长小说会整本塞进一次调用，而设定提取的回答和原文差不多长，JSON 会在 `max_tokens` 处被截断（M2 报告「遗留问题」）。

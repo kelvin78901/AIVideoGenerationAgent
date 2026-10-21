@@ -18,6 +18,8 @@ export const ProductSlotSchema = z.enum([
   "script",
   "asset_list",
   "ref_image",
+  // A character's side / back / expression views, made from the locked reference (M3).
+  "ref_views",
   "text_image",
   "voice",
   "line_audio",
@@ -55,6 +57,10 @@ export const VersionOriginSchema = z.enum([
   "import",
   "auto_qa_rerun",
   "comfy_ingest",
+  /** The candidate the user locked, alone (M3). */
+  "pick",
+  /** The user's own file (M3: a reference picture). */
+  "upload",
 ]);
 export type VersionOrigin = z.infer<typeof VersionOriginSchema>;
 
@@ -191,6 +197,10 @@ export const ProductSchema = z.object({
       cascade_id: z.string().nullable().optional(),
     })
     .nullable(),
+  /** 「选这个」: candidate `idx` (its `files[].idx`) of version `version_id` (M3). */
+  pick: z.object({ version_id: z.string(), idx: z.number().int().nonnegative() }).nullish(),
+  /** Its owner left (a script line a rerun dropped): never stale, not counted. */
+  retired: z.boolean().optional(),
 });
 export type Product = z.infer<typeof ProductSchema>;
 
@@ -206,6 +216,16 @@ export const RunRequestSchema = z.object({
   compiled: z.string().optional(),
   /** Takes to generate (生成页「再出一条」); default 1. */
   count: z.number().int().positive().optional(),
+  /** `api`: hybrid mode's 「用 API 出终版」 (SPEC 7.3). */
+  where: WhereSchema.optional(),
+  /** What the component reads besides the prompt (M3): a task, the draft a final starts from. */
+  params: z
+    .object({
+      task: z.string().optional(),
+      source_version_id: z.string().optional(),
+      source_idx: z.number().int().nonnegative().optional(),
+    })
+    .optional(),
 });
 export type RunRequest = z.infer<typeof RunRequestSchema>;
 

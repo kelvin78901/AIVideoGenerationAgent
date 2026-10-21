@@ -83,6 +83,11 @@ class MediaModel(_Loose):
     key: str
     kind: str
     display: str
+    # The ``llm_providers`` account whose key it uses (one MiniMax / Google / OpenAI key for
+    # writing, pictures and voices); its base URL too unless ``base_url`` says otherwise.
+    account: str | None = None
+    model_id: str | None = None
+    base_url: str | None = None
     unit: str | None = None
     currency: str = "USD"
     caps: dict[str, Any] = Field(default_factory=dict)
@@ -147,8 +152,22 @@ class FallbackDefaults(_Loose):
     notify: str = "after"
 
 
+class DialogueAudio(_Loose):
+    """How voice samples and dubbed lines are levelled (``media/audio.py``)."""
+
+    lufs: float = -18.0
+    peak_dbtp: float = -1.5
+    trim_db: float = -45.0
+    sample_rate: int = 48000
+
+
+class AudioDefaults(_Loose):
+    dialogue: DialogueAudio = Field(default_factory=DialogueAudio)
+
+
 class ComponentsConfig(_Loose):
     fallback_defaults: FallbackDefaults = Field(default_factory=FallbackDefaults)
+    audio: AudioDefaults = Field(default_factory=AudioDefaults)
     per_call_cap_usd: float | None = 0.5  # hard rule 6: a run above this waits for a yes
     components: list[ComponentDefault] = Field(default_factory=list)
 

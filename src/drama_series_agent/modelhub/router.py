@@ -168,9 +168,12 @@ class Router:
         item: str | None = None,
         where: Literal["local", "api"] | None = None,
         fallback_reason: str | None = None,
+        fallback: bool = True,
     ) -> RoutedResult:
         """``fallback_reason``: ``model`` is a fallback the user already agreed to (``notify:
-        ask``); it is logged as one and does not fall back again."""
+        ask``); it is logged as one and does not fall back again. ``fallback`` False: a call
+        that is one step of a flow (a voice's design and its variants, M3); the component falls
+        back for the whole flow, so the pieces never come from different models."""
         ctx = ctx or CallContext(component_id=component_id)
         settings = await self.settings(component_id, item)
         key = model or self.primary_model(settings, where)
@@ -182,17 +185,17 @@ class Router:
         except BudgetExceeded:
             raise
         except ModelError as exc:
-            if fallback_reason is not None:
-                raise  # one hop only
+            if fallback_reason is not None or not fallback:
+                raise  # one hop only, or the component handles it
             trigger = "timeout" if exc.code == "timeout" else "error"
             # One hop only: walking the whole alt_order on a bad day could multiply the spend.
-            fallback = self.fallback_model(settings, [key], trigger)
-            if fallback is None or fallback not in {s.key for s in self.registry.specs()}:
+            target = self.fallback_model(settings, [key], trigger)
+            if target is None or target not in {s.key for s in self.registry.specs()}:
                 raise
             if settings.values["fallback"].get("notify") == "ask" and ctx.job_id is not None:
-                raise NeedsConfirm(key, fallback, exc.code) from exc
+                raise NeedsConfirm(key, target, exc.code) from exc
             return await self._attempt(
-                component_id, fallback, req, ctx, settings, fallback_reason=exc.code
+                component_id, target, req, ctx, settings, fallback_reason=exc.code
             )
 
     async def _attempt(

@@ -22,7 +22,14 @@ from drama_series_agent.modelhub.adapters.base import (
     Pricing,
     Usage,
 )
-from drama_series_agent.modelhub.adapters.mock import MockAdapter, MockSettings, solid_png
+from drama_series_agent.modelhub.adapters.mock import (
+    MOCK_TEXT_KEY,
+    MockAdapter,
+    MockSettings,
+    gradient_png,
+    png_texts,
+    solid_png,
+)
 from drama_series_agent.modelhub.pricing import cost_usd
 from drama_series_agent.modelhub.registry import Registry, UnavailableAdapter, is_mock_mode
 from drama_series_agent.modelhub.router import BudgetExceeded, Router
@@ -53,6 +60,17 @@ def test_media_pricing_units() -> None:
     cny = Pricing(unit="call", price=7.1, currency="CNY")
     assert cost_usd(cny, Usage(), rates={"CNY_per_USD": 7.1}) == pytest.approx(1.0)
     assert cost_usd(Pricing(unit="free"), Usage(tokens_in=10**9)) == 0
+    pro = Pricing(unit="image", price=0.134, price_by_res={"4K": 0.24})
+    assert cost_usd(pro, Usage(images=2), resolution="4K") == pytest.approx(0.48)
+    assert cost_usd(pro, Usage(images=2), resolution="2K") == pytest.approx(0.268)
+
+
+def test_extras_are_billed_per_use() -> None:
+    """MiniMax's voice design ($3) on top of the characters (M3)."""
+    speech = Pricing(unit="char", price=100 / 1e6, extras={"voice_design": 3.0})
+    usage = Usage(chars=1000, calls={"voice_design": 1})
+    assert cost_usd(speech, usage) == pytest.approx(3.1)
+    assert cost_usd(speech, Usage(chars=1000)) == pytest.approx(0.1)
 
 
 # --------------------------------------------------------------------------- registry
@@ -68,6 +86,11 @@ def test_registry_reads_all_model_sections() -> None:
     assert h3.pricing.unit == "second" and h3.pricing.price_by_res == {"768p": 0.08, "2k": 0.13}
     tts = reg.spec("minimax/speech-2.8-hd")
     assert tts.pricing.unit == "char" and tts.pricing.price == pytest.approx(100 / 1e6)
+    assert tts.pricing.extras == {"voice_design": 3.0, "voice_clone": 1.5}
+    # Media models use their account's key (one MiniMax / Google key for everything).
+    assert tts.key_name == "MINIMAX_API_KEY" and tts.base_url
+    assert reg.spec("google/nano-banana-pro").key_name == "GEMINI_API_KEY"
+    assert reg.spec("comfy/h3").caps.aspects and reg.spec("comfy/h3").workflow == "h3_i2v"
     assert reg.spec("comfy/h3").where == "local" and reg.spec("comfy/h3").pricing.unit == "free"
     assert isinstance(reg.get("deepseek/v4-pro"), UnavailableAdapter)
     with pytest.raises(ModelError) as err:
@@ -134,6 +157,12 @@ async def test_mock_media_outputs() -> None:
     vdata = video.files[0].data
     assert vdata is not None and vdata[4:8] == b"ftyp"
     assert video.usage.output_seconds == 0.5
+
+
+def test_mock_pictures_carry_the_text_they_were_asked_to_show() -> None:
+    data = gradient_png(4, 6, (100, 120, 140), (130, 150, 170), {MOCK_TEXT_KEY: "等你到十二点。"})
+    assert data.startswith(b"\x89PNG") and png_texts(data) == {MOCK_TEXT_KEY: "等你到十二点。"}
+    assert png_texts(solid_png(2, 2, (1, 2, 3))) == {}
 
 
 def test_solid_png_header() -> None:
@@ -245,6 +274,17 @@ async def test_fallback_disabled_raises(hub: tuple[Router, Registry, EventBus]) 
     reg.mock_settings.fail_keys.add("deepseek/v4-pro")
     with pytest.raises(ModelError) as err:
         await router.call("script", _llm_req())
+    assert err.value.code == "mock_failure"
+    assert len(await calllog.recent(router.db)) == 1
+
+
+async def test_a_step_of_a_flow_does_not_fall_back(hub: tuple[Router, Registry, EventBus]) -> None:
+    """``fallback=False``: the component falls back for the whole flow (a voice's design and
+    its variants), never one piece of it."""
+    router, reg, _ = hub
+    reg.mock_settings.fail_keys.add("deepseek/v4-pro")
+    with pytest.raises(ModelError) as err:
+        await router.call("script", _llm_req(), fallback=False)
     assert err.value.code == "mock_failure"
     assert len(await calllog.recent(router.db)) == 1
 

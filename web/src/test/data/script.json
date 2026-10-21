@@ -987,7 +987,9 @@
         "cost_usd": 0.0251,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "retired": false
     },
     {
       "id": "demo-p-script-e2",
@@ -1013,7 +1015,9 @@
         "cost_usd": 0.0266,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "retired": false
     },
     {
       "id": "demo-p-script-e3",
@@ -1039,7 +1043,9 @@
         "cost_usd": 0.0271,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "retired": false
     }
   ],
   "rewrites": {

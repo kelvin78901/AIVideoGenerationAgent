@@ -58,6 +58,7 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                 )
             )
     for media in prov.media_models:
+        account = prov.provider(media.account) if media.account else None
         specs.append(
             ModelSpec(
                 key=media.key,
@@ -65,6 +66,9 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                 where="api",
                 display=media.display,
                 provider_id=media.key.split("/", 1)[0],
+                model_id=media.model_id,
+                base_url=media.base_url or (account.base_url if account else None),
+                key_name=account.key_name if account else None,
                 pricing=pricing_for_media(media, prov.as_of),
                 caps=Caps.model_validate(media.caps),
             )
@@ -78,7 +82,9 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                 display=local.display,
                 provider_id=local.key.split("/", 1)[0],
                 runtime=local.runtime,
+                workflow=local.workflow,
                 pricing=Pricing(unit="free", as_of=prov.as_of),
+                caps=Caps.model_validate(local.caps),
             )
         )
     return specs

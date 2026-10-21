@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import hashlib
+
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.models_db import Dependency, Event, Product, ProductVersion
+from drama_series_agent.pipeline.drafts import file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.hashing import content_hash, hash_json
 from drama_series_agent.pipeline.products import DependencyDraft, ProductService, VersionDraft
@@ -142,3 +145,88 @@ async def test_events(studio_db: Database) -> None:
         "product.updated",
         {"product_id": p.id, "series_id": "demo", "status": "adopted"},
     ) in events
+
+
+# --------------------------------------------------------------------------- candidates (M3)
+
+
+def _candidates(n: int, tag: str = "a") -> VersionDraft:
+    files = [
+        file_entry(
+            "candidate", hashlib.sha256(f"{tag}{i}".encode()).hexdigest(), "image/png", idx=i
+        )
+        for i in range(n)
+    ]
+    return VersionDraft(payload={"candidates": [{"label": f"c{i}"} for i in range(n)]}, files=files)
+
+
+async def _asset_product(db: Database) -> tuple[ProductService, Product]:
+    await seed_demo(db)
+    svc = ProductService(db, EventBus(db))
+    p = await svc.ensure(
+        series_id="demo", owner_type="asset", owner_id="a1", slot="ref_image", component_id="img"
+    )
+    return svc, p
+
+
+async def test_candidates_are_not_adopted_and_need_not_become_current(studio_db: Database) -> None:
+    svc, p = await _asset_product(studio_db)
+    v1 = await svc.append(p.id, _candidates(4), origin="run", adopt=False)
+    out = await svc.get(p.id)
+    assert out.adopted_version_id is None and out.current_version_id == v1.id
+    v2 = await svc.append(p.id, _candidates(4, "b"), origin="run", adopt=False, make_current=False)
+    out = await svc.get(p.id)
+    assert out.current_version_id == v1.id and [v.id for v in out.versions] == [v1.id, v2.id]
+
+
+async def test_lock_pick_makes_one_locked_version_of_the_chosen_file(studio_db: Database) -> None:
+    svc, p = await _asset_product(studio_db)
+    v1 = await svc.append(p.id, _candidates(4), origin="run", adopt=False)
+    await svc.set_pick(p.id, v1.id, 2)
+    assert (await svc.get(p.id)).pick is not None
+    recorded: list[str] = []
+
+    async def record(session: AsyncSession, product: Product, version: ProductVersion) -> None:
+        recorded.append(version.id)
+
+    pick = await svc.lock_pick(p.id, v1.id, 2, record=record)
+    out = await svc.get(p.id)
+    assert pick.origin == "pick" and pick.parent_version_id == v1.id
+    assert [f["role"] for f in pick.files_json] == ["ref"]
+    assert pick.files_json[0]["sha256"] == v1.files_json[2]["sha256"]
+    assert pick.payload_json == {"candidate": {"label": "c2"}}
+    assert out.adopted_version_id == pick.id and out.locked_hash == pick.content_hash
+    assert out.current_version_id == v1.id  # the grid keeps showing the candidates
+    assert out.pick is not None and (out.pick.version_id, out.pick.idx) == (v1.id, 2)
+    assert recorded == [pick.id]
+    # The same picture gives the same hash, whichever version it came from.
+    assert pick.content_hash == content_hash({"candidate": {"label": "c2"}}, pick.files_json)
+
+
+async def test_lock_pick_errors_and_whole_version_lock(studio_db: Database) -> None:
+    svc, p = await _asset_product(studio_db)
+    v1 = await svc.append(p.id, _candidates(2), origin="run", adopt=False)
+    for call, code in [
+        (svc.lock_pick(p.id, v1.id, 7), "no_such_candidate"),
+        (svc.set_pick(p.id, v1.id, 9), "no_such_candidate"),
+    ]:
+        try:
+            await call
+        except PipelineError as e:
+            assert e.code == code
+        else:
+            raise AssertionError(code)
+    upload = await svc.append(
+        p.id, VersionDraft(payload={}, files=[file_entry("ref", "f" * 64, "image/png")]),
+        origin="upload", adopt=False,
+    )  # fmt: skip
+    locked = await svc.lock_pick(p.id, upload.id, None)
+    assert locked.id == upload.id
+    out = await svc.get(p.id)
+    assert out.adopted_version_id == upload.id and out.locked_hash == upload.content_hash
+    try:
+        await svc.lock_pick(p.id, v1.id, 0)
+    except PipelineError as e:
+        assert e.code == "product_locked"
+    else:
+        raise AssertionError("locked twice")
