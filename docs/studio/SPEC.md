@@ -101,14 +101,21 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 
 `source_spans` 统一格式 `[{source_id, start, end}]`，用来实现“镜头 → 剧本行 → 小说段落”三向跳转。
 
+**M3 的实际做法**（细节和理由见 `plans/M3.md` 和 DECISIONS 里 M3 各步的条目）：
+
+- `asset` 实际是 id, series_id, kind（character / scene / prop / text / voice；style、world 还没用到）, name, bible_id（从哪条设定来）, seed_json（分析给的描述、画面文字的逐字内容等，示例剧集另有 `order`）, retired。用户改的东西（描述、画面文字的设置、音色来源、选中的候选）不在这张表，在素材的产物上（4.2），所以重新分析不会覆盖。
+- 新表 `asset_use`：一行一个（素材，场），记 episode_id、scene_id、line_ids（它出现在哪几行；空 = 整场）、version_id（来自哪一版素材清单）。出场矩阵和整集素材闸门都读它。
+- 素材清单是每集一个 `asset_list` 产物（组件 `assets`），素材本身属于整部剧。采纳一集的清单时 upsert 素材、替换这一集的 `asset_use`，**只增不删**：不会让别的集用到的素材退场。id 按 key 沿用（`character:<设定 id>`、`voice:<设定 id>`、`scene:<地点 id>:<时段>`、`prop:<设定 id>`、`text:name:<名字>`，对不上再按「类别 + 名字」），范围包括其他集的清单，所以同一个人在不同集是同一条素材。
+- 新素材顺手建好它的产物：角色、场景、道具 `ref_image`（组件 `img`），画面文字 `text_image`（`text`），音色 `voice`（`voice`）；角色锁定后另有 `ref_views`（`views`）。台词配音 `line_audio`（`dub`）的 owner 是剧本行，第一次配这一句时才建。
+
 ### 4.2 产物与版本（所有“四个按钮”的基础）
 
 界面上每一张可以“改提示词 / 重跑 / 不满意换一个 / 历史”的卡片都对应一个 **product**；每次生成或编辑产生一个 **version**，只追加、不覆盖。
 
 | 表 | 关键字段 |
 | --- | --- |
-| `product` | id, series_id, owner_type（series / episode / scene / shot / asset / line）, owner_id, slot（bible / suggestions / episodes / script / asset_list / ref_image / text_image / voice / line_audio / shot_plan / keyframe / video / upscale / lipsync / qa / music / subtitles / cut）, component_id, current_version_id, adopted_version_id, locked_hash, status（empty / queued / running / ready / stale / adopted / locked / failed） |
-| `product_version` | id, product_id, n, origin（run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest）, parent_version_id, payload_json, files[]（role, path, sha256, mime, duration_s, w, h）, content_hash, intent, compiled, compiled_overridden, model_key, where（local / api）, seed, params_json, qa_json, qa_pass, cost_usd, job_id, created_at, note；本地 ComfyUI 生成的另有 workflow_id, workflow_sha256, comfy_env_hash（6.4.5） |
+| `product` | id, series_id, owner_type（series / episode / scene / shot / asset / line）, owner_id, slot（bible / suggestions / episodes / script / asset_list / ref_image / ref_views / text_image / voice / line_audio / shot_plan / keyframe / video / upscale / lipsync / qa / music / subtitles / cut）, component_id, current_version_id, adopted_version_id, locked_hash, status（empty / queued / running / ready / stale / adopted / locked / failed）；M3 加 pick_json、settings_json、retired |
+| `product_version` | id, product_id, n, origin（run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest；M3 加 pick / upload）, parent_version_id, payload_json, files[]（role, path, sha256, mime, duration_s, w, h）, content_hash, intent, compiled, compiled_overridden, model_key, where（local / api）, seed, params_json, qa_json, qa_pass, cost_usd, job_id, created_at, note；本地 ComfyUI 生成的另有 workflow_id, workflow_sha256, comfy_env_hash（6.4.5） |
 | `dependency` | product_id, upstream_product_id, upstream_hash（构建时上游已采纳版本的 content_hash） |
 | `gate_decision` | id, gate（novel / script / assets / storyboard / takes / export）, scope_id, product_hashes_json, decided_at, action（confirm / reopen） |
 
@@ -126,6 +133,19 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 - **`dependency` 挂在版本上**，比上表多 `version_id`、`slice` 两列：一个版本读了上游哪几片就写几行，哈希是那一片的规范化 JSON（不含序号、「已修改」这类显示字段）。切片如 `chapter:<idx>`、`chapters`（小说各章 / 设定的章节摘要）、`names`（设定的名字和冻结条目）、`entities:<id,…>`、`adopted` / `adopted:<段号,…>`（已采纳的补写）、`episode:<id>`。「待更新」不存标志，每次比对切片哈希现算，改了再撤销就自动不旧。
 - 补全建议的决定单独存 `suggestion_decision`（不进版本，重跑后按 id 带过去）；补全的「有效哈希」只算已采纳的建议。
 - **`gate_decision`** 多 `series_id`；同一闸门同一范围以最后一条为准。小说闸门的 `scope_id` 是剧集 id，管小说、设定、补全；剧本闸门是集 id，管那一集的剧本；分集规划不归闸门。确认 = 锁定已采纳版本（`locked_hash`）并把有效哈希写进 `product_hashes_json`，重新打开 = 解锁。被锁的产物直接改返回 409 `product_locked`，要走 `/impact/preview` → `/impact/apply`（`mark` 解锁、写入、再锁上；`rerun` 级联重跑并采纳，被锁的先重新打开闸门）。
+
+**M3 的实际做法**（候选、`pick` 和锁定）：
+
+- **组件的两个开关**：`auto_adopt`（默认开；候选类组件 `img`、`text`、`voice` 关掉：一次运行出一个版本，候选都在 `files[]`，`role: candidate`、带 `idx`，由用户挑）和 `adopt_every_run`（每次运行都采纳：素材清单、补视图、台词配音，它们跟着上游走，不用挑）。
+- **「选这个」**记在产物上：`product.pick_json = {version_id, idx}`（`POST /products/{id}/pick`），不进物化表，重建物化表或 `demo --reset` 不会丢。素材只在 `pick` 指向屏幕上那一版时才返回它。
+- **锁定 = `ProductService.lock_pick()`**，一个事务里：出一个 `origin=pick` 的版本（只含选中那张，`role: ref`，沿用来源版本的模型、提示词、依赖；payload 只有 `{candidate}`，来源版本和第几张记在 `params`、不进哈希，所以同一张图从哪一版锁定哈希都一样）→ 采纳并锁定 → 写这条素材自己的 `gate_decision`（gate `assets`，`scope_id` 是素材 id）。锁定**不改当前版本**。`idx` 为空时锁定整个版本（上传的图、API 终版、音色）。音色**只有终版能锁、整版锁定**（锁试听 409 `voice_needs_final`）；画面文字选中的候选 OCR 不一致时 409 `ocr_mismatch`，带 `force: true` 才锁。
+- **上传**出一个 `origin=upload` 的版本，只有这一张候选并自动选中（参考图和画面文字；PNG / JPEG / WebP，≤ 20 MB）。
+- `product.settings_json`：画面文字的逐字内容、贴字方式、字体，音色来源，台词的手动情绪。描述 = 提示词的意图层。锁定后改这些都 409 `product_locked`，改走影响范围 `asset_edit`。
+- `product.retired`：所属对象已经不在了（剧本重跑后退场的台词的配音）。不算待更新，不进进度和级联；这一行回来时取消。
+- **哈希含文件**：媒体槽位（`ref_image`、`ref_views`、`text_image`、`voice`、`line_audio`）用 `media_slicer`，切片 = payload + 文件 sha（不含提示词）。闸门和下游依赖记的都是图片 / 音频本身。补视图依赖锁定图的哈希、道具依赖描述里提到的已锁定角色的图、配音依赖剧本切片 `line:<id>` 和说话人音色的锁定哈希；素材清单依赖剧本切片 `assets`（场的地点时段、每行的 id / 类型 / 人物、非对白行的文字，所以改对白措辞不影响清单）。
+- **整集素材闸门**（gate `assets`，`scope_id` 是集 id）管这一集用到的素材（`asset_use` 里有、没退场的）：确认要求都已锁定，否则 409 `assets_not_locked {count, names}`；确认不锁任何东西、重新打开也不解锁（素材属于整部剧，各自锁定）。解锁一条素材时，用到它、已确认的集一起重新打开。导航「素材」的计数是已锁定 / 本集用到的（示例第 1 集 7 / 10）。
+- **影响范围**：新改动类型 `asset_unlock`（解锁不改内容，由 planner 直接从依赖图列行：补视图、拿它做参考的道具）和 `asset_edit`（改已锁定素材的描述、画面文字设置或音色来源；「只改这里」只存新描述、锁定的仍是原图，「确认并同步」再让这条素材重出候选，选好新的再锁定下游才更新）。影响行按槽位（和集）合并、花费相加（「配音 · 60 句」带 `count`）。
+- **级联的停止集**：`auto_adopt` 关着的组件（候选类）级联永远不重跑：级联会采纳重跑的结果，等于解锁原来锁定的、采纳一版没人选过的候选。所以改剧本不会重画参考图；补视图和配音照常跟着走。按组件判断，以后加候选类组件不用改级联。
 
 ### 4.3 运行、配置、记账
 
@@ -172,6 +192,8 @@ class Component(Protocol):
 | text | 画面文字 | image | 逐字文本 + 字体风格 → 带字图 | 素材锁定 |
 | voice | 音色 | voice_design / tts | 角色描述 → 中性锚点 + 4–5 个情绪变体 | 素材锁定 |
 | dub | 台词配音 | tts | 台词 + 锁定音色 → 每行音频（决定镜头时长） | — |
+| views⁺ | 补视图 | image | 锁定的角色图 → 侧面、背面、四种表情各一张（M3） | — |
+| ocr⁺ | 文字核对 | ocr | 画面文字的候选图 → 读到的字、和要求是否一致（M3，只有本地 RapidOCR） | — |
 | plan | 分镜规划 | llm | 剧本 + 资产 → shot 列表（类型、景别、站位、时长初值） | — |
 | kf | 关键帧 | image | 镜头意图 + 锁定参考图 → 首帧（必要时尾帧） | 动态分镜确认 |
 | world | 3D 场景（可选） | world | 场景描述 → Marble 世界（v1 只留接口） | — |
@@ -183,7 +205,7 @@ class Component(Protocol):
 | music | 配乐 | music | 场景情绪 → 配乐 | — |
 | sub | 字幕对齐 | asr | 成片音频 + 剧本台词 → 时间轴 | — |
 
-`assets` 和 `dub` 在原型里没有单独一行（分别在 03 素材页顶部和「音色」组件里），实现时作为独立组件，界面放在同一页。
+`assets` 和 `dub` 在原型里没有单独一行（分别在 03 素材页顶部和「音色」组件里），实现时作为独立组件，界面放在同一页。标 ⁺ 的 `views`、`ocr` 是 M3 加的，原型没有；「模型与兜底」页因此多「补视图」「台词配音」「文字核对（OCR）」三行。
 
 ### 5.1 关键行为
 
@@ -191,8 +213,13 @@ class Component(Protocol):
 - **结构化输出**：LLM 组件一律要求 JSON 输出，用 Pydantic 校验；校验失败带着错误信息重试一次，仍失败则任务失败并保留原始输出供查看。
 - **LLM 修改先给差异**：LLM 对已有内容的改动以 diff（修订）形式展示，用户接受后才写成新的 version。
 - **音频先行定时长**：`shot.duration_s = Σ(该镜台词音频时长) + 前后留白（默认 0.3 s + 0.2 s，可配）`；超过目标模型单段上限（H3 为 2–15 s）时提示拆镜。没有台词的镜头用手填时长。
+  - M3（`pipeline/timing.py`）算到台词和场：一句 = 配过音就是音频长度，没配用剧本的估计，再没有按每秒 4 个字；一场 = 有说话人的行相加（动作行的时长 M4 由镜头决定）。镜头的 `shot_seconds` 写好、测好，M4 接上。
+  - 台词音频进版本前统一处理（`media/audio.py`，ffmpeg）：48 kHz 单声道，−18 LUFS、真峰值 −1.5 dBTP（`components.yaml` 的 `audio.dialogue`），增益取「到目标响度」和「真峰值不超」中小的，不压缩不削波；首尾静音按拉响度之后的音量判断，结尾留 `tail_s`（0.3 s）的一半自然收尾 + 50 ms 淡出，再补另一半静音。后端算好 64 段波形峰值给前端画。
+  - 情绪：手动设的优先，否则按语气里的关键词（`config/voice.yaml` 的 `tones`），都没有就是平静。
 - **动态分镜**：前端把关键帧按时长排在时间线上，配台词音频播放；不需要后端渲染。可选导出幻灯片式 MP4（FFmpeg）。
 - **画面文字**：分镜表里记录每个镜头的预期文字；质检用 OCR 逐字比对。
+  - M3 先在素材上做（`qa/ocr.py`）：每张候选过一次 OCR（`router.call()`、写 `model_call`，$0）。两边 NFKC、去空白后逐字比，标点也算；只有句末标点没读到算一致。不一致分 `missing` / `wrong` / `has_text`（后期贴字的底图上读出了字）。没有 OCR 时标「未检查」（`ocr_ok: null`），不拦锁定。
+  - 两种做法：模型直接出字（提示词带逐字内容和字体），或后期贴字（底图不要字、留位置；真正的合成在 M7）。
 - **H3 开头乱码音**：视频组件产出后默认裁掉开头 0.3 s（后期页可关）。
 
 ## 6. 模型层
@@ -225,6 +252,17 @@ class ModelAdapter(Protocol):
 ### 6.3 其他 API
 
 图像（Nano Banana Pro、GPT Image 2、Seedream 5.0）、视频（MiniMax H3 API 含 Regenerate-2K 和 Context-IR、Seedance 2.5、Gemini Omni Flash、Wan 3.0、Kling）、配音（MiniMax Speech 2.8 HD 含音色设计、ElevenLabs）、口型（sync lipsync-2-pro）、超分（Topaz Starlight）、配乐（ElevenLabs Music）、3D（World Labs Marble，v1 只占位）。各写一个适配器；长任务用厂商的异步任务接口轮询，轮询间隔指数退避。
+
+**M3 的实际做法**（图像三家和 MiniMax 配音，2026-10-21 按官方文档核对、真实冒烟跑通；`modelhub/adapters/`）：
+
+- **加适配器 = 填配置**：媒体模型在 `providers.yaml` 写 `adapter`（`gemini_image` / `openai_images` / `seedream` / `minimax_speech`），`modelhub/media_adapters.py` 按它挑类；没写的媒体模型「暂不可用」。媒体模型用 `account` 指向 `llm_providers` 里的账号，同一家的写作、出图、配音共用一个密钥（地址可用 `base_url` 另写）。共用的 HTTP 层 `adapters/http.py`：429、5xx、超时退避重试 2 次，以错误映射的 `retryable` 为准。
+- **模型**：Nano Banana Pro `gemini-3-pro-image`（原生 `:generateContent`）；GPT Image 2 `gpt-image-2`（没参考图 `/images/generations`，有参考图 `/images/edits`，`quality: high`）；Seedream 5.0 flash `doubao-seedream-5-0-flash-260915`（火山方舟，总是 `watermark: false`、`b64_json`）；MiniMax `speech-2.8-hd`（耳语换 `speech-2.6-hd`）走 `/t2a_v2`，音色设计 `/voice_design`，用国内站 `api.minimax.cn`。
+- **尺寸**：宽高从成片规格算（硬规则 10），每家换成自己支持的最近尺寸（`adapters/images.py:fit_size`），返回图按实际像素记 `w` / `h`。Gemini 传画幅 + 能盖住画面的最小档（9:16 2K 是 1536×2752）；GPT Image 2 向上取 16（1080×1920 → 1088×1920）；Seedream 向上取 16 再缩进像素范围。
+- **n 张**：GPT Image 2 一次请求出 n 张；Gemini、Seedream 同时发 n 个请求。部分失败照实记张数和花费，全部失败才报错。
+- **记账**：`Pricing` 加 `token_rates`（每百万 token，分 `text_in` / `image_in` / `text_out` / `image_out`）、`extras`（按次的附加服务，如音色设计）、`price_by_res`、`currency`（人民币按 `currency_rates.CNY_per_USD` 折算）；`Usage` 加 `tokens`、`calls`。返回了分项用量就按 token 算，否则按每张价格（每张价格也用于估价）。MiniMax 按返回的计费字数记；**音色设计费记在第一次用这个音色合成的那次调用上**（MiniMax 在那时才收），估价按 `charge_design` 算进去。
+- **错误码**（中英提示在 `common:modelError`）：内容审核拦下 `content_blocked`（不重试）、只回文字没出图 `no_image`、额度用完 / 没开通付费 / 安全体验模式上限 `quota_exceeded`（不重试，和限流 `rate_limited` 分开）、MiniMax 的 HTTP 200 + `base_resp` 错误码映射成 `auth_failed`、`insufficient_balance`、`voice_not_found` 等。路由把失败原文的前 500 字写进日志（`model_call` 只存码）。
+- **测试连接**：`POST /providers/{id}/test` 再逐个检查用这个密钥的媒体模型（结果在 `media`），只发不花钱的请求：Gemini、OpenAI 查 `GET /models/{id}`；方舟发一个一定被拒的请求（回 400 说明密钥和模型 ID 都对）；MiniMax 用 `POST /v1/get_voice`。
+- 自动化测试全部用 respx，不触网；真实调用只在 `scripts/smoke/live_assets.py`（`DRAMA_LIVE=1`）。
 
 ### 6.4 ComfyUI 与工作流库
 
@@ -286,7 +324,7 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 
 #### 6.4.5 可复现
 
-- 本地 ComfyUI 生成的每个 `product_version` 和 `model_call` 都记下 `workflow_id`、`workflow_sha256`、`comfy_env_hash`。`comfy_env` 按哈希存当时的 ComfyUI 版本和全部节点包版本，所以任何一版都查得到是用哪份工作流、哪套节点跑出来的。
+- 本地 ComfyUI 生成的每个 `product_version` 和 `model_call` 都记下 `workflow_id`、`workflow_sha256`、`comfy_env_hash`。`comfy_env` 按哈希存当时的 ComfyUI 版本和全部节点包版本，所以任何一版都查得到是用哪份工作流、哪套节点跑出来的。（M3：`product_version` 已有这三列，取第一个本地调用的；`model_call` 还没有，M5 接工作流库时加。）
 - 工作流文件变了（哈希不同）就降为「未验证」，重新试跑通过后回到原来的档。
 - 每次装或升级节点包后，自动把所有已登记的工作流体检一遍：先做静态检查（节点类、被绑定节点的标题和字段、模型文件都还在）；用到了变动节点包的推荐档和「我的」档工作流，再在 GPU 队列里排一次低优先级试跑。有坏的就提示，并给出「回滚到这次安装前的快照」。
 
@@ -308,6 +346,18 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 - 本地 GPU 队列并发 1；调度器按“同一工作流”分组连续执行，切换大模型前调 `/free` 释放显存（PLAN：同一套模型的镜头连续跑，不再每镜卸载）。
 - 本地任务超时（默认 10 分钟，可配）视为失败，进入兜底流程；取消时调 `/interrupt`（第 9 节）。
 
+**M3 的实际做法**（最小版的 ComfyUI 适配器，`modelhub/workflows.py`、`adapters/comfyui.py`；DECISIONS 2026-10-21「第 12 步（下）」「第 13 步」）：
+
+- **工作流目录**按 6.4.2 的布局：`workflows/<slug>/workflow.api.json` + `workflow.yaml`（`bindings` 槽位 → 节点标题 + 字段，载入时检查标题唯一、字段存在；`models` 加载器要的文件；`caps.sizes` 各画幅尺寸）。参考图槽位可以 `optional: true`：参考图比节点少时删掉空着的 LoadImage 和读它的输入。`providers.yaml` 的 `workflow:` 指向目录；目录还没有的（H3、SeedVR2 等）照旧不可用，M5 纳入。还没有 `comfy_workflow` 表和导入、体检、试跑（M5）。
+- **三个工作流**（按官方模板改写）：`qwen-image`（2512 fp8 文生图，Lightning 4 步，草稿、画面文字）、`qwen-image-edit`（2511 int8 按参考图编辑，4 步）、`qwen-image-edit-hq`（同一张图去掉 LoRA、40 步、cfg 4.0，补视图默认用它）。输出用 PreviewImage（不往用户的 output 里留文件）；尺寸按模型卡推荐的各画幅尺寸（9:16 → 928×1664），没有对应画幅时按 `max_pixels` 缩放到 16 的倍数，到成片尺寸靠之后的超分 / 导出。
+- **调用**：参考图上传到 `input/dramastudio/<sha256>.png` → `/prompt` → 每秒查 `/history/{id}`（WebSocket 进度在 M5）→ `/view`。n 张候选 = n 个 prompt，种子 seed、seed+1…，用到的种子记在结果里。负面提示走 `negative` 槽位（补视图按视图和表情给，`views.py:negative_for`）。
+- **停下**：本地超时 / 取消时 `/interrupt`（带 prompt_id，只停我们的）并从队列删掉；每 10 次轮询看一次 `/queue`，任务既不在队列也不在历史里报 `comfy_lost`。
+- **出错码**：`comfy_model_missing`、`comfy_node_missing`、`workflow_invalid`（`/prompt` 400）；`comfy_failed`、`out_of_memory`、`comfy_interrupted`（运行中）；`comfy_not_running`。都兜底到 API。
+- **地址**从上次扫描拿（`SetupService.comfy_target()`）。**健康检查**：`/system_stats` 通、`/models/<folder>` 里有工作流要的每个文件。
+- **显存租约**（`modelhub/vram.py`）：整个进程一把锁。每个工作流一个持有者（`comfy:<slug>`），换别的持有者（TTS worker 或另一个工作流）时先让上一个放手：ComfyUI `/free`、worker 退出。不设超时，等锁的时间算在本地超时里。
+- **GPU 队列先跑完已加载模型的任务**（`core/jobs.py`）：同一优先级里先跑和上一个任务同一模型（`params.model_key`）的；一个任务里换模型由显存租约管。
+- **`DRAMA_REAL_LOCAL=1`**：Mock 模式下本地模型（`runtime` 是 `comfyui` / `python`）照样建真实适配器，API 和写作模型仍是 Mock。本机真跑不花钱：`scripts/smoke/local_assets.py`。
+
 #### 6.4.8 按镜头选工作流；拼节点（beta）
 
 2026-10-18 Kelvin 定。
@@ -324,6 +374,14 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 ### 6.5 本地工具类模型
 
 质检和后期用到的本地模型（人脸相似度、SyncNet、Whisper、说话人相似度、OCR、Qwen3-VL）在独立 uv 环境里以子进程或常驻小服务运行，统一包成 `local_tools` 适配器；它们也写 `model_call`（花费为 0，记时长和显存）。
+
+**M3 的实际做法**（本地 Python 运行时，`adapters/local_python.py`；DECISIONS 2026-10-21「第 12 步（上）」）：适配器叫 `local_python`，本地 TTS 也用它。
+
+- **一个模型一个常驻 worker**：`~/.drama-studio/envs/<env>/` 里的 Python 跑 `workers/worker_<name>.py`，第一次调用时启动并加载模型，之后常驻，直到显存租约让它走或应用退出。M3 有三个：`worker_qwentts`（Qwen3-TTS VoiceDesign，试听）、`worker_indextts`（IndexTTS-2.5，本地终版和配音）、`worker_rapidocr`（RapidOCR，CPU，不拿显存租约）。
+- **协议**（`workers/worker_protocol.py`，只用标准库）：一行一个 JSON，请求和回复带同一个 id；文件写到适配器给的临时文件夹。worker 把 fd 1 转到 stderr，stdout 只有回复；崩溃时 stderr 最后几行进错误信息（`worker_crashed`）。超时、取消就杀掉 worker，下次重新启动。
+- **环境变量**：`PYTHONUTF8=1`、`HF_HUB_OFFLINE=1`、`HF_HOME=<安装位置>/hf`（运行时不联网，权重由安装器先下好）。
+- **配置**：`providers.yaml` 的本地模型写 `worker`、`env`、`args`（`{models}` 是安装位置，`{envs}` 是环境目录）、`gpu`、`needs`。没装时调用报 `not_installed`，能力过滤会先把它绕开。
+- **保护**：Qwen3-TTS 按字数限长（3 s + 0.8 s / 字），两次都碰到上限报 `tts_runaway`；配音的电平检查拦近乎静音的结果（`audio_silent`）。
 
 ## 7. 路由、兜底、预算
 
@@ -383,6 +441,8 @@ per_call_cap_usd: 0.50
 
 触发条件：调用失败（含 429 重试耗尽、5xx）、超时、质检连续 N 次不过。按配置切到下一个模型，新 version 的 origin=fallback，`model_call.fallback_reason` 记原因。`notify: ask` 时任务进入 `waiting_confirm`。
 
+**M3：多次调用的组件整套兜底**。补视图（6 张）、音色终版（设计 + 5 个情绪）这类一个版本要调用多次的组件，每次调用都是 `router.call(..., fallback=False)`；任何一步失败，整套换到兜底模型重做（`run_flow`），所以一套视图、一个音色不会混用两个模型。音色和配音的兜底是本地 IndexTTS（没有 ElevenLabs 密钥）；配音的请求同时带 `voice_id` 和本地要用的说话人样音、情绪参考，API 失败时直接兜底到本地。试听不兜底（IndexTTS 不能按文字设计音色）。
+
 ### 7.6 预算
 
 - 任何 API 任务入队前先 `estimate()`。超过单次上限、单镜头上限或本集预算剩余 → 任务进 `waiting_confirm`，前端弹确认（显示预计花费）。
@@ -396,10 +456,17 @@ per_call_cap_usd: 0.50
 - 同步接口的改写（剧本行 / 场、补全建议按要求重写）超限返回 409 `over_budget {estimate_usd, limit_usd}`，前端确认后带 `confirm_budget: true` 再发一次。
 - 估价按 `max_tokens` 算输出，是上限：真实花费通常低得多（第 13 步冒烟：剧本化估 $0.025，实花 $0.005）。各模型默认关掉「思考」，否则思考过程的 token 不在估价里（见 6.2 `providers.yaml` 的 `request`）。
 - 还没做：上面的「全局开关」（单独的暂停开关；超过本集剩余的新任务已经会先问），表头花费仍是示例数据（`/metrics/summary` 在 M8）。
+- **M3 加的**：确认过的任务最多花到「确认金额 + 余量」，余量取确认金额的 10% 和 $0.05 中大的（`components.yaml` 的 `confirm_margin`，Kelvin 2026-10-21 定）；没确认的任务仍按单次上限、不留余量。原因：估价稍低时（Nano Banana Pro 实测低 2.7%），多次调用的任务会停在最后一次，前面的钱白花。媒体调用的结果按请求缓存（`llm_cache`，key 前缀 `media:`，含返回的 JSON 如 `voice_id`），任务重试或重启续跑时出过的不再花钱。
 
 ### 7.7 混合模式
 
 本地出草稿（免费抽卡），用户点「采纳」时才用 API 出终版：视频走 H3 Regenerate-2K（输入为本地 768p take），LLM 走 API 模型重写定稿。终版作为同一 product 的新 version，origin=run，`parent_version_id` 指向草稿。
+
+**M3 的实际做法**（素材；Kelvin 2026-10-20 定的第 5 项）：
+
+- **参考图、画面文字**：本地出 4 张草稿（`stage: draft`，草稿档尺寸），用户选一张后点「用 API 出终版 · 约 $x」：`POST /products/{id}/run` 带 `where: api` 和 `params: {source_version_id, source_idx}`，以那张草稿为参考出 **1 张**（`stage: final`，交付档尺寸），成为新的当前版本，`parent_version_id` 是草稿。看过再锁定；草稿够用也能直接锁草稿。按钮只在路由是混合、屏幕上是本地草稿、素材没锁定时出现；价格是路由里 API 模型一张图的标价。上传的图也能当来源。原型 v2 的「4 张终版 $0.56」不照做。
+- **音色**：「重跑」= 免费试听（本地 Qwen3-TTS 3 个，各读这个角色的前两句台词；没有本地 TTS 时一个试听是一次 MiniMax 音色设计）；「用 MiniMax 出终版」= 用选中的试听做音色设计拿 `voice_id`，再按 5 种情绪（平静、愤怒、哭腔、耳语、喊叫）各读一遍；「本地」来源由 IndexTTS 出 5 个变体，全程免费。配置在 `config/voice.yaml`。
+- 补视图默认只走本地（`qwen-image-edit-hq`），API 只做兜底。
 
 ## 8. 提示词
 
@@ -416,23 +483,25 @@ per_call_cap_usd: 0.50
 - 队列：`gpu`（并发 1，按模型分组）、`api:<provider>`（每家并发和速率限制可配，429 指数退避）、`cpu`（FFmpeg 等，并发 = CPU 核数 / 2）。
 - 依赖：任务可以声明依赖其他任务；调度器按依赖图执行（替换上游的串行 runner）。
 - 取消：前端可取消排队或运行中的任务；ComfyUI 任务调用 `/interrupt`。
-- SSE 事件类型：`job.updated`、`product.updated`、`version.created`、`cost.updated`、`gate.updated`、`sync.updated`、`setup.progress`、`setup.log`、`toast`。事件带递增 ID，支持 `Last-Event-ID` 补发。
+- SSE 事件类型：`job.updated`、`product.updated`、`version.created`、`cost.updated`、`gate.updated`、`sync.updated`、`setup.progress`、`setup.log`、`toast`。事件带递增 ID，支持 `Last-Event-ID` 补发。`product.updated`、`version.created` 带 `slot`（M3）：前端遇到 `line_audio` 只刷新配音；「做一打」的槽位（`ProductService.quiet_slots`，现在只有配音）出新版本不发「已生成」的 toast，在产物列表里也不逐个估价。
 
 ### 9.1 HTTP 接口概览（`/api/v1`）
 
-标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`unadopt`、打分、`upscale` 除外，M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；其余仍由 MSW 返回示例数据。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
+标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`unadopt`、打分、`upscale` 除外，M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；M3 加上资产、台词配音、取文件、`pick`、素材闸门（`assets`）；其余仍由 MSW 返回示例数据（示例剧集的镜头仍由 MSW 叠加在素材和进度上，M4 删）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
 
 | 资源 | 接口 |
 | --- | --- |
 | 剧集 | `GET/POST /series`，`GET/PATCH /series/{id}`，`GET/PUT /series/{id}/spec`（成片规格，改画幅时返回影响范围；锁定后直接改画幅返回 409 `spec_locked`），`GET /series/{id}/spec/compat`⁺（模型兼容表），`GET /spec/presets`⁺（平台预设和各画幅尺寸），`GET /series/{id}/episodes`⁺，`GET /series/{id}/progress`⁺（还没分集时的导航徽标；小说闸门的状态） |
 | 小说与设定 | `POST /series/{id}/novel`（上传；`dry_run` 只识别章节、返回 `upload_id`，正式导入要 `rights_confirmed`），`GET /series/{id}/novel`⁺（段落），`PUT /series/{id}/novel/chapters/{idx}`⁺（逐段编辑后整章提交），`GET /series/{id}/bible`（对象：条目 + 合并建议），`PATCH /bible/{entity_id}`，`POST /bible/merge`⁺（合并 / 不是同一个 / 拆出别名），`GET /series/{id}/suggestions`⁺，`POST /suggestions/{id}/accept\|reject\|rewrite`，`POST /suggestions/{id}/reset`⁺，`POST /series/{id}/suggestions/accept-all`⁺ |
 | 分集、场、剧本、镜头 | `GET/PATCH /episodes/{id}`，`GET /episodes/{id}/progress`⁺（导航徽标），`GET /episodes/{id}/script`⁺，`PATCH /beats/{id}`（含拖动换集，返回整个方案），`PATCH /lines/{id}`、`PATCH /scenes/{id}`⁺（只改文字 / 场标题；已确认时 409，前端改走影响范围），`POST /lines/{id}/rewrite`⁺，`POST /scenes/{id}/rewrite`⁺，`GET /episodes/{id}/shots`⁺，`PATCH /shots/{id}`⁺，`POST /shots/{id}/split\|merge` |
-| 资产 | `GET/POST /series/{id}/assets`，`PATCH /assets/{id}`，`POST /assets/{id}/lock`⁺（解锁走影响范围 `asset_unlock`），`POST /episodes/{id}/assets/analyze`⁺ |
-| 产物与版本 | `GET /products?owner=&component=`⁺，`GET /products/{id}`（含版本列表、`prompt`、`estimate`、`running`），`POST /products/{id}/run` `{mode: rerun\|switch\|run, model?, intent?, compiled?, count?}` → job，`POST /versions/{id}/set-current\|adopt`，`POST /products/{id}/lock`，`POST /products/{id}/unlock`⁺，`POST /products/{id}/unadopt`⁺，`PUT /products/{id}/prompt`⁺，`POST /products/{id}/compile`⁺，`PATCH /versions/{id}`⁺（打分），`POST /versions/{id}/upscale`⁺ → job |
+| 资产 | `GET /series/{id}/assets?episode=`（M3 多 `scenes`：出现在本集哪几场，带全剧场号和行；`note`、`seed_changed`、`pick`；`shots` 到 M4），`POST /series/{id}/assets`（手动新建，还没做），`PATCH /assets/{id}`（描述、选这个、画面文字设置、音色来源；已锁定 409，改走影响范围 `asset_edit`），`POST /assets/{id}/lock`⁺ `{version_id?, idx?, force?}`（409 `ocr_mismatch` / `voice_needs_final`；解锁走影响范围 `asset_unlock`），`POST /assets/{id}/upload`⁺（multipart，PNG / JPEG / WebP ≤ 20 MB；音色 422 `upload_not_supported`），`POST /episodes/{id}/assets/analyze`⁺ → job（M0.5 是同步返回），`GET /episodes/{id}/assets/matrix`⁺（场 × 用到的素材，格子是行 id，空 = 整场） |
+| 台词配音⁺ | `GET /episodes/{id}/dub`（每句的说话人、音色、状态 done / stale / missing / running / failed / no_voice / voice_not_locked、情绪和 `tone_emotion`、音频带波形、时长；每场时长和已配句数），`POST /episodes/{id}/dub` `{dry_run?, line_ids?}`（`dry_run` 只给估价和句数；否则每句排一个 `product.run`，跳过的行写明原因；`line_ids` 不管状态都重配），`PATCH /lines/{id}/dub` `{emotion}`（null = 按语气） |
+| 文件⁺ | `GET /files/{sha256}`：版本里的媒体文件，类型按文件头判断，支持 Range，`immutable` 缓存 |
+| 产物与版本 | `GET /products?owner=&component=`⁺，`GET /products/{id}`（含版本列表、`prompt`、`estimate`、`running`），`POST /products/{id}/run` `{mode: rerun\|switch\|run, model?, intent?, compiled?, count?, where?, params?}` → job（M3 加 `where: api` = 混合模式出终版，`params` 是带类型的 `RunParams`：`task`、`source_version_id`、`source_idx`，未知字段 422），`POST /products/{id}/pick`⁺ `{version_id, idx}`，`POST /versions/{id}/set-current\|adopt`，`POST /products/{id}/lock`，`POST /products/{id}/unlock`⁺，`POST /products/{id}/unadopt`⁺，`PUT /products/{id}/prompt`⁺，`POST /products/{id}/compile`⁺，`PATCH /versions/{id}`⁺（打分），`POST /versions/{id}/upscale`⁺ → job |
 | 生成 | `GET/PUT /series/{id}/generate-rules`⁺（每镜候选数、质检不过自动重跑、单镜上限），`GET /episodes/{id}/generate-log`⁺（运行记录） |
 | 后期 | `GET /episodes/{id}/timeline`⁺，`PATCH /clips/{id}`⁺，`PATCH /subtitles/{id}`⁺，`GET /episodes/{id}/export/checks`⁺，`POST /episodes/{id}/export`⁺ `{format: mp4\|fcpxml\|otio\|srt}` → job |
 | 影响范围 | `POST /impact/preview`（给一个待改动，返回受影响的产物和预计花费），`POST /impact/apply` `{action: mark\|rerun\|undo}` |
-| 闸门 | `POST /gates/{gate}/confirm\|reopen` |
+| 闸门 | `POST /gates/{gate}/confirm\|reopen`（M3 加 `assets`：`scope_id` 是集 id，没锁完 409 `assets_not_locked {count, names}`） |
 | 任务 | `GET /jobs`，`GET /jobs/{id}`⁺，`POST /jobs/{id}/cancel\|confirm` |
 | 配置与模型 | `GET /config/components`⁺（组件目录、可选模型、`local_runtime_ok`），`GET /config/resolve`，`PUT /config/override`，`DELETE /config/override`⁺（恢复成预设），`GET/PUT /config/defaults`⁺（预设、兜底方式；代替原来的 `POST /config/preset`），`GET /providers`，`POST /providers/{id}/key`，`DELETE /providers/{id}/key`⁺，`POST /providers/{id}/test`，`POST /custom-models`（以后） |
 | 开发⁺ | `POST /dev/llm-test`（只在 Mock 下），`GET /dev/model-calls`（最近的 `model_call`，冒烟脚本也读它） |
@@ -550,7 +619,13 @@ M1 加的字段：
 
 检测器类型：`platform`（系统、内存、磁盘）、`nvml`（显卡、显存、驱动支持的 CUDA）、`command`（跑命令 + 正则取版本）、`py_import`（在指定 uv 环境或 ComfyUI 的 Python 里）、`file`（存在 + 可选 sha256）、`downloads`（见上）、`comfy`（定位 ComfyUI，6.4.1）、`comfy_manager`、`comfy_node`（目录或 `/object_info` 的节点类，`native_since`）、`http`（测速）、`service`（本地 LLM 服务端口）、`service_model`、`keyring`（密钥是否已填）、`resolve`。
 
-安装步骤类型：`uv_venv`、`uv_pip`、`git_clone`（锁定 commit）、`download`（12.2-7）、`pkg`（winget / brew / apt，需要管理员权限时先问）、`script`、`copy`。每一步都要幂等：动手前先检测，已经装好的记成「已经装好了」。
+安装步骤类型：`uv_venv`、`uv_pip`、`uv_sync`（M3）、`git_clone`（锁定 commit）、`download`（12.2-7）、`pkg`（winget / brew / apt，需要管理员权限时先问）、`script`、`copy`。每一步都要幂等：动手前先检测，已经装好的记成「已经装好了」。
+
+M3 加的（DECISIONS 2026-10-21「第 12 步（下）」）：
+
+- 安装步骤 `uv_sync`：`uv sync --locked --no-dev --project <项目> --python <版本>`，`UV_PROJECT_ENVIRONMENT={envs}/<env>` 把环境放到项目外。项目是仓库里的 `runtimes/<name>/`（我们写的 pyproject + uv.lock）或先 git clone 的上游仓库。`--locked`：锁文件对不上就报错，不悄悄重新解析。锁文件里是 wheel 的完整地址，PyPI 镜像对它不起作用。
+- 检测 `py_import` 加 `gpu: true`：环境里的 PyTorch 要是 CUDA 版，并且内核覆盖这块显卡（5090 是 sm_120），否则「需更新」（`env_no_cuda` / `env_gpu_arch`）；装完的复查也用它。
+- 清单四项：`rt_qwentts`（qwen-tts + PyTorch 2.11 cu130 + VoiceDesign 1.7B 权重）、`rt_indextts`（index-tts 锁 `d9e41aa`，Python 3.11、PyTorch 2.8 cu128）、`rt_ocr`（rapidocr + onnxruntime，CPU，Mac 上也必需）、`w_img_t2i`（Qwen-Image-2512 fp8 + Lightning LoRA，约 22 GB 新下载）；IndexTTS 的辅助模型并进 `w_tts`（8.3 GB）。本地模型的 `needs`：`comfy/qwen-image` → `[comfy, w_img_t2i]`，`local/qwen3-tts` → `[rt_qwentts]`，`local/indextts2` → `[w_tts, rt_indextts]`，`local/rapidocr` → `[rt_ocr]`。Setup 页因此多 4 行（原型没有）。
 
 清单按原型的 PC / Mac 两套列出，另外三项：`node_dramastudio`（我们自己的 ComfyUI 节点包，第 14.2 节）、`eagle`（只检测是否打开）、`resolve`（只检测版本和免费 / Studio）。运行环境和节点的地址、版本锁定见 DECISIONS「M1 清单补齐」，权重版本见「第 8b 步」。
 

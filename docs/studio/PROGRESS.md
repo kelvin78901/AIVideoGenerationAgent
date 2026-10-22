@@ -4,38 +4,24 @@
 
 ## 当前
 
-- 里程碑：**M3 素材与配音**，计划 [`plans/M3.md`](plans/M3.md)（2026-10-20 批准；Kelvin 定的七项见 DECISIONS 同日）。
-- 分支：`m3-assets-voice`（从合并 PR #4 后的 main 3ffd6a2 开出）。M2 已合并，报告 [`reports/M2.md`](reports/M2.md)。
+- 里程碑：**M3 素材与配音** 已做完，计划 [`plans/M3.md`](plans/M3.md) 全部勾完，报告 [`reports/M3.md`](reports/M3.md)（也是 PR 描述）。
+- 分支：`m3-assets-voice`（从合并 PR #4 后的 main 3ffd6a2 开出）。PR 开往 main，查看：`gh pr view -R kelvin78901/AIVideoGenerationAgent m3-assets-voice`。
 
 ## 已完成的小步
 
-（细节见 DECISIONS 各步的条目和提交说明；做完 M3 写报告时整理进 `reports/M3.md`。）
+（第 0–14 步的提交和细节已挪进 `reports/M3.md` 的「附：各步的提交」和 DECISIONS 各步的条目。）
 
-- 第 0–2 步：分支、计划、DECISIONS 七项（ff125ed、848eaa8）；框架和媒体基础（58f5260：迁移 `0016`、pick / retired、`RunParams`、`/files/{sha}`、`AudioPlayer`）；素材分析后端（d33cfec：组件 `assets`、物化只增不删、迁移 `0017`、示例 13 条）。
-- 第 3–4 步：参考图、补视图、上传、锁定（f0e07e6：组件 `img` / `views`、`asset_unlock`、示例 7 / 13 锁定）；素材页接后端 + 出场矩阵（70a1200，截图 `assets-{draft,views,matrix}`）。
-- 第 5 步：画面文字 + OCR（4461791，矩阵排序修在 68c9cdc）：组件 `text` / `ocr`、`ocr_mismatch`。截图 `assets-{text,text-composite,ocr-confirm}`。
-- 第 6 步：音色（ea5fd19）：试听 → MiniMax 终版 + 5 个情绪 → 整版锁定、`config/voice.yaml`。截图 `assets-voice-{final,drafts}`。
-- 第 7 步：台词配音 + 时长（后端 1d94c66、前端 49215a9，DECISIONS 2026-10-21「第 7 步」）：组件 `dub`、`pipeline/timing.py`、`POST /episodes/{id}/dub`；素材页「台词配音 n / m · 全部配音」、音色详情的台词配音、剧本页播放和真实时长；Playwright 项目 `seeded`。
-- 第 8 步：素材闸门、影响范围、级联（后端 bb1b47d、前端 333bdc6，DECISIONS 同日「第 8 步」）：整集素材闸门 409 `assets_not_locked`、「素材」真实计数 7 / 10、级联停止集、影响行按槽位合并、`asset_edit`。 Kelvin 看过（cf66b26）：计数定 7 / 10，候选卡改定宽小卡 + 放大看。
-- 第 9 步：Mock 端到端（c6c1761，时序修复 5fc2940，CI 绿）：`tests/e2e/test_script_to_dub.py` 从导入小说走到每句配音、场时长 = 音频之和。
-- 第 10 步：图像 API 适配器（489516e，DECISIONS「第 10 步」）：`gemini-3-pro-image`、`gpt-image-2`、Seedream 5.0 flash；`adapters/{http,images,google,openai_images,volcengine}.py`、`modelhub/media_adapters.py`；按 token 记账；测试连接带 `media`。
-- 第 11 步：MiniMax 适配器（0931412，DECISIONS「第 11 步」）：`/t2a_v2`、`/voice_design`、`base_resp` 错误码、按计费字数记账；`common:modelError` 把错误码翻成人话。之后改国内站 + 人民币价（0ee236c，DECISIONS「MiniMax 用国内站」）。
-- 第 12 步（上）：本地 Python 运行时（783045c，DECISIONS「第 12 步（上）」）：`adapters/local_python.py`、`modelhub/vram.py`、三个 worker。
-- 第 12 步（下）（d7cdced，DECISIONS 2026-10-21「第 12 步（下）」）：`modelhub/workflows.py`（工作流目录、按标题绑定）、`adapters/comfyui.py`（上传 → `/prompt` → 轮询 `/history` → `/view`，超时 `/interrupt` + 删排队，`comfy_lost`，租约 `/free`）、`workflows/qwen-image{,-edit}/`（官方模板改写，Lightning 4 步，9:16 → 928×1664）；版本记 `workflow_id` / `workflow_sha256` / `comfy_env_hash`；安装器 `uv_sync`（`UV_PROJECT_ENVIRONMENT`）、`runtimes/{qwentts,ocr}/`（pyproject + uv.lock）；清单 `rt_qwentts`、`rt_indextts`（index-tts `d9e41aa`、Python 3.11）、`rt_ocr`、`w_img_t2i`，IndexTTS 辅助模型并进 `w_tts`（8.3 GB）；`py_import` 的 `gpu: true` 查 CUDA 版和 sm_120；`needs`。worker 修正：IndexTTS 必填 `lang`、`use_cuda_kernel=False`；Qwen3-TTS 按本地文件夹加载。Setup 页多 4 行（原型没有）。测试：`test_comfyui_adapter.py` 12 个、`test_asset_refs_api.py` 真实 ComfyUI 适配器 + 假 ComfyUI 出草稿。pytest 645、Vitest 278、Playwright 34 全过。
-- 第 13 步：本机真装真跑（工具 6812db1；结果 a6d565b–2b678e2，DECISIONS 2026-10-21「第 13 步」，`reports/m3-local-smoke.txt`）：五项经真实安装器装好（18 分钟，没动 Anaconda）；冒烟六步全部本地成功。跑时修了四处：画面文字提示词（原来画成拼图）、台词结尾留缓冲（`tail_s`，Kelvin 听出尾音被切）、Qwen3-TTS 限长（一次说了 78 s）、补视图改用真实参考图；Kelvin 定表情一张一种（补视图 6 张），GPU 队列先跑完已加载模型的任务（硬规则 8）。
-- 第 13 步追加：补视图用官方 40 步（52b40cf，DECISIONS「第 13 步追加」）：Kelvin 看了 4 步 / 40 步对比后定的。`workflows/qwen-image-edit-hq/`（去掉 Lightning LoRA，steps 40、cfg 4.0）、模型 `comfy/qwen-image-edit-hq`，补视图本地模型改过去（草稿、画面文字、关键帧仍 4 步）；每张视图带负面提示（`views.py:negative_for`，愤怒 / 难过压住龇牙、哭），侧面 / 背面提示词收紧。5090 上 47–70 s / 张，一个角色约 6 分钟。冒烟脚本的补视图一步先查参考图是本地画的。pytest 650、Vitest 278、Playwright 34 全过。
-- 第 14 步：真实冒烟（脚本 ed52ea1；修复 5d835ab；图像 e783027、fca8856，DECISIONS 2026-10-21「第 14 步」，`reports/m3-live-smoke.txt`）：五次共 $1.72，四步全部跑通。GPT Image 2 终版 + OCR、MiniMax 音色（设计 + 5 个情绪）、两句配音、Nano Banana Pro 和 Seedream 终版，花费和估价对得上（Nano Banana Pro 低估 2.7%，见「等 Kelvin」）。前几次被两家账号挡住（$0）。修了：Seedream 删 `sequential_image_generation`；新错误码 `quota_exceeded`（不重试，`http.send()` 以 `retryable` 为准）；路由把失败原文写进日志。pytest 652、Vitest 278 过。
-- 第 14 步追加：OCR 句末标点、确认余量（本提交，DECISIONS「第 14 步追加」）：Kelvin 定的。`qa/ocr.py:_matches` 句末标点没读到算一致；Mock / 示例的「OCR 不一致」改成漏「点」；`components.yaml: confirm_margin`（max(10%, $0.05)）由 `BudgetGuardImpl` 用。pytest 653、Vitest 278 过。
+- 第 15 步：收尾（本提交，pytest 653、Vitest 278、Playwright 34 全过，mypy 两个平台干净）：SPEC 补 M3 的实际做法（4.1、4.2、5、6.3–6.5、7.5–7.7、9、9.1、12.1）；ROADMAP M3 全部勾选；写 `reports/M3.md`；重截 `assets` / `assets-views`（补视图 6 张）和 `assets-dub-confirm`（改价后的金额）。全套检查见报告「测试和 CI」。
 
 ## 下一步
 
-- **第 15 步：收尾**（计划第 15 步）：SPEC 补 M3 的实际做法（4.1 素材表、4.2 `pick` 和锁定、6.x 适配器和本地运行时、7.x 混合出终版、9.1 新接口），从 DECISIONS 里 M3 的各条整理；ROADMAP 勾选；把 PROGRESS「已完成」和两份冒烟报告整理进 `reports/M3.md`；跑全套检查（pytest 在后台）；`gh pr create -R kelvin78901/AIVideoGenerationAgent --base main`。可选、没排期：画表情前把锁定图的头肩裁出来当参考（脸更大）。
-- **提醒 Kelvin 重启后端**：Kelvin 2026-10-21 晚上重启过；之后改的 `confirm_margin`、OCR 规则、示例便利贴 D 要再重启才生效（示例数据要 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`）。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
+- **等 Kelvin 看 PR 并合并**。合并后从 main 开 M4 分支，用 `/milestone` 出 M4 计划（分镜与动态分镜；从 M3 挪来的两项：镜头时长用 `pipeline/timing.py:shot_seconds`、改素材时列出受影响的镜头；示例剧集的镜头 MSW 叠加要删）。
+- **提醒 Kelvin 重启后端**并 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`：2026-10-21 晚上之后改的 `confirm_margin`、OCR 规则、示例便利贴 D 要重启才生效。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
-- **和 MSW 共存的规则**（计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
-- **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。heredoc 里 Python 字符串的 `\n` 会被写成真换行（第 5 步踩了两次）：要写进代码的 `\n` 用 Edit 工具。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
-- 截图：`pnpm -C web shots -g "<page> (light|dark)"`（只写 `-g <page>` 时 `spec` 会匹配到文件名 `shots.spec.ts`，把所有页都截一遍），然后填 `reports/ui/README.md` 对照表那一行。
+- **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
+- **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。heredoc 里 Python 字符串的 `\n` 会被写成真换行：要写进代码的 `\n` 用 Edit 工具。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
+- 截图：`pnpm -C web shots -g "<page> (light|dark)"`（只写 `-g <page>` 时 `spec` 会匹配到文件名 `shots.spec.ts`，把所有页都截一遍），然后填 `reports/ui/README.md` 对照表那一行。`assets-views` 和 `assets` 是同一张（默认选中林晚），截完复制一份。
 
 ## 没提交的改动
 
@@ -75,5 +61,6 @@
 
 ## 等 Kelvin 的事
 
-- 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
+- 看 M3 的 PR（描述 = `reports/M3.md`），合并到 main。
+- 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 15 步重截的 `assets-views`（6 张视图）；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。
