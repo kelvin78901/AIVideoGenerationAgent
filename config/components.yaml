@@ -45,6 +45,11 @@ audio:
 # 组件里的 per_call_cap_usd 覆盖这个默认值；数值取自原型各页 Inspector。
 per_call_cap_usd: 0.50
 
+# 确认过的任务最多花到「确认金额 + 余量」，余量取确认金额的 ratio 和 min_usd 中大的（Kelvin 2026-10-21）。
+# 估价不是精确值（比如 Nano Banana Pro 还按输入和思考 token 收费，实际比估价多约 3%），
+# 多次调用的任务（4 张图、音色设计 + 5 个情绪）不会因此停在最后一次。
+confirm_margin: { ratio: 0.10, min_usd: 0.05 }
+
 components:
   - id: extract
     stage: novel

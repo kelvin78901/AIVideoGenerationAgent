@@ -27,9 +27,13 @@ def test_drawn_text_matches_character_for_character() -> None:
     assert check(NOTE, NOTE, "model") == {"ocr": NOTE, "ocr_ok": True, "ocr_issue": None}
     # OCR breaks lines and writes full-width digits as it likes.
     assert check("23:52", "２３ : ５２", "model")["ocr_ok"] is True
-    # Punctuation counts.
-    assert check(NOTE, NOTE[:-1], "model")["ocr_issue"] == "missing"
+    # Punctuation counts, except that the punctuation ending the text may go unread.
+    assert check(NOTE, NOTE[:-1], "model") == {"ocr": NOTE[:-1], "ocr_ok": True, "ocr_issue": None}
+    assert check("等你。」", "等你", "model")["ocr_ok"] is True
+    assert check(NOTE, NOTE[:-1] + ".", "model")["ocr_issue"] == "wrong"  # read as another
+    assert check("……", "", "model")["ocr_issue"] == "missing"  # nothing but punctuation
     assert check(NOTE, "楼下便利店等你到十二点。", "model")["ocr_issue"] == "missing"
+    assert check(NOTE, "楼下便利店，等你到十二。", "model")["ocr_issue"] == "missing"
     assert check(NOTE, NOTE.replace("点", "占"), "model")["ocr_issue"] == "wrong"
     # Shorter, and a character read as another: wrong, not just missing.
     assert check(NOTE, "楼下便利店，等你到十二占", "model")["ocr_issue"] == "wrong"
@@ -63,4 +67,4 @@ def test_mock_ocr_reads_what_the_mock_drew(tmp_path: Path) -> None:
     assert read(drawn) == NOTE
     assert read(blank) == ""
     settings.ocr_mismatch = True
-    assert read(drawn) == NOTE[:-1]
+    assert read(drawn) == "楼下便利店，等你到十二。"

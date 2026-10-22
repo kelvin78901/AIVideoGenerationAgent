@@ -175,10 +175,22 @@ class AudioDefaults(_Loose):
     dialogue: DialogueAudio = Field(default_factory=DialogueAudio)
 
 
+class ConfirmMargin(_Loose):
+    """How far past a confirmed amount a job may spend: the larger of ``ratio`` of it and
+    ``min_usd`` (Kelvin 2026-10-21)."""
+
+    ratio: float = 0.10
+    min_usd: float = 0.05
+
+    def allowance(self, confirmed_usd: float) -> float:
+        return confirmed_usd + max(confirmed_usd * self.ratio, self.min_usd)
+
+
 class ComponentsConfig(_Loose):
     fallback_defaults: FallbackDefaults = Field(default_factory=FallbackDefaults)
     audio: AudioDefaults = Field(default_factory=AudioDefaults)
     per_call_cap_usd: float | None = 0.5  # hard rule 6: a run above this waits for a yes
+    confirm_margin: ConfirmMargin = Field(default_factory=ConfirmMargin)
     components: list[ComponentDefault] = Field(default_factory=list)
 
     def component(self, component_id: str) -> ComponentDefault:

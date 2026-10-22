@@ -67,7 +67,8 @@ class MockSettings:
     responders: dict[tuple[str, str], Responder] = field(default_factory=dict)
     # The next N JSON answers are broken (exercises a component's retry-once path).
     bad_json: int = 0
-    # OCR misses the last character of what a picture shows (exercises 「OCR 不一致」).
+    # OCR misses the character before the last of what a picture shows (exercises 「OCR 不一致」;
+    # not the last one, a final 。 that goes unread passes).
     ocr_mismatch: bool = False
 
 
@@ -308,7 +309,7 @@ class MockAdapter:
             raise ModelError("ocr_no_image", str(exc)) from exc
         text = png_texts(data).get(MOCK_TEXT_KEY, "")
         if self.settings.ocr_mismatch:
-            text = text[:-1]
+            text = text[:-2] + text[-1:]
         return ModelResult(
             text=text, json={"text": text}, usage=Usage(images=1), raw={"mock": True}
         )

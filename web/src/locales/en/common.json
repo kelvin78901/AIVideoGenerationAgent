@@ -117,7 +117,7 @@
     "no_model_configured": "No model is selected for this step yet",
     "no_alternative": "There is no other model to switch to; add alternatives in Run settings",
     "invalid_output": "The model twice failed to answer in the required format; its raw answer is kept",
-    "budget_exceeded": "This call would go over a limit (the per-call cap or the confirmed amount); it stopped before spending",
+    "budget_exceeded": "This call would go over a limit (the per-call cap, or the confirmed amount plus its margin); it stopped before spending",
     "over_budget": "Estimated ${{estimate_usd}}, over the ${{limit_usd}} limit; it runs once you confirm",
     "rights_not_confirmed": "Tick “I own the adaptation rights” before importing",
     "unsupported_file": "Only .txt and .docx are supported (this file is {{ext}})",

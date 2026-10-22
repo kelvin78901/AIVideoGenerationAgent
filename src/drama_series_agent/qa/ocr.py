@@ -4,7 +4,8 @@ Every candidate of an on-screen text asset is read back and compared with what i
 
 - **模型直接出字** (``method: model``): character for character, punctuation included, after
   NFKC on both sides (full-width digits and colons read the same as half-width ones) and
-  without whitespace (OCR splits lines and words as it likes).
+  without whitespace (OCR splits lines and words as it likes). The punctuation ending the text
+  may go unread (Kelvin 2026-10-21: RapidOCR missed a final 。 that GPT Image 2 had drawn).
 - **后期贴字** (``composite``): the picture is a base for the text to go on in post, so OCR must
   read nothing on it.
 
@@ -47,8 +48,18 @@ def check(exact: str, read: str | None, method: str) -> dict[str, Any]:
         issue = "has_text" if got else None
     else:
         want = normalize(exact)
-        issue = None if got == want else "missing" if _left_out(got, want) else "wrong"
+        issue = None if _matches(got, want) else "missing" if _left_out(got, want) else "wrong"
     return {"ocr": read, "ocr_ok": issue is None, "ocr_issue": issue}
+
+
+def _matches(got: str, want: str) -> bool:
+    """``got`` is ``want``, or ``want`` without the punctuation it ends with."""
+    if got == want:
+        return True
+    end = len(want)
+    while end and unicodedata.category(want[end - 1]).startswith("P"):
+        end -= 1
+    return 0 < end < len(want) and got == want[:end]
 
 
 def _left_out(got: str, want: str) -> bool:

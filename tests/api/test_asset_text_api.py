@@ -22,6 +22,7 @@ from drama_series_agent.modelhub.adapters.mock import MOCK_TEXT_KEY, gradient_pn
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
 NOTE = "楼下便利店，等你到十二点。"
+SHORT = "楼下便利店，等你到十二。"  # what Mock OCR reads when it misses a character
 
 
 @pytest.fixture
@@ -91,7 +92,7 @@ def test_the_demo_candidates_carry_their_ocr(client: TestClient) -> None:
         _ok(NOTE),
         _ok(NOTE.replace("点", "占"), False, "wrong"),
         _ok(NOTE),
-        _ok(NOTE[:-1], False, "missing"),
+        _ok(SHORT, False, "missing"),
     ]
     txt2 = _product(client, "txt2")
     first = txt2["versions"][0]
@@ -148,11 +149,11 @@ def test_a_mismatch_locks_only_with_force(client: TestClient) -> None:
     }
     assert _product(client, "txt1")["locked_hash"] is None
 
-    # Every candidate of a run misses the full stop.
+    # Every candidate of a run misses the 点.
     _state(client).registry.mock_settings.ocr_mismatch = True
     _run(client, "txt1")
     draft = _latest(client, "txt1")
-    assert draft["payload"]["candidates"] == [_ok(NOTE[:-1], False, "missing")] * 4
+    assert draft["payload"]["candidates"] == [_ok(SHORT, False, "missing")] * 4
     assert _detail(client.post(f"{V1}/assets/txt1/lock"))["code"] == "ocr_mismatch"
     resp = client.post(f"{V1}/assets/txt1/lock", json={"force": True})
     assert resp.status_code == 200, resp.text

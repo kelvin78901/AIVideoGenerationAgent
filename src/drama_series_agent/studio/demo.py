@@ -552,10 +552,11 @@ def _demo_time(hhmm: str) -> datetime:
 
 def _text_reads(exact: str, method: str) -> list[str]:
     """What OCR reads on each of the four text pictures (the prototype's): drawn by the model,
-    B misreads 点 as 占 and D drops the last character; a base for compositing has none."""
+    B misreads 点 as 占 and D drops the character before the last (the prototype drops the
+    last, the 。, which passes since 2026-10-21); a base for compositing has none."""
     if method == "composite":
         return [""] * 4
-    return [exact, exact.replace("点", "占"), exact, exact[:-1]]
+    return [exact, exact.replace("点", "占"), exact, exact[:-2] + exact[-1:]]
 
 
 def _demo_wave(i: int) -> list[float]:

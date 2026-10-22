@@ -20,6 +20,9 @@ M3 第 14 步 · 真实冒烟（2026-10-21，scripts/smoke/live_assets.py）
   精修；Seedream 1088×1920，门边多了一个小画框。
   · Nano Banana Pro 实际 $0.1376，估价 $0.1340（只算了 1120 个输出 token），差的 $0.0036 是
     输入（提示词 + 参考图）和思考 token，低估约 2.7%。Seedream $0.0169，和估价一致。
+- 之后 Kelvin 定的（DECISIONS「第 14 步追加」）：OCR 没读到句末标点不算漏字（第 3 次 GPT Image 2
+  那张现在算一致）；确认过的任务留余量 max(10%, $0.05)。Kelvin 听了音色和配音：和之前生成的
+  差距不大，有的能用、有的不能用。
 
 M3 live smoke · 2026-10-21 10:41 · LIVE, cap $3.0 · steps ['text', 'voice', 'dub']
 ComfyUI 0.41.2 at http://127.0.0.1:8188; models C:\Users\kelvin\DramaStudio

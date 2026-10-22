@@ -1691,7 +1691,7 @@
                 "ocr_issue": null
               },
               {
-                "ocr": "楼下便利店，等你到十二点",
+                "ocr": "楼下便利店，等你到十二。",
                 "ocr_ok": false,
                 "ocr_issue": "missing"
               }
@@ -1749,8 +1749,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/67/6726c2ab79de096629a6d5c6f94a86147edc794eb4bbeded8e44126991ba4981",
-              "sha256": "6726c2ab79de096629a6d5c6f94a86147edc794eb4bbeded8e44126991ba4981",
+              "path": "blobs/sha256/1b/1bfcd5e2c3e7f6ef59e6effff707254cbe693cd3d469d423e88618a76eb18b0c",
+              "sha256": "1bfcd5e2c3e7f6ef59e6effff707254cbe693cd3d469d423e88618a76eb18b0c",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1762,7 +1762,7 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:cf3a1f4797ad8a9cb820a6d55d7a482d0af769af616c4d83ca48d1428d956b1a",
+          "content_hash": "sha256:d123a3f64cd26e06ab6fe468de0777a13472e0dbdd5667d5eabd23387aff8cec",
           "intent": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
           "compiled": "[任务] 画面文字素材：一张画面，里面只有下面这一处字，一字不差\n[描述] 黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。\n[风格] 写实电影感，竖屏短剧的画面质感\n[约束] 单幅画面，不拼图、不分格；这处字只出现一次，画面里不要出现别的文字、水印或标志\n\n# 目标模型：openai/gpt-image-2",
           "compiled_overridden": false,
