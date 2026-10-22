@@ -1,6 +1,6 @@
 M3 第 14 步 · 真实冒烟（2026-10-21，scripts/smoke/live_assets.py）
 
-跑了三次，合计花费 $1.5702（Kelvin 批准的清单约 $1.78，上限 $3）：
+跑了四次，合计花费 $1.5702（Kelvin 批准的清单约 $1.78，上限 $3）：
 - 第 1 次（全部步骤）：停在 img。Nano Banana Pro 429，兜底到 Seedream 又 400
   InvalidParameter（适配器带了 5.0 flash 不支持的 sequential_image_generation）。花费 $0。
 - 第 2 次（全部步骤，去掉那个参数、路由把失败原文写进日志）：仍停在 img，花费 $0。
@@ -10,8 +10,13 @@ M3 第 14 步 · 真实冒烟（2026-10-21，scripts/smoke/live_assets.py）
     用量上限，模型服务被暂停。
   · 两种都被当成可重试的 rate_limited，任务重试了 3 遍；之后改成 quota_exceeded，不重试。
 - 第 3 次（--only text,voice,dub）：全部成功，下面是这次的完整输出。
-- 没验证：Nano Banana Pro、Seedream 5.0 flash 的真实出图（等 Kelvin 在两家控制台处理后
-  再跑 --only img，约 $0.15）。
+- 第 4 次（17:47，--only img，Kelvin 说两家都处理好了）：本地草稿 32.8 s 出 4 张，两家终版
+  仍然 quota_exceeded，没有重试，花费 $0。
+  · Google：配额 ID 仍是 *-FreeTier（每分钟 / 每天请求数、输入 token，limit: 0）——工作台用的
+    密钥（钥匙串里只有这一把，.env 里没有）所在的项目还在免费层。
+  · 火山方舟：仍是 SetLimitExceeded（doubao-seedream-5-0-flash 的安全体验模式上限）。
+- 没验证：Nano Banana Pro、Seedream 5.0 flash 的真实出图（等两家账号真的生效后再跑
+  --only img，约 $0.15）。
 
 M3 live smoke · 2026-10-21 10:41 · LIVE, cap $3.0 · steps ['text', 'voice', 'dub']
 ComfyUI 0.41.2 at http://127.0.0.1:8188; models C:\Users\kelvin\DramaStudio

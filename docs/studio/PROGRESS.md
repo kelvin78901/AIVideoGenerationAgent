@@ -76,5 +76,5 @@
 
 - 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
 - **定一下**：确认过的任务真实花费超过确认金额时现在直接停（`budget_exceeded`），多步流程（比如音色终版 = 设计 + 5 次合成）会停在半路、前面花的白花。要不要留余量（比如确认金额的 10% 或 $0.05，取大的）？没定之前靠估价往高估（DECISIONS「第 11 步」）。
-- **两家账号**（第 14 步 img 要用）：① Gemini 密钥所在的项目开通付费（现在是免费层，`gemini-3-pro-image` 额度为 0）；② 火山方舟控制台「开通管理」里，`doubao-seedream-5-0-flash` 调高用量上限或关掉安全体验模式。③ 听一下真实的 MiniMax 音色和配音：`C:\Users\kelvin\AppData\Local\Temp\drama-live-smoke-g41t4kie\out\`（`linwan-voice-*.wav`、`dub-*.wav`）。④ **定一下**：OCR 没读到句末「。」判成漏字，要不要放宽（DECISIONS「第 14 步」）。
+- **两家账号**（第 14 步 img 要用；2026-10-21 17:47 第 4 次仍被挡，$0，见 `reports/m3-live-smoke.txt`）：① Gemini：工作台用的是钥匙串里那把密钥，它所在的项目还在免费层（配额 ID 是 `*-FreeTier`）——在 AI Studio 的 API 密钥页看这把密钥属于哪个项目，给**那个**项目开通付费；或者在已付费的项目里新建密钥，到「模型与兜底 → 填密钥」换掉。② 火山方舟：`doubao-seedream-5-0-flash` 仍报 `SetLimitExceeded`——「开通管理」里找**这个**模型（不是 4.5 等其他版本），关掉安全体验模式或调高上限；ARK 密钥属于哪个账号，就要在哪个账号里改。③ 听一下真实的 MiniMax 音色和配音：`C:\Users\kelvin\AppData\Local\Temp\drama-live-smoke-g41t4kie\out\`（`linwan-voice-*.wav`、`dub-*.wav`）。④ **定一下**：OCR 没读到句末「。」判成漏字，要不要放宽（DECISIONS「第 14 步」）。
 - M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。
