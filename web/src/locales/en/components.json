@@ -199,6 +199,8 @@
       "self_asset_list": "Episode {{n}}'s asset list will change",
       "stale_asset_list": "Episode {{n}} asset list · will be analysed again",
       "then_asset_list": "Episode {{n}} asset list · analysed again only if what it reads changes",
+      "stale_shot_plan": "Episode {{n}} shot plan · marked out of date, not redone by itself (a new plan would replace your edits and confirmed shots); rerun it on the storyboard page when you want",
+      "then_shot_plan": "Episode {{n}} shot plan · marked out of date only if what it reads changes; never redone by itself",
       "edited_asset_list": "Hand edits in episode {{n}}'s asset list may be rewritten",
       "stale_line_audio": "Dialogue audio · {{count}} line(s) redubbed with the new wording",
       "then_line_audio": "Dialogue audio · {{count}} line(s) · redubbed only if upstream really changes",

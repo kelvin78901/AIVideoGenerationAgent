@@ -6,6 +6,7 @@ import type { ReactNode } from "react";
 import { api } from "@/api/client";
 import { onEvent } from "@/api/events";
 import { useEpisodes } from "@/api/hooks/series";
+import { useTimeline } from "@/api/hooks/post";
 import { useShots } from "@/api/hooks/shots";
 import { HealthSchema } from "@/api/schemas/jobs";
 import { useEventStream } from "@/api/useEventStream";
@@ -29,7 +30,7 @@ describe("demo data (MSW)", () => {
   });
 
   it("returns translated errors for unknown ids", async () => {
-    const { result } = renderHook(() => useShots("nope"), { wrapper });
+    const { result } = renderHook(() => useTimeline("nope"), { wrapper });
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(result.current.error).toMatchObject({ status: 404, code: "episode_not_found" });
   });

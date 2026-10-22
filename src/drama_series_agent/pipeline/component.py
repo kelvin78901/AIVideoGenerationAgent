@@ -342,6 +342,12 @@ class Component(ABC):
                 await session.commit()
 
 
+def reruns_in_cascade(comp: Component) -> bool:
+    """确认并同步 reruns it and adopts what comes: not a candidate component (M3: its takes wait
+    for the user's pick) nor one that says no (M4: 分镜规划)."""
+    return comp.cascade_rerun and (comp.auto_adopt or comp.adopt_every_run)
+
+
 class ComponentRegistry:
     def __init__(self, services: Services) -> None:
         self.services = services

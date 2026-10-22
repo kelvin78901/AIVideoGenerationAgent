@@ -199,6 +199,8 @@
       "self_asset_list": "第 {{n}} 集的素材清单会改成新内容",
       "stale_asset_list": "第 {{n}} 集素材清单 · 会重新分析",
       "then_asset_list": "第 {{n}} 集素材清单 · 上游真的有变化才重新分析",
+      "stale_shot_plan": "第 {{n}} 集分镜规划 · 标待更新，不自动重做（重做会盖掉手改和已确认的镜头），要用时去分镜页重跑",
+      "then_shot_plan": "第 {{n}} 集分镜规划 · 上游真的有变化才标待更新，不自动重做",
       "edited_asset_list": "第 {{n}} 集素材清单里手动改过的地方，可能会按新的内容重写",
       "stale_line_audio": "台词配音 · {{count}} 句按新台词重配",
       "then_line_audio": "台词配音 · {{count}} 句 · 上游真的有变化才重配",

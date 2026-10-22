@@ -26,6 +26,7 @@
   "shot": {
     "label": "Shot settings",
     "title": "Shot {{id}}",
+    "scene": "Scene {{n}} · {{place}}",
     "confirm": "Confirm this shot",
     "unconfirm": "Unconfirm",
     "confirmed": "{{id}} confirmed: first frame, references and settings are locked; ready for video.",

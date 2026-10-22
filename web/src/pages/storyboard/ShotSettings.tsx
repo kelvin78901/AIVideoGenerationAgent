@@ -162,7 +162,9 @@ export function ShotSettings({
     >
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-bold">{t("shot.title", { id: shot.label })}</h2>
-        <span className="text-xs text-muted-foreground">{shot.scene_label}</span>
+        <span className="text-xs text-muted-foreground">
+          {t("shot.scene", { n: shot.scene_no, place: shot.scene_place })}
+        </span>
         <StatusBadge tone={shot.confirmed ? "info" : "warn"} icon={null}>
           {t(shot.confirmed ? "status.confirmed" : "status.draft")}
         </StatusBadge>

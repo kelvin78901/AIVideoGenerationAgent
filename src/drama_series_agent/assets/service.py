@@ -74,7 +74,7 @@ from drama_series_agent.episodes.service import (
     EpisodeService,
     gate_confirmed,
     latest_gate,
-    scene_counts,
+    scene_numbers,
 )
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_info
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
@@ -335,7 +335,7 @@ class AssetService:
             episode = await session.get(Episode, episode_id)
             if episode is None:
                 raise PipelineError(404, "episode_not_found", id=episode_id)
-            numbers = await _scene_numbers(session, episode.series_id)
+            numbers = await scene_numbers(session, episode.series_id)
             scenes = list(
                 (
                     await session.exec(
@@ -580,7 +580,7 @@ class AssetService:
             if product is None or not product.locked_hash:
                 raise PipelineError(409, "not_locked", id=asset_id)
             uses = await self._uses(session, asset, product)
-            numbers = await _scene_numbers(session, product.series_id)
+            numbers = await scene_numbers(session, product.series_id)
             scenes = sorted(
                 {
                     numbers.get(u.scene_id, 0)
@@ -709,7 +709,7 @@ class AssetService:
             await session.exec(select(AssetUse).where(col(AssetUse.asset_id).in_(ids)))
         ).all():
             uses.setdefault(u.asset_id, []).append(u)
-        numbers = await _scene_numbers(session, series_id)
+        numbers = await scene_numbers(session, series_id)
         episodes = {
             e.id: e.idx
             for e in (await session.exec(select(Episode).where(Episode.series_id == series_id)))
@@ -807,20 +807,6 @@ async def _refuse_ocr_mismatch(
             exact=exact,
             issue=entry.get("ocr_issue") or "",
         )
-
-
-async def _scene_numbers(session: AsyncSession, series_id: str) -> dict[str, int]:
-    """Scene id → its series-wide 场号 (as the script page numbers them)."""
-    offsets: dict[str, int] = {}
-    first = 1
-    for e in await scene_counts(session, series_id):
-        offsets[e["id"]] = first
-        first += int(e["scene_count"] or 0)
-    out: dict[str, int] = {}
-    rows = (await session.exec(select(Scene).where(Scene.series_id == series_id))).all()
-    for s in rows:
-        out[s.id] = offsets.get(s.episode_id, 1) + s.idx - 1
-    return out
 
 
 def _source(

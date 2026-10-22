@@ -14,10 +14,10 @@ from typing import Literal
 from pydantic import BaseModel, ConfigDict, Field
 from sqlmodel import col, select
 
-from drama_series_agent.assets.service import _scene_numbers
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import Episode, Product, ProductVersion, Scene, ScriptLine
+from drama_series_agent.episodes.service import scene_numbers
 from drama_series_agent.pipeline.components.dub import (
     LINE_AUDIO_SLOT,
     SPEAKING,
@@ -167,7 +167,7 @@ class DubService:
             }
             stale = await self._invalidation.stale_ids(session, list(products.values()))
             voices, uses, voice_products = await series_voices(session, episode.series_id)
-            numbers = await _scene_numbers(session, episode.series_id)
+            numbers = await scene_numbers(session, episode.series_id)
         cfg = get_config().voice
         out: list[DubLineOut] = []
         for x in lines:

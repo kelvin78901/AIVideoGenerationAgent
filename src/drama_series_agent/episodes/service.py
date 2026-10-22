@@ -28,7 +28,9 @@ from drama_series_agent.core.models_db import (
     Job,
     Product,
     ProductVersion,
+    Scene,
     Series,
+    Shot,
     utcnow,
 )
 from drama_series_agent.episodes import ops
@@ -105,6 +107,20 @@ async def scene_counts(session: AsyncSession, series_id: str) -> list[dict[str, 
             if v is not None:
                 count = script_ops.scene_count(v.payload_json)
         out.append({"id": r.id, "idx": r.idx, "scene_count": count})
+    return out
+
+
+async def scene_numbers(session: AsyncSession, series_id: str) -> dict[str, int]:
+    """Scene id → its series-wide 场号 (as the script page numbers them)."""
+    offsets: dict[str, int] = {}
+    first = 1
+    for e in await scene_counts(session, series_id):
+        offsets[e["id"]] = first
+        first += int(e["scene_count"] or 0)
+    out: dict[str, int] = {}
+    rows = (await session.exec(select(Scene).where(Scene.series_id == series_id))).all()
+    for s in rows:
+        out[s.id] = offsets.get(s.episode_id, 1) + s.idx - 1
     return out
 
 
@@ -352,6 +368,12 @@ class EpisodeService:
         for b in (await session.exec(query.order_by(col(Beat.idx)))).all():
             beats.setdefault(b.episode_id, []).append(b)
         ranges = ops.scene_ranges(await scene_counts(session, series_id))
+        shots: dict[str, int] = {}
+        query_shots = select(Shot.episode_id).where(
+            Shot.series_id == series_id, col(Shot.retired).is_(False)
+        )
+        for episode_id in (await session.exec(query_shots)).all():
+            shots[episode_id] = shots.get(episode_id, 0) + 1
         out = []
         for r in rows:
             status = await self._script_status(session, r.id, await self._script(session, r.id))
@@ -370,7 +392,7 @@ class EpisodeService:
                     stage="script_pending" if status == "none" else "in_progress",
                     scene_from=scenes[0] if scenes else None,
                     scene_to=scenes[1] if scenes else None,
-                    shot_count=None,
+                    shot_count=shots.get(r.id),
                     script_status=status,
                     beats=[
                         BeatOut(

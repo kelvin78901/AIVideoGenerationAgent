@@ -8,11 +8,12 @@ v1 local → v2 DeepSeek, adopted, the first suggestion accepted; ``enrich.json`
 bible (设定提取 v1, read with that accepted addition; ``extract.json``) and its episode plan
 (分集规划 v1 on DeepSeek, three episodes with a $15 budget each; ``split.json``) and episode 1's
 script (剧本化 v1 local → v2 「不满意换一个」 on Kimi, adopted; ``script.json``) and its asset
-list (素材分析 v1 on DeepSeek, the prototype's 13 assets with their ids; ``assets.json``), each
-assembled exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``.
-Then the novel gate and episode 1's script gate are confirmed, once: a gate the user reopened
-stays open. ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset``
-deletes the demo series first.
+list (素材分析 v1 on DeepSeek, the prototype's 13 assets with their ids; ``assets.json``) and
+its shot plan (分镜规划 v1 on DeepSeek, the prototype's nine shots ``demo-shot-1-01`` …;
+``plan.json``), each assembled exactly as a Mock run would. Ids and times match
+``web/src/mocks/fixtures/demo/``. Then the novel gate and episode 1's script gate are confirmed,
+once: a gate the user reopened stays open. ``drama-studio demo [--reset]`` runs the same
+seeding on demand; ``--reset`` deletes the demo series first.
 """
 
 from __future__ import annotations
@@ -46,7 +47,7 @@ from drama_series_agent.episodes import service as episodes
 from drama_series_agent.episodes.service import latest_gate
 from drama_series_agent.modelhub.adapters.mock import MOCK_TEXT_KEY, mock_picture, sine_wav
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
-from drama_series_agent.pipeline.components import assets, enrich, script, split
+from drama_series_agent.pipeline.components import assets, enrich, plan, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
 from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.components.views import (
@@ -63,6 +64,7 @@ from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.qa import ocr
 from drama_series_agent.script import service as script_service
+from drama_series_agent.shots import service as shots_service
 from drama_series_agent.spec.dims import dims
 from drama_series_agent.spec.schema import default_row
 from drama_series_agent.suggestions import service as suggestions
@@ -153,6 +155,8 @@ DEMO_ASSET_IDS = {
     "voice:c-linwan": "vlinwan",
     "voice:c-zhouyu": "vzhouyu",
 }
+# 分镜规划 of episode 1 on DeepSeek, 10:48 +08:00.
+PLAN_MODEL = "deepseek/v4-pro"
 # Confirmed by the seed (the prototype's demo: 小说 and episode 1's 剧本 已确认).
 CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 
@@ -160,6 +164,11 @@ CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 def script_product_id(episode_id: str) -> str:
     """``demo-e1`` → ``demo-p-script-e1`` (MSW ``scriptProductId``)."""
     return f"demo-p-script-{episode_id.removeprefix('demo-')}"
+
+
+def plan_product_id(episode_id: str) -> str:
+    """``demo-p-plan-e1`` (the MSW fixture's)."""
+    return f"demo-p-plan-{episode_id.removeprefix('demo-')}"
 
 
 def assets_product_id(episode_id: str) -> str:
@@ -211,6 +220,14 @@ async def seed_demo(
                     component_id=assets.AssetsComponent.id,
                     product_id=assets_product_id(e["id"]),
                 )
+                await products.ensure(
+                    series_id=DEMO_SERIES_ID,
+                    owner_type="episode",
+                    owner_id=e["id"],
+                    slot=plan.SHOT_PLAN_SLOT,
+                    component_id=plan.PlanComponent.id,
+                    product_id=plan_product_id(e["id"]),
+                )
         await _seed_novel(novel)
         if products is not None and compiler is not None:
             await _seed_enrich(db, novel, products, compiler)
@@ -219,6 +236,7 @@ async def seed_demo(
             await _seed_script(db, novel, products, compiler)
             await _seed_assets(db, products, compiler)
             await _seed_asset_versions(db, products, compiler)
+            await _seed_plan(db, products, compiler)
         if gates is not None:
             await _seed_gates(db, gates)
     return created
@@ -246,7 +264,9 @@ async def build_demo(*, reset: bool) -> None:
         products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
         products.on_adopt(episodes.EPISODES_SLOT, episodes.materialize)
         products.on_adopt(episodes.SCRIPT_SLOT, script_service.materialize)
+        products.on_adopt(episodes.SCRIPT_SLOT, shots_service.ensure_plan)
         products.on_adopt(assets.ASSET_LIST_SLOT, assets_service.materialize)
+        products.on_adopt(plan.SHOT_PLAN_SLOT, shots_service.materialize)
         if reset:
             await delete_demo(db)
         novel = NovelService(db, BlobStore(), products)
@@ -303,6 +323,7 @@ def slicers() -> Invalidation:
     invalidation.slicer(suggestions.SUGGESTIONS_SLOT, suggestions.suggestions_slicer)
     invalidation.slicer(episodes.EPISODES_SLOT, episodes.episodes_slicer)
     invalidation.slicer(episodes.SCRIPT_SLOT, script_service.script_slicer)
+    invalidation.slicer(assets.ASSET_LIST_SLOT, plan.asset_list_slicer)
     return invalidation
 
 
@@ -540,6 +561,40 @@ async def _seed_assets(db: Database, products: ProductService, compiler: PromptC
         dependencies=list(inputs.deps),
         id=f"{product_id}-v1",
         created_at=ASSETS_AT,
+    )
+    await products.append(product_id, draft, origin="run")
+
+
+async def _seed_plan(db: Database, products: ProductService, compiler: PromptCompiler) -> None:
+    """Episode 1's shot plan from the fixture, with the prototype's shot ids, adopted (its
+    mirror gives each shot that is not continuous its keyframe product)."""
+    product_id = plan_product_id("demo-e1")
+    async with db.session() as session:
+        product = await session.get(Product, product_id)
+        if product is None or product.current_version_id is not None:
+            return
+        try:
+            inputs = await plan.gather(session, slicers(), DEMO_SERIES_ID, "demo-e1")
+        except PipelineError:
+            return  # the script is not there yet
+    payload = plan.build(plan.demo_fixture()["answer"], inputs.context)
+    ids = {s["id"]: f"demo-shot-1-{n:02d}" for n, s in enumerate(payload["shots"], 1)}
+    for s in payload["shots"]:
+        s["id"] = ids[s["id"]]
+        if s.get("tail_from"):
+            s["tail_from"] = ids[s["tail_from"]]
+    intent = compiler.default_intent("plan", "zh-CN")
+    draft = VersionDraft(
+        payload=payload,
+        intent=intent,
+        compiled=compiler.compile("plan", intent, PLAN_MODEL),
+        model_key=PLAN_MODEL,
+        where="api",
+        seed=1301,
+        params={"mode": "run", "calls": 1},
+        dependencies=list(inputs.deps),
+        id=f"{product_id}-v1",
+        created_at=_demo_time("10:48"),
     )
     await products.append(product_id, draft, origin="run")
 

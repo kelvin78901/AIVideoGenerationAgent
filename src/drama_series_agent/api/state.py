@@ -14,11 +14,12 @@ from drama_series_agent.assets.dub import DubService
 from drama_series_agent.assets.service import AssetService
 from drama_series_agent.bible.service import BIBLE_SLOT, BibleService, bible_slicer, materialize
 from drama_series_agent.core import secrets
-from drama_series_agent.core.config import get_config
+from drama_series_agent.core.config import get_config, resolve
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.jobs import JobQueue
 from drama_series_agent.core.models_db import Product
+from drama_series_agent.core.overrides import load_defaults, load_overrides
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes_service
@@ -34,12 +35,21 @@ from drama_series_agent.modelhub.router import Router
 from drama_series_agent.modelhub.workflows import has_workflow
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
 from drama_series_agent.pipeline.cascade import CascadeService
-from drama_series_agent.pipeline.component import ComponentRegistry, Services
+from drama_series_agent.pipeline.component import (
+    ComponentRegistry,
+    Services,
+    reruns_in_cascade,
+)
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, AssetsComponent
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, DubComponent
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
 from drama_series_agent.pipeline.components.img import ImgComponent
+from drama_series_agent.pipeline.components.plan import (
+    SHOT_PLAN_SLOT,
+    PlanComponent,
+    asset_list_slicer,
+)
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.components.text import TextComponent
@@ -50,10 +60,14 @@ from drama_series_agent.pipeline.impact import ImpactService, register_kinds
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
+from drama_series_agent.pipeline.timing import longest_take_s
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.script import service as script_service
 from drama_series_agent.script.service import ScriptService
 from drama_series_agent.setup.service import SetupService
+from drama_series_agent.shots import service as shots_service
+from drama_series_agent.shots.service import ShotService
+from drama_series_agent.spec.compat import model_caps
 from drama_series_agent.suggestions import service as suggestions_service
 from drama_series_agent.suggestions.service import SUGGESTIONS_SLOT, SuggestionService
 
@@ -78,6 +92,7 @@ class StudioState:
     script: ScriptService
     assets: AssetService
     dub: DubService
+    shots: ShotService
     gates: GateService
     impact: ImpactService
     cascade: CascadeService
@@ -109,12 +124,15 @@ class StudioState:
         invalidation.slicer(SUGGESTIONS_SLOT, suggestions_service.suggestions_slicer)
         invalidation.slicer(EPISODES_SLOT, episodes_service.episodes_slicer)
         invalidation.slicer(episodes_service.SCRIPT_SLOT, script_service.script_slicer)
+        invalidation.slicer(ASSET_LIST_SLOT, asset_list_slicer)
         products = ProductService(db, bus, invalidation)
         products.on_adopt(BIBLE_SLOT, materialize)
         products.on_adopt(SUGGESTIONS_SLOT, suggestions_service.materialize)
         products.on_adopt(EPISODES_SLOT, episodes_service.materialize)
         products.on_adopt(episodes_service.SCRIPT_SLOT, script_service.materialize)
+        products.on_adopt(episodes_service.SCRIPT_SLOT, shots_service.ensure_plan)
         products.on_adopt(ASSET_LIST_SLOT, assets_service.materialize)
+        products.on_adopt(SHOT_PLAN_SLOT, shots_service.materialize)
         compiler = PromptCompiler()
         components = ComponentRegistry(
             Services(
@@ -141,6 +159,7 @@ class StudioState:
         components.add(VoiceComponent(components.services))
         dub = DubComponent(components.services)
         components.add(dub)
+        components.add(PlanComponent(components.services))
         # A line's audio is one of dozens: lists of them skip the per-product estimate.
         products.quiet_slots.add(LINE_AUDIO_SLOT)
         episodes = EpisodeService(db, products, invalidation)
@@ -149,6 +168,10 @@ class StudioState:
         novel.after_import = runs.ensure_series_products
 
         async def estimate(product: Product) -> float | None:
+            """What 确认并同步 would pay for it: nothing for what a sync never reruns."""
+            comp = components.get(product.component_id)
+            if comp is None or not reruns_in_cascade(comp):
+                return None
             _, est = await runs.describe(product)
             return est.cost_usd if est is not None and est.where == "api" and est.cost_usd else None
 
@@ -159,6 +182,19 @@ class StudioState:
             db, products, runs, bus=bus, store=store, invalidation=invalidation, text=text
         )
         dub_service = DubService(db, products, runs, invalidation, dub)
+
+        async def longest_take() -> float | None:
+            """The longest take on the video route this machine will take (SPEC 7.3)."""
+            async with db.session() as session:
+                overrides = await load_overrides(session)
+                defaults = await load_defaults(session)
+            cfg = get_config()
+            route = resolve(
+                "vid", overrides, config=cfg, caps=await setup.capabilities(), defaults=defaults
+            )
+            return longest_take_s(route.values, lambda key: model_caps(cfg, key))
+
+        shots = ShotService(db, products, runs, longest=longest_take)
         impact = ImpactService(db, products, invalidation, estimate)
         gates = GateService(db, bus, products, invalidation)
         cascade = CascadeService(db, bus, products, invalidation, runs, gates)
@@ -191,6 +227,7 @@ class StudioState:
             script=script_svc,
             assets=assets,
             dub=dub_service,
+            shots=shots,
             gates=gates,
             impact=impact,
             cascade=cascade,

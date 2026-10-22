@@ -42,7 +42,7 @@ from sqlmodel import col, select
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.models_db import Job, Product, new_id
-from drama_series_agent.pipeline.component import ComponentError
+from drama_series_agent.pipeline.component import ComponentError, reruns_in_cascade
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.impact import Node, rank, series_graph
@@ -213,7 +213,7 @@ class CascadeService:
     def _cascades(self, p: Product | None) -> bool:
         """Not in the stop set: its reruns are adopted as they come."""
         comp = self._runs.components.get(p.component_id) if p is not None else None
-        return comp is not None and comp.cascade_rerun and (comp.auto_adopt or comp.adopt_every_run)
+        return comp is not None and reruns_in_cascade(comp)
 
 
 def _closure(start: str, graph: dict[str, set[str]]) -> set[str]:

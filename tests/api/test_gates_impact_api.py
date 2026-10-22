@@ -218,9 +218,12 @@ def test_editing_a_confirmed_script_line(client: TestClient) -> None:
     assert _apply(client, spoken["id"], "undo").status_code == 200
     # An action line is what 素材分析 reads (M3): the episode's asset list goes stale.
     impact = _preview(client, "line_edit", "demo-b2", {"text": "她把伞靠在门边。"})
+    # The shot plan reads the asset list's ids only (M4): stale only if they change, and never
+    # redone by a sync.
     assert _codes(impact) == [
         ("self_script", {"n": 1}, False),
         ("stale_asset_list", {"n": 1}, False),
+        ("then_shot_plan", {"n": 1}, True),
     ]
     assert impact["stale"] == {"assets": 1} and impact["rerun_cost_usd"] > 0
     assert impact["change"]["kind"] == "line_edit"
@@ -292,8 +295,11 @@ def test_editing_a_confirmed_novel_chapter(client: TestClient) -> None:
         "stale_script",
     ]
     assert ("gate_novel", {}, False) in codes and ("gate_script", {"n": 1}, False) in codes
-    # Further down only episode 1's asset list, which reads the script (M3).
-    assert [c for c, _, _ in codes if c.startswith("then_")] == ["then_asset_list"]
+    # Further down episode 1's asset list, which reads the script (M3), and its shot plan (M4).
+    assert [c for c, _, _ in codes if c.startswith("then_")] == [
+        "then_asset_list",
+        "then_shot_plan",
+    ]
     assert impact["stale"] == {"novel": 2, "script": 2}
     priced = [x["cost_usd"] for x in impact["lines"] if x["cost_usd"] is not None]
     assert priced and impact["rerun_cost_usd"] == pytest.approx(sum(priced), abs=1e-4)
@@ -335,6 +341,7 @@ def test_moving_a_beat_affects_both_episodes(client: TestClient) -> None:
         ("stale_script", {"n": 1}, False),
         ("stale_script", {"n": 2}, False),
         ("then_asset_list", {"n": 1}, True),
+        ("then_shot_plan", {"n": 1}, True),
         ("gate_script", {"n": 1}, False),
     ]
     assert impact["stale"] == {"script": 2}

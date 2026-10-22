@@ -146,7 +146,8 @@ def test_demo_plan_is_seeded(client: TestClient) -> None:
     assert [(e["script_status"], e["stage"]) for e in data] == [
         ("draft", "in_progress"), ("none", "script_pending"), ("none", "script_pending"),
     ]  # fmt: skip
-    assert all(e["shot_count"] is None for e in data)
+    # Episode 1's shot plan is seeded too (分镜规划, M4): the prototype's nine shots.
+    assert [e["shot_count"] for e in data] == [9, None, None]
     first = e1["beats"][0]
     assert (first["id"], first["idx"], first["paras"]) == ("demo-bt1", 1, [0])
     novel = client.get(f"{V1}/series/demo/novel").json()

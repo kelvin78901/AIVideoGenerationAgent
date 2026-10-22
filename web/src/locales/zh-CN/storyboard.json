@@ -26,6 +26,7 @@
   "shot": {
     "label": "镜头设定",
     "title": "镜头 {{id}}",
+    "scene": "场 {{n}} · {{place}}",
     "confirm": "确认这个镜头",
     "unconfirm": "取消确认",
     "confirmed": "{{id}} 已确认：首帧、参考和镜头设定锁定，可以去生成视频。",

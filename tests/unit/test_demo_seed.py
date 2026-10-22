@@ -181,8 +181,8 @@ async def test_demo_suggestions_bible_plan_and_script_are_seeded_once(studio_db:
         ("demo-p-extract", "entities"),
     }
     assert {d.slice for d in script_deps} >= {"episode:demo-e1", "chapter:0", "adopted:0,1,2,3,4"}
-    # novel, enrich ×2, bible, plan, script ×2, episode 1's asset list: once each
-    assert await _count(studio_db, ProductVersion) == 8
+    # novel, enrich ×2, bible, plan, script ×2, episode 1's asset list and shot plan: once each
+    assert await _count(studio_db, ProductVersion) == 9
     assert await _count(studio_db, Scene) == 2
     assert await _count(studio_db, ScriptLine) == 10
     assert await _count(studio_db, BibleEntity) == len(version.payload_json["entities"]) == 18

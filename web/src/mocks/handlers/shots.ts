@@ -1,4 +1,4 @@
-import { http } from "msw";
+import { http, passthrough } from "msw";
 
 import { ShotPatchSchema } from "@/api/schemas/shots";
 import { getDb } from "@/mocks/db";
@@ -11,15 +11,16 @@ export function confirmedShotCount(episodeId: string): { done: number; total: nu
 
 export const shotHandlers = [
   http.get(v1("/episodes/:id/shots"), ({ params }) => {
-    const id = String(params.id);
-    if (!getDb().episodes.some((e) => e.id === id))
-      return demoError(404, "episode_not_found", { id });
-    return demoJson(getDb().shots.filter((s) => s.episode_id === id));
+    // Only the demo's episode 1 has shots here (until M4 step 5); any other episode's are the
+    // backend's (M4 step 2).
+    const mine = getDb().shots.filter((s) => s.episode_id === String(params.id));
+    if (!mine.length) return passthrough();
+    return demoJson(mine);
   }),
 
   http.patch(v1("/shots/:id"), async ({ params, request }) => {
     const shot = getDb().shots.find((s) => s.id === String(params.id));
-    if (!shot) return demoError(404, "shot_not_found", { id: params.id });
+    if (!shot) return passthrough();
     const body = ShotPatchSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     Object.assign(shot, body.data);
