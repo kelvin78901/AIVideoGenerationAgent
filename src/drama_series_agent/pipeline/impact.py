@@ -75,6 +75,8 @@ PIPELINE_ORDER = {
     "voice": 6,
     "ref_views": 7,
     "line_audio": 8,
+    "shot_plan": 9,
+    "keyframe": 10,
 }
 _STEP = {
     NOVEL_SLOT: "novel",
@@ -88,6 +90,8 @@ _STEP = {
     "voice": "assets",
     "ref_views": "assets",
     "line_audio": "assets",
+    "shot_plan": "storyboard",
+    "keyframe": "storyboard",
 }
 _KEPT = 100  # previews kept in memory
 
@@ -170,7 +174,7 @@ class _Preview:
 
 def rank(node: Node) -> tuple[int, int]:
     """Where a product comes in the pipeline (an episode's after the one before)."""
-    return PIPELINE_ORDER.get(node.slot, 9), node.n or 0
+    return PIPELINE_ORDER.get(node.slot, 99), node.n or 0
 
 
 async def series_graph(

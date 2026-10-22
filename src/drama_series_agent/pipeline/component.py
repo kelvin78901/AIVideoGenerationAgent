@@ -155,6 +155,9 @@ class Component(ABC):
     # True when a run is the user's explicit ask and only adds, so it is adopted every time
     # (素材分析's 「重新分析剧本」; what the user set lives elsewhere, M3).
     adopt_every_run: ClassVar[bool] = False
+    # False when 确认并同步 must not redo it on its own (M4: 分镜规划; a new plan would overwrite
+    # the user's framing, blocking and confirmed shots), so it is only marked 待更新.
+    cascade_rerun: ClassVar[bool] = True
 
     def __init__(self, services: Services) -> None:
         self.services = services

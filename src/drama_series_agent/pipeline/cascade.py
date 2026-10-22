@@ -23,7 +23,9 @@ restart picks it up again: nothing else is stored). Each step is worked out from
 - **Stop set** (M3): a product whose takes wait for the user's pick (candidates: reference
   pictures, on-screen text, voices; ``Component.auto_adopt`` off) is never rerun by a cascade,
   since settling would adopt a take nobody picked and unlock what was locked. A script change
-  never redraws or unlocks an asset; the dubbing still follows the lines.
+  never redraws or unlocks an asset; the dubbing still follows the lines. Nor is a product
+  whose component says ``cascade_rerun = False`` (M4: 分镜规划, which a new run would overwrite
+  the user's shots with): it is only marked 待更新.
 - When nothing is left running, a toast says how many products were updated.
 """
 
@@ -211,7 +213,7 @@ class CascadeService:
     def _cascades(self, p: Product | None) -> bool:
         """Not in the stop set: its reruns are adopted as they come."""
         comp = self._runs.components.get(p.component_id) if p is not None else None
-        return comp is not None and (comp.auto_adopt or comp.adopt_every_run)
+        return comp is not None and comp.cascade_rerun and (comp.auto_adopt or comp.adopt_every_run)
 
 
 def _closure(start: str, graph: dict[str, set[str]]) -> set[str]:

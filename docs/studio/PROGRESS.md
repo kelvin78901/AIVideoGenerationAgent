@@ -10,12 +10,13 @@
 ## 已完成的小步
 
 - M3 合并之后（5b3de78）：M2 剧本不调提示词、不开思考；SSE 测试的服务器最多等 30 秒启动。
-- 第 0 步（本提交）：存计划 `plans/M4.md`；DECISIONS 记 Kelvin 定的四项和不在 M4 做的；ROADMAP 两条验收注明「9 张关键帧」实际是 7 张（1-08、1-09 接尾帧）。只改文档，没跑测试。
+- 第 0 步（2d9d3de）：存计划 `plans/M4.md`；DECISIONS 记 Kelvin 定的四项和不在 M4 做的；ROADMAP 两条验收注明「9 张关键帧」实际是 7 张（1-08、1-09 接尾帧）。只改文档。
+- 第 1 步（本提交，DECISIONS「M4 第 1 步」）：迁移 `0018` 表 `shot`（`models_db.Shot`）；`Component.cascade_rerun`；流水线顺序加 `shot_plan` / `keyframe`（归「分镜」）；`timing.shot_duration`、`longest_take_s`；词条 `enums.durationSource`。前端槽位、owner `shot`、镜头枚举 M0.5 已有。`tests/unit/test_timing.py` 6 个；全量 pytest 668 个、vitest 278 个过；ruff、mypy（含 linux）干净。
 
 ## 下一步
 
-- **第 1 步 框架**（计划「小步」1）：迁移 `0018`（表 `shot`，看 `core/migrations/versions/0017_product_settings.py` 的写法）；`Component.cascade_rerun`（`pipeline/component.py:147`，停止集在 `pipeline/cascade.py:212`）；新槽位 `shot_plan`、`keyframe`、owner `shot`；`pipeline/impact.py` 的 `PIPELINE_ORDER` / `_STEP`；`timing.shot_duration`（Kelvin 定第 1 项）和单段上限（读 `vid` 路由模型的 `caps.duration_s`）；前端新槽位、枚举的词条。
-- 第 1 步加了迁移，做完**提醒 Kelvin 重启后端**；第 2、3 步之后再 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
+- **第 2 步 分镜规划（后端）**（计划「小步」2 和「设计要点 · 分镜规划」）：组件 `plan`（照 `pipeline/components/assets.py`：Mock 应答器 + `tests/fixtures/demo/plan.json`、规则后处理；`cascade_rerun = False`）、剧本切片 `shots`（`script/service.py:script_slicer`）、物化（照 `script/service.py:materialize`）+ `ensure` 关键帧产物；接口 `GET /episodes/{id}/shots`、`PATCH /shots/{id}`、`split|merge`（契约 `web/src/api/schemas/shots.ts`，示例 id `demo-shot-1-0X`）；时长用 `timing.shot_duration` + `longest_take_s`（`api/routes/spec.py:get_compat` 的 `resolve` 写法）；示例种子（`studio/demo.py`）；`tests/api/test_web_fixtures.py` 导出 `shots.json`。
+- **提醒 Kelvin 重启后端**（第 1 步加了迁移 `0018`）；第 2、3 步之后再 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

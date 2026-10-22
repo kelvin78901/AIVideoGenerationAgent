@@ -26,7 +26,8 @@ M2_TABLES = {
     "beat", "scene", "script_line",
 }  # fmt: skip
 M3_TABLES = {"asset", "asset_use"}
-ALL_TABLES = M0_TABLES | M1_TABLES | M2_TABLES | M3_TABLES
+M4_TABLES = {"shot"}
+ALL_TABLES = M0_TABLES | M1_TABLES | M2_TABLES | M3_TABLES | M4_TABLES
 
 
 def _tables(path: Path) -> set[str]:
