@@ -1,0 +1,20 @@
+# RapidOCR worker environment, CPU only (setup item rt_ocr, worker workers/worker_rapidocr.py).
+# The installer runs `uv sync --locked` into ~/.drama-studio/envs/ocr; regenerate the lock with
+# `uv lock --project runtimes/ocr` after changing this file. RapidOCR 3.10 ships its default models
+# (PP-OCRv6 det / rec, v2.0 cls) in the wheel, so nothing is downloaded at run time.
+[project]
+name = "drama-studio-rt-ocr"
+version = "0"
+requires-python = "==3.12.*"
+dependencies = [
+    "rapidocr==3.10.0",
+    "onnxruntime==1.31.0",  # RapidOCR does not pull an engine in; the CPU build
+]
+
+[tool.uv]
+package = false
+environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]

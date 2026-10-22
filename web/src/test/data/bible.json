@@ -1012,7 +1012,10 @@
         "cost_usd": 0.0163,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
     },
     {
       "id": "demo-p-extract",
@@ -1888,7 +1891,10 @@
         "cost_usd": 0.0,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
     },
     {
       "id": "demo-p-split",
@@ -2624,10 +2630,13 @@
       "estimate": {
         "model_key": "deepseek/v4.1-flash",
         "where": "api",
-        "cost_usd": 0.0059,
+        "cost_usd": 0.0083,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
     },
     {
       "id": "demo-novel",
@@ -2691,7 +2700,10 @@
       ],
       "prompt": null,
       "estimate": null,
-      "running": null
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
     }
   ]
 }

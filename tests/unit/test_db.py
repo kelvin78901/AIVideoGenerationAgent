@@ -25,7 +25,8 @@ M2_TABLES = {
     "novel_source", "chapter", "bible_entity", "suggestion", "suggestion_decision", "episode",
     "beat", "scene", "script_line",
 }  # fmt: skip
-ALL_TABLES = M0_TABLES | M1_TABLES | M2_TABLES
+M3_TABLES = {"asset", "asset_use"}
+ALL_TABLES = M0_TABLES | M1_TABLES | M2_TABLES | M3_TABLES
 
 
 def _tables(path: Path) -> set[str]:

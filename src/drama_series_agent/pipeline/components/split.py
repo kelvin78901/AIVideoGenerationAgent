@@ -220,7 +220,8 @@ class SplitComponent(ChunkedComponent):
     id = "split"
     slot = "episodes"
     owner_type = "series"
-    max_tokens = 4000
+    max_tokens = 6000
+    output_ratio = 0.9  # 1854 out for 2741 in (M2 step 13)
 
     def __init__(self, services: Services, novel: NovelService) -> None:
         super().__init__(services)

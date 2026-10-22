@@ -280,3 +280,29 @@ async def test_handler_can_ask_before_going_on(queue: JobQueue) -> None:
     done = await queue.get(job.id)
     assert done is not None and done.result_json == {"model": "b"} and done.confirmed_usd == 0.3
     assert [s.get("model") for s in seen] == [None, "b"]
+
+
+async def test_gpu_keeps_the_loaded_model_busy_before_switching(studio_db: Database) -> None:
+    """Hard rule 8: queued GPU jobs for the model the last job used go first, so pictures and
+    voices queued in turn do not swap models in and out of VRAM job by job. Priority still
+    comes first."""
+    q = JobQueue(studio_db, EventBus(studio_db), poll_interval_s=0.05)
+    tracker = Tracker(0)
+    q.register("t", tracker)
+    jobs = [
+        ("img1", "comfy/qwen-image", 0),
+        ("tts1", "local/indextts2", 0),
+        ("img2", "comfy/qwen-image", 0),
+        ("tts2", "local/indextts2", 0),
+        ("urgent", "local/indextts2", 5),
+        ("img3", "comfy/qwen-image", 0),
+    ]
+    for name, model, prio in jobs:
+        await q.enqueue("t", "gpu", {"name": name, "model_key": model}, priority=prio)
+    await q.start()
+    try:
+        await q.wait_idle()
+    finally:
+        await q.stop()
+    # urgent first (priority), on IndexTTS: the other IndexTTS lines follow, then the pictures
+    assert tracker.order == ["urgent", "tts1", "tts2", "img1", "img2", "img3"]

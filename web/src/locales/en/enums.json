@@ -18,7 +18,16 @@
     "fallback": "Automatic fallback",
     "import": "Imported",
     "auto_qa_rerun": "Rerun after failed QA",
-    "comfy_ingest": "Saved back from ComfyUI"
+    "comfy_ingest": "Saved back from ComfyUI",
+    "pick": "Locked candidate",
+    "upload": "Uploaded"
+  },
+  "emotion": {
+    "calm": "Calm",
+    "angry": "Angry",
+    "crying": "Crying",
+    "whisper": "Whisper",
+    "shout": "Shout"
   },
   "component": {
     "extract": "Story bible extraction",
@@ -27,7 +36,9 @@
     "script": "Scriptwriting",
     "assets": "Asset breakdown",
     "img": "Reference images",
+    "views": "Extra views",
     "text": "On-screen text",
+    "ocr": "Text check (OCR)",
     "voice": "Voices",
     "dub": "Dialogue audio",
     "plan": "Shot planning",
@@ -49,6 +60,7 @@
     "script": "Turns narration into scene headings, action, dialogue and delivery; every block cites its source paragraph.",
     "img": "Reference images for characters, scenes and props. Once locked, keyframes and videos use them.",
     "text": "Text that must be exact in the frame: notes, phone screens, signs. Every candidate is OCR-checked.",
+    "ocr": "Reads every on-screen text candidate and compares it character by character. Runs free on this computer's CPU; without it candidates are marked not checked and can still be locked.",
     "voice": "One voice per speaking character; all dialogue audio and auditions use it.",
     "plan": "Breaks the script into shots: type, framing, length, where the first frame comes from, which references.",
     "kf": "Three keyframes for every shot that needs a new first frame, following the framing and blocking set here.",
@@ -118,5 +130,14 @@
     "color_off": "colour",
     "light_missing": "lighting",
     "text_mismatch": "text"
+  },
+  "dubStatus": {
+    "done": "Dubbed",
+    "stale": "Out of date",
+    "missing": "Not dubbed",
+    "running": "Dubbing",
+    "failed": "Dubbing failed",
+    "no_voice": "No voice",
+    "voice_not_locked": "Voice not locked"
   }
 }

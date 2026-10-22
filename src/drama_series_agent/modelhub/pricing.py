@@ -33,8 +33,14 @@ def cost_usd(
     if unit == "token":
         amount = (usage.tokens_in or 0) * (pricing.price_in or 0) / 1e6
         amount += (usage.tokens_out or 0) * (pricing.price_out or 0) / 1e6
+    elif unit == "image" and _by_tokens(pricing, usage):
+        rates = pricing.token_rates or {}
+        amount = sum(n * rates[kind] / 1e6 for kind, n in (usage.tokens or {}).items())
     elif unit == "image":
-        amount = (usage.images or 0) * (pricing.price or 0)
+        per = pricing.price or 0
+        if pricing.price_by_res and resolution in pricing.price_by_res:
+            per = pricing.price_by_res[resolution]
+        amount = (usage.images or 0) * per
     elif unit in ("second", "minute"):
         per = pricing.price or 0
         if pricing.price_by_res and resolution in pricing.price_by_res:
@@ -46,9 +52,19 @@ def cost_usd(
         amount = (usage.chars or 0) * (pricing.price or 0)
     elif unit in ("call", "world"):
         amount = pricing.price or 0
+    for name, n in (usage.calls or {}).items():
+        amount += n * (pricing.extras or {}).get(name, 0.0)
     if offpeak and pricing.offpeak and "factor" in pricing.offpeak:
         amount *= float(pricing.offpeak["factor"])
     return round(to_usd(amount, pricing.currency, rates), 10)
+
+
+def _by_tokens(pricing: Pricing, usage: Usage) -> bool:
+    """Tokens are the bill when every kind reported has a rate (an unknown kind would cost 0)."""
+    rates, tokens = pricing.token_rates, usage.tokens
+    if not rates or not tokens:
+        return False
+    return all(kind in rates for kind in tokens)
 
 
 def pricing_for_llm(model: LlmModel, as_of: str | None) -> Pricing:
@@ -88,6 +104,8 @@ def pricing_for_media(model: MediaModel, as_of: str | None) -> Pricing:
         price=price,
         price_by_res=extra.get("price_by_res"),
         input_price_per_second=extra.get("input_price_per_second"),
+        extras=extra.get("extras"),
+        token_rates=extra.get("token_rates"),
         currency=model.currency,
         as_of=as_of,
     )

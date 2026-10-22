@@ -1,0 +1,34 @@
+# Qwen-Image-Edit-2511 按参考图编辑，官方 40 步（补视图用；Kelvin 2026-10-21 定）。和 qwen-image-edit 是同一张图，
+# 只差采样：不接 Lightning 4 步 LoRA（模型从 CFGNorm 直接进采样器），steps 40、cfg 4.0、euler / simple，
+# 和官方模板 image_qwen_image_edit_2511_int8 关掉 LoRA 时一样。cfg 4.0 时负面提示才起作用（Negative prompt 节点，
+# 调用方按槽位 negative 填；模板默认是空的）。5090 上约 50–100 s / 张，4 步约 6 s。
+name: { zh: Qwen-Image-Edit-2511 按参考图编辑（40 步）, en: Qwen-Image-Edit-2511 edit from references (40 steps) }
+kind: image
+tier: recommended
+bindings:
+  - { slot: prompt, node: Prompt, field: prompt }
+  - { slot: negative, node: Negative prompt, field: prompt }
+  - { slot: width, node: Size, field: width }
+  - { slot: height, node: Size, field: height }
+  - { slot: seed, node: Sampler, field: seed }
+  - { slot: ref_image, index: 1, node: Reference 1, field: image }
+  - { slot: ref_image, index: 2, node: Reference 2, field: image, optional: true }
+  - { slot: ref_image, index: 3, node: Reference 3, field: image, optional: true }
+  - { slot: image_out, node: Output }
+# 加载器用到的文件（清单 w_img 下载）
+models:
+  - { folder: diffusion_models, name: qwen_image_edit_2511_int8_convrot.safetensors }
+  - { folder: text_encoders, name: qwen_2.5_vl_7b_fp8_scaled.safetensors }
+  - { folder: vae, name: qwen_image_vae.safetensors }
+caps:
+  max_refs: 3
+  est_seconds: 80
+  sizes:
+    "1:1": [1328, 1328]
+    "16:9": [1664, 928]
+    "9:16": [928, 1664]
+    "4:3": [1472, 1104]
+    "3:4": [1104, 1472]
+    "3:2": [1584, 1056]
+    "2:3": [1056, 1584]
+  max_pixels: 1763584

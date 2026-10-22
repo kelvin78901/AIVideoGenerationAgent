@@ -9,6 +9,9 @@ from pathlib import Path
 import httpx
 from fastapi import Request
 
+from drama_series_agent.assets import service as assets_service
+from drama_series_agent.assets.dub import DubService
+from drama_series_agent.assets.service import AssetService
 from drama_series_agent.bible.service import BIBLE_SLOT, BibleService, bible_slicer, materialize
 from drama_series_agent.core import secrets
 from drama_series_agent.core.config import get_config
@@ -20,18 +23,28 @@ from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes_service
 from drama_series_agent.episodes.service import EPISODES_SLOT, EpisodeService
-from drama_series_agent.modelhub.adapters.base import ModelSpec
+from drama_series_agent.modelhub.adapters.base import ModelAdapter, ModelSpec
+from drama_series_agent.modelhub.adapters.comfyui import ComfyUIAdapter
+from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
+from drama_series_agent.modelhub.media_adapters import has_media_adapter, media_adapter
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
+from drama_series_agent.modelhub.workflows import has_workflow
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
 from drama_series_agent.pipeline.cascade import CascadeService
 from drama_series_agent.pipeline.component import ComponentRegistry, Services
+from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, AssetsComponent
+from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, DubComponent
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
+from drama_series_agent.pipeline.components.img import ImgComponent
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
+from drama_series_agent.pipeline.components.text import TextComponent
+from drama_series_agent.pipeline.components.views import ViewsComponent
+from drama_series_agent.pipeline.components.voice import VoiceComponent
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.impact import ImpactService, register_kinds
 from drama_series_agent.pipeline.invalidation import Invalidation
@@ -63,6 +76,8 @@ class StudioState:
     suggestions: SuggestionService
     episodes: EpisodeService
     script: ScriptService
+    assets: AssetService
+    dub: DubService
     gates: GateService
     impact: ImpactService
     cascade: CascadeService
@@ -93,11 +108,13 @@ class StudioState:
         invalidation.slicer(BIBLE_SLOT, bible_slicer)
         invalidation.slicer(SUGGESTIONS_SLOT, suggestions_service.suggestions_slicer)
         invalidation.slicer(EPISODES_SLOT, episodes_service.episodes_slicer)
+        invalidation.slicer(episodes_service.SCRIPT_SLOT, script_service.script_slicer)
         products = ProductService(db, bus, invalidation)
         products.on_adopt(BIBLE_SLOT, materialize)
         products.on_adopt(SUGGESTIONS_SLOT, suggestions_service.materialize)
         products.on_adopt(EPISODES_SLOT, episodes_service.materialize)
         products.on_adopt(episodes_service.SCRIPT_SLOT, script_service.materialize)
+        products.on_adopt(ASSET_LIST_SLOT, assets_service.materialize)
         compiler = PromptCompiler()
         components = ComponentRegistry(
             Services(
@@ -116,6 +133,16 @@ class StudioState:
         components.add(SplitComponent(components.services, novel))
         script = ScriptComponent(components.services, novel, budget)
         components.add(script)
+        components.add(AssetsComponent(components.services))
+        components.add(ImgComponent(components.services))
+        components.add(ViewsComponent(components.services))
+        text = TextComponent(components.services)
+        components.add(text)
+        components.add(VoiceComponent(components.services))
+        dub = DubComponent(components.services)
+        components.add(dub)
+        # A line's audio is one of dozens: lists of them skip the per-product estimate.
+        products.quiet_slots.add(LINE_AUDIO_SLOT)
         episodes = EpisodeService(db, products, invalidation)
         budget.episode_budget = episodes.budget
         runs = RunService(components, products, jobs, bus, budget)
@@ -128,6 +155,10 @@ class StudioState:
         bible = BibleService(db, products, novel)
         suggestions = SuggestionService(db, products, novel, enrich)
         script_svc = ScriptService(db, products, script)
+        assets = AssetService(
+            db, products, runs, bus=bus, store=store, invalidation=invalidation, text=text
+        )
+        dub_service = DubService(db, products, runs, invalidation, dub)
         impact = ImpactService(db, products, invalidation, estimate)
         gates = GateService(db, bus, products, invalidation)
         cascade = CascadeService(db, bus, products, invalidation, runs, gates)
@@ -140,6 +171,7 @@ class StudioState:
             episodes=episodes,
             script=script_svc,
         )
+        assets.register(impact, gates, episodes)
         state = cls(
             db=db,
             bus=bus,
@@ -157,6 +189,8 @@ class StudioState:
             suggestions=suggestions,
             episodes=episodes,
             script=script_svc,
+            assets=assets,
+            dub=dub_service,
             gates=gates,
             impact=impact,
             cascade=cascade,
@@ -168,6 +202,33 @@ class StudioState:
             )
 
         registry.add_factory(lambda spec: spec.kind == "llm" and bool(spec.base_url), openai_compat)
+
+        def media(spec: ModelSpec) -> ModelAdapter:
+            return media_adapter(
+                spec, get_key=secrets.get_secret, store=state.store, transport=state.http_transport
+            )
+
+        registry.add_factory(has_media_adapter, media)
+
+        def local_python(spec: ModelSpec) -> ModelAdapter:
+            return LocalPythonAdapter(spec, paths=setup.runtime_paths)
+
+        registry.add_factory(
+            lambda spec: spec.where == "local" and spec.runtime == "python" and bool(spec.worker),
+            local_python,
+        )
+
+        def comfyui(spec: ModelSpec) -> ModelAdapter:
+            return ComfyUIAdapter(
+                spec, target=setup.comfy_target, store=state.store, transport=state.http_transport
+            )
+
+        registry.add_factory(
+            lambda spec: (
+                spec.where == "local" and spec.runtime == "comfyui" and has_workflow(spec.workflow)
+            ),
+            comfyui,
+        )
 
         from drama_series_agent.api.handlers import register_handlers
 
@@ -187,6 +248,7 @@ class StudioState:
 
     async def stop(self) -> None:
         await self.jobs.stop()
+        await self.registry.aclose()  # local model workers exit with the app
         await self.db.dispose()
 
 

@@ -1,4 +1,5 @@
-"""Step gates (SPEC 4.2 ``gate_decision``; M2 plan step 10): 「确认原文」 and 「确认剧本」.
+"""Step gates (SPEC 4.2 ``gate_decision``; M2 plan step 10): 「确认原文」, 「确认剧本」 and
+「素材确认」 (M3).
 
 Confirming a gate locks the adopted version of each product it covers (``locked_hash``) and
 records their effective hashes; reopening unlocks them. While a product is locked, editing it
@@ -6,10 +7,16 @@ goes through the impact preview (``pipeline/impact.py``). The novel gate covers 
 novel, bible and suggestions (the front end sends an episode id as its scope; it is the
 series'); the script gate covers one episode's script. The later gates arrive with their
 milestones (the demo pages still get them from MSW).
+
+The assets gate of an episode covers the assets it uses, which another service lists
+(``members``): each is locked on its own (an asset belongs to the series), so confirming needs
+them all locked already (409 ``assets_not_locked``) and records their hashes, and reopening
+unlocks none. Unlocking an asset reopens the confirmed episodes that use it.
 """
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 from typing import Literal
 
@@ -28,14 +35,17 @@ from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.suggestions.service import ADOPTED_SLICE, SUGGESTIONS_SLOT
 
-GateId = Literal["novel", "script"]
+GateId = Literal["novel", "script", "assets"]
 
 # What each gate is about (the owner of its products) and the slots it locks; the first one
-# must have something adopted.
+# must have something adopted. A gate without slots has its products listed by ``members``.
 GATES: dict[str, tuple[str, tuple[str, ...]]] = {
     "novel": ("series", (NOVEL_SLOT, BIBLE_SLOT, SUGGESTIONS_SLOT)),
     "script": ("episode", (SCRIPT_SLOT,)),
+    "assets": ("episode", ()),
 }
+# (session, scope id) → each product the gate covers, with the name the user knows it by.
+Members = Callable[[AsyncSession, str], Awaitable[list[tuple[str, Product]]]]
 # A product's effective hash is its whole adopted payload, except where downstream reads less
 # (the suggestions: only the accepted ones, with the user's decisions).
 _EFFECTIVE_SLICE = {SUGGESTIONS_SLOT: ADOPTED_SLICE}
@@ -81,9 +91,15 @@ class GateService:
         self._bus = bus
         self._products = products
         self._invalidation = invalidation
+        self._members: dict[str, Members] = {}
+
+    def members(self, gate: str, fn: Members) -> None:
+        self._members[gate] = fn
 
     async def confirm(self, gate: str, scope_id: str) -> GateDecisionOut:
         """Lock what the gate covers. Confirming again only locks again (one decision)."""
+        if gate in self._members:
+            return await self._confirm_members(gate, scope_id)
         async with self._db.session() as session:
             series_id, scope = await self._scope(session, gate, scope_id)
             products = await self._products_of(session, gate, scope)
@@ -115,6 +131,8 @@ class GateService:
         async with self._db.session() as session:
             series_id, scope = await self._scope(session, gate, scope_id)
             products = await self._products_of(session, gate, scope)
+        if gate in self._members:  # locked on their own: only the decision changes
+            return await self._record(series_id, gate, scope, "reopen", {})
         for p in products.values():
             if p.locked_hash:
                 await self._products.unlock(p.id)
@@ -131,7 +149,51 @@ class GateService:
         if row is not None and row.action == "confirm":
             await self.reopen(gate, scope)
 
+    async def reopen_using(self, gate: str, product_id: str) -> list[str]:
+        """Reopen the confirmed scopes of ``gate`` whose members include this product (an
+        unlocked asset: the episodes that use it). Returns their ids."""
+        fn = self._members.get(gate)
+        if fn is None:
+            return []
+        async with self._db.session() as session:
+            p = await session.get(Product, product_id)
+            if p is None:
+                return []
+            rows = await session.exec(select(Episode).where(Episode.series_id == p.series_id))
+            scopes: list[str] = []
+            for e in rows.all():
+                row = await latest_gate(session, gate, e.id)
+                confirmed = row is not None and row.action == "confirm"
+                if confirmed and any(m.id == product_id for _, m in await fn(session, e.id)):
+                    scopes.append(e.id)
+        for scope in scopes:
+            await self.reopen(gate, scope)
+        return scopes
+
     # ------------------------------------------------------------------ internals
+
+    async def _confirm_members(self, gate: str, scope_id: str) -> GateDecisionOut:
+        async with self._db.session() as session:
+            series_id, scope = await self._scope(session, gate, scope_id)
+            members = await self._members[gate](session, scope)
+            if not members:
+                raise PipelineError(409, "nothing_adopted", gate=gate, scope_id=scope)
+            unlocked = [name for name, p in members if not p.locked_hash]
+            if unlocked:
+                raise PipelineError(
+                    409,
+                    f"{gate}_not_locked",
+                    gate=gate,
+                    scope_id=scope,
+                    count=len(unlocked),
+                    names="、".join(unlocked),
+                )
+            hashes = {
+                p.id: h
+                for _, p in members
+                if (h := await self._invalidation.current_hash(session, p.id, ""))
+            }
+        return await self._record(series_id, gate, scope, "confirm", hashes)
 
     @staticmethod
     async def _scope(session: AsyncSession, gate: str, scope_id: str) -> tuple[str, str]:

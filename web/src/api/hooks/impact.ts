@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { post } from "@/api/client";
+import { dubKeys } from "@/api/hooks/dub";
 import { productKeys } from "@/api/hooks/products";
 import {
   ApplyImpactResultSchema,
@@ -28,6 +29,8 @@ export function useApplyImpact() {
       void client.invalidateQueries({ queryKey: ["series"] });
       void client.invalidateQueries({ queryKey: ["episodes"] });
       void client.invalidateQueries({ queryKey: productKeys.all });
+      // A reworded line or a new voice leaves dubbing 待更新 (M3).
+      void client.invalidateQueries({ queryKey: dubKeys.all });
     },
   });
 }

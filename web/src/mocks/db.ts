@@ -6,7 +6,7 @@ import type { GateDecision } from "@/api/schemas/gates";
 import type { GenerateLogEntry, GenerateRules } from "@/api/schemas/generate";
 import type { Impact } from "@/api/schemas/impact";
 import type { SyncRun } from "@/api/schemas/sync";
-import { assetProducts, assets } from "@/mocks/fixtures/demo/assets";
+import { assets } from "@/mocks/fixtures/demo/assets";
 import { EP1, episodes, progress } from "@/mocks/fixtures/demo/episodes";
 import { calls, kpis, spend, summary } from "@/mocks/fixtures/demo/metrics";
 import {
@@ -45,7 +45,7 @@ function createDb() {
       episodes: episodeMetrics,
     },
     products: Object.fromEntries(
-      [...assetProducts, ...shotProducts, ...takeProducts, ...postProducts].map((p) => [p.id, p]),
+      [...shotProducts, ...takeProducts, ...postProducts].map((p) => [p.id, p]),
     ),
     assets,
     shots,

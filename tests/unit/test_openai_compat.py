@@ -119,6 +119,16 @@ async def test_gives_up_after_max_retries() -> None:
 
 
 @respx.mock
+async def test_no_credit_is_out_of_quota_and_not_retried() -> None:
+    """OpenAI's 429 ``insufficient_quota``: no credit left; retrying will not help."""
+    body = {"error": {"message": "You exceeded your current quota", "code": "insufficient_quota"}}
+    route = respx.post(f"{BASE}/chat/completions").mock(return_value=httpx.Response(429, json=body))
+    with pytest.raises(ModelError) as err:
+        await _adapter(max_retries=2).run(ModelRequest(kind="llm", prompt="x"), CallContext())
+    assert (err.value.code, err.value.retryable, route.call_count) == ("quota_exceeded", False, 1)
+
+
+@respx.mock
 @pytest.mark.parametrize(
     ("status", "code"), [(401, "auth_failed"), (404, "model_not_found"), (400, "bad_request")]
 )

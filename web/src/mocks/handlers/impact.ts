@@ -8,11 +8,11 @@ import { backendResponse } from "@/mocks/backend";
 import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { impactPreviews, scriptDownstream } from "@/mocks/fixtures/demo/impacts";
-import { applyAssetUnlock, assetUnlockPreview } from "@/mocks/handlers/assets";
+import { assetUnlockOverlay } from "@/mocks/handlers/assets";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
-/** Changes the demo still answers (成片规格 and 素材, M4); every other kind is the backend's. */
-const DEMO_KINDS = new Set(["spec_aspect", "asset_unlock"]);
+/** Changes the demo still answers (成片规格, M4); every other kind is the backend's. */
+const DEMO_KINDS = new Set(["spec_aspect"]);
 
 let seq = 0;
 
@@ -36,8 +36,9 @@ async function relay(resp: Response | null) {
 }
 
 export const impactHandlers = [
-  // The backend previews the M2 changes (novel, bible, suggestions, beats, script); for a block
-  // of the demo episode's script the demo adds what lies after it (shots, keyframes, videos).
+  // The backend previews the changes (novel, bible, suggestions, beats, script, assets); for a
+  // block of the demo episode's script, or an asset its shots use, the demo adds what lies
+  // after it (shots, keyframes, videos).
   http.post(v1("/impact/preview"), async ({ request }) => {
     const forward = request.clone();
     const change = ImpactChangeSchema.safeParse(await request.json());
@@ -47,7 +48,9 @@ export const impactHandlers = [
       const resp = await backendResponse(forward);
       if (!resp?.ok) return relay(resp);
       const real = (await resp.json()) as Impact;
-      const extra = scriptDownstream[`${kind}:${target_id}`];
+      const extra =
+        scriptDownstream[`${kind}:${target_id}`] ??
+        (kind === "asset_unlock" ? assetUnlockOverlay(target_id) : undefined);
       if (!extra) return HttpResponse.json(real);
       getDb().impactOverlays.set(real.id, extra.stale);
       const stale = { ...real.stale };
@@ -56,17 +59,17 @@ export const impactHandlers = [
       return demoJson({
         ...real,
         lines: [...real.lines, ...structuredClone(extra.lines)],
+        unaffected: extra.unaffected ?? real.unaffected,
         rerun_cost_usd: Math.round((real.rerun_cost_usd + extra.rerun_cost_usd) * 100) / 100,
         stale,
       });
     }
-    const preview = impactPreviews[`${kind}:${target_id}`] ??
-      (kind === "asset_unlock" ? assetUnlockPreview(target_id) : undefined) ?? {
-        lines: [],
-        unaffected: null,
-        rerun_cost_usd: 0,
-        stale: {},
-      };
+    const preview = impactPreviews[`${kind}:${target_id}`] ?? {
+      lines: [],
+      unaffected: null,
+      rerun_cost_usd: 0,
+      stale: {},
+    };
     const impact = { id: `demo-impact-${++seq}`, change: change.data, ...structuredClone(preview) };
     getDb().impacts.set(impact.id, impact);
     return demoJson(impact);
@@ -106,7 +109,6 @@ export const impactHandlers = [
         throw err;
       }
     }
-    if (kind === "asset_unlock") applyAssetUnlock(target_id);
     markDemo(impact.stale);
     const jobs = action === "rerun" ? [`demo-job-impact-${id}`] : [];
     return demoJson({ action, stale: impact.stale, job_ids: jobs });

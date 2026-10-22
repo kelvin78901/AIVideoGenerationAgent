@@ -75,13 +75,13 @@ test("first run: / opens 环境与安装; installing into ComfyUI asks first, sn
   await page.getByRole("button", { name: "开始检测" }).click();
   const summary = page.getByRole("region", { name: "检测结果" });
   await expect(summary.getByRole("status")).toHaveText("检测完成", { timeout: 20_000 });
-  await expect(nav.getByTestId("setup-badge")).toHaveText("缺 11 项");
+  await expect(nav.getByTestId("setup-badge")).toHaveText("缺 15 项");
   await expect(page.getByRole("region", { name: "你的 ComfyUI" })).toContainText("D:\\ComfyUI");
 
   await page.getByRole("button", { name: "全选" }).click();
-  await page.getByRole("button", { name: "安装选中的 11 项" }).click();
+  await page.getByRole("button", { name: "安装选中的 15 项" }).click();
   const dialog = page.getByRole("alertdialog", { name: "开始安装前请确认" });
-  await expect(dialog.getByText("会改动你的 ComfyUI（8 项）")).toBeVisible();
+  await expect(dialog.getByText("会改动你的 ComfyUI（9 项）")).toBeVisible();
   await dialog.getByRole("button", { name: "确认，开始安装" }).click();
   await expect(page.getByRole("heading", { name: "准备好了" })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText(/^已存 ComfyUI 快照：/)).toBeVisible();

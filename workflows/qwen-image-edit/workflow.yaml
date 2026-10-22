@@ -1,0 +1,36 @@
+# Qwen-Image-Edit-2511 按参考图编辑（补视图、参考图终版的本地兜底）。按官方模板 image_qwen_image_edit_2511_int8
+# （Comfy-Org/workflow_templates d0e41fe，2026-10-21 核对）改写成 API 格式：打开 Lightning（4 步 LoRA 接在 CFGNorm 后，
+# steps 4、cfg 1.0；关掉是 40 步、cfg 4.0）；参考图 1 照模板先过 FluxKontextImageScale，参考图 2、3 原样接两个编码器；
+# 和模板不同的是采样的起点用 EmptySD3LatentImage（Size），输出按成片画幅（9:16 → 928×1664），不跟着参考图 1 的尺寸
+# （模板是 VAEEncode 参考图 1，9:16 会变成 752×1392；denoise 1.0 时起点只决定尺寸）。格式见 modelhub/workflows.py。
+name: { zh: Qwen-Image-Edit-2511 按参考图编辑, en: Qwen-Image-Edit-2511 edit from references }
+kind: image
+tier: recommended
+bindings:
+  - { slot: prompt, node: Prompt, field: prompt }
+  - { slot: negative, node: Negative prompt, field: prompt }
+  - { slot: width, node: Size, field: width }
+  - { slot: height, node: Size, field: height }
+  - { slot: seed, node: Sampler, field: seed }
+  - { slot: ref_image, index: 1, node: Reference 1, field: image }
+  - { slot: ref_image, index: 2, node: Reference 2, field: image, optional: true }
+  - { slot: ref_image, index: 3, node: Reference 3, field: image, optional: true }
+  - { slot: image_out, node: Output }
+# 加载器用到的文件（清单 w_img 下载）
+models:
+  - { folder: diffusion_models, name: qwen_image_edit_2511_int8_convrot.safetensors }
+  - { folder: text_encoders, name: qwen_2.5_vl_7b_fp8_scaled.safetensors }
+  - { folder: vae, name: qwen_image_vae.safetensors }
+  - { folder: loras, name: Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors }
+caps:
+  max_refs: 3
+  est_seconds: 20
+  sizes:
+    "1:1": [1328, 1328]
+    "16:9": [1664, 928]
+    "9:16": [928, 1664]
+    "4:3": [1472, 1104]
+    "3:4": [1104, 1472]
+    "3:2": [1584, 1056]
+    "2:3": [1056, 1584]
+  max_pixels: 1763584

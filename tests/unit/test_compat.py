@@ -23,16 +23,12 @@ def _table(
 
 
 def _msw_rows(aspect: Aspect) -> list[tuple[str, list[str], str, str]]:
-    """``web/src/mocks/handlers/spec.ts:compatRows``, the prototype's table."""
-    is21 = aspect == "21:9"
+    """The prototype's table (``web/src/test/backend.ts:compatRows``), with the image models as
+    their official docs have them (DECISIONS 2026-10-21「第 10 步」): Nano Banana Pro makes
+    21:9 and GPT Image 2 makes the delivery size directly, so both are native everywhere."""
     return [
-        (
-            "keyframe",
-            ["google/nano-banana-pro"],
-            "unsupported" if is21 else "native",
-            "outpaint_from_16_9" if is21 else "native_4k",
-        ),
-        ("text_keyframe", ["openai/gpt-image-2"], "convert", "upscale_from_1k"),
+        ("keyframe", ["google/nano-banana-pro"], "native", "native_4k"),
+        ("text_keyframe", ["openai/gpt-image-2"], "native", "native"),
         ("sketch", ["volc/seedream-5.0"], "native", "cheap_sketch"),
         ("video_draft", ["comfy/h3"], "native", "h3_aspects"),
         ("video_final", ["minimax/h3-regenerate-2k"], "native", "follow_draft"),
@@ -64,10 +60,11 @@ def test_every_code_has_copy() -> None:
 
 
 def test_follows_route_overrides() -> None:
-    # Keyframes switched to GPT Image 2: needs an upscale; 3D world stays off and has no row.
-    ov = Override("component", None, "kf", {"api_model": "openai/gpt-image-2"})
+    # Keyframes switched to Seedance (720p at most): needs an upscale; 3D world stays off and
+    # has no row.
+    ov = Override("component", None, "kf", {"api_model": "volc/seedance-2.5"})
     rows = {r[0]: r for r in _table("9:16", overrides=[ov])}
-    assert rows["keyframe"][1:] == (["openai/gpt-image-2"], "convert", "upscale_from_1k")
+    assert rows["keyframe"][1:] == (["volc/seedance-2.5"], "convert", "upscale_from_720p")
     # Fallback cleared: no sketch row.
     ov = Override("component", None, "kf", {"fallback": {"to": None}})
     assert "sketch" not in {r[0] for r in _table("9:16", overrides=[ov])}

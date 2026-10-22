@@ -7,6 +7,7 @@ import { toast } from "sonner";
 
 import { ApiError, errorMessage } from "@/api/client";
 import { useComponentModels } from "@/api/hooks/config";
+import { useEpisodeDub } from "@/api/hooks/dub";
 import { useApplyImpact, useImpactPreview } from "@/api/hooks/impact";
 import { useNovel, useSuggestions } from "@/api/hooks/novel";
 import { useProducts } from "@/api/hooks/products";
@@ -28,7 +29,7 @@ import { StepLayout } from "@/components/StepLayout";
 import { useRunAction } from "@/components/useRunAction";
 import { Button } from "@/components/ui/button";
 import { modelName } from "@/lib/versions";
-import { scriptBlocks, useBlockLead, type Block } from "@/pages/script/blocks";
+import { dubIndex, scriptBlocks, useBlockLead, type Block } from "@/pages/script/blocks";
 import { Episodes, type EpisodeView } from "@/pages/script/Episodes";
 import {
   ScriptScreenplay,
@@ -74,6 +75,7 @@ export default function ScriptPage() {
   const suggestions = useSuggestions(seriesId);
   const script = useScript(episode?.id);
   const shots = useShots(episode?.id);
+  const dub = useEpisodeDub(episode?.id);
   const seriesProducts = useProducts({ owner: `series:${seriesId}` });
   const episodeProducts = useProducts({ owner: `episode:${episode?.id ?? ""}` });
   const selected = useInspectorStore((s) => s.component) ?? "script";
@@ -347,6 +349,7 @@ export default function ScriptPage() {
                     routeModel={scriptProduct?.estimate?.model_key}
                     overBudget={overBudget}
                     links={links}
+                    dub={dubIndex(dub.data)}
                     onSelect={(id) => {
                       setPicked({ id, link: linked });
                       if (overBudget?.blockId !== id) setOverBudget(null);
@@ -358,6 +361,7 @@ export default function ScriptPage() {
                     blocks={blocks}
                     selectedId={activeId}
                     pendingId={pending?.block.id ?? null}
+                    dub={dubIndex(dub.data)}
                   />
                 )}
               </section>

@@ -96,9 +96,11 @@ llm_providers:
 
   - id: minimax_llm
     name: MiniMax
-    base_url: https://api.minimax.io/v1               # 国内：https://api.minimaxi.com/v1
+    # 用国内站（Kelvin 2026-10-21 定：配音和音色设计约是国际站的一半）。国际站 https://api.minimax.io/v1，
+    # 两个是独立账号，密钥不通用；换站时连同下面配音的人民币单价一起改。
+    base_url: https://api.minimax.cn/v1
     key_name: MINIMAX_API_KEY                         # 和配音、视频共用账号
-    docs: https://platform.minimax.io/docs/guides/pricing
+    docs: https://platform.minimax.cn/docs/guides/pricing-paygo
     verify: true
     models:
       - { key: minimax/m3, display: MiniMax-M3, model_id: null, price: { in: 0.30, out: 1.20, currency: USD }, json_mode: true }
@@ -179,10 +181,50 @@ llm_ui_order:
 # 媒体类 API：各写一个适配器。unit 决定怎么记用量。
 # ---------------------------------------------------------------------------
 media_models:
-  # 图像
-  - { key: google/nano-banana-pro, kind: image, display: Nano Banana Pro, unit: image, price: 0.14, currency: USD, caps: { aspects: ["1:1", "3:4", "4:3", "9:16", "16:9"], max_res: 4K, max_refs: null }, verify: true }
-  - { key: openai/gpt-image-2,     kind: image, display: GPT Image 2,     unit: image, price: 0.28, currency: USD, caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_short_edge: 1024, note: "部分渠道 9:16 只到 1K" }, verify: true }
-  - { key: volc/seedream-5.0,      kind: image, display: Seedream 5.0,    unit: image, price: 0.03, currency: USD, verify: true }
+  # account：用哪个 llm_providers 账号的密钥（和它的 base_url，除非这里另写 base_url）；
+  # 同一家的写作、出图、配音共用一个密钥（M3）。
+  # 图像（2026-10-21 按官方文档核对，M3 第 10 步，DECISIONS 同日「第 10 步」）
+  # adapter：哪个真实适配器（modelhub/media_adapters.py）；model_id 是厂商的模型 ID。
+  # Google、OpenAI 按 token 计费：token_rates 是每百万 token 的价格，实际花费按返回的用量算；
+  # price（每张）只用来估价。宽高按成片规格换成各家支持的尺寸（见各适配器文件头）。
+  - key: google/nano-banana-pro
+    kind: image
+    display: Nano Banana Pro
+    account: google_llm
+    adapter: gemini_image
+    base_url: https://generativelanguage.googleapis.com/v1beta   # 原生 generateContent，不是账号的 OpenAI 兼容地址
+    model_id: gemini-3-pro-image
+    unit: image
+    price: 0.134            # 1K、2K 每张（1120 个输出 token）；4K 是 $0.24，我们最高用 2K
+    token_rates: { text_in: 2.00, image_in: 2.00, text_out: 12.00, image_out: 120.00 }   # 思考按 text_out 计
+    currency: USD
+    caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"], max_refs: 14 }
+    docs: https://ai.google.dev/gemini-api/docs/pricing
+  - key: openai/gpt-image-2
+    kind: image
+    display: GPT Image 2
+    account: openai_llm
+    adapter: openai_images
+    model_id: gpt-image-2   # 快照 gpt-image-2-2026-04-21
+    unit: image
+    price: 0.23             # 估价参考：1088×1920、high 约 7.5k 输出 token
+    token_rates: { text_in: 5.00, image_in: 8.00, image_out: 30.00 }
+    currency: USD
+    # est_tokens_per_mp：high 每百万像素约多少输出 token（1024×1536 high 约 $0.165，第三方实测）；
+    # est_ref_tokens：每张参考图的输入 token（估）。max_refs 文档没写，按 gpt-image-1 的 16。
+    caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_refs: 16, est_tokens_per_mp: 3600, est_ref_tokens: 2000, request: { quality: high } }
+    docs: https://developers.openai.com/api/docs/guides/image-generation
+  - key: volc/seedream-5.0
+    kind: image
+    display: Seedream 5.0
+    account: volcengine
+    adapter: seedream
+    model_id: doubao-seedream-5-0-flash-260915   # 5.0 flash：三档里最便宜，1K–2K 覆盖草稿和交付档
+    unit: image
+    price: 0.12             # 火山方舟官方价目表（2026-10-21）：输出 0.12 元 / 张，输入图免费；审核没过没出图的不收
+    currency: CNY
+    caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_refs: 10 }
+    docs: https://docs.volcengine.com/docs/82379/1541523
   # 视频
   - key: minimax/h3-api
     kind: video
@@ -199,8 +241,34 @@ media_models:
   - { key: alibaba/wan-3.0, kind: video, display: Wan 3.0, unit: minute, price: 12.00, currency: USD, verify: true }
   - { key: kling/kling-3.0, kind: video, display: Kling 3.0, unit: second, price: null, verify: true }
   - { key: google/veo-3.1, kind: video, display: Veo 3.1, unit: second, price: null, verify: true }
-  # 配音
-  - { key: minimax/speech-2.8-hd, kind: tts, display: MiniMax Speech 2.8 HD, unit: char, price_per_million: 100, currency: USD, extras: { voice_design: 3.00, voice_clone: 1.50 } }
+  # 配音（2026-10-21 按官方文档核对，M3 第 11 步，DECISIONS 同日「第 11 步」）：国内站人民币价。
+  # 按计费字数（返回的 usage_characters；1 个汉字算 2 个字符）：3.50 元 / 万字符 = 350 元 / 百万字符。
+  # extras：音色设计 9.90 元在设计出的音色第一次合成时收（返回 usage_voice_count），不是设计时；
+  # 设计时的试听 2.00 元 / 万字符。request：每次合成都带上的字段（language_boost: auto 自动判断语种）。
+  - key: minimax/speech-2.8-hd
+    kind: tts
+    display: MiniMax Speech 2.8 HD
+    account: minimax_llm
+    adapter: minimax_speech
+    model_id: speech-2.8-hd
+    unit: char
+    price_per_million: 350
+    currency: CNY
+    extras: { voice_design: 9.90, voice_clone: 9.90, design_preview_char: 0.0002 }
+    caps: { request: { language_boost: auto } }
+    docs: https://platform.minimax.cn/docs/guides/pricing-paygo
+  # 只用来出耳语变体（2.8 没有 whisper，config/voice.yaml）；不在「模型与兜底」的可选列表里。
+  - key: minimax/speech-2.6-hd
+    kind: tts
+    display: MiniMax Speech 2.6 HD
+    account: minimax_llm
+    adapter: minimax_speech
+    model_id: speech-2.6-hd
+    unit: char
+    price_per_million: 350
+    currency: CNY
+    extras: { voice_design: 9.90, design_preview_char: 0.0002 }
+    caps: { request: { language_boost: auto } }
   - { key: elevenlabs/v3, kind: tts, display: ElevenLabs v3, unit: char, price: null, docs: https://invideo.io/blog/ai-voice-model-pricing/, verify: true }
   # 口型、超分、配乐、字幕、3D
   - { key: sync/lipsync-2-pro, kind: lipsync, display: sync lipsync-2-pro, unit: second, price_range: [0.067, 0.083], currency: USD }
@@ -214,19 +282,24 @@ media_models:
 # needs: 跑它要有的清单项（config/setup-manifest.yaml 的 id）；requires_cuda: 要 NVIDIA 显卡。
 # 扫描后缺任何一项，resolve() 就绕开它（local / hybrid 改走 API，见 core/capabilities.py）。
 # 没写 needs 的（清单里还没有对应项）视为能跑，跑时失败照常兜底。
+# runtime: comfyui 的模型由 workflow 指的 workflows/<slug>/ 跑（adapters/comfyui.py）；文件夹还没有的（H3 等，M5）暂不可用。
 local_models:
   - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3_i2v, caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440 }, needs: [comfy, node_h3, w_h3, w_te], requires_cuda: true }
   - { key: comfy/h3-fun-controlnet, kind: video,   display: H3 Fun ControlNet（本地）, runtime: comfyui, workflow: h3_controlnet, needs: [comfy, node_h3, node_ctrl, w_h3, w_te], requires_cuda: true }
   - { key: comfy/wan-2.2,           kind: video,   display: Wan 2.2（本地）,          runtime: comfyui, needs: [comfy], requires_cuda: true }
   - { key: comfy/ltx,               kind: video,   display: LTX（本地）,              runtime: comfyui, verify: true, needs: [comfy], requires_cuda: true }
-  - { key: comfy/qwen-image-edit,   kind: image,   display: Qwen-Image-Edit（本地）,  runtime: comfyui, needs: [comfy, w_img] }
-  - { key: comfy/qwen-image,        kind: image,   display: Qwen-Image（本地）,       runtime: comfyui, needs: [comfy] }
+  - { key: comfy/qwen-image-edit,   kind: image,   display: Qwen-Image-Edit（本地）,  runtime: comfyui, workflow: qwen-image-edit, needs: [comfy, w_img] }
+  - { key: comfy/qwen-image-edit-hq, kind: image, display: Qwen-Image-Edit 40 步（本地）, runtime: comfyui, workflow: qwen-image-edit-hq, needs: [comfy, w_img] }
+  - { key: comfy/qwen-image,        kind: image,   display: Qwen-Image（本地）,       runtime: comfyui, workflow: qwen-image, needs: [comfy, w_img_t2i] }
   - { key: comfy/flux2-dev,         kind: image,   display: FLUX.2 dev（本地）,       runtime: comfyui, needs: [comfy] }
   - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui, needs: [comfy, node_seedvr2, w_sr], requires_cuda: true }
   - { key: comfy/flashvsr,          kind: upscale, display: FlashVSR（本地）,         runtime: comfyui, needs: [comfy, node_flashvsr], requires_cuda: true }
-  - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python, needs: [w_tts] }
+  # runtime: python 的模型由 worker 跑（adapters/local_python.py）：worker 是 workers/ 下的脚本，env 是
+  # ~/.drama-studio/envs/ 下的环境（清单 rt_* 按 runtimes/ 的锁文件装），args 是它加载什么（{models} 是 Setup 页选的
+# 安装位置）；gpu: false 不占显存租约。
+  - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python, worker: worker_indextts, env: indextts, args: { model_dir: "{models}/IndexTTS-2.5", cwd: "{envs}/indextts-src", bf16: true, lang: zh }, needs: [w_tts, rt_indextts], requires_cuda: true }
   - { key: local/cosyvoice,         kind: tts,     display: CosyVoice（本地）,        runtime: python }
-  - { key: local/qwen3-tts,         kind: tts,     display: Qwen3-TTS（本地试听）,     runtime: python }
+  - { key: local/qwen3-tts,         kind: tts,     display: Qwen3-TTS（本地试听）,     runtime: python, worker: worker_qwentts, env: qwentts, args: { model: "{models}/Qwen3-TTS-12Hz-1.7B-VoiceDesign", language: Chinese }, needs: [rt_qwentts], requires_cuda: true }
   - { key: local/latentsync,        kind: lipsync, display: LatentSync（本地）,       runtime: python, requires_cuda: true }
   - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python, requires_cuda: true }
   - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server, needs: [llmsrv] }
@@ -234,3 +307,4 @@ local_models:
   - { key: local/mmaudio,           kind: sfx,     display: MMAudio（本地）,          runtime: python, verify: true }
   - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python }
   - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }
+  - { key: local/rapidocr,          kind: ocr,     display: RapidOCR（本地）,         runtime: python, worker: worker_rapidocr, env: ocr, gpu: false, caps: { langs: [zh, en] }, needs: [rt_ocr] }

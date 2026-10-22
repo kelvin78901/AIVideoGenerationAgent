@@ -13,7 +13,9 @@ import { series as demoSeries } from "@/mocks/fixtures/demo/series";
 import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
 import { setBackendFetch } from "@/mocks/backend";
 import { server } from "@/mocks/node";
+import { assetHandlers, assetsBackendFetch, resetFakeAssets } from "@/test/fakes/assets";
 import { bibleBackendFetch, bibleHandlers, resetFakeBible } from "@/test/fakes/bible";
+import { dubHandlers, resetFakeDub } from "@/test/fakes/dub";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { episodeHandlers, episodesBackendFetch, resetFakeEpisodes } from "@/test/fakes/episodes";
 import { gateHandlers, impactBackendFetch, resetFakeImpact } from "@/test/fakes/impact";
@@ -52,9 +54,8 @@ const presets: SpecPresets = {
   dims: Object.fromEntries(AspectSchema.options.map((a) => [a, dimsOf(a)])) as SpecPresets["dims"],
 };
 
-/** `spec/compat.py`'s table for the default route (tests/unit/test_compat.py). */
-function compatRows(aspect: Aspect): CompatRow[] {
-  const is21 = aspect === "21:9";
+/** `spec/compat.py`'s table for the default route (tests/unit/test_compat.py): the same for every aspect. */
+function compatRows(): CompatRow[] {
   const row = (stage: string, keys: string[], status: CompatRow["status"], code: string) => ({
     stage,
     model_keys: keys,
@@ -62,13 +63,8 @@ function compatRows(aspect: Aspect): CompatRow[] {
     how: { code, params: {} },
   });
   return [
-    row(
-      "keyframe",
-      ["google/nano-banana-pro"],
-      is21 ? "unsupported" : "native",
-      is21 ? "outpaint_from_16_9" : "native_4k",
-    ),
-    row("text_keyframe", ["openai/gpt-image-2"], "convert", "upscale_from_1k"),
+    row("keyframe", ["google/nano-banana-pro"], "native", "native_4k"),
+    row("text_keyframe", ["openai/gpt-image-2"], "native", "native"),
     row("sketch", ["volc/seedream-5.0"], "native", "cheap_sketch"),
     row("video_draft", ["comfy/h3"], "native", "h3_aspects"),
     row("video_final", ["minimax/h3-regenerate-2k"], "native", "follow_draft"),
@@ -155,7 +151,7 @@ function seriesHandlers() {
       if (!known(params.id)) return error(404, "series_not_found");
       const q = AspectSchema.safeParse(new URL(request.url).searchParams.get("aspect"));
       const aspect = q.success ? q.data : (specOf(params.id)?.aspect ?? "9:16");
-      return HttpResponse.json({ aspect, rows: compatRows(aspect) });
+      return HttpResponse.json({ aspect, rows: compatRows() });
     }),
     http.get("*/api/v1/spec/presets", () => HttpResponse.json(presets)),
     ...novelHandlers(known),
@@ -163,6 +159,8 @@ function seriesHandlers() {
     ...suggestionHandlers(known),
     ...episodeHandlers(known),
     ...scriptHandlers(),
+    ...assetHandlers(),
+    ...dubHandlers(),
     ...gateHandlers(),
   ];
 }
@@ -178,6 +176,7 @@ async function fakeBackendFetch(request: Request): Promise<Response> {
     bibleBackendFetch(url) ??
     episodesBackendFetch(url) ??
     scriptBackendFetch(url) ??
+    assetsBackendFetch(url) ??
     HttpResponse.json({ detail: { code: "http_404", params: {} } }, { status: 404 })
   );
 }
@@ -186,8 +185,9 @@ async function fakeBackendFetch(request: Request): Promise<Response> {
  * Real backend endpoints pages read: live mode, DeepSeek without a key, an empty job list, the
  * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`), bible
  * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), the
- * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`), the
- * novel and script gates and impact previews (`test/fakes/impact.ts`), and the PC sample machine
+ * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`),
+ * episode 1's assets (`test/fakes/assets.ts`) and 台词配音 (`test/fakes/dub.ts`), the novel and script gates and impact previews
+ * (`test/fakes/impact.ts`), and the PC sample machine
  * before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
  */
@@ -201,6 +201,8 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeSuggestions();
   resetFakeEpisodes();
   resetFakeScript();
+  resetFakeAssets();
+  resetFakeDub();
   resetFakeImpact();
   setBackendFetch(fakeBackendFetch);
   resetFakeSetup();

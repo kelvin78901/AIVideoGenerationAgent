@@ -98,18 +98,20 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 
 ## M3 素材与配音（约 1.5 周）
 
-- [ ] 素材分析（assets）：素材清单 + 场景 × 角色出场矩阵
-- [ ] 图像适配器：Nano Banana Pro、GPT Image 2、Seedream 5.0；ComfyUI 适配器的最小版本（Qwen-Image-Edit）
-- [ ] 参考图（img）：候选、锁定、锁定后补齐侧面和背面
-- [ ] 画面文字（text）：逐字内容、字体风格、OCR 核对
-- [ ] 音色（voice）：本地试听 → MiniMax 音色设计 → 情绪变体 → 统一响度 → 锁定
-- [ ] 台词配音（dub）+ 音频先行定镜头时长
-- [ ] 本地文件夹同步（第 14.1 节的文件夹目标，可以提前在这里做）
+- [x] 素材分析（assets）：素材清单 + 场景 × 角色出场矩阵
+- [x] 图像适配器：Nano Banana Pro、GPT Image 2、Seedream 5.0；ComfyUI 适配器的最小版本（Qwen-Image 出图、Qwen-Image-Edit 补视图）（M3 第 10、12 步；MiniMax 配音适配器第 11 步）
+- [x] 参考图（img）：候选、混合模式出终版、上传、锁定、锁定后补齐侧面和背面（Mock；真实图像 API 和 ComfyUI 归上一项）
+- [x] 画面文字（text）：逐字内容、字体风格、OCR 核对（Mock；真装 RapidOCR 归下面的「本地运行时」）
+- [x] 音色（voice）：本地试听 → MiniMax 音色设计 → 情绪变体 → 统一响度 → 锁定（Mock；真实 MiniMax、本地 TTS 归下面两项）
+- [x] 台词配音（dub）+ 音频先行定时长（M3 算到台词和场，镜头 M4 接上；Mock，真实 MiniMax T2A、本地 IndexTTS 归下面两项）
+- [x] 本地运行时：Qwen3-TTS、IndexTTS-2.5、RapidOCR，和 ComfyUI 一起在本机真装真跑（M3 第 12、13 步）
 
 **验收**
-- [ ] 示例项目的 13 项素材（角色 2、场景 3、道具 4、画面文字 2、音色 2）都能出候选并锁定，锁定内容的哈希写进 `gate_decision`
-- [ ] 每行台词都有音频，镜头时长由音频算出
-- [ ] 锁定的素材改描述后，提示哪些镜头受影响
+- [x] 示例项目的 13 项素材（角色 2、场景 3、道具 4、画面文字 2、音色 2）都能出候选并锁定，锁定内容的哈希写进 `gate_decision`（Mock，M3 第 9 步：`tests/e2e/test_script_to_dub.py`）
+- [x] 每行台词都有音频，台词和场的时长由音频算出（镜头那一半挪到 M4，Kelvin 2026-10-20 定；Mock，同上，Playwright `web/e2e/seeded.spec.ts` 全部配音并播放）
+- [x] 锁定的素材改描述后，提示哪些场和台词配音受影响（镜头那一半挪到 M4；M3 第 8 步：`asset_edit`，`web/e2e/real.spec.ts`）
+- [x] 本机真跑：ComfyUI 出图和补视图、Qwen3-TTS 试听、IndexTTS 配音、RapidOCR 各跑一次（M3 第 13 步：`scripts/smoke/local_assets.py`，`reports/m3-local-smoke.txt`）
+- [x] 手动冒烟：真实 Google、OpenAI、火山、MiniMax 各跑一遍（`DRAMA_LIVE=1`，上限 $5；M3 第 14 步：`scripts/smoke/live_assets.py`，2026-10-21 五次共 $1.72，`reports/m3-live-smoke.txt`）
 
 ## M4 分镜与动态分镜（约 1.5 周）
 
@@ -123,6 +125,8 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 **验收**
 - [ ] 第 1 集 9 个镜头都有关键帧，能整集预演播放
 - [ ] 把画幅从 9:16 改成 16:9，影响范围列出 9 张关键帧，并给出预计花费
+- [ ] 镜头时长由台词音频算出（`pipeline/timing.py:shot_seconds`，M3 写好；从 M3 验收挪来）
+- [ ] 锁定的素材改描述后，提示哪些镜头受影响（从 M3 验收挪来）
 
 ## M5 视频生成（约 2 周）
 
@@ -184,6 +188,7 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 ## M9 素材整理与外部同步（约 1.5 周，M5 之后任何时候都可以做）
 
 - [ ] 同步引擎：触发规则、类型过滤、`sync_item` 差异推送、同步记录
+- [ ] 本地文件夹同步（第 14.1 节的文件夹目标；2026-10-20 从 M3 挪来）
 - [ ] ComfyUI 素材板：生成界面格式的 workflow（分组、Load 节点、便签），写进 ComfyUI 工作流列表
 - [ ] 节点包 `integrations/comfyui-dramastudio`：镜头、素材、存回工作台；`POST /api/v1/ingest`（输入 / 输出节点 M5 已做）
 - [ ] Eagle（检测 + 文件夹 + 标签 + 注释）

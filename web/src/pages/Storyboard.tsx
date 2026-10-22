@@ -31,7 +31,7 @@ export default function StoryboardPage() {
   const { seriesId, episodeIdx, episode } = useRouteEpisode();
   const shots = useShots(episode?.id);
   const spec = useOutputSpec(seriesId);
-  const assets = useAssets(seriesId);
+  const assets = useAssets(seriesId, episode?.id);
   const episodeProducts = useProducts({ owner: `episode:${episode?.id ?? ""}` });
   const patchShot = usePatchShot(episode?.id);
   const component = useInspectorStore((s) => s.component) ?? "kf";

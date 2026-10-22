@@ -1,5 +1,6 @@
 import { useTranslation } from "react-i18next";
 
+import type { Dub, DubLine, DubScene } from "@/api/schemas/dub";
 import type { Scene, Script, ScriptLine } from "@/api/schemas/script";
 
 /**
@@ -59,4 +60,17 @@ export function useBlockLead() {
 /** The line uses an accepted addition (小说补全): its source has a `sug:` span. */
 export function fromAddition(b: Block): boolean {
   return b.kind !== "scene" && b.line.source_spans.some((s) => s.source_id.startsWith("sug:"));
+}
+
+/** 台词配音 by line and by scene (`GET /episodes/{id}/dub`). */
+export interface DubIndex {
+  lines: Map<string, DubLine>;
+  scenes: Map<string, DubScene>;
+}
+
+export function dubIndex(dub: Dub | undefined): DubIndex {
+  return {
+    lines: new Map(dub?.lines.map((x) => [x.line_id, x])),
+    scenes: new Map(dub?.scenes.map((s) => [s.scene_id, s])),
+  };
 }

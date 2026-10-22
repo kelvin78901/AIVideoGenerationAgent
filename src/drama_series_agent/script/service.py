@@ -62,6 +62,45 @@ class Rewriter(Protocol):
     ) -> tuple[str, str]: ...
 
 
+SPEAKING = ("dialogue", "vo")
+
+
+async def script_slicer(
+    session: AsyncSession, product: Product, version: ProductVersion, name: str
+) -> Any:
+    """``assets`` (素材分析, M3): scenes with their place and time, each line's id, type and
+    character, and the text of the lines that are not spoken, so rewording dialogue never makes
+    the asset list stale. ``line:<id>`` (台词配音): what that line says, how and by whom (None
+    once the script drops it). Any other name is a key of the payload."""
+    if name.startswith("line:"):
+        wanted = name.removeprefix("line:")
+        for s in ops.scenes_of(version.payload_json):
+            for x in s.get("lines") or []:
+                if x.get("id") == wanted:
+                    keys = ("type", "character_id", "tone", "text")
+                    return {k: x.get(k) for k in keys}
+        return None
+    if name != "assets":
+        return version.payload_json if name == "" else version.payload_json.get(name)
+    return [
+        {
+            "id": s["id"],
+            "location_id": s.get("location_id"),
+            "time": s.get("time_of_day"),
+            "lines": [
+                {
+                    "id": x["id"],
+                    "type": x.get("type"),
+                    "character_id": x.get("character_id"),
+                    **({} if x.get("type") in SPEAKING else {"text": x.get("text")}),
+                }
+                for x in s.get("lines") or []
+            ],
+        }
+        for s in ops.scenes_of(version.payload_json)
+    ]
+
+
 async def materialize(session: AsyncSession, product: Product, version: ProductVersion) -> None:
     """Mirror an adopted script: upsert the episode's scenes and lines by id, retire the ones it
     dropped."""
@@ -132,6 +171,16 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
             gone.version_id = version.id
             gone.updated_at = now
             session.add(gone)
+    # A line's dubbing retires with it, and comes back with it (台词配音, M3).
+    dubbed = await session.exec(
+        select(Product).where(Product.owner_type == "line", col(Product.owner_id).in_(list(lines)))
+    )
+    for p in dubbed.all():
+        retired = p.owner_id not in kept
+        if p.retired != retired:
+            p.retired = retired
+            p.updated_at = now
+            session.add(p)
 
 
 def script_out(

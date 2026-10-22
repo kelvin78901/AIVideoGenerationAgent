@@ -43,6 +43,7 @@ from drama_series_agent.episodes.schema import BeatPatch
 from drama_series_agent.episodes.service import EPISODES_SLOT, SCRIPT_SLOT, EpisodeService
 from drama_series_agent.novel.schema import ChapterEditIn
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService
+from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT
 from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import gate_of
@@ -68,6 +69,12 @@ PIPELINE_ORDER = {
     BIBLE_SLOT: 2,
     EPISODES_SLOT: 3,
     SCRIPT_SLOT: 4,
+    ASSET_LIST_SLOT: 5,
+    "ref_image": 6,
+    "text_image": 6,
+    "voice": 6,
+    "ref_views": 7,
+    "line_audio": 8,
 }
 _STEP = {
     NOVEL_SLOT: "novel",
@@ -75,6 +82,12 @@ _STEP = {
     SUGGESTIONS_SLOT: "novel",
     EPISODES_SLOT: "script",
     SCRIPT_SLOT: "script",
+    ASSET_LIST_SLOT: "assets",
+    "ref_image": "assets",
+    "text_image": "assets",
+    "voice": "assets",
+    "ref_views": "assets",
+    "line_audio": "assets",
 }
 _KEPT = 100  # previews kept in memory
 
@@ -216,6 +229,7 @@ class ImpactService:
         found = await self._affected(planned)
         lines, stale, total = await self._describe(planned, found)
         impact_id = f"imp-{new_id()}"
+        unaffected = planned.unaffected
         self._previews[impact_id] = _Preview(change, planned, stale)
         while len(self._previews) > _KEPT:
             self._previews.popitem(last=False)
@@ -223,7 +237,7 @@ class ImpactService:
             id=impact_id,
             change=change,
             lines=lines,
-            unaffected=None,
+            unaffected=MessageOut.model_validate(unaffected) if unaffected else None,
             rerun_cost_usd=total,
             stale=stale,
         )
@@ -242,7 +256,9 @@ class ImpactService:
             raise PipelineError(409, "impact_outdated", id=body.impact_id)
         await self._write(planned)
         jobs: list[str] = []
-        if body.action == "rerun" and self.cascade is not None:
+        if body.action == "rerun" and planned.rerun is not None:
+            jobs = await planned.rerun()
+        elif body.action == "rerun" and self.cascade is not None:
             jobs = await self.cascade.start(planned.series_id, planned.product_id)
         return ImpactApplyOut(action=body.action, stale=preview.stale, job_ids=jobs)
 
@@ -251,6 +267,9 @@ class ImpactService:
         async with self._db.session() as session:
             p = await session.get(Product, planned.product_id)
         locked = p is not None and bool(p.locked_hash)
+        if not planned.relock:
+            await planned.commit()
+            return
         if locked:
             await self._products.unlock(planned.product_id)
         try:
@@ -356,11 +375,8 @@ class ImpactService:
         me = nodes.get(planned.product_id)
         if me is not None and me.locked and not found.noop:
             lines.append(line(f"self_{me.slot}", me))
-        lines += [line(f"stale_{nodes[i].slot}", nodes[i], cost=costs.get(i)) for i in found.direct]
-        lines += [
-            line(f"then_{nodes[i].slot}", nodes[i], cost=costs.get(i), optional=True)
-            for i in found.further
-        ]
+        lines += self._grouped("stale", found.direct, nodes, costs, optional=False)
+        lines += self._grouped("then", found.further, nodes, costs, optional=True)
         gates: dict[tuple[str, str], Node] = {}
         for i in ids:
             node = nodes[i]
@@ -369,14 +385,47 @@ class ImpactService:
                 gates.setdefault(under, node)
         lines += [line(f"gate_{gate}", node) for (gate, _), node in gates.items()]
         lines += [line(f"edited_{nodes[i].slot}", nodes[i]) for i in ids if nodes[i].edited]
+        lines += [ImpactLineOut.model_validate(x) for x in planned.lines]
 
         stale: dict[str, int] = {}
         for i in found.direct:
             step = _STEP.get(nodes[i].slot)
             if step:
                 stale[step] = stale.get(step, 0) + 1
-        total = round(sum(c for c in costs.values() if c), 4)
+        # Lines the planner worked out (an edited asset's redraw) are priced by it.
+        planned_costs = [c for x in planned.lines if (c := x.get("cost_usd"))]
+        total = round(sum(c for c in costs.values() if c) + sum(planned_costs), 4)
         return lines, stale, total
+
+    def _grouped(
+        self,
+        prefix: str,
+        ids: list[str],
+        nodes: dict[str, Node],
+        costs: dict[str, float | None],
+        *,
+        optional: bool,
+    ) -> list[ImpactLineOut]:
+        """One line per slot (and episode): 60 lines of dubbing are 「配音 · 60 句」, with their
+        costs added up. Slots made by the dozen always say how many."""
+        groups: dict[tuple[str, int | None], list[str]] = {}
+        for i in ids:
+            groups.setdefault((nodes[i].slot, nodes[i].n), []).append(i)
+        out: list[ImpactLineOut] = []
+        for (slot, n), members in groups.items():
+            params: dict[str, Any] = {"n": n} if n is not None else {}
+            if len(members) > 1 or slot in self._products.quiet_slots:
+                params["count"] = len(members)
+            priced = [c for i in members if (c := costs.get(i)) is not None]
+            out.append(
+                ImpactLineOut(
+                    code=f"{prefix}_{slot}",
+                    params=params,
+                    cost_usd=round(sum(priced), 6) if priced else None,
+                    optional=optional,
+                )
+            )
+        return out
 
 
 # ------------------------------------------------------------------ the kinds of change

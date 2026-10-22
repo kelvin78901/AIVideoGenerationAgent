@@ -155,9 +155,10 @@ def test_novel_gate_locks_the_novel_step_of_the_series(client: TestClient) -> No
 
     async def rows() -> list[GateDecision]:
         async with _state(client).db.session() as s:
-            return list((await s.exec(select(GateDecision))).all())
+            query = select(GateDecision).where(GateDecision.gate == "novel")
+            return list((await s.exec(query)).all())
 
-    (row,) = _call(client, rows)
+    (row,) = _call(client, rows)  # the demo's locked assets have gate decisions of their own
     assert set(row.product_hashes_json) == {NOVEL, BIBLE, ENRICH}
     # Confirming again is the same decision.
     assert _gate(client, "novel", "confirm", "demo")["id"] == decision["id"]
@@ -196,7 +197,7 @@ def test_script_gate_is_per_episode(client: TestClient) -> None:
 
 
 def test_gate_errors(client: TestClient) -> None:
-    resp = client.post(f"{V1}/gates/assets/confirm", json={"scope_id": "demo-e1"})
+    resp = client.post(f"{V1}/gates/storyboard/confirm", json={"scope_id": "demo-e1"})
     assert resp.status_code == 404 and _code(resp) == "unknown_gate"
     resp = client.post(f"{V1}/gates/script/confirm", json={"scope_id": "demo"})
     assert resp.status_code == 404 and _code(resp) == "episode_not_found"
@@ -210,10 +211,18 @@ def test_gate_errors(client: TestClient) -> None:
 def test_editing_a_confirmed_script_line(client: TestClient) -> None:
     _gate(client, "script", "confirm", "demo-e1")
     before = _versions(client, SCRIPT1)
+    # Rewording dialogue: nothing downstream reads it, but the dialog says what changes.
+    spoken = _preview(client, "line_edit", "demo-b5", {"text": "……是周屿吗？"})
+    assert _codes(spoken) == [("self_script", {"n": 1}, False)]
+    assert spoken["stale"] == {} and spoken["rerun_cost_usd"] == 0
+    assert _apply(client, spoken["id"], "undo").status_code == 200
+    # An action line is what 素材分析 reads (M3): the episode's asset list goes stale.
     impact = _preview(client, "line_edit", "demo-b2", {"text": "她把伞靠在门边。"})
-    # Nothing is downstream of a script in M2, but the dialog always says what changes.
-    assert _codes(impact) == [("self_script", {"n": 1}, False)]
-    assert impact["stale"] == {} and impact["rerun_cost_usd"] == 0
+    assert _codes(impact) == [
+        ("self_script", {"n": 1}, False),
+        ("stale_asset_list", {"n": 1}, False),
+    ]
+    assert impact["stale"] == {"assets": 1} and impact["rerun_cost_usd"] > 0
     assert impact["change"]["kind"] == "line_edit"
     assert _versions(client, SCRIPT1) == before  # a preview writes nothing
 
@@ -283,7 +292,8 @@ def test_editing_a_confirmed_novel_chapter(client: TestClient) -> None:
         "stale_script",
     ]
     assert ("gate_novel", {}, False) in codes and ("gate_script", {"n": 1}, False) in codes
-    assert not any(c.startswith("then_") for c, _, _ in codes)
+    # Further down only episode 1's asset list, which reads the script (M3).
+    assert [c for c, _, _ in codes if c.startswith("then_")] == ["then_asset_list"]
     assert impact["stale"] == {"novel": 2, "script": 2}
     priced = [x["cost_usd"] for x in impact["lines"] if x["cost_usd"] is not None]
     assert priced and impact["rerun_cost_usd"] == pytest.approx(sum(priced), abs=1e-4)
@@ -324,6 +334,7 @@ def test_moving_a_beat_affects_both_episodes(client: TestClient) -> None:
     assert _codes(impact) == [
         ("stale_script", {"n": 1}, False),
         ("stale_script", {"n": 2}, False),
+        ("then_asset_list", {"n": 1}, True),
         ("gate_script", {"n": 1}, False),
     ]
     assert impact["stale"] == {"script": 2}

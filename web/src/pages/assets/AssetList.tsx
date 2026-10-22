@@ -55,9 +55,11 @@ export function AssetList({
                   <span className="truncate text-sm font-medium">{a.name}</span>
                   <span className="text-xs text-muted-foreground">
                     {te(`assetKind.${a.kind}`)} ·{" "}
-                    {a.shots.length
-                      ? t("list.shots", { count: a.shots.length })
-                      : t("list.noShots")}
+                    {!a.scenes.length
+                      ? t("list.notHere")
+                      : a.shots.length
+                        ? t("list.scenesShots", { count: a.scenes.length, shots: a.shots.length })
+                        : t("list.scenes", { count: a.scenes.length })}
                   </span>
                 </span>
                 <StatusBadge tone={STATUS_TONE[a.status]} icon={null}>

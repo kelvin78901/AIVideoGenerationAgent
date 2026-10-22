@@ -32,6 +32,10 @@ class Api:
         assert resp.status_code == 200, (path, resp.text)
         return resp.json()
 
+    def raw(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        """A write whose refusal the test checks itself."""
+        return httpx.request(method, f"{self.base}{path}", headers=HEADERS, timeout=10, **kwargs)
+
     def send(self, method: str, path: str, **kwargs: Any) -> Any:
         resp = httpx.request(method, f"{self.base}{path}", headers=HEADERS, timeout=10, **kwargs)
         assert resp.status_code in (200, 201), (path, resp.text)

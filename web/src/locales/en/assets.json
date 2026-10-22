@@ -8,8 +8,6 @@
   "kindCount": "{{count}} {{kind}}",
   "summarySep": " · ",
   "reanalyze": "Analyze the script again",
-  "reanalyzed": "Script analyzed again: no new assets. After editing the script, new or changed ones are marked.",
-  "reanalyzedChanged": "Script analyzed again: {{added}} new, {{changed}} changed.",
   "what": {
     "image": "{{name}} · 4 reference candidates",
     "text": "{{name}} · 4 text candidates",
@@ -19,8 +17,9 @@
     "label": "Asset list",
     "filter": "Filter by type",
     "all": "All",
-    "shots": "{{count}} shots",
-    "noShots": "Not in this episode"
+    "scenes": "In {{count}} scenes",
+    "scenesShots": "{{count}} scenes · {{shots}} shots",
+    "notHere": "Not in this episode"
   },
   "detail": {
     "label": "Asset details",
@@ -28,13 +27,20 @@
     "unlock": "Unlock",
     "source": "Source: {{source}}",
     "appears": "Appears in:",
-    "noShots": "No shots in this episode",
     "desc": "Description (the intent layer of this asset's prompt)",
     "descHint": "Click Rerun to apply changes; editing a locked asset shows which shots are affected.",
     "descSaved": "Description saved; it applies to the next rerun.",
     "locked": "“{{name}}” locked: candidate {{letter}} is the reference.",
     "lockedCharacter": "“{{name}}” locked: candidate {{letter}} is the reference; side, back and expression views are being filled in.",
-    "unlockTitle": "Unlocking “{{name}}” affects the shots that use it"
+    "unlockTitle": "Unlocking “{{name}}” affects the shots that use it",
+    "scene": "Scene {{n}}",
+    "shots": "Shots:",
+    "noScenes": "Not in this episode",
+    "upload": "Upload a reference",
+    "uploadFile": "Choose a picture to upload",
+    "uploaded": "Uploaded “{{name}}”: it is a candidate now, and picked.",
+    "editTitle": "{{name}} is locked: the change reaches downstream",
+    "editWhat": "New description: {{text}}"
   },
   "text": {
     "exact": "Text in the frame (checked letter by letter)",
@@ -57,6 +63,8 @@
   "cands": {
     "title": "Candidates",
     "noteText": "Every candidate is OCR-checked against the text above",
+    "noteComposite": "Every plate is OCR-checked to be free of text; the text on top previews what post will add",
+    "madeWith": "This version shows “{{text}}”, made with “{{method}}”; the text or method has changed since, so rerun to use the current settings",
     "noteCharacter": "Side, back and expression views are filled in after locking",
     "noteOther": "Pick one, then lock it",
     "label": "v{{n}} · {{letter}}",
@@ -69,6 +77,9 @@
     "ocrOk": "OCR matches",
     "ocrMissing": "OCR mismatch: missing characters or punctuation",
     "ocrWrong": "OCR mismatch: wrong characters",
+    "ocrBlank": "OCR: no text on the plate",
+    "ocrHasText": "OCR found text on the plate: “{{read}}”",
+    "ocrUnchecked": "Not OCR-checked: no OCR available on this computer",
     "emptyImage": "Not generated yet. Click Rerun above or on the right for 4 candidates.",
     "emptyVoice": "Not generated yet. Click Rerun above or on the right for 3 voice candidates."
   },
@@ -82,16 +93,96 @@
     "hint": {
       "design": "Creates a new voice from the description above; no sample needed. MiniMax voice design is about $3 each.",
       "clone": "Upload at least 10 s of clean speech (with the speaker's consent). MiniMax cloning is about $1.5 each.",
-      "local": "Uses local TTS (IndexTTS2 / CosyVoice): free, quality depends on the reference audio."
+      "local": "All local and free: the chosen audition is the voice, and IndexTTS makes the emotion variants. Quality depends on the audition."
     },
     "cands": "Voice candidates",
-    "play": "Play {{letter}}",
-    "pause": "Pause {{letter}}",
     "label": "v{{n}} · {{letter}} · {{label}}",
     "pick": "Choose",
     "picked": "Chosen",
     "lines": "Audition with lines from the script",
-    "tryLine": "Audition: {{text}}",
-    "trying": "Auditioning “{{text}}” ({{tone}})."
+    "note": "Three free auditions first; choose one and make the final, which is what gets locked",
+    "needsFinal": "An audition cannot be locked: make the final first",
+    "cloneLater": "Coming later",
+    "finalApi": "Make the final with {{model}}",
+    "finalLocal": "Make the final locally (free)",
+    "finalStarted": "Making the final from candidate {{letter}}: the voice, then five emotion variants.",
+    "finalTitle": "Final",
+    "final": "Final · {{label}} · {{provider}}",
+    "provider": {
+      "api": "API voice design",
+      "local": "Local"
+    },
+    "anchor": "Sample",
+    "variants": "Emotion variants",
+    "variantsHint": "Dialogue audio uses the emotion that matches each line's delivery."
+  },
+  "lockMismatch": {
+    "title": "Candidate {{letter}} does not show the required text",
+    "read": "OCR reads “{{read}}”",
+    "nothing": "OCR reads no text here",
+    "exact": "It should say “{{exact}}”",
+    "hint": "Once locked, every later shot follows this picture. Lock it only if the text is right.",
+    "confirm": "Lock anyway",
+    "cancel": "Cancel"
+  },
+  "reanalyzing": "Analysing the script again; the list updates when it is done and new assets show up in it.",
+  "view": {
+    "label": "View",
+    "list": "List",
+    "matrix": "Appearance matrix"
+  },
+  "final": {
+    "button": "Final via API",
+    "buttonCost": "Final via API · about {{cost}}",
+    "started": "Making the final: candidate {{letter}} as the reference, one picture on {{model}}."
+  },
+  "views": {
+    "title": "Extra views",
+    "note": "Drawn from the locked picture once it is locked; locking another one redraws them",
+    "running": "Drawing the side, back and expressions from the locked picture…",
+    "stale": "The locked picture changed; waiting to redraw",
+    "none": "The side, back and expressions are drawn once it is locked.",
+    "side": "Side",
+    "back": "Back",
+    "expressions": "Expressions",
+    "calm": "Calm",
+    "smile": "Smile",
+    "angry": "Angry",
+    "sad": "Sad"
+  },
+  "matrix": {
+    "label": "Appearance matrix",
+    "hint": "One row per scene, one column per asset. The number is how many lines of the scene have it; click to jump to that line in the script.",
+    "scene": "Scene",
+    "whole": "All",
+    "cellLines": "{{kind}} {{asset}} in scene {{n}}: {{count}} lines",
+    "cellScene": "{{kind}} {{asset}} in scene {{n}} (the whole scene)",
+    "empty": "No assets analysed for this episode yet."
+  },
+  "dub": {
+    "progress": "Dialogue audio {{done}} / {{total}}",
+    "all": "Dub all",
+    "allDone": "Every line of this episode is dubbed",
+    "waiting": "{{names}}: voice not locked yet, lines waiting: {{count}}",
+    "confirmTitle": "Dub episode {{n}}",
+    "confirmLines": "Lines to dub: {{count}}, about {{cost}}.",
+    "confirmNothing": "No lines to dub.",
+    "skipLocked": "Skipped: {{count}} (voice not locked yet: {{names}}).",
+    "skipNoVoice": "Skipped: {{count}} (no voice yet: {{names}}).",
+    "skipBusy": "Being dubbed already: {{count}}.",
+    "confirmHint": "Each line uses its speaker's locked voice, with the emotion its tone calls for. Dubbed lengths replace the script's estimates.",
+    "cancel": "Cancel",
+    "start": "Start dubbing",
+    "started": "Dubbing started (lines: {{count}}); each appears on the script page and in its voice's details when done.",
+    "lines": "Episode {{n}} lines, dubbed",
+    "linesNone": "This character has no lines in this episode.",
+    "linesHint": "The emotion follows the tone; change it if you like, then redub to hear it.",
+    "lockFirst": "Lock {{name}}'s voice first",
+    "dub": "Dub",
+    "redub": "Redub",
+    "redubStarted": "Redubbing: {{text}}",
+    "emotion": "Emotion",
+    "emotionAuto": "From the tone ({{emotion}})",
+    "emotionSaved": "Emotion set to {{emotion}}; redub to hear it."
   }
 }

@@ -12,6 +12,7 @@ is what its script is written from, so dragging a beat makes exactly two scripts
 
 from __future__ import annotations
 
+from collections.abc import Awaitable, Callable
 from typing import Any
 
 from sqlmodel import col, select
@@ -193,11 +194,17 @@ async def gate_confirmed(session: AsyncSession, gate: str, scope_id: str) -> boo
     return row is not None and row.action == "confirm"
 
 
+# (session, episode id) → that step's badge.
+StepCounter = Callable[[AsyncSession, str], Awaitable[StepProgressOut]]
+
+
 class EpisodeService:
     def __init__(self, db: Database, products: ProductService, invalidation: Invalidation) -> None:
         self._db = db
         self._products = products
         self._invalidation = invalidation
+        # Badges another service counts (M3: 素材, from the assets the episode uses).
+        self.counters: dict[StepId, StepCounter] = {}
 
     # ------------------------------------------------------------------ reads
 
@@ -264,6 +271,8 @@ class EpisodeService:
                 state={"confirmed": "confirmed", "draft": "in_progress"}.get(status, "not_started"),
                 stale=stale_of(by_slot.get(EPISODES_SLOT), script),
             )
+            for step, count in self.counters.items():
+                steps[step] = await count(session, episode_id)
         return steps
 
     # ------------------------------------------------------------------ edits

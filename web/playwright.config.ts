@@ -40,7 +40,14 @@ export default defineConfig({
   reporter: process.env.CI ? [["github"], ["list"]] : "list",
   use: { baseURL: BASE_URL, locale: "zh-CN" },
   projects: [
-    { name: "smoke", testMatch: /(smoke|m2)\.spec\.ts/, use: { ...desktop } },
+    // The demo as seeded, before the M2 flows below change it.
+    { name: "seeded", testMatch: /seeded\.spec\.ts/, use: { ...desktop, baseURL: REAL_URL } },
+    {
+      name: "smoke",
+      testMatch: /(smoke|m2)\.spec\.ts/,
+      dependencies: ["seeded"],
+      use: { ...desktop },
+    },
     { name: "real", testMatch: /real\.spec\.ts/, use: { ...desktop, baseURL: REAL_URL } },
     { name: "shots", testMatch: /shots\.spec\.ts/, use: { ...desktop } },
   ],

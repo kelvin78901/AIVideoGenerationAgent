@@ -36,7 +36,7 @@ DetectType = Literal[
     "keyring",
     "resolve",
 ]
-StepType = Literal["uv_venv", "uv_pip", "git_clone", "download", "pkg", "script", "copy"]
+StepType = Literal["uv_venv", "uv_pip", "uv_sync", "git_clone", "download", "pkg", "script", "copy"]
 
 TODO = "TODO"
 
@@ -84,6 +84,8 @@ class Detect(_Loose):
     version_regex: str | None = None
     env: str | None = None
     module: str | None = None
+    # py_import: also check the environment's PyTorch drives this GPU (CUDA build, arch)
+    gpu: bool = False
     url: str | None = None
     urls: list[str] = Field(default_factory=list)
     dir: str | None = None

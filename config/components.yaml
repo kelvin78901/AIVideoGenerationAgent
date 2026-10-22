@@ -34,9 +34,21 @@ fallback_defaults:
   local_timeout_s: 600
   notify: after            # after = 直接兜底事后通知；ask = 兜底前先问
 
+# 台词音频（音色样本、台词配音）统一处理（M3，media/audio.py）：48 kHz 单声道，裁首尾静音
+# （按拉响度之后的音量算，低于 trim_db 算静音），响度拉到 lufs，真峰值不超过 peak_dbtp。对白比成片的
+# -14 LUFS 低，给 M7 的音乐、音效和最终响度留余量。tail_s：结尾的缓冲，一半留最后一个音的自然收尾
+# （最后 50 ms 淡出），一半补静音，免得一句话在音还没落下时就断掉。
+audio:
+  dialogue: { lufs: -18, peak_dbtp: -1.5, trim_db: -45, sample_rate: 48000, tail_s: 0.3 }
+
 # 单次花费上限（美元，硬规则 6）：预计花费超过它的调用先进 waiting_confirm 等确认。
 # 组件里的 per_call_cap_usd 覆盖这个默认值；数值取自原型各页 Inspector。
 per_call_cap_usd: 0.50
+
+# 确认过的任务最多花到「确认金额 + 余量」，余量取确认金额的 ratio 和 min_usd 中大的（Kelvin 2026-10-21）。
+# 估价不是精确值（比如 Nano Banana Pro 还按输入和思考 token 收费，实际比估价多约 3%），
+# 多次调用的任务（4 张图、音色设计 + 5 个情绪）不会因此停在最后一次。
+confirm_margin: { ratio: 0.10, min_usd: 0.05 }
 
 components:
   - id: extract
@@ -97,12 +109,23 @@ components:
     name: { zh: 参考图生成, en: Reference images }
     kind: image
     api: *img_api
-    local: *img_local
-    balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image-edit, fallback_to: volc/seedream-5.0 }
+    local: [comfy/qwen-image, comfy/qwen-image-edit, comfy/flux2-dev]
+    balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image, fallback_to: volc/seedream-5.0 }
     per_call_cap_usd: 1.5
     cheap_api: volc/seedream-5.0
     candidates: 4
     gate: assets
+
+  - id: views
+    stage: assets
+    name: { zh: 补视图, en: Extra views }
+    kind: image
+    api: *img_api
+    local: [comfy/qwen-image-edit-hq, comfy/qwen-image-edit]
+    balanced: { mode: local, local: comfy/qwen-image-edit-hq, api: google/nano-banana-pro, fallback_to: google/nano-banana-pro }
+    per_call_cap_usd: 1
+    cheap_api: volc/seedream-5.0
+    note: 角色锁定后自动补侧面、背面和表情（以锁定的参考图为准，本地用编辑模型的官方 40 步，不用 4 步加速）；自动采纳
 
   - id: text
     stage: assets
@@ -113,7 +136,17 @@ components:
     balanced: { mode: hybrid, api: openai/gpt-image-2, local: comfy/qwen-image, fallback_to: google/nano-banana-pro }
     per_call_cap_usd: 1.2
     cheap_api: google/nano-banana-pro
+    candidates: 4
     gate: assets
+
+  - id: ocr
+    stage: assets
+    name: { zh: 文字核对（OCR）, en: Text check (OCR) }
+    kind: ocr
+    api: []
+    local: [local/rapidocr]
+    balanced: { mode: local, local: local/rapidocr }
+    note: 画面文字的每张候选都读一遍，和要求的字逐字比对；只用 CPU、不花钱，不做 API 兜底，没装时标「未检查」
 
   - id: voice
     stage: assets
@@ -121,11 +154,12 @@ components:
     kind: tts
     api: [minimax/speech-2.8-hd, elevenlabs/v3]
     local: [local/indextts2, local/cosyvoice, local/qwen3-tts]
-    balanced: { mode: hybrid, api: minimax/speech-2.8-hd, local: local/qwen3-tts, fallback_to: elevenlabs/v3 }
+    balanced: { mode: hybrid, api: minimax/speech-2.8-hd, local: local/qwen3-tts, fallback_to: local/indextts2 }
     per_call_cap_usd: 3
     cheap_api: minimax/speech-2.8-hd
     candidates: 3
     gate: assets
+    note: 「重跑」= 本地试听 3 个（Qwen3-TTS）；「用 MiniMax 出终版」= 音色设计 + 5 个情绪变体（config/voice.yaml），失败整套改用本地 IndexTTS
 
   - id: dub
     stage: assets
@@ -133,8 +167,8 @@ components:
     kind: tts
     api: [minimax/speech-2.8-hd, elevenlabs/v3]
     local: [local/indextts2, local/cosyvoice]
-    balanced: { mode: api, api: minimax/speech-2.8-hd, fallback_to: elevenlabs/v3 }
-    note: 原型里没有单独一行，界面放在素材页；用锁定的音色包，决定镜头时长
+    balanced: { mode: api, api: minimax/speech-2.8-hd, fallback_to: local/indextts2 }
+    note: 原型里没有单独一行，界面放在素材页；用锁定的音色包，决定镜头时长；失败改用本地 IndexTTS
 
   - id: plan
     stage: storyboard

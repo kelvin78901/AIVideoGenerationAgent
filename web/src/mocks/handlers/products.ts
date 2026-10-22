@@ -16,7 +16,6 @@ import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
 import { keyframeCandidates } from "@/mocks/fixtures/demo/shots";
-import { assetPayload } from "@/mocks/handlers/assets";
 import { demoTakeQa, logTake, shotOf, waitingOn } from "@/mocks/handlers/generate";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 import { demoRoute, primaryModel } from "@/mocks/route";
@@ -120,7 +119,7 @@ function finishRun(
       parent: parent?.id ?? null,
       intent: opts.intent,
       compiled: opts.compiled,
-      payload: assetPayload(p) ?? (p.slot === "keyframe" ? keyframeCandidates() : parent?.payload),
+      payload: p.slot === "keyframe" ? keyframeCandidates() : parent?.payload,
     });
     version.job_id = run.jobId;
     const shot = p.slot === "video" ? shotOf(p) : undefined;
@@ -170,6 +169,7 @@ export const productHandlers = [
     if (kind === "series" && ownerId && !getDb().series[ownerId]) return passthrough();
     if (kind === "episode" && ownerId && !getDb().episodes.some((e) => e.id === ownerId))
       return passthrough();
+    if (kind === "asset") return passthrough(); // assets are the backend's (M3)
     const list = Object.values(getDb().products).filter(
       (p) =>
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&

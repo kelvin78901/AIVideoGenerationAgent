@@ -1,11 +1,13 @@
 """``/api/v1/providers``: writing-model providers, their keys and "test connection".
 
 Keys are write-only: responses only ever say whether a key is present and where it comes
-from (keyring or environment), never the key itself.
+from (keyring or environment), never the key itself. Media models that use a provider's key
+(``account`` in providers.yaml: pictures, voices) are listed with it and tested with it.
 """
 
 from __future__ import annotations
 
+import asyncio
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
@@ -19,6 +21,8 @@ from drama_series_agent.core.config import LlmProvider, get_config
 from drama_series_agent.core.models_db import ProviderAccount, utcnow
 from drama_series_agent.modelhub.adapters.base import ModelSpec
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
+from drama_series_agent.modelhub.media_adapters import has_media_adapter, media_adapter
+from drama_series_agent.modelhub.registry import specs_from_config
 
 router = APIRouter(prefix="/providers", tags=["providers"])
 
@@ -39,6 +43,17 @@ def _provider(provider_id: str) -> LlmProvider:
 async def _account(session: AsyncSession, provider_id: str) -> ProviderAccount:
     row = await session.get(ProviderAccount, provider_id)
     return row or ProviderAccount(provider_id=provider_id)
+
+
+def _media_specs(provider_id: str) -> list[ModelSpec]:
+    """The media models with a real adapter that use this provider's key."""
+    cfg = get_config()
+    accounts = {m.key: m.account for m in cfg.providers.media_models}
+    return [
+        s
+        for s in specs_from_config(cfg)
+        if accounts.get(s.key) == provider_id and has_media_adapter(s)
+    ]
 
 
 def _public(provider: LlmProvider, account: ProviderAccount) -> dict[str, Any]:
@@ -64,6 +79,7 @@ def _public(provider: LlmProvider, account: ProviderAccount) -> dict[str, Any]:
             }
             for m in provider.models
         ],
+        "media": [{"key": s.key, "display": s.display} for s in _media_specs(provider.id)],
     }
 
 
@@ -115,7 +131,8 @@ async def delete_key(provider_id: str, state: State) -> dict[str, Any]:
 
 @router.post("/{provider_id}/test")
 async def test_connection(provider_id: str, state: State) -> dict[str, Any]:
-    """``GET /models`` with the stored key: checks the key and lists real model ids."""
+    """``GET /models`` with the stored key: checks the key and lists real model ids; then each
+    media model on this key checks its own model id (free calls only, never a generation)."""
     provider = _provider(provider_id)
     async with state.db.session() as session:
         account = await _account(session, provider.id)
@@ -132,5 +149,22 @@ async def test_connection(provider_id: str, state: State) -> dict[str, Any]:
         key_name=provider.key_name,
     )
     adapter = OpenAICompatAdapter(spec, get_key=secrets.get_secret, transport=state.http_transport)
-    health = await adapter.health()
-    return {"ok": health.ok, "detail": health.detail, "models": health.models}
+    media = _media_specs(provider.id)
+    health, *checks = await asyncio.gather(
+        adapter.health(),
+        *(
+            media_adapter(
+                m, get_key=secrets.get_secret, store=state.store, transport=state.http_transport
+            ).health()
+            for m in media
+        ),
+    )
+    return {
+        "ok": health.ok,
+        "detail": health.detail,
+        "models": health.models,
+        "media": [
+            {"key": m.key, "display": m.display, "ok": h.ok, "detail": h.detail}
+            for m, h in zip(media, checks, strict=True)
+        ],
+    }

@@ -1,0 +1,43 @@
+# 音色（M3 组件 voice）：怎么试听、怎么出终版。改这里不用改代码（硬规则 7）。
+#
+# 流程：「重跑」= 本地试听（Qwen3-TTS 按描述设计，免费）→ 选一个「用 MiniMax 出终版」
+# = 音色设计拿到 voice_id，紧接着用 T2A 出下面 5 个情绪变体 → 统一响度 → 锁定。
+# 「本地」来源（或 API 失败兜底）：锚点就是选中的试听，变体由 local_final 按情绪文字出。
+# MiniMax 的参数（emotion、vol、model）2026-10-21 按官方文档核对：情绪有 happy、sad、angry、fearful、
+# disgusted、surprised、calm、fluent、whisper，fluent 和 whisper 只有 2.6 有；vol 范围 (0, 10]，默认 1。
+
+lines: 2                           # 试听读这个角色的前几句台词
+sample_text: 你好，我在这儿。等我一下。   # 角色还没有台词时读这句
+local_final: local/indextts2       # 本地变体，也是 MiniMax 失败时的整套兜底
+
+# 三个试听：描述后面加上不同的倾向
+drafts:
+  - { label: 偏低沉, hint: 声音偏低沉一些 }
+  - { label: 更清亮, hint: 声音更清亮一些 }
+  - { label: 带一点沙哑, hint: 声音带一点沙哑 }
+
+# 情绪变体（界面上的名字在 enums:emotion.<id>）。台词配音按语气选用哪一个（第 7 步）。
+emotions:
+  - id: calm
+    instruct: 平静、自然地说
+    minimax: { emotion: calm }
+  - id: angry
+    instruct: 生气，压着火说
+    minimax: { emotion: angry }
+  - id: crying
+    instruct: 带着哭腔，声音发颤
+    minimax: { emotion: sad }
+  - id: whisper
+    instruct: 压低声音，耳语
+    minimax: { emotion: whisper, model: minimax/speech-2.6-hd }   # 2.8 没有 whisper
+  - id: shout
+    instruct: 大声喊出来
+    minimax: { emotion: angry, vol: 2.0 }                        # 没有 shout：angry + 调高音量
+
+# 台词配音：剧本里这句的语气含有这些词，就用对应的情绪。从上往下找，第一个对上的算；都没有就是 calm。
+# 每句也可以在界面上手动改。
+tones:
+  shout: [喊, 吼, 嚷, 尖叫]
+  whisper: [低声, 耳语, 小声, 轻声, 悄声]
+  crying: [哭, 哽咽, 抽泣, 泣]
+  angry: [怒, 火, 气, 恨, 咬牙]

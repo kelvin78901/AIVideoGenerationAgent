@@ -85,6 +85,59 @@ items:
     required: true
     detect: { type: command, cmd: "git --version" }
     install: [ { type: pkg, winget: Git.Git, brew: git, apt: git, admin: [winget, apt] } ]   # Git for Windows 装到 Program Files
+  # 本地模型的运行环境（M3 第 12 步，DECISIONS 2026-10-21「第 12 步（下）」）：各自一个 uv 环境 {envs}/<env>，
+  # 由 uv_sync 按锁文件装（runtimes/<name>/ 是我们的 pyproject + uv.lock）；worker 在 workers/，模型由安装器先下好，
+  # 运行时不联网。gpu: true 的检测还要看环境里的 PyTorch 能不能用这块显卡（CUDA 版、sm_120）。
+  - id: rt_qwentts
+    group: rt
+    name: { zh: Qwen3-TTS 运行环境（本地试听）, en: Qwen3-TTS runtime (local auditions) }
+    requires_cuda: true
+    required: true
+    depends_on: [uv]
+    # qwen-tts 0.1.1 + PyTorch 2.11 cu130；VoiceDesign 1.7B 自带 12Hz 分词器（speech_tokenizer/），
+    # 下到安装位置按文件夹加载（transformers 4.57.3 离线时按仓库名加载会去查 Hub）。12Hz 用不到 SoX。
+    detect: { type: py_import, env: qwentts, module: qwen_tts, gpu: true }
+    size_gb: 4.5
+    install:
+      - { type: uv_sync, env: qwentts, project: runtimes/qwentts, python: "3.12" }
+      - type: download
+        hf_repo: Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign
+        revision: 5ecdb67327fd37bb2e042aab12ff7391903235d3
+        dest: "{models}/Qwen3-TTS-12Hz-1.7B-VoiceDesign"
+        files:
+          - { path: config.json }
+          - { path: generation_config.json }
+          - { path: merges.txt }
+          - { path: model.safetensors, sha256: 391e8db219f292c515297cdceeb43e4eae67cdde35fa57e79a6a8a532fca0522 }   # 3.83 GB
+          - { path: preprocessor_config.json }
+          - { path: speech_tokenizer/config.json }
+          - { path: speech_tokenizer/configuration.json }
+          - { path: speech_tokenizer/model.safetensors, sha256: 836b7b357f5ea43e889936a3709af68dfe3751881acefe4ecf0dbd30ba571258 }   # 0.68 GB
+          - { path: speech_tokenizer/preprocessor_config.json }
+          - { path: tokenizer_config.json }
+          - { path: vocab.json }
+  - id: rt_indextts
+    group: rt
+    name: { zh: IndexTTS 运行环境（本地配音）, en: IndexTTS runtime (local dubbing) }
+    requires_cuda: true
+    required: true
+    depends_on: [uv, git]
+    # index-tts 源码锁 main 的 commit（v2.5.0 之后的修正，2026-09-29），按它自带的 uv.lock 装：Python 3.11、
+    # PyTorch 2.8 cu128；不装 extras（DeepSpeed、flash-attn 要编译）。代码和模型都是 bilibili 模型协议（DECISIONS）。
+    # 首次运行要下的辅助模型由 w_tts 预下到 IndexTTS-2.5/hf_cache/。
+    detect: { type: py_import, env: indextts, module: indextts, gpu: true }
+    install:
+      - { type: git_clone, url: https://github.com/index-tts/index-tts, ref: d9e41aac89fd00b3d71497fddb287b7f24613712, version: "v2.5.0+", dest: "{envs}/indextts-src" }
+      - { type: uv_sync, env: indextts, project: "{envs}/indextts-src", python: "3.11" }
+  - id: rt_ocr
+    group: rt
+    name: { zh: RapidOCR 运行环境（画面文字检查）, en: RapidOCR runtime (on-screen text checks) }
+    required: true
+    depends_on: [uv]
+    # rapidocr 3.10 + onnxruntime 1.31，只用 CPU；默认模型在 wheel 里。OCR 没有 API 兜底，所以 Mac 上也必需。
+    detect: { type: py_import, env: ocr, module: rapidocr }
+    install:
+      - { type: uv_sync, env: ocr, project: runtimes/ocr, python: "3.12" }
 
   # ---------- ComfyUI 与节点 ----------
   - id: comfy
@@ -256,6 +309,30 @@ items:
         revision: 107d238d68b8387e32843d0b4a2e24ceb0d3ad86
         files:
           - { path: Qwen-Image-Edit-2511-Lightning-4steps-V1.0-bf16.safetensors, folder: loras, sha256: 22226e8d05d354bb356627d428809f5afd7819399b077238a2b70a82883a904f }   # 0.85 GB
+  - id: w_img_t2i
+    group: w
+    name: { zh: "Qwen-Image-2512 文生图（fp8）", en: "Qwen-Image-2512 text to image (fp8)" }
+    required: true
+    depends_on: [comfy]
+    macos: { required: false, fix: { optional: mac_image_slow } }
+    # 2511 只能按参考图编辑，没有参考图的草稿用 2512（M3 第 12 步，workflows/qwen-image）。官方模板 image_qwen_Image_2512
+    # （2026-10-21 核对）：fp8 模型（Comfy-Org 没有 2512 的 int8 版）、和 w_img 同一个文本编码器和 VAE（已装 w_img 时
+    # 校验后跳过，实际新下约 22 GB）、Lightning 4 步 LoRA（模板用 fp32）
+    detect: { type: downloads }
+    size_gb: 31.8
+    install:
+      - type: download
+        hf_repo: Comfy-Org/Qwen-Image_ComfyUI
+        revision: 1f12b17be14c89b026c51a91d67c32f84bb047bc
+        files:
+          - { path: split_files/diffusion_models/qwen_image_2512_fp8_e4m3fn.safetensors, folder: diffusion_models, sha256: 5dc80554d5d83390046a2f4a94ece06afb7700bf7b0aaf8bde9769793875876b }   # 20.43 GB
+          - { path: split_files/text_encoders/qwen_2.5_vl_7b_fp8_scaled.safetensors, folder: text_encoders, sha256: cb5636d852a0ea6a9075ab1bef496c0db7aef13c02350571e388aea959c5c0b4 }   # 9.38 GB
+          - { path: split_files/vae/qwen_image_vae.safetensors, folder: vae, sha256: a70580f0213e67967ee9c95f05bb400e8fb08307e017a924bf3441223e023d1f }   # 0.25 GB
+      - type: download
+        hf_repo: lightx2v/Qwen-Image-2512-Lightning
+        revision: 4609161e308ce82018a42c2a0c9b107e865bb751
+        files:
+          - { path: Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors, folder: loras, sha256: ad12117461cb41e2ea637fec8df6392ce8e8550c47fbe2b829ed3deb98262066 }   # 1.70 GB
   - id: w_sr
     group: w
     name: { zh: "SeedVR2 7B 权重（int8）", en: "SeedVR2 7B weights (int8)" }
@@ -278,10 +355,11 @@ items:
     name: { zh: IndexTTS-2.5, en: IndexTTS-2.5 }
     required: true
     macos: { required: false, name: { zh: 本地配音模型, en: Local voice model }, fix: { optional: mac_voice_slow } }
-    # 不走 ComfyUI，放安装位置下；运行环境（index-tts 源码、Python 3.10–3.11 的 uv 环境）和它运行时自己下的辅助模型
-    # 等配音那个里程碑再装。小文件（配置、分词表）HF 没有 sha256，靠锁定的 revision。
+    # 不走 ComfyUI，放安装位置下；运行环境是 rt_indextts。小文件（配置、分词表）HF 没有 sha256，靠锁定的 revision。
+    # 后三步是 index-tts 首次运行自己去下的辅助模型（w2v-bert、CAMPPlus、BigVGAN），它先找 <model_dir>/hf_cache/，
+    # 找到就不联网；小文件的 sha256 是下载后算的（2026-10-21）。
     detect: { type: downloads }
-    size_gb: 5.5
+    size_gb: 8.3
     install:
       - type: download
         hf_repo: IndexTeam/IndexTTS-2.5
@@ -308,6 +386,27 @@ items:
           - { path: qwen0.6bemo4-merge/vocab.json }   # 0.00 GB
           - { path: s2mel.pth, sha256: 9b1b0003fc189c94cc349758d7ebc25f903b7eb2de4602879959cc64ce816456 }   # 0.41 GB
           - { path: wav2vec2bert_stats.pt, sha256: c9c176c2b8850ab2e3ba828bbfa969deaf4566ce55db5f2687b8430b87526ad2 }   # 0.00 GB
+      - type: download
+        hf_repo: facebook/w2v-bert-2.0
+        revision: da985ba0987f70aaeb84a80f2851cfac8c697a7b
+        dest: "{models}/IndexTTS-2.5/hf_cache/w2v-bert-2.0"
+        files:
+          - { path: config.json, sha256: f5572bd5998b68182e9c328a43127ed21fed687f6910497136b91a4e3b0e3675 }
+          - { path: preprocessor_config.json, sha256: 8e6281aad64f97e40534135a59dcc5d33571efae376f2a25adf5551951897ab4 }
+          - { path: model.safetensors, sha256: eb890c9660ed6e3414b6812e27257b8ce5454365d5490d3ad581ea60b93be043 }   # 2.32 GB
+      - type: download
+        hf_repo: funasr/campplus
+        revision: e4b6ede7ce16997aff4ae69fbca1f0175e2afede
+        dest: "{models}/IndexTTS-2.5/hf_cache"
+        files:
+          - { path: campplus_cn_common.bin, sha256: 3388cf5fd3493c9ac9c69851d8e7a8badcfb4f3dc631020c4961371646d5ada8 }   # 0.03 GB
+      - type: download
+        hf_repo: nvidia/bigvgan_v2_22khz_80band_256x
+        revision: 633ff708ed5b74903e86ff1298cf4a98e921c513
+        dest: "{models}/IndexTTS-2.5/hf_cache/bigvgan"
+        files:
+          - { path: config.json, sha256: 88a1f47acf747db0b21e97a389d838566147f7a5464583ff5c8d819d870f03ee }
+          - { path: bigvgan_generator.pt, sha256: e95ba25972d3de0628d99cd156e9315a9c018899bf739988959ebe3544080ced }   # 0.45 GB
   - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, installable: false, fix: { optional: llm_optional }, macos: { variant: MLX, required: true, name: { zh: "Qwen3.6-27B（MLX 版）", en: "Qwen3.6-27B (MLX)" }, fix: { missing: weights_pending_p0 } }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
 
   # ---------- 网络与服务 ----------

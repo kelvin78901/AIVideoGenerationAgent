@@ -9,11 +9,13 @@ import { useEventStream } from "@/api/useEventStream";
 import { GateButton } from "@/components/GateButton";
 import { ImpactDialog } from "@/components/ImpactDialog";
 import { Inspector } from "@/components/Inspector";
+import { Toaster } from "@/components/ui/sonner";
 import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { PRODUCT_ENRICH, PRODUCT_EXTRACT } from "@/mocks/fixtures/demo/products";
 import { useInspectorStore } from "@/stores/inspector";
 import { backend } from "@/test/backend";
+import { fakeAssets } from "@/test/fakes/assets";
 import { fakeConfig } from "@/test/fakes/config";
 import { fakeEpisodes } from "@/test/fakes/episodes";
 import { FakeEventSource } from "@/test/fakeEventSource";
@@ -252,13 +254,36 @@ describe("GateButton", () => {
 
   it("confirms the gate and goes to the next step", async () => {
     const user = userEvent.setup();
+    // The backend's assets gate (M3) needs every asset episode 1 uses locked.
+    for (const a of fakeAssets.assets.filter((x) => x.scenes.length)) {
+      const p = fakeAssets.products.find((x) => x.id === a.product_id);
+      if (p && !p.locked_hash) p.locked_hash = `locked-${a.id}`;
+    }
     renderAt(<Pages />, "/s/demo/e/1/assets");
     const button = await screen.findByRole("button", { name: "去做分镜" });
     await waitFor(() => expect(button).toBeEnabled());
     await user.click(button);
     expect(await screen.findByTestId("next-step")).toBeInTheDocument();
-    expect(getDb().progress[EP1]?.steps.assets.state).toBe("confirmed");
-    expect(getDb().gates.at(-1)).toMatchObject({ gate: "assets", action: "confirm" });
+    expect(fakeAssets.confirmed.has(EP1)).toBe(true);
+  });
+
+  it("says which assets are not locked yet", async () => {
+    const user = userEvent.setup();
+    renderAt(
+      <>
+        <Pages />
+        <Toaster />
+      </>,
+      "/s/demo/e/1/assets",
+    );
+    const button = await screen.findByRole("button", { name: "去做分镜" });
+    await waitFor(() => expect(button).toBeEnabled());
+    await user.click(button);
+    expect(
+      await screen.findByText("还有 3 条素材没锁定：林晚出租屋 · 夜、旧黑发圈、便利贴手写"),
+    ).toBeInTheDocument();
+    expect(screen.queryByTestId("next-step")).not.toBeInTheDocument();
+    expect(fakeAssets.confirmed.has(EP1)).toBe(false);
   });
 
   it("shows a confirmed step and reopens it", async () => {

@@ -6,8 +6,14 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-import { errorMessage } from "@/api/client";
-import { assetKeys, useAnalyzeAssets, useAssets, useLockAsset } from "@/api/hooks/assets";
+import { ApiError, errorMessage } from "@/api/client";
+import {
+  assetKeys,
+  useAnalyzeAssets,
+  useAssetMatrix,
+  useAssets,
+  useLockAsset,
+} from "@/api/hooks/assets";
 import { useComponentModels } from "@/api/hooks/config";
 import { useApplyImpact, useImpactPreview } from "@/api/hooks/impact";
 import { useProduct } from "@/api/hooks/products";
@@ -20,17 +26,28 @@ import { Inspector } from "@/components/Inspector";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState, Skeleton } from "@/components/QueryState";
 import { RunBar } from "@/components/RunBar";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { StepLayout } from "@/components/StepLayout";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { AssetDetail } from "@/pages/assets/AssetDetail";
 import { AssetList } from "@/pages/assets/AssetList";
+import { AssetMatrix } from "@/pages/assets/AssetMatrix";
+import { DubAllRow } from "@/pages/assets/Dub";
 import { useInspectorStore } from "@/stores/inspector";
 
 const KINDS: AssetKind[] = ["character", "scene", "prop", "text", "voice"];
 const COMPONENTS = ["img", "text", "voice"] as const;
 const componentOf = (a: Asset) =>
   a.kind === "voice" ? "voice" : a.kind === "text" ? "text" : "img";
+type View = "list" | "matrix";
 
 export default function AssetsPage() {
   const { t } = useTranslation("assets");
@@ -38,7 +55,7 @@ export default function AssetsPage() {
   const { t: tc } = useTranslation();
   const client = useQueryClient();
   const { seriesId, episodeIdx, episode } = useRouteEpisode();
-  const assets = useAssets(seriesId);
+  const assets = useAssets(seriesId, episode?.id);
   const spec = useOutputSpec(seriesId);
   const progress = useEpisodeProgress(episode?.id);
   const lock = useLockAsset(seriesId, episode?.id);
@@ -50,6 +67,12 @@ export default function AssetsPage() {
   const [filter, setFilter] = useState<AssetKind | "all">("all");
   const [selectedId, setSelectedId] = useState("linwan");
   const [unlocking, setUnlocking] = useState<Asset | null>(null);
+  // On-screen text OCR read differently: what it read, until the user confirms or cancels.
+  const [mismatch, setMismatch] = useState<{ asset: Asset; read: string; exact: string } | null>(
+    null,
+  );
+  const [view, setView] = useState<View>("list");
+  const matrix = useAssetMatrix(episode?.id, view === "matrix");
 
   useEffect(() => useInspectorStore.getState().reset(), []);
 
@@ -64,6 +87,7 @@ export default function AssetsPage() {
   const product = useProduct(selected?.product_id);
   const models = useComponentModels(selectedComponent);
   const ep = String(episodeIdx);
+  const scriptPath = paths.step(seriesId, ep, "script");
 
   const select = (a: Asset) => {
     setSelectedId(a.id);
@@ -80,10 +104,35 @@ export default function AssetsPage() {
   const letter = (i: number) => "ABCD"[i] ?? "";
 
   const refresh = () => {
-    void client.invalidateQueries({ queryKey: assetKeys.list(seriesId) });
+    void client.invalidateQueries({ queryKey: assetKeys.all(seriesId) });
     setUnlocking(null);
     preview.reset();
   };
+
+  const lockAsset = (a: Asset, force = false) =>
+    lock.mutate(
+      { id: a.id, body: force ? { force } : undefined },
+      {
+        onSuccess: (locked) => {
+          setMismatch(null);
+          toast.success(
+            t(locked.kind === "character" ? "detail.lockedCharacter" : "detail.locked", {
+              name: locked.name,
+              letter: letter(locked.pick),
+            }),
+          );
+        },
+        onError: (err) => {
+          if (err instanceof ApiError && err.code === "ocr_mismatch")
+            setMismatch({
+              asset: a,
+              read: String(err.params.read ?? ""),
+              exact: String(err.params.exact ?? ""),
+            });
+          else onError(err);
+        },
+      },
+    );
 
   const startUnlock = (a: Asset) =>
     preview.mutate(
@@ -135,29 +184,29 @@ export default function AssetsPage() {
       />
 
       {assets.data ? (
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3">
+        // One grid for both rows (assets locked, lines dubbed), so their columns line up.
+        <div className="grid grid-cols-[max-content_minmax(4rem,10rem)_minmax(0,1fr)_max-content] items-center gap-x-4 gap-y-2 rounded-lg border bg-card px-4 py-3">
           <span className="text-sm font-medium tabular-nums">{t("progress", { done, total })}</span>
           <Progress
             value={total ? (done / total) * 100 : 0}
             aria-label={t("progress", { done, total })}
-            className="w-40"
           />
           <span className="text-xs text-muted-foreground">{t("analyzed", { summary })}</span>
           <Button
             variant="outline"
             size="sm"
-            className="ml-auto"
+            className="justify-self-end"
             disabled={analyze.isPending}
             onClick={() =>
               analyze.mutate(undefined, {
-                onSuccess: (r) =>
-                  toast.info(r.added || r.changed ? t("reanalyzedChanged", r) : t("reanalyzed")),
+                onSuccess: () => toast.info(t("reanalyzing")),
                 onError,
               })
             }
           >
             {t("reanalyze")}
           </Button>
+          {episode ? <DubAllRow episodeId={episode.id} episodeIdx={episodeIdx} /> : null}
         </div>
       ) : null}
 
@@ -176,43 +225,94 @@ export default function AssetsPage() {
         />
       ) : null}
 
+      {assets.data?.length ? (
+        <SegmentedControl
+          label={t("view.label")}
+          value={view}
+          onChange={setView}
+          options={(["list", "matrix"] as const).map((v) => ({ value: v, label: t(`view.${v}`) }))}
+        />
+      ) : null}
+
       <QueryState query={assets} skeleton={<Skeleton className="h-96 w-full" />}>
         {(all) =>
           selected ? (
-            <div className="grid items-start gap-4 xl:grid-cols-[300px_minmax(0,1fr)]">
-              <AssetList
-                assets={all}
-                kinds={KINDS}
-                filter={filter}
-                onFilter={setFilter}
-                selectedId={selected.id}
-                onSelect={select}
-              />
+            <div
+              className={
+                view === "list"
+                  ? "grid items-start gap-4 xl:grid-cols-[300px_minmax(0,1fr)]"
+                  : "flex flex-col gap-4"
+              }
+            >
+              {view === "list" ? (
+                <AssetList
+                  assets={all}
+                  kinds={KINDS}
+                  filter={filter}
+                  onFilter={setFilter}
+                  selectedId={selected.id}
+                  onSelect={select}
+                />
+              ) : (
+                <QueryState query={matrix} skeleton={<Skeleton className="h-48 w-full" />}>
+                  {(m) => (
+                    <AssetMatrix
+                      matrix={m}
+                      scriptPath={scriptPath}
+                      selectedId={selected.id}
+                      onSelect={(id) => {
+                        const a = all.find((x) => x.id === id);
+                        if (a) select(a);
+                      }}
+                    />
+                  )}
+                </QueryState>
+              )}
               <AssetDetail
                 key={selected.id}
                 asset={selected}
                 seriesId={seriesId}
+                episode={episode ? { id: episode.id, idx: episodeIdx } : undefined}
                 aspect={spec.data?.aspect ?? "9:16"}
+                scriptPath={scriptPath}
                 storyboardPath={paths.step(seriesId, ep, "storyboard")}
                 busy={lock.isPending || preview.isPending}
-                onLock={() =>
-                  lock.mutate(selected.id, {
-                    onSuccess: (a) =>
-                      toast.success(
-                        t(a.kind === "character" ? "detail.lockedCharacter" : "detail.locked", {
-                          name: a.name,
-                          letter: letter(a.pick),
-                        }),
-                      ),
-                    onError,
-                  })
-                }
+                onLock={() => lockAsset(selected)}
                 onUnlock={() => startUnlock(selected)}
               />
             </div>
           ) : null
         }
       </QueryState>
+
+      <Dialog open={mismatch !== null} onOpenChange={(open) => !open && setMismatch(null)}>
+        {mismatch ? (
+          <DialogContent role="alertdialog" className="gap-3">
+            <DialogTitle>
+              {t("lockMismatch.title", { letter: letter(mismatch.asset.pick) })}
+            </DialogTitle>
+            <DialogDescription asChild>
+              <div className="flex flex-col gap-1">
+                <span>
+                  {mismatch.read
+                    ? t("lockMismatch.read", { read: mismatch.read })
+                    : t("lockMismatch.nothing")}
+                </span>
+                <span>{t("lockMismatch.exact", { exact: mismatch.exact })}</span>
+                <span className="mt-1">{t("lockMismatch.hint")}</span>
+              </div>
+            </DialogDescription>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setMismatch(null)}>
+                {t("lockMismatch.cancel")}
+              </Button>
+              <Button disabled={lock.isPending} onClick={() => lockAsset(mismatch.asset, true)}>
+                {t("lockMismatch.confirm")}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        ) : null}
+      </Dialog>
 
       {unlocking && preview.data ? (
         <ImpactDialog

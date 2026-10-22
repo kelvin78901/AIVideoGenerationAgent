@@ -145,7 +145,8 @@
     "shots": "Shots",
     "shot": "Shot {{label}}",
     "noShots": "Not in any shot yet",
-    "inNovel": "Show in the novel"
+    "inNovel": "Show in the novel",
+    "sceneSpoken": "Lines {{s}} s · dubbed {{dubbed}} / {{lines}}"
   },
   "other": {
     "title": "{{name}} script",

@@ -78,6 +78,15 @@ PC: dict[str, Row] = {
     "torch": _r("old", "torch_not_cuda", "torch_cuda", f_cuda="13", x_cuda="13.0"),
     "ffmpeg": _r("missing", "not_found", "install_named", x_name="FFmpeg"),
     "git": _r("ok", "installed"),
+    "rt_qwentts": _r(
+        "missing", "not_found", "install_named", x_name="Qwen3-TTS runtime (local auditions)"
+    ),
+    "rt_indextts": _r(
+        "missing", "not_found", "install_named", x_name="IndexTTS runtime (local dubbing)"
+    ),
+    "rt_ocr": _r(
+        "missing", "not_found", "install_named", x_name="RapidOCR runtime (on-screen text checks)"
+    ),
     "comfy": _r("old", "outdated", "update_latest"),
     "comfy_manager": _r("ok", "version", f_version="4.2.2"),
     "node_h3": _r("missing", "not_found", "update_comfy_native", x_version="0.30.0"),
@@ -90,6 +99,7 @@ PC: dict[str, Row] = {
     "w_h3": _r("missing", "not_found", "download"),
     "w_te": _r("missing", "not_found", "download"),
     "w_img": _r("missing", "not_found", "download"),
+    "w_img_t2i": _r("missing", "not_found", "download"),
     "w_sr": _r("missing", "not_found", "download"),
     "w_tts": _r("missing", "not_found", "download"),
     "w_llm": _r("optional", "not_found", "llm_optional"),
@@ -110,6 +120,11 @@ MAC: dict[str, Row] = {
     "torch": _r("missing", "not_found", "install_torch_mps"),
     "ffmpeg": _r("missing", "not_found", "install_named", x_name="FFmpeg"),
     "git": _r("ok", "installed"),
+    "rt_qwentts": _r("skip", "needs_cuda", "unsupported_skip"),
+    "rt_indextts": _r("skip", "needs_cuda", "unsupported_skip"),
+    "rt_ocr": _r(
+        "missing", "not_found", "install_named", x_name="RapidOCR runtime (on-screen text checks)"
+    ),
     "comfy": _r("optional", "not_found", "comfy_images_only"),
     "comfy_manager": _r("optional", "not_found", "install_nodes"),
     "node_h3": _r("skip", "needs_cuda", "unsupported_skip"),
@@ -122,6 +137,7 @@ MAC: dict[str, Row] = {
     "w_h3": _r("skip", "needs_cuda", "unsupported_skip"),
     "w_te": _r("skip", "needs_cuda", "unsupported_skip"),
     "w_img": _r("optional", "not_found", "mac_image_slow"),
+    "w_img_t2i": _r("optional", "not_found", "mac_image_slow"),
     "w_sr": _r("skip", "needs_cuda", "unsupported_upscale_api"),
     "w_tts": _r("optional", "not_found", "mac_voice_slow"),
     "w_llm": _r("missing", "not_found", "weights_pending_p0"),
@@ -139,13 +155,23 @@ MAC: dict[str, Row] = {
 async def test_pc_scan() -> None:
     result = await scan("pc")
     assert rows(result) == PC
-    assert counts(result) == {"ok": 10, "missing": 9, "old": 2, "optional": 8, "warn": 1}
+    assert counts(result) == {"ok": 10, "missing": 13, "old": 2, "optional": 8, "warn": 1}
 
 
 async def test_pc_flags_match_the_prototype() -> None:
     result = await scan("pc")
     picked = {i for i, (_, d) in result.items() if d.installable}
-    for item_id in ("torch", "ffmpeg", "comfy", "w_h3", "w_te", "w_img", "w_sr", "w_tts"):
+    for item_id in (
+        "torch",
+        "ffmpeg",
+        "comfy",
+        "w_h3",
+        "w_te",
+        "w_img",
+        "w_img_t2i",
+        "w_sr",
+        "w_tts",
+    ):
         assert result[item_id][0].required and result[item_id][1].installable, item_id
     for item_id in ("node_flashvsr", "sage", "llmsrv"):
         assert not result[item_id][0].required and result[item_id][1].installable, item_id
@@ -172,7 +198,7 @@ async def test_pc_facts() -> None:
 async def test_mac_scan() -> None:
     result = await scan("mac")
     assert rows(result) == MAC
-    assert counts(result) == {"ok": 6, "warn": 3, "missing": 4, "optional": 8, "skip": 8}
+    assert counts(result) == {"ok": 6, "warn": 3, "missing": 5, "optional": 9, "skip": 10}
     assert "driver" not in result
     assert result["w_llm"][0].name.en == "Qwen3.6-27B (MLX)"
     assert not result["w_llm"][1].installable  # until P0 settles the model
@@ -221,12 +247,45 @@ async def test_weights_count_in_any_model_folder() -> None:
     sr = (await scan("pc", probe))["w_sr"][1]
     assert sr.status == "ok" and len(sr.facts["paths"]) == 2
 
-    tts = _weight_files("w_tts")
-    assert {folder for folder, _ in tts} == {None} and len(tts) > 1
-    probe.add_files(*(f"D:/DramaStudio/IndexTTS-2.5/{path}" for _, path in tts[:-1]))
+    tts = _dest_files("w_tts", "D:/DramaStudio")
+    assert len(tts) > 1 and all(p.startswith("D:/DramaStudio/IndexTTS-2.5/") for p in tts)
+    assert "D:/DramaStudio/IndexTTS-2.5/hf_cache/bigvgan/bigvgan_generator.pt" in tts
+    probe.add_files(*tts[:-1])
     assert rows(await scan("pc", probe))["w_tts"][0] == "missing"
-    probe.add_files(f"D:/DramaStudio/IndexTTS-2.5/{tts[-1][1]}")
+    probe.add_files(tts[-1])
     assert rows(await scan("pc", probe))["w_tts"][0] == "ok"  # under the install folder
+
+
+def _dest_files(item_id: str, models: str) -> list[str]:
+    """Where an item's files go when they are not for ComfyUI (``dest`` + path)."""
+    item = next(x for x in load_manifest().items if x.id == item_id)
+    out = []
+    for step in item.install:
+        dest = str((step.model_extra or {}).get("dest") or "").replace("{models}", models)
+        out += [f"{dest}/{f.path}" for f in step.download_files() if f.folder is None]
+    return out
+
+
+async def test_a_runtime_needs_a_pytorch_that_drives_this_gpu() -> None:
+    """rt_qwentts / rt_indextts: importable, and their PyTorch is a CUDA build with kernels for
+    this GPU (sm_120); a CPU build or a build without the GPU's arch is ``old``."""
+    probe = FakeProbe.load("pc")
+    py = f"{ENVS['pc']}/qwentts/Scripts/python.exe"
+    probe.add_files(py)
+    good = {"version": "0.1.1", "torch_cuda": "13.0", "gpu_arch": "sm_120", "arch_ok": True}
+    probe.python[py] = {"qwen_tts": good}
+    row = rows(await scan("pc", probe))["rt_qwentts"]
+    assert row[:3] == ("ok", "version", {"version": "0.1.1"})
+    probe.python[py] = {"qwen_tts": {**good, "arch_ok": False, "torch_cuda": "12.6"}}
+    assert rows(await scan("pc", probe))["rt_qwentts"] == (
+        "old",
+        "env_gpu_arch",
+        {"arch": "sm_120", "cuda": "12.6"},
+        "env_torch_gpu",
+        {},
+    )
+    probe.python[py] = {"qwen_tts": {**good, "torch_cuda": None}}
+    assert rows(await scan("pc", probe))["rt_qwentts"][:2] == ("old", "env_no_cuda")
 
 
 # --------------------------------------------------------------------------- ComfyUI

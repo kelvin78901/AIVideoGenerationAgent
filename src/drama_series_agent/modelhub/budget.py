@@ -7,8 +7,10 @@ Two checks:
   over → the job waits for a yes (``waiting_confirm``). Work that belongs to no episode (bible,
   enrichment, episode planning) only meets the per-call cap.
 - **Before each model call** (``BudgetGuardImpl``, the router's guard): a confirmed job may
-  spend up to what was confirmed; anything else must stay under the per-call cap. A fallback
-  that would cost more fails with ``budget_exceeded`` instead of spending silently.
+  spend up to what was confirmed plus a margin (``confirm_margin``: the larger of 10% and
+  $0.05, so a job of several calls does not stop on its last one because the estimate was a
+  little low); anything else must stay under the per-call cap. A fallback that would cost more
+  fails with ``budget_exceeded`` instead of spending silently.
 
 Left of the episode budget = budget − spent − the estimates of its queued / waiting jobs − what
 its running jobs are still expected to spend (estimate − spent so far, at least 0).
@@ -22,7 +24,7 @@ from typing import Any
 
 from sqlmodel import col, select
 
-from drama_series_agent.core.config import Resolved
+from drama_series_agent.core.config import ConfirmMargin, Resolved, get_config
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import Job
 from drama_series_agent.modelhub import calllog
@@ -104,8 +106,9 @@ class Budget:
 class BudgetGuardImpl:
     """The router's guard: runs before every model call, after the estimate."""
 
-    def __init__(self, db: Database) -> None:
+    def __init__(self, db: Database, margin: ConfirmMargin | None = None) -> None:
         self.db = db
+        self.margin = margin or get_config().components.confirm_margin
 
     async def check(
         self, spec: ModelSpec, estimate: Estimate, settings: Resolved, ctx: CallContext
@@ -120,8 +123,9 @@ class BudgetGuardImpl:
                 confirmed = job.confirmed_usd
                 spent = await calllog.total_cost(self.db, job_id=ctx.job_id)
         if confirmed is not None:
-            if spent + cost > confirmed + EPSILON:
-                raise BudgetExceeded(cost, max(0.0, confirmed - spent), "confirmed")
+            allowed = self.margin.allowance(confirmed)
+            if spent + cost > allowed + EPSILON:
+                raise BudgetExceeded(cost, max(0.0, allowed - spent), "confirmed")
             return
         cap = cap_of(settings)
         if cap is not None and cost > cap + EPSILON:

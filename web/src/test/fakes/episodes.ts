@@ -20,6 +20,7 @@ import {
   type StepProgress,
 } from "@/api/schemas/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
+import { fakeAssetsBadge } from "@/test/fakes/assets";
 import data from "@/test/data/episodes.json";
 
 const demo = z.array(EpisodeSchema).parse(data.episodes);
@@ -81,8 +82,14 @@ export function episodesBackendFetch(url: URL): Response | null {
   if (url.pathname.endsWith(`/series/${DEMO_SERIES_ID}/episodes`))
     return HttpResponse.json(fakeEpisodes.list);
   const m = /\/episodes\/([^/]+)\/progress$/.exec(url.pathname);
-  const progress = m ? fakeEpisodes.progress[decodeURIComponent(m[1] ?? "")] : undefined;
-  return progress ? HttpResponse.json(progress) : null;
+  const id = decodeURIComponent(m?.[1] ?? "");
+  const progress = m ? fakeEpisodes.progress[id] : undefined;
+  if (!progress) return null;
+  // 素材 counts the fake assets as they are now (locks in a test move it).
+  const assets = fakeAssetsBadge(id);
+  return HttpResponse.json(
+    assets ? { ...progress, steps: { ...progress.steps, assets } } : progress,
+  );
 }
 
 /** `known`: the series the fake backend has. Other series have no plan yet. */

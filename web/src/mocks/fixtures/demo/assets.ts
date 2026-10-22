@@ -1,13 +1,24 @@
 /**
- * Episode 1 assets (prototype Assets.dc.html `assets()`): 13 items, 7 locked, 3 waiting for a
- * pick, 3 not generated. Each asset owns one product; its versions carry the candidates.
+ * Episode 1 assets (prototype Assets.dc.html `assets()`). The assets themselves are the
+ * backend's since M3 step 3 (its demo seed has the same 13, 7 locked); the demo keeps them for
+ * what is not real yet: the shots of episode 1 that use each one (M4), laid over the backend's
+ * list and its unlock preview, and the kinds the demo's video QA checks.
  */
-import type { Asset, CandidatesPayload } from "@/api/schemas/assets";
-import type { Product, ProductVersion } from "@/api/schemas/products";
-import { demoAt, demoVersion } from "@/mocks/fixtures/demo/products";
+import type { Asset } from "@/api/schemas/assets";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 
-type Seed = Omit<Asset, "series_id" | "product_id" | "status" | "pick" | "text" | "voice"> &
+type Seed = Omit<
+  Asset,
+  | "series_id"
+  | "product_id"
+  | "status"
+  | "pick"
+  | "text"
+  | "voice"
+  | "scenes"
+  | "note"
+  | "seed_changed"
+> &
   Partial<Pick<Asset, "text" | "voice">> & { state: "locked" | "choosing" | "none" };
 
 const msg = (code: string, params: Record<string, string | number> = {}) => ({ code, params });
@@ -143,89 +154,6 @@ const seeds: Seed[] = [
   },
 ];
 
-export const assetProductId = (assetId: string) => `demo-p-asset-${assetId}`;
-
-const componentOf = (kind: Asset["kind"]) =>
-  kind === "voice" ? "voice" : kind === "text" ? "text" : "img";
-const slotOf = (kind: Asset["kind"]): Product["slot"] =>
-  kind === "voice" ? "voice" : kind === "text" ? "text_image" : "ref_image";
-
-const WAVES = [
-  [10, 18, 26, 14, 22, 30, 12, 20, 16, 28, 10, 18, 24, 12, 20, 14],
-  [14, 22, 12, 28, 18, 10, 24, 30, 16, 12, 22, 18, 10, 26, 14, 20],
-  [8, 16, 22, 30, 12, 18, 26, 10, 20, 28, 14, 10, 24, 16, 22, 12],
-].map((w) => w.map((h) => h / 30));
-const VOICE_LABELS = ["偏低沉", "更清亮", "带一点沙哑"];
-
-/** Candidates a run produces for an asset (4 images, 4 text images with OCR, 3 voices). */
-export function candidatesFor(asset: {
-  kind: Asset["kind"];
-  text?: Asset["text"];
-}): CandidatesPayload {
-  if (asset.kind === "voice")
-    return {
-      candidates: VOICE_LABELS.map((label, i) => ({ label, waveform: WAVES[i] ?? null })),
-    };
-  const exact = asset.text?.exact;
-  return {
-    candidates: [0, 1, 2, 3].map((i) => {
-      if (exact === undefined) return {};
-      // Model-drawn text misreads now and then (prototype): 点 → 占, a dropped last character.
-      if (asset.text?.method === "composite") return { ocr: exact };
-      if (i === 1) return { ocr: exact.replace("点", "占") };
-      if (i === 3) return { ocr: exact.slice(0, -1) };
-      return { ocr: exact };
-    }),
-  };
-}
-
-function versionsOf(seed: Seed, productId: string): ProductVersion[] {
-  if (seed.state === "none") return [];
-  const component = componentOf(seed.kind);
-  const payload = candidatesFor(seed);
-  const v = (n: number, model: string, at: string, parent: string | null = null) =>
-    demoVersion(productId, component, {
-      n,
-      origin: "run",
-      model,
-      at: demoAt(at),
-      parent,
-      intent: seed.intent,
-      payload,
-    });
-  if (seed.id === "linwan") {
-    // 混合: 本地草稿, then the API final (SPEC 7.7).
-    const draft = v(1, "comfy/qwen-image-edit", "10:31");
-    return [draft, v(2, "google/nano-banana-pro", "10:36", draft.id)];
-  }
-  if (seed.kind === "voice") return [v(1, "minimax/speech-2.8-hd", "10:40")];
-  if (seed.kind === "text") return [v(1, "openai/gpt-image-2", "10:44")];
-  return [v(1, "comfy/qwen-image-edit", "10:33")];
-}
-
-function productOf(seed: Seed): Product {
-  const id = assetProductId(seed.id);
-  const versions = versionsOf(seed, id);
-  const last = versions.at(-1);
-  const locked = seed.state === "locked" && last;
-  return {
-    id,
-    series_id: DEMO_SERIES_ID,
-    owner_type: "asset",
-    owner_id: seed.id,
-    slot: slotOf(seed.kind),
-    component_id: componentOf(seed.kind),
-    current_version_id: last?.id ?? null,
-    adopted_version_id: locked ? last.id : null,
-    locked_hash: locked ? last.content_hash : null,
-    status: locked ? "locked" : last ? "ready" : "empty",
-    versions,
-    prompt: null,
-    estimate: null,
-    running: null,
-  };
-}
-
 export const assets: Asset[] = seeds.map(
   ({ id, kind, name, intent, source, shots, text, voice }) => ({
     id,
@@ -235,12 +163,13 @@ export const assets: Asset[] = seeds.map(
     source,
     shots,
     series_id: DEMO_SERIES_ID,
-    product_id: assetProductId(id),
+    product_id: `demo-p-asset-${id}`,
+    scenes: [],
     status: "not_generated",
     pick: 0,
     text: text ?? null,
     voice: voice ?? null,
+    note: null,
+    seed_changed: false,
   }),
 );
-
-export const assetProducts: Product[] = seeds.map(productOf);

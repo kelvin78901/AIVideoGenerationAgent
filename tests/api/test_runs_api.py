@@ -19,10 +19,12 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
+from drama_series_agent.core.config import ConfirmMargin
 from drama_series_agent.core.models_db import Dependency, Event, ModelCall, Product
 from drama_series_agent.modelhub.adapters.base import ModelRequest
 from drama_series_agent.modelhub.adapters.mock import Responder
-from drama_series_agent.pipeline.component import Component, Inputs
+from drama_series_agent.modelhub.budget import BudgetGuardImpl
+from drama_series_agent.pipeline.component import Component, Inputs, RunContext
 from drama_series_agent.pipeline.products import VersionDraft
 from drama_series_agent.prompts.compiler import TEMPLATES, Block, PromptCompiler
 
@@ -49,6 +51,12 @@ class EchoComponent(Component):
 
     def output_schema(self) -> type[BaseModel]:
         return Lines
+
+    async def build_payload(
+        self, output: BaseModel, inputs: Inputs, ctx: RunContext
+    ) -> dict[str, Any]:
+        payload = output.model_dump(mode="json")
+        return {**payload, "params": inputs.params} if inputs.params else payload
 
     def mock_responders(self) -> dict[str, Responder]:
         def answer(req: ModelRequest) -> dict[str, Any]:
@@ -160,6 +168,24 @@ def test_first_run_makes_an_adopted_version(client: TestClient) -> None:
     assert [(d.version_id, d.upstream_product_id) for d in deps] == [(v1["id"], "test-bible")]
     toasts = [e.data_json for e in _rows(client, Event) if e.type == "toast"]
     assert toasts[-1]["code"] == "version_created" and toasts[-1]["params"]["n"] == 1
+
+
+def test_where_and_params_reach_the_run_and_candidates_wait_for_a_pick(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """M3: ``where`` picks the route's local / API model (hybrid's 出终版), ``params`` reach
+    the component, and a candidate component never adopts by itself."""
+    monkeypatch.setattr(EchoComponent, "auto_adopt", False)
+    pid = _setup(client)
+    job = _run(client, pid, where="local", params={"task": "views", "source_idx": 2})
+    assert job["state"] == "succeeded" and job["queue"] == "gpu"
+    assert job["params"]["params"] == {"task": "views", "source_idx": 2}
+    data = client.get(f"{V1}/products/{pid}").json()
+    v1 = data["versions"][0]
+    assert v1["where"] == "local" and v1["payload"]["params"] == {"task": "views", "source_idx": 2}
+    assert data["adopted_version_id"] is None and data["status"] == "ready"
+    bad = client.post(f"{V1}/products/{pid}/run", json={"mode": "run", "params": {"x": 1}})
+    assert bad.status_code == 422
 
 
 def test_rerun_and_switch(client: TestClient) -> None:
@@ -337,9 +363,16 @@ def test_over_the_cap_waits_for_a_yes(client: TestClient) -> None:
     assert client.get(f"{V1}/products/{pid}").json()["status"] == "adopted"
 
 
+def _margin(client: TestClient, margin: ConfirmMargin) -> None:
+    guard = _state(client).router.budget
+    assert isinstance(guard, BudgetGuardImpl)
+    guard.margin = margin
+
+
 def test_a_pricier_fallback_after_a_yes_fails(client: TestClient) -> None:
     pid = _setup(client)
     _cap(client, 0.00001)
+    _margin(client, ConfirmMargin(ratio=0.0, min_usd=0.0))
     settings = _state(client).registry.mock_settings
     settings.fail_keys = {"deepseek/v4.1-flash"}  # fallback: Qwen3.7-plus, which costs more
     job = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"}).json()
@@ -347,6 +380,23 @@ def test_a_pricier_fallback_after_a_yes_fails(client: TestClient) -> None:
     done = _wait(client, job["id"])
     assert done["state"] == "failed" and done["error"]["code"] == "budget_exceeded"
     assert not [c for c in _rows(client, ModelCall) if c.model_key == "qwen/qwen3.7-plus"]
+
+
+def test_a_yes_leaves_a_margin(client: TestClient) -> None:
+    """The larger of 10% and $0.05 past what was confirmed (Kelvin 2026-10-21)."""
+    assert ConfirmMargin().allowance(1.0) == pytest.approx(1.1)
+    assert ConfirmMargin().allowance(0.2) == pytest.approx(0.25)
+    pid = _setup(client)
+    _cap(client, 0.00001)
+    settings = _state(client).registry.mock_settings
+    # The fallback estimated past the confirmed amount (stopped without a margin, above) but
+    # within $0.05 of it.
+    settings.fail_keys = {"deepseek/v4.1-flash"}
+    job = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"}).json()
+    client.post(f"{V1}/jobs/{job['id']}/confirm")
+    assert _wait(client, job["id"])["state"] == "succeeded"
+    calls = [c for c in _rows(client, ModelCall) if c.product_id == pid]
+    assert calls[-1].model_key == "qwen/qwen3.7-plus" and calls[-1].status == "success"
 
 
 def test_fallback_asks_first_when_set_to(client: TestClient) -> None:

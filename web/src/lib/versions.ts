@@ -11,8 +11,16 @@ export function currentVersion(product: Product): ProductVersion | undefined {
 
 export type VersionStatus = "locked" | "adopted" | "draft";
 
+/**
+ * Adopted / locked, else a draft. Locking a candidate adopts a `pick` version holding it alone
+ * (M3) and keeps the version it came from on screen: that one reads as adopted too.
+ */
 export function versionStatus(product: Product, version: ProductVersion): VersionStatus {
-  if (version.id !== product.adopted_version_id) return "draft";
+  const adopted = product.versions.find((v) => v.id === product.adopted_version_id);
+  const mine =
+    version.id === adopted?.id ||
+    (adopted?.origin === "pick" && adopted.parent_version_id === version.id);
+  if (!mine) return "draft";
   return product.locked_hash ? "locked" : "adopted";
 }
 

@@ -1,5 +1,5 @@
-"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script}.json``: what the
-Mock backend answers.
+"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script,assets,dub}.json``:
+what the Mock backend answers.
 
 The front end's page tests serve these through their fake backend
 (``web/src/test/setupBackend.ts``), so they see the items, codes and change lists this backend
@@ -13,6 +13,7 @@ and let the page tests show what that changes on screen.
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import time
@@ -255,3 +256,67 @@ def test_web_script_fixture_is_current(client: TestClient) -> None:
             f.write(text)
     current = path.read_text(encoding="utf-8") if path.exists() else ""
     assert current == text, f"{path.name} is out of date: see this module's docstring"
+
+
+ASSETS_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "assets.json"
+
+
+def test_web_assets_fixture_is_current(client: TestClient) -> None:
+    """Episode 1's assets, each one's product with its candidates, 林晚's views and the
+    episode's 出场矩阵 (``test/fakes/assets.ts``). A lock's ``pick`` version gets a random id and
+    the time it was made: pinned here."""
+    assets = client.get(f"{V1}/series/demo/assets", params={"episode": "demo-e1"}).json()
+    products = [client.get(f"{V1}/products/{a['product_id']}").json() for a in assets]
+    owned = client.get(f"{V1}/products", params={"owner": "asset:linwan"}).json()
+    export = {
+        "assets": assets,
+        "products": products,
+        "views": [p for p in owned if p["slot"] == "ref_views"],
+        "matrix": client.get(f"{V1}/episodes/demo-e1/assets/matrix").json(),
+    }
+    text = json.dumps(_fixed(export), ensure_ascii=False)
+    for p in products:
+        for v in p["versions"]:
+            if v["origin"] == "pick":
+                text = text.replace(v["id"], f"{p['id']}-v{v['n']}")
+    text = json.dumps(json.loads(text), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(ASSETS_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = ASSETS_FIXTURE.read_text(encoding="utf-8") if ASSETS_FIXTURE.exists() else ""
+    assert current == text, f"{ASSETS_FIXTURE.name} is out of date: see this module's docstring"
+
+
+DUB_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "dub.json"
+
+
+def _wait_jobs(client: TestClient, job_ids: list[str], limit_s: float = 30) -> None:
+    deadline = time.monotonic() + limit_s
+    for job_id in job_ids:
+        while client.get(f"{V1}/jobs/{job_id}").json()["state"] != "succeeded":
+            assert time.monotonic() < deadline, "jobs did not finish"
+            time.sleep(0.02)
+
+
+def test_web_dub_fixture_is_current(client: TestClient) -> None:
+    """Episode 1's 台词配音 before 「全部配音」, its estimate, and after (``test/fakes/dub.ts``).
+    A line's audio product is made on its first take with a random id: pinned here."""
+    before = client.get(f"{V1}/episodes/demo-e1/dub").json()
+    estimate = client.post(f"{V1}/episodes/demo-e1/dub", json={"dry_run": True}).json()
+    started = client.post(f"{V1}/episodes/demo-e1/dub", json={}).json()
+    _wait_jobs(client, started["jobs"])
+    after = client.get(f"{V1}/episodes/demo-e1/dub").json()
+    export = {"before": before, "estimate": estimate, "after": after}
+    text = json.dumps(_fixed(export), ensure_ascii=False)
+    for x in after["lines"]:
+        text = text.replace(x["product_id"], f"dub-{x['line_id']}")
+        # The take's audio differs with its seed.
+        sha = hashlib.sha256(f"dub-{x['line_id']}".encode()).hexdigest()
+        text = text.replace(x["audio"]["path"], f"blobs/sha256/{sha[:2]}/{sha}")
+        text = text.replace(x["audio"]["sha256"], sha)
+    text = json.dumps(json.loads(text), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(DUB_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = DUB_FIXTURE.read_text(encoding="utf-8") if DUB_FIXTURE.exists() else ""
+    assert current == text, f"{DUB_FIXTURE.name} is out of date: see this module's docstring"

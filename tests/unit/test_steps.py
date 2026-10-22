@@ -43,9 +43,13 @@ class Recorder:
         self.codes = codes or {}
         self.torch = torch  # what `python -c "import torch; ..."` prints
         self.calls: list[list[str]] = []
+        self.envs: list[dict[str, str] | None] = []
 
-    async def __call__(self, argv: list[str], *, cwd: str | None, on_line: Any) -> int:
+    async def __call__(
+        self, argv: list[str], *, cwd: str | None, on_line: Any, env: dict[str, str] | None = None
+    ) -> int:
         self.calls.append(argv)
+        self.envs.append(env)
         await on_line(f"$ {' '.join(argv[:3])}")
         self._leave_behind(argv)
         if "rev-parse" in argv and self.head:
@@ -190,13 +194,15 @@ async def test_no_python_outside_our_envs(tmp_path: Path, os: OS) -> None:
         except InstallError as exc:
             outcomes[item.id] = exc.code
     envs = str(tmp_path / "envs")
-    uv = [c for c in rec.calls if c[0] == "uv"]
+    uv = [(c, e) for c, e in zip(rec.calls, rec.envs, strict=True) if c[0] == "uv"]
     assert uv, outcomes
-    for call in uv:
+    for call, call_env in uv:
         if call[1] == "venv":
             assert call[-1].startswith(envs), call
         elif call[1] == "pip":
             assert call[call.index("--python") + 1].startswith(envs), call
+        elif call[1] == "sync":
+            assert call_env and call_env["UV_PROJECT_ENVIRONMENT"].startswith(envs), call
         else:
             assert call[1:3] == ["python", "install"], call  # uv-managed, not the system's
     assert not [c for c in rec.calls if c[0] in ("pip", "pip3", "python", "python3")]
@@ -264,6 +270,42 @@ async def test_checked_again_after_installing(tmp_path: Path) -> None:
 
 
 # --------------------------------------------------------------------------- git
+
+
+async def test_uv_sync_installs_a_lock_into_our_envs(tmp_path: Path) -> None:
+    """Our runtime (``runtimes/<name>``, in the repo) or a clone's own lock, never a ``.venv``
+    beside the project: ``UV_PROJECT_ENVIRONMENT`` points into ~/.drama-studio/envs."""
+    env = _env(tmp_path)
+    envs = str(tmp_path / "envs")
+    ours = _item({"type": "uv_sync", "env": "qwentts", "project": "runtimes/qwentts"})
+    rec, _ = await _install(ours, env)
+    project = str(REPO_ROOT / "runtimes" / "qwentts")
+    assert rec.calls == [
+        ["uv", "sync", "--locked", "--no-dev", "--project", project, "--python", "3.12"]
+    ]
+    assert rec.envs == [{"UV_PROJECT_ENVIRONMENT": join(envs, "qwentts")}]
+
+    clone = _item(
+        {"type": "uv_sync", "env": "indextts", "project": "{envs}/indextts-src", "python": "3.11"}
+    )
+    with pytest.raises(InstallError) as err:  # not cloned yet
+        await _install(clone, env)
+    assert err.value.code == "source_missing"
+    src = tmp_path / "envs" / "indextts-src"
+    src.mkdir(parents=True)
+    (src / "uv.lock").write_text("version = 1\n", encoding="utf-8")
+    rec, _ = await _install(clone, env)
+    assert rec.calls[0][-4:] == ["--project", f"{envs}/indextts-src", "--python", "3.11"]
+    assert rec.envs == [{"UV_PROJECT_ENVIRONMENT": join(envs, "indextts")}]
+
+
+@pytest.mark.parametrize("name", ["qwentts", "ocr"])
+def test_our_runtimes_have_their_locks(name: str) -> None:
+    """``uv sync --locked`` refuses a stale lock: regenerate it with ``uv lock --project``."""
+    folder = REPO_ROOT / "runtimes" / name
+    assert (folder / "pyproject.toml").is_file() and (folder / "uv.lock").is_file()
+    steps = [s for x in load_manifest().items for s in x.install if s.type == "uv_sync"]
+    assert f"runtimes/{name}" in [(s.model_extra or {}).get("project") for s in steps]
 
 
 async def test_git_clone_then_already_there(tmp_path: Path) -> None:

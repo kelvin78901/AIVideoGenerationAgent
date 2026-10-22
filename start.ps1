@@ -4,15 +4,20 @@
 #   powershell -ExecutionPolicy Bypass -File .\start.ps1                       # backend + web
 #   powershell -ExecutionPolicy Bypass -File .\start.ps1 -NoWeb                # backend only
 #   powershell -ExecutionPolicy Bypass -File .\start.ps1 -Port 8001 -SkipInstall
+#   powershell -ExecutionPolicy Bypass -File .\start.ps1 -RealSetup:$false     # Setup page: sample machines
 #
 # The backend always binds 127.0.0.1. Mock adapters are the default; set $env:DRAMA_MOCK = "0"
-# to call real models.
+# to call real models. -RealSetup (on by default) makes the Setup page scan and install on
+# this computer (DRAMA_SETUP=real) while models stay on Mock; -RealSetup:$false shows the
+# prototype's sample machines instead. An explicit $env:DRAMA_SETUP wins when the switch is
+# not given.
 
 [CmdletBinding()]
 param(
     [int]$Port = 8000,
     [switch]$NoWeb,
-    [switch]$SkipInstall
+    [switch]$SkipInstall,
+    [switch]$RealSetup = $true
 )
 
 $ErrorActionPreference = "Stop"
@@ -37,6 +42,9 @@ $env:DRAMA_SERIES_ROOT = $Root
 if (-not $env:COMFYUI_URL) { $env:COMFYUI_URL = "http://127.0.0.1:8188" }
 $env:DRAMA_BACKEND_URL = "http://127.0.0.1:$Port"   # Vite proxies /api here
 $env:COREPACK_ENABLE_DOWNLOAD_PROMPT = "0"
+if ($PSBoundParameters.ContainsKey("RealSetup") -or -not $env:DRAMA_SETUP) {
+    $env:DRAMA_SETUP = if ($RealSetup) { "real" } else { "fake" }
+}
 
 if (-not (Get-Command uv -ErrorAction SilentlyContinue)) {
     throw "uv not found. Install it: winget install --id astral-sh.uv -e"
@@ -57,12 +65,14 @@ if (-not $SkipInstall) {
 }
 
 $mock = if ($env:DRAMA_MOCK -eq "0") { "off (real models)" } else { "on" }
+$setupMode = if ($env:DRAMA_SETUP -eq "real") { "this computer (real scan and install)" } else { "sample machines (simulated)" }
 Write-Host "========================================"
 Write-Host "  AI Drama Studio"
 Write-Host "========================================"
 Write-Host "  API:   http://127.0.0.1:$Port   (docs: /docs)"
 if (-not $NoWeb) { Write-Host "  Web:   http://127.0.0.1:5173" }
 Write-Host "  Mock:  $mock"
+Write-Host "  Setup: $setupMode"
 Write-Host "  Comfy: $env:COMFYUI_URL"
 Write-Host "  Ctrl+C to stop"
 Write-Host "========================================"

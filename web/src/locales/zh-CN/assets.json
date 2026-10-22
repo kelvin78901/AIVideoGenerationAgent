@@ -8,8 +8,6 @@
   "kindCount": "{{kind}} {{count}}",
   "summarySep": " · ",
   "reanalyze": "重新分析剧本",
-  "reanalyzed": "已重新分析剧本：没有新增素材。改过剧本后再分析，新增或变化的会标出来。",
-  "reanalyzedChanged": "已重新分析剧本：新增 {{added}} 项，变化 {{changed}} 项。",
   "what": {
     "image": "{{name}} · 参考图 4 张候选",
     "text": "{{name}} · 文字素材 4 张候选",
@@ -19,8 +17,9 @@
     "label": "素材清单",
     "filter": "按类别筛选",
     "all": "全部",
-    "shots": "{{count}} 个镜头",
-    "noShots": "本集未出镜"
+    "scenes": "出现在 {{count}} 场",
+    "scenesShots": "{{count}} 场 · {{shots}} 个镜头",
+    "notHere": "本集未出现"
   },
   "detail": {
     "label": "素材详情",
@@ -28,13 +27,20 @@
     "unlock": "解锁",
     "source": "来源：{{source}}",
     "appears": "出现在：",
-    "noShots": "本集暂无镜头",
     "desc": "描述（就是这条素材的提示词意图层）",
     "descHint": "改完点「重跑」生效；锁定的素材改描述后会提示哪些镜头受影响。",
     "descSaved": "描述已保存，下次重跑生效。",
     "locked": "「{{name}}」已锁定：候选 {{letter}} 成为参考。",
     "lockedCharacter": "「{{name}}」已锁定：候选 {{letter}} 成为参考，正在自动补齐侧面、背面和表情。",
-    "unlockTitle": "解锁「{{name}}」会影响用到它的镜头"
+    "unlockTitle": "解锁「{{name}}」会影响用到它的镜头",
+    "scene": "场 {{n}}",
+    "shots": "镜头：",
+    "noScenes": "本集未出现",
+    "upload": "上传参考图",
+    "uploadFile": "选择要上传的图片",
+    "uploaded": "已上传「{{name}}」，成为一张候选并已选中。",
+    "editTitle": "「{{name}}」已锁定，改动会影响下游",
+    "editWhat": "新描述：{{text}}"
   },
   "text": {
     "exact": "画面里的字（逐字核对）",
@@ -57,6 +63,8 @@
   "cands": {
     "title": "候选",
     "noteText": "每张都做了 OCR，和上面的字逐字比对",
+    "noteComposite": "每张都做了 OCR，确认底图上没有字；上面叠的字是后期贴字的预览",
+    "madeWith": "这一版是按「{{method}}」出的「{{text}}」；字或做法改了，点「重跑」按现在的设置出",
     "noteCharacter": "锁定后自动补齐侧面、背面和表情",
     "noteOther": "点一张选中，再锁定",
     "label": "v{{n}} · {{letter}}",
@@ -69,6 +77,9 @@
     "ocrOk": "OCR 一致",
     "ocrMissing": "OCR 不一致：缺字或缺标点",
     "ocrWrong": "OCR 不一致：有错字",
+    "ocrBlank": "OCR 确认底图没有字",
+    "ocrHasText": "OCR 在底图上读到了字：「{{read}}」",
+    "ocrUnchecked": "OCR 未检查：这台电脑上没有可用的 OCR",
     "emptyImage": "还没生成。点上方或右侧的「重跑」出 4 张候选。",
     "emptyVoice": "还没生成。点上方或右侧的「重跑」出 3 个音色候选。"
   },
@@ -82,16 +93,96 @@
     "hint": {
       "design": "按上面的描述生成全新音色，不需要样本。MiniMax 音色设计约 $3 / 个。",
       "clone": "上传 10 秒以上的干净人声样本（需本人授权）。MiniMax 克隆约 $1.5 / 个。",
-      "local": "用本地 TTS（IndexTTS2 / CosyVoice）生成，不产生费用，质量取决于参考音频。"
+      "local": "全程本地、不花钱：选中的试听就是这个音色，情绪变体由 IndexTTS 出。效果取决于试听的质量。"
     },
     "cands": "音色候选",
-    "play": "试听 {{letter}}",
-    "pause": "暂停 {{letter}}",
     "label": "v{{n}} · {{letter}} · {{label}}",
     "pick": "选这个",
     "picked": "已选",
     "lines": "用剧本里的台词试读",
-    "tryLine": "试读：{{text}}",
-    "trying": "试读「{{text}}」（{{tone}}）。"
+    "note": "先免费试听 3 个，选一个出终版；终版才能锁定",
+    "needsFinal": "试听不能直接锁定：先出终版",
+    "cloneLater": "之后支持",
+    "finalApi": "用 {{model}} 出终版",
+    "finalLocal": "用本地出终版（免费）",
+    "finalStarted": "已开始出终版：以候选 {{letter}} 为基础，定下音色，再出 5 个情绪变体。",
+    "finalTitle": "终版",
+    "final": "终版 · {{label}} · {{provider}}",
+    "provider": {
+      "api": "API 音色设计",
+      "local": "本地"
+    },
+    "anchor": "样音",
+    "variants": "情绪变体",
+    "variantsHint": "台词配音按每句的语气选用对应的情绪。"
+  },
+  "lockMismatch": {
+    "title": "候选 {{letter}} 的字和要求不一致",
+    "read": "OCR 读出来是「{{read}}」",
+    "nothing": "OCR 在这张上没读出字",
+    "exact": "要求是「{{exact}}」",
+    "hint": "锁定后，后面的镜头都按这张来。确认字没问题再锁定。",
+    "confirm": "仍然锁定",
+    "cancel": "取消"
+  },
+  "reanalyzing": "已开始重新分析剧本，分析完清单会自动更新；新增的素材会出现在清单里。",
+  "view": {
+    "label": "显示方式",
+    "list": "清单",
+    "matrix": "出场矩阵"
+  },
+  "final": {
+    "button": "用 API 出终版",
+    "buttonCost": "用 API 出终版 · 约 {{cost}}",
+    "started": "已开始出终版：以候选 {{letter}} 为参考，用 {{model}} 出 1 张。"
+  },
+  "views": {
+    "title": "补视图",
+    "note": "锁定后按锁定的图自动补齐，换了锁定图会重画",
+    "running": "正在按锁定的图补齐侧面、背面和表情……",
+    "stale": "锁定的图换了，正在等重画",
+    "none": "锁定后自动补齐侧面、背面和表情。",
+    "side": "侧面",
+    "back": "背面",
+    "expressions": "表情",
+    "calm": "平静",
+    "smile": "微笑",
+    "angry": "愤怒",
+    "sad": "难过"
+  },
+  "matrix": {
+    "label": "出场矩阵",
+    "hint": "一行一场，一列一样素材。数字是这一场里有它的台词行数，点一下跳到剧本里那一行。",
+    "scene": "场",
+    "whole": "整场",
+    "cellLines": "{{kind}}「{{asset}}」在场 {{n}}：{{count}} 行",
+    "cellScene": "{{kind}}「{{asset}}」在场 {{n}}（整场）",
+    "empty": "本集还没有分析出素材。"
+  },
+  "dub": {
+    "progress": "台词配音 {{done}} / {{total}}",
+    "all": "全部配音",
+    "allDone": "这一集的台词都配好了",
+    "waiting": "{{names}} 的音色还没锁定，{{count}} 句先等着",
+    "confirmTitle": "给第 {{n}} 集配音",
+    "confirmLines": "要配 {{count}} 句台词，约 {{cost}}。",
+    "confirmNothing": "没有要配的台词。",
+    "skipLocked": "跳过 {{count}} 句：{{names}} 的音色还没锁定。",
+    "skipNoVoice": "跳过 {{count}} 句：{{names}} 还没有音色。",
+    "skipBusy": "{{count}} 句正在配。",
+    "confirmHint": "每句用说话人锁定的音色，按语气选情绪。配好的时长会替换剧本里的估计。",
+    "cancel": "取消",
+    "start": "开始配音",
+    "started": "已开始配 {{count}} 句，配好的会出现在剧本页和音色详情里。",
+    "lines": "第 {{n}} 集的台词配音",
+    "linesNone": "这个角色在本集没有台词。",
+    "linesHint": "情绪按语气自动选，可以改；改完点「重配」才用上。",
+    "lockFirst": "先锁定「{{name}}」的音色",
+    "dub": "配音",
+    "redub": "重配",
+    "redubStarted": "已开始重配：{{text}}",
+    "emotion": "情绪",
+    "emotionAuto": "按语气（{{emotion}}）",
+    "emotionSaved": "情绪改成「{{emotion}}」，重配后生效。"
   }
 }

@@ -1,5 +1,9 @@
-"""Real install steps (SPEC 12.1): ``uv_venv``, ``uv_pip``, ``git_clone``, ``download``,
-``pkg``, ``script``, ``copy``.
+"""Real install steps (SPEC 12.1): ``uv_venv``, ``uv_pip``, ``uv_sync``, ``git_clone``,
+``download``, ``pkg``, ``script``, ``copy``.
+
+``uv_sync`` installs a project's lock file (``uv sync --locked``) into ``{envs}/<env>``: a runtime
+of ours (``runtimes/<name>/``, pyproject + uv.lock) or a clone that ships its own lock
+(index-tts). The lock's wheel addresses are used as they are, so the PyPI mirror does not apply.
 
 Every step is idempotent: a venv that exists, a checkout already at its ref, a file whose
 sha256 matches are left alone, so a retry or a resumed install only does what is missing.
@@ -17,6 +21,7 @@ from __future__ import annotations
 
 import asyncio
 import contextlib
+import os
 import re
 import shlex
 import shutil
@@ -63,11 +68,21 @@ MAX_LINE = 500
 
 
 class Exec(Protocol):
-    async def __call__(self, argv: list[str], *, cwd: str | None, on_line: LineFn) -> int: ...
+    async def __call__(
+        self,
+        argv: list[str],
+        *,
+        cwd: str | None,
+        on_line: LineFn,
+        env: dict[str, str] | None = None,
+    ) -> int: ...
 
 
-async def run_process(argv: list[str], *, cwd: str | None, on_line: LineFn) -> int:
-    """Run ``argv`` (no shell), streaming its output; returns the exit code."""
+async def run_process(
+    argv: list[str], *, cwd: str | None, on_line: LineFn, env: dict[str, str] | None = None
+) -> int:
+    """Run ``argv`` (no shell), streaming its output; returns the exit code. ``env`` adds to
+    this process's environment."""
     if sys.platform == "win32":
         import subprocess
 
@@ -82,6 +97,7 @@ async def run_process(argv: list[str], *, cwd: str | None, on_line: LineFn) -> i
             stdout=asyncio.subprocess.PIPE,
             stderr=asyncio.subprocess.STDOUT,
             creationflags=flags,
+            env={**os.environ, **env} if env else None,
         )
     except FileNotFoundError:
         raise InstallError("command_not_found", command=argv[0]) from None
@@ -275,8 +291,9 @@ def speed_test_url(
     items: list[Item], mirrors: dict[str, dict[str, Any]], facts: dict[str, dict[str, Any]]
 ) -> str | None:
     """A weight file the install would fetch (its first 16 MB time the line during a scan), from
-    the site the automatic mirror choice would use."""
-    for item in items:
+    the site the automatic mirror choice would use. Weights first: a runtime's model folder starts
+    with small config files."""
+    for item in sorted(items, key=lambda x: x.group != "w"):
         for step in item.install:
             extra = step.model_extra or {}
             repo = extra.get("hf_repo")
@@ -345,7 +362,12 @@ class _StepRun:
             raise InstallError("manifest_todo", field=str(exc.args[0])) from None
 
     async def run(
-        self, argv: list[str], *, cwd: str | None = None, ok: tuple[int, ...] = (0,)
+        self,
+        argv: list[str],
+        *,
+        cwd: str | None = None,
+        ok: tuple[int, ...] = (0,),
+        env: dict[str, str] | None = None,
     ) -> None:
         exe = self.r._which(argv[0])
         if exe is None:
@@ -354,7 +376,7 @@ class _StepRun:
         async def line(text: str) -> None:
             await self.log("info", "output", {"text": text})
 
-        code = await self.r._exec([exe, *argv[1:]], cwd=cwd, on_line=line)
+        code = await self.r._exec([exe, *argv[1:]], cwd=cwd, on_line=line, env=env)
         if code not in ok:
             raise InstallError("step_failed", step=self.step.type, exit=code)
 
@@ -419,6 +441,22 @@ class _StepRun:
             argv += ["--index-url", self.r.base(self.env, "pypi")]
         await self.run(argv)
         return []
+
+    async def _uv_sync(self) -> list[str]:
+        """``project``'s locked environment into ``{envs}/<env>``: a folder of this repo
+        (``runtimes/qwentts``) or a templated path (``{envs}/indextts-src``, cloned first).
+        ``--locked`` refuses a lock that no longer matches its pyproject."""
+        venv = join(self.env.envs, str(self.value("env")))
+        raw = str(self.value("project"))
+        project = self.expand(raw) if "{" in raw else str(REPO_ROOT / raw)
+        if not await _exists(Path(project) / "uv.lock"):
+            raise InstallError("source_missing", path=join(project, "uv.lock"))
+        python = str(self.extra.get("python") or "3.12")
+        argv = ["uv", "sync", "--locked", "--no-dev", "--project", project, "--python", python]
+        for extra in self.value("extras", required=False) or []:
+            argv += ["--extra", str(extra)]
+        await self.run(argv, env={"UV_PROJECT_ENVIRONMENT": venv})
+        return [venv]
 
     async def _git_clone(self) -> list[str]:
         url = str(self.value("url"))

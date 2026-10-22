@@ -40,6 +40,13 @@ class Pricing(BaseModel):
     price: float | None = None
     input_price_per_second: float | None = None
     price_by_res: dict[str, float] | None = None
+    # Flat prices of extra services billed per use (MiniMax's voice design $3), counted by
+    # ``Usage.calls``.
+    extras: dict[str, float] | None = None
+    # Per million tokens by kind (``text_in``, ``image_in``, ``text_out``, ``image_out``) for
+    # image models billed by tokens (Gemini, GPT Image): a call that reports ``Usage.tokens``
+    # costs its tokens; ``price`` per image is then only the estimate.
+    token_rates: dict[str, float] | None = None
     currency: str = "USD"
     as_of: str | None = None
     offpeak: dict[str, Any] | None = None
@@ -87,6 +94,10 @@ class Usage(BaseModel):
     output_seconds: float | None = None
     chars: int | None = None
     input_seconds: float | None = None
+    # Extra services used, priced by ``Pricing.extras`` (e.g. ``{"voice_design": 1}``).
+    calls: dict[str, int] | None = None
+    # Tokens by kind as the provider reported them, priced by ``Pricing.token_rates``.
+    tokens: dict[str, int] | None = None
 
 
 @dataclass
@@ -176,6 +187,14 @@ class ModelSpec:
     base_url: str | None = None
     key_name: str | None = None
     runtime: str | None = None
+    workflow: str | None = None  # a ComfyUI model's workflow folder (SPEC 6.4)
+    adapter: str | None = None  # a media model's real adapter (``modelhub/media_adapters.py``)
+    # A local Python model's worker (``adapters/local_python.py``): script, environment, what it
+    # loads, and whether it takes the VRAM lease.
+    worker: str | None = None
+    env: str | None = None
+    worker_args: dict[str, Any] = field(default_factory=dict)
+    gpu: bool = True
     pricing: Pricing = field(default_factory=Pricing)
     caps: Caps = field(default_factory=Caps)
 

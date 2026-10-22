@@ -4,6 +4,8 @@ Versions are append-only and are the source of truth. ``current`` is what the sc
 ``adopted`` is what downstream uses, ``locked_hash`` is set when a gate locks the adopted one.
 Only the first successful version of a product is adopted automatically; later runs only
 become current, so an adopted version is never replaced behind the user's back (hard rule 5).
+Candidate components (four pictures to choose from, M3) adopt nothing by themselves: the user
+picks one and locks it (``lock_pick``).
 Domain tables that mirror the adopted version register a materializer per slot (``on_adopt``).
 
 The display status is worked out on read: a queued / running job first (from the ``job``
@@ -26,6 +28,7 @@ from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.hashing import content_hash
 from drama_series_agent.pipeline.schema import (
     EstimateOut,
+    PickOut,
     ProductOut,
     PromptOut,
     RunningOut,
@@ -39,6 +42,8 @@ if TYPE_CHECKING:
 __all__ = ["DependencyDraft", "ProductService", "VersionDraft", "product_public", "status_of"]
 
 Materializer = Callable[[AsyncSession, Product, ProductVersion], Awaitable[None]]
+# Writes what a lock decided (the asset gate's ``gate_decision``) in the lock's transaction.
+LockRecorder = Callable[[AsyncSession, Product, ProductVersion], Awaitable[None]]
 # Fills in what a product shows before its next run: the prompt (a default one if it never
 # ran) and the estimate on the current route (pipeline/runs.py).
 Describer = Callable[[Product], Awaitable[tuple[PromptOut | None, EstimateOut | None]]]
@@ -124,6 +129,9 @@ def product_public(
         prompt=prompt,
         estimate=None if running else estimate,
         running=running,
+        pick=PickOut.model_validate(p.pick_json) if p.pick_json else None,
+        settings=p.settings_json,
+        retired=p.retired,
     )
 
 
@@ -169,6 +177,9 @@ class ProductService:
         self._invalidation = invalidation
         self._materializers: dict[str, Materializer] = {}
         self.describer: Describer | None = None
+        # Slots of products made by the dozen (a line's audio): listed without the next run's
+        # prompt and estimate, and a new take of one is not toasted.
+        self.quiet_slots: set[str] = set()
 
     def on_adopt(self, slot: str, materializer: Materializer) -> None:
         """Rebuild the domain rows of ``slot`` from a newly adopted version (same transaction)."""
@@ -250,8 +261,9 @@ class ProductService:
         origin: str,
         parent_version_id: str | None = None,
         adopt: bool | None = None,
+        make_current: bool = True,
     ) -> ProductVersion:
-        """Append a version and make it current.
+        """Append a version and make it current (unless ``make_current`` is False).
 
         ``adopt``: None = only if nothing is adopted yet (first success); True = adopt it (a
         user's edit); False = never.
@@ -283,6 +295,9 @@ class ProductService:
                 fallback_reason=draft.fallback_reason,
                 stage=draft.stage,
                 note=draft.note,
+                workflow_id=draft.workflow_id,
+                workflow_sha256=draft.workflow_sha256,
+                comfy_env_hash=draft.comfy_env_hash,
             )
             if draft.id:
                 v.id = draft.id
@@ -300,7 +315,8 @@ class ProductService:
                         upstream_hash=dep.upstream_hash,
                     )
                 )
-            p.current_version_id = v.id
+            if make_current or p.current_version_id is None:
+                p.current_version_id = v.id
             p.status = "ready"
             auto = adopt is None and p.adopted_version_id is None and not p.locked_hash
             if adopt or auto:
@@ -314,7 +330,13 @@ class ProductService:
             await session.refresh(p)
         await self._bus.publish(
             EventType.VERSION_CREATED,
-            {"product_id": p.id, "version_id": v.id, "n": v.n, "origin": v.origin},
+            {
+                "product_id": p.id,
+                "slot": p.slot,
+                "version_id": v.id,
+                "n": v.n,
+                "origin": v.origin,
+            },
         )
         await self._announce(p)
         return v
@@ -382,6 +404,89 @@ class ProductService:
             await session.commit()
         await self._announce(p)
         return await self.get(p.id)
+
+    async def update_settings(self, product_id: str, changes: dict[str, Any]) -> ProductOut:
+        """Merge ``changes`` into the product's settings (refused while locked: changing what
+        a locked product was made from goes through the impact preview)."""
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+            if p.locked_hash:
+                raise PipelineError(409, "product_locked", id=p.id)
+            p.settings_json = {**(p.settings_json or {}), **changes}
+            p.updated_at = utcnow()
+            session.add(p)
+            await session.commit()
+        await self._announce(p)
+        return await self.get(p.id)
+
+    async def set_pick(self, product_id: str, version_id: str, idx: int) -> ProductOut:
+        """「选这个」: remember candidate ``idx`` of a version (refused while locked)."""
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+            if p.locked_hash:
+                raise PipelineError(409, "product_locked", id=p.id)
+            source = await require_version(session, version_id)
+            if source.product_id != p.id:
+                raise PipelineError(404, "version_not_found", id=version_id)
+            _candidate(source, idx)
+            p.pick_json = {"version_id": source.id, "idx": idx}
+            p.updated_at = utcnow()
+            session.add(p)
+            await session.commit()
+        await self._announce(p)
+        return await self.get(p.id)
+
+    async def lock_pick(
+        self,
+        product_id: str,
+        version_id: str,
+        idx: int | None,
+        *,
+        record: LockRecorder | None = None,
+    ) -> ProductVersion:
+        """「锁定为参考」 (M3), in one transaction: candidate ``idx`` of a version becomes a
+        ``pick`` version holding that file alone (``role: ref``, with the source's model, prompt
+        and dependencies), which is adopted and locked; ``record`` writes the gate decision.
+        ``idx`` None locks the version as it is (an upload, an API final, a voice).
+
+        The current version stays, so the candidate grid keeps showing where the pick came
+        from. The pick's hash is its file's content, so locking the same picture twice gives
+        the same hash."""
+        created = False
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+            if p.locked_hash:
+                raise PipelineError(409, "product_locked", id=p.id)
+            source = await require_version(session, version_id)
+            if source.product_id != p.id:
+                raise PipelineError(404, "version_not_found", id=version_id)
+            v = source
+            if idx is not None:
+                v = await self._pick_version(session, p, source, idx)
+                created = True
+            await self._adopt(session, p, v)
+            p.locked_hash = v.content_hash
+            p.pick_json = {"version_id": source.id, "idx": idx or 0}
+            p.updated_at = utcnow()
+            session.add(p)
+            if record is not None:
+                await record(session, p, v)
+            await session.commit()
+            await session.refresh(v)
+            await session.refresh(p)
+        if created:
+            await self._bus.publish(
+                EventType.VERSION_CREATED,
+                {
+                    "product_id": p.id,
+                    "slot": p.slot,
+                    "version_id": v.id,
+                    "n": v.n,
+                    "origin": v.origin,
+                },
+            )
+        await self._announce(p)
+        return v
 
     async def unlock(self, product_id: str) -> ProductOut:
         async with self._db.session() as session:
@@ -456,7 +561,7 @@ class ProductService:
         out = []
         for p in products:
             prompt = estimate = None
-            if self.describer is not None:
+            if self.describer is not None and p.slot not in self.quiet_slots:
                 prompt, estimate = await self.describer(p)
             out.append(
                 product_public(
@@ -470,6 +575,51 @@ class ProductService:
             )
         return out
 
+    async def _pick_version(
+        self, session: AsyncSession, p: Product, source: ProductVersion, idx: int
+    ) -> ProductVersion:
+        picked = {**_candidate(source, idx), "role": "ref"}
+        prompts = [f for f in source.files_json if f.get("role") == "prompt"]
+        candidates = source.payload_json.get("candidates")
+        about = candidates[idx] if isinstance(candidates, list) and idx < len(candidates) else {}
+        payload: dict[str, Any] = {"candidate": about}
+        last_n = (
+            await session.exec(
+                select(func.max(ProductVersion.n)).where(ProductVersion.product_id == p.id)
+            )
+        ).one()
+        v = ProductVersion(
+            product_id=p.id,
+            n=(last_n or 0) + 1,
+            origin="pick",
+            parent_version_id=source.id,
+            payload_json=payload,
+            files_json=[picked, *prompts],
+            content_hash=content_hash(payload, [picked]),
+            intent=source.intent,
+            compiled=source.compiled,
+            compiled_overridden=source.compiled_overridden,
+            model_key=source.model_key,
+            where=source.where,
+            seed=source.seed,
+            params_json={"from_version": source.id, "idx": idx},
+            stage=source.stage,
+        )
+        session.add(v)
+        await session.flush()
+        query = select(Dependency).where(Dependency.version_id == source.id)
+        for d in (await session.exec(query)).all():
+            session.add(
+                Dependency(
+                    version_id=v.id,
+                    product_id=p.id,
+                    upstream_product_id=d.upstream_product_id,
+                    slice=d.slice,
+                    upstream_hash=d.upstream_hash,
+                )
+            )
+        return v
+
     async def _adopt(self, session: AsyncSession, p: Product, v: ProductVersion) -> None:
         p.adopted_version_id = v.id
         if p.status == "failed":
@@ -481,5 +631,18 @@ class ProductService:
     async def _announce(self, p: Product) -> None:
         await self._bus.publish(
             EventType.PRODUCT_UPDATED,
-            {"product_id": p.id, "series_id": p.series_id, "status": status_of(p)},
+            {
+                "product_id": p.id,
+                "series_id": p.series_id,
+                "slot": p.slot,
+                "status": status_of(p),
+            },
         )
+
+
+def _candidate(version: ProductVersion, idx: int) -> dict[str, Any]:
+    """Candidate ``idx`` (``files[].idx``) of a version, or 422 ``no_such_candidate``."""
+    for f in version.files_json:
+        if f.get("role") == "candidate" and f.get("idx") == idx:
+            return dict(f)
+    raise PipelineError(422, "no_such_candidate", id=version.id, idx=idx)

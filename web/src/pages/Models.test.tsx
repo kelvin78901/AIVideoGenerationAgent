@@ -41,10 +41,15 @@ describe("ModelsPage", () => {
     expect(preset(/^均衡/)).toHaveAttribute("aria-pressed", "true");
     expect(preset(/^均衡/)).toHaveTextContent("当前");
     const components = screen.getByRole("table", { name: "组件设置" });
-    expect(within(components).getAllByRole("rowgroup")).toHaveLength(20);
+    expect(within(components).getAllByRole("rowgroup")).toHaveLength(22);
     expect(mode("设定提取", "本地")).toBeChecked();
     expect(row("设定提取")).toHaveTextContent("Qwen3.6-27B");
-    expect(row("参考图生成")).toHaveTextContent("Qwen-Image-Edit（本地） → Nano Banana Pro");
+    expect(row("参考图生成")).toHaveTextContent("Qwen-Image（本地） → Nano Banana Pro");
+    // 补视图 edits the locked picture: the editing model, locally, on the official 40 steps.
+    expect(row("补视图")).toHaveTextContent("Qwen-Image-Edit 40 步（本地）");
+    // OCR runs on this computer only: no API to switch to.
+    expect(row("文字核对（OCR）")).toHaveTextContent("RapidOCR（本地）");
+    expect(mode("文字核对（OCR）", "API")).toBeDisabled();
     expect(row("3D 场景（可选）")).toHaveTextContent("这一步不跑");
     expect(mode("结构控制", "API")).toBeDisabled();
     expect(within(row("视频生成")).getByRole("button", { name: "收起 视频生成" })).toHaveAttribute(
@@ -199,5 +204,52 @@ describe("ModelsPage", () => {
     expect(await within(dialog).findByText("连接正常，能看到 2 个模型。")).toBeInTheDocument();
     await user.keyboard("{Escape}");
     expect(await screen.findByRole("button", { name: "DeepSeek · 已配置" })).toBeInTheDocument();
+  });
+
+  it("tests the image models that share a provider's key", async () => {
+    const user = userEvent.setup();
+    const google = {
+      id: "google_llm",
+      name: "Google（Gemini）",
+      where: "api",
+      base_url: "https://generativelanguage.googleapis.com/v1beta/openai/",
+      docs: null,
+      verify: false,
+      needs_key: true,
+      has_key: true,
+      key_source: "keyring",
+      enabled: true,
+      models: [],
+      media: [{ key: "google/nano-banana-pro", display: "Nano Banana Pro" }],
+    };
+    server.use(
+      http.get("*/api/v1/providers", () =>
+        HttpResponse.json({ providers: [google], llm_ui_order: [] }),
+      ),
+      http.post("*/api/v1/providers/google_llm/test", () =>
+        HttpResponse.json({
+          ok: true,
+          detail: null,
+          models: ["gemini-3.6-flash"],
+          media: [
+            {
+              key: "google/nano-banana-pro",
+              display: "Nano Banana Pro",
+              ok: false,
+              detail: "model_not_found",
+            },
+          ],
+        }),
+      ),
+    );
+    renderModels();
+    await user.click(await screen.findByRole("button", { name: "Google（Gemini） · 已配置" }));
+    const dialog = await screen.findByRole("dialog", { name: "Google（Gemini） 的 API 密钥" });
+    expect(within(dialog).getByText("这个密钥也用于：Nano Banana Pro")).toBeInTheDocument();
+    await user.click(within(dialog).getByRole("button", { name: "测试连接" }));
+    expect(await within(dialog).findByText("连接正常，能看到 1 个模型。")).toBeInTheDocument();
+    expect(
+      within(dialog).getByText("Nano Banana Pro：不能用（model_not_found）"),
+    ).toBeInTheDocument();
   });
 });

@@ -1,8 +1,16 @@
 """Deterministic mock adapters for every model kind (``DRAMA_MOCK=1``, always on in tests).
 
-Outputs: fixed JSON / text for LLMs, solid-colour PNGs for images, sine-wave WAVs for audio
-and solid-colour MP4s (FFmpeg) for video. A mock keeps the real model's key and prices, so
-cost accounting in mock mode matches what the real call would have cost.
+Outputs: fixed JSON / text for LLMs, soft two-colour gradient PNGs for images, sine-wave WAVs
+for audio and solid-colour MP4s (FFmpeg) for video. A mock keeps the real model's key and
+prices, so cost accounting in mock mode matches what the real call would have cost.
+
+A picture asked to show text (``params["text"]``, M3 画面文字) carries it in an ``iTXt`` chunk
+(``MOCK_TEXT_KEY``), so Mock OCR (kind ``ocr``, the picture at ``params["path"]``) reads back
+what the "model drew": nothing on any other picture.
+
+A voice design (request kind ``voice_design``) answers a ``voice_id`` with its trial audio; a
+call with ``params["charge_design"]`` bills the design's flat price (``Usage.calls``), as
+MiniMax charges it on a designed voice's first synthesis.
 """
 
 from __future__ import annotations
@@ -39,9 +47,11 @@ LLM_KINDS = {"llm", "llm_aux", "vlm"}
 IMAGE_KINDS = {"image"}
 AUDIO_KINDS = {"tts", "voice_design", "music"}
 VIDEO_KINDS = {"video", "upscale", "lipsync"}
+OCR_KINDS = {"ocr"}
 
 # Answers a writing request in Mock mode: JSON-able data for ``json_mode``, else text.
 Responder = Callable[[ModelRequest], Any]
+MOCK_TEXT_KEY = "drama:text"
 
 
 @dataclass
@@ -57,6 +67,9 @@ class MockSettings:
     responders: dict[tuple[str, str], Responder] = field(default_factory=dict)
     # The next N JSON answers are broken (exercises a component's retry-once path).
     bad_json: int = 0
+    # OCR misses the character before the last of what a picture shows (exercises 「OCR 不一致」;
+    # not the last one, a final 。 that goes unread passes).
+    ocr_mismatch: bool = False
 
 
 def estimate_tokens(text: str) -> int:
@@ -65,25 +78,81 @@ def estimate_tokens(text: str) -> int:
     return max(1, cjk + (len(text) - cjk) // 4)
 
 
+def _design_calls(req: ModelRequest) -> dict[str, int] | None:
+    return {"voice_design": 1} if req.params.get("charge_design") else None
+
+
 def _digest(*parts: object) -> bytes:
     return hashlib.sha256("|".join(map(str, parts)).encode("utf-8")).digest()
 
 
-def solid_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
-    row = b"\x00" + bytes(rgb) * width
-    raw = row * height
+def _png_chunk(tag: bytes, data: bytes) -> bytes:
+    body = tag + data
+    return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
 
-    def chunk(tag: bytes, data: bytes) -> bytes:
-        body = tag + data
-        return struct.pack(">I", len(data)) + body + struct.pack(">I", zlib.crc32(body))
 
+def gradient_png(
+    width: int,
+    height: int,
+    top: tuple[int, int, int],
+    bottom: tuple[int, int, int] | None = None,
+    texts: dict[str, str] | None = None,
+) -> bytes:
+    """A top-to-bottom gradient (solid when ``bottom`` is None); ``texts`` become UTF-8
+    ``iTXt`` chunks."""
+    bottom = bottom or top
+    rows = []
+    for y in range(height):
+        f = y / max(height - 1, 1)
+        rgb = bytes(round(a + (b - a) * f) for a, b in zip(top, bottom, strict=True))
+        rows.append(b"\x00" + rgb * width)
     header = struct.pack(">IIBBBBB", width, height, 8, 2, 0, 0, 0)
+    extra = b"".join(
+        _png_chunk(b"iTXt", key.encode("latin-1") + b"\x00\x00\x00\x00\x00" + value.encode())
+        for key, value in (texts or {}).items()
+    )
     return (
         b"\x89PNG\r\n\x1a\n"
-        + chunk(b"IHDR", header)
-        + chunk(b"IDAT", zlib.compress(raw, 9))
-        + chunk(b"IEND", b"")
+        + _png_chunk(b"IHDR", header)
+        + extra
+        + _png_chunk(b"IDAT", zlib.compress(b"".join(rows), 9))
+        + _png_chunk(b"IEND", b"")
     )
+
+
+def mock_picture(
+    width: int, height: int, *parts: object, texts: dict[str, str] | None = None
+) -> bytes:
+    """The Mock picture for ``parts`` (model, prompt, seed, index …): soft colours (each channel
+    96–223), a lighter tone at the bottom."""
+    d = _digest(*parts)
+    top = (96 + d[0] % 128, 96 + d[1] % 128, 96 + d[2] % 128)
+    bottom = (min(top[0] + 32, 255), min(top[1] + 32, 255), min(top[2] + 32, 255))
+    return gradient_png(width, height, top, bottom, texts)
+
+
+def solid_png(width: int, height: int, rgb: tuple[int, int, int]) -> bytes:
+    return gradient_png(width, height, rgb)
+
+
+def png_texts(data: bytes) -> dict[str, str]:
+    """The ``iTXt`` chunks of a PNG (uncompressed ones, as ``gradient_png`` writes)."""
+    out: dict[str, str] = {}
+    pos = 8
+    while pos + 8 <= len(data):
+        (length,) = struct.unpack(">I", data[pos : pos + 4])
+        tag = data[pos + 4 : pos + 8]
+        body = data[pos + 8 : pos + 8 + length]
+        if tag == b"iTXt":
+            key, _, rest = body.partition(b"\x00")
+            if rest[:1] == b"\x00":  # not compressed
+                _, _, rest = rest[2:].partition(b"\x00")  # language tag
+                _, _, text = rest.partition(b"\x00")  # translated keyword
+                out[key.decode("latin-1")] = text.decode("utf-8", errors="replace")
+        if tag == b"IEND":
+            break
+        pos += 12 + length
+    return out
 
 
 def sine_wav(duration_s: float, freq_hz: float = 440.0, rate: int = 48000) -> bytes:
@@ -167,6 +236,8 @@ class MockAdapter:
             return self._audio(req)
         if kind in VIDEO_KINDS:
             return await self._video(req)
+        if kind in OCR_KINDS:
+            return self._ocr(req)
         return ModelResult(json={"mock": True, "kind": kind}, raw={"mock": True})
 
     # ------------------------------------------------------------------ helpers
@@ -181,9 +252,11 @@ class MockAdapter:
         if kind in IMAGE_KINDS:
             return Usage(images=int(req.params.get("n", 1)))
         if kind in AUDIO_KINDS:
-            return Usage(chars=len(req.text()))
+            return Usage(chars=len(req.text()), calls=_design_calls(req))
         if kind in VIDEO_KINDS:
             return Usage(output_seconds=float(req.params.get("duration_s", 2.0)))
+        if kind in OCR_KINDS:
+            return Usage(images=1)
         return Usage()
 
     def _llm(self, req: ModelRequest) -> ModelResult:
@@ -214,28 +287,46 @@ class MockAdapter:
         w = int(req.params.get("width", 108))
         h = int(req.params.get("height", 192))
         n = int(req.params.get("n", 1))
-        files = []
-        for i in range(n):
-            d = _digest(self.key, req.text(), req.seed, i)
-            files.append(
-                OutputFile(
-                    role="image",
-                    mime="image/png",
-                    data=solid_png(w, h, (d[0], d[1], d[2])),
-                    w=w,
-                    h=h,
-                )
+        text = req.params.get("text")
+        texts = {MOCK_TEXT_KEY: str(text)} if text else None
+        files = [
+            OutputFile(
+                role="image",
+                mime="image/png",
+                data=mock_picture(w, h, self.key, req.text(), req.seed, i, texts=texts),
+                w=w,
+                h=h,
             )
+            for i in range(n)
+        ]
         return ModelResult(files=files, usage=Usage(images=n), raw={"mock": True})
 
+    def _ocr(self, req: ModelRequest) -> ModelResult:
+        """What the picture at ``params["path"]`` says it shows (its ``iTXt``)."""
+        try:
+            data = Path(str(req.params["path"])).read_bytes()
+        except (KeyError, OSError) as exc:
+            raise ModelError("ocr_no_image", str(exc)) from exc
+        text = png_texts(data).get(MOCK_TEXT_KEY, "")
+        if self.settings.ocr_mismatch:
+            text = text[:-2] + text[-1:]
+        return ModelResult(
+            text=text, json={"text": text}, usage=Usage(images=1), raw={"mock": True}
+        )
+
     def _audio(self, req: ModelRequest) -> ModelResult:
+        """A tone whose pitch follows the model, the text and how it is spoken (the voice, the
+        emotion …), so different takes sound different."""
         text = req.text()
         duration = float(req.params.get("duration_s", max(0.5, len(text) * 0.25)))
-        freq = 220 + _digest(self.key, text)[0]
-        data = sine_wav(duration, freq_hz=freq)
+        how = json.dumps(req.params, sort_keys=True, ensure_ascii=False, default=str)
+        d = _digest(self.key, text, how, req.seed)
+        data = sine_wav(duration, freq_hz=160 + d[0] * 1.5)
+        voice = {"voice_id": f"mock-voice-{d.hex()[:12]}"} if req.kind == "voice_design" else None
         return ModelResult(
+            json=voice,
             files=[OutputFile(role="audio", mime="audio/wav", data=data, duration_s=duration)],
-            usage=Usage(chars=len(text), output_seconds=duration),
+            usage=Usage(chars=len(text), output_seconds=duration, calls=_design_calls(req)),
             raw={"mock": True},
         )
 

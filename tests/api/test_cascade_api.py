@@ -21,10 +21,13 @@ LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
 BIBLE, ENRICH, SPLIT = "demo-p-extract", "demo-p-enrich", "demo-p-split"
 SCRIPT1, SCRIPT2 = "demo-p-script-e1", "demo-p-script-e2"
+ASSETS1 = "demo-p-assets-e1"
 # The suggestions first (the bible reads the accepted ones), the bible, then the suggestions
 # again: the Mock bible of an edited novel has other names (only the demo text gets the demo
-# answer), and the suggestions read the names. Then the plan, then the script.
-SYNCED = [ENRICH, BIBLE, ENRICH, SPLIT, SCRIPT1]
+# answer), and the suggestions read the names. Then the plan, the script and the episode's
+# asset list (M3: it reads the script; the assets' pictures and voices never rerun by
+# themselves).
+SYNCED = [ENRICH, BIBLE, ENRICH, SPLIT, SCRIPT1, ASSETS1]
 
 
 @pytest.fixture
@@ -159,7 +162,7 @@ def test_sync_after_editing_a_confirmed_novel(client: TestClient) -> None:
     assert len(_product(client, SCRIPT1)["versions"]) == 3
     # Once, at the end: 「已同步：N 个产物更新」.
     assert _toasts(client, "cascade_done") == [
-        {"level": "success", "code": "cascade_done", "params": {"count": 4, "failed": 0}}
+        {"level": "success", "code": "cascade_done", "params": {"count": 5, "failed": 0}}
     ]
 
 
@@ -216,9 +219,9 @@ def test_nothing_downstream_syncs_nothing(client: TestClient) -> None:
     _gate(client, "script", "confirm", "demo-e1")
     resp = client.post(
         f"{V1}/impact/preview",
-        json={"kind": "line_edit", "target_id": "demo-b2", "patch": {"text": "她把伞靠在门边。"}},
+        json={"kind": "line_edit", "target_id": "demo-b5", "patch": {"text": "……是周屿吗？"}},
     )
-    impact = resp.json()
+    impact = resp.json()  # rewording dialogue: nothing downstream reads it
     resp = client.post(f"{V1}/impact/apply", json={"impact_id": impact["id"], "action": "rerun"})
     assert resp.status_code == 200 and resp.json()["job_ids"] == []
     # The user's own edit: the gate stays confirmed.

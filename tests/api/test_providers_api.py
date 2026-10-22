@@ -72,7 +72,7 @@ def test_test_connection_ok_and_bad(client: TestClient, respx_mock: respx.MockRo
     client.post("/api/v1/providers/deepseek/key", json={"api_key": SECRET})
     route.mock(return_value=httpx.Response(200, json={"data": [{"id": "deepseek-v4-pro"}]}))
     resp = client.post("/api/v1/providers/deepseek/test")
-    assert resp.json() == {"ok": True, "detail": None, "models": ["deepseek-v4-pro"]}
+    assert resp.json() == {"ok": True, "detail": None, "models": ["deepseek-v4-pro"], "media": []}
     assert route.calls.last.request.headers["authorization"] == f"Bearer {SECRET}"
     assert SECRET not in resp.text
 
@@ -84,6 +84,41 @@ def test_test_connection_ok_and_bad(client: TestClient, respx_mock: respx.MockRo
     assert client.post("/api/v1/providers/custom/test").status_code == 400
 
 
+GEMINI_KEY = "g-REAL-looking-0123456789"
+
+
+@respx.mock(assert_all_called=False)
+def test_test_connection_checks_the_media_models_on_the_key(
+    client: TestClient, respx_mock: respx.MockRouter
+) -> None:
+    respx_mock.route(host="127.0.0.1").pass_through()
+    google = next(
+        p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "google_llm"
+    )
+    assert google["media"] == [{"key": "google/nano-banana-pro", "display": "Nano Banana Pro"}]
+
+    client.post("/api/v1/providers/google_llm/key", json={"api_key": GEMINI_KEY})
+    respx_mock.get("https://generativelanguage.googleapis.com/v1beta/openai/models").mock(
+        return_value=httpx.Response(200, json={"data": [{"id": "gemini-3.6-flash"}]})
+    )
+    image = respx_mock.get(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image"
+    ).mock(return_value=httpx.Response(404))
+    resp = client.post("/api/v1/providers/google_llm/test")
+    assert resp.json()["ok"] is True
+    assert resp.json()["media"] == [
+        {
+            "key": "google/nano-banana-pro",
+            "display": "Nano Banana Pro",
+            "ok": False,
+            "detail": "model_not_found",
+        }
+    ]
+    assert image.calls.last.request.headers["x-goog-api-key"] == GEMINI_KEY
+    assert GEMINI_KEY not in resp.text
+    client.delete("/api/v1/providers/google_llm/key")
+
+
 def test_real_mode_uses_openai_compat_for_llms(client: TestClient) -> None:
     from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 
@@ -92,3 +127,54 @@ def test_real_mode_uses_openai_compat_for_llms(client: TestClient) -> None:
     registry._adapters.clear()
     assert isinstance(registry.get("deepseek/v4-pro"), OpenAICompatAdapter)
     assert isinstance(registry.get("local/qwen3.6-27b"), OpenAICompatAdapter)
+
+
+def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
+    from drama_series_agent.modelhub.adapters.comfyui import ComfyUIAdapter
+    from drama_series_agent.modelhub.adapters.google import GeminiImageAdapter
+    from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
+    from drama_series_agent.modelhub.adapters.minimax import MiniMaxSpeechAdapter
+    from drama_series_agent.modelhub.adapters.openai_images import OpenAIImageAdapter
+    from drama_series_agent.modelhub.adapters.volcengine import SeedreamAdapter
+    from drama_series_agent.modelhub.registry import UnavailableAdapter
+
+    registry = client.app.state.studio.registry  # type: ignore[attr-defined]
+    registry.mock = False
+    registry._adapters.clear()
+    assert isinstance(registry.get("google/nano-banana-pro"), GeminiImageAdapter)
+    assert isinstance(registry.get("openai/gpt-image-2"), OpenAIImageAdapter)
+    assert isinstance(registry.get("volc/seedream-5.0"), SeedreamAdapter)
+    assert isinstance(registry.get("minimax/speech-2.8-hd"), MiniMaxSpeechAdapter)
+    assert isinstance(registry.get("minimax/speech-2.6-hd"), MiniMaxSpeechAdapter)
+    minimax = next(
+        p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "minimax_llm"
+    )
+    assert [m["key"] for m in minimax["media"]] == [
+        "minimax/speech-2.8-hd",
+        "minimax/speech-2.6-hd",
+    ]
+    assert isinstance(registry.get("minimax/h3-api"), UnavailableAdapter)  # not yet
+    for key in ("local/qwen3-tts", "local/indextts2", "local/rapidocr"):
+        assert isinstance(registry.get(key), LocalPythonAdapter)
+    for key in ("comfy/qwen-image", "comfy/qwen-image-edit", "comfy/qwen-image-edit-hq"):
+        assert isinstance(registry.get(key), ComfyUIAdapter)
+    assert isinstance(registry.get("comfy/h3"), UnavailableAdapter)  # no workflow folder yet
+
+
+def test_real_local_runs_local_models_for_real_and_keeps_the_rest_mock(
+    client: TestClient,
+) -> None:
+    """``DRAMA_REAL_LOCAL=1`` (the local smoke test): ComfyUI workflows and Python workers are
+    real, API and writing models (local LLM servers included) stay Mock."""
+    from drama_series_agent.modelhub.adapters.comfyui import ComfyUIAdapter
+    from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
+    from drama_series_agent.modelhub.adapters.mock import MockAdapter
+
+    registry = client.app.state.studio.registry  # type: ignore[attr-defined]
+    assert registry.mock and not registry.real_local
+    registry.real_local = True
+    registry._adapters.clear()
+    assert isinstance(registry.get("comfy/qwen-image"), ComfyUIAdapter)
+    assert isinstance(registry.get("local/rapidocr"), LocalPythonAdapter)
+    for key in ("google/nano-banana-pro", "minimax/speech-2.8-hd", "local/qwen3.6-27b"):
+        assert isinstance(registry.get(key), MockAdapter), key

@@ -1,216 +1,179 @@
-import { Check, Pause, Play, Volume2 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Check, Maximize2 } from "lucide-react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
-import { toast } from "sonner";
 
-import type { Asset, CandidatesPayload } from "@/api/schemas/assets";
+import type { Asset, CandidatesPayload, TextSettings } from "@/api/schemas/assets";
 import type { Aspect } from "@/api/schemas/spec";
+import { MediaLightbox } from "@/components/MediaLightbox";
 import { MediaThumb } from "@/components/MediaThumb";
 import { StatusBadge } from "@/components/StatusBadge";
-import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { CARD_INSET, CARD_WIDTH } from "@/pages/assets/status";
 
 const LETTERS = "ABCD";
 
 /** Paper / screen colours of on-screen text tiles: they depict the medium, not UI chrome. */
-const TEXT_TILE: Record<NonNullable<Asset["text"]>["style"], string> = {
+const TEXT_TILE: Record<TextSettings["style"], string> = {
   handwritten: "bg-[#EFE2A6] text-[#2B2412] font-serif",
   printed: "bg-[#F4F3EF] text-[#1A1B1E]",
   screen: "bg-[#26282C] text-[#F2F2EF] font-sans",
 };
 
 type Candidate = CandidatesPayload["candidates"][number];
+type Tone = "ok" | "bad" | "none";
+const OCR_TONE: Record<Tone, string> = {
+  ok: "text-tone-info-fg",
+  bad: "text-tone-warn-fg",
+  none: "text-muted-foreground",
+};
 
-/** 候选: 4 reference images, or 4 on-screen text images with their OCR check. */
+/** What the backend's OCR check says about a text candidate (`ocr_ok`, `ocr_issue`). */
+function useOcrLine() {
+  const { t } = useTranslation("assets");
+  return (c: Candidate, method: TextSettings["method"]): { text: string; tone: Tone } => {
+    if (c.ocr_ok === true)
+      return { text: t(method === "composite" ? "cands.ocrBlank" : "cands.ocrOk"), tone: "ok" };
+    if (c.ocr_ok === false) {
+      const text =
+        c.ocr_issue === "has_text"
+          ? t("cands.ocrHasText", { read: c.ocr ?? "" })
+          : c.ocr_issue === "missing"
+            ? t("cands.ocrMissing")
+            : t("cands.ocrWrong");
+      return { text, tone: "bad" };
+    }
+    return { text: t("cands.ocrUnchecked"), tone: "none" };
+  };
+}
+
+/** 候选: 4 reference images, or 4 on-screen text images with their OCR check. A base for
+ * compositing shows the text laid over it, as post will paste it (M7). The cards are small;
+ * 「放大」 on a picture opens it at screen size. */
 export function ImageCandidates({
   asset,
   versionNo,
   candidates,
+  srcs,
   aspect,
+  madeWith,
   locked,
   onPick,
 }: {
   asset: Asset;
   versionNo: number;
   candidates: Candidate[];
+  /** Each candidate's picture (`files[]` with its `idx`), when the version has files. */
+  srcs: (string | null)[];
   aspect: Aspect;
+  /** On-screen text: the settings the version was made with (`payload.text`). */
+  madeWith?: TextSettings | null;
   locked: boolean;
   onPick: (i: number) => void;
 }) {
   const { t } = useTranslation("assets");
+  const { t: tc } = useTranslation("components");
+  const ocrLine = useOcrLine();
+  const [zoomed, setZoomed] = useState<number | null>(null);
   const text = asset.text;
+  const method = madeWith?.method ?? text?.method ?? "composite";
+  const label = (i: number) => t("cands.label", { n: versionNo, letter: LETTERS[i] });
+  // The pictures there are, in order, for the lightbox's ← →.
+  const pictures = srcs.flatMap((src, i) => (src ? [{ src, label: label(i), i }] : []));
   return (
-    <div
-      role="radiogroup"
-      aria-label={t("cands.title")}
-      className="grid grid-cols-2 gap-3 sm:grid-cols-4"
-    >
+    <div role="radiogroup" aria-label={t("cands.title")} className="flex flex-wrap gap-3">
       {candidates.map((c, i) => {
         const on = asset.pick === i;
-        const label = t("cands.label", { n: versionNo, letter: LETTERS[i] });
-        const ocrOk = !text || text.method === "composite" || c.ocr === text.exact;
-        const ocr = !text
-          ? null
-          : ocrOk
-            ? t("cands.ocrOk")
-            : (c.ocr ?? "").length < text.exact.length
-              ? t("cands.ocrMissing")
-              : t("cands.ocrWrong");
+        const ocr = text ? ocrLine(c, method) : null;
+        const src = srcs[i];
         return (
-          <button
-            key={i}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            aria-label={label}
-            disabled={locked}
-            onClick={() => onPick(i)}
-            className={cn(
-              "flex flex-col gap-1.5 rounded-lg border-2 p-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
-              on ? "border-primary" : "border-transparent hover:border-border",
-            )}
-          >
-            <div className="relative">
-              {text ? (
-                <div
-                  className={cn(
-                    "flex aspect-square items-center justify-center rounded-md p-3 text-center text-sm leading-relaxed",
-                    TEXT_TILE[text.style],
-                  )}
-                >
-                  {text.method === "composite"
-                    ? t("cands.compositeSample", { text: text.exact })
-                    : (c.ocr ?? "")}
-                </div>
-              ) : (
-                <MediaThumb
-                  aspect={aspect}
-                  seed={`${asset.id}-${versionNo}-${i}`}
-                  label={LETTERS[i]}
-                />
-              )}
-              {on ? (
-                <StatusBadge tone="info" icon={Check} className="absolute top-1.5 right-1.5">
-                  {t("cands.picked")}
-                </StatusBadge>
-              ) : null}
-            </div>
-            <span className="text-xs font-medium">{label}</span>
-            <span className="text-xs text-muted-foreground">
-              {text
-                ? t(text.method === "composite" ? "cands.metaComposite" : "cands.metaModel")
-                : asset.kind === "character"
-                  ? t("cands.metaCharacter")
-                  : t("cands.metaOther", { aspect })}
-            </span>
-            {ocr ? (
-              <span className={cn("text-xs", ocrOk ? "text-tone-info-fg" : "text-tone-warn-fg")}>
-                {ocr}
-              </span>
-            ) : null}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
-
-/** 音色候选: static waveforms with a play toggle, a pick, and auditions with script lines. */
-export function VoiceCandidates({
-  asset,
-  versionNo,
-  candidates,
-  locked,
-  onPick,
-}: {
-  asset: Asset;
-  versionNo: number;
-  candidates: Candidate[];
-  locked: boolean;
-  onPick: (i: number) => void;
-}) {
-  const { t } = useTranslation("assets");
-  const [playing, setPlaying] = useState<number | null>(null);
-
-  // A demo clip "plays" for 2.5 s (no audio files until M3).
-  useEffect(() => {
-    if (playing === null) return;
-    const id = setTimeout(() => setPlaying(null), 2500);
-    return () => clearTimeout(id);
-  }, [playing]);
-
-  return (
-    <div className="flex flex-col gap-3">
-      <div role="radiogroup" aria-label={t("voice.cands")} className="flex flex-col gap-2">
-        {candidates.map((c, i) => {
-          const on = asset.pick === i;
-          const isPlaying = playing === i;
-          const letter = LETTERS[i] ?? "";
-          return (
-            <div
-              key={i}
+          <div key={i} className="relative shrink-0" style={{ width: CARD_WIDTH[aspect] }}>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={on}
+              aria-label={label(i)}
+              disabled={locked}
+              onClick={() => onPick(i)}
               className={cn(
-                "flex items-center gap-3 rounded-lg border px-3 py-2",
-                on && "border-primary bg-tone-info-bg/40",
+                "flex w-full flex-col gap-1.5 rounded-lg border-2 p-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
+                on ? "border-primary" : "border-transparent hover:border-border",
               )}
             >
-              <Button
-                size="icon"
-                variant="outline"
-                aria-label={t(isPlaying ? "voice.pause" : "voice.play", { letter })}
-                aria-pressed={isPlaying}
-                onClick={() => setPlaying(isPlaying ? null : i)}
-              >
-                {isPlaying ? <Pause aria-hidden /> : <Play aria-hidden />}
-              </Button>
-              <div aria-hidden className="flex h-8 items-center gap-0.5">
-                {(c.waveform ?? []).map((h, j) => (
-                  <span
-                    key={j}
+              <div className="relative">
+                {text && !src ? (
+                  <div
                     className={cn(
-                      "w-1 rounded-full",
-                      isPlaying ? "bg-primary" : "bg-muted-foreground/40",
+                      "flex aspect-square items-center justify-center rounded-md p-3 text-center text-sm leading-relaxed",
+                      TEXT_TILE[text.style],
                     )}
-                    style={{ height: `${Math.max(12, h * 100)}%` }}
+                  >
+                    {method === "composite"
+                      ? t("cands.compositeSample", { text: text.exact })
+                      : (c.ocr ?? "")}
+                  </div>
+                ) : (
+                  <MediaThumb
+                    aspect={aspect}
+                    seed={`${asset.id}-${versionNo}-${i}`}
+                    src={src}
+                    alt={label(i)}
+                    label={LETTERS[i]}
+                    overlay={
+                      text && method === "composite" ? (
+                        <div
+                          className={cn(
+                            "absolute inset-x-3 top-1/2 -translate-y-1/2 rounded px-2 py-1.5 text-center text-sm leading-relaxed shadow-md",
+                            TEXT_TILE[text.style],
+                          )}
+                        >
+                          {text.exact}
+                        </div>
+                      ) : null
+                    }
                   />
-                ))}
+                )}
+                {on ? (
+                  <StatusBadge tone="info" icon={Check} className="absolute top-1.5 right-1.5">
+                    {t("cands.picked")}
+                  </StatusBadge>
+                ) : null}
               </div>
-              <span className="flex-1 text-sm">
-                {t("voice.label", { n: versionNo, letter, label: c.label ?? "" })}
+              <span className="text-xs font-medium">{label(i)}</span>
+              <span className="text-xs text-muted-foreground">
+                {text
+                  ? t(method === "composite" ? "cands.metaComposite" : "cands.metaModel")
+                  : asset.kind === "character"
+                    ? t("cands.metaCharacter")
+                    : t("cands.metaOther", { aspect })}
               </span>
-              <Button
-                size="sm"
-                role="radio"
-                aria-checked={on}
-                variant={on ? "default" : "outline"}
-                disabled={locked}
-                onClick={() => onPick(i)}
+              {ocr ? <span className={cn("text-xs", OCR_TONE[ocr.tone])}>{ocr.text}</span> : null}
+            </button>
+            {src ? (
+              // Over the picture, beside the card (a control inside a radio would be hidden).
+              <div
+                className="pointer-events-none absolute"
+                style={{
+                  top: CARD_INSET,
+                  left: CARD_INSET,
+                  width: `calc(100% - ${2 * CARD_INSET}px)`,
+                  aspectRatio: aspect.replace(":", " / "),
+                }}
               >
-                {t(on ? "voice.picked" : "voice.pick")}
-              </Button>
-            </div>
-          );
-        })}
-      </div>
-      {asset.voice?.lines.length ? (
-        <div className="flex flex-col gap-1.5">
-          <div className="text-xs font-medium">{t("voice.lines")}</div>
-          {asset.voice.lines.map((l) => (
-            <div key={l.text} className="flex items-center gap-2 text-sm">
-              <Button
-                size="icon"
-                variant="ghost"
-                aria-label={t("voice.tryLine", { text: l.text })}
-                onClick={() => toast.info(t("voice.trying", { text: l.text, tone: l.tone }))}
-              >
-                <Volume2 aria-hidden />
-              </Button>
-              <span>{l.text}</span>
-              <span className="text-xs text-muted-foreground">{l.tone}</span>
-            </div>
-          ))}
-        </div>
-      ) : null}
+                <button
+                  type="button"
+                  aria-label={tc("lightbox.zoom", { label: label(i) })}
+                  title={tc("lightbox.zoom", { label: label(i) })}
+                  onClick={() => setZoomed(pictures.findIndex((p) => p.i === i))}
+                  className="pointer-events-auto absolute right-1.5 bottom-1.5 flex size-7 items-center justify-center rounded-md bg-black/45 text-white outline-none hover:bg-black/65 focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Maximize2 className="size-3.5" aria-hidden />
+                </button>
+              </div>
+            ) : null}
+          </div>
+        );
+      })}
+      <MediaLightbox items={pictures} index={zoomed} onIndex={setZoomed} />
     </div>
   );
 }

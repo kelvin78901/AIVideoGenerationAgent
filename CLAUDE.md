@@ -38,7 +38,7 @@
 
 ```bash
 ./start.sh                                # 一键：uv sync + pnpm install + 后端 + 前端（--no-web / --skip-install / --port）
-# Windows：powershell -ExecutionPolicy Bypass -File .\start.ps1   （-NoWeb / -SkipInstall / -Port）
+# Windows：powershell -ExecutionPolicy Bypass -File .\start.ps1   （-NoWeb / -SkipInstall / -Port；-RealSetup 默认开：Setup 页扫描、安装这台电脑，模型仍走 Mock；-RealSetup:$false 换回示例机器；start.sh 用 --no-real-setup）
 uv sync                                   # 安装后端依赖（Python 3.12，uv 自动下载）
 uv run pytest                             # 后端测试（Mock；含 tests/e2e 的重启续跑测试）
 uv run ruff check . && uv run ruff format --check . && uv run mypy

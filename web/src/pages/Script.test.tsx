@@ -11,6 +11,7 @@ import ScriptPage from "@/pages/Script";
 import { backend } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { fakeEpisodes } from "@/test/fakes/episodes";
+import { dubFakeEpisode } from "@/test/fakes/dub";
 import { fakeImpact } from "@/test/fakes/impact";
 import { fakeScript } from "@/test/fakes/script";
 import { renderAt } from "@/test/render";
@@ -113,6 +114,31 @@ describe("ScriptPage", () => {
     expect(rows[4]).toHaveTextContent("台词");
     expect(rows[4]).toHaveTextContent("低声，愣住");
     expect(rows[8]).toHaveTextContent("叠在 1-06");
+  });
+
+  it("before dubbing, a scene adds up its lines' estimates; nothing plays", async () => {
+    renderScript();
+    await screen.findByText(META);
+    // Before dubbing: the script's estimate.
+    expect(await screen.findByText("台词 4.0 秒 · 已配音 0 / 1")).toBeInTheDocument();
+    expect(screen.queryByRole("button", { name: /^播放/ })).not.toBeInTheDocument();
+  });
+
+  it("after dubbing, lines play in both views with their real length", async () => {
+    const user = userEvent.setup();
+    dubFakeEpisode();
+    renderScript();
+    await screen.findByText(META);
+    expect(await screen.findByText("台词 1.3 秒 · 已配音 1 / 1")).toBeInTheDocument();
+    expect(screen.getByText("台词 2.3 秒 · 已配音 1 / 1")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "播放：……周屿？" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "播放：三年了。他凭什么。" })).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "结构化表格" }));
+    const rows = within(screen.getByRole("table")).getAllByRole("row");
+    const row = rows[4] as HTMLElement;
+    expect(row).toHaveTextContent("1.3 秒");
+    expect(within(row).getByRole("button", { name: "播放：……周屿？" })).toBeInTheDocument();
+    expect(rows[8]).toHaveTextContent("2.3 秒叠在 1-06");
   });
 
   it("editing a confirmed line previews the impact; 只改这里 saves it and marks 待更新", async () => {

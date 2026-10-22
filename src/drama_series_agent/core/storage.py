@@ -31,6 +31,11 @@ class BlobStore:
             raise ValueError(f"not a sha256 hex digest: {sha256!r}")
         return self.root / "sha256" / sha256[:2] / sha256
 
+    @staticmethod
+    def relative(sha256: str) -> str:
+        """Where a blob lives under the data directory, as a version's ``files[].path``."""
+        return f"blobs/sha256/{sha256[:2]}/{sha256}"
+
     def exists(self, sha256: str) -> bool:
         return self.path_for(sha256).is_file()
 

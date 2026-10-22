@@ -166,6 +166,7 @@ class EnrichComponent(ChunkedComponent):
     slot = "suggestions"
     owner_type = "series"
     max_tokens = 3000
+    output_ratio = 0.3  # 429 out for 2741 in (M2 step 13)
 
     def __init__(self, services: Services, novel: NovelService) -> None:
         super().__init__(services)

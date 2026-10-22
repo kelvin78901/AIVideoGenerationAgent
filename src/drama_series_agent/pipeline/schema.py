@@ -11,8 +11,10 @@ OwnerType = Literal["series", "episode", "scene", "shot", "asset", "line"]
 ProductStatus = Literal[
     "empty", "queued", "running", "ready", "stale", "adopted", "locked", "failed"
 ]  # fmt: skip
+# ``pick``: the candidate the user locked, alone (M3); ``upload``: the user's own file.
 VersionOrigin = Literal[
-    "run", "rerun", "switch", "edit", "fallback", "import", "auto_qa_rerun", "comfy_ingest"
+    "run", "rerun", "switch", "edit", "fallback", "import", "auto_qa_rerun", "comfy_ingest",
+    "pick", "upload",
 ]  # fmt: skip
 
 
@@ -24,6 +26,11 @@ class VersionFileOut(BaseModel):
     duration_s: float | None = None
     w: int | None = None
     h: int | None = None
+    idx: int | None = None  # a candidate's or view's number in its version (M3)
+    view: str | None = None  # side / back / calm / smile / angry / sad (补视图)
+    line: int | None = None  # a voice sample: which of its audition lines it reads
+    emotion: str | None = None  # a voice's emotion variant (config/voice.yaml)
+    waveform: list[float] | None = None  # audio: 64 peaks, 0–1 (media/audio.py)
 
 
 class VersionOut(BaseModel):
@@ -75,6 +82,13 @@ class RunningOut(BaseModel):
     cascade_id: str | None = None
 
 
+class PickOut(BaseModel):
+    """「选这个」: candidate ``idx`` (0-based, its ``files[].idx``) of version ``version_id``."""
+
+    version_id: str
+    idx: int
+
+
 class ProductOut(BaseModel):
     id: str
     series_id: str
@@ -90,3 +104,6 @@ class ProductOut(BaseModel):
     prompt: PromptOut | None
     estimate: EstimateOut | None
     running: RunningOut | None
+    pick: PickOut | None = None
+    settings: dict[str, Any] | None = None
+    retired: bool = False

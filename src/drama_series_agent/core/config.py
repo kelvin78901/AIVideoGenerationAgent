@@ -83,6 +83,13 @@ class MediaModel(_Loose):
     key: str
     kind: str
     display: str
+    # The ``llm_providers`` account whose key it uses (one MiniMax / Google / OpenAI key for
+    # writing, pictures and voices); its base URL too unless ``base_url`` says otherwise.
+    account: str | None = None
+    # Which real adapter runs it (``modelhub/media_adapters.py``); none yet → unavailable.
+    adapter: str | None = None
+    model_id: str | None = None
+    base_url: str | None = None
     unit: str | None = None
     currency: str = "USD"
     caps: dict[str, Any] = Field(default_factory=dict)
@@ -95,6 +102,13 @@ class LocalModel(_Loose):
     display: str
     runtime: str | None = None
     workflow: str | None = None
+    # ``runtime: python``: the worker script (``workers/<worker>.py``), the environment it runs in
+    # (``~/.drama-studio/envs/<env>``), what it loads (``args``, ``{models}`` / ``{envs}``
+    # expanded) and whether it needs the GPU (the VRAM lease; RapidOCR does not).
+    worker: str | None = None
+    env: str | None = None
+    args: dict[str, Any] = Field(default_factory=dict)
+    gpu: bool = True
     caps: dict[str, Any] = Field(default_factory=dict)
     verify: bool = False
     # What this machine must have to run it (core/capabilities.py): setup-manifest item ids.
@@ -147,9 +161,36 @@ class FallbackDefaults(_Loose):
     notify: str = "after"
 
 
+class DialogueAudio(_Loose):
+    """How voice samples and dubbed lines are levelled (``media/audio.py``)."""
+
+    lufs: float = -18.0
+    peak_dbtp: float = -1.5
+    trim_db: float = -45.0
+    sample_rate: int = 48000
+    tail_s: float = 0.3
+
+
+class AudioDefaults(_Loose):
+    dialogue: DialogueAudio = Field(default_factory=DialogueAudio)
+
+
+class ConfirmMargin(_Loose):
+    """How far past a confirmed amount a job may spend: the larger of ``ratio`` of it and
+    ``min_usd`` (Kelvin 2026-10-21)."""
+
+    ratio: float = 0.10
+    min_usd: float = 0.05
+
+    def allowance(self, confirmed_usd: float) -> float:
+        return confirmed_usd + max(confirmed_usd * self.ratio, self.min_usd)
+
+
 class ComponentsConfig(_Loose):
     fallback_defaults: FallbackDefaults = Field(default_factory=FallbackDefaults)
+    audio: AudioDefaults = Field(default_factory=AudioDefaults)
     per_call_cap_usd: float | None = 0.5  # hard rule 6: a run above this waits for a yes
+    confirm_margin: ConfirmMargin = Field(default_factory=ConfirmMargin)
     components: list[ComponentDefault] = Field(default_factory=list)
 
     def component(self, component_id: str) -> ComponentDefault:
@@ -194,11 +235,49 @@ class SpecConfig(_Loose):
     compat_stages: list[CompatStage] = Field(default_factory=list)
 
 
+# --------------------------------------------------------------------------- voice.yaml
+
+
+class VoiceDraft(_Loose):
+    """One of the free local auditions: a tendency added to the voice's description."""
+
+    label: str  # the candidate's description (content)
+    hint: str
+
+
+class VoiceEmotion(_Loose):
+    """One emotion variant of a finished voice; the UI names it ``enums:emotion.<id>``."""
+
+    id: str
+    instruct: str  # the emotion in words, for a local model (IndexTTS)
+    minimax: dict[str, Any] = Field(default_factory=dict)  # T2A overrides (emotion, vol, model)
+
+
+class VoiceConfig(_Loose):
+    """How a voice is auditioned and finished (M3 ``voice``): ``config/voice.yaml``."""
+
+    lines: int = 2  # script lines a voice reads to audition
+    sample_text: str = "你好。"  # what it reads when its character has no lines yet
+    local_final: str = "local/indextts2"  # variants of a local voice; the API flow's fallback
+    drafts: list[VoiceDraft] = Field(default_factory=list)
+    emotions: list[VoiceEmotion] = Field(default_factory=list)
+    # 台词配音: words in a line's tone → its emotion, the first match in this order.
+    tones: dict[str, list[str]] = Field(default_factory=dict)
+
+    def emotion_of(self, tone: str | None) -> str:
+        """The emotion a line's tone asks for; ``calm`` when none matches."""
+        for emotion, words in self.tones.items():
+            if tone and any(w in tone for w in words):
+                return emotion
+        return "calm"
+
+
 @dataclass(frozen=True)
 class StudioConfig:
     providers: ProvidersConfig
     components: ComponentsConfig
     spec: SpecConfig
+    voice: VoiceConfig = field(default_factory=VoiceConfig)
 
 
 class _Yaml12BoolLoader(yaml.SafeLoader):
@@ -234,6 +313,9 @@ def load_config(directory: Path | None = None) -> StudioConfig:
         providers=ProvidersConfig.model_validate(_read_yaml(base / "providers.yaml")),
         components=ComponentsConfig.model_validate(_read_yaml(base / "components.yaml")),
         spec=SpecConfig.model_validate(_read_yaml(base / "spec.yaml")),
+        voice=VoiceConfig.model_validate(
+            _read_yaml(base / "voice.yaml") if (base / "voice.yaml").exists() else {}
+        ),
     )
 
 

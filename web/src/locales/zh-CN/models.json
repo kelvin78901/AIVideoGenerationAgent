@@ -57,9 +57,13 @@
     "saved": "{{name}} 的密钥已保存。",
     "deleted": "{{name}} 的密钥已删除。",
     "envNote": "这个密钥来自环境变量或 .env，要删除请改那边。",
+    "sharedWith": "这个密钥也用于：{{names}}",
+    "listSep": "、",
     "testOk": "连接正常，能看到 {{count}} 个模型。",
     "testOkNoList": "连接正常。",
     "testFail": "连接失败：{{detail}}",
+    "mediaOk": "{{name}}：可以用",
+    "mediaFail": "{{name}}：不能用（{{detail}}）",
     "docs": "去官网拿密钥",
     "baseUrl": "接口地址：{{url}}",
     "close": "关闭"

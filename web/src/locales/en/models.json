@@ -57,9 +57,13 @@
     "saved": "{{name}} key saved.",
     "deleted": "{{name}} key deleted.",
     "envNote": "This key comes from the environment or .env; change it there to remove it.",
+    "sharedWith": "This key is also used by: {{names}}",
+    "listSep": ", ",
     "testOk": "Connected. {{count}} models available.",
     "testOkNoList": "Connected.",
     "testFail": "Connection failed: {{detail}}",
+    "mediaOk": "{{name}}: available",
+    "mediaFail": "{{name}}: not available ({{detail}})",
     "docs": "Get a key from the provider",
     "baseUrl": "Endpoint: {{url}}",
     "close": "Close"

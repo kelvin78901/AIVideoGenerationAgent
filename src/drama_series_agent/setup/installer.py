@@ -32,6 +32,7 @@ FAKE_BPS = 25e6
 STEP_SECONDS: dict[str, float] = {
     "uv_venv": 10,
     "uv_pip": 60,
+    "uv_sync": 240,  # a runtime with PyTorch: a few GB of wheels
     "git_clone": 20,
     "pkg": 60,
     "script": 30,

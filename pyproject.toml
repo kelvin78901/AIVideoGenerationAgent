@@ -94,7 +94,7 @@ strict = true
 packages = ["drama_series_agent"]
 mypy_path = "src"
 exclude = [
-  "src/drama_series_agent/(adapters|agent|drama|intake|utils|api/routers|api/schemas)/",
+  "src/drama_series_agent/(adapters|agent|drama|intake|utils|workers|api/routers|api/schemas)/",
   "src/drama_series_agent/(cli|llm_presets|__main__)\\.py$",
 ]
 plugins = ["pydantic.mypy"]
@@ -106,6 +106,7 @@ module = [
   "drama_series_agent.drama.*",
   "drama_series_agent.intake.*",
   "drama_series_agent.utils.*",
+  "drama_series_agent.workers.*",
   "drama_series_agent.api.routers.*",
   "drama_series_agent.api.schemas.*",
   "drama_series_agent.cli",

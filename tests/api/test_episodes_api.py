@@ -376,7 +376,10 @@ def test_progress_of_the_novel_and_script_steps(client: TestClient) -> None:
     assert steps["script"]["state"] == "in_progress" and steps["script"]["stale"] == 0
     e2 = client.get(f"{V1}/episodes/demo-e2/progress").json()["steps"]
     assert e2["script"]["state"] == "not_started"
-    assert all(steps[s]["state"] == "not_started" for s in ("assets", "post"))
+    assert steps["post"]["state"] == "not_started"
+    # 素材 counts the assets episode 1 uses (10 of the demo's 13), 7 of them locked.
+    assert steps["assets"] == {"state": "in_progress", "done": 7, "total": 10, "stale": 0}
+    assert e2["assets"]["state"] == "not_started"
     # Accepting an addition: the bible, the plan and episode 1's script (it is on its first
     # paragraph) all read it; episode 2's script does not.
     client.post(f"{V1}/suggestions/s2/accept")

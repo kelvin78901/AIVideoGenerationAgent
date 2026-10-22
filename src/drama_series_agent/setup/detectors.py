@@ -374,10 +374,23 @@ def parse_version_text(out: str) -> str | None:
 async def _py_import(item: Item, ctx: ScanContext) -> Outcome:
     python = await ctx.env_python(item.detect.env or "comfy")
     module = item.detect.module
-    mod = await ctx.probe.py_module(python, module) if python and module else None
+    gpu = item.detect.gpu and ctx.has_cuda
+    mod = await ctx.probe.py_module(python, module, gpu=gpu) if python and module else None
     if mod is None:
         return Outcome("absent", NOT_FOUND)
-    facts = {"python": python, "cuda": mod.cuda}
+    facts: dict[str, Any] = {"python": python, "cuda": mod.cuda}
+    if gpu:
+        # A runtime of its own (rt_qwentts …): its PyTorch must be a CUDA build whose kernels
+        # cover this GPU (an RTX 5090 is sm_120). Reinstalling the lock would not change that.
+        facts.update(torch_cuda=mod.torch_cuda, gpu_arch=mod.gpu_arch)
+        version = mod.version
+        if not mod.torch_cuda:
+            return Outcome(
+                "old", msg("env_no_cuda"), fix=msg("env_torch_gpu"), version=version, facts=facts
+            )
+        if mod.arch_ok is False:
+            found = msg("env_gpu_arch", arch=mod.gpu_arch or "?", cuda=mod.torch_cuda)
+            return Outcome("old", found, fix=msg("env_torch_gpu"), version=version, facts=facts)
     build = item.require.get("cuda_build")
     if build and ctx.has_cuda and mod.cuda != str(build):
         return Outcome(

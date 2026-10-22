@@ -82,6 +82,8 @@
     "no_keys": "None yet",
     "no_gpu": "No usable GPU found",
     "check_failed": "Check failed",
+    "env_no_cuda": "Installed, but its PyTorch is not a CUDA build",
+    "env_gpu_arch": "Installed, but its PyTorch (CUDA {{cuda}}) does not support this GPU ({{arch}})",
     "running": "Running",
     "not_running": "Not running",
     "reachable": "Good connection",
@@ -118,7 +120,8 @@
     "resolve_later": "Install if you edit in DaVinci Resolve",
     "update_comfy_native": "Comes with ComfyUI: update ComfyUI to {{version}} or later",
     "dramastudio_pending": "Not released yet: comes with the ComfyUI integration",
-    "weights_pending_p0": "Install after the P0 tests settle the version"
+    "weights_pending_p0": "Install after the P0 tests settle the version",
+    "env_torch_gpu": "The pinned PyTorch cannot use this GPU and reinstalling will not change that; the API is used until the manifest is updated"
   },
   "error": {
     "not_detected": "Installed, but a fresh check still can't find it (a package that won't import, say); see the log",

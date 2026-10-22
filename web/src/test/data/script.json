@@ -987,7 +987,309 @@
         "cost_usd": 0.0251,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-assets-e1",
+      "series_id": "demo",
+      "owner_type": "episode",
+      "owner_id": "demo-e1",
+      "slot": "asset_list",
+      "component_id": "assets",
+      "current_version_id": "demo-p-assets-e1-v1",
+      "adopted_version_id": "demo-p-assets-e1-v1",
+      "locked_hash": null,
+      "status": "adopted",
+      "versions": [
+        {
+          "id": "demo-p-assets-e1-v1",
+          "product_id": "demo-p-assets-e1",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "episode_id": "demo-e1",
+            "assets": [
+              {
+                "id": "hall",
+                "key": "scene:l-stairs:night",
+                "kind": "scene",
+                "name": "老小区楼道 · 夜",
+                "bible_id": "l-stairs",
+                "description": "六层老楼的楼道，水泥台阶，墙皮剥落；声控灯偏黄，坏了一半；窗外下大雨，地上有湿脚印。",
+                "text": null,
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b1",
+                    "line_ids": []
+                  }
+                ]
+              },
+              {
+                "id": "linwan",
+                "key": "character:c-linwan",
+                "kind": "character",
+                "name": "林晚",
+                "bible_id": "c-linwan",
+                "description": "26 岁女性，插画师。米色风衣湿了半边，低马尾，素颜，左手腕一根旧黑发圈。神情疲惫但克制。",
+                "text": null,
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b1",
+                    "line_ids": [
+                      "demo-b2",
+                      "demo-b5",
+                      "demo-b6"
+                    ]
+                  },
+                  {
+                    "scene_id": "demo-b7",
+                    "line_ids": [
+                      "demo-b8",
+                      "demo-b10",
+                      "demo-b11",
+                      "demo-b12"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "umbrella",
+                "key": "prop:p-umbrella",
+                "kind": "prop",
+                "name": "红色长柄伞",
+                "bible_id": "p-umbrella",
+                "description": "正红色长柄直伞，木质弯柄，伞面是湿的，收着靠墙。",
+                "text": null,
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b1",
+                    "line_ids": [
+                      "demo-b3"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "note",
+                "key": "prop:p-note",
+                "kind": "prop",
+                "name": "黄色便利贴",
+                "bible_id": "p-note",
+                "description": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
+                "text": null,
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b1",
+                    "line_ids": [
+                      "demo-b3",
+                      "demo-b4",
+                      "demo-b6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "vlinwan",
+                "key": "voice:c-linwan",
+                "kind": "voice",
+                "name": "林晚",
+                "bible_id": "c-linwan",
+                "description": "二十多岁女声，偏低，克制，句尾轻，不要播音腔。",
+                "text": null,
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b1",
+                    "line_ids": [
+                      "demo-b5"
+                    ]
+                  },
+                  {
+                    "scene_id": "demo-b7",
+                    "line_ids": [
+                      "demo-b10"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "band",
+                "key": "prop:p-hairtie",
+                "kind": "prop",
+                "name": "旧黑发圈",
+                "bible_id": "p-hairtie",
+                "description": "洗旧了的黑色布发圈，戴在林晚左手腕上。",
+                "text": null,
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b1",
+                    "line_ids": [
+                      "demo-b6"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "room",
+                "key": "scene:l-flat:night",
+                "kind": "scene",
+                "name": "林晚出租屋 · 夜",
+                "bible_id": "l-flat",
+                "description": "十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。",
+                "text": null,
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b7",
+                    "line_ids": []
+                  }
+                ]
+              },
+              {
+                "id": "phone",
+                "key": "prop:p-phone",
+                "kind": "prop",
+                "name": "手机",
+                "bible_id": "p-phone",
+                "description": "普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。",
+                "text": null,
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b7",
+                    "line_ids": [
+                      "demo-b9"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "txt1",
+                "key": "text:name:便利贴手写",
+                "kind": "text",
+                "name": "便利贴手写",
+                "bible_id": null,
+                "description": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
+                "text": {
+                  "exact": "楼下便利店，等你到十二点。",
+                  "style": "handwritten",
+                  "method": "model"
+                },
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b1",
+                    "line_ids": [
+                      "demo-b4"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "txt2",
+                "key": "text:name:手机锁屏时间",
+                "kind": "text",
+                "name": "手机锁屏时间",
+                "bible_id": null,
+                "description": "手机锁屏上的大号时间，白字，系统默认字体，下方没有通知。",
+                "text": {
+                  "exact": "23:52",
+                  "style": "screen",
+                  "method": "composite"
+                },
+                "note": null,
+                "uses": [
+                  {
+                    "scene_id": "demo-b7",
+                    "line_ids": [
+                      "demo-b9"
+                    ]
+                  }
+                ]
+              },
+              {
+                "id": "zhouyu",
+                "key": "character:c-zhouyu",
+                "kind": "character",
+                "name": "周屿",
+                "bible_id": "c-zhouyu",
+                "description": "外貌待定，第 2 集出场前再做。",
+                "text": null,
+                "note": "本集只出现字迹",
+                "uses": []
+              },
+              {
+                "id": "vzhouyu",
+                "key": "voice:c-zhouyu",
+                "kind": "voice",
+                "name": "周屿",
+                "bible_id": "c-zhouyu",
+                "description": "第 2 集出场前再定。",
+                "text": null,
+                "note": "第 2 集出场",
+                "uses": []
+              },
+              {
+                "id": "store",
+                "key": "scene:l-store:night",
+                "kind": "scene",
+                "name": "楼下便利店 · 夜",
+                "bible_id": "l-store",
+                "description": "第 2 集才出现，到时再做。",
+                "text": null,
+                "note": "第 2 集出场",
+                "uses": []
+              }
+            ]
+          },
+          "files": [],
+          "content_hash": "sha256:4dffaac44d003e7895690990e3f5fdc9c48945e9a5ae9f13d9e152d3d3150a7d",
+          "intent": "描述要具体到能直接画出来、念出来：年龄、身材、发型、衣着的颜色和材质、光线、质感；声音写年龄感、音高、语速和性格。同一样东西在每个镜头里都要一样。",
+          "compiled": "你负责竖屏短剧一集的素材分析：列出后面每个镜头都要用到、要先做好并锁定的素材——角色的样子、场景、道具、画面里的字、说话角色的音色。下游按你的描述出参考图和音色。\n\n[规则]\n描述要具体到能直接画出来、念出来：年龄、身材、发型、衣着的颜色和材质、光线、质感；声音写年龄感、音高、语速和性格。同一样东西在每个镜头里都要一样。\n- [已知素材] 是从 [剧本] 里按人物、地点和设定里的道具找出来的，每条最前面是 key。每条都写 description：角色、场景、道具写画面描述，音色写声音的描述。只写看得见（听得见）、每个镜头都要保持一样的东西；外貌、衣着、道具细节以 [设定] 和 [剧本] 为准，不编情节。需要时可以给它一个更好认的 name。\n- 另外从 [剧本] 的动作行（△）里找两类东西，写 kind、name、description 和 lines（它出现在哪几行，用每行前的 L 号）：\n  - 设定里没有、但镜头里看得清的道具（kind: prop）；\n  - 画面里要出现的字，例如纸条、招牌、手机屏幕（kind: text）。text 写 exact（逐字，包括标点）、style（handwritten 手写 / printed 印刷 / screen 屏幕界面）、method（model：让模型直接出字，适合短的手写字和印刷字；composite：后期贴字，适合屏幕界面和长段文字）。\n- 字幕不算画面文字。[已知素材] 里已有的不要再列。\n- 本集还没出场、但 [设定] 里马上要用到的角色、场景或音色，也可以列出来，lines 留空，note 写一句为什么。\n\n[输出 JSON]\n{\"assets\": [{\"key\": \"character:c-linwan\", \"description\": \"26 岁女性，插画师……\"}, {\"kind\": \"prop\", \"name\": \"帆布画板袋\", \"description\": \"……\", \"lines\": [1]}, {\"kind\": \"text\", \"name\": \"便利贴手写\", \"description\": \"黑色圆珠笔手写……\", \"text\": {\"exact\": \"楼下便利店，等你到十二点。\", \"style\": \"handwritten\", \"method\": \"model\"}, \"lines\": [3]}]}\n\n# 目标模型：deepseek/v4.1-flash",
+          "compiled_overridden": false,
+          "model_key": "deepseek/v4.1-flash",
+          "where": "api",
+          "seed": 1101,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-14T02:25:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "描述要具体到能直接画出来、念出来：年龄、身材、发型、衣着的颜色和材质、光线、质感；声音写年龄感、音高、语速和性格。同一样东西在每个镜头里都要一样。",
+        "compiled": "你负责竖屏短剧一集的素材分析：列出后面每个镜头都要用到、要先做好并锁定的素材——角色的样子、场景、道具、画面里的字、说话角色的音色。下游按你的描述出参考图和音色。\n\n[规则]\n描述要具体到能直接画出来、念出来：年龄、身材、发型、衣着的颜色和材质、光线、质感；声音写年龄感、音高、语速和性格。同一样东西在每个镜头里都要一样。\n- [已知素材] 是从 [剧本] 里按人物、地点和设定里的道具找出来的，每条最前面是 key。每条都写 description：角色、场景、道具写画面描述，音色写声音的描述。只写看得见（听得见）、每个镜头都要保持一样的东西；外貌、衣着、道具细节以 [设定] 和 [剧本] 为准，不编情节。需要时可以给它一个更好认的 name。\n- 另外从 [剧本] 的动作行（△）里找两类东西，写 kind、name、description 和 lines（它出现在哪几行，用每行前的 L 号）：\n  - 设定里没有、但镜头里看得清的道具（kind: prop）；\n  - 画面里要出现的字，例如纸条、招牌、手机屏幕（kind: text）。text 写 exact（逐字，包括标点）、style（handwritten 手写 / printed 印刷 / screen 屏幕界面）、method（model：让模型直接出字，适合短的手写字和印刷字；composite：后期贴字，适合屏幕界面和长段文字）。\n- 字幕不算画面文字。[已知素材] 里已有的不要再列。\n- 本集还没出场、但 [设定] 里马上要用到的角色、场景或音色，也可以列出来，lines 留空，note 写一句为什么。\n\n[输出 JSON]\n{\"assets\": [{\"key\": \"character:c-linwan\", \"description\": \"26 岁女性，插画师……\"}, {\"kind\": \"prop\", \"name\": \"帆布画板袋\", \"description\": \"……\", \"lines\": [1]}, {\"kind\": \"text\", \"name\": \"便利贴手写\", \"description\": \"黑色圆珠笔手写……\", \"text\": {\"exact\": \"楼下便利店，等你到十二点。\", \"style\": \"handwritten\", \"method\": \"model\"}, \"lines\": [3]}]}\n\n# 目标模型：deepseek/v4.1-flash",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4.1-flash"
+      },
+      "estimate": {
+        "model_key": "deepseek/v4.1-flash",
+        "where": "api",
+        "cost_usd": 0.0052,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
     },
     {
       "id": "demo-p-script-e2",
@@ -1013,7 +1315,34 @@
         "cost_usd": 0.0266,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-assets-e2",
+      "series_id": "demo",
+      "owner_type": "episode",
+      "owner_id": "demo-e2",
+      "slot": "asset_list",
+      "component_id": "assets",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "描述要具体到能直接画出来、念出来：年龄、身材、发型、衣着的颜色和材质、光线、质感；声音写年龄感、音高、语速和性格。同一样东西在每个镜头里都要一样。",
+        "compiled": "你负责竖屏短剧一集的素材分析：列出后面每个镜头都要用到、要先做好并锁定的素材——角色的样子、场景、道具、画面里的字、说话角色的音色。下游按你的描述出参考图和音色。\n\n[规则]\n描述要具体到能直接画出来、念出来：年龄、身材、发型、衣着的颜色和材质、光线、质感；声音写年龄感、音高、语速和性格。同一样东西在每个镜头里都要一样。\n- [已知素材] 是从 [剧本] 里按人物、地点和设定里的道具找出来的，每条最前面是 key。每条都写 description：角色、场景、道具写画面描述，音色写声音的描述。只写看得见（听得见）、每个镜头都要保持一样的东西；外貌、衣着、道具细节以 [设定] 和 [剧本] 为准，不编情节。需要时可以给它一个更好认的 name。\n- 另外从 [剧本] 的动作行（△）里找两类东西，写 kind、name、description 和 lines（它出现在哪几行，用每行前的 L 号）：\n  - 设定里没有、但镜头里看得清的道具（kind: prop）；\n  - 画面里要出现的字，例如纸条、招牌、手机屏幕（kind: text）。text 写 exact（逐字，包括标点）、style（handwritten 手写 / printed 印刷 / screen 屏幕界面）、method（model：让模型直接出字，适合短的手写字和印刷字；composite：后期贴字，适合屏幕界面和长段文字）。\n- 字幕不算画面文字。[已知素材] 里已有的不要再列。\n- 本集还没出场、但 [设定] 里马上要用到的角色、场景或音色，也可以列出来，lines 留空，note 写一句为什么。\n\n[输出 JSON]\n{\"assets\": [{\"key\": \"character:c-linwan\", \"description\": \"26 岁女性，插画师……\"}, {\"kind\": \"prop\", \"name\": \"帆布画板袋\", \"description\": \"……\", \"lines\": [1]}, {\"kind\": \"text\", \"name\": \"便利贴手写\", \"description\": \"黑色圆珠笔手写……\", \"text\": {\"exact\": \"楼下便利店，等你到十二点。\", \"style\": \"handwritten\", \"method\": \"model\"}, \"lines\": [3]}]}\n\n# 目标模型：deepseek/v4.1-flash",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4.1-flash"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
     },
     {
       "id": "demo-p-script-e3",
@@ -1039,7 +1368,34 @@
         "cost_usd": 0.0271,
         "seconds": 0.0
       },
-      "running": null
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-assets-e3",
+      "series_id": "demo",
+      "owner_type": "episode",
+      "owner_id": "demo-e3",
+      "slot": "asset_list",
+      "component_id": "assets",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "描述要具体到能直接画出来、念出来：年龄、身材、发型、衣着的颜色和材质、光线、质感；声音写年龄感、音高、语速和性格。同一样东西在每个镜头里都要一样。",
+        "compiled": "你负责竖屏短剧一集的素材分析：列出后面每个镜头都要用到、要先做好并锁定的素材——角色的样子、场景、道具、画面里的字、说话角色的音色。下游按你的描述出参考图和音色。\n\n[规则]\n描述要具体到能直接画出来、念出来：年龄、身材、发型、衣着的颜色和材质、光线、质感；声音写年龄感、音高、语速和性格。同一样东西在每个镜头里都要一样。\n- [已知素材] 是从 [剧本] 里按人物、地点和设定里的道具找出来的，每条最前面是 key。每条都写 description：角色、场景、道具写画面描述，音色写声音的描述。只写看得见（听得见）、每个镜头都要保持一样的东西；外貌、衣着、道具细节以 [设定] 和 [剧本] 为准，不编情节。需要时可以给它一个更好认的 name。\n- 另外从 [剧本] 的动作行（△）里找两类东西，写 kind、name、description 和 lines（它出现在哪几行，用每行前的 L 号）：\n  - 设定里没有、但镜头里看得清的道具（kind: prop）；\n  - 画面里要出现的字，例如纸条、招牌、手机屏幕（kind: text）。text 写 exact（逐字，包括标点）、style（handwritten 手写 / printed 印刷 / screen 屏幕界面）、method（model：让模型直接出字，适合短的手写字和印刷字；composite：后期贴字，适合屏幕界面和长段文字）。\n- 字幕不算画面文字。[已知素材] 里已有的不要再列。\n- 本集还没出场、但 [设定] 里马上要用到的角色、场景或音色，也可以列出来，lines 留空，note 写一句为什么。\n\n[输出 JSON]\n{\"assets\": [{\"key\": \"character:c-linwan\", \"description\": \"26 岁女性，插画师……\"}, {\"kind\": \"prop\", \"name\": \"帆布画板袋\", \"description\": \"……\", \"lines\": [1]}, {\"kind\": \"text\", \"name\": \"便利贴手写\", \"description\": \"黑色圆珠笔手写……\", \"text\": {\"exact\": \"楼下便利店，等你到十二点。\", \"style\": \"handwritten\", \"method\": \"model\"}, \"lines\": [3]}]}\n\n# 目标模型：deepseek/v4.1-flash",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4.1-flash"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
     }
   ],
   "rewrites": {

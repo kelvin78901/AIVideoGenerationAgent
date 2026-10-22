@@ -6,6 +6,9 @@ import { DEMO_HEADER, useDemoStore } from "@/stores/demo";
 
 export const API_BASE = "/api/v1";
 
+/** A version file (picture, audio) by its content hash: `GET /files/{sha256}` (M3). */
+export const fileUrl = (sha256: string) => `${API_BASE}/files/${sha256}`;
+
 /** The backend rejects writes without this header (see `api/security.py`). */
 export const CLIENT_HEADERS = { "X-Drama-Studio": "1" } as const;
 

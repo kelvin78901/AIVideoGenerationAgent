@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Query
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, ConfigDict, Field
 
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.jobs import job_public
@@ -16,12 +16,31 @@ router = APIRouter(tags=["products"])
 State = Annotated[StudioState, Depends(get_state)]
 
 
+class RunParams(BaseModel):
+    """What a component reads besides the prompt (M3): a task such as ``views``, the draft
+    (version + candidate) an API final starts from."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    task: str | None = Field(default=None, max_length=32)
+    source_version_id: str | None = Field(default=None, max_length=64)
+    source_idx: int | None = Field(default=None, ge=0)
+
+
 class RunBody(BaseModel):
     mode: Literal["run", "rerun", "switch"]
     model: str | None = None
     intent: str | None = None
     compiled: str | None = None  # a hand-edited compiled layer (「保存并重跑」)
     count: int = Field(default=1, ge=1, le=8)
+    # ``api``: hybrid mode's 「用 API 出终版」 (SPEC 7.3).
+    where: Literal["local", "api"] | None = None
+    params: RunParams | None = None
+
+
+class PickBody(BaseModel):
+    version_id: str
+    idx: int = Field(ge=0)
 
 
 class PromptBody(BaseModel):
@@ -81,8 +100,16 @@ async def run_product(product_id: str, body: RunBody, state: State) -> dict[str,
         intent=body.intent,
         compiled=body.compiled,
         count=body.count,
+        where=body.where,
+        params=body.params.model_dump(exclude_none=True) if body.params else None,
     )
     return job_public(job)
+
+
+@router.post("/products/{product_id}/pick")
+async def pick(product_id: str, body: PickBody, state: State) -> ProductOut:
+    """「选这个」: candidate ``idx`` of a version (409 ``product_locked`` while locked)."""
+    return await state.products.set_pick(product_id, body.version_id, body.idx)
 
 
 @router.put("/products/{product_id}/prompt")

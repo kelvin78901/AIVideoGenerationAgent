@@ -3,7 +3,10 @@ import { useId, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
+import { fileUrl } from "@/api/client";
+import type { DubLine } from "@/api/schemas/dub";
 import type { ModelOption } from "@/api/schemas/models";
+import { AudioPlayer } from "@/components/AudioPlayer";
 import { ModelSwitchMenu } from "@/components/ModelSwitchMenu";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -18,7 +21,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { cn } from "@/lib/utils";
-import { fromAddition, useBlockLead, type Block } from "@/pages/script/blocks";
+import { fromAddition, useBlockLead, type Block, type DubIndex } from "@/pages/script/blocks";
 
 function useBlockText() {
   const { t } = useTranslation("script");
@@ -62,6 +65,20 @@ export interface OverBudget {
   message: string;
 }
 
+/** A dubbed line: play it, and how long it runs. */
+function LineAudio({ line, className }: { line: DubLine | undefined; className?: string }) {
+  if (!line?.audio) return null;
+  return (
+    <AudioPlayer
+      compact
+      src={fileUrl(line.audio.sha256)}
+      duration={line.audio.duration_s}
+      label={line.text}
+      className={className}
+    />
+  );
+}
+
 function BlockRow({
   block,
   selected,
@@ -73,6 +90,7 @@ function BlockRow({
   routeModel,
   overBudget,
   links,
+  dub,
   onSelect,
   actions,
 }: {
@@ -86,6 +104,7 @@ function BlockRow({
   routeModel: string | undefined;
   overBudget: OverBudget | null;
   links: ScriptLinks;
+  dub: DubIndex;
   onSelect: () => void;
   actions: ScriptActions;
 }) {
@@ -96,6 +115,7 @@ function BlockRow({
   const scene = block.kind === "scene";
   const shots = scene ? [] : links.shotsOf(block);
   const first = block.paras[0];
+  const spoken = scene ? dub.scenes.get(block.id) : undefined;
   return (
     <li
       data-block={block.id}
@@ -106,29 +126,41 @@ function BlockRow({
         scene && !selected && "bg-muted",
       )}
     >
-      <button
-        type="button"
-        aria-pressed={selected}
-        onClick={onSelect}
-        className="flex w-full items-start gap-3 rounded-md px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
-      >
-        <span className={cn("flex-1 text-[15px] leading-7", scene && "font-bold")}>
-          {text.lead(block)}
-          {block.text}
-        </span>
-        {block.kind !== "scene" && block.line.cliffhanger ? (
-          <StatusBadge tone="info" icon={null} className="mt-1">
-            {t("script.cliffhanger")}
-          </StatusBadge>
-        ) : null}
-        <StatusBadge
-          tone={text.flagged(block, pending) ? "warn" : "neutral"}
-          icon={null}
-          className="mt-1"
+      <div className="flex items-start">
+        <button
+          type="button"
+          aria-pressed={selected}
+          onClick={onSelect}
+          className="flex min-w-0 flex-1 items-start gap-3 rounded-md px-3 py-2 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring"
         >
-          {text.prov(block, pending)}
-        </StatusBadge>
-      </button>
+          <span className={cn("flex-1 text-[15px] leading-7", scene && "font-bold")}>
+            {text.lead(block)}
+            {block.text}
+            {spoken?.lines ? (
+              <span className="block text-xs leading-5 font-normal text-muted-foreground tabular-nums">
+                {t("script.sceneSpoken", {
+                  s: spoken.seconds.toFixed(1),
+                  dubbed: spoken.dubbed,
+                  lines: spoken.lines,
+                })}
+              </span>
+            ) : null}
+          </span>
+          {block.kind !== "scene" && block.line.cliffhanger ? (
+            <StatusBadge tone="info" icon={null} className="mt-1">
+              {t("script.cliffhanger")}
+            </StatusBadge>
+          ) : null}
+          <StatusBadge
+            tone={text.flagged(block, pending) ? "warn" : "neutral"}
+            icon={null}
+            className="mt-1"
+          >
+            {text.prov(block, pending)}
+          </StatusBadge>
+        </button>
+        {scene ? null : <LineAudio line={dub.lines.get(block.id)} className="py-1 pr-3" />}
+      </div>
       {selected ? (
         <div className="flex flex-col gap-2 px-3 pb-3">
           {editing !== null ? (
@@ -257,6 +289,7 @@ export function ScriptScreenplay({
   routeModel,
   overBudget,
   links,
+  dub,
   onSelect,
   actions,
 }: {
@@ -274,6 +307,7 @@ export function ScriptScreenplay({
   routeModel: string | undefined;
   overBudget: OverBudget | null;
   links: ScriptLinks;
+  dub: DubIndex;
   onSelect: (id: string) => void;
   actions: ScriptActions;
 }) {
@@ -319,6 +353,7 @@ export function ScriptScreenplay({
               routeModel={routeModel}
               overBudget={overBudget?.blockId === b.id ? overBudget : null}
               links={links}
+              dub={dub}
               onSelect={() => onSelect(b.id)}
               actions={actions}
             />
@@ -334,10 +369,12 @@ export function ScriptTable({
   blocks,
   selectedId,
   pendingId,
+  dub,
 }: {
   blocks: Block[];
   selectedId: string | null;
   pendingId: string | null;
+  dub: DubIndex;
 }) {
   const { t } = useTranslation("script");
   const { t: te } = useTranslation("enums");
@@ -358,21 +395,33 @@ export function ScriptTable({
             const l = b.line;
             const spoken = b.kind === "dialogue" || b.kind === "vo";
             const pending = b.id === pendingId;
+            const dubbed = dub.lines.get(b.id);
             return (
               <TableRow key={b.id} data-state={b.id === selectedId ? "selected" : undefined}>
                 <TableCell className="font-mono text-xs">
                   {String(i + 1).padStart(2, "0")}
                 </TableCell>
-                <TableCell>{te(`lineType.${b.kind}`)}</TableCell>
+                <TableCell className="whitespace-nowrap">{te(`lineType.${b.kind}`)}</TableCell>
                 <TableCell className="min-w-64 whitespace-normal">{b.text}</TableCell>
-                <TableCell>{l.character_name ?? t("script.none")}</TableCell>
+                <TableCell className="whitespace-nowrap">
+                  {l.character_name ?? t("script.none")}
+                </TableCell>
                 <TableCell>{(spoken ? l.tone : l.mood) ?? t("script.none")}</TableCell>
                 <TableCell className="whitespace-nowrap">
-                  {l.overlay_shot
-                    ? t("script.overlay", { shot: l.overlay_shot })
-                    : l.duration_s !== null
-                      ? t("script.seconds", { n: l.duration_s })
-                      : t("script.none")}
+                  {dubbed?.audio ? (
+                    <div className="flex items-center gap-2">
+                      <LineAudio line={dubbed} />
+                      {l.overlay_shot ? (
+                        <span>{t("script.overlay", { shot: l.overlay_shot })}</span>
+                      ) : null}
+                    </div>
+                  ) : l.overlay_shot ? (
+                    t("script.overlay", { shot: l.overlay_shot })
+                  ) : l.duration_s !== null ? (
+                    t("script.seconds", { n: l.duration_s })
+                  ) : (
+                    t("script.none")
+                  )}
                 </TableCell>
                 <TableCell
                   className={cn(

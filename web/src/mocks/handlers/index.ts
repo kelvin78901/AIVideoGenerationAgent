@@ -14,9 +14,12 @@
  * POST /series/{id}/suggestions/accept-all, POST /suggestions/{id}/accept|reject|reset|rewrite,
  * PATCH /episodes/{id}, PATCH /beats/{id}, GET /episodes/{id}/script, PATCH /lines/{id},
  * PATCH /scenes/{id}, POST /lines/{id}/rewrite, POST /scenes/{id}/rewrite (M2).
+ * PATCH /assets/{id}, POST /assets/{id}/lock|upload, POST /episodes/{id}/assets/analyze,
+ * GET /episodes/{id}/assets/matrix, the asset products and `asset_unlock` (M3).
  * GET /series/{id}/episodes and GET /episodes/{id}/progress are the backend's too; the demo
  * series lays its later-step data over them (shots, the script gate, the badges after 剧本)
- * until those steps are real.
+ * until those steps are real; so is GET /series/{id}/assets (the demo lays the shots that use each
+ * asset over it, M4).
  * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
  *
  * Handlers that take a series answer only for the demo series; any other series passes through
@@ -37,9 +40,6 @@
  * | POST /products/{id}/compile      | M2             |
  * | POST /impact/preview, apply      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | GET /series/{id}/assets, PATCH /assets/{id} | M3   |
- * | POST /assets/{id}/lock           | M3             |
- * | POST /episodes/{id}/assets/analyze | M3           |
  * | GET /episodes/{id}/shots, PATCH /shots/{id} | M4  |
  * | POST /products/{id}/unadopt, PATCH /versions/{id} | M5 |
  * | GET, PUT /series/{id}/generate-rules | M5        |

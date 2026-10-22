@@ -7,40 +7,63 @@ start): the novel (``tests/fixtures/demo/雨停之前.txt``), its enrichment sug
 v1 local → v2 DeepSeek, adopted, the first suggestion accepted; ``enrich.json``) and its story
 bible (设定提取 v1, read with that accepted addition; ``extract.json``) and its episode plan
 (分集规划 v1 on DeepSeek, three episodes with a $15 budget each; ``split.json``) and episode 1's
-script (剧本化 v1 local → v2 「不满意换一个」 on Kimi, adopted; ``script.json``), each assembled
-exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``. Then the
-novel gate and episode 1's script gate are confirmed, once: a gate the user reopened stays open.
-``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset`` deletes the demo
-series first.
+script (剧本化 v1 local → v2 「不满意换一个」 on Kimi, adopted; ``script.json``) and its asset
+list (素材分析 v1 on DeepSeek, the prototype's 13 assets with their ids; ``assets.json``), each
+assembled exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``.
+Then the novel gate and episode 1's script gate are confirmed, once: a gate the user reopened
+stays open. ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset``
+deletes the demo series first.
 """
 
 from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime
+from typing import Any
 
 from loguru import logger
 from sqlmodel import select
+from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.assets import ops as asset_ops
+from drama_series_agent.assets import service as assets_service
+from drama_series_agent.assets.service import record_asset_gate
 from drama_series_agent.bible.service import BIBLE_SLOT, bible_slicer, materialize
 from drama_series_agent.core.config import SpecConfig, get_config
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
-from drama_series_agent.core.models_db import Episode, Product, Series, SuggestionDecision
+from drama_series_agent.core.models_db import (
+    Asset,
+    Episode,
+    Product,
+    ProductVersion,
+    Series,
+    SuggestionDecision,
+)
 from drama_series_agent.core.paths import REPO_ROOT, database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes
 from drama_series_agent.episodes.service import latest_gate
+from drama_series_agent.modelhub.adapters.mock import MOCK_TEXT_KEY, mock_picture, sine_wav
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
-from drama_series_agent.pipeline.components import enrich, script, split
+from drama_series_agent.pipeline.components import assets, enrich, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
-from drama_series_agent.pipeline.drafts import VersionDraft
+from drama_series_agent.pipeline.components.text import text_settings
+from drama_series_agent.pipeline.components.views import (
+    REF_VIEWS_SLOT,
+    VIEWS,
+    ViewsComponent,
+    negative_for,
+)
+from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
+from drama_series_agent.qa import ocr
 from drama_series_agent.script import service as script_service
+from drama_series_agent.spec.dims import dims
 from drama_series_agent.spec.schema import default_row
 from drama_series_agent.suggestions import service as suggestions
 
@@ -76,6 +99,60 @@ SCRIPT_VERSIONS = (
     ("v1", "local/qwen3.6-27b", "local", "run", datetime(2026, 10, 14, 2, 12, tzinfo=UTC)),
     ("v2", "moonshot/kimi-k2.6", "api", "switch", datetime(2026, 10, 14, 2, 20, tzinfo=UTC)),
 )  # fmt: skip
+# 素材分析 of episode 1 on DeepSeek, 10:25 +08:00.
+ASSETS_MODEL = "deepseek/v4.1-flash"
+ASSETS_AT = datetime(2026, 10, 14, 2, 25, tzinfo=UTC)
+# The prototype's candidates (MSW fixtures/demo/assets.ts): each asset's versions (model, time
+# +08:00 on the demo day, stage) and the candidate it is locked to (None: still to choose).
+# 林晚 is hybrid: a local draft, then the API final from its first picture (SPEC 7.7).
+DEMO_ASSET_VERSIONS: dict[str, tuple[tuple[tuple[str, str, str | None], ...], int | None]] = {
+    "linwan": (
+        (("comfy/qwen-image", "10:31", "draft"), ("google/nano-banana-pro", "10:36", "final")),
+        0,
+    ),
+    "hall": ((("comfy/qwen-image", "10:33", "draft"),), 0),
+    "room": ((("comfy/qwen-image", "10:33", "draft"),), None),
+    "umbrella": ((("comfy/qwen-image", "10:33", "draft"),), 0),
+    "note": ((("comfy/qwen-image", "10:33", "draft"),), 0),
+    "band": ((("comfy/qwen-image", "10:33", "draft"),), None),
+    "phone": ((("comfy/qwen-image", "10:33", "draft"),), 0),
+    "txt1": ((("openai/gpt-image-2", "10:44", None),), None),
+    "txt2": ((("openai/gpt-image-2", "10:44", None),), 0),
+    # Free local auditions, then the MiniMax final from A (design + five emotions), locked whole.
+    "vlinwan": (
+        (("local/qwen3-tts", "10:38", "draft"), ("minimax/speech-2.8-hd", "10:40", "final")),
+        0,
+    ),
+}
+# What each run cost (the API's price × pictures; a voice final is its $3 design + characters).
+DEMO_ASSET_COST = {
+    "google/nano-banana-pro": 0.14,
+    "openai/gpt-image-2": 1.12,
+    "minimax/speech-2.8-hd": 3.004,  # 40 characters: the trial clip and the five emotions
+}
+# 林晚's first two lines (the script's), which her auditions read.
+VOICE_LINES = ("……周屿？", "三年了。他凭什么。")
+VOICE_WAVES = (
+    (10, 18, 26, 14, 22, 30, 12, 20, 16, 28, 10, 18, 24, 12, 20, 14),
+    (14, 22, 12, 28, 18, 10, 24, 30, 16, 12, 22, 18, 10, 26, 14, 20),
+    (8, 16, 22, 30, 12, 18, 26, 10, 20, 28, 14, 10, 24, 16, 22, 12),
+)
+# The prototype's asset ids (MSW fixtures/demo/assets.ts), by analysis key.
+DEMO_ASSET_IDS = {
+    "character:c-linwan": "linwan",
+    "character:c-zhouyu": "zhouyu",
+    "scene:l-stairs:night": "hall",
+    "scene:l-flat:night": "room",
+    "scene:l-store:night": "store",
+    "prop:p-umbrella": "umbrella",
+    "prop:p-note": "note",
+    "prop:p-hairtie": "band",
+    "prop:p-phone": "phone",
+    "text:name:便利贴手写": "txt1",
+    "text:name:手机锁屏时间": "txt2",
+    "voice:c-linwan": "vlinwan",
+    "voice:c-zhouyu": "vzhouyu",
+}
 # Confirmed by the seed (the prototype's demo: 小说 and episode 1's 剧本 已确认).
 CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 
@@ -83,6 +160,16 @@ CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 def script_product_id(episode_id: str) -> str:
     """``demo-e1`` → ``demo-p-script-e1`` (MSW ``scriptProductId``)."""
     return f"demo-p-script-{episode_id.removeprefix('demo-')}"
+
+
+def assets_product_id(episode_id: str) -> str:
+    """``demo-e1`` → ``demo-p-assets-e1``: the episode's 素材分析."""
+    return f"demo-p-assets-{episode_id.removeprefix('demo-')}"
+
+
+def asset_product_id(asset_id: str) -> str:
+    """``linwan`` → ``demo-p-asset-linwan`` (MSW ``assetProductId``)."""
+    return f"demo-p-asset-{asset_id}"
 
 
 async def seed_demo(
@@ -116,12 +203,22 @@ async def seed_demo(
                     component_id=episodes.SCRIPT_COMPONENT,
                     product_id=script_product_id(e["id"]),
                 )
+                await products.ensure(
+                    series_id=DEMO_SERIES_ID,
+                    owner_type="episode",
+                    owner_id=e["id"],
+                    slot=assets.ASSET_LIST_SLOT,
+                    component_id=assets.AssetsComponent.id,
+                    product_id=assets_product_id(e["id"]),
+                )
         await _seed_novel(novel)
         if products is not None and compiler is not None:
             await _seed_enrich(db, novel, products, compiler)
             await _seed_bible(db, novel, products, compiler)
             await _seed_split(db, novel, products, compiler)
             await _seed_script(db, novel, products, compiler)
+            await _seed_assets(db, products, compiler)
+            await _seed_asset_versions(db, products, compiler)
         if gates is not None:
             await _seed_gates(db, gates)
     return created
@@ -149,6 +246,7 @@ async def build_demo(*, reset: bool) -> None:
         products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
         products.on_adopt(episodes.EPISODES_SLOT, episodes.materialize)
         products.on_adopt(episodes.SCRIPT_SLOT, script_service.materialize)
+        products.on_adopt(assets.ASSET_LIST_SLOT, assets_service.materialize)
         if reset:
             await delete_demo(db)
         novel = NovelService(db, BlobStore(), products)
@@ -204,6 +302,7 @@ def slicers() -> Invalidation:
     invalidation.slicer(BIBLE_SLOT, bible_slicer)
     invalidation.slicer(suggestions.SUGGESTIONS_SLOT, suggestions.suggestions_slicer)
     invalidation.slicer(episodes.EPISODES_SLOT, episodes.episodes_slicer)
+    invalidation.slicer(episodes.SCRIPT_SLOT, script_service.script_slicer)
     return invalidation
 
 
@@ -401,6 +500,249 @@ async def _seed_script(
             parent = v.id
         assert parent is not None
         await products.adopt(parent)
+
+
+async def _seed_assets(db: Database, products: ProductService, compiler: PromptCompiler) -> None:
+    """Episode 1's asset list, with the prototype's ids; each asset's product first, so the
+    list's mirror finds them instead of making ones with random ids."""
+    product_id = assets_product_id("demo-e1")
+    async with db.session() as session:
+        product = await session.get(Product, product_id)
+        if product is None or product.current_version_id is not None:
+            return
+        try:
+            inputs = await assets.gather(session, slicers(), DEMO_SERIES_ID, "demo-e1")
+        except PipelineError:
+            return  # the script is not there yet
+    inputs.context["known"] = [
+        {"id": asset_id, "key": key, "kind": key.split(":")[0], "name": ""}
+        for key, asset_id in DEMO_ASSET_IDS.items()
+    ]
+    payload = assets.build(assets.demo_fixture()["answer"], inputs.context)
+    for a in asset_ops.assets_of(payload):
+        await products.ensure(
+            series_id=DEMO_SERIES_ID,
+            owner_type="asset",
+            owner_id=a["id"],
+            slot=asset_ops.slot_of(a["kind"]),
+            component_id=asset_ops.component_of(a["kind"]),
+            product_id=asset_product_id(a["id"]),
+        )
+    intent = compiler.default_intent("assets", "zh-CN")
+    draft = VersionDraft(
+        payload=payload,
+        intent=intent,
+        compiled=compiler.compile("assets", intent, ASSETS_MODEL),
+        model_key=ASSETS_MODEL,
+        where="api",
+        seed=1101,
+        params={"mode": "run", "calls": 1},
+        dependencies=list(inputs.deps),
+        id=f"{product_id}-v1",
+        created_at=ASSETS_AT,
+    )
+    await products.append(product_id, draft, origin="run")
+
+
+def _demo_time(hhmm: str) -> datetime:
+    """``10:31`` on the demo day, +08:00."""
+    h, m = (int(x) for x in hhmm.split(":"))
+    return datetime(2026, 10, 14, h - 8, m, tzinfo=UTC)
+
+
+def _text_reads(exact: str, method: str) -> list[str]:
+    """What OCR reads on each of the four text pictures (the prototype's): drawn by the model,
+    B misreads 点 as 占 and D drops the character before the last (the prototype drops the
+    last, the 。, which passes since 2026-10-21); a base for compositing has none."""
+    if method == "composite":
+        return [""] * 4
+    return [exact, exact.replace("点", "占"), exact, exact[:-2] + exact[-1:]]
+
+
+def _demo_wave(i: int) -> list[float]:
+    """The prototype's 16-bar waveform of candidate ``i``, as the 64 bars a clip has."""
+    return [h / 30 for h in VOICE_WAVES[i % len(VOICE_WAVES)] for _ in range(4)]
+
+
+def _tone(store: BlobStore, text: str, freq: float, **extra: Any) -> dict[str, Any]:
+    """A clip (a tone as long as the line would take) as a ``files[]`` entry."""
+    seconds = round(max(0.5, len(text) * 0.25), 3)
+    sha = store.put_bytes(sine_wav(seconds, freq_hz=freq))
+    return file_entry(extra.pop("role"), sha, "audio/wav", duration_s=seconds, **extra)
+
+
+def _voice_files(
+    store: BlobStore, asset: Asset, stage: str | None
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """林晚's auditions (three drafts reading her two lines) or her final (the design's trial
+    clip and the five emotions)."""
+    cfg = get_config().voice
+    lines = VOICE_LINES
+    if stage == "draft":
+        files, candidates = [], []
+        for i, draft in enumerate(cfg.drafts[:3]):
+            wave = _demo_wave(i)
+            for j, text in enumerate(lines):
+                freq = 180 + 40 * i + 7 * j
+                files.append(
+                    _tone(store, text, freq, role="candidate", idx=i, line=j, waveform=wave)
+                )
+            design = f"{(asset.seed_json or {}).get('description', '')}；{draft.hint}"
+            candidates.append({"label": draft.label, "design": design, "waveform": wave})
+        return {"candidates": candidates}, files
+    trial = "\n".join(lines)
+    files = [_tone(store, trial, 185, role="anchor", idx=None, line=None, waveform=_demo_wave(0))]
+    for k, emotion in enumerate(cfg.emotions):
+        files.append(
+            _tone(
+                store,
+                lines[0],
+                200 + 30 * k,
+                role="variant",
+                idx=k,
+                line=0,
+                emotion=emotion.id,
+                waveform=_demo_wave(k),
+            )
+        )
+    payload = {
+        "provider": "minimax",
+        "voice_id": f"demo-voice-{asset.id}",
+        "emotions": [e.id for e in cfg.emotions],
+        "label": cfg.drafts[0].label,
+    }
+    return payload, files
+
+
+def _asset_files(
+    store: BlobStore, asset: Asset, product_id: str, model: str, stage: str | None
+) -> tuple[dict[str, Any], list[dict[str, Any]]]:
+    """A demo version's payload and candidate files (Mock pictures, or tones for a voice)."""
+    if asset.kind == "voice":
+        return _voice_files(store, asset, stage)
+    size = dims("9:16", "draft" if stage == "draft" else "1080p")
+    text = text_settings(asset, None)
+    reads: list[str | None] = [None] * (1 if stage == "final" else 4)
+    if asset.kind == "text":
+        reads = list(_text_reads(text["exact"], text["method"]))
+    files = []
+    for i, read in enumerate(reads):
+        texts = {MOCK_TEXT_KEY: read} if read else None
+        png = mock_picture(size.w, size.h, model, product_id, stage, i, texts=texts)
+        sha = store.put_bytes(png)
+        files.append(file_entry("candidate", sha, "image/png", w=size.w, h=size.h, idx=i))
+    if asset.kind == "text":
+        checks = [ocr.check(text["exact"], r, text["method"]) for r in reads]
+        return {"candidates": checks, "aspect": "9:16", "refs": [], "text": text}, files
+    return {"candidates": [{} for _ in reads], "aspect": "9:16", "refs": []}, files
+
+
+async def _seed_asset_versions(
+    db: Database, products: ProductService, compiler: PromptCompiler
+) -> None:
+    """The prototype's candidates for the assets that have them, 7 of 13 locked (each with its
+    gate decision), and the views drawn from 林晚's locked picture."""
+    store = BlobStore()
+    invalidation = slicers()
+
+    async def record(session: AsyncSession, p: Product, v: ProductVersion) -> None:
+        await record_asset_gate(session, invalidation, p, "confirm")
+
+    for asset_id, (runs, locked) in DEMO_ASSET_VERSIONS.items():
+        product_id = asset_product_id(asset_id)
+        async with db.session() as session:
+            asset = await session.get(Asset, asset_id)
+            product = await session.get(Product, product_id)
+        if asset is None or product is None or product.current_version_id is not None:
+            continue
+        intent = str((asset.seed_json or {}).get("description") or "")
+        parent = None
+        for n, (model, at, stage) in enumerate(runs, 1):
+            payload, files = _asset_files(store, asset, product_id, model, stage)
+            draft = VersionDraft(
+                payload=payload,
+                files=files,
+                intent=intent,
+                compiled=compiler.compile(product.component_id, intent, model),
+                model_key=model,
+                where="local" if model.startswith("comfy/") else "api",
+                seed=1200 + n,
+                params={"mode": "run", "calls": 1},
+                cost_usd=DEMO_ASSET_COST.get(model, 0.0),
+                stage=stage,
+                id=f"{product_id}-v{n}",
+                created_at=_demo_time(at),
+            )
+            v = await products.append(
+                product_id, draft, origin="run", parent_version_id=parent, adopt=False
+            )
+            parent = v.id
+        if locked is None or parent is None:
+            continue
+        # A voice's final has no candidates: it is locked whole.
+        await products.lock_pick(
+            product_id, parent, None if asset.kind == "voice" else locked, record=record
+        )
+        if asset.kind == "character":
+            await _seed_views(db, products, compiler, asset, store, invalidation)
+
+
+async def _seed_views(
+    db: Database,
+    products: ProductService,
+    compiler: PromptCompiler,
+    asset: Asset,
+    store: BlobStore,
+    invalidation: Invalidation,
+) -> None:
+    """补视图 of a locked character: side, back and four expressions, adopted."""
+    ref_id = asset_product_id(asset.id)
+    views_id = f"demo-p-views-{asset.id}"
+    p = await products.ensure(
+        series_id=DEMO_SERIES_ID,
+        owner_type="asset",
+        owner_id=asset.id,
+        slot=REF_VIEWS_SLOT,
+        component_id=ViewsComponent.id,
+        product_id=views_id,
+    )
+    if p.current_version_id is not None:
+        return
+    async with db.session() as session:
+        dep = await invalidation.dependency(session, ref_id, "")
+    model = "comfy/qwen-image-edit-hq"
+    size = dims("9:16", "draft")
+    files = [
+        file_entry(
+            "view",
+            store.put_bytes(mock_picture(size.w, size.h, model, views_id, view)),
+            "image/png",
+            w=size.w,
+            h=size.h,
+            idx=i,
+            view=view,
+        )
+        for i, view in enumerate(VIEWS)
+    ]
+    intent = compiler.default_intent(ViewsComponent.id, "zh-CN")
+    draft = VersionDraft(
+        payload={
+            "views": list(VIEWS),
+            "from": dep.upstream_hash,
+            "negative": {view: negative_for(view) for view in VIEWS},
+        },
+        files=files,
+        intent=intent,
+        compiled=compiler.compile(ViewsComponent.id, intent, model),
+        model_key=model,
+        where="local",
+        seed=1301,
+        params={"mode": "run", "calls": len(VIEWS)},
+        dependencies=[dep],
+        id=f"{views_id}-v1",
+        created_at=_demo_time("10:37"),
+    )
+    await products.append(views_id, draft, origin="run")
 
 
 async def _seed_gates(db: Database, gates: GateService) -> None:
