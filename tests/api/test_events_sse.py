@@ -26,11 +26,14 @@ async def server() -> AsyncIterator[tuple[str, StudioState]]:
     port = _free_port()
     srv = uvicorn.Server(uvicorn.Config(app, host="127.0.0.1", port=port, log_level="warning"))
     task = asyncio.create_task(srv.serve())
-    for _ in range(250):
-        if srv.started:
+    # Startup seeds the Mock demo series (~2 s here); slow CI runners take several times that.
+    for _ in range(1500):
+        if srv.started or task.done():
             break
         await asyncio.sleep(0.02)
-    assert srv.started
+    if task.done():
+        task.result()  # startup failed: raise its error
+    assert srv.started, "uvicorn did not start within 30 s"
     yield f"http://127.0.0.1:{port}", app.state.studio
     srv.should_exit = True
     await asyncio.wait_for(task, 10)

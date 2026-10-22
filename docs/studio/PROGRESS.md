@@ -4,18 +4,16 @@
 
 ## 当前
 
-- 里程碑：**M3 素材与配音** 已做完，计划 [`plans/M3.md`](plans/M3.md) 全部勾完，报告 [`reports/M3.md`](reports/M3.md)（也是 PR 描述）。
-- 分支：`m3-assets-voice`（从合并 PR #4 后的 main 3ffd6a2 开出）。PR 开往 main，查看：`gh pr view -R kelvin78901/AIVideoGenerationAgent m3-assets-voice`。
+- 里程碑：**M3 素材与配音** 已合并（PR #5，main fb08576），报告 [`reports/M3.md`](reports/M3.md)。下一个是 **M4 分镜与动态分镜**，还没出计划。
+- 分支：`m4-storyboard`（从 main fb08576 先开出，放 M3 合并之后的两项记录；M4 计划批准后接着用）。
 
 ## 已完成的小步
 
-（第 0–14 步的提交和细节已挪进 `reports/M3.md` 的「附：各步的提交」和 DECISIONS 各步的条目。）
-
-- 第 15 步：收尾（本提交，pytest 653、Vitest 278、Playwright 34 全过，mypy 两个平台干净）：SPEC 补 M3 的实际做法（4.1、4.2、5、6.3–6.5、7.5–7.7、9、9.1、12.1）；ROADMAP M3 全部勾选；写 `reports/M3.md`；重截 `assets` / `assets-views`（补视图 6 张）和 `assets-dub-confirm`（改价后的金额）。全套检查见报告「测试和 CI」。
+- M3 合并之后（本提交，DECISIONS 2026-10-21「M3 合并之后」）：Kelvin 定 M2 剧本不调提示词、不开思考；SSE 测试的服务器最多等 30 秒启动（PR #5 的 Windows CI 慢，两个测试在准备阶段超时）。`test_events_sse.py` 2 个过，mypy 干净。
 
 ## 下一步
 
-- **等 Kelvin 看 PR 并合并**。合并后从 main 开 M4 分支，用 `/milestone` 出 M4 计划（分镜与动态分镜；从 M3 挪来的两项：镜头时长用 `pipeline/timing.py:shot_seconds`、改素材时列出受影响的镜头；示例剧集的镜头 MSW 叠加要删）。
+- **`/milestone` 出 M4 计划**（分镜与动态分镜）。从 M3 挪来的两项：镜头时长用 `pipeline/timing.py:shot_seconds`，改素材时列出受影响的镜头；示例剧集的镜头 MSW 叠加要删。计划批准后就在 `m4-storyboard` 上做，不用另开分支。
 - **提醒 Kelvin 重启后端**并 `uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`：2026-10-21 晚上之后改的 `confirm_margin`、OCR 规则、示例便利贴 D 要重启才生效。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -61,6 +59,4 @@
 
 ## 等 Kelvin 的事
 
-- 看 M3 的 PR（描述 = `reports/M3.md`），合并到 main。
 - 看截图（原型没有的部分，都在 `reports/ui/`）：第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 15 步重截的 `assets-views`（6 张视图）；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
-- M2 留下的：看真实冒烟的剧本（`reports/m2-live-smoke-book.txt`），定要不要调提示词、开思考。
