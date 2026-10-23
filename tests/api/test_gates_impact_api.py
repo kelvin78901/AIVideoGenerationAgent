@@ -219,13 +219,19 @@ def test_editing_a_confirmed_script_line(client: TestClient) -> None:
     # An action line is what 素材分析 reads (M3): the episode's asset list goes stale.
     impact = _preview(client, "line_edit", "demo-b2", {"text": "她把伞靠在门边。"})
     # The shot plan reads the asset list's ids only (M4): stale only if they change, and never
-    # redone by a sync.
+    # redone by a sync. The keyframe of the shot that films the line (1-01) reads its text.
     assert _codes(impact) == [
         ("self_script", {"n": 1}, False),
         ("stale_asset_list", {"n": 1}, False),
+        ("stale_keyframe", {"n": 1, "count": 1, "shots": "1-01"}, False),
         ("then_shot_plan", {"n": 1}, True),
+        (
+            "then_keyframe",
+            {"n": 1, "count": 6, "shots": "1-02、1-03、1-04、1-05、1-06、1-07"},
+            True,
+        ),
     ]
-    assert impact["stale"] == {"assets": 1} and impact["rerun_cost_usd"] > 0
+    assert impact["stale"] == {"assets": 1, "storyboard": 1} and impact["rerun_cost_usd"] > 0
     assert impact["change"]["kind"] == "line_edit"
     assert _versions(client, SCRIPT1) == before  # a preview writes nothing
 
@@ -299,6 +305,7 @@ def test_editing_a_confirmed_novel_chapter(client: TestClient) -> None:
     assert [c for c, _, _ in codes if c.startswith("then_")] == [
         "then_asset_list",
         "then_shot_plan",
+        "then_keyframe",
     ]
     assert impact["stale"] == {"novel": 2, "script": 2}
     priced = [x["cost_usd"] for x in impact["lines"] if x["cost_usd"] is not None]
@@ -342,6 +349,11 @@ def test_moving_a_beat_affects_both_episodes(client: TestClient) -> None:
         ("stale_script", {"n": 2}, False),
         ("then_asset_list", {"n": 1}, True),
         ("then_shot_plan", {"n": 1}, True),
+        (
+            "then_keyframe",
+            {"n": 1, "count": 7, "shots": "1-01、1-02、1-03、1-04、1-05、1-06、1-07"},
+            True,
+        ),
         ("gate_script", {"n": 1}, False),
     ]
     assert impact["stale"] == {"script": 2}

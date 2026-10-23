@@ -70,10 +70,11 @@
           "y": 0.92
         }
       ],
-      "keyframe_product_id": "kf-demo-shot-1-01",
+      "keyframe_product_id": "demo-p-kf-1-01",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": true,
+      "confirm_stale": false
     },
     {
       "id": "demo-shot-1-02",
@@ -146,10 +147,11 @@
           "y": 0.8
         }
       ],
-      "keyframe_product_id": "kf-demo-shot-1-02",
+      "keyframe_product_id": "demo-p-kf-1-02",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": true,
+      "confirm_stale": false
     },
     {
       "id": "demo-shot-1-03",
@@ -221,10 +223,11 @@
           "y": 0.62
         }
       ],
-      "keyframe_product_id": "kf-demo-shot-1-03",
+      "keyframe_product_id": "demo-p-kf-1-03",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": true,
+      "confirm_stale": false
     },
     {
       "id": "demo-shot-1-04",
@@ -297,10 +300,11 @@
           "y": 0.7
         }
       ],
-      "keyframe_product_id": "kf-demo-shot-1-04",
+      "keyframe_product_id": "demo-p-kf-1-04",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": false,
+      "confirm_stale": false
     },
     {
       "id": "demo-shot-1-05",
@@ -373,10 +377,11 @@
           "y": 0.62
         }
       ],
-      "keyframe_product_id": "kf-demo-shot-1-05",
+      "keyframe_product_id": "demo-p-kf-1-05",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": false,
+      "confirm_stale": false
     },
     {
       "id": "demo-shot-1-06",
@@ -443,10 +448,11 @@
           "y": 0.8
         }
       ],
-      "keyframe_product_id": "kf-demo-shot-1-06",
+      "keyframe_product_id": "demo-p-kf-1-06",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": false,
+      "confirm_stale": false
     },
     {
       "id": "demo-shot-1-07",
@@ -511,10 +517,11 @@
           "y": 0.62
         }
       ],
-      "keyframe_product_id": "kf-demo-shot-1-07",
+      "keyframe_product_id": "demo-p-kf-1-07",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": false,
+      "confirm_stale": false
     },
     {
       "id": "demo-shot-1-08",
@@ -582,7 +589,8 @@
       "keyframe_product_id": null,
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": false,
+      "confirm_stale": false
     },
     {
       "id": "demo-shot-1-09",
@@ -658,7 +666,8 @@
       "keyframe_product_id": null,
       "video_product_id": null,
       "keyframe_pick": 0,
-      "confirmed": false
+      "confirmed": false,
+      "confirm_stale": false
     }
   ],
   "plan": {
@@ -1248,5 +1257,1117 @@
     "pick": null,
     "settings": null,
     "retired": false
-  }
+  },
+  "keyframes": [
+    {
+      "id": "demo-p-kf-1-01",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-01",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-01-v2",
+      "adopted_version_id": "demo-p-kf-1-01-v2",
+      "locked_hash": "sha256:f488b6ab12878f2ee0af215b9195a0edbe63387e9a63379fae021c12ac347829",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-01-v1",
+          "product_id": "demo-p-kf-1-01",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/b6/b6e6b9b6eb5a06e7b097a941eb86e6e3328c952aa181b968def238ae0b37826a",
+              "sha256": "b6e6b9b6eb5a06e7b097a941eb86e6e3328c952aa181b968def238ae0b37826a",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/89/8929a9bdda06453b0af6d719c8ae53e9b7f991a45c3965cb2d10ec774ce04eb1",
+              "sha256": "8929a9bdda06453b0af6d719c8ae53e9b7f991a45c3965cb2d10ec774ce04eb1",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/19/196b42f12141e13dd17be6a25469ffb54c27ab1babf18e472fa757d0703cbcc1",
+              "sha256": "196b42f12141e13dd17be6a25469ffb54c27ab1babf18e472fa757d0703cbcc1",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/a4/a479f181014c40c6f8c9a2d9b74185c8888f924e7d9c13444e4aace89515a639",
+              "sha256": "a479f181014c40c6f8c9a2d9b74185c8888f924e7d9c13444e4aace89515a639",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:e1967ce83f22b2e58392762ab2fa9c923aacfa46c37eb5e1ddff0955345f81e8",
+          "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image-edit",
+          "where": "local",
+          "seed": 1401,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-kf-1-01-v2",
+          "product_id": "demo-p-kf-1-01",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-kf-1-01-v1",
+          "payload": {
+            "candidates": [
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/94/94a3f1898afad1c7c5ddfafbe87f8fcc9e238aa51590507310a767650153ceaf",
+              "sha256": "94a3f1898afad1c7c5ddfafbe87f8fcc9e238aa51590507310a767650153ceaf",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/fd/fd9bb4a2e5f827b5b0feca8dcb4efa56274be2acf0a694d2af1f24692d802921",
+              "sha256": "fd9bb4a2e5f827b5b0feca8dcb4efa56274be2acf0a694d2af1f24692d802921",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:f488b6ab12878f2ee0af215b9195a0edbe63387e9a63379fae021c12ac347829",
+          "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-pro",
+          "compiled_overridden": false,
+          "model_key": "google/nano-banana-pro",
+          "where": "api",
+          "seed": 1401,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-kf-1-01-v1",
+              "idx": 0
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.14,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image-edit"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image-edit",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-kf-1-01-v2",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-02",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-02",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-02-v2",
+      "adopted_version_id": "demo-p-kf-1-02-v2",
+      "locked_hash": "sha256:ede5b553ef612459131b10c989943539dddcdb5200330195dd243512bb82e87a",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-02-v1",
+          "product_id": "demo-p-kf-1-02",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "老小区楼道 · 夜",
+              "红色长柄伞",
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/6d/6de6ea505a5011447c3643013cce8c6e51f5ce70725675dc45a84373074098b6",
+              "sha256": "6de6ea505a5011447c3643013cce8c6e51f5ce70725675dc45a84373074098b6",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/9d/9da7d764666bc2efdd99845c7c904d221e9fffedeeb36682e68c5e4d2d9c147a",
+              "sha256": "9da7d764666bc2efdd99845c7c904d221e9fffedeeb36682e68c5e4d2d9c147a",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/c4/c479e4b63ac8bbcc2511d45d8365b936306b57cc419a093e54704ef796e6a66d",
+              "sha256": "c479e4b63ac8bbcc2511d45d8365b936306b57cc419a093e54704ef796e6a66d",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/43/438fede06a7ec35688808abd8adcefaa729f1df7ae18fc3475bc961314638031",
+              "sha256": "438fede06a7ec35688808abd8adcefaa729f1df7ae18fc3475bc961314638031",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:fe6391913d29fdcf7355c90d6f9ed69cf8e1c63d558addba3c672c93f3aa0fba",
+          "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image-edit",
+          "where": "local",
+          "seed": 1402,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-kf-1-02-v2",
+          "product_id": "demo-p-kf-1-02",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-kf-1-02-v1",
+          "payload": {
+            "candidates": [
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "老小区楼道 · 夜",
+              "红色长柄伞",
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/b4/b442aead22dd03902dc62c442ceba0a990215e93852923fe753c8eb37fed0e32",
+              "sha256": "b442aead22dd03902dc62c442ceba0a990215e93852923fe753c8eb37fed0e32",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/6c/6ce7fd977e6cd069bacb55121307508609803dfa3870ce9abe15bd01b51772bb",
+              "sha256": "6ce7fd977e6cd069bacb55121307508609803dfa3870ce9abe15bd01b51772bb",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:ede5b553ef612459131b10c989943539dddcdb5200330195dd243512bb82e87a",
+          "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-pro",
+          "compiled_overridden": false,
+          "model_key": "google/nano-banana-pro",
+          "where": "api",
+          "seed": 1402,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-kf-1-02-v1",
+              "idx": 0
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.14,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image-edit"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image-edit",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-kf-1-02-v2",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-03",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-03",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-03-v2",
+      "adopted_version_id": "demo-p-kf-1-03-v2",
+      "locked_hash": "sha256:f9a028536319a0ab83b793456cf01c49be3a6d7a39bb3e770029a4db47527c58",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-03-v1",
+          "product_id": "demo-p-kf-1-03",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ed/ed1a58c7c61367f6524ef72386e345ae36a58c1e0713bcc949858835ec38c120",
+              "sha256": "ed1a58c7c61367f6524ef72386e345ae36a58c1e0713bcc949858835ec38c120",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/9d/9d0c6436438225f6928784f25296c19a28d8f6ce80866d78c56af84b937c261a",
+              "sha256": "9d0c6436438225f6928784f25296c19a28d8f6ce80866d78c56af84b937c261a",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/7a/7aaf2bf53eb22f21c5bbd7f28462bc4a1dfab4e6f59b3d82f556dbc4ddd40412",
+              "sha256": "7aaf2bf53eb22f21c5bbd7f28462bc4a1dfab4e6f59b3d82f556dbc4ddd40412",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/1f/1f94a821e0e46feac94867d993536eb441152e8b0ce11ff28d808618099f62b3",
+              "sha256": "1f94a821e0e46feac94867d993536eb441152e8b0ce11ff28d808618099f62b3",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:1eacd6f9bb940692816a45e5dd0ccbb48cc85629c1b02f28648e39718f084186",
+          "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image-edit",
+          "where": "local",
+          "seed": 1403,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-kf-1-03-v2",
+          "product_id": "demo-p-kf-1-03",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-kf-1-03-v1",
+          "payload": {
+            "candidates": [
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/7b/7bd9b9a3484f9a9e39fb99e0caada4c205f9e850a65b81f219fdc77c0347fa89",
+              "sha256": "7bd9b9a3484f9a9e39fb99e0caada4c205f9e850a65b81f219fdc77c0347fa89",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/da/da46905df7215b1fe8ccb25a3157364b2332e8731cf577b301ab0107d933fbd4",
+              "sha256": "da46905df7215b1fe8ccb25a3157364b2332e8731cf577b301ab0107d933fbd4",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:f9a028536319a0ab83b793456cf01c49be3a6d7a39bb3e770029a4db47527c58",
+          "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-pro",
+          "compiled_overridden": false,
+          "model_key": "google/nano-banana-pro",
+          "where": "api",
+          "seed": 1403,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-kf-1-03-v1",
+              "idx": 0
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.14,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image-edit"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image-edit",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-kf-1-03-v2",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-04",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-04",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-04-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-04-v1",
+          "product_id": "demo-p-kf-1-04",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/01/0161873e1951d88cac952b84a2344ddaf7b98920cc1f80a789dcdee1bb0e7129",
+              "sha256": "0161873e1951d88cac952b84a2344ddaf7b98920cc1f80a789dcdee1bb0e7129",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ef/efdc573cfbb0eff53ea803bc11c89717f64e7f8f0132be612c0017ea091d7085",
+              "sha256": "efdc573cfbb0eff53ea803bc11c89717f64e7f8f0132be612c0017ea091d7085",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/d6/d60936f2f0ed3fa298104b5df1f2951cecdd530150cf465d3ff11a78fabe67a4",
+              "sha256": "d60936f2f0ed3fa298104b5df1f2951cecdd530150cf465d3ff11a78fabe67a4",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/26/265ac8ccc4140af52c35883c7c90c45f34cccc2777e1523dbe0193b4db153a2d",
+              "sha256": "265ac8ccc4140af52c35883c7c90c45f34cccc2777e1523dbe0193b4db153a2d",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:1c3627ae1990067b4ded99f4db9f8239501ddae626e24e617f173f1380d4c76b",
+          "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image-edit",
+          "where": "local",
+          "seed": 1404,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image-edit"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image-edit",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-05",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-05",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-05-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-05-v1",
+          "product_id": "demo-p-kf-1-05",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚",
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/3e/3ec8e13e67199f1195d37ee8dc77654db87ab2c60a432fd777e9f5f7db6de0c4",
+              "sha256": "3ec8e13e67199f1195d37ee8dc77654db87ab2c60a432fd777e9f5f7db6de0c4",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/2e/2ecfa57d002753487061dd160f7c6a7438e7f8524d240dfa0a6d65c3cc41b359",
+              "sha256": "2ecfa57d002753487061dd160f7c6a7438e7f8524d240dfa0a6d65c3cc41b359",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/16/16d5cd3b73d42e889962a7043667e8717305dd9f7c03540b1746bd451525fd08",
+              "sha256": "16d5cd3b73d42e889962a7043667e8717305dd9f7c03540b1746bd451525fd08",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/23/2341fb58e5ed6b4cb15d52a93a727f991f8daafcde109999005e7b1ea629aa73",
+              "sha256": "2341fb58e5ed6b4cb15d52a93a727f991f8daafcde109999005e7b1ea629aa73",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:fc6fb1a98f5474a5a3bb3ec1e3b29c8cf3083bec25ac3fea1f0b587789eafb6d",
+          "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image-edit",
+          "where": "local",
+          "seed": 1405,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image-edit"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image-edit",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-06",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-06",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-06-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-06-v1",
+          "product_id": "demo-p-kf-1-06",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/e2/e2442f470f5fdb1f3aeb6f87d519aa526310f7c9940312649b723cfa7c575320",
+              "sha256": "e2442f470f5fdb1f3aeb6f87d519aa526310f7c9940312649b723cfa7c575320",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/0d/0d162c2aeb1fac31247ecff4b8502691aeb71be25edfd68983d1bf29b93cbdf0",
+              "sha256": "0d162c2aeb1fac31247ecff4b8502691aeb71be25edfd68983d1bf29b93cbdf0",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/c8/c8c492487db2f1bee6c6cdf76301066e22c812e6dea2395e40231651ffcf6c79",
+              "sha256": "c8c492487db2f1bee6c6cdf76301066e22c812e6dea2395e40231651ffcf6c79",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/ab/ab90fac68446a84f42f2fb0dbffd621272d9f54ffb9705c08a3d415c2d5e1fcb",
+              "sha256": "ab90fac68446a84f42f2fb0dbffd621272d9f54ffb9705c08a3d415c2d5e1fcb",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:fd18621ceb297274684774dbd9c1afed4c3441df9a567b3ad25ba966eb4c9413",
+          "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image-edit",
+          "where": "local",
+          "seed": 1406,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image-edit"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image-edit",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-07",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-07",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-07-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-07-v1",
+          "product_id": "demo-p-kf-1-07",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "手机",
+              "手机锁屏时间"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/7b/7bb4cc6f8c7e84ae9eef8209932469a630a19ccd2f01a3de942d941ef48bb6e5",
+              "sha256": "7bb4cc6f8c7e84ae9eef8209932469a630a19ccd2f01a3de942d941ef48bb6e5",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ec/ec589f77e92a1679459ae41071cd04d356a207fc6535a8e19eb2d37c86261939",
+              "sha256": "ec589f77e92a1679459ae41071cd04d356a207fc6535a8e19eb2d37c86261939",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ee/ee6af95e2e2ebbeeb720535b8ee51427080a22838173c416e53fb644fe5d2e78",
+              "sha256": "ee6af95e2e2ebbeeb720535b8ee51427080a22838173c416e53fb644fe5d2e78",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/e2/e28983cda681cdd40b717e11dd64c8a8712f3659b7de6cdbe54924df6be9189a",
+              "sha256": "e28983cda681cdd40b717e11dd64c8a8712f3659b7de6cdbe54924df6be9189a",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:96e74bc647ed69b917a01ad9859d2d2f782ad7ae5e65285423d8086d179c188e",
+          "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled_overridden": false,
+          "model_key": "comfy/qwen-image-edit",
+          "where": "local",
+          "seed": 1407,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled_overridden": false,
+        "model_key": "comfy/qwen-image-edit"
+      },
+      "estimate": {
+        "model_key": "comfy/qwen-image-edit",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    }
+  ]
 }

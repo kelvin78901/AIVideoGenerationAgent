@@ -57,7 +57,9 @@ class ShotOut(BaseModel):
     keyframe_product_id: str | None
     video_product_id: str | None  # M5
     keyframe_pick: int  # the candidate picked on the keyframe's version on screen
-    confirmed: bool
+    confirmed: bool  # its last 「确认这个镜头」 decision (gate ``shot``) is a confirm
+    # Confirmed, but its settings (the plan's ``shot:<id>`` slice) or its keyframe changed since.
+    confirm_stale: bool
 
 
 class ShotPatch(BaseModel):

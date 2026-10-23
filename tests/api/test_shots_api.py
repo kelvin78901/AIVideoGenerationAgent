@@ -90,19 +90,19 @@ def test_the_demo_has_the_prototypes_nine_shots(client: TestClient) -> None:
 def test_an_edit_is_an_adopted_edit_version(client: TestClient) -> None:
     plan = _plan(client)
     before = len(plan["versions"])
-    r = client.patch(f"{V1}/shots/demo-shot-1-02", json={"framing": "wide", "camera_move": "pan"})
+    r = client.patch(f"{V1}/shots/demo-shot-1-05", json={"framing": "wide", "camera_move": "pan"})
     assert r.status_code == 200, r.text
     assert (r.json()["framing"], r.json()["camera_move"]) == ("wide", "pan")
     plan = _plan(client)
     assert len(plan["versions"]) == before + 1
     last = plan["versions"][-1]
     assert last["origin"] == "edit" and plan["adopted_version_id"] == last["id"]
-    (row,) = _rows(client, Shot, Shot.id == "demo-shot-1-02")
+    (row,) = _rows(client, Shot, Shot.id == "demo-shot-1-05")
     assert row.framing == "wide" and row.version_id == last["id"]
     blocking = [{"id": "camera", "kind": "camera", "label": "", "x": 0.2, "y": 0.9}]
-    r = client.patch(f"{V1}/shots/demo-shot-1-02", json={"blocking": blocking})
+    r = client.patch(f"{V1}/shots/demo-shot-1-05", json={"blocking": blocking})
     assert r.json()["blocking"] == blocking
-    bad = client.patch(f"{V1}/shots/demo-shot-1-02", json={"asset_ids": ["nobody"]})
+    bad = client.patch(f"{V1}/shots/demo-shot-1-05", json={"asset_ids": ["nobody"]})
     assert bad.status_code == 422 and bad.json()["detail"]["code"] == "asset_not_found"
     assert client.patch(f"{V1}/shots/nope", json={"framing": "wide"}).status_code == 404
 
@@ -119,7 +119,7 @@ def test_a_dialogue_shot_is_never_shorter_than_its_audio(client: TestClient) -> 
     )
     back = client.patch(f"{V1}/shots/demo-shot-1-04", json={"duration_s": None}).json()
     assert (back["duration_s"], back["duration_source"]) == (4.5, "audio")
-    silent = client.patch(f"{V1}/shots/demo-shot-1-02", json={"duration_s": 2.5}).json()
+    silent = client.patch(f"{V1}/shots/demo-shot-1-05", json={"duration_s": 2.5}).json()
     assert (silent["duration_s"], silent["duration_source"]) == (2.5, "manual")
 
 

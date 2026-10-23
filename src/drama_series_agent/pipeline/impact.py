@@ -37,6 +37,7 @@ from drama_series_agent.core.models_db import (
     Episode,
     Product,
     ProductVersion,
+    Shot,
     new_id,
 )
 from drama_series_agent.episodes.schema import BeatPatch
@@ -154,7 +155,8 @@ class Node:
     owner_id: str
     locked: bool
     edited: bool  # its adopted version is the user's edit
-    n: int | None  # episode number of an episode's product
+    n: int | None  # episode number of an episode's (or one of its shots') product
+    label: str | None = None  # a shot's 「1-04」
 
 
 @dataclass
@@ -170,6 +172,11 @@ class _Preview:
     change: ImpactChangeIn
     planned: PlannedChange
     stale: dict[str, int] = field(default_factory=dict)
+
+
+def label_order(label: str) -> tuple[int, ...]:
+    """「2-01」 after 「1-10」."""
+    return tuple(int(x) for x in label.split("-") if x.isdigit())
 
 
 def rank(node: Node) -> tuple[int, int]:
@@ -192,19 +199,30 @@ async def series_graph(
     origins = {v.id: v.origin for v in versions.all()}
     rows = await session.exec(select(Episode).where(Episode.series_id == series_id))
     episodes = {e.id: e.idx for e in rows.all()}
-    nodes = {
-        p.id: Node(
+    shots = {
+        s.id: (episodes.get(s.episode_id), s.idx)
+        for s in (await session.exec(select(Shot).where(Shot.series_id == series_id))).all()
+    }
+
+    def node(p: Product) -> Node:
+        n, label = None, None
+        if p.owner_type == "episode":
+            n = episodes.get(p.owner_id)
+        elif p.owner_type == "shot" and p.owner_id in shots:
+            n, idx = shots[p.owner_id]
+            label = f"{n}-{idx:02d}"
+        return Node(
             id=p.id,
             slot=p.slot,
             owner_type=p.owner_type,
             owner_id=p.owner_id,
             locked=bool(p.locked_hash),
             edited=origins.get(p.adopted_version_id or "") == "edit",
-            n=episodes.get(p.owner_id) if p.owner_type == "episode" else None,
+            n=n,
+            label=label,
         )
-        for p in products
-    }
-    return nodes, edges
+
+    return {p.id: node(p) for p in products}, edges
 
 
 class ImpactService:
@@ -411,15 +429,19 @@ class ImpactService:
         optional: bool,
     ) -> list[ImpactLineOut]:
         """One line per slot (and episode): 60 lines of dubbing are 「配音 · 60 句」, with their
-        costs added up. Slots made by the dozen always say how many."""
+        costs added up. Slots made by the dozen always say how many; a shot's products say
+        which shots (「1-01、1-04」)."""
         groups: dict[tuple[str, int | None], list[str]] = {}
         for i in ids:
             groups.setdefault((nodes[i].slot, nodes[i].n), []).append(i)
         out: list[ImpactLineOut] = []
         for (slot, n), members in groups.items():
             params: dict[str, Any] = {"n": n} if n is not None else {}
-            if len(members) > 1 or slot in self._products.quiet_slots:
+            labels = [x for i in members if (x := nodes[i].label)]
+            if len(members) > 1 or slot in self._products.quiet_slots or labels:
                 params["count"] = len(members)
+            if labels:
+                params["shots"] = "、".join(sorted(labels, key=label_order))
             priced = [c for i in members if (c := costs.get(i)) is not None]
             out.append(
                 ImpactLineOut(

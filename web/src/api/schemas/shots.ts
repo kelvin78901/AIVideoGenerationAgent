@@ -81,6 +81,8 @@ export const ShotSchema = z.object({
   /** Picked keyframe candidate (0-based) in the current version. */
   keyframe_pick: z.number().int().nonnegative(),
   confirmed: z.boolean(),
+  /** Confirmed, but the shot's settings or its keyframe changed since (「待更新」). */
+  confirm_stale: z.boolean(),
 });
 export type Shot = z.infer<typeof ShotSchema>;
 

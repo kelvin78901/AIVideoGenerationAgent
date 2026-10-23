@@ -315,6 +315,7 @@ class Component(ABC):
             component_id=self.id,
             series_id=ctx.product.series_id,
             episode_id=episode_id,
+            shot_id=ctx.product.owner_id if ctx.product.owner_type == "shot" else None,
             product_id=ctx.product.id,
             job_id=ctx.job_id,
             attempt=ctx.attempt,

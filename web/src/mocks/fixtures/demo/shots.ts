@@ -271,6 +271,7 @@ export const shots: Shot[] = seeds.map((s, i) => ({
   video_product_id: videoProductId(s.label),
   keyframe_pick: 0,
   confirmed: s.confirmed ?? false,
+  confirm_stale: false,
 }));
 
 const planV1 = demoVersion(PRODUCT_PLAN, "plan", {

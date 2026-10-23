@@ -12,17 +12,18 @@
 - M3 合并之后（5b3de78）：M2 剧本不调提示词、不开思考；SSE 测试的服务器最多等 30 秒启动。
 - 第 0 步（2d9d3de）：存计划 `plans/M4.md`；DECISIONS 记 Kelvin 定的四项和不在 M4 做的；ROADMAP 两条验收注明「9 张关键帧」实际是 7 张（1-08、1-09 接尾帧）。只改文档。
 - 第 1 步（052ef9b，DECISIONS「M4 第 1 步」）：迁移 `0018` 表 `shot`（`models_db.Shot`）；`Component.cascade_rerun`；流水线顺序加 `shot_plan` / `keyframe`（归「分镜」）；`timing.shot_duration`、`longest_take_s`；词条 `enums.durationSource`。前端槽位、owner `shot`、镜头枚举 M0.5 已有。`tests/unit/test_timing.py` 6 个；全量 pytest 668 个、vitest 278 个过；ruff、mypy（含 linux）干净。
-- 第 2 步（本提交，DECISIONS「M4 第 2 步」）：组件 `plan`（`pipeline/components/plan.py`，`cascade_rerun = False`）、规则 `shots/ops.py`（补齐覆盖、插入镜头、接尾帧、id 沿用、拆分合并、改字段）、`shots/service.py`（读当前版本、时长现算、物化 + 关键帧产物、`ensure_plan`）、接口 `api/routes/shots.py`；剧本切片 `shots`（只有结构、不含文字，按 Kelvin 定第 3 项）、素材清单切片 `ids`；影响范围新行 `stale_shot_plan` / `then_shot_plan`，「确认并同步」估价不算级联不跑的产物（`component.reruns_in_cascade`）；`on_adopt` 可挂多个；`scene_numbers` 挪到 `episodes.service`；`shot_count`；示例种子 `plan.json`；导出 `web/src/test/data/shots.json`。前端契约 `scene_label` → `scene_no` / `scene_place`，加 `seed_changed`、`min_s`、`planned_s`、`manual_s`、`longest_s`、`split_hint`；MSW 镜头只管示例第 1 集。新测试 `tests/unit/test_shot_ops.py` 9 个、`tests/api/test_shots_api.py` 7 个；全量 pytest 676 个、Playwright e2e 34 个、vitest 278 个过；ruff、mypy 干净。
+- 第 2 步（0b80875，DECISIONS「M4 第 2 步」）：组件 `plan`（`pipeline/components/plan.py`，`cascade_rerun = False`）、规则 `shots/ops.py`（补齐覆盖、插入镜头、接尾帧、id 沿用、拆分合并、改字段）、`shots/service.py`（读当前版本、时长现算、物化 + 关键帧产物、`ensure_plan`）、接口 `api/routes/shots.py`；剧本切片 `shots`（只有结构、不含文字，按 Kelvin 定第 3 项）、素材清单切片 `ids`；影响范围新行 `stale_shot_plan` / `then_shot_plan`，「确认并同步」估价不算级联不跑的产物（`component.reruns_in_cascade`）；`on_adopt` 可挂多个；`scene_numbers` 挪到 `episodes.service`；`shot_count`；示例种子 `plan.json`；导出 `web/src/test/data/shots.json`。前端契约 `scene_label` → `scene_no` / `scene_place`，加 `seed_changed`、`min_s`、`planned_s`、`manual_s`、`longest_s`、`split_hint`；MSW 镜头只管示例第 1 集。新测试 `tests/unit/test_shot_ops.py` 9 个、`tests/api/test_shots_api.py` 7 个；全量 pytest 676 个、Playwright e2e 34 个、vitest 278 个过；ruff、mypy 干净。
+- 第 3 步（本提交，DECISIONS「M4 第 3 步」）：组件 `kf`（`pipeline/components/kf.py`：读已采纳的分镜规划和剧本、只传锁定的参考图（角色 → 场景 → 道具 → 画面文字，按 `max_refs` / 工作流槽数）、站位转文字、混合出终版）；分镜规划切片 `shot:<id>`（`plan.shot_plan_slicer`）；`keyframe` 进 `MEDIA_SLOTS`；`Invalidation.check` + `kf.stale_aspect`；`model_call.shot_id`；确认 / 取消确认镜头（`lock_pick` + gate `shot` 的决定，`shots.service.record_shot_gate`）、`confirm_stale`、409 `shot_confirmed`；`lock_spec`；示例 7 个关键帧（`demo-p-kf-1-0X`，1-01–1-03 已确认）；`shots.json` 加关键帧产物；影响范围里的关键帧行写镜头号（`Node.label`，`stale_keyframe` / `then_keyframe` / `uses_keyframe` 加词条）；4 个错误码词条。新测试 `tests/api/test_keyframes_api.py` 7 个、`tests/unit/test_kf.py` 5 个；全量 pytest 688 个过；ruff、mypy（含 linux）、tsc、prettier 干净；vitest 278 个、eslint 过。
 
 ## 下一步
 
-- **第 3 步 关键帧（后端，Mock）**（计划「小步」3）。**已起草、没提交**（见下「没提交的改动」）：`pipeline/components/kf.py`（`gather`、`pick_refs`、`ref_limit` 按工作流的 `ref_image` 槽数、`blocking_text`、`stale_aspect`、`KfComponent`）、模板 `prompts/templates/kf/default.j2`、测试 `tests/api/test_keyframes_api.py`（8 个，现在会失败）。还要做：
-  1. `pipeline/components/plan.py` 加 `shot_plan_slicer`（`shot:<id>` = scene_id、shot_type、framing、camera_move、blocking、asset_ids、line_ids、tail_from），在 `api/state.py` 和 `studio/demo.py:slicers()` 登记；`state.py` 加 `KfComponent`。
-  2. `Invalidation` 加按槽位的额外检查（`check(slot, fn)`，`stale_ids` 里对显示的版本调用），`keyframe` 登记 `kf.stale_aspect`。
-  3. `Component._call_ctx` 带 `shot_id`（owner 是镜头时）。
-  4. `shots/service.py`：确认 = `lock_pick`（当前版本 + 选中那张）+ `GateDecision(gate="shot", scope_id=镜头 id, hashes={分镜规划: shot 切片哈希, 关键帧: 锁定哈希})`，没版本 409 `nothing_to_confirm`，已锁定（待更新后再确认）只记新决定；连续动作只记决定；取消确认 = 解锁 + `reopen`；已确认的镜头改任何字段 409 `shot_confirmed`（第 4 步接影响范围）；`ShotOut` 加 `confirm_stale`（前端 zod 一起加）；`confirmed` 读最后一条决定。`on_adopt("keyframe")` 加 `lock_spec`：`locked_at` 为空就写。
-  5. 示例：`_seed_plan` 前先用固定 id `demo-p-kf-1-0X` 建 7 个关键帧产物；`_seed_keyframes`：1-01–1-03 本地草稿（3 张，10:55）+ Nano Banana Pro 终版（1 张，11:02，$0.14）并确认，1-04–1-07 草稿（11:06）；用 `kf.gather` + `kf.pick_refs` 算依赖。重导 `shots.json`（含关键帧产物）。
-- **提醒 Kelvin 重启后端并 `demo --reset`**（第 1 步加了迁移 `0018`，第 2 步加了示例分镜）：`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
+- **第 4 步 分镜闸门、进度、影响范围（后端）**（计划「小步」4）。从 `pipeline/gates.py` 开始：
+  1. `GATES` 加 `storyboard`（owner 集，锁 `shot_plan`）和可插拔的前提检查：本集镜头都已确认、都不是 `confirm_stale`，否则 409 `shots_not_confirmed {count, labels}`；确认时锁分镜规划，重开时解锁。`ShotService._unconfirm` 里一起重开已确认的分镜闸门（现在只解锁关键帧 + 记 `reopen`）。
+  2. 进度：分镜一步 = 已确认 / 镜头数 + 待更新数（`confirm_stale` 或关键帧 stale）。
+  3. 影响范围：`shot_edit`（`ShotService.patch` 现在对已确认的镜头一律 409 `shot_confirmed`，改成走预览）、后端 `spec_aspect`（`kf.stale_aspect` 已能判断旧画幅；`PUT …/spec?confirmed_impact=` 校验 id）、`asset_edit` / `asset_unlock` / `line_edit` 补镜头行。
+  4. 测试见计划第 4 步的五条。分镜闸门锁住分镜规划后，`ShotService._locate(editable=True)` 会报 `product_locked`：改镜头也要走 `shot_edit`。
+- **第 9 步提醒**：本地没有锁定参考图时要换 Qwen-Image（2511 只能按参考图编辑），第 3 步没做（DECISIONS「M4 第 3 步」）。
+- **提醒 Kelvin 重启后端并 `demo --reset`**（第 1 步加了迁移 `0018`，第 2、3 步加了示例分镜和关键帧；本地库里关键帧产物是第 2 步的随机 id，`--reset` 后才是 `demo-p-kf-1-0X`）：`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -31,9 +32,11 @@
 
 ## 没提交的改动
 
-- 第 3 步的草稿（没接线、没进 git）：`src/drama_series_agent/pipeline/components/kf.py`、`src/drama_series_agent/prompts/templates/kf/default.j2`、`tests/api/test_keyframes_api.py`。在它们接好之前，全量 pytest 里 `test_keyframes_api.py` 会失败。
+- 无。
 
 ## 踩过的坑 / 临时绕过
+
+- **临时脚本里 `create_app()` 一定先设 `DRAMA_HOME` 到临时目录**（`core/paths.py`；不是 `DRAMA_STUDIO_HOME`），否则开的是真实的 `~/.drama-studio`：第 3 步就这样把示例关键帧种进了 Kelvin 的库（Mock，没花钱，和重启后端的效果一样）。
 
 - **测试别在「档案写完」后立刻断言任务状态**：任务结束比档案写入晚一点，CI 慢机器上会读到 running（`test_rescan_replaces_a_running_scan`，2026-10-21 修：等任务都结束再比）。
 - **同一次物化建的行 `created_at` 可能相同**（Windows 时钟粗，Linux 细，结果相反）：别拿它排序或当次序；出场矩阵改成按分析里的顺序（`seed_json.order`）再按 id。

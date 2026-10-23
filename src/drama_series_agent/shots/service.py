@@ -10,12 +10,22 @@ plan (M3: 描述 = 意图层).
 
 How long a shot runs is worked out when read (``timing.shot_duration``, Kelvin 2026-10-21):
 dubbing again changes it without a new version.
+
+**确认这个镜头** (``confirmed: true``) locks the keyframe's picked candidate (``lock_pick``; a
+final's lone picture is locked as it is) and writes the shot's own ``gate_decision`` (gate
+``shot``, scope the shot id) with the hashes of its settings (the plan's ``shot:<id>`` slice)
+and of the locked keyframe, in one transaction. A continuous shot has no keyframe: only the
+decision. Taking it back unlocks the keyframe and writes ``reopen``. A confirmed shot is
+「待更新」 (``confirm_stale``) when its settings or its keyframe changed since; it is not edited
+in place (409 ``shot_confirmed``; that goes through the impact preview, M4 step 4). The output
+spec locks when the first keyframe is adopted (``lock_spec``, SPEC 13.3).
 """
 
 from __future__ import annotations
 
 import re
 from collections.abc import Awaitable, Callable, Iterable
+from datetime import datetime, timedelta
 from typing import Any
 
 from sqlmodel import col, select
@@ -24,7 +34,9 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import (
     Episode,
+    GateDecision,
     Job,
+    OutputSpecRow,
     Product,
     ProductVersion,
     Scene,
@@ -32,15 +44,17 @@ from drama_series_agent.core.models_db import (
     Shot,
     utcnow,
 )
-from drama_series_agent.episodes.service import scene_numbers
+from drama_series_agent.episodes.service import latest_gate, scene_numbers
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
 from drama_series_agent.pipeline.components.plan import (
     SHOT_PLAN_SLOT,
     PlanComponent,
     episode_assets,
     plan_product,
+    shot_slice,
 )
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.pipeline.timing import ShotDuration, line_seconds, shot_duration
@@ -49,6 +63,7 @@ from drama_series_agent.shots.schema import ShotOut, ShotPatch, ShotSplitIn
 
 KEYFRAME_SLOT = "keyframe"
 KF_COMPONENT = "kf"
+SHOT_GATE = "shot"
 # The longest take the video route can make (seconds); None when no model on it says.
 LongestTake = Callable[[], Awaitable[float | None]]
 _HEADING_MARKS = re.compile(r"^(?:[日夜晨昏][　\s]+)?(?:[内外][　\s]+)?")
@@ -149,6 +164,59 @@ async def ensure_plan(session: AsyncSession, product: Product, version: ProductV
         )
 
 
+async def lock_spec(session: AsyncSession, product: Product, version: ProductVersion) -> None:
+    """The output spec locks when the series' first keyframe is adopted (SPEC 13.3); later
+    ones leave the time as it is."""
+    row = await session.get(OutputSpecRow, product.series_id)
+    if row is not None and row.locked_at is None:
+        row.locked_at = utcnow()
+        session.add(row)
+
+
+async def record_shot_gate(
+    session: AsyncSession,
+    invalidation: Invalidation,
+    series_id: str,
+    shot_id: str,
+    plan: Product,
+    keyframe: Product | None,
+    action: str,
+    at: datetime | None = None,
+) -> None:
+    """The shot's own ``gate_decision``: on ``confirm`` the hashes of its settings and of its
+    locked keyframe. Written in the caller's transaction (the lock's)."""
+    hashes: dict[str, str] = {}
+    if action == "confirm":
+        if h := await invalidation.current_hash(session, plan.id, shot_slice(shot_id)):
+            hashes[plan.id] = h
+        if keyframe is not None and (h := await invalidation.current_hash(session, keyframe.id)):
+            hashes[keyframe.id] = h
+    last = await latest_gate(session, SHOT_GATE, shot_id)
+    at = at or utcnow()
+    if last is not None and at <= last.decided_at:  # keep them in order
+        at = last.decided_at + timedelta(microseconds=1)
+    session.add(
+        GateDecision(
+            series_id=series_id,
+            gate=SHOT_GATE,
+            scope_id=shot_id,
+            action=action,
+            product_hashes_json=hashes,
+            decided_at=at,
+        )
+    )
+
+
+async def shot_decisions(session: AsyncSession, shot_ids: Iterable[str]) -> dict[str, GateDecision]:
+    """Each shot's last 确认这个镜头 decision."""
+    rows = await session.exec(
+        select(GateDecision)
+        .where(GateDecision.gate == SHOT_GATE, col(GateDecision.scope_id).in_(list(shot_ids)))
+        .order_by(col(GateDecision.decided_at))
+    )
+    return {d.scope_id: d for d in rows.all()}
+
+
 async def line_audio_seconds(session: AsyncSession, line_ids: Iterable[str]) -> dict[str, float]:
     """Each dubbed line's audio length (its adopted take)."""
     products = (
@@ -201,11 +269,13 @@ class ShotService:
         db: Database,
         products: ProductService,
         runs: RunService,
+        invalidation: Invalidation,
         longest: LongestTake | None = None,
     ) -> None:
         self._db = db
         self._products = products
         self._runs = runs
+        self._invalidation = invalidation
         self._longest = longest
 
     # ------------------------------------------------------------------ reads
@@ -232,6 +302,15 @@ class ShotService:
                 ).all()
             }
             keyframes = await keyframe_products(session, [s["id"] for s in shots])
+            decisions = await shot_decisions(session, [s["id"] for s in shots])
+            stale_kf = await self._invalidation.stale_ids(session, keyframes.values())
+            settings = {
+                s["id"]: await self._invalidation.current_hash(
+                    session, plan.id, shot_slice(s["id"])
+                )
+                for s in shots
+                if plan is not None
+            }
         longest = await self._longest() if self._longest is not None else None
         labels = {s["id"]: f"{episode.idx}-{i:02d}" for i, s in enumerate(shots, 1)}
         out = []
@@ -245,6 +324,10 @@ class ShotService:
             intent = str(((kf.prompt_json if kf else None) or {}).get("intent") or seed)
             edited_from = ((kf.settings_json if kf else None) or {}).get("seed")
             pick = (kf.pick_json if kf else None) or {}
+            decided = decisions.get(s["id"])
+            confirmed = decided is not None and decided.action == "confirm"
+            locked = (decided.product_hashes_json if decided else None) or {}
+            changed = plan is not None and locked.get(plan.id) != settings.get(s["id"])
             out.append(
                 ShotOut(
                     id=s["id"],
@@ -280,7 +363,8 @@ class ShotService:
                     keyframe_pick=int(pick.get("idx") or 0)
                     if kf is not None and pick.get("version_id") == kf.current_version_id
                     else 0,
-                    confirmed=False,
+                    confirmed=confirmed,
+                    confirm_stale=confirmed and (changed or (kf is not None and kf.id in stale_kf)),
                 )
             )
         return out
@@ -298,8 +382,10 @@ class ShotService:
         """改镜头设定. The plan's fields append an ``edit`` version; the picture description and
         the picked candidate are the keyframe product's."""
         fields = body.model_fields_set
-        if body.confirmed is not None:
-            raise PipelineError(409, "component_not_ready", id=KF_COMPONENT)
+        if body.confirmed is False:
+            await self._unconfirm(shot_id)
+        elif fields - {"confirmed"} and await self._confirmed(shot_id):
+            raise PipelineError(409, "shot_confirmed", id=shot_id)
         changes: dict[str, Any] = {
             k: getattr(body, k)
             for k in ("shot_type", "framing", "camera_move", "audio_mode")
@@ -341,6 +427,8 @@ class ShotService:
                 if kf.current_version_id is None:
                     raise PipelineError(409, "nothing_to_pick", id=shot_id)
                 await self._products.set_pick(kf.id, kf.current_version_id, body.keyframe_pick)
+        if body.confirmed:
+            await self._confirm(shot_id)
         return await self.get(shot_id)
 
     async def split(self, shot_id: str, body: ShotSplitIn) -> list[ShotOut]:
@@ -362,6 +450,65 @@ class ShotService:
         payload, _ = _apply(lambda: ops.merge(v.payload_json, shot_id, order))
         await self._products.append_edit(p.id, v, payload)
         return await self.of_episode(p.owner_id)
+
+    # ------------------------------------------------------------------ confirming
+
+    async def _confirmed(self, shot_id: str) -> bool:
+        async with self._db.session() as session:
+            last = await latest_gate(session, SHOT_GATE, shot_id)
+        return last is not None and last.action == "confirm"
+
+    async def _confirm(self, shot_id: str) -> None:
+        """「确认这个镜头」: lock the picked keyframe with the shot's decision. A keyframe locked
+        already (a 「待更新」 shot confirmed again) or a continuous shot only gets the decision."""
+        p, v = await self._locate(shot_id, editable=False)
+        shot = ops.find_shot(v.payload_json, shot_id)
+        assert shot is not None
+        if shot["shot_type"] == "continuous":
+            tail = shot.get("tail_from")
+            if not tail or ops.find_shot(v.payload_json, tail) is None:
+                raise PipelineError(409, "no_tail_shot", id=shot_id)
+            await self._decide(shot_id, p, None, "confirm")
+            return
+        kf = await self._keyframe(shot_id)
+        if kf.current_version_id is None:
+            raise PipelineError(409, "nothing_to_confirm", id=shot_id)
+        if kf.locked_hash:
+            await self._decide(shot_id, p, kf, "confirm")
+            return
+        async with self._db.session() as session:
+            current = await session.get(ProductVersion, kf.current_version_id)
+        assert current is not None
+        candidates = [f for f in current.files_json if f.get("role") == "candidate"]
+        pick = kf.pick_json or {}
+        idx: int | None = int(pick.get("idx") or 0) if pick.get("version_id") == current.id else 0
+        if len(candidates) <= 1:
+            idx = None  # an API final's lone picture (or an upload) is locked as it is
+
+        async def record(session: AsyncSession, keyframe: Product, _: ProductVersion) -> None:
+            await record_shot_gate(
+                session, self._invalidation, p.series_id, shot_id, p, keyframe, "confirm"
+            )
+
+        await self._products.lock_pick(kf.id, current.id, idx, record=record)
+
+    async def _unconfirm(self, shot_id: str) -> None:
+        """取消确认: unlock the keyframe and write ``reopen`` (nothing when not confirmed)."""
+        if not await self._confirmed(shot_id):
+            return
+        p, _ = await self._locate(shot_id, editable=False)
+        async with self._db.session() as session:
+            kf = (await keyframe_products(session, [shot_id])).get(shot_id)
+        if kf is not None and kf.locked_hash:
+            await self._products.unlock(kf.id)
+        await self._decide(shot_id, p, None, "reopen")
+
+    async def _decide(self, shot_id: str, plan: Product, kf: Product | None, action: str) -> None:
+        async with self._db.session() as session:
+            await record_shot_gate(
+                session, self._invalidation, plan.series_id, shot_id, plan, kf, action
+            )
+            await session.commit()
 
     # ------------------------------------------------------------------ internals
 

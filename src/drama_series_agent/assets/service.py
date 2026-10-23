@@ -89,7 +89,7 @@ from drama_series_agent.pipeline.components.voice import VOICE_SLOT
 from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
-from drama_series_agent.pipeline.impact import ImpactService, series_graph
+from drama_series_agent.pipeline.impact import ImpactService, label_order, series_graph
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
@@ -633,7 +633,8 @@ class AssetService:
         self, session: AsyncSession, asset: Asset, product: Product
     ) -> list[dict[str, Any]]:
         """Impact lines for what reads the locked reference: views, assets drawn from it
-        (names), the lines dubbed in a voice (how many)."""
+        (names), the shots' keyframes drawn from it (labels), the lines dubbed in a voice (how
+        many)."""
         nodes, edges = await series_graph(session, product.series_id)
         users = sorted({down for down, up, _ in edges if up == product.id})
         owners = {nodes[u].owner_id for u in users if u in nodes}
@@ -641,13 +642,15 @@ class AssetService:
             a.id: a.name
             for a in (await session.exec(select(Asset).where(col(Asset.id).in_(owners))))
         }
-        by_slot: dict[str, list[str]] = {}
+        by_slot: dict[str, list[tuple[tuple[int, ...], str]]] = {}
         for u in users:
             node = nodes.get(u)
             if node is not None:
-                by_slot.setdefault(node.slot, []).append(names.get(node.owner_id, node.owner_id))
+                name = names.get(node.owner_id) or node.label or node.owner_id
+                by_slot.setdefault(node.slot, []).append((label_order(node.label or ""), name))
         lines: list[dict[str, Any]] = []
-        for slot, who in by_slot.items():
+        for slot, entries in by_slot.items():
+            who = [name for _, name in sorted(entries)]
             params: dict[str, Any] = {"count": len(who), "names": "、".join(who)}
             if slot == REF_VIEWS_SLOT:
                 params = {"name": asset.name}

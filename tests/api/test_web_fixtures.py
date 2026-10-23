@@ -326,16 +326,21 @@ SHOTS_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "shots.json"
 
 
 def test_web_shots_fixture_is_current(client: TestClient) -> None:
-    """Episode 1's shots and its 分镜规划 product (``test/fakes/shots.ts``). A shot's keyframe
-    product is made with a random id when the plan is mirrored: pinned here."""
+    """Episode 1's shots, its 分镜规划 product and the shots' keyframe products (the demo's
+    ``demo-p-kf-1-0X``; ``test/fakes/shots.ts``)."""
     shots = client.get(f"{V1}/episodes/demo-e1/shots").json()
     owned = client.get(f"{V1}/products", params={"owner": "episode:demo-e1"}).json()
-    export = {"shots": shots, "plan": next(p for p in owned if p["slot"] == "shot_plan")}
-    text = json.dumps(_fixed(export), ensure_ascii=False)
-    for s in shots:
-        if s["keyframe_product_id"]:
-            text = text.replace(s["keyframe_product_id"], f"kf-{s['id']}")
-    text = json.dumps(json.loads(text), ensure_ascii=False, indent=2) + "\n"
+    keyframes = [
+        client.get(f"{V1}/products/{s['keyframe_product_id']}").json()
+        for s in shots
+        if s["keyframe_product_id"]
+    ]
+    export = {
+        "shots": shots,
+        "plan": next(p for p in owned if p["slot"] == "shot_plan"),
+        "keyframes": keyframes,
+    }
+    text = json.dumps(_fixed(export), ensure_ascii=False, indent=2) + "\n"
     if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
         with open(SHOTS_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
             f.write(text)

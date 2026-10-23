@@ -50,6 +50,18 @@ DEMO_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "demo" / "plan.json"
 SHOT_PLAN_SLOT = "shot_plan"
 SCRIPT_SHOTS_SLICE = "shots"
 ASSET_IDS_SLICE = "ids"
+SHOT_SLICE = "shot:"
+# What a shot's keyframe is drawn from (``shot:<id>``): not its length or sound.
+SHOT_SLICE_KEYS = (
+    "scene_id",
+    "shot_type",
+    "framing",
+    "camera_move",
+    "blocking",
+    "asset_ids",
+    "line_ids",
+    "tail_from",
+)
 _VERTICAL = {"9:16": "竖屏", "3:4": "竖屏"}
 
 
@@ -86,6 +98,22 @@ async def asset_list_slicer(
             {"id": a.get("id"), "kind": a.get("kind"), "name": a.get("name")}
             for a in asset_ops.assets_of(version.payload_json)
         ]
+    return version.payload_json if name == "" else version.payload_json.get(name)
+
+
+def shot_slice(shot_id: str) -> str:
+    return f"{SHOT_SLICE}{shot_id}"
+
+
+async def shot_plan_slicer(
+    session: AsyncSession, product: Product, version: ProductVersion, name: str
+) -> Any:
+    """``shot:<id>`` (关键帧, confirming a shot): the shot's type, framing, move, top view,
+    references, lines and the shot it follows (None once the plan drops it), so a new length
+    or sound never redraws its keyframe. Any other name is a key of the payload."""
+    if name.startswith(SHOT_SLICE):
+        shot = ops.find_shot(version.payload_json, name.removeprefix(SHOT_SLICE))
+        return None if shot is None else {k: shot.get(k) for k in SHOT_SLICE_KEYS}
     return version.payload_json if name == "" else version.payload_json.get(name)
 
 
