@@ -45,7 +45,7 @@ test("a locked spec changes aspect through the impact dialog and keeps it after 
     await page.getByRole("button", { name: platform }).click();
     await page.getByRole("button", { name: "改，并标记待更新" }).click();
     await expect(page.getByText(/会影响已经做好的部分/)).toHaveCount(0);
-    // Written to the real backend (MSW's /impact/apply calls PUT …/spec?confirmed_impact=).
+    // Written by the backend's /impact/apply (`spec_aspect`, M4); the shots' confirmations go.
     await page.reload();
     await expect(page.locator("[data-loading]")).toHaveCount(0, { timeout: 15_000 });
     await expect(tag(aspect)).toBeVisible();

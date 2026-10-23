@@ -45,8 +45,18 @@ export function ShotCards({
             <MediaThumb aspect={aspect} seed={s.label} label={s.label} caption={s.summary} />
             <span className="flex items-center gap-1">
               <span className="font-mono text-xs font-medium">{s.label}</span>
-              <StatusBadge tone={s.confirmed ? "info" : "warn"} icon={null} className="ml-auto">
-                {t(s.confirmed ? "status.confirmed" : "status.draft")}
+              <StatusBadge
+                tone={s.confirmed && !s.confirm_stale ? "info" : "warn"}
+                icon={null}
+                className="ml-auto"
+              >
+                {t(
+                  s.confirm_stale
+                    ? "status.stale"
+                    : s.confirmed
+                      ? "status.confirmed"
+                      : "status.draft",
+                )}
               </StatusBadge>
             </span>
             <span className="text-xs">{te(`shotType.${s.shot_type}`)}</span>

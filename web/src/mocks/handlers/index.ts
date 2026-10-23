@@ -16,10 +16,11 @@
  * PATCH /scenes/{id}, POST /lines/{id}/rewrite, POST /scenes/{id}/rewrite (M2).
  * PATCH /assets/{id}, POST /assets/{id}/lock|upload, POST /episodes/{id}/assets/analyze,
  * GET /episodes/{id}/assets/matrix, the asset products and `asset_unlock` (M3).
- * GET /series/{id}/episodes and GET /episodes/{id}/progress are the backend's too; the demo
- * series lays its later-step data over them (shots, the script gate, the badges after 剧本)
- * until those steps are real; so is GET /series/{id}/assets (the demo lays the shots that use each
- * asset over it, M4).
+ * PATCH /shots/{id}, POST /shots/{id}/split|merge, the 分镜规划 and keyframe products, the
+ * storyboard gate, `spec_aspect` and `shot_edit` (M4).
+ * GET /episodes/{id}/progress and GET /episodes/{id}/shots are the backend's too; the demo lays
+ * episode 1's 生成 and 后期 over the badges and its takes over the shots (`video_product_id`)
+ * until those steps are real.
  * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
  *
  * Handlers that take a series answer only for the demo series; any other series passes through
@@ -40,7 +41,6 @@
  * | POST /products/{id}/compile      | M2             |
  * | POST /impact/preview, apply      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | GET /episodes/{id}/shots, PATCH /shots/{id} | M4  |
  * | POST /products/{id}/unadopt, PATCH /versions/{id} | M5 |
  * | GET, PUT /series/{id}/generate-rules | M5        |
  * | GET /episodes/{id}/generate-log  | M5             |
@@ -55,7 +55,6 @@
  * | POST /workflows/check-all, /workflows/{id}/deps, /deps/install | M5 |
  * | GET /comfy/workflows (ComfyUI's own workflow list) | M5 |
  */
-import { assetHandlers } from "@/mocks/handlers/assets";
 import { gateHandlers } from "@/mocks/handlers/gates";
 import { generateHandlers } from "@/mocks/handlers/generate";
 import { impactHandlers } from "@/mocks/handlers/impact";
@@ -73,7 +72,6 @@ export const handlers = [
   ...productHandlers,
   ...impactHandlers,
   ...gateHandlers,
-  ...assetHandlers,
   ...shotHandlers,
   ...generateHandlers,
   ...postHandlers,

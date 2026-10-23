@@ -38,7 +38,7 @@ export function Inspector({
   className,
 }: {
   components: InspectorComponent[];
-  /** Per-item overrides (`shot:1-05`); null = component level. */
+  /** Per-item overrides (`shot:<shot id>`, as runs read them); null = component level. */
   item?: string | null;
   className?: string;
 }) {

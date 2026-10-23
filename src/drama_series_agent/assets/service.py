@@ -66,6 +66,7 @@ from drama_series_agent.core.models_db import (
     ProductVersion,
     Scene,
     ScriptLine,
+    Shot,
     utcnow,
 )
 from drama_series_agent.core.storage import BlobStore
@@ -717,6 +718,19 @@ class AssetService:
             e.id: e.idx
             for e in (await session.exec(select(Episode).where(Episode.series_id == series_id)))
         }
+        # 出现在: the shots (of the adopted plans) that reference each asset, 「1-04」.
+        shot_rows = (
+            await session.exec(
+                select(Shot).where(Shot.series_id == series_id, col(Shot.retired).is_(False))
+            )
+        ).all()
+        in_shots: dict[str, list[str]] = {}
+        for s in shot_rows:
+            if episode_id is not None and s.episode_id != episode_id:
+                continue
+            label = f"{episodes.get(s.episode_id, 0)}-{s.idx:02d}"
+            for asset_id in s.asset_ids_json:
+                in_shots.setdefault(asset_id, []).append(label)
         line_ids = {i for us in uses.values() for u in us for i in u.line_ids_json}
         lines = {
             r.id: r
@@ -760,7 +774,7 @@ class AssetService:
                         name=a.name,
                         intent=intent,
                         source=_source(a, here, mine, numbers, episodes, lines),
-                        shots=[],
+                        shots=sorted(in_shots.get(a.id, []), key=label_order),
                         scenes=[
                             AssetSceneOut(
                                 scene_id=u.scene_id,

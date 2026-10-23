@@ -267,5 +267,10 @@
     "position": "{{n}} / {{total}}",
     "hint": "Press Esc to close",
     "hintMany": "← → to switch, Esc to close"
+  },
+  "final": {
+    "button": "Final via API",
+    "buttonCost": "Final via API · about {{cost}}",
+    "started": "Making the final: candidate {{letter}} as the reference, one picture on {{model}}."
   }
 }

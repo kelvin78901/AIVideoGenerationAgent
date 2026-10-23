@@ -13,7 +13,14 @@
           "line": 1
         }
       },
-      "shots": [],
+      "shots": [
+        "1-01",
+        "1-04",
+        "1-05",
+        "1-06",
+        "1-08",
+        "1-09"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b1",
@@ -79,7 +86,12 @@
           "scene": 1
         }
       },
-      "shots": [],
+      "shots": [
+        "1-01",
+        "1-02",
+        "1-04",
+        "1-09"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b1",
@@ -108,7 +120,10 @@
           "scene": 2
         }
       },
-      "shots": [],
+      "shots": [
+        "1-06",
+        "1-08"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b7",
@@ -160,7 +175,10 @@
           "line": 2
         }
       },
-      "shots": [],
+      "shots": [
+        "1-02",
+        "1-09"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b1",
@@ -192,7 +210,11 @@
           "line": 2
         }
       },
-      "shots": [],
+      "shots": [
+        "1-02",
+        "1-03",
+        "1-05"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b1",
@@ -226,7 +248,9 @@
           "line": 5
         }
       },
-      "shots": [],
+      "shots": [
+        "1-05"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b1",
@@ -258,7 +282,9 @@
           "line": 2
         }
       },
-      "shots": [],
+      "shots": [
+        "1-07"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b7",
@@ -290,7 +316,9 @@
           "line": 3
         }
       },
-      "shots": [],
+      "shots": [
+        "1-03"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b1",
@@ -326,7 +354,9 @@
           "line": 2
         }
       },
-      "shots": [],
+      "shots": [
+        "1-07"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b7",
@@ -361,7 +391,10 @@
           "count": 2
         }
       },
-      "shots": [],
+      "shots": [
+        "1-04",
+        "1-06"
+      ],
       "scenes": [
         {
           "scene_id": "demo-b1",

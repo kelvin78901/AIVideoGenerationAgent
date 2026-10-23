@@ -196,3 +196,20 @@ def test_another_episode_is_planned_by_rules(client: TestClient) -> None:
     version = _plan(client, "demo-e2")["adopted_version_id"]
     deps = _rows(client, Dependency, Dependency.version_id == version)
     assert {d.slice for d in deps} >= {"shots"}
+
+
+def test_an_asset_lists_the_shots_it_is_in(client: TestClient) -> None:
+    """素材页「出现在」: the adopted plan's shots that reference the asset."""
+
+    def shots_of(asset: str) -> list[str]:
+        found = client.get(f"{V1}/series/demo/assets", params={"episode": EP1}).json()
+        out: list[str] = next(a for a in found if a["id"] == asset)["shots"]
+        return out
+
+    by = {s["label"]: s for s in _shots(client)}
+    using = [label for label, s in by.items() if "linwan" in s["asset_ids"]]
+    assert using and shots_of("linwan") == using
+    # A split is adopted at once: the new shot is listed and the later ones renumbered.
+    client.post(f"{V1}/shots/demo-shot-1-06/split", json={})
+    after = [s["label"] for s in _shots(client) if "linwan" in s["asset_ids"]]
+    assert shots_of("linwan") == after and len(after) == len(using) + 1

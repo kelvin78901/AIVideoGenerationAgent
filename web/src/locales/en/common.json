@@ -74,6 +74,8 @@
     "asset_not_found": "Asset {{id}} not found",
     "shot_not_found": "Shot {{id}} not found",
     "shot_confirmed": "This shot is confirmed: take it back first, or change it through the impact preview",
+    "nothing_to_pick": "This version has no candidates to pick from",
+    "duration_below_audio": "Not shorter than its spoken lines: at least {{min_s}} s",
     "nothing_to_confirm": "This shot has no keyframe yet: draw one first",
     "no_tail_shot": "The shot it continues from is missing",
     "no_keyframe": "A continuous shot has no keyframe of its own: it starts from the last frame of the shot before",

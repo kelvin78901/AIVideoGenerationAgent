@@ -267,5 +267,10 @@
     "position": "{{n}} / {{total}}",
     "hint": "按 Esc 关闭",
     "hintMany": "← → 切换，按 Esc 关闭"
+  },
+  "final": {
+    "button": "用 API 出终版",
+    "buttonCost": "用 API 出终版 · 约 {{cost}}",
+    "started": "已开始出终版：以候选 {{letter}} 为参考，用 {{model}} 出 1 张。"
   }
 }

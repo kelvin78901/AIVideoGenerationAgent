@@ -74,6 +74,8 @@
     "asset_not_found": "找不到素材 {{id}}",
     "shot_not_found": "找不到镜头 {{id}}",
     "shot_confirmed": "这个镜头已确认：先取消确认，或在影响范围里改",
+    "nothing_to_pick": "这一版还没有候选可选",
+    "duration_below_audio": "不能短于台词音频：至少 {{min_s}} 秒",
     "nothing_to_confirm": "这个镜头还没有关键帧：先出一版再确认",
     "no_tail_shot": "找不到它要接尾帧的镜头",
     "no_keyframe": "连续动作镜头没有自己的关键帧：它接上一个镜头的尾帧",

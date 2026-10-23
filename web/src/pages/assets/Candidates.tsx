@@ -1,14 +1,9 @@
-import { Check, Maximize2 } from "lucide-react";
-import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import type { Asset, CandidatesPayload, TextSettings } from "@/api/schemas/assets";
 import type { Aspect } from "@/api/schemas/spec";
-import { MediaLightbox } from "@/components/MediaLightbox";
-import { MediaThumb } from "@/components/MediaThumb";
-import { StatusBadge } from "@/components/StatusBadge";
+import { CandidateGrid } from "@/components/CandidateGrid";
 import { cn } from "@/lib/utils";
-import { CARD_INSET, CARD_WIDTH } from "@/pages/assets/status";
 
 const LETTERS = "ABCD";
 
@@ -47,8 +42,7 @@ function useOcrLine() {
 }
 
 /** 候选: 4 reference images, or 4 on-screen text images with their OCR check. A base for
- * compositing shows the text laid over it, as post will paste it (M7). The cards are small;
- * 「放大」 on a picture opens it at screen size. */
+ * compositing shows the text laid over it, as post will paste it (M7). */
 export function ImageCandidates({
   asset,
   versionNo,
@@ -71,109 +65,62 @@ export function ImageCandidates({
   onPick: (i: number) => void;
 }) {
   const { t } = useTranslation("assets");
-  const { t: tc } = useTranslation("components");
   const ocrLine = useOcrLine();
-  const [zoomed, setZoomed] = useState<number | null>(null);
   const text = asset.text;
   const method = madeWith?.method ?? text?.method ?? "composite";
-  const label = (i: number) => t("cands.label", { n: versionNo, letter: LETTERS[i] });
-  // The pictures there are, in order, for the lightbox's ← →.
-  const pictures = srcs.flatMap((src, i) => (src ? [{ src, label: label(i), i }] : []));
-  return (
-    <div role="radiogroup" aria-label={t("cands.title")} className="flex flex-wrap gap-3">
-      {candidates.map((c, i) => {
-        const on = asset.pick === i;
-        const ocr = text ? ocrLine(c, method) : null;
-        const src = srcs[i];
-        return (
-          <div key={i} className="relative shrink-0" style={{ width: CARD_WIDTH[aspect] }}>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={on}
-              aria-label={label(i)}
-              disabled={locked}
-              onClick={() => onPick(i)}
-              className={cn(
-                "flex w-full flex-col gap-1.5 rounded-lg border-2 p-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
-                on ? "border-primary" : "border-transparent hover:border-border",
-              )}
-            >
-              <div className="relative">
-                {text && !src ? (
-                  <div
-                    className={cn(
-                      "flex aspect-square items-center justify-center rounded-md p-3 text-center text-sm leading-relaxed",
-                      TEXT_TILE[text.style],
-                    )}
-                  >
-                    {method === "composite"
-                      ? t("cands.compositeSample", { text: text.exact })
-                      : (c.ocr ?? "")}
-                  </div>
-                ) : (
-                  <MediaThumb
-                    aspect={aspect}
-                    seed={`${asset.id}-${versionNo}-${i}`}
-                    src={src}
-                    alt={label(i)}
-                    label={LETTERS[i]}
-                    overlay={
-                      text && method === "composite" ? (
-                        <div
-                          className={cn(
-                            "absolute inset-x-3 top-1/2 -translate-y-1/2 rounded px-2 py-1.5 text-center text-sm leading-relaxed shadow-md",
-                            TEXT_TILE[text.style],
-                          )}
-                        >
-                          {text.exact}
-                        </div>
-                      ) : null
-                    }
-                  />
-                )}
-                {on ? (
-                  <StatusBadge tone="info" icon={Check} className="absolute top-1.5 right-1.5">
-                    {t("cands.picked")}
-                  </StatusBadge>
-                ) : null}
-              </div>
-              <span className="text-xs font-medium">{label(i)}</span>
-              <span className="text-xs text-muted-foreground">
-                {text
-                  ? t(method === "composite" ? "cands.metaComposite" : "cands.metaModel")
-                  : asset.kind === "character"
-                    ? t("cands.metaCharacter")
-                    : t("cands.metaOther", { aspect })}
-              </span>
-              {ocr ? <span className={cn("text-xs", OCR_TONE[ocr.tone])}>{ocr.text}</span> : null}
-            </button>
-            {src ? (
-              // Over the picture, beside the card (a control inside a radio would be hidden).
-              <div
-                className="pointer-events-none absolute"
-                style={{
-                  top: CARD_INSET,
-                  left: CARD_INSET,
-                  width: `calc(100% - ${2 * CARD_INSET}px)`,
-                  aspectRatio: aspect.replace(":", " / "),
-                }}
-              >
-                <button
-                  type="button"
-                  aria-label={tc("lightbox.zoom", { label: label(i) })}
-                  title={tc("lightbox.zoom", { label: label(i) })}
-                  onClick={() => setZoomed(pictures.findIndex((p) => p.i === i))}
-                  className="pointer-events-auto absolute right-1.5 bottom-1.5 flex size-7 items-center justify-center rounded-md bg-black/45 text-white outline-none hover:bg-black/65 focus-visible:ring-2 focus-visible:ring-ring"
-                >
-                  <Maximize2 className="size-3.5" aria-hidden />
-                </button>
-              </div>
-            ) : null}
+  const cards = candidates.map((c, i) => {
+    const ocr = text ? ocrLine(c, method) : null;
+    return {
+      label: t("cands.label", { n: versionNo, letter: LETTERS[i] }),
+      letter: LETTERS[i] ?? "",
+      seed: `${asset.id}-${versionNo}-${i}`,
+      src: srcs[i] ?? null,
+      tile: text ? (
+        <div
+          className={cn(
+            "flex aspect-square items-center justify-center rounded-md p-3 text-center text-sm leading-relaxed",
+            TEXT_TILE[text.style],
+          )}
+        >
+          {method === "composite"
+            ? t("cands.compositeSample", { text: text.exact })
+            : (c.ocr ?? "")}
+        </div>
+      ) : undefined,
+      overlay:
+        text && method === "composite" ? (
+          <div
+            className={cn(
+              "absolute inset-x-3 top-1/2 -translate-y-1/2 rounded px-2 py-1.5 text-center text-sm leading-relaxed shadow-md",
+              TEXT_TILE[text.style],
+            )}
+          >
+            {text.exact}
           </div>
-        );
-      })}
-      <MediaLightbox items={pictures} index={zoomed} onIndex={setZoomed} />
-    </div>
+        ) : undefined,
+      meta: (
+        <>
+          <span className="text-xs text-muted-foreground">
+            {text
+              ? t(method === "composite" ? "cands.metaComposite" : "cands.metaModel")
+              : asset.kind === "character"
+                ? t("cands.metaCharacter")
+                : t("cands.metaOther", { aspect })}
+          </span>
+          {ocr ? <span className={cn("text-xs", OCR_TONE[ocr.tone])}>{ocr.text}</span> : null}
+        </>
+      ),
+    };
+  });
+  return (
+    <CandidateGrid
+      label={t("cands.title")}
+      cards={cards}
+      aspect={aspect}
+      picked={asset.pick}
+      pickedText={t("cands.picked")}
+      disabled={locked}
+      onPick={onPick}
+    />
   );
 }

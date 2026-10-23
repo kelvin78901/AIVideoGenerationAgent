@@ -3,9 +3,7 @@ import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router";
 
 import { useEventStream } from "@/api/useEventStream";
-import { getDb } from "@/mocks/db";
 import { demoTiming } from "@/mocks/events";
-import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import AssetsPage from "@/pages/Assets";
 import { backend } from "@/test/backend";
 import { fakeAssets } from "@/test/fakes/assets";
@@ -146,11 +144,11 @@ describe("AssetsPage", () => {
     await user.click(screen.getByRole("button", { name: "解锁" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("解锁「红色长柄伞」会影响用到它的镜头");
-    expect(dialog).toHaveTextContent("分镜 · 1-02 1-08 1-09，共 3 个镜头用它做参考");
+    expect(dialog).toHaveTextContent("分镜 · 1-02、1-09，共 2 个镜头用它做参考");
+    expect(dialog).toHaveTextContent("其中镜头 1-02 已确认");
     await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     expect(await screen.findByText("已锁定 6 / 10")).toBeInTheDocument();
     expect(item(/红色长柄伞/)).toHaveTextContent("待选");
-    expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(3);
   });
 
   it("unlocking a character lists the views drawn from it, then its shots", async () => {
@@ -162,7 +160,9 @@ describe("AssetsPage", () => {
     expect(dialog).toHaveTextContent(
       "补视图 · 「林晚」的侧面、背面和表情按这张参考图画，锁定新的一张后会重画",
     );
-    expect(dialog).toHaveTextContent("分镜 · 1-01 1-04 1-05 1-06 1-08 1-09，共 6 个镜头用它做参考");
+    expect(dialog).toHaveTextContent(
+      "分镜 · 1-01、1-04、1-05、1-06、1-08、1-09，共 6 个镜头用它做参考",
+    );
   });
 
   it("「撤销」 keeps the asset locked", async () => {

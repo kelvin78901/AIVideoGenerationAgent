@@ -1,8 +1,9 @@
-import { Check, CheckCircle2, Film, Plus } from "lucide-react";
+import { CheckCircle2, Film, Plus } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
+import { fileUrl } from "@/api/client";
 import { useProduct } from "@/api/hooks/products";
 import { CandidatesPayloadSchema, type Asset } from "@/api/schemas/assets";
 import {
@@ -14,8 +15,10 @@ import {
   type ShotPatch,
 } from "@/api/schemas/shots";
 import type { Aspect } from "@/api/schemas/spec";
+import { CandidateGrid } from "@/components/CandidateGrid";
 import { Chip } from "@/components/Chip";
 import { EmptyState } from "@/components/EmptyState";
+import { FinalButton } from "@/components/FinalButton";
 import { MediaThumb } from "@/components/MediaThumb";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -37,7 +40,8 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** 首帧: the shot's own keyframe candidates, or the last frame of an earlier shot. */
+/** 首帧: the shot's own keyframe candidates (pick one; a local draft can be finished on the API
+ * model, M3 混合), or the last frame of an earlier shot. */
 function FirstFrame({
   shot,
   aspect,
@@ -68,47 +72,41 @@ function FirstFrame({
       </div>
     );
   }
-  if (!version || !cands.length) return <EmptyState icon={Film} title={t("shot.noKeyframe")} />;
+  if (!version || !cands.length || !product.data)
+    return <EmptyState icon={Film} title={t("shot.noKeyframe")} />;
+  const made = t(version.stage === "final" ? "shot.kfFinal" : "shot.kfDraft");
+  const cards = cands.map((c, i) => {
+    const file = version.files.find((f) => f.role === "candidate" && f.idx === i);
+    return {
+      label: t("shot.kfLabel", { n: version.n, letter: LETTERS[i] }),
+      letter: LETTERS[i] ?? "",
+      seed: `${shot.id}-${version.n}-${i}`,
+      src: file ? fileUrl(file.sha256) : null,
+      meta: <span className="text-xs text-muted-foreground">{c.label ?? made}</span>,
+    };
+  });
   return (
-    <div
-      role="radiogroup"
-      aria-label={t("shot.firstFrame")}
-      className="grid max-w-md grid-cols-3 gap-2.5"
-    >
-      {cands.map((c, i) => {
-        const on = shot.keyframe_pick === i;
-        const label = t("shot.kfLabel", { n: version.n, letter: LETTERS[i] });
-        return (
-          <button
-            key={i}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            aria-label={label}
-            disabled={shot.confirmed}
-            onClick={() => onPick(i)}
-            className={cn(
-              "flex flex-col gap-1 rounded-lg border-2 p-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
-              on ? "border-primary" : "border-transparent hover:border-border",
-            )}
-          >
-            <div className="relative">
-              <MediaThumb
-                aspect={aspect}
-                seed={`${shot.label}-${version.n}-${i}`}
-                label={LETTERS[i]}
-              />
-              {on ? (
-                <StatusBadge tone="info" icon={Check} className="absolute top-1.5 right-1.5">
-                  {t("shot.picked")}
-                </StatusBadge>
-              ) : null}
-            </div>
-            <span className="text-xs font-medium">{label}</span>
-            <span className="text-xs text-muted-foreground">{c.label}</span>
-          </button>
-        );
-      })}
+    <div className="flex flex-col gap-2">
+      <CandidateGrid
+        label={t("shot.firstFrame")}
+        cards={cards}
+        aspect={aspect}
+        picked={shot.keyframe_pick}
+        pickedText={t("shot.picked")}
+        disabled={shot.confirmed}
+        onPick={onPick}
+      />
+      {shot.confirmed ? null : (
+        <div>
+          <FinalButton
+            componentId="kf"
+            product={product.data}
+            version={version}
+            pick={shot.keyframe_pick}
+            letter={LETTERS[shot.keyframe_pick] ?? "A"}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -165,8 +163,14 @@ export function ShotSettings({
         <span className="text-xs text-muted-foreground">
           {t("shot.scene", { n: shot.scene_no, place: shot.scene_place })}
         </span>
-        <StatusBadge tone={shot.confirmed ? "info" : "warn"} icon={null}>
-          {t(shot.confirmed ? "status.confirmed" : "status.draft")}
+        <StatusBadge tone={shot.confirmed && !shot.confirm_stale ? "info" : "warn"} icon={null}>
+          {t(
+            shot.confirm_stale
+              ? "status.stale"
+              : shot.confirmed
+                ? "status.confirmed"
+                : "status.draft",
+          )}
         </StatusBadge>
         <Button
           className="ml-auto"

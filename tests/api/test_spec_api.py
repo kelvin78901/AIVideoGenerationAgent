@@ -74,12 +74,25 @@ def test_locked_aspect_change_needs_confirmed_impact(client: TestClient) -> None
     assert resp.json()["detail"]["params"] == {"aspect": "9:16"}
     assert client.get(SPEC).json()["aspect"] == "9:16"  # nothing written
 
-    resp = client.put(f"{SPEC}?confirmed_impact=imp_1", json={"aspect": "16:9", "platform": "wide"})
+    wide = {"aspect": "16:9", "platform": "wide"}
+    # An id that is no applied 改画幅 preview of this series to this aspect is refused like none.
+    assert client.put(f"{SPEC}?confirmed_impact=imp_1", json=wide).status_code == 409
+    change = {"kind": "spec_aspect", "target_id": "demo", "patch": wide}
+    impact = client.post("/api/v1/impact/preview", json=change).json()["id"]
+    assert client.put(f"{SPEC}?confirmed_impact={impact}", json=wide).status_code == 409
+
+    # Applying it writes the spec; saving the same aspect with it afterwards changes nothing.
+    resp = client.post("/api/v1/impact/apply", json={"impact_id": impact, "action": "mark"})
+    assert resp.status_code == 200
+    resp = client.put(f"{SPEC}?confirmed_impact={impact}", json=wide)
     assert resp.status_code == 200
     data = resp.json()
     assert (data["aspect"], data["platform"]) == ("16:9", "wide")
     assert data["dims"] == {"delivery": {"w": 1920, "h": 1080}, "draft": {"w": 1366, "h": 768}}
     assert data["locked_at"] is not None  # still locked
+    # Not for another aspect.
+    resp = client.put(f"{SPEC}?confirmed_impact={impact}", json={"aspect": "1:1"})
+    assert resp.status_code == 409 and _code(resp) == "spec_locked"
 
 
 def test_presets(client: TestClient) -> None:

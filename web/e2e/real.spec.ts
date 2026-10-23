@@ -1,5 +1,5 @@
 /**
- * The no-demo-data round (plan step 12, `VITE_DEMO_DATA=0`): the pages M2 and M3 put on the
+ * The no-demo-data round (plan step 12, `VITE_DEMO_DATA=0`): the pages M2–M4 put on the
  * backend, with nothing from MSW in between, so a response that does not match its zod contract
  * shows up here instead of behind the demo data. Endpoints of later milestones answer 404 (the
  * page says 加载失败 there); those are listed on the test, not failed.
@@ -15,6 +15,7 @@ const PAGES = [
   { id: "script", path: "/s/demo/e/1/script" },
   { id: "script e2", path: "/s/demo/e/2/script" },
   { id: "assets", path: "/s/demo/e/1/assets" },
+  { id: "storyboard", path: "/s/demo/e/1/storyboard" },
   { id: "models", path: "/models" },
   { id: "dev jobs", path: "/dev/jobs" },
 ];
@@ -85,8 +86,11 @@ test("assets: real candidate pictures, the matrix, lock and unlock", async ({ pa
   await cands.getByRole("radio", { name: "v1 · B" }).click();
   await page.getByRole("button", { name: "锁定为参考" }).click();
   await expect(list.getByRole("button", { name: /林晚出租屋/ })).toContainText("已锁定");
-  // Nothing uses this scene's picture yet: unlocking needs no dialog.
+  // The shots of scene 2 use it as a reference (M4): unlocking previews them first.
   await page.getByRole("button", { name: "解锁" }).click();
+  const dialog = page.getByRole("alertdialog");
+  await expect(dialog).toContainText("1-06、1-08，共 2 个镜头用它做参考");
+  await dialog.getByRole("button", { name: "只改这里，下游标待更新" }).click();
   await expect(list.getByRole("button", { name: /林晚出租屋/ })).toContainText("待选");
   note(missing);
   expect(errors).toEqual([]);

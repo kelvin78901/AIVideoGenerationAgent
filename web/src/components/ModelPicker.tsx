@@ -117,7 +117,7 @@ function ModelRadios({
 
 /**
  * 「运行设置」 (SPEC 16.2): run location, API service, local model, automatic fallback and the
- * per-call cap of one component, optionally for one item (`shot:1-05`). Every change is an
+ * per-call cap of one component, optionally for one item (`shot:<shot id>`). Every change is an
  * override at that level; each field shows the level its value comes from.
  */
 export function ModelPicker({

@@ -2,6 +2,20 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-23 · M4 第 5 步：分镜页接后端（前端）
+
+- **删掉的 MSW**：镜头的 PATCH、示例分镜规划和关键帧产物（`fixtures/demo/shots.ts` 整个删掉，`shotId` / `videoProductId` 挪进 `takes.ts`）、分镜闸门（放行到后端）、`spec_aspect`（MSW 自己的影响范围那条路整个删了，`impacts` 库也删了）、素材列表的镜头叠加和解锁叠加（`handlers/assets.ts` 删掉）、剧集列表的镜头数叠加。
+- **还留着的**：`GET /episodes/{id}/shots` 只给第 1 集叠 `video_product_id`（按视频产物的 `owner_id` 找，不按镜头号，拆分后也对得上；M5 删）。生成页、后期页的 MSW 读镜头前先取后端的（`handlers/shots.ts:demoShots`，存进 `getDb().shots` 给同步代码用），所以分镜里改时长，后期时间线跟着变：示例整集现在是后端算的 34.5 秒（1-04 没配音，按剧本估计 4 秒加留白），后期页测试的位置跟着改了。示例进度只留生成、后期两步（`DemoSteps`）。
+- **剧本块下游的示例叠加只留视频行**（M5）：原来还有原型写死的素材行（「素材 · 道具『红色长柄伞、黄色便利贴』」）和镜头、关键帧行，现在这些都由后端给（素材行 M3 起就有，镜头和关键帧行第 2–4 步），留着会重复。
+- **素材的「出现在」**（`AssetOut.shots`）改由后端算：已采纳分镜规划的镜头（`shot` 表，未退场）里引用了它的，写成「1-04」，按 `?episode=` 过滤，按镜头号排。
+- **`PUT …/spec?confirmed_impact=` 真校验**（第 4 步挪过来的）：`ImpactService` 记下应用过的预览（`applied(id)`，只记「只改这里」「确认并同步」，内存里最多 100 条，重启就没了）。规格已锁定又要改画幅时，id 必须是这个剧的 `spec_aspect` 预览、而且改的是同一个画幅，否则 409 `spec_locked`，和没给 id 一样，不加新错误码。应用 `spec_aspect` 本身就会写规格，所以前端改画幅不再调这个 PUT；它留给「应用之后再存一次规格」的客户端。
+- **通用候选网格** `components/CandidateGrid.tsx`：固定尺寸的卡片 + 放大看（M3 定的宽屏做法），素材页的 `ImageCandidates` 和分镜页的首帧都用它。卡片尺寸挪到 `lib/cards.ts`（组件文件只导出组件，ESLint fast-refresh 规则）。`FinalButton` 挪到 `components/`，词条从 `assets.final.*` 挪到 `components.final.*`。
+- **关键帧卡片下面写「本地草稿」或「API 终版」**：后端的候选没有原型里那句构图说明（「构图偏左，留门的位置」）；以后模型给了 `label` 就显示 `label`。
+- **改已确认的镜头**（或分镜闸门确认之后）：改设定、画面描述都先做 `shot_edit` 预览，弹影响范围对话框，确认前什么都不写；「撤销」把表单复原（`ShotSettings` 重新挂载）。确认、取消确认直接走 PATCH（后端规则）。
+- **Inspector 的单镜头覆盖** item 改成 `shot:<镜头 id>`，和后端 `runs.item_of()` 读的一致（原来是镜头号）。
+- **测试假后端** `test/fakes/shots.ts`（数据是第 2、3 步导出的 `test/data/shots.json`）：改设定、选这个、确认（草稿锁成 `pick` 版本、终版整版锁）、取消确认、出草稿 / 出终版、分镜闸门、`shot_edit`、`spec_aspect`、素材改动和解锁里的镜头行。剧集列表、素材列表的假后端现在直接应答（不再经过 MSW 叠加）。
+- 新词条：`storyboard.shot.kfDraft` / `kfFinal` / `editTitle`、`storyboard.status.stale`，错误码 `nothing_to_pick`、`duration_below_audio`，中英文都加了。
+
 ## 2026-10-23 · M4 第 4 步：分镜闸门、进度、影响范围（后端）
 
 - **分镜确认**（gate `storyboard`，scope 集）：`GATES` 加一项，锁本集的分镜规划；`GateService.precondition(gate, fn)` 是新的可插拔前提，`ShotService` 登记：有镜头没确认或「待更新」就 409 `shots_not_confirmed {count, labels}`。取消确认一个镜头时，这一集已确认的分镜闸门一起重开（解锁分镜规划）。原来测「未知闸门」用的是 `storyboard`，改成 `takes`（M5）。

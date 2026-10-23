@@ -243,6 +243,8 @@ class ImpactService:
         self._extras: dict[str, list[Extra]] = {}
         self.cascade: Cascader | None = None
         self._previews: OrderedDict[str, _Preview] = OrderedDict()
+        # Applied previews (not 撤销), for an endpoint that needs one (SPEC 13.3 改画幅).
+        self._applied: OrderedDict[str, ImpactChangeIn] = OrderedDict()
 
     def kind(self, name: str, planner: Planner) -> None:
         self._planners[name] = planner
@@ -284,12 +286,20 @@ class ImpactService:
         if (planned.base_version_id, planned.content) != (before.base_version_id, before.content):
             raise PipelineError(409, "impact_outdated", id=body.impact_id)
         await self._write(planned)
+        self._applied[body.impact_id] = preview.change
+        while len(self._applied) > _KEPT:
+            self._applied.popitem(last=False)
         jobs: list[str] = []
         if body.action == "rerun" and planned.rerun is not None:
             jobs = await planned.rerun()
         elif body.action == "rerun" and self.cascade is not None:
             jobs = await self.cascade.start(planned.series_id, planned.product_id)
         return ImpactApplyOut(action=body.action, stale=preview.stale, job_ids=jobs)
+
+    def applied(self, impact_id: str) -> ImpactChangeIn | None:
+        """The change of a preview applied with 只改这里 or 确认并同步; None otherwise (unknown,
+        撤销, or applied before a restart)."""
+        return self._applied.get(impact_id)
 
     async def _write(self, planned: PlannedChange) -> None:
         """Commit a change to a locked product: unlock for the write, lock what it adopted."""

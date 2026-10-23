@@ -21,7 +21,8 @@
   },
   "status": {
     "confirmed": "已确认",
-    "draft": "草稿"
+    "draft": "草稿",
+    "stale": "待更新"
   },
   "shot": {
     "label": "镜头设定",
@@ -31,11 +32,14 @@
     "unconfirm": "取消确认",
     "confirmed": "{{id}} 已确认：首帧、参考和镜头设定锁定，可以去生成视频。",
     "unconfirmed": "已取消确认 {{id}}。",
+    "editTitle": "镜头 {{id}} 已确认，改动会影响下游",
     "firstFrame": "首帧",
     "ownKeyframe": "本镜关键帧",
     "tailOf": "接续 {{id}} 的尾帧",
     "kfLabel": "v{{n}} · {{letter}}",
     "picked": "已选",
+    "kfDraft": "本地草稿",
+    "kfFinal": "API 终版",
     "noKeyframe": "这个镜头还没有关键帧。在右侧选「关键帧」组件后点「重跑」。",
     "tailTitle": "{{id}} 尾帧",
     "tailText": "不单独做关键帧：视频生成时取 {{id}} 的最后一帧当首帧，动作和光线连着走。",

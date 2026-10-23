@@ -21,7 +21,8 @@
   },
   "status": {
     "confirmed": "Confirmed",
-    "draft": "Draft"
+    "draft": "Draft",
+    "stale": "Out of date"
   },
   "shot": {
     "label": "Shot settings",
@@ -31,11 +32,14 @@
     "unconfirm": "Unconfirm",
     "confirmed": "{{id}} confirmed: first frame, references and settings are locked; ready for video.",
     "unconfirmed": "{{id}} is no longer confirmed.",
+    "editTitle": "Shot {{id}} is confirmed: the change reaches downstream",
     "firstFrame": "First frame",
     "ownKeyframe": "Own keyframe",
     "tailOf": "Continues from the last frame of {{id}}",
     "kfLabel": "v{{n}} · {{letter}}",
     "picked": "Picked",
+    "kfDraft": "Local draft",
+    "kfFinal": "API final",
     "noKeyframe": "No keyframe yet. Pick the Keyframes component on the right and click Rerun.",
     "tailTitle": "Last frame of {{id}}",
     "tailText": "No keyframe of its own: video generation starts from the last frame of {{id}}, so action and light carry over.",

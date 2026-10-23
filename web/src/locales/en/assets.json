@@ -131,11 +131,6 @@
     "list": "List",
     "matrix": "Appearance matrix"
   },
-  "final": {
-    "button": "Final via API",
-    "buttonCost": "Final via API · about {{cost}}",
-    "started": "Making the final: candidate {{letter}} as the reference, one picture on {{model}}."
-  },
   "views": {
     "title": "Extra views",
     "note": "Drawn from the locked picture once it is locked; locking another one redraws them",

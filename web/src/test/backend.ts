@@ -13,14 +13,20 @@ import { series as demoSeries } from "@/mocks/fixtures/demo/series";
 import { spec as demoSpec } from "@/mocks/fixtures/demo/spec";
 import { setBackendFetch } from "@/mocks/backend";
 import { server } from "@/mocks/node";
-import { assetHandlers, assetsBackendFetch, resetFakeAssets } from "@/test/fakes/assets";
+import { assetHandlers, resetFakeAssets } from "@/test/fakes/assets";
 import { bibleBackendFetch, bibleHandlers, resetFakeBible } from "@/test/fakes/bible";
 import { dubHandlers, resetFakeDub } from "@/test/fakes/dub";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { episodeHandlers, episodesBackendFetch, resetFakeEpisodes } from "@/test/fakes/episodes";
 import { gateHandlers, impactBackendFetch, resetFakeImpact } from "@/test/fakes/impact";
 import { novelHandlers, resetFakeNovel } from "@/test/fakes/novel";
-import { resetFakeScript, scriptBackendFetch, scriptHandlers } from "@/test/fakes/script";
+import { fakeScriptProducts, resetFakeScript, scriptHandlers } from "@/test/fakes/script";
+import {
+  fakeShotProducts,
+  resetFakeShots,
+  shotHandlers,
+  shotsBackendFetch,
+} from "@/test/fakes/shots";
 import { resetFakeSuggestions, suggestionHandlers } from "@/test/fakes/suggestions";
 import { resetFakeSetup, setupHandlers } from "@/test/setupBackend";
 
@@ -161,22 +167,25 @@ function seriesHandlers() {
     ...scriptHandlers(),
     ...assetHandlers(),
     ...dubHandlers(),
+    ...shotHandlers(),
     ...gateHandlers(),
   ];
 }
 
 /**
- * What the MSW demo merges in from the backend (`mocks/backend.ts`): products, the plan, and
- * the impact previews it lays its downstream over.
+ * What the MSW demo merges in from the backend (`mocks/backend.ts`): products, the plan, the
+ * shots it lays its takes over, and the impact previews it lays its downstream over.
  */
 async function fakeBackendFetch(request: Request): Promise<Response> {
   const url = new URL(request.url);
+  const owner = url.searchParams.get("owner") ?? "";
+  if (url.pathname.endsWith("/api/v1/products") && /^(episode|shot):/.test(owner))
+    return HttpResponse.json([...fakeScriptProducts(owner), ...fakeShotProducts(owner)]);
   return (
     (await impactBackendFetch(request)) ??
     bibleBackendFetch(url) ??
     episodesBackendFetch(url) ??
-    scriptBackendFetch(url) ??
-    assetsBackendFetch(url) ??
+    shotsBackendFetch(url) ??
     HttpResponse.json({ detail: { code: "http_404", params: {} } }, { status: 404 })
   );
 }
@@ -186,7 +195,8 @@ async function fakeBackendFetch(request: Request): Promise<Response> {
  * series list with the demo series and its output spec, novel (`test/fakes/novel.ts`), bible
  * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), the
  * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`),
- * episode 1's assets (`test/fakes/assets.ts`) and 台词配音 (`test/fakes/dub.ts`), the novel and script gates and impact previews
+ * episode 1's assets (`test/fakes/assets.ts`), 台词配音 (`test/fakes/dub.ts`) and shots
+ * (`test/fakes/shots.ts`), the gates up to 分镜 and impact previews
  * (`test/fakes/impact.ts`), and the PC sample machine
  * before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
@@ -203,6 +213,7 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeScript();
   resetFakeAssets();
   resetFakeDub();
+  resetFakeShots();
   resetFakeImpact();
   setBackendFetch(fakeBackendFetch);
   resetFakeSetup();

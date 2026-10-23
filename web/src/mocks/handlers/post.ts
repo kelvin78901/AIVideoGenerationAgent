@@ -11,11 +11,13 @@ import {
 } from "@/api/schemas/timeline";
 import { getDb } from "@/mocks/db";
 import { defaultClip, type Anchor } from "@/mocks/fixtures/demo/post";
+import { demoShots } from "@/mocks/handlers/shots";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 const clipId = (shotId: string) => `demo-clip-${shotId}`;
 
-/** Lays the shots end to end and places the anchored audio and subtitles on them. */
+/** Lays the shots end to end and places the anchored audio and subtitles on them. The shots
+ * are the backend's as last read (`demoShots`): handlers read them first. */
 export function buildTimeline(episodeId: string): Timeline {
   const db = getDb();
   const shots = db.shots.filter((s) => s.episode_id === episodeId);
@@ -82,9 +84,10 @@ export function exportChecks(episodeId: string): ExportCheck[] {
 const episodeExists = (id: string) => getDb().episodes.some((e) => e.id === id);
 
 export const postHandlers = [
-  http.get(v1("/episodes/:id/timeline"), ({ params }) => {
+  http.get(v1("/episodes/:id/timeline"), async ({ params, request }) => {
     const id = String(params.id);
     if (!episodeExists(id)) return demoError(404, "episode_not_found", { id });
+    await demoShots(request, id);
     return demoJson(buildTimeline(id));
   }),
 
@@ -95,6 +98,7 @@ export const postHandlers = [
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     const clips = getDb().post.clips;
     clips[shot.id] = { ...defaultClip, ...clips[shot.id], ...body.data };
+    await demoShots(request, shot.episode_id);
     return demoJson(buildTimeline(shot.episode_id));
   }),
 
@@ -105,12 +109,14 @@ export const postHandlers = [
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     sub.text = body.data.text;
     sub.edited = sub.text !== sub.source_text;
+    await demoShots(request, getDb().post.episode_id);
     return demoJson(buildTimeline(getDb().post.episode_id));
   }),
 
-  http.get(v1("/episodes/:id/export/checks"), ({ params }) => {
+  http.get(v1("/episodes/:id/export/checks"), async ({ params, request }) => {
     const id = String(params.id);
     if (!episodeExists(id)) return demoError(404, "episode_not_found", { id });
+    await demoShots(request, id);
     return demoJson({ checks: exportChecks(id) });
   }),
 

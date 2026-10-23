@@ -5,9 +5,9 @@ import type { ReactNode } from "react";
 
 import { api } from "@/api/client";
 import { onEvent } from "@/api/events";
+import { useGenerateLog } from "@/api/hooks/generate";
 import { useEpisodes } from "@/api/hooks/series";
 import { useTimeline } from "@/api/hooks/post";
-import { useShots } from "@/api/hooks/shots";
 import { HealthSchema } from "@/api/schemas/jobs";
 import { useEventStream } from "@/api/useEventStream";
 import { emitDemoEvent } from "@/mocks/events";
@@ -22,11 +22,11 @@ function wrapper({ children }: { children: ReactNode }) {
 
 describe("demo data (MSW)", () => {
   it("answers unimplemented endpoints with demo data and the demo header", async () => {
-    useDemoStore.getState().setRoute("/s/demo/e/1/storyboard");
-    const { result } = renderHook(() => useShots("demo-e1"), { wrapper });
+    useDemoStore.getState().setRoute("/s/demo/e/1/generate");
+    const { result } = renderHook(() => useGenerateLog("demo-e1"), { wrapper });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toHaveLength(9);
-    expect(useDemoStore.getState().routes["/s/demo/e/1/storyboard"]).toBe(true);
+    expect(result.current.data?.length).toBeGreaterThan(0);
+    expect(useDemoStore.getState().routes["/s/demo/e/1/generate"]).toBe(true);
   });
 
   it("returns translated errors for unknown ids", async () => {

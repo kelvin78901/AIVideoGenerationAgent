@@ -52,7 +52,7 @@ class AssetOut(BaseModel):
     name: str
     intent: str  # the description = the intent layer of the asset's prompt
     source: MessageOut
-    shots: list[str]  # M4; the demo's come from MSW until then
+    shots: list[str]  # 出现在: the shots that reference it, 「1-04」
     scenes: list[AssetSceneOut]  # in the episode asked for
     product_id: str
     status: AssetStatus

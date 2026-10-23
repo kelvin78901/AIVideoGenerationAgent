@@ -21,6 +21,7 @@ import {
 } from "@/api/schemas/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import { fakeAssetsBadge } from "@/test/fakes/assets";
+import { fakeShotsBadge } from "@/test/fakes/shots";
 import data from "@/test/data/episodes.json";
 
 const demo = z.array(EpisodeSchema).parse(data.episodes);
@@ -79,26 +80,23 @@ function patchBeat(list: Episode[], id: string, body: BeatPatch): string | null 
 
 /** The fake backend's answer to what the MSW demo merges in (`mocks/backend.ts`), or null. */
 export function episodesBackendFetch(url: URL): Response | null {
-  if (url.pathname.endsWith(`/series/${DEMO_SERIES_ID}/episodes`))
-    return HttpResponse.json(fakeEpisodes.list);
   const m = /\/episodes\/([^/]+)\/progress$/.exec(url.pathname);
   const id = decodeURIComponent(m?.[1] ?? "");
   const progress = m ? fakeEpisodes.progress[id] : undefined;
   if (!progress) return null;
-  // 素材 counts the fake assets as they are now (locks in a test move it).
-  const assets = fakeAssetsBadge(id);
-  return HttpResponse.json(
-    assets ? { ...progress, steps: { ...progress.steps, assets } } : progress,
-  );
+  // 素材 and 分镜 count the fake assets and shots as they are now (a test moves them).
+  const steps = { ...progress.steps };
+  steps.assets = fakeAssetsBadge(id) ?? steps.assets;
+  steps.storyboard = fakeShotsBadge(id) ?? steps.storyboard;
+  return HttpResponse.json({ ...progress, steps });
 }
 
 /** `known`: the series the fake backend has. Other series have no plan yet. */
 export function episodeHandlers(known: (id: string) => boolean) {
   return [
-    // The demo series' list goes through the MSW demo (it lays its overlay on this).
     http.get("*/api/v1/series/:id/episodes", ({ params }) => {
       const id = String(params.id);
-      if (id === DEMO_SERIES_ID) return undefined;
+      if (id === DEMO_SERIES_ID) return HttpResponse.json(fakeEpisodes.list);
       return known(id) ? HttpResponse.json([]) : error(404, "series_not_found", { id });
     }),
 

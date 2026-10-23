@@ -15,8 +15,8 @@ import { demoTiming, emitDemoEvent } from "@/mocks/events";
 import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
-import { keyframeCandidates } from "@/mocks/fixtures/demo/shots";
 import { demoTakeQa, logTake, shotOf, waitingOn } from "@/mocks/handlers/generate";
+import { demoShots } from "@/mocks/handlers/shots";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 import { demoRoute, primaryModel } from "@/mocks/route";
 
@@ -41,8 +41,12 @@ function settle(p: Product): void {
 
 /** Cost units of one run: seconds for a video take, candidates for images (demoCost). */
 function costUnits(p: Product): number {
-  if (p.slot === "video") return shotOf(p)?.duration_s ?? 4;
-  return p.slot === "keyframe" ? 3 : 4;
+  return p.slot === "video" ? (shotOf(p)?.duration_s ?? 4) : 4;
+}
+
+/** A video take reads its shot (how long it runs, what it continues): fresh from the backend. */
+async function readShots(request: Request, products: Product[]): Promise<void> {
+  if (products.some((p) => p.slot === "video")) await demoShots(request);
 }
 
 function demoJob(p: Product, modelKey: string, mode: string): Job {
@@ -119,7 +123,7 @@ function finishRun(
       parent: parent?.id ?? null,
       intent: opts.intent,
       compiled: opts.compiled,
-      payload: p.slot === "keyframe" ? keyframeCandidates() : parent?.payload,
+      payload: parent?.payload,
     });
     version.job_id = run.jobId;
     const shot = p.slot === "video" ? shotOf(p) : undefined;
@@ -164,7 +168,8 @@ export const productHandlers = [
     const q = new URL(request.url).searchParams;
     const owner = q.get("owner");
     const component = q.get("component");
-    // A series or an episode that is not the demo's is the backend's (plan「和 MSW 共存」).
+    // A series or an episode that is not the demo's is the backend's (plan「和 MSW 共存」); so
+    // are a shot's keyframes (M4), next to its demo takes.
     const [kind, ownerId] = owner?.split(":") ?? [];
     if (kind === "series" && ownerId && !getDb().series[ownerId]) return passthrough();
     if (kind === "episode" && ownerId && !getDb().episodes.some((e) => e.id === ownerId))
@@ -177,16 +182,19 @@ export const productHandlers = [
     );
     // The backend's products of the demo series (the novel, 设定提取 …) and of its episodes
     // (剧本化) come first.
-    const merged = (kind === "series" || kind === "episode") && !!ownerId;
+    const merged = (kind === "series" || kind === "episode" || kind === "shot") && !!ownerId;
     const real = merged ? await backendJson<Product[]>(request.clone(), []) : [];
+    await readShots(request, list);
     const demo = await Promise.all(list.map(withEstimate));
     return demoJson([...real, ...demo.filter((p) => !real.some((r) => r.id === p.id))]);
   }),
 
   // Ids that are not in the demo data are the backend's.
-  http.get(v1("/products/:id"), async ({ params }) => {
+  http.get(v1("/products/:id"), async ({ params, request }) => {
     const p = getDb().products[String(params.id)];
-    return p ? demoJson(await withEstimate(p)) : passthrough();
+    if (!p) return passthrough();
+    await readShots(request, [p]);
+    return demoJson(await withEstimate(p));
   }),
 
   http.post(v1("/products/:id/run"), async ({ params, request }) => {
@@ -195,6 +203,7 @@ export const productHandlers = [
     const body = RunRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     if (p.running) return demoError(409, "product_busy", { id: p.id });
+    await readShots(request, [p]);
     // A continuous shot starts from the last frame of a shot that has no adopted take yet.
     const shot = shotOf(p);
     const tail = p.slot === "video" && shot ? waitingOn(shot) : undefined;

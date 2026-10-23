@@ -3,10 +3,9 @@ import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router";
 
 import { Toaster } from "@/components/ui/sonner";
-import { getDb } from "@/mocks/db";
-import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import SpecPage from "@/pages/Spec";
 import { backend, fake } from "@/test/backend";
+import { fakeShots } from "@/test/fakes/shots";
 import { renderAt } from "@/test/render";
 
 function renderSpec() {
@@ -62,8 +61,8 @@ describe("SpecPage", () => {
     await ready();
     await user.click(aspect(/^21:9 宽银幕/));
     expect(await screen.findByText("改成 21:9 宽银幕 会影响已经做好的部分")).toBeInTheDocument();
-    expect(screen.getByText(/关键帧 9 张（9 个镜头）要按新画幅重画/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "改，并自动重做（约 $4.02）" })).toBeInTheDocument();
+    expect(screen.getByText(/关键帧 7 张（9 个镜头）要按新画幅重画/)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "改，并自动重做（约 $0.94）" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /自定义/ })).toHaveAttribute("aria-pressed", "true");
     await waitFor(() =>
       expect(compatRow("视频（备选）")).toHaveTextContent("支持这个画幅；部分渠道只到 720p"),
@@ -98,7 +97,8 @@ describe("SpecPage", () => {
     await waitFor(() => expect(spec().aspect).toBe("16:9"));
     expect(spec().platform).toBe("wide");
     expect(spec().dims.delivery).toEqual({ w: 1920, h: 1080 });
-    expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(9);
+    // The confirmed shots go back to 待确认 (their keyframes were drawn for 9:16).
+    expect(fakeShots.shots.filter((s) => s.confirmed)).toEqual([]);
     await waitFor(() => expect(screen.queryByText(/会影响已经做好的部分/)).toBeNull());
   });
 
