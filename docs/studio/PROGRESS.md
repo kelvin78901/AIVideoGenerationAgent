@@ -39,7 +39,7 @@
 
 ## 踩过的坑 / 临时绕过
 
-- **CI**：第 4 步（d5cccb3）的 CI 红了：`e2e/real.spec.ts` 解锁「林晚出租屋」现在会列出用到它的镜头、弹影响范围，测试还按「不弹窗」写；第 5 步改好了。
+- **CI**：第 4 步（d5cccb3）的 CI 红了：`e2e/real.spec.ts` 解锁「林晚出租屋」现在会列出用到它的镜头、弹影响范围，测试还按「不弹窗」写；第 5 步改好了。第 5、6 步（c6e07f3、3b1ad8d）的 CI 交接时还在跑：`/continue` 时先 `gh run list -R kelvin78901/AIVideoGenerationAgent --branch m4-storyboard` 看一眼。
 - **临时脚本里 `create_app()` 一定先设 `DRAMA_HOME` 到临时目录**（`core/paths.py`；不是 `DRAMA_STUDIO_HOME`），否则开的是真实的 `~/.drama-studio`：第 3 步就这样把示例关键帧种进了 Kelvin 的库（Mock，没花钱，和重启后端的效果一样）。
 
 - **测试别在「档案写完」后立刻断言任务状态**：任务结束比档案写入晚一点，CI 慢机器上会读到 running（`test_rescan_replaces_a_running_scan`，2026-10-21 修：等任务都结束再比）。
