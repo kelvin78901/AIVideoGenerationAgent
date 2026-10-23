@@ -15,6 +15,45 @@
     "shot": "镜头 {{id}}，{{seconds}} 秒",
     "seconds": "{{n}}s"
   },
+  "list": {
+    "title": "镜头 · {{count}} 个 · {{seconds}} 秒",
+    "views": "镜头显示方式",
+    "view": {
+      "board": "分镜板",
+      "table": "表格"
+    }
+  },
+  "table": {
+    "label": "镜头表",
+    "col": {
+      "shot": "镜头",
+      "scene": "场",
+      "type": "类型",
+      "framing": "景别",
+      "move": "运动",
+      "duration": "时长（秒）",
+      "dialogue": "台词",
+      "refs": "参考素材",
+      "keyframe": "关键帧",
+      "status": "状态",
+      "actions": "拆分 / 合并"
+    },
+    "none": "—",
+    "kfPick": "已选 {{letter}}",
+    "kfTail": "接 {{id}} 尾帧",
+    "kfNone": "还没有",
+    "typeOf": "镜头 {{id}} 的类型",
+    "framingOf": "镜头 {{id}} 的景别",
+    "moveOf": "镜头 {{id}} 的机位运动",
+    "durationOf": "镜头 {{id}} 的时长（秒）",
+    "source": {
+      "audio": "按音频",
+      "manual": "手动",
+      "plan": "按规划"
+    },
+    "splitOf": "拆分镜头 {{id}}",
+    "mergeOf": "把镜头 {{id}} 和下一个合并"
+  },
   "cards": {
     "label": "镜头列表",
     "meta": "{{framing}} · {{seconds}}s"
@@ -77,6 +116,21 @@
     "noLines": "这个镜头没有对应的剧本行。",
     "lineLink": "在剧本里看：{{text}}",
     "paras": "原文第 {{paras}} 段",
-    "paraSep": "、"
+    "paraSep": "、",
+    "durationSource": {
+      "audio": "按台词音频算（含前后留白），最短 {{min}} 秒",
+      "manual": "手动设定",
+      "manualMin": "手动设定 · 不能短于台词音频 {{min}} 秒",
+      "plan": "按分镜规划"
+    },
+    "durationReset": "恢复按音频",
+    "durationResetPlan": "恢复规划的 {{s}} 秒",
+    "splitHint": "超过 {{max}} 秒（视频单段上限），建议拆镜",
+    "split": "拆分",
+    "splitAfter": "在「{{text}}」之后切",
+    "merge": "和下一个合并",
+    "mergeNone": "同一场里后面没有镜头了",
+    "splitDone": "已拆分：{{id}} 后面多了 {{next}}",
+    "mergeDone": "已把下一个镜头并进 {{id}}"
   }
 }

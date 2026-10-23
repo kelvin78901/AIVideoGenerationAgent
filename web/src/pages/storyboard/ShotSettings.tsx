@@ -1,4 +1,4 @@
-import { CheckCircle2, Film, Plus } from "lucide-react";
+import { CheckCircle2, Combine, Film, Plus, RotateCcw, Scissors } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
@@ -28,6 +28,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { currentVersion } from "@/lib/versions";
 import { Blocking } from "@/pages/storyboard/Blocking";
+import { durationSource } from "@/pages/storyboard/duration";
 
 const LETTERS = "ABC";
 
@@ -120,6 +121,108 @@ export interface ShotLine {
   paras: number[];
 }
 
+/** 时长: how long the shot runs and where that comes from (its audio, the user, the plan);
+ * typed in, saved on leaving it; 「恢复」 goes back to automatic. */
+function DurationNote({ shot, onPatch }: { shot: Shot; onPatch: (patch: ShotPatch) => void }) {
+  const { t } = useTranslation("storyboard");
+  const source = durationSource(shot);
+  const text =
+    source === "audio"
+      ? t("shot.durationSource.audio", { min: shot.min_s })
+      : source === "manual" && shot.min_s > 0
+        ? t("shot.durationSource.manualMin", { min: shot.min_s })
+        : t(`shot.durationSource.${source}`);
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+      <span>{text}</span>
+      {shot.manual_s !== null ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-6 px-1.5 text-xs"
+          onClick={() => onPatch({ duration_s: null })}
+        >
+          <RotateCcw aria-hidden />
+          {shot.min_s > 0 || shot.planned_s === null
+            ? t("shot.durationReset")
+            : t("shot.durationResetPlan", { s: shot.planned_s })}
+        </Button>
+      ) : null}
+      {shot.split_hint && shot.longest_s !== null ? (
+        <span role="status" className="text-tone-warn-fg">
+          {t("shot.splitHint", { max: shot.longest_s })}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/** 拆分 (several lines: choose where to cut) and 和下一个合并 (the next shot of the scene). */
+function SplitMerge({
+  lines,
+  canMerge,
+  busy,
+  onSplit,
+  onMerge,
+}: {
+  lines: ShotLine[];
+  canMerge: boolean;
+  busy: boolean;
+  onSplit: (afterLineId?: string) => void;
+  onMerge: () => void;
+}) {
+  const { t } = useTranslation("storyboard");
+  const [open, setOpen] = useState(false);
+  const split = (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={busy}
+      onClick={lines.length > 1 ? undefined : () => onSplit()}
+    >
+      <Scissors aria-hidden />
+      {t("shot.split")}
+    </Button>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {lines.length > 1 ? (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>{split}</PopoverTrigger>
+          <PopoverContent className="flex w-80 flex-col gap-1 p-2">
+            {lines.slice(0, -1).map((l) => (
+              <Button
+                key={l.id}
+                size="sm"
+                variant="ghost"
+                className="h-auto justify-start py-1.5 text-left whitespace-normal"
+                onClick={() => {
+                  setOpen(false);
+                  onSplit(l.id);
+                }}
+              >
+                {t("shot.splitAfter", { text: l.text })}
+              </Button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      ) : (
+        split
+      )}
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={busy || !canMerge}
+        title={canMerge ? undefined : t("shot.mergeNone")}
+        onClick={onMerge}
+      >
+        <Combine aria-hidden />
+        {t("shot.merge")}
+      </Button>
+    </div>
+  );
+}
+
 /** 镜头设定: everything about one shot, saved as you change it. */
 export function ShotSettings({
   shot,
@@ -130,7 +233,10 @@ export function ShotSettings({
   scriptPath,
   novelPath,
   busy,
+  canMerge,
   onPatch,
+  onSplit,
+  onMerge,
 }: {
   shot: Shot;
   assets: Asset[];
@@ -142,7 +248,11 @@ export function ShotSettings({
   /** The novel page with this paragraph (0-based) in view. */
   novelPath: (idx: number) => string;
   busy: boolean;
+  /** The next shot is in the same scene. */
+  canMerge: boolean;
   onPatch: (patch: ShotPatch) => void;
+  onSplit: (afterLineId?: string) => void;
+  onMerge: () => void;
 }) {
   const { t } = useTranslation("storyboard");
   const { t: te } = useTranslation("enums");
@@ -210,6 +320,13 @@ export function ShotSettings({
         ) : (
           <p className="text-sm text-muted-foreground">{t("shot.noLines")}</p>
         )}
+        <SplitMerge
+          lines={lines}
+          canMerge={canMerge}
+          busy={busy}
+          onSplit={onSplit}
+          onMerge={onMerge}
+        />
       </Field>
 
       <div className="flex flex-col gap-2">
@@ -268,20 +385,21 @@ export function ShotSettings({
           <Input
             id={`${ids}-dur`}
             type="number"
-            min={2}
-            max={15}
-            step={1}
+            min={shot.min_s || 0.5}
+            max={60}
+            step={0.5}
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
             onBlur={() => {
               const n = Number(duration);
-              if (Number.isFinite(n) && n >= 2 && n <= 15 && n !== shot.duration_s)
+              if (Number.isFinite(n) && n > 0 && n <= 60 && n !== shot.duration_s)
                 onPatch({ duration_s: n });
               else setDuration(String(shot.duration_s));
             }}
           />
         </div>
       </div>
+      <DurationNote shot={shot} onPatch={onPatch} />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${ids}-desc`}>{t("shot.desc")}</Label>

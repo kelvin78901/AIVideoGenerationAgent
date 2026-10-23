@@ -15,6 +15,45 @@
     "shot": "Shot {{id}}, {{seconds}} s",
     "seconds": "{{n}}s"
   },
+  "list": {
+    "title": "Shots · {{count}} · {{seconds}} s",
+    "views": "Show shots as",
+    "view": {
+      "board": "Board",
+      "table": "Table"
+    }
+  },
+  "table": {
+    "label": "Shot table",
+    "col": {
+      "shot": "Shot",
+      "scene": "Scene",
+      "type": "Type",
+      "framing": "Framing",
+      "move": "Move",
+      "duration": "Length (s)",
+      "dialogue": "Dialogue",
+      "refs": "References",
+      "keyframe": "Keyframe",
+      "status": "Status",
+      "actions": "Split / merge"
+    },
+    "none": "—",
+    "kfPick": "{{letter}} picked",
+    "kfTail": "Last frame of {{id}}",
+    "kfNone": "None yet",
+    "typeOf": "Type of shot {{id}}",
+    "framingOf": "Framing of shot {{id}}",
+    "moveOf": "Camera move of shot {{id}}",
+    "durationOf": "Length of shot {{id}} (s)",
+    "source": {
+      "audio": "audio",
+      "manual": "by hand",
+      "plan": "plan"
+    },
+    "splitOf": "Split shot {{id}}",
+    "mergeOf": "Merge shot {{id}} with the next one"
+  },
   "cards": {
     "label": "Shots",
     "meta": "{{framing}} · {{seconds}}s"
@@ -77,6 +116,21 @@
     "noLines": "No script line for this shot.",
     "lineLink": "Show in the script: {{text}}",
     "paras": "Novel paragraph {{paras}}",
-    "paraSep": ", "
+    "paraSep": ", ",
+    "durationSource": {
+      "audio": "Set by the spoken audio (a breath each side), at least {{min}} s",
+      "manual": "Set by hand",
+      "manualMin": "Set by hand · not shorter than its audio, {{min}} s",
+      "plan": "From the shot plan"
+    },
+    "durationReset": "Back to the audio",
+    "durationResetPlan": "Back to the plan's {{s}} s",
+    "splitHint": "Longer than {{max}} s (one video take): split the shot",
+    "split": "Split",
+    "splitAfter": "Cut after “{{text}}”",
+    "merge": "Merge with the next",
+    "mergeNone": "No later shot in this scene",
+    "splitDone": "Split: {{next}} now follows {{id}}",
+    "mergeDone": "The next shot is merged into {{id}}"
   }
 }

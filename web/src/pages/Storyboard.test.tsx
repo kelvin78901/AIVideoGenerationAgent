@@ -302,4 +302,99 @@ describe("StoryboardPage", () => {
     await user.click(await screen.findByRole("radio", { name: "本地" }));
     await waitFor(() => expect(fakeConfig.item["kf|shot:demo-shot-1-04"]?.mode).toBe("local"));
   });
+
+  it("shows the shots as a table; a cell saves its setting; the row's shot is the board's", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+    await ready();
+    await user.click(screen.getByRole("radio", { name: "表格" }));
+    const table = await screen.findByRole("region", { name: "镜头表" });
+    expect(within(table).getAllByRole("row")).toHaveLength(10);
+    expect(within(table).getByText("接 1-06 尾帧")).toBeInTheDocument();
+    await user.selectOptions(within(table).getByLabelText("镜头 1-05 的景别"), "近景");
+    await waitFor(() => expect(shot("1-05")?.framing).toBe("close"));
+    await user.click(within(table).getByRole("button", { name: "1-07" }));
+    expect(await screen.findByRole("heading", { name: "镜头 1-07" })).toBeInTheDocument();
+    await user.click(screen.getByRole("radio", { name: "分镜板" }));
+    expect(screen.getByRole("heading", { name: "镜头 1-07" })).toBeInTheDocument();
+    expect(card("1-07")).toHaveAttribute("aria-pressed", "true");
+  });
+
+  it("a dialogue shot runs as long as its audio; longer by hand, then back to the audio", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+    await ready();
+    expect(screen.getByText("按台词音频算（含前后留白），最短 4.5 秒")).toBeInTheDocument();
+    const dur = screen.getByLabelText("时长（秒）");
+    await user.clear(dur);
+    await user.type(dur, "6");
+    await user.tab();
+    await waitFor(() => expect(shot("1-04")).toMatchObject({ duration_s: 6, manual_s: 6 }));
+    expect(await screen.findByText("手动设定 · 不能短于台词音频 4.5 秒")).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "恢复按音频" }));
+    await waitFor(() =>
+      expect(shot("1-04")).toMatchObject({
+        duration_s: 4.5,
+        manual_s: null,
+        duration_source: "audio",
+      }),
+    );
+  });
+
+  it("a length shorter than the audio is refused and put back", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+    await ready();
+    const dur = screen.getByLabelText("时长（秒）");
+    await user.clear(dur);
+    await user.type(dur, "3");
+    await user.tab();
+    expect(await screen.findByText("不能短于台词音频：至少 4.5 秒")).toBeInTheDocument();
+    expect(shot("1-04")?.duration_s).toBe(4.5);
+    await waitFor(() => expect(screen.getByLabelText("时长（秒）")).toHaveValue(4.5));
+  });
+
+  it("longer than one video take suggests splitting the shot", async () => {
+    const s = shot("1-08");
+    if (s) Object.assign(s, { duration_s: 16, manual_s: 16, split_hint: true });
+    renderBoard("/s/demo/e/1/storyboard?shot=demo-shot-1-08");
+    expect(await screen.findByText("超过 15 秒（视频单段上限），建议拆镜")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "恢复规划的 6 秒" })).toBeInTheDocument();
+  });
+
+  it("splits a shot after a line it films, then merges it back", async () => {
+    const user = userEvent.setup();
+    renderBoard("/s/demo/e/1/storyboard?shot=demo-shot-1-06");
+    expect(await screen.findByRole("heading", { name: "镜头 1-06" })).toBeInTheDocument();
+    await user.click(screen.getByRole("button", { name: "拆分" }));
+    await user.click(await screen.findByRole("button", { name: /^在「林晚把伞靠回墙边/ }));
+    expect(await screen.findByText("已拆分：1-06 后面多了 1-07")).toBeInTheDocument();
+    expect(fakeShots.shots).toHaveLength(10);
+    expect(shot("1-07")?.line_ids).toEqual(["demo-b10"]);
+    // What continued 1-06 now continues its second half.
+    expect(shot("1-09")?.tail_from).toBe("1-07");
+    await user.click(screen.getByRole("button", { name: "和下一个合并" }));
+    expect(await screen.findByText("已把下一个镜头并进 1-06")).toBeInTheDocument();
+    expect(fakeShots.shots).toHaveLength(9);
+    expect(shot("1-06")?.line_ids).toEqual(["demo-b8", "demo-b10"]);
+  });
+
+  it("the last shot of a scene has nothing to merge with", async () => {
+    renderBoard("/s/demo/e/1/storyboard?shot=demo-shot-1-05");
+    expect(await screen.findByRole("heading", { name: "镜头 1-05" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "和下一个合并" })).toBeDisabled();
+  });
+
+  it("merging confirmed shots in the table shows the impact first", async () => {
+    const user = userEvent.setup();
+    renderBoard("/s/demo/e/1/storyboard?view=table");
+    const table = await screen.findByRole("region", { name: "镜头表" });
+    await user.click(within(table).getByRole("button", { name: "把镜头 1-01 和下一个合并" }));
+    const dialog = await screen.findByRole("alertdialog");
+    expect(dialog).toHaveTextContent("镜头 1-01、1-02 会取消确认");
+    expect(fakeShots.shots).toHaveLength(9);
+    await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+    await waitFor(() => expect(fakeShots.shots).toHaveLength(8));
+    expect(shot("1-01")).toMatchObject({ confirmed: false, line_ids: ["demo-b2", "demo-b3"] });
+  });
 });

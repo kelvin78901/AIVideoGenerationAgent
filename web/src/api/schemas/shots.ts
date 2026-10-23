@@ -86,17 +86,22 @@ export const ShotSchema = z.object({
 });
 export type Shot = z.infer<typeof ShotSchema>;
 
-/** `PATCH /shots/{id}` */
+/** `PATCH /shots/{id}`; `duration_s: null` = back to automatic (its audio, or the plan's). */
 export const ShotPatchSchema = ShotSchema.pick({
   shot_type: true,
   framing: true,
   camera_move: true,
-  duration_s: true,
   intent: true,
   audio_mode: true,
   asset_ids: true,
   blocking: true,
   keyframe_pick: true,
   confirmed: true,
-}).partial();
+})
+  .extend({ duration_s: z.number().positive().nullable() })
+  .partial();
 export type ShotPatch = z.infer<typeof ShotPatchSchema>;
+
+/** The impact preview's `shot_edit`: settings, or a split (after a line) / a merge with the
+ * next shot of a confirmed shot. */
+export type ShotEdit = ShotPatch & { split?: { after_line_id: string | null }; merge?: boolean };

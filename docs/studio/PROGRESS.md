@@ -15,16 +15,16 @@
 - 第 2 步（0b80875，DECISIONS「M4 第 2 步」）：组件 `plan`（`pipeline/components/plan.py`，`cascade_rerun = False`）、规则 `shots/ops.py`（补齐覆盖、插入镜头、接尾帧、id 沿用、拆分合并、改字段）、`shots/service.py`（读当前版本、时长现算、物化 + 关键帧产物、`ensure_plan`）、接口 `api/routes/shots.py`；剧本切片 `shots`（只有结构、不含文字，按 Kelvin 定第 3 项）、素材清单切片 `ids`；影响范围新行 `stale_shot_plan` / `then_shot_plan`，「确认并同步」估价不算级联不跑的产物（`component.reruns_in_cascade`）；`on_adopt` 可挂多个；`scene_numbers` 挪到 `episodes.service`；`shot_count`；示例种子 `plan.json`；导出 `web/src/test/data/shots.json`。前端契约 `scene_label` → `scene_no` / `scene_place`，加 `seed_changed`、`min_s`、`planned_s`、`manual_s`、`longest_s`、`split_hint`；MSW 镜头只管示例第 1 集。新测试 `tests/unit/test_shot_ops.py` 9 个、`tests/api/test_shots_api.py` 7 个；全量 pytest 676 个、Playwright e2e 34 个、vitest 278 个过；ruff、mypy 干净。
 - 第 3 步（3b89b38，DECISIONS「M4 第 3 步」）：组件 `kf`（`pipeline/components/kf.py`：读已采纳的分镜规划和剧本、只传锁定的参考图（角色 → 场景 → 道具 → 画面文字，按 `max_refs` / 工作流槽数）、站位转文字、混合出终版）；分镜规划切片 `shot:<id>`（`plan.shot_plan_slicer`）；`keyframe` 进 `MEDIA_SLOTS`；`Invalidation.check` + `kf.stale_aspect`；`model_call.shot_id`；确认 / 取消确认镜头（`lock_pick` + gate `shot` 的决定，`shots.service.record_shot_gate`）、`confirm_stale`、409 `shot_confirmed`；`lock_spec`；示例 7 个关键帧（`demo-p-kf-1-0X`，1-01–1-03 已确认）；`shots.json` 加关键帧产物；影响范围里的关键帧行写镜头号（`Node.label`，`stale_keyframe` / `then_keyframe` / `uses_keyframe` 加词条）；4 个错误码词条。新测试 `tests/api/test_keyframes_api.py` 7 个、`tests/unit/test_kf.py` 5 个；全量 pytest 688 个过；ruff、mypy（含 linux）、tsc、prettier 干净；vitest 278 个、eslint 过。
 - 第 4 步（d5cccb3，DECISIONS「M4 第 4 步」）：分镜确认（gate `storyboard`，`GateService.precondition`，409 `shots_not_confirmed`；取消确认镜头时重开）；分镜进度（`ShotService.badge`）；影响范围 `shot_edit`（字段 / 拆分 / 合并，已确认的镜头普通接口 409）、后端 `spec_aspect`（`keyframes_redraw` 估价 `RunService.final_cost`、`ref_images_suggest`、`PlannedChange.stale`）；`ImpactService.extra`：素材行 `shot_refs` / `shots_confirmed_redraw`、说话的行 `shot_duration_follows`；`ShotService.states` 共用；词条。导出 `episodes.json`（分镜徽标）。新测试 `tests/api/test_storyboard_api.py` 10 个；全量 pytest 698 个过；ruff、mypy（含 linux）干净；vitest 278 个、eslint、tsc、prettier 过。
-- 第 5 步（本提交，DECISIONS「M4 第 5 步」）：删 MSW 的镜头 PATCH、示例分镜 / 关键帧产物（`fixtures/demo/shots.ts`）、分镜闸门、`spec_aspect`、素材叠加（`handlers/assets.ts`）、剧集镜头数叠加；剧本块叠加只留视频行；`GET …/shots` 只叠第 1 集的 `video_product_id`，生成、后期的 MSW 先取后端镜头（`handlers/shots.ts:demoShots`）。后端：`AssetOut.shots` 读 `shot` 表；`ImpactService.applied()` + 规格路由校验 `confirmed_impact`。前端：`components/CandidateGrid.tsx`（素材页也用）、`FinalButton` 挪到 `components/`、分镜页真图 / 放大 / 出终版 / 「待更新」、改已确认镜头走 `shot_edit`、Inspector item `shot:<id>`。假后端 `test/fakes/shots.ts`。Playwright `real` 加分镜页。截图 `storyboard`、`storyboard-shot-edit`、`spec-aspect-impact`。全量 pytest 699 个、vitest 285 个、Playwright e2e 35 个过；ruff、mypy（含 linux）、eslint、tsc、prettier 干净。
+- 第 5 步（c6e07f3，DECISIONS「M4 第 5 步」）：删 MSW 的镜头 PATCH、示例分镜 / 关键帧产物（`fixtures/demo/shots.ts`）、分镜闸门、`spec_aspect`、素材叠加（`handlers/assets.ts`）、剧集镜头数叠加；剧本块叠加只留视频行；`GET …/shots` 只叠第 1 集的 `video_product_id`，生成、后期的 MSW 先取后端镜头（`handlers/shots.ts:demoShots`）。后端：`AssetOut.shots` 读 `shot` 表；`ImpactService.applied()` + 规格路由校验 `confirmed_impact`。前端：`components/CandidateGrid.tsx`（素材页也用）、`FinalButton` 挪到 `components/`、分镜页真图 / 放大 / 出终版 / 「待更新」、改已确认镜头走 `shot_edit`、Inspector item `shot:<id>`。假后端 `test/fakes/shots.ts`。Playwright `real` 加分镜页。截图 `storyboard`、`storyboard-shot-edit`、`spec-aspect-impact`。全量 pytest 699 个、vitest 285 个、Playwright e2e 35 个过；ruff、mypy（含 linux）、eslint、tsc、prettier 干净。
+- 第 6 步（本提交，DECISIONS「M4 第 6 步」）：「分镜板 / 表格」切换（`?view=table`，选中镜头写进 `?shot=`）、`storyboard/ShotTable.tsx`（单元格改类型 / 景别 / 运动 / 时长，每行拆分 / 合并）、镜头设定里的拆分（选切点）/ 合并、时长来源 / 「恢复按音频」/ 拆镜提示（`duration.ts`）；`useSplitShot` / `useMergeShot`，`ShotPatchSchema.duration_s` 可为 null；所有改动走 `Storyboard.tsx:edit`（已确认的先 `shot_edit`）。假后端补拆分、合并、时长规则。截图 `storyboard-table`。只改前端：vitest 292 个、Playwright `real` 14 个过；eslint、tsc、prettier 干净。
 
 ## 下一步
 
-- **第 6 步 表格视图、拆分合并、时长（前端）**（计划「小步」6）。从 `web/src/pages/Storyboard.tsx` 开始：
-  1. 「分镜板 / 表格」切换（剧本页 `SegmentedControl` 的做法），`?view=table`，选中的镜头仍是 `?shot=`；表格列见计划，单元格走同一个 PATCH（已确认的走 `shot_edit`，Storyboard.tsx 的 `onPatch` 已经分好）。
-  2. 拆分（多行时选从哪里切）/ 和下一个合并：`POST /shots/{id}/split|merge`（hooks 还没有）；已确认的走 `shot_edit` 的 `{split}` / `{merge: true}`。假后端 `test/fakes/shots.ts` 要补 split / merge。
-  3. 时长：显示来源（音频 / 手动）、最短多少、「恢复按音频」（PATCH `duration_s: null`：前端 `ShotPatchSchema` 现在不收 null，要放开）；超过 `longest_s` 显示拆镜提示。现在的时长输入框 `step=1`、`min=2`，1-04 的 4.5 秒在浏览器里算不合法，一起改。
-  4. 截图给 Kelvin（表格视图）。
-- **第 7 步提醒**：镜头卡片和预演条还是占位色块，要显示选中的关键帧，`ShotOut` 加选中那张图的 sha256（后端），免得每个镜头查一次产物。
+- **第 7 步 动态分镜和安全区（前端）**（计划「小步」7）。从 `web/src/pages/storyboard/PreviewStrip.tsx` 开始：
+  1. 镜头卡片、预演条现在还是占位色块：`ShotOut` 加选中那张关键帧的 sha256（后端 `ShotService.of_episode`，版本上的 pick / 锁定的 `pick` 版本），前端用 `fileUrl`；改了后端要重启、重新导出 `test/data/shots.json`（`DRAMA_UPDATE_FIXTURES=1`）。
+  2. `storyboard/Animatic.tsx`：rAF 时钟按镜头时长走；连续动作用接的那个镜头的关键帧，标「接 1-06 尾帧」；台词配音按偏移播放（镜头开头 0.3 秒，之后一句接一句，读 `dub` 接口的音频）；字幕；播放 / 暂停 / 点时间条跳转 / 空格键；「n 句还没配音 · 去配音」。
+  3. `lib/safeArea.ts`（从 `pages/spec/SafeAreaPreview` 抽区域算法），画面和候选图上的安全区开关，比例读 `GET /spec/presets` 的 `safe_areas`。
+  4. 截图给 Kelvin（播放中、开着安全区）。
 - **第 9 步提醒**：本地没有锁定参考图时要换 Qwen-Image（2511 只能按参考图编辑），第 3 步没做（DECISIONS「M4 第 3 步」）。
 - **提醒 Kelvin 重启后端并 `demo --reset`**（第 1 步加了迁移 `0018`，第 2、3 步加了示例分镜和关键帧；本地库里关键帧产物是第 2 步的随机 id，`--reset` 后才是 `demo-p-kf-1-0X`；第 5 步起分镜页完全读后端，MSW 不再兜底）：`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
@@ -39,6 +39,7 @@
 
 ## 踩过的坑 / 临时绕过
 
+- **CI**：第 4 步（d5cccb3）的 CI 红了：`e2e/real.spec.ts` 解锁「林晚出租屋」现在会列出用到它的镜头、弹影响范围，测试还按「不弹窗」写；第 5 步改好了。
 - **临时脚本里 `create_app()` 一定先设 `DRAMA_HOME` 到临时目录**（`core/paths.py`；不是 `DRAMA_STUDIO_HOME`），否则开的是真实的 `~/.drama-studio`：第 3 步就这样把示例关键帧种进了 Kelvin 的库（Mock，没花钱，和重启后端的效果一样）。
 
 - **测试别在「档案写完」后立刻断言任务状态**：任务结束比档案写入晚一点，CI 慢机器上会读到 running（`test_rescan_replaces_a_running_scan`，2026-10-21 修：等任务都结束再比）。
@@ -73,4 +74,4 @@
 
 ## 等 Kelvin 的事
 
-- 看截图（原型没有的部分，都在 `reports/ui/`）：**M4 第 5 步 `storyboard`、`storyboard-shot-edit`（改已确认的镜头）、`spec-aspect-impact`（改画幅，后端估价 $0.94）**；M3 第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 15 步重截的 `assets-views`（6 张视图）；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
+- 看截图（原型没有的部分，都在 `reports/ui/`）：**M4 第 5 步 `storyboard`、`storyboard-shot-edit`（改已确认的镜头）、`spec-aspect-impact`（改画幅，后端估价 $0.94）；第 6 步 `storyboard-table`（表格视图）**；M3 第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 15 步重截的 `assets-views`（6 张视图）；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。

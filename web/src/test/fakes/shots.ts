@@ -5,7 +5,10 @@
  * the pages need them:
  * - 改设定 (`PATCH /shots/{id}`): written in place (the plan's edit versions are not kept);
  *   refused on a confirmed shot (409 `shot_confirmed`) and on a confirmed storyboard (409
- *   `product_locked`); shorter than its audio: 422 `duration_below_audio`;
+ *   `product_locked`); shorter than its audio: 422 `duration_below_audio`; the duration follows
+ *   `timing.shot_duration` (null: back to automatic);
+ * - 拆分 / 和下一个合并 (`shots/ops.py`): lines halved (or cut after a line) / joined, shots
+ *   renumbered; the new half gets an empty keyframe product, the merged one's goes;
  * - 选这个: the keyframe product's pick in the version on screen (409 `nothing_to_pick`);
  * - 确认这个镜头: the picked draft candidate becomes an adopted, locked `pick` version (a final's
  *   lone picture is locked as it is; the version on screen stays); a continuous shot needs none.
@@ -158,13 +161,25 @@ function confirm(s: Shot): Response | null {
   return null;
 }
 
+/** `timing.shot_duration`: dialogue runs as long as its audio unless made longer by hand; the
+ * rest by hand, else the plan's seconds; never shorter than what is spoken (`min_s`). */
+function retime(s: Shot) {
+  const dialogue = s.dialogue !== null && !s.dialogue.includes("画外音");
+  const base = s.manual_s ?? (dialogue ? s.min_s : (s.planned_s ?? 3));
+  s.duration_source = (dialogue && s.manual_s === null) || s.min_s > base ? "audio" : "manual";
+  s.duration_s = Math.max(base, s.min_s);
+  s.split_hint = s.longest_s !== null && s.duration_s > s.longest_s;
+}
+
 /** The settings of `PATCH /shots/{id}` written in place (no checks); the refusal, or null. */
 function write(s: Shot, patch: ShotPatch): Response | null {
   const { confirmed, keyframe_pick: pick, intent, duration_s: seconds, ...rest } = patch;
   void confirmed;
   if (seconds !== undefined) {
-    if (seconds < s.min_s) return error(422, "duration_below_audio", { id: s.id, min_s: s.min_s });
-    Object.assign(s, { duration_s: seconds, manual_s: seconds, duration_source: "manual" });
+    if (seconds !== null && seconds < s.min_s)
+      return error(422, "duration_below_audio", { id: s.id, min_s: s.min_s });
+    s.manual_s = seconds;
+    retime(s);
   }
   Object.assign(s, rest);
   const kf = keyframeOf(s);
@@ -214,21 +229,35 @@ export function shotEditImpact(shotId: string, patch: Record<string, unknown>): 
   const s = findShot(shotId);
   if (!s) return null;
   const lines: Line[] = [];
-  if (s.confirmed) lines.push(line("shot_reconfirm", { shots: s.label, count: 1 }));
+  const next = patch.merge ? nextInScene(s) : undefined;
+  const confirmed = [s, ...(next ? [next] : [])].filter((x) => x.confirmed);
+  if (confirmed.length)
+    lines.push(
+      line("shot_reconfirm", {
+        shots: confirmed.map((x) => x.label).join("、"),
+        count: confirmed.length,
+      }),
+    );
   if (patch.intent !== undefined && keyframeOf(s))
     lines.push(line("shot_redraw", { shot: s.label }));
   if (fakeShots.confirmed.has(s.episode_id)) lines.push(line("gate_storyboard", { n: 1 }));
   return lines;
 }
 
-/** Applying `shot_edit`: 分镜确认 reopened, the shot's confirmation taken back, the edit written;
- * 确认并同步 also draws its keyframe again. */
+/** Applying `shot_edit`: 分镜确认 reopened, the shot's confirmation taken back (and the next
+ * one's, merging), the edit written; 确认并同步 also draws its keyframe again. */
 export function editFakeShot(shotId: string, patch: Record<string, unknown>, redraw: boolean) {
   const s = findShot(shotId);
   if (!s) return;
   reopenGate();
   unconfirm(s);
-  write(s, ShotPatchSchema.parse(patch));
+  const split = patch.split as { after_line_id?: string | null } | undefined;
+  if (split) splitShot(s, split.after_line_id ?? null);
+  else if (patch.merge) {
+    const next = nextInScene(s);
+    if (next) unconfirm(next);
+    mergeShot(s);
+  } else write(s, ShotPatchSchema.parse(patch));
   const kf = keyframeOf(s);
   if (redraw && kf) run(kf, { mode: "run", where: "local" });
 }
@@ -273,6 +302,97 @@ export function specAspectImpact(scenes: number): Line[] {
 export function aspectFakeShots(redraw: boolean) {
   for (const s of fakeShots.shots) unconfirm(s);
   if (redraw) for (const kf of fakeShots.keyframes) run(kf, { mode: "run", where: "local" });
+}
+
+// ------------------------------------------------------------------ split, merge
+
+function renumber() {
+  fakeShots.shots.forEach((s, i) => {
+    s.idx = i + 1;
+    s.label = `1-${String(i + 1).padStart(2, "0")}`;
+  });
+}
+
+const nextInScene = (s: Shot) => {
+  const next = fakeShots.shots[fakeShots.shots.indexOf(s) + 1];
+  return next?.scene_id === s.scene_id ? next : undefined;
+};
+
+let made = 0;
+
+/** 拆分 (`ops.split`): the lines halved, or cut after `after`; one action line is filmed by
+ * both, one spoken line stays in the first (the second is a 2 s reaction). The refusal, or null. */
+function splitShot(s: Shot, after: string | null): Response | null {
+  const lines = s.line_ids;
+  if (after !== null && !lines.slice(0, -1).includes(after))
+    return error(422, "split_point_invalid", { id: after });
+  const cut = after !== null ? lines.indexOf(after) + 1 : Math.ceil(lines.length / 2);
+  const one = lines.length === 1;
+  const head = one ? lines : lines.slice(0, cut);
+  const tail = one ? (s.dialogue ? [] : [...lines]) : lines.slice(cut);
+  const id = `shot-new-${++made}`;
+  const kf: Product = {
+    ...structuredClone(fakeShots.keyframes[0] as Product),
+    id: `p-kf-${id}`,
+    owner_id: id,
+    current_version_id: null,
+    adopted_version_id: null,
+    locked_hash: null,
+    status: "empty",
+    versions: [],
+    pick: null,
+    prompt: null,
+  };
+  fakeShots.keyframes.push(kf);
+  const half = tail.length ? Math.max(1, Math.round(((s.planned_s ?? 4) / 2) * 10) / 10) : 2;
+  const second: Shot = {
+    ...structuredClone(s),
+    id,
+    line_ids: tail,
+    shot_type: "same_scene_cut",
+    tail_from: null,
+    tail_note: null,
+    dialogue: tail.length ? s.dialogue : null,
+    min_s: tail.length ? s.min_s : 0,
+    planned_s: half,
+    manual_s: null,
+    keyframe_product_id: kf.id,
+    keyframe_pick: 0,
+    confirmed: false,
+    confirm_stale: false,
+  };
+  Object.assign(s, { line_ids: head, planned_s: tail.length ? half : s.planned_s, manual_s: null });
+  retime(s);
+  retime(second);
+  for (const x of fakeShots.shots) if (x.tail_from === s.label) x.tail_from = "pending";
+  fakeShots.shots.splice(fakeShots.shots.indexOf(s) + 1, 0, second);
+  renumber();
+  for (const x of fakeShots.shots) if (x.tail_from === "pending") x.tail_from = second.label;
+  return null;
+}
+
+/** 和下一个合并 (`ops.merge`): the next shot of the scene folds into this one; its keyframe goes. */
+function mergeShot(s: Shot): Response | null {
+  const next = nextInScene(s);
+  if (!next) return error(422, "no_next_shot", { id: s.id });
+  s.line_ids = [...new Set([...s.line_ids, ...next.line_ids])];
+  s.asset_ids = [...new Set([...s.asset_ids, ...next.asset_ids])];
+  s.planned_s = (s.planned_s ?? 0) + (next.planned_s ?? 0) || null;
+  s.min_s = s.min_s + next.min_s;
+  s.manual_s = null;
+  retime(s);
+  fakeShots.keyframes = fakeShots.keyframes.filter((p) => p.id !== next.keyframe_product_id);
+  fakeShots.shots.splice(fakeShots.shots.indexOf(next), 1);
+  renumber();
+  return null;
+}
+
+/** 拆分 / 合并 by the plain endpoints: refused on a confirmed shot (and the next one, merging). */
+function splitOrMerge(s: Shot, run: () => Response | null, others: Shot[] = []): Response {
+  for (const x of [s, ...others])
+    if (x.confirmed) return error(409, "shot_confirmed", { id: x.id });
+  if (fakeShots.plan.locked_hash) return error(409, "product_locked", { id: fakeShots.plan.id });
+  return run() ?? HttpResponse.json(fakeShots.shots);
 }
 
 // ------------------------------------------------------------------ keyframe runs
@@ -404,6 +524,20 @@ export function shotHandlers() {
       const body = ShotPatchSchema.safeParse(await request.json());
       if (!body.success) return error(422, "invalid_request");
       return patchShot(s, body.data);
+    }),
+
+    http.post("*/api/v1/shots/:id/split", async ({ params, request }) => {
+      const s = findShot(params.id);
+      if (!s) return error(404, "shot_not_found", { id: params.id });
+      const body = (await request.json()) as { after_line_id?: string | null };
+      return splitOrMerge(s, () => splitShot(s, body.after_line_id ?? null));
+    }),
+
+    http.post("*/api/v1/shots/:id/merge", ({ params }) => {
+      const s = findShot(params.id);
+      if (!s) return error(404, "shot_not_found", { id: params.id });
+      const next = nextInScene(s);
+      return splitOrMerge(s, () => mergeShot(s), next ? [next] : []);
     }),
 
     http.get("*/api/v1/products/:id", ({ params }) => {

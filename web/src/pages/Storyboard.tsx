@@ -1,6 +1,7 @@
-/** 04 分镜 · 关键帧与镜头设定 (prototype Storyboard.dc.html). A confirmed shot (or a shot of a
- * confirmed storyboard) is changed through the impact preview (`shot_edit`): its confirmation
- * goes, 确认并同步 also draws its keyframe again. */
+/** 04 分镜 · 关键帧与镜头设定 (prototype Storyboard.dc.html). The shots show as a board or a
+ * table (`?view=table`), the selected one is `?shot=` in both. A confirmed shot (or a shot of a
+ * confirmed storyboard) is changed, split or merged through the impact preview (`shot_edit`):
+ * its confirmation goes, 确认并同步 also draws its keyframe again. */
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
@@ -13,8 +14,8 @@ import { useImpactPreview } from "@/api/hooks/impact";
 import { useProduct, useProducts } from "@/api/hooks/products";
 import { useScript } from "@/api/hooks/script";
 import { useOutputSpec, useRouteEpisode } from "@/api/hooks/series";
-import { usePatchShot, useShots } from "@/api/hooks/shots";
-import type { ShotPatch } from "@/api/schemas/shots";
+import { useMergeShot, usePatchShot, useShots, useSplitShot } from "@/api/hooks/shots";
+import type { Shot, ShotEdit, ShotPatch } from "@/api/schemas/shots";
 import { paths } from "@/app/paths";
 import { GateButton } from "@/components/GateButton";
 import { ImpactDialog } from "@/components/ImpactDialog";
@@ -22,12 +23,21 @@ import { Inspector } from "@/components/Inspector";
 import { PageHeader } from "@/components/PageHeader";
 import { QueryState, Skeleton } from "@/components/QueryState";
 import { RunBar } from "@/components/RunBar";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { StepLayout } from "@/components/StepLayout";
 import { scriptBlocks, useBlockLead } from "@/pages/script/blocks";
 import { PreviewStrip } from "@/pages/storyboard/PreviewStrip";
 import { ShotCards } from "@/pages/storyboard/ShotCards";
 import { ShotSettings } from "@/pages/storyboard/ShotSettings";
+import { ShotTable } from "@/pages/storyboard/ShotTable";
 import { useInspectorStore } from "@/stores/inspector";
+
+type View = "board" | "table";
+
+/** What the user does to a shot: change its settings, split it (after a line), merge it with
+ * the next shot of its scene. */
+type Edit =
+  { kind: "patch"; change: ShotPatch } | { kind: "split"; after?: string } | { kind: "merge" };
 
 export default function StoryboardPage() {
   const { t } = useTranslation("storyboard");
@@ -38,22 +48,34 @@ export default function StoryboardPage() {
   const assets = useAssets(seriesId, episode?.id);
   const episodeProducts = useProducts({ owner: `episode:${episode?.id ?? ""}` });
   const patchShot = usePatchShot(episode?.id);
+  const splitShot = useSplitShot(episode?.id);
+  const mergeShot = useMergeShot(episode?.id);
   const preview = useImpactPreview();
-  // An edit of a confirmed shot, waiting in the impact dialog; 撤销 puts the form back.
-  const [editing, setEditing] = useState<{ id: string; change: ShotPatch } | null>(null);
+  // An edit of a confirmed shot, waiting in the impact dialog; 撤销 (or a refused edit) puts
+  // the form back.
+  const [editing, setEditing] = useState<{ id: string; change: ShotEdit } | null>(null);
   const [undone, setUndone] = useState(0);
   const component = useInspectorStore((s) => s.component) ?? "kf";
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(component);
   const script = useScript(episode?.id);
   const leadOf = useBlockLead();
-  // A script line's 「镜头 1-04」 links here with `?shot=`; a shot the user picks wins until the
-  // link changes.
-  const [search] = useSearchParams();
-  const linked = search.get("shot");
-  const [picked, setPicked] = useState<{ id: string; link: string | null } | null>(null);
-  const selectedId = picked && picked.link === linked ? picked.id : linked;
-  const setSelectedId = (id: string) => setPicked({ id, link: linked });
+  // A script line's 「镜头 1-04」 links here with `?shot=`; picking a shot (on the board or in the
+  // table) writes it there, so both views and a reload keep it.
+  const [search, setSearch] = useSearchParams();
+  const selectedId = search.get("shot");
+  const view: View = search.get("view") === "table" ? "table" : "board";
+  const setParam = (key: string, value: string | null) =>
+    setSearch(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (value === null) next.delete(key);
+        else next.set(key, value);
+        return next;
+      },
+      { replace: true },
+    );
+  const setSelectedId = (id: string) => setParam("shot", id);
 
   useEffect(() => {
     useInspectorStore.getState().reset();
@@ -73,22 +95,54 @@ export default function StoryboardPage() {
     .filter((b) => b.kind !== "scene" && shot?.line_ids.includes(b.id))
     .map((b) => ({ id: b.id, lead: leadOf(b), text: b.text, paras: b.paras }));
 
-  const onPatch = (change: ShotPatch) => {
-    if (!shot) return;
-    const settings = Object.keys(change).some((k) => k !== "confirmed");
-    if (settings && (shot.confirmed || !!plan?.locked_hash)) {
-      const target = shot.id;
+  const fail = (err: unknown) => {
+    toast.error(errorMessage(tc, err));
+    setUndone((n) => n + 1);
+  };
+
+  const edit = (target: Shot, e: Edit) => {
+    const next = list[list.indexOf(target) + 1];
+    const settles = e.kind !== "patch" || Object.keys(e.change).some((k) => k !== "confirmed");
+    const confirmed =
+      target.confirmed ||
+      !!plan?.locked_hash ||
+      (e.kind === "merge" && next?.scene_id === target.scene_id && next.confirmed);
+    if (settles && confirmed) {
+      const change: ShotEdit =
+        e.kind === "patch"
+          ? e.change
+          : e.kind === "split"
+            ? { split: { after_line_id: e.after ?? null } }
+            : { merge: true };
       preview.mutate(
-        { kind: "shot_edit", target_id: target, patch: change },
+        { kind: "shot_edit", target_id: target.id, patch: change },
+        { onSuccess: () => setEditing({ id: target.id, change }), onError: fail },
+      );
+      return;
+    }
+    if (e.kind === "split") {
+      splitShot.mutate(
+        { id: target.id, afterLineId: e.after },
         {
-          onSuccess: () => setEditing({ id: target, change }),
-          onError: (err) => toast.error(errorMessage(tc, err)),
+          onSuccess: (now) => {
+            const at = now.findIndex((s) => s.id === target.id);
+            toast.success(t("shot.splitDone", { id: now[at]?.label, next: now[at + 1]?.label }));
+          },
+          onError: fail,
         },
       );
       return;
     }
+    if (e.kind === "merge") {
+      mergeShot.mutate(target.id, {
+        onSuccess: () => toast.success(t("shot.mergeDone", { id: target.label })),
+        onError: fail,
+      });
+      return;
+    }
+    const { change } = e;
     patchShot.mutate(
-      { id: shot.id, patch: change },
+      { id: target.id, patch: change },
       {
         onSuccess: (s) => {
           if (change.confirmed !== undefined)
@@ -96,10 +150,12 @@ export default function StoryboardPage() {
               t(change.confirmed ? "shot.confirmed" : "shot.unconfirmed", { id: s.label }),
             );
         },
-        onError: (err) => toast.error(errorMessage(tc, err)),
+        onError: fail,
       },
     );
   };
+  const busy =
+    patchShot.isPending || splitShot.isPending || mergeShot.isPending || preview.isPending;
 
   const closeEdit = (kept: boolean) => {
     if (!kept) setUndone((n) => n + 1);
@@ -169,12 +225,41 @@ export default function StoryboardPage() {
                   onOpenHistory={() => show("history", component)}
                 />
               ) : null}
-              <ShotCards
-                shots={list}
-                aspect={aspect}
-                selectedId={shot.id}
-                onSelect={setSelectedId}
-              />
+              <div className="flex flex-wrap items-center gap-2">
+                <h2 className="text-base font-bold">
+                  {t("list.title", { count: list.length, seconds })}
+                </h2>
+                <SegmentedControl
+                  className="ml-auto"
+                  size="sm"
+                  label={t("list.views")}
+                  value={view}
+                  onChange={(v) => setParam("view", v === "table" ? "table" : null)}
+                  options={(["board", "table"] as const).map((v) => ({
+                    value: v,
+                    label: t(`list.view.${v}`),
+                  }))}
+                />
+              </div>
+              {view === "table" ? (
+                <ShotTable
+                  shots={list}
+                  assets={assets.data ?? []}
+                  selectedId={shot.id}
+                  busy={busy}
+                  onSelect={setSelectedId}
+                  onPatch={(target, change) => edit(target, { kind: "patch", change })}
+                  onSplit={(target) => edit(target, { kind: "split" })}
+                  onMerge={(target) => edit(target, { kind: "merge" })}
+                />
+              ) : (
+                <ShotCards
+                  shots={list}
+                  aspect={aspect}
+                  selectedId={shot.id}
+                  onSelect={setSelectedId}
+                />
+              )}
               <ShotSettings
                 key={`${shot.id}-${undone}`}
                 shot={shot}
@@ -186,8 +271,11 @@ export default function StoryboardPage() {
                   `${paths.step(seriesId, ep, "script")}?line=${encodeURIComponent(id)}`
                 }
                 novelPath={(idx) => `${paths.step(seriesId, ep, "novel")}?para=${idx}`}
-                busy={patchShot.isPending || preview.isPending}
-                onPatch={onPatch}
+                busy={busy}
+                canMerge={list[list.indexOf(shot) + 1]?.scene_id === shot.scene_id}
+                onPatch={(change) => edit(shot, { kind: "patch", change })}
+                onSplit={(after) => edit(shot, { kind: "split", after })}
+                onMerge={() => edit(shot, { kind: "merge" })}
               />
             </>
           ) : null
