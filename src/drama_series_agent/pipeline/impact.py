@@ -57,6 +57,8 @@ from drama_series_agent.suggestions.service import SUGGESTIONS_SLOT, SuggestionS
 
 ImpactAction = Literal["mark", "rerun", "undo"]
 Planner = Callable[[str, dict[str, Any]], Awaitable[PlannedChange]]
+# (target id, patch) → more impact lines {code, params, cost_usd, optional} for that kind.
+Extra = Callable[[str, dict[str, Any]], Awaitable[list[dict[str, Any]]]]
 # The next run's price of a product on its current route; None = free (local) or unknown.
 Estimator = Callable[[Product], Awaitable[float | None]]
 
@@ -238,11 +240,16 @@ class ImpactService:
         self._invalidation = invalidation
         self._estimate = estimate
         self._planners: dict[str, Planner] = {}
+        self._extras: dict[str, list[Extra]] = {}
         self.cascade: Cascader | None = None
         self._previews: OrderedDict[str, _Preview] = OrderedDict()
 
     def kind(self, name: str, planner: Planner) -> None:
         self._planners[name] = planner
+
+    def extra(self, name: str, fn: Extra) -> None:
+        """More lines for a kind another service plans (M4: the shots a script line is in)."""
+        self._extras.setdefault(name, []).append(fn)
 
     # ------------------------------------------------------------------ preview
 
@@ -307,9 +314,12 @@ class ImpactService:
         if planner is None:
             raise PipelineError(422, "unknown_change_kind", kind=change.kind)
         try:
-            return await planner(change.target_id, change.patch)
+            planned = await planner(change.target_id, change.patch)
         except ValidationError as exc:
             raise PipelineError(422, "invalid_patch", kind=change.kind, issues=str(exc)) from exc
+        for fn in self._extras.get(change.kind, []):
+            planned.lines = [*planned.lines, *await fn(change.target_id, change.patch)]
+        return planned
 
     async def _affected(self, planned: PlannedChange) -> _Affected:
         async with self._db.session() as session:
@@ -409,7 +419,7 @@ class ImpactService:
         lines += [line(f"edited_{nodes[i].slot}", nodes[i]) for i in ids if nodes[i].edited]
         lines += [ImpactLineOut.model_validate(x) for x in planned.lines]
 
-        stale: dict[str, int] = {}
+        stale: dict[str, int] = dict(planned.stale)
         for i in found.direct:
             step = _STEP.get(nodes[i].slot)
             if step:

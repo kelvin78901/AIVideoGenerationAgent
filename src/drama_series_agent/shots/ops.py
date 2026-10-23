@@ -37,6 +37,8 @@ MOVES = ("static", "push", "follow", "pan")
 AUDIO_MODES = ("native", "tts", "none")
 BLOCKING_KINDS = ("character", "camera", "prop", "landmark")
 SPEAKING = ("dialogue", "vo")
+# What a keyframe takes a locked picture of, in the order it sends them (M4).
+REF_KINDS = ("character", "scene", "prop", "text")
 # Where the camera stands on the top view for each framing (x, y; the action is up the page).
 CAMERA = {"wide": (0.5, 0.92), "medium": (0.5, 0.8), "close": (0.38, 0.7), "closeup": (0.55, 0.62)}
 SHORTEST_S = 1.0  # the plan's seconds are kept within these

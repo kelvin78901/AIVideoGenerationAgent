@@ -197,7 +197,7 @@ def test_script_gate_is_per_episode(client: TestClient) -> None:
 
 
 def test_gate_errors(client: TestClient) -> None:
-    resp = client.post(f"{V1}/gates/storyboard/confirm", json={"scope_id": "demo-e1"})
+    resp = client.post(f"{V1}/gates/takes/confirm", json={"scope_id": "demo-e1"})  # M5
     assert resp.status_code == 404 and _code(resp) == "unknown_gate"
     resp = client.post(f"{V1}/gates/script/confirm", json={"scope_id": "demo"})
     assert resp.status_code == 404 and _code(resp) == "episode_not_found"
@@ -211,9 +211,13 @@ def test_gate_errors(client: TestClient) -> None:
 def test_editing_a_confirmed_script_line(client: TestClient) -> None:
     _gate(client, "script", "confirm", "demo-e1")
     before = _versions(client, SCRIPT1)
-    # Rewording dialogue: nothing downstream reads it, but the dialog says what changes.
+    # Rewording dialogue: nothing downstream reads it, but the dialog says what changes (and
+    # that its shot runs as long as the new audio, M4).
     spoken = _preview(client, "line_edit", "demo-b5", {"text": "……是周屿吗？"})
-    assert _codes(spoken) == [("self_script", {"n": 1}, False)]
+    assert _codes(spoken) == [
+        ("self_script", {"n": 1}, False),
+        ("shot_duration_follows", {"shots": "1-04", "count": 1}, False),
+    ]
     assert spoken["stale"] == {} and spoken["rerun_cost_usd"] == 0
     assert _apply(client, spoken["id"], "undo").status_code == 200
     # An action line is what 素材分析 reads (M3): the episode's asset list goes stale.

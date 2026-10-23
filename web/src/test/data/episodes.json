@@ -746,9 +746,9 @@
           "stale": 0
         },
         "storyboard": {
-          "state": "not_started",
-          "done": null,
-          "total": null,
+          "state": "in_progress",
+          "done": 3,
+          "total": 9,
           "stale": 0
         },
         "generate": {

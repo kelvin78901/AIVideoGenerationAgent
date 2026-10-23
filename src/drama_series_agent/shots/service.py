@@ -17,22 +17,32 @@ final's lone picture is locked as it is) and writes the shot's own ``gate_decisi
 and of the locked keyframe, in one transaction. A continuous shot has no keyframe: only the
 decision. Taking it back unlocks the keyframe and writes ``reopen``. A confirmed shot is
 「待更新」 (``confirm_stale``) when its settings or its keyframe changed since; it is not edited
-in place (409 ``shot_confirmed``; that goes through the impact preview, M4 step 4). The output
-spec locks when the first keyframe is adopted (``lock_spec``, SPEC 13.3).
+in place (409 ``shot_confirmed``): that goes through the impact preview (``shot_edit``), which
+takes the confirmation back. The output spec locks when the first keyframe is adopted
+(``lock_spec``, SPEC 13.3).
+
+**分镜确认** (gate ``storyboard``) locks the episode's plan once every shot is confirmed and
+none is 「待更新」 (``register``: its precondition, the 分镜 badge); taking a shot's
+confirmation back reopens it. **改画幅** (``spec_aspect``) lists the keyframes drawn for the old
+aspect: 「只改这里」 writes the spec and takes the shots' confirmations back, 「确认并同步」 also
+draws the keyframes again (local drafts).
 """
 
 from __future__ import annotations
 
 import re
 from collections.abc import Awaitable, Callable, Iterable
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
 
+from loguru import logger
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import (
+    Asset,
     Episode,
     GateDecision,
     Job,
@@ -44,7 +54,13 @@ from drama_series_agent.core.models_db import (
     Shot,
     utcnow,
 )
-from drama_series_agent.episodes.service import latest_gate, scene_numbers
+from drama_series_agent.episodes.schema import StepProgressOut
+from drama_series_agent.episodes.service import (
+    EpisodeService,
+    gate_confirmed,
+    latest_gate,
+    scene_numbers,
+)
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
 from drama_series_agent.pipeline.components.plan import (
     SHOT_PLAN_SLOT,
@@ -53,17 +69,22 @@ from drama_series_agent.pipeline.components.plan import (
     plan_product,
     shot_slice,
 )
+from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.gates import GateService
+from drama_series_agent.pipeline.impact import ImpactService
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.pipeline.timing import ShotDuration, line_seconds, shot_duration
 from drama_series_agent.shots import ops
-from drama_series_agent.shots.schema import ShotOut, ShotPatch, ShotSplitIn
+from drama_series_agent.shots.schema import ShotEditIn, ShotOut, ShotPatch, ShotSplitIn
+from drama_series_agent.spec.schema import SpecPatch, apply_patch
 
 KEYFRAME_SLOT = "keyframe"
 KF_COMPONENT = "kf"
 SHOT_GATE = "shot"
+STORYBOARD_GATE = "storyboard"
 # The longest take the video route can make (seconds); None when no model on it says.
 LongestTake = Callable[[], Awaitable[float | None]]
 _HEADING_MARKS = re.compile(r"^(?:[日夜晨昏][　\s]+)?(?:[内外][　\s]+)?")
@@ -263,6 +284,21 @@ def dialogue_text(lines: Iterable[ScriptLine]) -> str | None:
     return "\n".join(rows) or None
 
 
+@dataclass(frozen=True)
+class ShotState:
+    confirmed: bool  # its last decision is a confirm
+    stale: bool  # confirmed, but its settings or its keyframe changed since (「待更新」)
+    keyframe_stale: bool
+
+
+def _line(code: str, params: dict[str, Any], cost: float | None = None) -> dict[str, Any]:
+    return {"code": code, "params": params, "cost_usd": cost, "optional": False}
+
+
+def _labels(episode_idx: int, shots: list[dict[str, Any]]) -> dict[str, str]:
+    return {s["id"]: f"{episode_idx}-{i:02d}" for i, s in enumerate(shots, 1)}
+
+
 class ShotService:
     def __init__(
         self,
@@ -277,6 +313,82 @@ class ShotService:
         self._runs = runs
         self._invalidation = invalidation
         self._longest = longest
+        self._gates: GateService | None = None  # set by ``register``
+
+    def register(self, gates: GateService, episodes: EpisodeService, impact: ImpactService) -> None:
+        """分镜确认's precondition, the 分镜 badge, and the impact preview's ``shot_edit``,
+        ``spec_aspect`` and the shot lines of the script's and the assets' changes."""
+
+        async def shot_edit(target: str, patch: dict[str, Any]) -> PlannedChange:
+            return await self.plan_edit(target, ShotEditIn.model_validate(patch))
+
+        async def spec_aspect(target: str, patch: dict[str, Any]) -> PlannedChange:
+            return await self.plan_aspect(target, SpecPatch.model_validate(patch))
+
+        gates.precondition(STORYBOARD_GATE, self._all_confirmed)
+        episodes.counters["storyboard"] = self.badge
+        impact.kind("shot_edit", shot_edit)
+        impact.kind("spec_aspect", spec_aspect)
+        impact.extra("line_edit", self._line_shots)
+        impact.extra("asset_edit", self._asset_shots)
+        impact.extra("asset_unlock", self._asset_shots)
+        self._gates = gates
+
+    async def states(
+        self, session: AsyncSession, plan: Product | None, shots: list[dict[str, Any]]
+    ) -> tuple[dict[str, Product], dict[str, ShotState]]:
+        """The shots' keyframe products (not retired) and whether each is confirmed and
+        「待更新」."""
+        ids = [s["id"] for s in shots]
+        keyframes = {
+            k: p for k, p in (await keyframe_products(session, ids)).items() if not p.retired
+        }
+        decisions = await shot_decisions(session, ids)
+        stale_kf = await self._invalidation.stale_ids(session, keyframes.values())
+        out: dict[str, ShotState] = {}
+        for shot_id in ids:
+            decided = decisions.get(shot_id)
+            confirmed = decided is not None and decided.action == "confirm"
+            kf = keyframes.get(shot_id)
+            kf_stale = kf is not None and kf.id in stale_kf
+            changed = False
+            if confirmed and decided is not None and plan is not None:
+                now = await self._invalidation.current_hash(session, plan.id, shot_slice(shot_id))
+                changed = (decided.product_hashes_json or {}).get(plan.id) != now
+            out[shot_id] = ShotState(confirmed, confirmed and (changed or kf_stale), kf_stale)
+        return keyframes, out
+
+    async def badge(self, session: AsyncSession, episode_id: str) -> StepProgressOut:
+        """分镜 n / m: the shots confirmed; 待更新: the plan and the shots changed since."""
+        plan = await plan_product(session, episode_id)
+        v = await _current(session, plan)
+        shots = ops.shots_of(v.payload_json) if v is not None else []
+        if plan is None or not shots:
+            return StepProgressOut(state="not_started")
+        _, states = await self.states(session, plan, shots)
+        stale = sum(1 for x in states.values() if x.stale or x.keyframe_stale)
+        stale += len(await self._invalidation.stale_ids(session, [plan]))
+        confirmed = await gate_confirmed(session, STORYBOARD_GATE, episode_id)
+        return StepProgressOut(
+            state="confirmed" if confirmed else "in_progress",
+            done=sum(1 for x in states.values() if x.confirmed),
+            total=len(shots),
+            stale=stale,
+        )
+
+    async def _all_confirmed(self, session: AsyncSession, episode_id: str) -> None:
+        """分镜确认 needs every shot confirmed and none 「待更新」."""
+        episode = await session.get(Episode, episode_id)
+        plan = await plan_product(session, episode_id)
+        v = await _current(session, plan)
+        shots = ops.shots_of(v.payload_json) if v is not None else []
+        _, states = await self.states(session, plan, shots)
+        labels = _labels(episode.idx if episode is not None else 0, shots)
+        waiting = [labels[i] for i, x in states.items() if not x.confirmed or x.stale]
+        if waiting:
+            raise PipelineError(
+                409, "shots_not_confirmed", count=len(waiting), labels="、".join(waiting)
+            )
 
     # ------------------------------------------------------------------ reads
 
@@ -301,33 +413,20 @@ class ShotService:
                     await session.exec(select(Scene).where(Scene.episode_id == episode_id))
                 ).all()
             }
-            keyframes = await keyframe_products(session, [s["id"] for s in shots])
-            decisions = await shot_decisions(session, [s["id"] for s in shots])
-            stale_kf = await self._invalidation.stale_ids(session, keyframes.values())
-            settings = {
-                s["id"]: await self._invalidation.current_hash(
-                    session, plan.id, shot_slice(s["id"])
-                )
-                for s in shots
-                if plan is not None
-            }
+            keyframes, states = await self.states(session, plan, shots)
         longest = await self._longest() if self._longest is not None else None
-        labels = {s["id"]: f"{episode.idx}-{i:02d}" for i, s in enumerate(shots, 1)}
+        labels = _labels(episode.idx, shots)
         out = []
         for i, s in enumerate(shots, 1):
             mine = [lines[x] for x in s.get("line_ids") or [] if x in lines]
             timing = _timing(s, mine, audio, longest)
             kf = keyframes.get(s["id"])
-            kf = kf if kf is not None and not kf.retired else None
+            state = states[s["id"]]
             scene = scenes.get(s["scene_id"])
             seed = str(s.get("intent") or "")
             intent = str(((kf.prompt_json if kf else None) or {}).get("intent") or seed)
             edited_from = ((kf.settings_json if kf else None) or {}).get("seed")
             pick = (kf.pick_json if kf else None) or {}
-            decided = decisions.get(s["id"])
-            confirmed = decided is not None and decided.action == "confirm"
-            locked = (decided.product_hashes_json if decided else None) or {}
-            changed = plan is not None and locked.get(plan.id) != settings.get(s["id"])
             out.append(
                 ShotOut(
                     id=s["id"],
@@ -363,8 +462,8 @@ class ShotService:
                     keyframe_pick=int(pick.get("idx") or 0)
                     if kf is not None and pick.get("version_id") == kf.current_version_id
                     else 0,
-                    confirmed=confirmed,
-                    confirm_stale=confirmed and (changed or (kf is not None and kf.id in stale_kf)),
+                    confirmed=state.confirmed,
+                    confirm_stale=state.stale,
                 )
             )
         return out
@@ -386,43 +485,15 @@ class ShotService:
             await self._unconfirm(shot_id)
         elif fields - {"confirmed"} and await self._confirmed(shot_id):
             raise PipelineError(409, "shot_confirmed", id=shot_id)
-        changes: dict[str, Any] = {
-            k: getattr(body, k)
-            for k in ("shot_type", "framing", "camera_move", "audio_mode")
-            if k in fields and getattr(body, k) is not None
-        }
-        if "blocking" in fields and body.blocking is not None:
-            changes["blocking"] = [b.model_dump() for b in body.blocking]
-        if "asset_ids" in fields and body.asset_ids is not None:
-            changes["asset_ids"] = list(dict.fromkeys(body.asset_ids))
-        if "duration_s" in fields:
-            changes["manual_s"] = body.duration_s
+        changes = _changes(body)
         p, v = await self._locate(shot_id, editable=bool(changes))
         if changes:
-            async with self._db.session() as session:
-                assets, _ = await episode_assets(session, p.owner_id)
-                lines = await _lines(session, p.owner_id)
-                shot = ops.find_shot(v.payload_json, shot_id)
-                assert shot is not None
-                audio = await line_audio_seconds(session, shot.get("line_ids") or [])
-            unknown = [a for a in changes.get("asset_ids", []) if a not in assets]
-            if unknown:
-                raise PipelineError(422, "asset_not_found", id=unknown[0])
-            manual = changes.get("manual_s")
-            if manual is not None:
-                mine = [lines[x] for x in shot.get("line_ids") or [] if x in lines]
-                floor = _timing(shot, mine, audio, None).min_s
-                if manual < floor:
-                    raise PipelineError(422, "duration_below_audio", min_s=floor)
-            characters = [a.id for a in assets.values() if a.kind == "character"]
-            payload = _apply(lambda: ops.patch(v.payload_json, shot_id, changes, characters))
+            payload = await self._edited(p, v, shot_id, changes)
             await self._products.append_edit(p.id, v, payload)
         if body.intent is not None or body.keyframe_pick is not None:
             kf = await self._keyframe(shot_id)
             if body.intent is not None:
-                seed = str((ops.find_shot(v.payload_json, shot_id) or {}).get("intent") or "")
-                await self._runs.save_prompt(kf.id, body.intent, None)
-                await self._products.update_settings(kf.id, {"seed": seed})
+                await self._set_intent(kf, v, shot_id, body.intent)
             if body.keyframe_pick is not None:
                 if kf.current_version_id is None:
                     raise PipelineError(409, "nothing_to_pick", id=shot_id)
@@ -432,7 +503,10 @@ class ShotService:
         return await self.get(shot_id)
 
     async def split(self, shot_id: str, body: ShotSplitIn) -> list[ShotOut]:
-        """拆分 (``ops.split``): one more shot after this one."""
+        """拆分 (``ops.split``): one more shot after this one. A confirmed shot is split through
+        the impact preview (``shot_edit``)."""
+        if await self._confirmed(shot_id):
+            raise PipelineError(409, "shot_confirmed", id=shot_id)
         p, v = await self._locate(shot_id)
         async with self._db.session() as session:
             lines = await _lines(session, p.owner_id)
@@ -442,14 +516,241 @@ class ShotService:
         return await self.of_episode(p.owner_id)
 
     async def merge(self, shot_id: str) -> list[ShotOut]:
-        """和下一个合并 (``ops.merge``)."""
+        """和下一个合并 (``ops.merge``); confirmed ones go through the impact preview."""
         p, v = await self._locate(shot_id)
+        for x in (shot_id, _next_in_scene(v.payload_json, shot_id)):
+            if x is not None and await self._confirmed(x):
+                raise PipelineError(409, "shot_confirmed", id=x)
         async with self._db.session() as session:
             lines = await _lines(session, p.owner_id)
         order = {line_id: n for n, line_id in enumerate(lines)}
         payload, _ = _apply(lambda: ops.merge(v.payload_json, shot_id, order))
         await self._products.append_edit(p.id, v, payload)
         return await self.of_episode(p.owner_id)
+
+    # ------------------------------------------------------------------ the impact preview
+
+    async def plan_edit(self, shot_id: str, body: ShotEditIn) -> PlannedChange:
+        """``shot_edit``: change a confirmed shot (or one of a confirmed storyboard), split it
+        or merge it with the next one. Lines: the shots whose confirmation it takes back, a new
+        picture description's redraw, 分镜确认 reopened; the keyframes it makes 待更新 come from
+        the plan's slices. 「确认并同步」 also draws the touched shots' keyframes again."""
+        if body.confirmed is not None or body.keyframe_pick is not None:
+            raise PipelineError(422, "invalid_patch", kind="shot_edit", issues="confirmed")
+        p, v = await self._locate(shot_id, editable=False, locked_ok=True)
+        payload: dict[str, Any] | None = None
+        touched = [shot_id]
+        async with self._db.session() as session:
+            lines = await _lines(session, p.owner_id)
+            episode = await session.get(Episode, p.owner_id)
+            gate_on = await gate_confirmed(session, STORYBOARD_GATE, p.owner_id)
+        if body.split is not None:
+            types = {x.id: x.type for x in lines.values()}
+            after = body.split.after_line_id
+            payload, _ = _apply(lambda: ops.split(v.payload_json, shot_id, types, after))
+        elif body.merge:
+            order = {line_id: n for n, line_id in enumerate(lines)}
+            payload, _ = _apply(lambda: ops.merge(v.payload_json, shot_id, order))
+            nxt = _next_in_scene(v.payload_json, shot_id)
+            touched += [nxt] if nxt else []
+        elif changes := _changes(body):
+            payload = await self._edited(p, v, shot_id, changes)
+        if payload == v.payload_json:
+            payload = None
+        labels = _labels(episode.idx if episode is not None else 0, ops.shots_of(v.payload_json))
+        confirmed = [x for x in touched if await self._confirmed(x)]
+        kf = None if body.intent is None else await self._keyframe(shot_id)
+        planned_lines: list[dict[str, Any]] = []
+        if confirmed:
+            shots = "、".join(labels[x] for x in confirmed)
+            planned_lines.append(_line("shot_reconfirm", {"shots": shots, "count": len(confirmed)}))
+        if kf is not None:
+            planned_lines.append(_line("shot_redraw", {"shot": labels[shot_id]}))
+        if gate_on:
+            planned_lines.append(_line("gate_storyboard", {"n": episode.idx if episode else 0}))
+
+        async def commit() -> None:
+            if gate_on and self._gates is not None:
+                await self._gates.reopen(STORYBOARD_GATE, p.owner_id)
+            for x in confirmed:
+                await self._unconfirm(x, reopen_gate=False)
+            if payload is not None:
+                await self._products.append_edit(p.id, v, payload)
+            if kf is not None and body.intent is not None:
+                await self._set_intent(kf, v, shot_id, body.intent)
+
+        async def redraw() -> list[str]:
+            async with self._db.session() as session:
+                now = await _current(session, await plan_product(session, p.owner_id))
+                shots = ops.shots_of(now.payload_json if now is not None else None)
+                ids = [s["id"] for s in shots]
+                again = set(touched)
+                if body.split is not None and shot_id in ids and ids.index(shot_id) + 1 < len(ids):
+                    again.add(ids[ids.index(shot_id) + 1])
+                keyframes = await keyframe_products(session, again)
+            return await self._redraw([k for k in keyframes.values() if not k.retired])
+
+        return PlannedChange(
+            product_id=p.id,
+            series_id=p.series_id,
+            base_version_id=v.id,
+            commit=commit,
+            payload=payload,
+            content=body.model_dump(mode="json", exclude_unset=True),
+            lines=planned_lines,
+            relock=False,
+            rerun=redraw,
+        )
+
+    async def plan_aspect(self, series_id: str, body: SpecPatch) -> PlannedChange:
+        """``spec_aspect`` (改画幅, SPEC 13.3): the keyframes drawn so far (their API finals'
+        price) and the scenes' reference pictures drawn for the old aspect (a hint). 「只改这里」
+        writes the spec and takes the confirmations back (分镜确认 reopens); 「确认并同步」 also
+        draws the keyframes again as local drafts."""
+        async with self._db.session() as session:
+            row = await session.get(OutputSpecRow, series_id)
+            if row is None:
+                raise PipelineError(404, "series_not_found", id=series_id)
+            old = row.aspect
+            keyframes = [
+                k
+                for k in (
+                    await session.exec(
+                        select(Product).where(
+                            Product.series_id == series_id,
+                            Product.owner_type == "shot",
+                            Product.slot == KEYFRAME_SLOT,
+                            col(Product.retired).is_(False),
+                            col(Product.current_version_id).is_not(None),
+                        )
+                    )
+                ).all()
+            ]
+            shots = list(
+                (
+                    await session.exec(
+                        select(Shot).where(
+                            Shot.series_id == series_id, col(Shot.retired).is_(False)
+                        )
+                    )
+                ).all()
+            )
+            scenes = await _scene_refs_drawn_for(session, series_id, old)
+        new = body.aspect or old
+        changed = new != old
+        lines: list[dict[str, Any]] = []
+        if changed and keyframes:
+            costs = [c for k in keyframes if (c := await self._runs.final_cost(k))]
+            lines.append(
+                _line(
+                    "keyframes_redraw",
+                    {"count": len(keyframes), "shots": len(shots)},
+                    round(sum(costs), 4) if costs else None,
+                )
+            )
+        if changed and scenes:
+            lines.append(
+                {**_line("ref_images_suggest", {"count": scenes, "aspect": old}), "optional": True}
+            )
+
+        async def commit() -> None:
+            async with self._db.session() as session:
+                spec = await session.get(OutputSpecRow, series_id)
+                assert spec is not None
+                apply_patch(spec, body)
+                session.add(spec)
+                await session.commit()
+                confirmed = (
+                    [s.id for s in shots if await gate_confirmed(session, SHOT_GATE, s.id)]
+                    if changed
+                    else []
+                )
+            for shot_id in confirmed:
+                await self._unconfirm(shot_id)
+
+        async def redraw() -> list[str]:
+            return await self._redraw(keyframes) if changed else []
+
+        return PlannedChange(
+            product_id=f"spec:{series_id}",
+            series_id=series_id,
+            base_version_id=None,
+            commit=commit,
+            content={"from": old, **body.model_dump(mode="json", exclude_unset=True)},
+            lines=lines,
+            unaffected={"code": "unaffected_spec", "params": {}},
+            relock=False,
+            rerun=redraw,
+            stale={"storyboard": len(keyframes)} if changed and keyframes else {},
+        )
+
+    async def _line_shots(self, line_id: str, patch: dict[str, Any]) -> list[dict[str, Any]]:
+        """``line_edit`` of a spoken line: the shots it is in run as long as its new audio."""
+        async with self._db.session() as session:
+            line = await session.get(ScriptLine, line_id)
+            if (
+                line is None
+                or line.type not in ops.SPEAKING
+                or patch.get("text") in (None, line.text)
+            ):
+                return []
+            labels = await _shot_labels(
+                session, line.episode_id, lambda s: line_id in s.line_ids_json
+            )
+        if not labels:
+            return []
+        return [_line("shot_duration_follows", {"shots": "、".join(labels), "count": len(labels)})]
+
+    async def _asset_shots(self, asset_id: str, patch: dict[str, Any]) -> list[dict[str, Any]]:
+        """Changing or unlocking a locked asset: the shots that use it, and which of those with
+        a keyframe were confirmed (a new picture makes them 「待更新」)."""
+        async with self._db.session() as session:
+            asset = await session.get(Asset, asset_id)
+            if asset is None or asset.kind not in ops.REF_KINDS:
+                return []
+            using = [
+                s
+                for s in (
+                    await session.exec(
+                        select(Shot).where(
+                            Shot.series_id == asset.series_id, col(Shot.retired).is_(False)
+                        )
+                    )
+                ).all()
+                if asset_id in s.asset_ids_json
+            ]
+            episodes = {
+                e.id: e.idx
+                for e in (
+                    await session.exec(select(Episode).where(Episode.series_id == asset.series_id))
+                ).all()
+            }
+            using.sort(key=lambda s: (episodes.get(s.episode_id, 0), s.idx))
+            label = {s.id: f"{episodes.get(s.episode_id, 0)}-{s.idx:02d}" for s in using}
+            drawn = [
+                s.id
+                for s in using
+                if s.shot_type != "continuous" and await gate_confirmed(session, SHOT_GATE, s.id)
+            ]
+        if not using:
+            return []
+        out = [
+            _line("shot_refs", {"ids": "、".join(label[s.id] for s in using), "count": len(using)})
+        ]
+        if drawn:
+            shots = "、".join(label[x] for x in drawn)
+            out.append(_line("shots_confirmed_redraw", {"shots": shots, "count": len(drawn)}))
+        return out
+
+    async def _redraw(self, keyframes: Iterable[Product]) -> list[str]:
+        """「确认并同步」: new candidates of these keyframes (a busy one is left as it is)."""
+        jobs = []
+        for k in keyframes:
+            try:
+                jobs.append((await self._runs.start(k.id, "rerun")).id)
+            except PipelineError as exc:
+                logger.warning("keyframe {} not redrawn: {}", k.id, exc.code)
+        return jobs
 
     # ------------------------------------------------------------------ confirming
 
@@ -492,16 +793,20 @@ class ShotService:
 
         await self._products.lock_pick(kf.id, current.id, idx, record=record)
 
-    async def _unconfirm(self, shot_id: str) -> None:
-        """取消确认: unlock the keyframe and write ``reopen`` (nothing when not confirmed)."""
+    async def _unconfirm(self, shot_id: str, *, reopen_gate: bool = True) -> None:
+        """取消确认: unlock the keyframe and write ``reopen`` (nothing when not confirmed); a
+        confirmed 分镜确认 of its episode reopens with it."""
         if not await self._confirmed(shot_id):
             return
         p, _ = await self._locate(shot_id, editable=False)
         async with self._db.session() as session:
             kf = (await keyframe_products(session, [shot_id])).get(shot_id)
+            gate_on = await gate_confirmed(session, STORYBOARD_GATE, p.owner_id)
         if kf is not None and kf.locked_hash:
             await self._products.unlock(kf.id)
         await self._decide(shot_id, p, None, "reopen")
+        if reopen_gate and gate_on and self._gates is not None:
+            await self._gates.reopen(STORYBOARD_GATE, p.owner_id)
 
     async def _decide(self, shot_id: str, plan: Product, kf: Product | None, action: str) -> None:
         async with self._db.session() as session:
@@ -512,15 +817,48 @@ class ShotService:
 
     # ------------------------------------------------------------------ internals
 
+    async def _edited(
+        self, p: Product, v: ProductVersion, shot_id: str, changes: dict[str, Any]
+    ) -> dict[str, Any]:
+        """The plan's payload with a shot's settings changed (checked: its references are the
+        episode's, it is not shorter than its lines' audio)."""
+        async with self._db.session() as session:
+            assets, _ = await episode_assets(session, p.owner_id)
+            lines = await _lines(session, p.owner_id)
+            shot = ops.find_shot(v.payload_json, shot_id)
+            assert shot is not None
+            audio = await line_audio_seconds(session, shot.get("line_ids") or [])
+        unknown = [a for a in changes.get("asset_ids", []) if a not in assets]
+        if unknown:
+            raise PipelineError(422, "asset_not_found", id=unknown[0])
+        manual = changes.get("manual_s")
+        if manual is not None:
+            mine = [lines[x] for x in shot.get("line_ids") or [] if x in lines]
+            floor = _timing(shot, mine, audio, None).min_s
+            if manual < floor:
+                raise PipelineError(422, "duration_below_audio", min_s=floor)
+        characters = [a.id for a in assets.values() if a.kind == "character"]
+        payload: dict[str, Any] = _apply(
+            lambda: ops.patch(v.payload_json, shot_id, changes, characters)
+        )
+        return payload
+
+    async def _set_intent(self, kf: Product, v: ProductVersion, shot_id: str, intent: str) -> None:
+        """The picture description is the keyframe prompt's intent layer; the plan's seed is
+        kept to say when a rerun gives a new one."""
+        seed = str((ops.find_shot(v.payload_json, shot_id) or {}).get("intent") or "")
+        await self._runs.save_prompt(kf.id, intent, None)
+        await self._products.update_settings(kf.id, {"seed": seed})
+
     async def _episode_of_shot(self, shot_id: str) -> str:
         p, _ = await self._locate(shot_id, editable=False)
         return p.owner_id
 
     async def _locate(
-        self, shot_id: str, *, editable: bool = True
+        self, shot_id: str, *, editable: bool = True, locked_ok: bool = False
     ) -> tuple[Product, ProductVersion]:
         """The plan whose version on screen has this shot; an edit refuses a busy or locked
-        plan (a locked one goes through the impact preview)."""
+        plan (a locked one goes through the impact preview, ``locked_ok``)."""
         async with self._db.session() as session:
             row = await session.get(Shot, shot_id)
             if row is not None:
@@ -532,7 +870,7 @@ class ShotService:
                 v = await _current(session, p)
                 if v is None or ops.find_shot(v.payload_json, shot_id) is None:
                     continue
-                if editable and p.running_job_id:
+                if (editable or locked_ok) and p.running_job_id:
                     job = await session.get(Job, p.running_job_id)
                     if job is not None and job.state in ACTIVE_JOB_STATES:
                         raise PipelineError(409, "product_busy", id=p.id)
@@ -547,6 +885,66 @@ class ShotService:
         if kf is None or kf.retired:
             raise PipelineError(409, "no_keyframe", id=shot_id)
         return kf
+
+
+def _changes(body: ShotPatch) -> dict[str, Any]:
+    """The plan's fields a patch sets (``duration_s`` is the user's seconds; null = automatic)."""
+    fields = body.model_fields_set
+    changes: dict[str, Any] = {
+        k: getattr(body, k)
+        for k in ("shot_type", "framing", "camera_move", "audio_mode")
+        if k in fields and getattr(body, k) is not None
+    }
+    if "blocking" in fields and body.blocking is not None:
+        changes["blocking"] = [b.model_dump() for b in body.blocking]
+    if "asset_ids" in fields and body.asset_ids is not None:
+        changes["asset_ids"] = list(dict.fromkeys(body.asset_ids))
+    if "duration_s" in fields:
+        changes["manual_s"] = body.duration_s
+    return changes
+
+
+def _next_in_scene(payload: dict[str, Any], shot_id: str) -> str | None:
+    shots = ops.shots_of(payload)
+    at = next((i for i, s in enumerate(shots) if s["id"] == shot_id), None)
+    if at is None or at + 1 >= len(shots) or shots[at + 1]["scene_id"] != shots[at]["scene_id"]:
+        return None
+    return str(shots[at + 1]["id"])
+
+
+async def _shot_labels(
+    session: AsyncSession, episode_id: str, wanted: Callable[[Shot], bool]
+) -> list[str]:
+    episode = await session.get(Episode, episode_id)
+    rows = (
+        await session.exec(
+            select(Shot).where(Shot.episode_id == episode_id, col(Shot.retired).is_(False))
+        )
+    ).all()
+    n = episode.idx if episode is not None else 0
+    return [f"{n}-{s.idx:02d}" for s in sorted(rows, key=lambda s: s.idx) if wanted(s)]
+
+
+async def _scene_refs_drawn_for(session: AsyncSession, series_id: str, aspect: str) -> int:
+    """How many locked scene reference pictures were drawn for ``aspect``."""
+    rows = await session.exec(
+        select(Asset, Product).where(
+            Asset.series_id == series_id,
+            Asset.kind == "scene",
+            col(Asset.retired).is_(False),
+            Product.owner_type == "asset",
+            Product.owner_id == Asset.id,
+            col(Product.locked_hash).is_not(None),
+        )
+    )
+    n = 0
+    for _, product in rows.all():
+        v = await session.get(ProductVersion, product.adopted_version_id or "")
+        while v is not None and "aspect" not in (v.payload_json or {}) and v.parent_version_id:
+            v = await session.get(ProductVersion, v.parent_version_id)
+        if v is not None and (v.payload_json or {}).get("aspect") == aspect:
+            n += 1
+    return n
 
 
 async def _current(session: AsyncSession, p: Product | None) -> ProductVersion | None:

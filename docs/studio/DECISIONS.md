@@ -2,6 +2,22 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-23 · M4 第 4 步：分镜闸门、进度、影响范围（后端）
+
+- **分镜确认**（gate `storyboard`，scope 集）：`GATES` 加一项，锁本集的分镜规划；`GateService.precondition(gate, fn)` 是新的可插拔前提，`ShotService` 登记：有镜头没确认或「待更新」就 409 `shots_not_confirmed {count, labels}`。取消确认一个镜头时，这一集已确认的分镜闸门一起重开（解锁分镜规划）。原来测「未知闸门」用的是 `storyboard`，改成 `takes`（M5）。
+- **分镜进度**：`done` = 已确认的镜头数（含「待更新」的），`total` = 镜头数，`stale` = 「待更新」或关键帧待更新的镜头数，加上分镜规划本身待更新的 1。闸门确认了才是「已确认」。
+- **`shot_edit`**（新的影响范围类型，目标是镜头 id）：patch 是 `ShotPatch` 的字段，或者 `{split: {...}}` / `{merge: true}`。拆分、合并已确认的镜头，普通接口也 409 `shot_confirmed`，要走这里。行：
+  - 规划切片变了的关键帧由通用的依赖图列出（`stale_keyframe`）；分镜闸门确认时还有 `self_shot_plan`；
+  - 自己出的行：`shot_reconfirm`（取消哪几个镜头的确认，合并时含下一个）、`shot_redraw`（只改了画面描述：没有切片变化，通用行列不出来，照 M3 改素材描述的 `asset_redraw`）、`gate_storyboard`。
+  - 「只改这里」：先重开闸门、取消确认，再写入（`relock = False`：闸门重开了，不再锁回去）。「确认并同步」再给碰到的镜头（拆分时含新的后一半）重出关键帧草稿。
+- **`spec_aspect`** 挪到后端（`ShotService.plan_aspect`）：
+  - 行：`keyframes_redraw {count: 有版本的关键帧数, shots: 镜头数}`，估价 = 每张按路由上的 API 模型出终版的价钱（`RunService.final_cost`，示例 7 × $0.134）；`ref_images_suggest {count, aspect}`：按旧画幅出的已锁定场景参考图（可选，只提示）。视频到 M5 才有，不列。
+  - `stale` 由规划器给（`PlannedChange.stale`）：规格不是产物，通用的依赖图算不出来。
+  - 「只改这里」写规格、取消所有已确认镜头（闸门跟着重开）；「确认并同步」再给这些关键帧重出本地草稿。
+- **`PUT …/spec?confirmed_impact=` 校验 id 挪到第 5 步**：现在前端的改画幅还走 MSW，MSW 的 apply 拿自己的 impact id 调 PUT（`e2e/smoke.spec.ts` 就走这条）。这一步校验的话，到第 5 步删 MSW 之前这条 e2e 会断。第 5 步前端改走后端的 `spec_aspect` 时一起做。
+- **别的类型补镜头行**：`ImpactService.extra(kind, fn)` 让别的服务给一个类型加行。`asset_edit` / `asset_unlock`：`shot_refs`（用到这个素材的镜头，含连续动作，只算角色、场景、道具、画面文字）、`shots_confirmed_redraw`（其中已确认、有关键帧的，换图后要重新确认）。`line_edit` 改说话的行：`shot_duration_follows`（时长跟着重配的音频变，只提示）。动作行和加删行的镜头行由通用依赖图给（第 2、3 步）。
+- 新词条：上面这些行和错误码 `shots_not_confirmed`，中英文都加了。
+
 ## 2026-10-22 · M4 第 3 步：关键帧（后端，Mock）
 
 - **关键帧读已采纳的分镜规划和剧本的 payload**，不读 `shot` / `script_line` 物化表（组件的规矩）。依赖：分镜规划的新切片 `shot:<id>`（类型、景别、运动、站位、参考素材、拍的行、接哪个镜头，不含时长和声音，`plan.shot_plan_slicer`）、拍的动作行 `line:<id>`、传出去的每张锁定参考图（整版哈希）。

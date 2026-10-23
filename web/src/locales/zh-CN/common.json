@@ -77,6 +77,7 @@
     "nothing_to_confirm": "这个镜头还没有关键帧：先出一版再确认",
     "no_tail_shot": "找不到它要接尾帧的镜头",
     "no_keyframe": "连续动作镜头没有自己的关键帧：它接上一个镜头的尾帧",
+    "shots_not_confirmed": "还有 {{count}} 个镜头没确认或待更新：{{labels}}",
     "upstream_not_adopted": "等 {{id}} 采纳：这个镜头的首帧要用 {{id}} 的最后一帧",
     "clip_not_found": "找不到片段 {{id}}",
     "subtitle_not_found": "找不到字幕 {{id}}",

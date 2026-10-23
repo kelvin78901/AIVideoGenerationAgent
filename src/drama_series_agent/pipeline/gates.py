@@ -12,6 +12,10 @@ The assets gate of an episode covers the assets it uses, which another service l
 (``members``): each is locked on its own (an asset belongs to the series), so confirming needs
 them all locked already (409 ``assets_not_locked``) and records their hashes, and reopening
 unlocks none. Unlocking an asset reopens the confirmed episodes that use it.
+
+The storyboard gate (M4) locks an episode's 分镜规划, once every shot in it is confirmed and
+none is 「待更新」: a service that knows the shots says so (``precondition``; 409
+``shots_not_confirmed``).
 """
 
 from __future__ import annotations
@@ -30,12 +34,13 @@ from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.models_db import Episode, GateDecision, Job, Product, Series, utcnow
 from drama_series_agent.episodes.service import SCRIPT_SLOT, latest_gate
 from drama_series_agent.novel.service import NOVEL_SLOT
+from drama_series_agent.pipeline.components.plan import SHOT_PLAN_SLOT
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.suggestions.service import ADOPTED_SLICE, SUGGESTIONS_SLOT
 
-GateId = Literal["novel", "script", "assets"]
+GateId = Literal["novel", "script", "assets", "storyboard"]
 
 # What each gate is about (the owner of its products) and the slots it locks; the first one
 # must have something adopted. A gate without slots has its products listed by ``members``.
@@ -43,9 +48,12 @@ GATES: dict[str, tuple[str, tuple[str, ...]]] = {
     "novel": ("series", (NOVEL_SLOT, BIBLE_SLOT, SUGGESTIONS_SLOT)),
     "script": ("episode", (SCRIPT_SLOT,)),
     "assets": ("episode", ()),
+    "storyboard": ("episode", (SHOT_PLAN_SLOT,)),
 }
 # (session, scope id) → each product the gate covers, with the name the user knows it by.
 Members = Callable[[AsyncSession, str], Awaitable[list[tuple[str, Product]]]]
+# (session, scope id) → raises a PipelineError when the gate cannot be confirmed yet.
+Precondition = Callable[[AsyncSession, str], Awaitable[None]]
 # A product's effective hash is its whole adopted payload, except where downstream reads less
 # (the suggestions: only the accepted ones, with the user's decisions).
 _EFFECTIVE_SLICE = {SUGGESTIONS_SLOT: ADOPTED_SLICE}
@@ -92,9 +100,13 @@ class GateService:
         self._products = products
         self._invalidation = invalidation
         self._members: dict[str, Members] = {}
+        self._preconditions: dict[str, Precondition] = {}
 
     def members(self, gate: str, fn: Members) -> None:
         self._members[gate] = fn
+
+    def precondition(self, gate: str, fn: Precondition) -> None:
+        self._preconditions[gate] = fn
 
     async def confirm(self, gate: str, scope_id: str) -> GateDecisionOut:
         """Lock what the gate covers. Confirming again only locks again (one decision)."""
@@ -106,6 +118,8 @@ class GateService:
             first = products.get(GATES[gate][1][0])
             if first is None or first.adopted_version_id is None:
                 raise PipelineError(409, "nothing_adopted", gate=gate, scope_id=scope)
+            if gate in self._preconditions:
+                await self._preconditions[gate](session, scope)
             for p in products.values():
                 if p.running_job_id:
                     job = await session.get(Job, p.running_job_id)

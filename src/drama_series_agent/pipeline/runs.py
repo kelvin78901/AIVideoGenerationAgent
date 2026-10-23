@@ -197,6 +197,26 @@ class RunService:
             model_key=model, where=spec.where, cost_usd=round(est.cost_usd, 4), seconds=est.seconds
         )
 
+    async def final_cost(self, product: Product) -> float | None:
+        """What 「用 API 出终版」 of a candidate product costs on its route's API model (M4: the
+        keyframes 改画幅 redraws); None without an API model or before the upstream is ready."""
+        comp = self.components.get(product.component_id)
+        if comp is None:
+            return None
+        settings = await self.services.router.settings(product.component_id, item_of(product))
+        try:
+            model = Router.primary_model(settings, "api")
+        except ModelError:
+            return None
+        async with self.services.db.session() as session:
+            try:
+                inputs = await comp.inputs(session, product)
+            except (LookupError, PipelineError, ComponentError):
+                return None
+        inputs.params = {"source_version_id": product.current_version_id or "-"}
+        compiled = self.services.compiler.compile(product.component_id, "", model)
+        return round(comp.estimate(inputs, compiled, model).cost_usd, 4)
+
     # ------------------------------------------------------------------ commands
 
     async def start(

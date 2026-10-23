@@ -85,3 +85,11 @@ class ShotSplitIn(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     after_line_id: str | None = None
+
+
+class ShotEditIn(ShotPatch):
+    """The impact preview's ``shot_edit`` patch (a confirmed shot, or a shot of a confirmed
+    storyboard): its settings, or a split / a merge with the next shot."""
+
+    split: ShotSplitIn | None = None
+    merge: bool = False

@@ -50,7 +50,7 @@ from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import ops
 from drama_series_agent.shots.service import KEYFRAME_SLOT
 
-REF_ORDER = ("character", "scene", "prop", "text")
+REF_ORDER = ops.REF_KINDS
 REF_SLOTS = ("ref_image", "text_image")
 KIND_LABEL = {"character": "角色", "scene": "场景", "prop": "道具", "text": "画面文字"}
 FRAMING = {"wide": "远景", "medium": "中景", "close": "近景", "closeup": "特写"}

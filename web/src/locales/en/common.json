@@ -77,6 +77,7 @@
     "nothing_to_confirm": "This shot has no keyframe yet: draw one first",
     "no_tail_shot": "The shot it continues from is missing",
     "no_keyframe": "A continuous shot has no keyframe of its own: it starts from the last frame of the shot before",
+    "shots_not_confirmed": "{{count}} shots are not confirmed or out of date: {{labels}}",
     "upstream_not_adopted": "Waiting for {{id}} to be adopted: this shot starts from its last frame",
     "clip_not_found": "Clip {{id}} not found",
     "subtitle_not_found": "Subtitle {{id}} not found",
