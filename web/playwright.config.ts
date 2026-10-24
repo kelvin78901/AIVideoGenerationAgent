@@ -1,5 +1,6 @@
 /**
- * Playwright: `pnpm e2e` (smoke tests and the no-demo-data round, run in CI) and `pnpm shots`
+ * Playwright: `pnpm e2e` (smoke tests and the no-demo-data round with the flows they depend on,
+ * `seeded` → `m4` → `real` → `smoke`; run in CI) and `pnpm shots`
  * (screenshots for docs/studio/reports/ui/). Starts its own mock backend (temporary DRAMA_HOME)
  * and two Vite servers on separate ports — one with the MSW demo data, one without
  * (`VITE_DEMO_DATA=0`) — so a running `start.ps1` / `start.sh` session is never touched.
@@ -42,13 +43,26 @@ export default defineConfig({
   projects: [
     // The demo as seeded, before the M2 flows below change it.
     { name: "seeded", testMatch: /seeded\.spec\.ts/, use: { ...desktop, baseURL: REAL_URL } },
+    // The demo storyboard confirmed (M4), on the dubbed lines `seeded` made.
+    {
+      name: "m4",
+      testMatch: /m4\.spec\.ts/,
+      dependencies: ["seeded"],
+      use: { ...desktop, baseURL: REAL_URL },
+    },
+    {
+      name: "real",
+      testMatch: /real\.spec\.ts/,
+      dependencies: ["m4"],
+      use: { ...desktop, baseURL: REAL_URL },
+    },
+    // Last: the M2 flows re-script the demo's episode 1 (its assets' scenes go with it).
     {
       name: "smoke",
       testMatch: /(smoke|m2)\.spec\.ts/,
-      dependencies: ["seeded"],
+      dependencies: ["seeded", "m4", "real"],
       use: { ...desktop },
     },
-    { name: "real", testMatch: /real\.spec\.ts/, use: { ...desktop, baseURL: REAL_URL } },
     { name: "shots", testMatch: /shots\.spec\.ts/, use: { ...desktop } },
   ],
   webServer: [

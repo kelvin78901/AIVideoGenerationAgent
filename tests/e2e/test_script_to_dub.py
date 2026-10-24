@@ -33,9 +33,9 @@ def _start(api: Api, product_id: str, **body: Any) -> dict[str, Any]:
     return job
 
 
-def _confirmed_script(api: Api) -> tuple[str, str]:
+def _confirmed_script(api: Api, title: str = "雨停之前（M3 验收）") -> tuple[str, str]:
     """M2's road: import, 补全 (all accepted), 设定, 确认原文, 分集, episode 1's 剧本化, 确认."""
-    series = api.send("POST", "/series", json={"title": "雨停之前（M3 验收）"})["id"]
+    series = api.send("POST", "/series", json={"title": title})["id"]
     api.send(
         "POST",
         f"/series/{series}/novel",
