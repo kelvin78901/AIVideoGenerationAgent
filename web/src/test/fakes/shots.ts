@@ -73,6 +73,15 @@ const productById = (id: unknown) =>
   [fakeShots.plan, ...fakeShots.keyframes].find((p) => p.id === id);
 const current = (p: Product) => p.versions.find((v) => v.id === p.current_version_id);
 
+/** `keyframe_sha256`: the picked candidate's picture in the keyframe's version on screen. */
+function repicture(s: Shot) {
+  const kf = keyframeOf(s);
+  const v = kf && current(kf);
+  s.keyframe_sha256 =
+    v?.files.find((f) => f.role === "candidate" && (f.idx ?? 0) === s.keyframe_pick)?.sha256 ??
+    null;
+}
+
 function announce(p: Product) {
   setTimeout(() =>
     injectEvent("product.updated", { product_id: p.id, series_id: p.series_id, status: p.status }),
@@ -197,6 +206,7 @@ function write(s: Shot, patch: ShotPatch): Response | null {
     if (!kf?.current_version_id) return error(409, "nothing_to_pick", { id: s.id });
     s.keyframe_pick = pick;
     kf.pick = { version_id: kf.current_version_id, idx: pick };
+    repicture(s);
   }
   return null;
 }
@@ -358,6 +368,7 @@ function splitShot(s: Shot, after: string | null): Response | null {
     manual_s: null,
     keyframe_product_id: kf.id,
     keyframe_pick: 0,
+    keyframe_sha256: null,
     confirmed: false,
     confirm_stale: false,
   };
@@ -486,7 +497,10 @@ function run(p: Product, body: RunRequest): Job {
   });
   if (typeof source === "string") v.parent_version_id = source;
   const s = fakeShots.shots.find((x) => x.keyframe_product_id === p.id);
-  if (s && !s.confirmed) s.keyframe_pick = 0;
+  if (s) {
+    if (!s.confirmed) s.keyframe_pick = 0;
+    repicture(s);
+  }
   return job(p, v.id, model, body.mode);
 }
 

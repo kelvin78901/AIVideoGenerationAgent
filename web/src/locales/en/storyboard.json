@@ -11,9 +11,16 @@
     "label": "Preview",
     "play": "Play preview",
     "pause": "Pause preview",
-    "total": "{{seconds}} s in total · current keyframes + temporary local voice + subtitles, free",
+    "total": "{{seconds}} s in total · current keyframes + dubbed lines + subtitles, free",
     "shot": "Shot {{id}}, {{seconds}} s",
-    "seconds": "{{n}}s"
+    "seconds": "{{n}}s",
+    "frame": "Shot {{id}}: {{summary}}",
+    "tail": "Last frame of {{id}}",
+    "clock": "{{at}} / {{total}}",
+    "safe": "Safe area",
+    "keys": "Space plays / pauses; click the strip to jump",
+    "missing": "Lines not dubbed yet: {{count}}",
+    "toDub": "Dub them"
   },
   "list": {
     "title": "Shots · {{count}} · {{seconds}} s",

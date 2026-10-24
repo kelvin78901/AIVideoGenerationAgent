@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { act, fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { Route, Routes } from "react-router";
 
@@ -8,6 +8,7 @@ import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import StoryboardPage from "@/pages/Storyboard";
 import { backend } from "@/test/backend";
 import { fakeConfig } from "@/test/fakes/config";
+import { dubFakeEpisode, fakeDub } from "@/test/fakes/dub";
 import { fakeImpact } from "@/test/fakes/impact";
 import { fakeShots } from "@/test/fakes/shots";
 import { FakeEventSource } from "@/test/fakeEventSource";
@@ -39,13 +40,23 @@ const cards = () => screen.getByRole("region", { name: "镜头列表" });
 const card = (label: string) =>
   within(cards()).getByRole("button", { name: new RegExp(`^${label}`) });
 // 1-04's line is not dubbed yet: the script's 4 s and a breath each side (M4, Kelvin 2026-10-21).
-const ready = () => screen.findByText("共 34.5 秒 · 用当前关键帧 + 本地临时配音 + 字幕，不花钱");
+const ready = () => screen.findByText("共 34.5 秒 · 用当前关键帧 + 台词配音 + 字幕，不花钱");
+const animatic = () => screen.getByRole("region", { name: "预演" });
+const frame = () => within(animatic()).getByRole("img", { name: /^镜头 / });
+/** The animatic's clock runs on animation frames: fake those (and the time they read). */
+const fakeClock = () =>
+  vi.useFakeTimers({ toFake: ["requestAnimationFrame", "cancelAnimationFrame", "performance"] });
+const advance = (ms: number) => act(() => vi.advanceTimersByTimeAsync(ms));
 
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   backend();
 });
-afterEach(() => vi.unstubAllGlobals());
+afterEach(() => {
+  vi.useRealTimers();
+  vi.restoreAllMocks();
+  vi.unstubAllGlobals();
+});
 
 describe("StoryboardPage", () => {
   it("shows 9 shots, 34.5 s, the spec and shot 1-04 with its keyframes", async () => {
@@ -171,19 +182,114 @@ describe("StoryboardPage", () => {
     await waitFor(() => expect(shot("1-04")?.asset_ids).toContain("umbrella"));
   });
 
-  it("plays the preview through the shots", async () => {
+  it("plays the episode from the top, each shot as long as it runs; pausing selects that shot", async () => {
     const user = userEvent.setup();
     renderBoard();
     await ready();
+    expect(frame()).toHaveAccessibleName(/^镜头 1-04：/);
+    fakeClock();
     await user.click(screen.getByRole("button", { name: "播放预演" }));
-    expect(screen.getByTestId("preview-caption")).toHaveTextContent("楼道全景");
-    await waitFor(
-      () => expect(screen.getByTestId("preview-caption")).toHaveTextContent("门口的红伞"),
-      {
-        timeout: 1500,
-      },
-    );
+    expect(frame()).toHaveAccessibleName(/^镜头 1-01：.*楼道全景/);
+    await advance(4100);
+    expect(frame()).toHaveAccessibleName(/^镜头 1-02：/);
+    expect(screen.getByTestId("preview-clock")).toHaveTextContent("00:04 / 00:34");
     await user.click(screen.getByRole("button", { name: "暂停预演" }));
+    expect(await screen.findByRole("heading", { name: "镜头 1-02" })).toBeInTheDocument();
+    // Playing again goes on from there.
+    await user.click(screen.getByRole("button", { name: "播放预演" }));
+    await advance(3000);
+    expect(frame()).toHaveAccessibleName(/^镜头 1-03：/);
+    // To the end, then back at the top.
+    await advance(31000);
+    expect(screen.getByRole("button", { name: "播放预演" })).toBeInTheDocument();
+    expect(screen.getByTestId("preview-clock")).toHaveTextContent("00:00 / 00:34");
+  });
+
+  it("the strip jumps to a shot; space plays and pauses", async () => {
+    renderBoard();
+    await ready();
+    fakeClock();
+    fireEvent.click(within(animatic()).getByRole("button", { name: "镜头 1-06，5 秒" }));
+    expect(await screen.findByRole("heading", { name: "镜头 1-06" })).toBeInTheDocument();
+    expect(screen.getByTestId("preview-clock")).toHaveTextContent("00:17 / 00:34");
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(screen.getByRole("button", { name: "暂停预演" })).toBeInTheDocument();
+    await advance(5200);
+    expect(frame()).toHaveAccessibleName(/^镜头 1-07：/);
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(screen.getByRole("button", { name: "播放预演" })).toBeInTheDocument();
+    expect(await screen.findByRole("heading", { name: "镜头 1-07" })).toBeInTheDocument();
+    // Space typed into a field is the field's.
+    fireEvent.keyDown(screen.getByLabelText("时长（秒）"), { key: " " });
+    expect(screen.getByRole("button", { name: "播放预演" })).toBeInTheDocument();
+  });
+
+  it("a continuous shot shows the keyframe of the shot it continues", async () => {
+    renderBoard("/s/demo/e/1/storyboard?shot=demo-shot-1-08");
+    await ready();
+    const from = shot("1-06")?.keyframe_sha256 ?? "";
+    expect(from).not.toBe("");
+    expect(within(animatic()).getByText("接 1-06 尾帧")).toBeInTheDocument();
+    expect(frame().querySelector("img")).toHaveAttribute("src", expect.stringContaining(from));
+    // The cards show the picked keyframes too.
+    const own = shot("1-04")?.keyframe_sha256 ?? "";
+    expect(card("1-04").querySelector("img")).toHaveAttribute("src", expect.stringContaining(own));
+  });
+
+  it("plays the dubbed lines at their offsets under their subtitles", async () => {
+    const played: { src: string; at: number }[] = [];
+    vi.spyOn(HTMLMediaElement.prototype, "play").mockImplementation(function (
+      this: HTMLMediaElement,
+    ) {
+      played.push({ src: this.src, at: this.currentTime });
+      return Promise.resolve();
+    });
+    const paused = vi.spyOn(HTMLMediaElement.prototype, "pause").mockImplementation(() => {});
+    dubFakeEpisode();
+    renderBoard();
+    await ready();
+    expect(within(animatic()).queryByText(/句还没配音/)).not.toBeInTheDocument();
+    fakeClock();
+    fireEvent.click(within(animatic()).getByRole("button", { name: "镜头 1-04，4.5 秒" }));
+    fireEvent.keyDown(document.body, { key: " " });
+    await advance(200);
+    // 0.3 s into the shot: nothing yet.
+    expect(played).toHaveLength(0);
+    await advance(200);
+    const audio = fakeDub.dub.lines.find((x) => x.line_id === "demo-b5")?.audio?.sha256 ?? "";
+    expect(played).toHaveLength(1);
+    expect(played[0]?.src).toContain(audio);
+    expect(played[0]?.at).toBeGreaterThan(0);
+    expect(played[0]?.at).toBeLessThan(0.2);
+    expect(screen.getByTestId("preview-subtitle")).toHaveTextContent("……周屿？");
+    fireEvent.keyDown(document.body, { key: " " });
+    expect(paused).toHaveBeenCalled();
+  });
+
+  it("lines not dubbed yet are their subtitles alone, with a way to dub them", async () => {
+    renderBoard();
+    await ready();
+    expect(within(animatic()).getByText(/^2 句还没配音/)).toBeInTheDocument();
+    expect(within(animatic()).getByRole("link", { name: "去配音" })).toHaveAttribute(
+      "href",
+      "/s/demo/e/1/assets",
+    );
+    fakeClock();
+    fireEvent.click(within(animatic()).getByRole("button", { name: "镜头 1-04，4.5 秒" }));
+    fireEvent.keyDown(document.body, { key: " " });
+    await advance(500);
+    expect(screen.getByTestId("preview-subtitle")).toHaveTextContent("……周屿？");
+  });
+
+  it("安全区 lays the platform's UI over the frame and the keyframe candidates", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+    await ready();
+    const frames = await screen.findByRole("radiogroup", { name: "首帧" });
+    expect(within(frames).queryAllByTestId("zone-buttons")).toHaveLength(0);
+    await user.click(within(animatic()).getByRole("checkbox", { name: "安全区" }));
+    expect(within(animatic()).getByTestId("zone-buttons")).toBeInTheDocument();
+    expect(within(frames).getAllByTestId("zone-buttons")).toHaveLength(3);
   });
 
   it("the run bar follows the Inspector: 分镜规划", async () => {

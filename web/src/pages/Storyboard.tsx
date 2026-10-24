@@ -1,5 +1,6 @@
-/** 04 分镜 · 关键帧与镜头设定 (prototype Storyboard.dc.html). The shots show as a board or a
- * table (`?view=table`), the selected one is `?shot=` in both. A confirmed shot (or a shot of a
+/** 04 分镜 · 关键帧与镜头设定 (prototype Storyboard.dc.html). The animatic plays the episode on
+ * top; the shots show as a board or a table (`?view=table`), the selected one is `?shot=` in
+ * both. A confirmed shot (or a shot of a
  * confirmed storyboard) is changed, split or merged through the impact preview (`shot_edit`):
  * its confirmation goes, 确认并同步 also draws its keyframe again. */
 import { useEffect, useState } from "react";
@@ -10,10 +11,11 @@ import { toast } from "sonner";
 import { errorMessage } from "@/api/client";
 import { useAssets } from "@/api/hooks/assets";
 import { useComponentModels } from "@/api/hooks/config";
+import { useEpisodeDub } from "@/api/hooks/dub";
 import { useImpactPreview } from "@/api/hooks/impact";
 import { useProduct, useProducts } from "@/api/hooks/products";
 import { useScript } from "@/api/hooks/script";
-import { useOutputSpec, useRouteEpisode } from "@/api/hooks/series";
+import { useOutputSpec, useRouteEpisode, useSpecPresets } from "@/api/hooks/series";
 import { useMergeShot, usePatchShot, useShots, useSplitShot } from "@/api/hooks/shots";
 import type { Shot, ShotEdit, ShotPatch } from "@/api/schemas/shots";
 import { paths } from "@/app/paths";
@@ -25,8 +27,9 @@ import { QueryState, Skeleton } from "@/components/QueryState";
 import { RunBar } from "@/components/RunBar";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StepLayout } from "@/components/StepLayout";
+import { safeAreaOf } from "@/lib/safeArea";
 import { scriptBlocks, useBlockLead } from "@/pages/script/blocks";
-import { PreviewStrip } from "@/pages/storyboard/PreviewStrip";
+import { Animatic } from "@/pages/storyboard/Animatic";
 import { ShotCards } from "@/pages/storyboard/ShotCards";
 import { ShotSettings } from "@/pages/storyboard/ShotSettings";
 import { ShotTable } from "@/pages/storyboard/ShotTable";
@@ -55,6 +58,9 @@ export default function StoryboardPage() {
   // the form back.
   const [editing, setEditing] = useState<{ id: string; change: ShotEdit } | null>(null);
   const [undone, setUndone] = useState(0);
+  const [showSafe, setShowSafe] = useState(false);
+  const dub = useEpisodeDub(episode?.id);
+  const presets = useSpecPresets();
   const component = useInspectorStore((s) => s.component) ?? "kf";
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(component);
@@ -89,6 +95,8 @@ export default function StoryboardPage() {
   const keyframe = useProduct(shot?.keyframe_product_id ?? undefined);
   const product = component === "plan" ? plan : keyframe.data;
   const aspect = spec.data?.aspect ?? "9:16";
+  const safeArea =
+    presets.data && spec.data ? safeAreaOf(presets.data, aspect, spec.data.platform) : null;
   const seconds = list.reduce((n, s) => n + s.duration_s, 0);
   const ep = String(episodeIdx);
   const lines = (script.data ? scriptBlocks(script.data) : [])
@@ -206,11 +214,16 @@ export default function StoryboardPage() {
         {() =>
           shot ? (
             <>
-              <PreviewStrip
+              <Animatic
                 shots={list}
                 aspect={aspect}
                 selectedId={shot.id}
                 onSelect={setSelectedId}
+                dub={dub.data}
+                area={safeArea}
+                showSafe={showSafe}
+                onShowSafe={setShowSafe}
+                dubPath={paths.step(seriesId, ep, "assets")}
               />
               {product ? (
                 <RunBar
@@ -265,6 +278,7 @@ export default function StoryboardPage() {
                 shot={shot}
                 assets={assets.data ?? []}
                 aspect={aspect}
+                safeArea={showSafe ? safeArea : null}
                 assetsPath={paths.step(seriesId, ep, "assets")}
                 lines={lines}
                 scriptPath={(id) =>

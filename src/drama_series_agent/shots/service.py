@@ -414,6 +414,15 @@ class ShotService:
                 ).all()
             }
             keyframes, states = await self.states(session, plan, shots)
+            shown_ids = [k.current_version_id for k in keyframes.values() if k.current_version_id]
+            shown = {
+                v.id: v
+                for v in (
+                    await session.exec(
+                        select(ProductVersion).where(col(ProductVersion.id).in_(shown_ids))
+                    )
+                ).all()
+            }
         longest = await self._longest() if self._longest is not None else None
         labels = _labels(episode.idx, shots)
         out = []
@@ -427,6 +436,20 @@ class ShotService:
             intent = str(((kf.prompt_json if kf else None) or {}).get("intent") or seed)
             edited_from = ((kf.settings_json if kf else None) or {}).get("seed")
             pick = (kf.pick_json if kf else None) or {}
+            picked = (
+                int(pick.get("idx") or 0)
+                if kf is not None and pick.get("version_id") == kf.current_version_id
+                else 0
+            )
+            version = shown.get(kf.current_version_id or "") if kf else None
+            picture = next(
+                (
+                    str(f["sha256"])
+                    for f in (version.files_json if version else [])
+                    if f.get("role") == "candidate" and f.get("idx", 0) == picked
+                ),
+                None,
+            )
             out.append(
                 ShotOut(
                     id=s["id"],
@@ -459,9 +482,8 @@ class ShotService:
                     blocking=s.get("blocking") or [],
                     keyframe_product_id=kf.id if kf else None,
                     video_product_id=None,
-                    keyframe_pick=int(pick.get("idx") or 0)
-                    if kf is not None and pick.get("version_id") == kf.current_version_id
-                    else 0,
+                    keyframe_pick=picked,
+                    keyframe_sha256=picture,
                     confirmed=state.confirmed,
                     confirm_stale=state.stale,
                 )

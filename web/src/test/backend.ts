@@ -58,6 +58,25 @@ const presets: SpecPresets = {
     { id: "custom", aspect: null, delivery: null },
   ],
   dims: Object.fromEntries(AspectSchema.options.map((a) => [a, dimsOf(a)])) as SpecPresets["dims"],
+  // config/spec.yaml
+  safe_areas: {
+    vertical_app: {
+      zones: [
+        { key: "top", l: 0, t: 0, w: 100, h: 7 },
+        { key: "buttons", l: 84, t: 38, w: 16, h: 42 },
+        { key: "caption", l: 0, t: 82, w: 100, h: 18 },
+      ],
+      subtitle: { top: 70, right: 16 },
+    },
+    vertical_player: {
+      zones: [{ key: "controls", l: 0, t: 86, w: 100, h: 14 }],
+      subtitle: { top: 76, right: 0 },
+    },
+    horizontal: {
+      zones: [{ key: "controlsWide", l: 0, t: 86, w: 100, h: 14 }],
+      subtitle: { top: 72, right: 0 },
+    },
+  },
 };
 
 /** `spec/compat.py`'s table for the default route (tests/unit/test_compat.py): the same for every aspect. */

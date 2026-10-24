@@ -73,6 +73,7 @@
       "keyframe_product_id": "demo-p-kf-1-01",
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": "94a3f1898afad1c7c5ddfafbe87f8fcc9e238aa51590507310a767650153ceaf",
       "confirmed": true,
       "confirm_stale": false
     },
@@ -150,6 +151,7 @@
       "keyframe_product_id": "demo-p-kf-1-02",
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": "b442aead22dd03902dc62c442ceba0a990215e93852923fe753c8eb37fed0e32",
       "confirmed": true,
       "confirm_stale": false
     },
@@ -226,6 +228,7 @@
       "keyframe_product_id": "demo-p-kf-1-03",
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": "7bd9b9a3484f9a9e39fb99e0caada4c205f9e850a65b81f219fdc77c0347fa89",
       "confirmed": true,
       "confirm_stale": false
     },
@@ -303,6 +306,7 @@
       "keyframe_product_id": "demo-p-kf-1-04",
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": "0161873e1951d88cac952b84a2344ddaf7b98920cc1f80a789dcdee1bb0e7129",
       "confirmed": false,
       "confirm_stale": false
     },
@@ -380,6 +384,7 @@
       "keyframe_product_id": "demo-p-kf-1-05",
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": "3ec8e13e67199f1195d37ee8dc77654db87ab2c60a432fd777e9f5f7db6de0c4",
       "confirmed": false,
       "confirm_stale": false
     },
@@ -451,6 +456,7 @@
       "keyframe_product_id": "demo-p-kf-1-06",
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": "e2442f470f5fdb1f3aeb6f87d519aa526310f7c9940312649b723cfa7c575320",
       "confirmed": false,
       "confirm_stale": false
     },
@@ -520,6 +526,7 @@
       "keyframe_product_id": "demo-p-kf-1-07",
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": "7bb4cc6f8c7e84ae9eef8209932469a630a19ccd2f01a3de942d941ef48bb6e5",
       "confirmed": false,
       "confirm_stale": false
     },
@@ -589,6 +596,7 @@
       "keyframe_product_id": null,
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": null,
       "confirmed": false,
       "confirm_stale": false
     },
@@ -666,6 +674,7 @@
       "keyframe_product_id": null,
       "video_product_id": null,
       "keyframe_pick": 0,
+      "keyframe_sha256": null,
       "confirmed": false,
       "confirm_stale": false
     }

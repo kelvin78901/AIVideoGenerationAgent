@@ -80,6 +80,8 @@ export const ShotSchema = z.object({
   video_product_id: z.string().nullable(),
   /** Picked keyframe candidate (0-based) in the current version. */
   keyframe_pick: z.number().int().nonnegative(),
+  /** That candidate's picture (`fileUrl`); null = no keyframe yet, or a continuous shot. */
+  keyframe_sha256: z.string().nullable(),
   confirmed: z.boolean(),
   /** Confirmed, but the shot's settings or its keyframe changed since (「待更新」). */
   confirm_stale: z.boolean(),

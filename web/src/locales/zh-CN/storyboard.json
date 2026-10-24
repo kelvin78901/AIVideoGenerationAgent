@@ -11,9 +11,16 @@
     "label": "预演",
     "play": "播放预演",
     "pause": "暂停预演",
-    "total": "共 {{seconds}} 秒 · 用当前关键帧 + 本地临时配音 + 字幕，不花钱",
+    "total": "共 {{seconds}} 秒 · 用当前关键帧 + 台词配音 + 字幕，不花钱",
     "shot": "镜头 {{id}}，{{seconds}} 秒",
-    "seconds": "{{n}}s"
+    "seconds": "{{n}}s",
+    "frame": "镜头 {{id}}：{{summary}}",
+    "tail": "接 {{id}} 尾帧",
+    "clock": "{{at}} / {{total}}",
+    "safe": "安全区",
+    "keys": "空格键播放 / 暂停，点时间条跳转",
+    "missing": "{{count}} 句还没配音",
+    "toDub": "去配音"
   },
   "list": {
     "title": "镜头 · {{count}} 个 · {{seconds}} 秒",

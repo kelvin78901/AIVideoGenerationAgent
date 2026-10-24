@@ -40,8 +40,8 @@ episode_lengths:
 
 # 平台界面挡住画面的地方（画面的百分比，近似值，照原型 Spec.dc.html）。
 # 竖屏短剧 App：顶栏、右侧按钮列、底部标题区；其他播放器只有底部控件。
-# 成片规格页的预览目前用前端 pages/spec/SafeAreaPreview.tsx 里的同一份数字；
-# 分镜和关键帧页叠参考线时从 GET /spec/presets 的 safe_areas 读。
+# 前端从 GET /spec/presets 的 safe_areas 读（web/src/lib/safeArea.ts 按画幅和平台选一组）：
+# 成片规格页的预览、分镜页的预演和关键帧候选上的参考线。
 safe_areas:
   vertical_app:
     zones:

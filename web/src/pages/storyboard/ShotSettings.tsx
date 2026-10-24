@@ -14,12 +14,13 @@ import {
   type Shot,
   type ShotPatch,
 } from "@/api/schemas/shots";
-import type { Aspect } from "@/api/schemas/spec";
+import type { Aspect, SafeArea } from "@/api/schemas/spec";
 import { CandidateGrid } from "@/components/CandidateGrid";
 import { Chip } from "@/components/Chip";
 import { EmptyState } from "@/components/EmptyState";
 import { FinalButton } from "@/components/FinalButton";
 import { MediaThumb } from "@/components/MediaThumb";
+import { SafeAreaOverlay } from "@/components/SafeAreaOverlay";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -46,10 +47,12 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
 function FirstFrame({
   shot,
   aspect,
+  safeArea,
   onPick,
 }: {
   shot: Shot;
   aspect: Aspect;
+  safeArea: SafeArea | null;
   onPick: (i: number) => void;
 }) {
   const { t } = useTranslation("storyboard");
@@ -83,6 +86,7 @@ function FirstFrame({
       letter: LETTERS[i] ?? "",
       seed: `${shot.id}-${version.n}-${i}`,
       src: file ? fileUrl(file.sha256) : null,
+      overlay: safeArea ? <SafeAreaOverlay area={safeArea} /> : undefined,
       meta: <span className="text-xs text-muted-foreground">{c.label ?? made}</span>,
     };
   });
@@ -228,6 +232,7 @@ export function ShotSettings({
   shot,
   assets,
   aspect,
+  safeArea,
   assetsPath,
   lines,
   scriptPath,
@@ -241,6 +246,8 @@ export function ShotSettings({
   shot: Shot;
   assets: Asset[];
   aspect: Aspect;
+  /** 安全区 on: laid over the keyframe candidates. */
+  safeArea: SafeArea | null;
   assetsPath: string;
   lines: ShotLine[];
   /** The script page with this line selected. */
@@ -338,7 +345,12 @@ export function ShotSettings({
               : t("shot.ownKeyframe")}
           </span>
         </div>
-        <FirstFrame shot={shot} aspect={aspect} onPick={(i) => onPatch({ keyframe_pick: i })} />
+        <FirstFrame
+          shot={shot}
+          aspect={aspect}
+          safeArea={safeArea}
+          onPick={(i) => onPatch({ keyframe_pick: i })}
+        />
       </div>
 
       <Field label={t("shot.type")}>

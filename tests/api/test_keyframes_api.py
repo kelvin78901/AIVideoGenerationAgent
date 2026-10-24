@@ -114,6 +114,10 @@ def test_draft_then_final_then_confirm(client: TestClient) -> None:
     pick = client.patch(f"{V1}/shots/demo-shot-1-04", json={"keyframe_pick": 1}).json()
     assert pick["keyframe_pick"] == 1
     draft = _kf(client, "1-04")["versions"][-1]
+    assert pick["keyframe_sha256"] == next(
+        f["sha256"] for f in draft["files"] if f["role"] == "candidate" and f["idx"] == 1
+    )
+    assert _shot(client, "1-08")["keyframe_sha256"] is None  # continuous: no keyframe of its own
     final = _run(
         client,
         "1-04",
@@ -126,6 +130,9 @@ def test_draft_then_final_then_confirm(client: TestClient) -> None:
     assert len([f for f in v["files"] if f["role"] == "candidate"]) == 1
     shot = client.patch(f"{V1}/shots/demo-shot-1-04", json={"confirmed": True}).json()
     assert shot["confirmed"] and not shot["confirm_stale"]
+    assert shot["keyframe_sha256"] == next(
+        f["sha256"] for f in v["files"] if f["role"] == "candidate"
+    )
     product = _kf(client, "1-04")
     assert product["locked_hash"] and product["current_version_id"] == v["id"]
     decisions = _rows(client, GateDecision, GateDecision.scope_id == "demo-shot-1-04")
