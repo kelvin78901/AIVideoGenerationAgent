@@ -108,6 +108,12 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 - 素材清单是每集一个 `asset_list` 产物（组件 `assets`），素材本身属于整部剧。采纳一集的清单时 upsert 素材、替换这一集的 `asset_use`，**只增不删**：不会让别的集用到的素材退场。id 按 key 沿用（`character:<设定 id>`、`voice:<设定 id>`、`scene:<地点 id>:<时段>`、`prop:<设定 id>`、`text:name:<名字>`，对不上再按「类别 + 名字」），范围包括其他集的清单，所以同一个人在不同集是同一条素材。
 - 新素材顺手建好它的产物：角色、场景、道具 `ref_image`（组件 `img`），画面文字 `text_image`（`text`），音色 `voice`（`voice`）；角色锁定后另有 `ref_views`（`views`）。台词配音 `line_audio`（`dub`）的 owner 是剧本行，第一次配这一句时才建。
 
+**M4 的实际做法**（细节和理由见 `plans/M4.md` 和 DECISIONS 里 M4 各步的条目）：
+
+- `shot`（迁移 `0018`）是分镜规划已采纳版本的物化表，和 `script_line` 一样按 id upsert、版本里没有了的标 `retired`。实际列：id, episode_id, scene_id, idx, shot_type, framing（不叫 `size`）, camera_move, duration_s（分镜规划给的秒数）, manual_s（用户手填的）, intent（规划给的画面描述，只是关键帧提示词的种子）, summary, line_ids, asset_ids（角色、场景、道具、画面文字、音色都在一个列表里，不分 `character_ids` / `prop_ids`）, tail_from（连续动作接哪个镜头的尾帧）, blocking_json, audio_mode, difficulty, control_json（M5 用）, retired, version_id。显示的时长不存，读的时候现算（5.1），所以重配音不产生新版本；镜头号「1-04」也是现算（集序号 + 本集第几个）。
+- 分镜规划是每集一个 `shot_plan` 产物（组件 `plan`），一集的剧本被采纳时建；物化时给每个非连续镜头建一个关键帧产物（owner `shot`，slot `keyframe`，组件 `kf`），镜头退场或改成连续动作时它的关键帧产物标 `retired`。重跑时按「同一场 + 拍的行有重叠」、再按顺序沿用已采纳版本的镜头 id。
+- `continuity_state` 没建（连续性账本在 M6）。
+
 ### 4.2 产物与版本（所有“四个按钮”的基础）
 
 界面上每一张可以“改提示词 / 重跑 / 不满意换一个 / 历史”的卡片都对应一个 **product**；每次生成或编辑产生一个 **version**，只追加、不覆盖。
@@ -146,6 +152,15 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 - **整集素材闸门**（gate `assets`，`scope_id` 是集 id）管这一集用到的素材（`asset_use` 里有、没退场的）：确认要求都已锁定，否则 409 `assets_not_locked {count, names}`；确认不锁任何东西、重新打开也不解锁（素材属于整部剧，各自锁定）。解锁一条素材时，用到它、已确认的集一起重新打开。导航「素材」的计数是已锁定 / 本集用到的（示例第 1 集 7 / 10）。
 - **影响范围**：新改动类型 `asset_unlock`（解锁不改内容，由 planner 直接从依赖图列行：补视图、拿它做参考的道具）和 `asset_edit`（改已锁定素材的描述、画面文字设置或音色来源；「只改这里」只存新描述、锁定的仍是原图，「确认并同步」再让这条素材重出候选，选好新的再锁定下游才更新）。影响行按槽位（和集）合并、花费相加（「配音 · 60 句」带 `count`）。
 - **级联的停止集**：`auto_adopt` 关着的组件（候选类）级联永远不重跑：级联会采纳重跑的结果，等于解锁原来锁定的、采纳一版没人选过的候选。所以改剧本不会重画参考图；补视图和配音照常跟着走。按组件判断，以后加候选类组件不用改级联。
+
+**M4 的实际做法**（镜头、确认镜头和分镜闸门）：
+
+- **第三个开关 `cascade_rerun`**（默认开）：关掉的组件「确认并同步」不自动重跑，只标「待更新」。`plan` 关掉：重做会盖掉手改的设定和镜头确认，剧本加删行、换类型或说话人后由用户在分镜页点「重跑」再采纳。和候选类的停止集一起在 `component.reruns_in_cascade` 里判断，估价也不算这些。
+- **切片**：分镜规划读剧本切片 `shots`（场的地点、时段，每行的 id、类型、说话人，不含任何文字：改对白措辞、改动作描写都不让分镜规划变旧）和素材清单切片 `ids`（id、类别、名字）。关键帧读分镜规划的 `shot:<id>`（类型、景别、运动、站位、参考素材、拍的行、接哪个镜头，不含时长和声音）、拍的动作行 `line:<id>`、传出去的每张锁定参考图（整版哈希）。`keyframe` 是媒体槽位（哈希含文件）。没有产物承载的「待更新」原因用 `Invalidation.check(slot, fn)` 登记：关键帧按别的画幅画的也算待更新。
+- **改镜头**：结构和设定字段从分镜规划的当前版本出一个 `origin=edit` 的版本并采纳；画面描述写在关键帧产物的提示词上（意图层），选哪张写关键帧产物的 `pick_json`。已确认的镜头（或分镜闸门已确认时）普通接口 409 `shot_confirmed`，改走影响范围 `shot_edit`。
+- **确认镜头**（`PATCH /shots/{id} {confirmed: true}`）：非连续镜头做 `lock_pick`（草稿锁选中的那张，没选默认第 1 张；终版只有一张就锁整版），同一个事务里写一条 `gate_decision`（gate `shot`，`scope_id` 是镜头 id），哈希记分镜规划的 `shot:<id>` 切片和锁定的关键帧。连续动作只记决定，要求它接的镜头还在（409 `no_tail_shot`）；没有关键帧版本 409 `nothing_to_confirm`。取消确认：解锁关键帧、记 `reopen`，这一集已确认的分镜闸门一起重开。「待更新」（`confirm_stale`）= 已确认，但规划切片的哈希和确认时记的不一样，或者关键帧待更新。
+- **分镜闸门**（gate `storyboard`，`scope_id` 是集 id）：前提是本集镜头都已确认、都不是待更新，否则 409 `shots_not_confirmed {count, labels}`（`GateService.precondition` 是可插拔的前提）；确认时锁定已采纳的分镜规划，重新打开时解锁。进度：`done` = 已确认的镜头数，`total` = 镜头数，`stale` = 待更新的镜头数（分镜规划本身待更新再加 1）。
+- **影响范围**：新类型 `shot_edit`（目标是镜头 id，patch 是 `PATCH /shots/{id}` 的字段，或 `{split: {after_line_id}}` / `{merge: true}`）：行有关键帧重画、哪几个镜头要重新确认、分镜闸门重开；「只改这里」= 重开闸门、取消确认再写入，「确认并同步」再给碰到的镜头重出关键帧草稿。`spec_aspect` 见 13.3。`asset_edit` / `asset_unlock` 多「镜头 1-01、1-04… 共 n 个」和其中已确认、要重新确认的；`line_edit` 改说话的行多一行「时长跟着配音变」（只提示）。
 
 ### 4.3 运行、配置、记账
 
@@ -214,9 +229,15 @@ class Component(Protocol):
 - **LLM 修改先给差异**：LLM 对已有内容的改动以 diff（修订）形式展示，用户接受后才写成新的 version。
 - **音频先行定时长**：`shot.duration_s = Σ(该镜台词音频时长) + 前后留白（默认 0.3 s + 0.2 s，可配）`；超过目标模型单段上限（H3 为 2–15 s）时提示拆镜。没有台词的镜头用手填时长。
   - M3（`pipeline/timing.py`）算到台词和场：一句 = 配过音就是音频长度，没配用剧本的估计，再没有按每秒 4 个字；一场 = 有说话人的行相加（动作行的时长 M4 由镜头决定）。镜头的 `shot_seconds` 写好、测好，M4 接上。
+  - M4（`timing.shot_duration`，Kelvin 定）：说话的行（对白 + 画外音）的音频一句接一句，前后各留 0.3 / 0.2 秒，是这个镜头最短的长度，有对白时就用它（来源「音频」）；用户手填更长的就用手填的（「手动」），短于音频 422 `duration_below_audio {min_s}`，传 `null` 恢复自动；之后重配音变长了就按音频算。没对白的镜头用手填的，再没有用分镜规划的秒数，再没有 3 秒。画外音叠在动作镜头上时取两者中长的。单段上限取 `vid` 路由上各模型 `caps.duration_s` 上限中最小的（H3 15 秒），超过给 `split_hint`。
   - 台词音频进版本前统一处理（`media/audio.py`，ffmpeg）：48 kHz 单声道，−18 LUFS、真峰值 −1.5 dBTP（`components.yaml` 的 `audio.dialogue`），增益取「到目标响度」和「真峰值不超」中小的，不压缩不削波；首尾静音按拉响度之后的音量判断，结尾留 `tail_s`（0.3 s）的一半自然收尾 + 50 ms 淡出，再补另一半静音。后端算好 64 段波形峰值给前端画。
   - 情绪：手动设的优先，否则按语气里的关键词（`config/voice.yaml` 的 `tones`），都没有就是平静。
 - **动态分镜**：前端把关键帧按时长排在时间线上，配台词音频播放；不需要后端渲染。可选导出幻灯片式 MP4（FFmpeg）。
+  - M4（`web/src/pages/storyboard/Animatic.tsx`）：rAF 时钟；每句台词从镜头开头 0.3 秒起一句接一句放素材页配好的配音（不做预演配音 `pv`，Kelvin 定），没配音的句子静音、只显示字幕，并给「去配音」；连续动作镜头先用它接的那个镜头的关键帧（真正的尾帧要等 M5 的视频）；安全区开关叠在预演和关键帧候选上。幻灯片式 MP4 没做。
+- **分镜规划和关键帧（M4）**：
+  - `plan`：模型每场拆镜，给拍哪几行、类型、景别、运动、画面描述、参考素材、站位、没对白的时长初值；规则后处理（`shots/ops.py:normalize`）把能确定修好的直接修好、不为此重试：没拍到的行补一个镜头（画外音叠到前一个镜头）、说话的行重复了只留第一次、每场第一个镜头不是连续动作、连续动作接同一场前面最近的非插入镜头（插入镜头 = 特写且没有角色）、参考素材只留本集的、没给站位按参考素材摆、机位按景别放。
+  - `kf`：和 `img` 一样是候选类（一次 3 张）、混合模式（本地草稿 → 选一张 →「用 API 出终版」1 张，父版本是草稿）。编译层写画幅、景别和之后的机位运动、场景、站位（俯视图转成「林晚在画面右侧，远处；机位在正前方」，只写这个镜头参考素材里有的角色和道具）、拍的动作行、画面文字（模型出字写逐字内容，后期贴字写「留出位置」）。参考图只传已锁定的，按角色 → 场景 → 道具 → 画面文字取到模型能收的张数（`caps.max_refs`，本地工作流按 `ref_image` 槽数），出终版时草稿占第 1 张；没传的在提示词里点名。
+  - **组件可以按输入换模型**（`Component.model_for`，`RunService` 先读输入再定模型、编译和估价）：Qwen-Image-Edit 2511 只能按参考图编辑，一个镜头没有锁定的参考图时本地草稿改用 `components.yaml` 里 `kf.local` 第一个不需要参考图的模型（Qwen-Image）。
 - **画面文字**：分镜表里记录每个镜头的预期文字；质检用 OCR 逐字比对。
   - M3 先在素材上做（`qa/ocr.py`）：每张候选过一次 OCR（`router.call()`、写 `model_call`，$0）。两边 NFKC、去空白后逐字比，标点也算；只有句末标点没读到算一致。不一致分 `missing` / `wrong` / `has_text`（后期贴字的底图上读出了字）。没有 OCR 时标「未检查」（`ocr_ok: null`），不拦锁定。
   - 两种做法：模型直接出字（提示词带逐字内容和字体），或后期贴字（底图不要字、留位置；真正的合成在 M7）。
@@ -487,21 +508,21 @@ per_call_cap_usd: 0.50
 
 ### 9.1 HTTP 接口概览（`/api/v1`）
 
-标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`unadopt`、打分、`upscale` 除外，M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；M3 加上资产、台词配音、取文件、`pick`、素材闸门（`assets`）；其余仍由 MSW 返回示例数据（示例剧集的镜头仍由 MSW 叠加在素材和进度上，M4 删）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
+标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`unadopt`、打分、`upscale` 除外，M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；M3 加上资产、台词配音、取文件、`pick`、素材闸门（`assets`）；M4 加上镜头、拆分合并、分镜闸门（`storyboard`）、确认镜头、影响范围 `shot_edit` / `spec_aspect`；其余仍由 MSW 返回示例数据（生成页、后期页的示例数据读后端的镜头；`GET /episodes/{id}/shots` 只给示例第 1 集叠加 `video_product_id`，M5 删）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
 
 | 资源 | 接口 |
 | --- | --- |
 | 剧集 | `GET/POST /series`，`GET/PATCH /series/{id}`，`GET/PUT /series/{id}/spec`（成片规格，改画幅时返回影响范围；锁定后直接改画幅返回 409 `spec_locked`），`GET /series/{id}/spec/compat`⁺（模型兼容表），`GET /spec/presets`⁺（平台预设和各画幅尺寸），`GET /series/{id}/episodes`⁺，`GET /series/{id}/progress`⁺（还没分集时的导航徽标；小说闸门的状态） |
 | 小说与设定 | `POST /series/{id}/novel`（上传；`dry_run` 只识别章节、返回 `upload_id`，正式导入要 `rights_confirmed`），`GET /series/{id}/novel`⁺（段落），`PUT /series/{id}/novel/chapters/{idx}`⁺（逐段编辑后整章提交），`GET /series/{id}/bible`（对象：条目 + 合并建议），`PATCH /bible/{entity_id}`，`POST /bible/merge`⁺（合并 / 不是同一个 / 拆出别名），`GET /series/{id}/suggestions`⁺，`POST /suggestions/{id}/accept\|reject\|rewrite`，`POST /suggestions/{id}/reset`⁺，`POST /series/{id}/suggestions/accept-all`⁺ |
-| 分集、场、剧本、镜头 | `GET/PATCH /episodes/{id}`，`GET /episodes/{id}/progress`⁺（导航徽标），`GET /episodes/{id}/script`⁺，`PATCH /beats/{id}`（含拖动换集，返回整个方案），`PATCH /lines/{id}`、`PATCH /scenes/{id}`⁺（只改文字 / 场标题；已确认时 409，前端改走影响范围），`POST /lines/{id}/rewrite`⁺，`POST /scenes/{id}/rewrite`⁺，`GET /episodes/{id}/shots`⁺，`PATCH /shots/{id}`⁺，`POST /shots/{id}/split\|merge` |
-| 资产 | `GET /series/{id}/assets?episode=`（M3 多 `scenes`：出现在本集哪几场，带全剧场号和行；`note`、`seed_changed`、`pick`；`shots` 到 M4），`POST /series/{id}/assets`（手动新建，还没做），`PATCH /assets/{id}`（描述、选这个、画面文字设置、音色来源；已锁定 409，改走影响范围 `asset_edit`），`POST /assets/{id}/lock`⁺ `{version_id?, idx?, force?}`（409 `ocr_mismatch` / `voice_needs_final`；解锁走影响范围 `asset_unlock`），`POST /assets/{id}/upload`⁺（multipart，PNG / JPEG / WebP ≤ 20 MB；音色 422 `upload_not_supported`），`POST /episodes/{id}/assets/analyze`⁺ → job（M0.5 是同步返回），`GET /episodes/{id}/assets/matrix`⁺（场 × 用到的素材，格子是行 id，空 = 整场） |
+| 分集、场、剧本、镜头 | `GET/PATCH /episodes/{id}`，`GET /episodes/{id}/progress`⁺（导航徽标），`GET /episodes/{id}/script`⁺，`PATCH /beats/{id}`（含拖动换集，返回整个方案），`PATCH /lines/{id}`、`PATCH /scenes/{id}`⁺（只改文字 / 场标题；已确认时 409，前端改走影响范围），`POST /lines/{id}/rewrite`⁺，`POST /scenes/{id}/rewrite`⁺，`GET /episodes/{id}/shots`⁺（M4：读分镜规划的当前版本；每个镜头带 `label`、`scene_no` / `scene_place`、时长 `duration_s` / `duration_source` / `min_s` / `planned_s` / `manual_s` / `longest_s` / `split_hint`、`keyframe_product_id` / `keyframe_pick` / `keyframe_sha256`、`confirmed` / `confirm_stale`、`seed_changed`），`PATCH /shots/{id}`⁺（设定字段、`intent`、`keyframe_pick`、`confirmed`；已确认 409 `shot_confirmed`；时长短于音频 422 `duration_below_audio`），`POST /shots/{id}/split\|merge`（拆分 `{after_line_id?}`，默认从中间切、只有一行时后一半是 2 秒的反应镜头；合并只和同一场的下一个，409 `split_point_invalid` / `no_next_shot`；都返回本集的镜头列表） |
+| 资产 | `GET /series/{id}/assets?episode=`（M3 多 `scenes`：出现在本集哪几场，带全剧场号和行；`note`、`seed_changed`、`pick`；M4 起 `shots` 是已采纳分镜规划里引用它的镜头号），`POST /series/{id}/assets`（手动新建，还没做），`PATCH /assets/{id}`（描述、选这个、画面文字设置、音色来源；已锁定 409，改走影响范围 `asset_edit`），`POST /assets/{id}/lock`⁺ `{version_id?, idx?, force?}`（409 `ocr_mismatch` / `voice_needs_final`；解锁走影响范围 `asset_unlock`），`POST /assets/{id}/upload`⁺（multipart，PNG / JPEG / WebP ≤ 20 MB；音色 422 `upload_not_supported`），`POST /episodes/{id}/assets/analyze`⁺ → job（M0.5 是同步返回），`GET /episodes/{id}/assets/matrix`⁺（场 × 用到的素材，格子是行 id，空 = 整场） |
 | 台词配音⁺ | `GET /episodes/{id}/dub`（每句的说话人、音色、状态 done / stale / missing / running / failed / no_voice / voice_not_locked、情绪和 `tone_emotion`、音频带波形、时长；每场时长和已配句数），`POST /episodes/{id}/dub` `{dry_run?, line_ids?}`（`dry_run` 只给估价和句数；否则每句排一个 `product.run`，跳过的行写明原因；`line_ids` 不管状态都重配），`PATCH /lines/{id}/dub` `{emotion}`（null = 按语气） |
 | 文件⁺ | `GET /files/{sha256}`：版本里的媒体文件，类型按文件头判断，支持 Range，`immutable` 缓存 |
 | 产物与版本 | `GET /products?owner=&component=`⁺，`GET /products/{id}`（含版本列表、`prompt`、`estimate`、`running`），`POST /products/{id}/run` `{mode: rerun\|switch\|run, model?, intent?, compiled?, count?, where?, params?}` → job（M3 加 `where: api` = 混合模式出终版，`params` 是带类型的 `RunParams`：`task`、`source_version_id`、`source_idx`，未知字段 422），`POST /products/{id}/pick`⁺ `{version_id, idx}`，`POST /versions/{id}/set-current\|adopt`，`POST /products/{id}/lock`，`POST /products/{id}/unlock`⁺，`POST /products/{id}/unadopt`⁺，`PUT /products/{id}/prompt`⁺，`POST /products/{id}/compile`⁺，`PATCH /versions/{id}`⁺（打分），`POST /versions/{id}/upscale`⁺ → job |
 | 生成 | `GET/PUT /series/{id}/generate-rules`⁺（每镜候选数、质检不过自动重跑、单镜上限），`GET /episodes/{id}/generate-log`⁺（运行记录） |
 | 后期 | `GET /episodes/{id}/timeline`⁺，`PATCH /clips/{id}`⁺，`PATCH /subtitles/{id}`⁺，`GET /episodes/{id}/export/checks`⁺，`POST /episodes/{id}/export`⁺ `{format: mp4\|fcpxml\|otio\|srt}` → job |
 | 影响范围 | `POST /impact/preview`（给一个待改动，返回受影响的产物和预计花费），`POST /impact/apply` `{action: mark\|rerun\|undo}` |
-| 闸门 | `POST /gates/{gate}/confirm\|reopen`（M3 加 `assets`：`scope_id` 是集 id，没锁完 409 `assets_not_locked {count, names}`） |
+| 闸门 | `POST /gates/{gate}/confirm\|reopen`（M3 加 `assets`：`scope_id` 是集 id，没锁完 409 `assets_not_locked {count, names}`；M4 加 `storyboard`：`scope_id` 是集 id，镜头没确认完或有待更新的 409 `shots_not_confirmed {count, labels}`） |
 | 任务 | `GET /jobs`，`GET /jobs/{id}`⁺，`POST /jobs/{id}/cancel\|confirm` |
 | 配置与模型 | `GET /config/components`⁺（组件目录、可选模型、`local_runtime_ok`），`GET /config/resolve`，`PUT /config/override`，`DELETE /config/override`⁺（恢复成预设），`GET/PUT /config/defaults`⁺（预设、兜底方式；代替原来的 `POST /config/preset`），`GET /providers`，`POST /providers/{id}/key`，`DELETE /providers/{id}/key`⁺，`POST /providers/{id}/test`，`POST /custom-models`（以后） |
 | 开发⁺ | `POST /dev/llm-test`（只在 Mock 下），`GET /dev/model-calls`（最近的 `model_call`，冒烟脚本也读它） |
@@ -680,6 +701,7 @@ M3 加的（DECISIONS 2026-10-21「第 12 步（下）」）：
 - `spec/compat.py`：对当前路由里的每个模型，用适配器 `caps`（支持的画幅、最高分辨率、帧率、时长）判定 原生支持 / 需要转换 / 不支持，返回给前端表格；“不支持”的模型在 ModelPicker 里隐藏。路由按这台机器能力过滤后的算（7.3）。
 - 第一张关键帧被采纳时写 `output_spec.locked_at`。锁定后改画幅：用失效传播算出受影响的关键帧和视频（以及按旧画幅出的场景参考图，标为可选），显示数量和预计花费，选项同 ImpactDialog。改分辨率或帧率只影响精修和导出，不触发重做。
   - 接口：锁定后 `PUT /series/{id}/spec` 改画幅返回 409 `spec_locked`；用户在影响范围里选了处理方式后带 `?confirmed_impact=<impact id>` 再写。M1 只检查这个参数不为空，影响范围由 MSW 示例给（M4 之前）；M2 有真的影响范围后再校验 id。
+  - **M4 的实际做法**：`locked_at` 在第一张关键帧被采纳（= 第一个镜头确认，锁定选中的关键帧）时写，同一个事务（`on_adopt("keyframe")`）；出草稿不锁。改画幅是影响范围 `spec_aspect`（后端 `ShotService.plan_aspect`）：`keyframes_redraw {count, shots}`，估价按路由上的 API 模型出终版（示例 7 × $0.134），按旧画幅出的已锁定场景参考图列成可选的 `ref_images_suggest`，视频到 M5 才列；「只改这里」写规格、取消所有已确认的镜头（分镜闸门跟着重开），「确认并同步」再给这些关键帧重出本地草稿。应用 `spec_aspect` 本身就写规格；`PUT …/spec?confirmed_impact=` 现在真的校验 id：必须是这个剧应用过的 `spec_aspect` 预览、改的是同一个画幅（内存里记最近 100 条，重启就没了），否则 409 `spec_locked`。
 - 另出一版：主画幅 9:16 时可选“导出时外扩出 16:9”（另计费，走外扩模型适配器）；主画幅 16:9 时可选“按人物位置自动裁成 9:16”（本地，不花钱）。
 
 ## 14. 素材整理与外部同步
