@@ -17,7 +17,7 @@
 
 ## 下一步
 
-- **第 5 步 视频组件（后端，Mock）**：照 `plans/M5.md`「视频组件 `vid`」：`vid` 组件（照 `pipeline/` 里关键帧组件 `kf` 的写法）、物化（分镜闸门确认后每镜一个 owner `shot` / slot `video` 的产物）、输入（首帧 = 采纳的关键帧；连续镜头 = 上一镜采纳 take 的尾帧，没采纳 409 `upstream_not_adopted`；参考图按模型张数；音频按 `audio_mode`：`tts` 传 `dialogue_audio`，`native` 先只靠提示词——音色样本见「等 Kelvin」）、六段式模板 `prompts/templates/vid/*.j2`、裁头 0.3 秒、依赖失效、`GET /episodes/{id}/shots` 的 `video_product_id`、`takes` 闸门、进度、影响范围视频行。适配器参数约定：`first_frame` / `video_in` / `dialogue_audio` 是 blob sha256，`duration_s`、`fps`、`aspect`、`n`。
+- **第 5 步 视频组件（后端，Mock）**：照 `plans/M5.md`「视频组件 `vid`」：`vid` 组件（照 `pipeline/` 里关键帧组件 `kf` 的写法）、物化（分镜闸门确认后每镜一个 owner `shot` / slot `video` 的产物）、输入（首帧 = 采纳的关键帧；连续镜头 = 上一镜采纳 take 的尾帧，没采纳 409 `upstream_not_adopted`；参考图按模型张数；音频按 `audio_mode`：`tts` 传 `dialogue_audio`，`native` 走新的 `workflows/h3-r2v/`（Kelvin 2026-10-26 选 B，见 DECISIONS「M5 第 4 步」：参考生视频节点 + ref2va 权重 + 4 步 Turbo LoRA，首帧当 `<Picture 1>`、锁定参考图、音色样本当 `<Audio N>`；要加 `ref_audio` 槽位，前端契约 `api/schemas/workflows.ts` 跟着加），`none` 不给音频）、六段式模板 `prompts/templates/vid/*.j2`、裁头 0.3 秒、依赖失效、`GET /episodes/{id}/shots` 的 `video_product_id`、`takes` 闸门、进度、影响范围视频行。适配器参数约定：`first_frame` / `video_in` / `dialogue_audio` 是 blob sha256，`duration_s`、`fps`、`aspect`、`n`。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -68,6 +68,5 @@
 
 ## 等 Kelvin 的事
 
-- **`native` 配音方式的锁定音色样本**（第 5 步前定）：H3 的图生视频节点收不了音色参考，只有「参考生视频」节点（另一套 ref2va 权重，你机器上也有）收。两条路：A. `native` 先只靠提示词让 H3 自己出声，音色参考以后再说；B. 第 5 步加一个 `h3-r2v` 工作流专门接音色样本（首帧变成软约束）。我倾向 A，第 14 步真跑时对比一下再决定。
-- 无其他。（「湿了半边」Kelvin 2026-10-26 定：示例剧本不改，留着考新模型；默认的 Klein 画 1-01 没有污渍。）
+- 无。（「湿了半边」Kelvin 2026-10-26 定：示例剧本不改，留着考新模型；默认的 Klein 画 1-01 没有污渍。）
 
