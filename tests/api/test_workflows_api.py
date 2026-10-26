@@ -282,7 +282,7 @@ def test_a_workflow_broken_after_a_node_install_points_at_the_snapshot(
         return {k: v for k, v in info.items() if k != "KSampler"}
 
     # The pack install breaks KSampler (as a bad node pack can).
-    res = client.post(f"{V1}/workflows/{ltx["id"]}/deps/install").json()
+    res = client.post(f"{V1}/workflows/{ltx['id']}/deps/install").json()
     monkeypatch.setattr(access, "object_info", without_ksampler)
     rows = {w["id"]: w for w in client.post(f"{V1}/workflows/check-all").json()}
     broken = rows[sdxl["id"]]["check"]
