@@ -19,11 +19,12 @@
 - 第 6 步（3b1ad8d，DECISIONS「M4 第 6 步」）：「分镜板 / 表格」切换（`?view=table`，选中镜头写进 `?shot=`）、`storyboard/ShotTable.tsx`（单元格改类型 / 景别 / 运动 / 时长，每行拆分 / 合并）、镜头设定里的拆分（选切点）/ 合并、时长来源 / 「恢复按音频」/ 拆镜提示（`duration.ts`）；`useSplitShot` / `useMergeShot`，`ShotPatchSchema.duration_s` 可为 null；所有改动走 `Storyboard.tsx:edit`（已确认的先 `shot_edit`）。假后端补拆分、合并、时长规则。截图 `storyboard-table`。只改前端：vitest 292 个、Playwright `real` 14 个过；eslint、tsc、prettier 干净。
 - 第 7 步（bbeb0cc，DECISIONS「M4 第 7 步」）：`ShotOut.keyframe_sha256`（选中的候选图，`ShotService.of_episode`），镜头卡片和预演显示真图；`storyboard/Animatic.tsx` + `timeline.ts` 替换 `PreviewStrip`（rAF 时钟、配音按偏移播放、字幕、接尾帧用来源镜头的关键帧、点时间条跳转、空格键、「n 句还没配音 · 去配音」）；`lib/safeArea.ts` + `components/SafeAreaOverlay.tsx`，规格页和分镜页都从 `GET /spec/presets` 的 `safe_areas` 读，「安全区」开关叠在预演和关键帧候选上。截图 `storyboard-animatic`、重截 `storyboard`。全量 pytest 699 个、vitest 297 个、Playwright e2e 35 个过；ruff、mypy（含 linux）、eslint、tsc、prettier 干净。
 - 第 8 步（f0d8b6c，DECISIONS「M4 第 8 步」）：后端验收 `tests/e2e/test_script_to_storyboard.py`（新剧集 → 素材锁定 → 分镜规划 9 个镜头 → 7 个关键帧草稿 → 1-04 选 B 出终版 → 9 个都确认 → 分镜闸门，哈希、配音后的时长、改画幅、改林晚）；Playwright 新项目 `m4`（`e2e/m4.spec.ts`：预演播放配音、空格、出终版、逐个确认、分镜闸门），项目顺序 `seeded` → `m4` → `real` → `smoke`。截图第 7 步已重截。只改测试：`tests/e2e` 5 个、Playwright e2e 37 个过；ruff、eslint、tsc、prettier 干净。
-- 第 9 步（本提交，DECISIONS「M4 第 9 步」）：`Component.model_for` 钩子（`RunService.start` / `describe` 先读输入再定模型），`kf.model_for`：没有锁定参考图的草稿从 Qwen-Image-Edit 换成 `kf.local` 里第一个不需要参考图的（Qwen-Image；`Workflow.needs_refs()`）；站位只写镜头用到的角色和道具；关键帧模板加「单幅画面，不要分格或拼图」。本机真跑 `scripts/smoke/local_storyboard.py`（ComfyUI，跑了两轮），报告 `reports/m4-local-smoke.txt`：林晚在 1-01、1-04 的 6 张里都认得出，Edit 每镜 3 张 15–19 秒，显存峰值 31.4 GB，1-07 走了 Qwen-Image。全量 pytest 703 个、vitest 297 个过；ruff、mypy（含 linux）、prettier 干净。
+- 第 9 步（4ad5d61，DECISIONS「M4 第 9 步」）：`Component.model_for` 钩子（`RunService.start` / `describe` 先读输入再定模型），`kf.model_for`：没有锁定参考图的草稿从 Qwen-Image-Edit 换成 `kf.local` 里第一个不需要参考图的（Qwen-Image；`Workflow.needs_refs()`）；站位只写镜头用到的角色和道具；关键帧模板加「单幅画面，不要分格或拼图」。本机真跑 `scripts/smoke/local_storyboard.py`（ComfyUI，跑了两轮），报告 `reports/m4-local-smoke.txt`：林晚在 1-01、1-04 的 6 张里都认得出，Edit 每镜 3 张 15–19 秒，显存峰值 31.4 GB，1-07 走了 Qwen-Image。全量 pytest 703 个、vitest 297 个过；ruff、mypy（含 linux）、prettier 干净。
+- 第 10 步（本提交，DECISIONS「M4 第 10 步」）：真实冒烟 `scripts/smoke/live_storyboard.py`（Kelvin 批准约 $0.16，实花 $0.0272），报告 `reports/m4-live-smoke.txt`：DeepSeek V4 Pro 分镜规划 10 个镜头 $0.0103；Nano Banana Pro 402（Google 预付额度用完）→ 兜底 Seedream 5.0 终版 $0.0169，Kelvin 定不补跑。HTTP 402 改归 `quota_exceeded`（`adapters/http.py`）。全量 pytest 704 个过；ruff、mypy 干净。
 
 ## 下一步
 
-- **第 10 步 真实冒烟**（计划「小步」10，花真钱，上限 $1，**跑之前先给 Kelvin 清单和预估、等同意**）：写 `scripts/smoke/live_storyboard.py`（照 `live_assets.py`：`DRAMA_LIVE=1`、临时数据目录、花费上限）：DeepSeek V4 Pro 跑第 1 集分镜规划（约 $0.02），Nano Banana Pro 以本地草稿为参考出 1 张关键帧终版（约 $0.14）。本地草稿可以先用 `local_storyboard.py` 在同一个临时目录里出（要 ComfyUI）。结果写进 `reports/m4-live-smoke.txt`。
+- **第 11 步 收尾**（计划「小步」11）：SPEC 补 M4 的实际做法（4.1 镜头表、4.2 确认镜头和分镜闸门、5.1 时长、9.1 镜头接口、13.3 锁定和改画幅；以 DECISIONS「M4 第 1–10 步」为准）；ROADMAP 勾 M4；写 `reports/M4.md`（把本文件「已完成的小步」挪进去）；全量 pytest + 前端全套 + CI 绿后 `gh pr create -R kelvin78901/AIVideoGenerationAgent --base main`，描述用报告。
 - **提醒 Kelvin 重启后端并 `demo --reset`**（第 1 步加了迁移 `0018`，第 2、3 步加了示例分镜和关键帧；本地库里关键帧产物是第 2 步的随机 id，`--reset` 后才是 `demo-p-kf-1-0X`；第 5 步起分镜页完全读后端，MSW 不再兜底）：`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -37,7 +38,7 @@
 
 ## 踩过的坑 / 临时绕过
 
-- **CI**：第 4 步（d5cccb3）的 CI 红了：`e2e/real.spec.ts` 解锁「林晚出租屋」现在会列出用到它的镜头、弹影响范围，测试还按「不弹窗」写；第 5 步改好了。第 5、6 步的 CI（9afc438 那次）是绿的。第 7、8 步的 CI（8f6d587 那次）是绿的。第 9 步的 CI 交接时还在跑：`/continue` 时先 `gh run list -R kelvin78901/AIVideoGenerationAgent --branch m4-storyboard` 看一眼。
+- **CI**：第 4 步（d5cccb3）的 CI 红了：`e2e/real.spec.ts` 解锁「林晚出租屋」现在会列出用到它的镜头、弹影响范围，测试还按「不弹窗」写；第 5 步改好了。第 5、6 步的 CI（9afc438 那次）是绿的。第 7、8 步的 CI（8f6d587 那次）是绿的。第 9、10 步的 CI 交接时还在跑：`/continue` 时先 `gh run list -R kelvin78901/AIVideoGenerationAgent --branch m4-storyboard` 看一眼。
 - **临时脚本里 `create_app()` 一定先设 `DRAMA_HOME` 到临时目录**（`core/paths.py`；不是 `DRAMA_STUDIO_HOME`），否则开的是真实的 `~/.drama-studio`：第 3 步就这样把示例关键帧种进了 Kelvin 的库（Mock，没花钱，和重启后端的效果一样）。
 
 - **测试别在「档案写完」后立刻断言任务状态**：任务结束比档案写入晚一点，CI 慢机器上会读到 running（`test_rescan_replaces_a_running_scan`，2026-10-21 修：等任务都结束再比）。
@@ -72,5 +73,6 @@
 
 ## 等 Kelvin 的事
 
+- **Google AI Studio 预付额度用完了**（M4 第 10 步，402）：Nano Banana Pro 现在调不通，关键帧和参考图的终版会兜底到 Seedream。充值后可补跑 `DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/live_storyboard.py --only kf`（约 $0.14）。
 - **场景参考图是分格拼图**（M4 第 9 步本机真跑）：Qwen-Image-2512 9:16 画空景几乎总是 2×2 或 3 格拼图（楼道 4/4，提示词里说「不要拼图」也没用），关键帧的空间结构跟着不稳。可选：场景参考图改画横屏、场景走 API 终版、或在候选上提示「这是拼图」。看 `reports/m4-local-smoke.txt` 末尾。
 - 看截图（原型没有的部分，都在 `reports/ui/`）：**M4 第 5 步 `storyboard`、`storyboard-shot-edit`（改已确认的镜头）、`spec-aspect-impact`（改画幅，后端估价 $0.94）；第 6 步 `storyboard-table`（表格视图）；第 7 步 `storyboard-animatic`（预演播放中、开着安全区）**；M3 第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 15 步重截的 `assets-views`（6 张视图）；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。

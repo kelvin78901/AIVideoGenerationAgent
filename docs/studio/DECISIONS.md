@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M4 第 10 步：真实冒烟
+
+- **HTTP 402 归 `quota_exceeded`**（不重试，`modelhub/adapters/http.py:error_for`）：真实冒烟时 Gemini 的预付项目额度用完，返回 402 RESOURCE_EXHAUSTED，原来落到兜底的 `bad_request`。和 M3 的「429 + limit: 0」一样是钱的问题，界面已有「额度用完」的词条。
+- **Nano Banana Pro 那张终版没有补跑**（Kelvin 定）：兜底到 Seedream 5.0 出的终版构图跟草稿、人物一致，算这一步通过；Google 充值之后用 `live_storyboard.py --only kf` 可以补（约 $0.14）。
+- **冒烟脚本** `scripts/smoke/live_storyboard.py`：继承 `live_assets.LiveSmoke`（连接测试、每个组件的单次上限、总上限、超了取消）；分镜规划重跑一次、不采纳（第 3 项：不自动重做）；关键帧先在本地把 1-04 的两张参考图（林晚、楼道）重画锁定，再出本地草稿和 API 终版。
+
 ## 2026-10-26 · M4 第 9 步：本机真跑
 
 - **没有锁定参考图的关键帧草稿改走 Qwen-Image**（第 3 步挪来的）：组件加钩子 `Component.model_for(inputs, model, settings)`（默认原样返回），`RunService.start` / `describe` 先读输入再定模型、再编译提示词和估价，所以提示词里的目标模型、任务的队列、显示的估价都是换过之后的。`kf.model_for`：本地模型的工作流 `needs_refs()`（有不可选的 `ref_image` 槽，Qwen-Image-Edit 2511）、这个镜头又没有锁定的参考图、也不是出终版时，取 `components.yaml` 里 `kf.local` 列表中第一个工作流不需要参考图、这台机器能跑（不在 `settings.unavailable`）的模型；都没有就不换，跑的时候按 `ref_missing` 照常兜底。`kf.local` 改成 `[qwen-image-edit, qwen-image, flux2-dev]`（原来的锚点 `img_local` 没别人用，删了）。原因：换哪个模型写在配置里，不在代码里写死模型名（硬规则 7）。

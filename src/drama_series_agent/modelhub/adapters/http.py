@@ -2,7 +2,7 @@
 
 Retried: timeouts, network errors and ``RETRY_STATUSES`` (rate limits, 5xx), with exponential
 backoff or the provider's ``Retry-After``, unless the error mapper calls it final (a 429 that
-is out of quota, ``quota_exceeded``). Anything else fails at once with a stable code.
+is out of quota, or a 402, ``quota_exceeded``). Anything else fails at once with a stable code.
 """
 
 from __future__ import annotations
@@ -30,6 +30,8 @@ def error_for(status: int, body: str) -> ModelError:
         return ModelError("auth_failed", snippet, status=status)
     if status == 404:
         return ModelError("model_not_found", snippet, status=status)
+    if status == 402:  # Payment Required: Gemini's prepaid credits used up (M4 live smoke)
+        return ModelError("quota_exceeded", snippet, status=status)
     if status == 429:
         if any(marker in body for marker in QUOTA_MARKERS):
             return ModelError("quota_exceeded", snippet, status=status)
