@@ -34,7 +34,12 @@ from drama_series_agent.core.models_db import Asset, OutputSpecRow, Product, Pro
 from drama_series_agent.episodes.service import script_product
 from drama_series_agent.modelhub.adapters.base import Estimate, ModelError
 from drama_series_agent.modelhub.registry import Registry
-from drama_series_agent.modelhub.workflows import Workflow, has_workflow, load_workflow
+from drama_series_agent.modelhub.workflows import (
+    Workflow,
+    has_workflow,
+    load_workflow,
+    spec_workflows_dir,
+)
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.media import (
     MediaComponent,
@@ -112,9 +117,10 @@ def local_workflow(registry: Registry, model: str) -> Workflow | None:
         spec = registry.spec(model)
     except ModelError:
         return None
-    if spec.where != "local" or not has_workflow(spec.workflow):
+    root = spec_workflows_dir(spec)
+    if spec.where != "local" or not has_workflow(spec.workflow, root):
         return None
-    return load_workflow(str(spec.workflow))
+    return load_workflow(str(spec.workflow), root)
 
 
 async def stale_aspect(session: AsyncSession, product: Product, version: ProductVersion) -> bool:

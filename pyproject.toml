@@ -54,7 +54,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-drama_series_agent = ["py.typed", "prompts/templates/**/*"]
+drama_series_agent = ["py.typed", "prompts/templates/**/*", "wflib/demo/**/*"]
 
 # ---------------------------------------------------------------------------
 # Quality tools. New studio code is checked strictly; upstream modules are

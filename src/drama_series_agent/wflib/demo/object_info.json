@@ -1,0 +1,155 @@
+{
+ "CheckpointLoaderSimple": {
+  "display_name": "Load Checkpoint",
+  "input": {
+   "required": {
+    "ckpt_name": [
+     [
+      "sd_xl_base_1.0.safetensors"
+     ]
+    ]
+   }
+  }
+ },
+ "CLIPTextEncode": {
+  "display_name": "CLIP Text Encode (Prompt)",
+  "input": {
+   "required": {
+    "text": [
+     "STRING",
+     {
+      "multiline": true
+     }
+    ],
+    "clip": [
+     "CLIP"
+    ]
+   }
+  }
+ },
+ "EmptyLatentImage": {
+  "display_name": "Empty Latent Image",
+  "input": {
+   "required": {
+    "width": [
+     "INT",
+     {
+      "default": 512
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 512
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "default": 1
+     }
+    ]
+   }
+  }
+ },
+ "KSampler": {
+  "display_name": "KSampler",
+  "input": {
+   "required": {
+    "model": [
+     "MODEL"
+    ],
+    "seed": [
+     "INT",
+     {
+      "default": 0,
+      "control_after_generate": true
+     }
+    ],
+    "steps": [
+     "INT",
+     {
+      "default": 20
+     }
+    ],
+    "cfg": [
+     "FLOAT",
+     {
+      "default": 8.0
+     }
+    ],
+    "sampler_name": [
+     [
+      "euler",
+      "euler_ancestral"
+     ]
+    ],
+    "scheduler": [
+     [
+      "normal",
+      "karras"
+     ]
+    ],
+    "positive": [
+     "CONDITIONING"
+    ],
+    "negative": [
+     "CONDITIONING"
+    ],
+    "latent_image": [
+     "LATENT"
+    ],
+    "denoise": [
+     "FLOAT",
+     {
+      "default": 1.0
+     }
+    ]
+   }
+  }
+ },
+ "VAEDecode": {
+  "display_name": "VAE Decode",
+  "input": {
+   "required": {
+    "samples": [
+     "LATENT"
+    ],
+    "vae": [
+     "VAE"
+    ]
+   }
+  }
+ },
+ "SaveImage": {
+  "display_name": "Save Image",
+  "input": {
+   "required": {
+    "images": [
+     "IMAGE"
+    ],
+    "filename_prefix": [
+     "STRING",
+     {
+      "default": "ComfyUI"
+     }
+    ]
+   }
+  }
+ },
+ "LoadImage": {
+  "display_name": "Load Image",
+  "input": {
+   "required": {
+    "image": [
+     [
+      "first.png"
+     ],
+     {
+      "image_upload": true
+     }
+    ]
+   }
+  }
+ }
+}

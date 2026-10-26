@@ -13,7 +13,7 @@ from __future__ import annotations
 import copy
 import re
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
@@ -102,6 +102,9 @@ class LocalModel(_Loose):
     display: str
     runtime: str | None = None
     workflow: str | None = None
+    # A library workflow outside the repo (``~/.drama-studio/workflows``, M5); None: ``workflows/``.
+    workflow_root: str | None = None
+    tier: str | None = None  # a library workflow's tier (recommended / mine / unverified)
     # ``runtime: python``: the worker script (``workers/<worker>.py``), the environment it runs in
     # (``~/.drama-studio/envs/<env>``), what it loads (``args``, ``{models}`` / ``{envs}``
     # expanded) and whether it needs the GPU (the VRAM lease; RapidOCR does not).
@@ -281,6 +284,52 @@ class StudioConfig:
     components: ComponentsConfig
     spec: SpecConfig
     voice: VoiceConfig = field(default_factory=VoiceConfig)
+    # Library workflows that may only be picked by hand (SPEC 6.4.4: 未验证): never on a route
+    # the studio picks itself (``alt_order``, ``fallback.to``).
+    unverified: frozenset[str] = frozenset()
+
+
+@dataclass(frozen=True)
+class Library:
+    """What the workflow library (``wflib``, M5) adds to the factory config: imported workflows
+    as local models, each in the components that serve its kind."""
+
+    models: tuple[LocalModel, ...] = ()
+    serves: tuple[tuple[str, str], ...] = ()  # (component id, model key)
+    mine: frozenset[str] = frozenset()  # 我的工作流: also in 「不满意换一个」
+    unverified: frozenset[str] = frozenset()
+
+
+_library = Library()
+
+
+def set_library(library: Library) -> None:
+    """The library changed (startup, import, a tier): the next ``get_config()`` includes it."""
+    global _library
+    _library = library
+    get_config.cache_clear()
+
+
+def with_library(cfg: StudioConfig, lib: Library) -> StudioConfig:
+    if not lib.models and not lib.unverified:
+        return cfg
+    known = {m.key for m in cfg.providers.local_models}
+    added = [m for m in lib.models if m.key not in known]
+    providers = cfg.providers.model_copy(
+        update={"local_models": [*cfg.providers.local_models, *added]}
+    )
+    comps = []
+    for comp in cfg.components.components:
+        extra = [k for c, k in lib.serves if c == comp.id and k not in comp.local]
+        if extra:
+            update: dict[str, Any] = {"local": [*comp.local, *extra]}
+            mine = [k for k in extra if k in lib.mine]
+            if mine and comp.alt_order is not None:
+                update["alt_order"] = [*comp.alt_order, *mine]
+            comp = comp.model_copy(update=update)
+        comps.append(comp)
+    components = cfg.components.model_copy(update={"components": comps})
+    return replace(cfg, providers=providers, components=components, unverified=lib.unverified)
 
 
 class _Yaml12BoolLoader(yaml.SafeLoader):
@@ -324,8 +373,9 @@ def load_config(directory: Path | None = None) -> StudioConfig:
 
 @lru_cache(maxsize=1)
 def get_config() -> StudioConfig:
-    """Process-wide factory config (tests changing ``DRAMA_CONFIG_DIR`` call cache_clear)."""
-    return load_config()
+    """Process-wide factory config plus the workflow library (tests changing
+    ``DRAMA_CONFIG_DIR`` call cache_clear)."""
+    return with_library(load_config(), _library)
 
 
 # --------------------------------------------------------------------------- resolution
@@ -484,5 +534,17 @@ def resolve(
         for path, value in _flatten(ov.data).items():
             _set_path(values, path, value)
             sources[path] = ov.scope
+    if cfg.unverified:
+        _manual_only(values, cfg.unverified)
     unavailable = restrict(values, cfg.providers, caps, comp.local) if caps is not None else {}
     return Resolved(values=values, sources=sources, unavailable=unavailable)
+
+
+def _manual_only(values: dict[str, Any], unverified: frozenset[str]) -> None:
+    """Unverified workflows run only when picked by hand (SPEC 6.4.4): off the fallback and
+    「不满意换一个」; a ``local_model`` the user chose stays."""
+    fallback = values.get("fallback")
+    if isinstance(fallback, dict) and fallback.get("to") in unverified:
+        fallback["to"] = None
+    if isinstance(values.get("alt_order"), list):
+        values["alt_order"] = [k for k in values["alt_order"] if k not in unverified]

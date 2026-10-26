@@ -1,0 +1,169 @@
+{
+ "1": {
+  "class_type": "CheckpointLoaderSimple",
+  "inputs": {
+   "ckpt_name": "ltx-2-19b-distilled-fp8.safetensors"
+  },
+  "_meta": {
+   "title": "Load Checkpoint"
+  }
+ },
+ "2": {
+  "class_type": "LoadImage",
+  "inputs": {
+   "image": "first.png"
+  },
+  "_meta": {
+   "title": "Load Image"
+  }
+ },
+ "3": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "rainy night, neon reflections",
+   "clip": [
+    "1",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "CLIP Text Encode"
+  }
+ },
+ "4": {
+  "class_type": "CLIPTextEncode",
+  "inputs": {
+   "text": "blurry, low quality",
+   "clip": [
+    "1",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "CLIP Text Encode"
+  }
+ },
+ "5": {
+  "class_type": "LTXVConditioning",
+  "inputs": {
+   "positive": [
+    "3",
+    0
+   ],
+   "negative": [
+    "4",
+    0
+   ],
+   "frame_rate": 24
+  },
+  "_meta": {
+   "title": "LTXVConditioning"
+  }
+ },
+ "6": {
+  "class_type": "EmptyLTXVLatentVideo",
+  "inputs": {
+   "width": 768,
+   "height": 1344,
+   "length": 97,
+   "batch_size": 1
+  },
+  "_meta": {
+   "title": "EmptyLTXVLatentVideo"
+  }
+ },
+ "7": {
+  "class_type": "RandomNoise",
+  "inputs": {
+   "noise_seed": 42
+  },
+  "_meta": {
+   "title": "RandomNoise"
+  }
+ },
+ "8": {
+  "class_type": "CFGGuider",
+  "inputs": {
+   "model": [
+    "1",
+    0
+   ],
+   "positive": [
+    "5",
+    0
+   ],
+   "negative": [
+    "5",
+    1
+   ],
+   "cfg": 1.0
+  },
+  "_meta": {
+   "title": "CFGGuider"
+  }
+ },
+ "9": {
+  "class_type": "SamplerCustomAdvanced",
+  "inputs": {
+   "noise": [
+    "7",
+    0
+   ],
+   "guider": [
+    "8",
+    0
+   ],
+   "latent_image": [
+    "6",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "SamplerCustomAdvanced"
+  }
+ },
+ "10": {
+  "class_type": "VAEDecode",
+  "inputs": {
+   "samples": [
+    "9",
+    0
+   ],
+   "vae": [
+    "1",
+    2
+   ]
+  },
+  "_meta": {
+   "title": "VAE Decode"
+  }
+ },
+ "11": {
+  "class_type": "CreateVideo",
+  "inputs": {
+   "images": [
+    "10",
+    0
+   ],
+   "fps": 24
+  },
+  "_meta": {
+   "title": "Create Video"
+  }
+ },
+ "12": {
+  "class_type": "SaveVideo",
+  "inputs": {
+   "video": [
+    "11",
+    0
+   ],
+   "filename_prefix": "video/ltx2",
+   "format": "auto",
+   "codec": "auto"
+  },
+  "_meta": {
+   "title": "Save Video"
+  }
+ }
+}

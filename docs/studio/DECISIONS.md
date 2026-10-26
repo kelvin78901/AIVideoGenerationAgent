@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 2 步：工作流库（登记、档位、导入、绑定）
+
+- **库进配置，而不是另开一套**：`core.config` 加 `Library` 覆盖层（`set_library`）。`get_config()` = 工厂 YAML + 库：`providers.yaml` 里没有的工作流变成本地模型 `comfy/<slug>`，按 kind 放进组件的 `local`（video → 视频生成；image → 关键帧、参考图；upscale → 超分；lipsync → 口型）。这样 ModelPicker、路由、能力过滤、注册表都不用改就认得导入的工作流。启动、导入、改档位、改绑定时重新发布；应用停止和每个测试开始时清空（否则上一个应用的库会漏进后面的测试）。
+- **未验证的只能手动选**：`StudioConfig.unverified`，`resolve` 在覆盖之后把它们从 `alt_order`（「不满意换一个」）和 `fallback.to` 里拿掉；用户自己选的 `local_model` 保留。「我的工作流」加进组件的 `alt_order`。
+- **仓库的 `workflows/<slug>/` 是推荐档，文件即真相**：每次启动按文件刷新绑定、能力、名字；`selfhost/`（上游旧格式）跳过。用户导入的放 `~/.drama-studio/workflows/<slug>/`（`workflow.api.json` + `workflow.yaml`，yaml 里 `pending` 记还没确认的猜测，`origin` 记来源），模型的 `workflow_root` 指过去，`ComfyUIAdapter` / `kf.local_workflow` 按它找文件。文件哈希变了：显示 `file_changed`，「我的工作流」降为未验证。
+- **导入**：拖进来的 JSON 或 ComfyUI 列表里的路径；**UI 格式按 `/object_info` 转成 API 格式**（`wflib/convert.py`：静音的节点去掉、旁路的节点按同类型输入直通、`Reroute` 直通、`PrimitiveNode` 的值填进去、种子后面的「生成后控制」不算输入、备注去掉；不认识的节点类 409 `workflow_unknown_nodes` 列出来，子图 409 `workflow_subgraph`）。ComfyUI 存的、它自己列表里的都是 UI 格式，不转的话列表导入没法用。
+- **猜绑定**（`wflib/guess.py`）：沿条件链往上找接到采样器 `positive` / `negative` 的 `CLIPTextEncode`（经过 `LTXVConditioning` 这种两路都进的节点时只走同名那一路）；第二个 `LoadImage` 起是参考图 1、2…；被猜中的节点标题不唯一时改成「原标题 #节点 id」，绑定按标题找。只把图里真能接上的绑定写进 yaml。
+- **ComfyUI 的工作流列表走它的 user data 接口**（`/api/userdata?dir=workflows`、`/api/userdata/workflows%2F<path>`）：文件夹版、便携版、Desktop 都一样；Mock 的示例机器用 `wflib/demo/`（LTX-2 的 API 格式、SDXL 的 UI 格式、素材板）。素材板按文件名前缀「DramaStudio 素材板」或 JSON 里的 `extra.dramastudio.board` 认出来，不能导入。
+- **接口返回的 `name` 是中文名**（契约是单个字符串；导入的工作流中英文同名）。
+
 ## 2026-10-26 · M5 第 1 步：工作流表、model_call 的工作流列、视频小工具
 
 - **表 `comfy_workflow`**（迁移 `0019`）按 SPEC 4 的列，另加两列：`name_json`（`{zh, en}`，SPEC 写的 `name` 是单语言）和 `kind`（image / video / upscale…，ModelPicker 按组件的 kind 分组要用）。`slug` 唯一。文件还在 `workflows/<slug>/`，表里存档位、确认过的绑定、体检和试跑结果、做这些时的文件哈希。

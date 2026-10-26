@@ -23,14 +23,28 @@ import hashlib
 import json
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from drama_series_agent.core.config import _read_yaml
-from drama_series_agent.core.paths import REPO_ROOT
+from drama_series_agent.core.paths import REPO_ROOT, drama_home
+
+if TYPE_CHECKING:
+    from drama_series_agent.modelhub.adapters.base import ModelSpec
 
 WORKFLOWS_DIR = REPO_ROOT / "workflows"
+
+
+def user_workflows_dir() -> Path:
+    """Where imported workflows go (SPEC 6.4.2): ``~/.drama-studio/workflows/<slug>/``."""
+    return drama_home() / "workflows"
+
+
+def spec_workflows_dir(spec: ModelSpec) -> Path | None:
+    """The folder a model's workflow is in; None for the repo's ``workflows/``."""
+    return Path(spec.workflow_root) if spec.workflow_root else None
+
 
 Slot = Literal[
     "first_frame",

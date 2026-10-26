@@ -11,7 +11,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable, Iterable
 
-from drama_series_agent.core.config import StudioConfig
+from drama_series_agent.core.config import LocalModel, StudioConfig
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
     Caps,
@@ -84,25 +84,28 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                 caps=Caps.model_validate(media.caps),
             )
         )
-    for local in prov.local_models:
-        specs.append(
-            ModelSpec(
-                key=local.key,
-                kind=local.kind,
-                where="local",
-                display=local.display,
-                provider_id=local.key.split("/", 1)[0],
-                runtime=local.runtime,
-                workflow=local.workflow,
-                worker=local.worker,
-                env=local.env,
-                worker_args=dict(local.args),
-                gpu=local.gpu,
-                pricing=Pricing(unit="free", as_of=prov.as_of),
-                caps=Caps.model_validate(local.caps),
-            )
-        )
+    specs += [local_spec(local, prov.as_of) for local in prov.local_models]
     return specs
+
+
+def local_spec(local: LocalModel, as_of: str | None = None) -> ModelSpec:
+    """A ``providers.yaml`` local model (or a library workflow, ``wflib``) as a spec."""
+    return ModelSpec(
+        key=local.key,
+        kind=local.kind,
+        where="local",
+        display=local.display,
+        provider_id=local.key.split("/", 1)[0],
+        runtime=local.runtime,
+        workflow=local.workflow,
+        workflow_root=local.workflow_root,
+        worker=local.worker,
+        env=local.env,
+        worker_args=dict(local.args),
+        gpu=local.gpu,
+        pricing=Pricing(unit="free", as_of=as_of),
+        caps=Caps.model_validate(local.caps),
+    )
 
 
 class UnavailableAdapter:

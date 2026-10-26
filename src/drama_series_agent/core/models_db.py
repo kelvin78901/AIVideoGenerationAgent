@@ -308,6 +308,7 @@ class ComfyWorkflowRow(SQLModel, table=True):
     tier: str  # recommended / mine / unverified
     source: str  # repo / user
     dir: str
+    origin: str | None = None  # imported from: a dropped file's name or a ComfyUI workflow path
     file_sha256: str
     bindings_json: list[dict[str, Any]] = _json(list)
     deps_json: dict[str, Any] = _json(dict)  # {packs: [...], models: [...]}

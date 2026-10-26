@@ -29,6 +29,7 @@ def upgrade() -> None:
         sa.Column("tier", sa.String(), nullable=False),
         sa.Column("source", sa.String(), nullable=False),
         sa.Column("dir", sa.String(), nullable=False),
+        sa.Column("origin", sa.String(), nullable=True),
         sa.Column("file_sha256", sa.String(), nullable=False),
         sa.Column("bindings_json", sa.JSON(), nullable=False),
         sa.Column("deps_json", sa.JSON(), nullable=False),
