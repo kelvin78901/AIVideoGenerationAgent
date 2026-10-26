@@ -1,0 +1,61 @@
+M4 local smoke · 2026-10-26 01:07
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 610.47; in use before 29219 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p
+
+== refs: 林晚、楼道、红伞重新画（先解锁）· Qwen-Image-2512，各锁第 1 张
+   3 job(s) in 38.5 s, GPU memory peak 31299 MiB
+   call comfy/qwen-image [local] success 13.4 s images=4
+   call comfy/qwen-image [local] success 12.2 s images=4
+   call comfy/qwen-image [local] success 12.2 s images=4
+   model comfy/qwen-image [local], files: linwan-candidate-0.png (928x1664), linwan-candidate-1.png (928x1664), linwan-candidate-2.png (928x1664), linwan-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: hall-candidate-0.png (928x1664), hall-candidate-1.png (928x1664), hall-candidate-2.png (928x1664), hall-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: umbrella-candidate-0.png (928x1664), umbrella-candidate-1.png (928x1664), umbrella-candidate-2.png (928x1664), umbrella-candidate-3.png (928x1664)
+== kf: 1-01、1-02、1-04 关键帧草稿 · Qwen-Image-Edit-2511（锁定的参考图）
+   3 job(s) in 93.0 s, GPU memory peak 31446 MiB
+   call comfy/qwen-image-edit [local] success 57.6 s images=3
+   call comfy/qwen-image-edit [local] success 19.4 s images=3
+   call comfy/qwen-image-edit [local] success 15.4 s images=3
+   1-01: refs sent ['林晚', '老小区楼道 · 夜'] · aspect 9:16
+   model comfy/qwen-image-edit [local], files: kf-1-01-candidate-0.png (928x1664), kf-1-01-candidate-1.png (928x1664), kf-1-01-candidate-2.png (928x1664)
+   1-02: refs sent ['老小区楼道 · 夜', '红色长柄伞'] · aspect 9:16
+   model comfy/qwen-image-edit [local], files: kf-1-02-candidate-0.png (928x1664), kf-1-02-candidate-1.png (928x1664), kf-1-02-candidate-2.png (928x1664)
+   1-04: refs sent ['林晚', '老小区楼道 · 夜'] · aspect 9:16
+   model comfy/qwen-image-edit [local], files: kf-1-04-candidate-0.png (928x1664), kf-1-04-candidate-1.png (928x1664), kf-1-04-candidate-2.png (928x1664)
+== kf_no_refs: 1-07 没有锁定的参考图 · 改走 Qwen-Image-2512
+   1 job(s) in 30.9 s, GPU memory peak 30230 MiB
+   call comfy/qwen-image [local] success 30.4 s images=3
+   1-07: refs sent none · aspect 9:16
+   model comfy/qwen-image [local], files: kf-1-07-candidate-0.png (928x1664), kf-1-07-candidate-1.png (928x1664), kf-1-07-candidate-2.png (928x1664)
+
+result: all local steps ran
+files: C:\Users\kelvin\AppData\Local\Temp\drama-local-storyboard-poubks_5\out
+
+== 观察（人看过每张图；2026-10-26）
+这是第 2 轮。第 1 轮（01:01）之后改了两处再跑：
+- 站位只写镜头参考素材里有的角色和道具（kf.blocking_text）：站位是整场的俯视图，第 1 轮
+  1-02（门口的伞）、1-07（手机）的提示词写了「林晚在画面中间」，模型就画了一个不像林晚的陌生人
+  （1-02 是黑西装女人，1-07 是男人）；1-01 没用红伞却画了一把撑开的、和参考图不一样的伞。
+  第 2 轮 1-02 有 2 张没有人、1 张远处有个暗影；1-07 只有手和手机。
+- 关键帧模板 [约束] 加「一张完整的单幅画面，不要分格或拼图」：楼道参考图本身是分格拼图（见下），
+  第 1 轮 1-04 的 3 张候选都跟着变成上下 2–3 格；第 2 轮 10 张关键帧全是单幅。
+  （这轮的参考图模板也临时加了同样一句，楼道仍然 4 张都是拼图，所以提交时撤掉了，只留关键帧的。）
+
+耗时和显存（两轮差不多）：
+- Qwen-Image-2512 出参考图每组 4 张 12–15 秒；Qwen-Image-Edit-2511 每个镜头 3 张 15–19 秒，
+  第一个镜头 58 秒（含从 Qwen-Image 换到 Edit 的加载）；1-07 换回 Qwen-Image 3 张 30 秒（含加载）。
+- 显存峰值 31.0–31.4 GB / 32.6 GB（整张卡，ComfyUI 开始前就占着 28–29 GB 的缓存）。没有 OOM。
+
+人物一致性（Qwen-Image-Edit 拿锁定的林晚 + 楼道）：
+- 林晚：1-01 的 3 张、1-04 的 3 张都认得出是参考图里的人：脸型、低马尾和散下来的头发、卡其色风衣
+  配深色衬衫都一致。1-04 是近景、低头看便利贴，表情对；1-01 是远景，人偏小，细节看不清。
+- 楼道：墙裙的蓝绿色、剥落的墙皮、偏黄的壁灯、铁栏杆扶手都带过来了；但参考图是拼图，镜头里的空间
+  结构（楼梯朝向、门的位置）每张不一样，站位只部分起作用。
+- 红伞：1-02 三张都是参考图那把（木头弯柄、暗红伞面），模型自己按描述加了黄色便利贴（便利贴没锁定、
+  没传）。
+- 问题：1-01 第 1 轮有一张风衣上有黑白的「融化」瑕疵（第 2 轮没有）；画面描述的「抱着画板袋」两轮都
+  画成了一块白板或白色大袋子，算画对了一半；1-07 的画面文字是「后期贴字」，但[画面]里写了 23:52，模型照样把时间画出来了。
+
+需要定的（写进 PROGRESS「等 Kelvin」）：
+- 场景参考图在 Qwen-Image-2512 9:16 下几乎总是分格拼图（这轮 4/4，加了约束也一样），会削弱关键帧里
+  空间结构的一致性。可选：场景参考图改画横屏、场景走 API 终版、或者在参考图候选上提示「这是拼图」。

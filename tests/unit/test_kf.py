@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from drama_series_agent.modelhub.workflows import load_workflow
 from drama_series_agent.pipeline.component import Inputs
 from drama_series_agent.pipeline.components.kf import blocking_text, pick_refs, ref_limit
 
@@ -48,6 +49,13 @@ def test_how_many_references_a_model_takes() -> None:
     assert ref_limit(None, "local", None) == 3
 
 
+def test_which_workflows_need_a_reference_picture() -> None:
+    """Qwen-Image-Edit 2511 only edits (reference 1 is required); Qwen-Image draws from words."""
+    assert load_workflow("qwen-image-edit").needs_refs()
+    assert load_workflow("qwen-image-edit-hq").needs_refs()
+    assert not load_workflow("qwen-image").needs_refs()
+
+
 def test_the_top_view_in_words() -> None:
     marks = [
         {"id": "door", "kind": "landmark", "label": "家门", "x": 0.78, "y": 0.14},
@@ -55,3 +63,17 @@ def test_the_top_view_in_words() -> None:
         {"id": "camera", "kind": "camera", "label": "", "x": 0.5, "y": 0.92},
     ]
     assert blocking_text(marks) == "家门在画面右侧，远处；林晚在画面中间，近处；机位在正前方"
+
+
+def test_the_top_view_leaves_out_who_is_not_in_the_shot() -> None:
+    """The top view is the scene's: 1-02 (the umbrella at the door) has no 林晚 in it."""
+    marks = [
+        {"id": "door", "kind": "landmark", "label": "家门", "x": 0.78, "y": 0.14},
+        {"id": "umbrella", "kind": "prop", "label": "红伞", "x": 0.9, "y": 0.5},
+        {"id": "linwan", "kind": "character", "label": "林晚", "x": 0.5, "y": 0.4},
+        {"id": "camera", "kind": "camera", "label": "", "x": 0.5, "y": 0.92},
+    ]
+    assert blocking_text(marks, {"hall", "umbrella"}) == (
+        "家门在画面右侧，远处；红伞在画面右侧；机位在正前方"
+    )
+    assert "林晚" in blocking_text(marks, {"林晚"})  # a model's own ids: matched by name

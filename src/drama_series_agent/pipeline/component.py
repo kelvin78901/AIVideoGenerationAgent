@@ -26,6 +26,7 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, ValidationError
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.core.config import Resolved
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import LlmCache, Product, ProductVersion
 from drama_series_agent.core.storage import BlobStore
@@ -184,6 +185,12 @@ class Component(ABC):
         """The intent a product that never saved a prompt starts with (an asset's: its
         description, M3)."""
         return self.services.compiler.default_intent(self.id, lang)
+
+    def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
+        """The model a run goes to: ``model`` is the route's (or the one the user picked). A
+        component takes another when this run's inputs do not suit it (M4: a keyframe with no
+        locked reference picture cannot go to an edit-only model)."""
+        return model
 
     # ------------------------------------------------------------------ run
 

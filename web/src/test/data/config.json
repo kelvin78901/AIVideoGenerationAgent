@@ -250,6 +250,7 @@
         ],
         "local_models": [
           "comfy/qwen-image-edit",
+          "comfy/qwen-image",
           "comfy/flux2-dev"
         ],
         "unavailable": {}
@@ -1206,6 +1207,7 @@
         },
         "alt_order": [
           "comfy/qwen-image-edit",
+          "comfy/qwen-image",
           "comfy/flux2-dev",
           "google/nano-banana-pro",
           "volc/seedream-5.0"
@@ -1763,6 +1765,7 @@
         },
         "alt_order": [
           "volc/seedream-5.0",
+          "comfy/qwen-image",
           "comfy/flux2-dev",
           "openai/gpt-image-2",
           "google/nano-banana-pro"
@@ -2327,6 +2330,7 @@
         },
         "alt_order": [
           "volc/seedream-5.0",
+          "comfy/qwen-image",
           "comfy/flux2-dev",
           "openai/gpt-image-2",
           "google/nano-banana-pro"
@@ -2791,6 +2795,7 @@
           "notify": "after"
         },
         "alt_order": [
+          "comfy/qwen-image",
           "comfy/flux2-dev"
         ],
         "per_call_cap_usd": 1.0

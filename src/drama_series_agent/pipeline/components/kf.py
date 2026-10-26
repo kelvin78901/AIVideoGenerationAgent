@@ -12,6 +12,9 @@ from another shot's last frame instead).
 - The prompt says the framing, the camera move, the top view in words (who is where, where the
   camera is), the scene, the script's action lines it films and the on-screen text.
 - The size comes from the output spec (hard rule 10), and the aspect is written in the prompt.
+- **No locked picture, no edit model**: Qwen-Image-Edit 2511 only edits from references, so a
+  draft of a shot with none goes to the next local model of ``components.yaml`` that draws from
+  words (Qwen-Image; ``model_for``).
 
 The version depends on the shot's settings (the plan's ``shot:<id>`` slice: type, framing, move,
 blocking, references and lines, not its length or sound), the action lines it films
@@ -26,10 +29,12 @@ from typing import Any
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.core.config import Resolved, get_config
 from drama_series_agent.core.models_db import Asset, OutputSpecRow, Product, ProductVersion, Shot
 from drama_series_agent.episodes.service import script_product
-from drama_series_agent.modelhub.adapters.base import Estimate
-from drama_series_agent.modelhub.workflows import has_workflow, load_workflow
+from drama_series_agent.modelhub.adapters.base import Estimate, ModelError
+from drama_series_agent.modelhub.registry import Registry
+from drama_series_agent.modelhub.workflows import Workflow, has_workflow, load_workflow
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.media import (
     MediaComponent,
@@ -59,13 +64,22 @@ FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物
 LOCAL_REFS = 3  # a local workflow that does not say
 
 
-def blocking_text(items: list[dict[str, Any]]) -> str:
-    """The top view in words, as the camera sees it: who is left or right, near or far."""
+def blocking_text(items: list[dict[str, Any]], in_shot: set[str] | None = None) -> str:
+    """The top view in words, as the camera sees it: who is left or right, near or far.
+    ``in_shot``: the ids and names of the shot's references. The top view is the whole scene's,
+    so a character or prop the shot does not use is left out (named, a model draws someone
+    else; M4 step 9); landmarks always stay."""
     camera = next((i for i in items if i.get("kind") == "camera"), None)
     cx, cy = (camera["x"], camera["y"]) if camera else (0.5, 1.0)
     rows = []
     for i in items:
         if i.get("kind") == "camera" or not i.get("label"):
+            continue
+        if (
+            in_shot is not None
+            and i.get("kind") in ("character", "prop")
+            and not {i.get("id"), i.get("label")} & in_shot
+        ):
             continue
         dx, depth = float(i["x"]) - cx, cy - float(i["y"])
         side = "画面左侧" if dx < -0.15 else "画面右侧" if dx > 0.15 else "画面中间"
@@ -87,6 +101,17 @@ def ref_limit(spec_caps_max: int | None, where: str, workflow: str | None) -> in
     if workflow and has_workflow(workflow):
         return len(load_workflow(workflow).bindings("ref_image"))
     return LOCAL_REFS
+
+
+def local_workflow(registry: Registry, model: str) -> Workflow | None:
+    """A local model's ComfyUI workflow; None for an API model or one without a workflow."""
+    try:
+        spec = registry.spec(model)
+    except ModelError:
+        return None
+    if spec.where != "local" or not has_workflow(spec.workflow):
+        return None
+    return load_workflow(str(spec.workflow))
 
 
 async def stale_aspect(session: AsyncSession, product: Product, version: ProductVersion) -> bool:
@@ -145,7 +170,9 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     if scene is not None and scene.get("heading"):
         blocks.append(Block("场景", str(scene["heading"])))
     if shot.get("blocking"):
-        blocks.append(Block("站位", blocking_text(list(shot["blocking"]))))
+        named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
+        in_shot = set(shot.get("asset_ids") or []) | named
+        blocks.append(Block("站位", blocking_text(list(shot["blocking"]), in_shot)))
     if action:
         blocks.append(Block("剧本", "\n".join(str(x.get("text") or "") for x in action)))
     for t in texts:
@@ -276,6 +303,26 @@ class KfComponent(MediaComponent):
 
     async def inputs(self, session: AsyncSession, product: Product) -> Inputs:
         return await gather(session, self.services.invalidation, product)
+
+    def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
+        """A draft with no locked reference picture cannot go to an edit-only model: take the
+        first local model of the component that draws from words and this machine can run
+        (Qwen-Image). An API final always sends the draft."""
+        registry = self.services.registry
+        if inputs.params.get("source_version_id") or inputs.context.get("refs"):
+            return model
+        wf = local_workflow(registry, model)
+        if wf is None or not wf.needs_refs():
+            return model
+        try:
+            local = get_config().components.component(self.id).local
+        except KeyError:
+            local = []
+        for other in local:
+            alt = local_workflow(registry, other)
+            if other not in settings.unavailable and alt is not None and not alt.needs_refs():
+                return other
+        return model  # nothing to take: it fails as 「ref_missing」 and falls back as usual
 
     # ------------------------------------------------------------------ run
 

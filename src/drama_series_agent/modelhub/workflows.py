@@ -115,6 +115,11 @@ class Workflow:
     def has(self, slot: Slot) -> bool:
         return any(b.slot == slot for b in self.meta.bindings)
 
+    def needs_refs(self) -> bool:
+        """It cannot run without a reference picture (an edit-only model, Qwen-Image-Edit
+        2511): a ``ref_image`` slot that is not optional."""
+        return any(not b.optional for b in self.bindings("ref_image"))
+
     def node_id(self, title: str) -> str:
         return self._ids[title]
 
