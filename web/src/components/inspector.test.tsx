@@ -192,7 +192,7 @@ describe("ImpactDialog", () => {
     const dialog = await screen.findByRole("alertdialog");
     // 7 keyframes at the API final's price (1-08 and 1-09 continue an earlier shot).
     expect(dialog).toHaveTextContent("关键帧 7 张（9 个镜头）要按新画幅重画 · 约 $0.94");
-    expect(dialog).toHaveTextContent("建议重出（可选）");
+    expect(dialog).not.toHaveTextContent("场景参考图"); // drawn 16:9 whatever the spec
     expect(dialog).toHaveTextContent("剧本、分镜表、配音和音色不受影响");
     // 确认并同步 comes first (the filled button), then 只改这里 and 撤销.
     expect(

@@ -164,8 +164,8 @@ def test_a_new_aspect_lists_the_keyframes(client: TestClient) -> None:
     redraw = lines["keyframes_redraw"]
     assert redraw["params"] == {"count": 7, "shots": 9}
     assert redraw["cost_usd"] == pytest.approx(7 * 0.134, abs=0.01)  # an API final each
-    assert lines["ref_images_suggest"]["params"] == {"count": 1, "aspect": "9:16"}  # the hall
-    assert lines["ref_images_suggest"]["optional"]
+    # Scene pictures are drawn 16:9 whatever the spec (components.yaml): nothing to redraw.
+    assert "ref_images_suggest" not in lines
     assert impact["stale"] == {"storyboard": 7}
     assert impact["unaffected"]["code"] == "unaffected_spec"
     assert impact["rerun_cost_usd"] == pytest.approx(redraw["cost_usd"])

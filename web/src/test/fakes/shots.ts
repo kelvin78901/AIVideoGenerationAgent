@@ -292,19 +292,13 @@ export function assetShotLines(assetId: string): Line[] {
 }
 
 /** `spec_aspect` (`ShotService.plan_aspect`) from 9:16: the keyframes drawn so far at their
- * finals' price, and the locked scene pictures (`scenes`) as an optional hint. */
-export function specAspectImpact(scenes: number): Line[] {
+ * finals' price. Scene pictures are drawn 16:9 whatever the spec, so none to redraw. */
+export function specAspectImpact(): Line[] {
   const drawn = fakeShots.keyframes.filter((p) => p.current_version_id);
   const cost = Math.round(drawn.length * FINAL_COST * 100) / 100;
-  const lines = drawn.length
+  return drawn.length
     ? [line("keyframes_redraw", { count: drawn.length, shots: fakeShots.shots.length }, cost)]
     : [];
-  if (scenes)
-    lines.push({
-      ...line("ref_images_suggest", { count: scenes, aspect: "9:16" }),
-      optional: true,
-    });
-  return lines;
 }
 
 /** Applying `spec_aspect` (the spec itself is written by the caller): every confirmation taken

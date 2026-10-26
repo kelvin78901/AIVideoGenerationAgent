@@ -52,6 +52,7 @@ from drama_series_agent.modelhub.adapters.mock import MOCK_TEXT_KEY, mock_pictur
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
 from drama_series_agent.pipeline.components import assets, enrich, kf, plan, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
+from drama_series_agent.pipeline.components.img import asset_aspect
 from drama_series_agent.pipeline.components.media import prompt_text
 from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.components.views import (
@@ -826,7 +827,8 @@ def _asset_files(
     """A demo version's payload and candidate files (Mock pictures, or tones for a voice)."""
     if asset.kind == "voice":
         return _voice_files(store, asset, stage)
-    size = dims("9:16", "draft" if stage == "draft" else "1080p")
+    aspect = asset_aspect(asset.kind, "9:16")  # the demo's spec; scenes are drawn 16:9
+    size = dims(aspect, "draft" if stage == "draft" else "1080p")  # type: ignore[arg-type]
     text = text_settings(asset, None)
     reads: list[str | None] = [None] * (1 if stage == "final" else 4)
     if asset.kind == "text":
@@ -839,8 +841,8 @@ def _asset_files(
         files.append(file_entry("candidate", sha, "image/png", w=size.w, h=size.h, idx=i))
     if asset.kind == "text":
         checks = [ocr.check(text["exact"], r, text["method"]) for r in reads]
-        return {"candidates": checks, "aspect": "9:16", "refs": [], "text": text}, files
-    return {"candidates": [{} for _ in reads], "aspect": "9:16", "refs": []}, files
+        return {"candidates": checks, "aspect": aspect, "refs": [], "text": text}, files
+    return {"candidates": [{} for _ in reads], "aspect": aspect, "refs": []}, files
 
 
 async def _seed_asset_versions(

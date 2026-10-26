@@ -381,11 +381,6 @@ function run(p: Product, body: RunRequest): Job {
   return job(p, v.id, model, body.mode);
 }
 
-/** Locked scene pictures (drawn for the demo's 9:16): 改画幅 suggests drawing them again. */
-export function lockedSceneRefs(): number {
-  return fakeAssets.assets.filter((a) => a.kind === "scene" && productOf(a)?.locked_hash).length;
-}
-
 /** `asset_unlock`: what uses the locked picture (`assets/service.py:plan_unlock`), or null
  * when it is not locked. */
 export function assetUnlockImpact(assetId: string): Pick<Impact, "lines" | "unaffected"> | null {

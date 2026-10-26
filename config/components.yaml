@@ -114,6 +114,8 @@ components:
     cheap_api: volc/seedream-5.0
     candidates: 4
     gate: assets
+    # 场景参考图固定横屏（Kelvin 2026-10-26）：Qwen-Image 竖屏画空景几乎总是分格拼图；没写的类别跟成片规格
+    aspects: { scene: "16:9" }
 
   - id: views
     stage: assets

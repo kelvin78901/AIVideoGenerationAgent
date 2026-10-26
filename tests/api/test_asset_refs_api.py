@@ -29,6 +29,7 @@ from drama_series_agent.core.models_db import (
 from drama_series_agent.modelhub.adapters.mock import gradient_png
 from drama_series_agent.modelhub.workflows import shipped_workflow
 from drama_series_agent.pipeline.component import RunContext
+from drama_series_agent.pipeline.components.img import asset_aspect
 from drama_series_agent.pipeline.components.media import MediaCall, MediaComponent
 from drama_series_agent.pipeline.components.views import NEGATIVE, VIEWS
 from drama_series_agent.pipeline.hashing import hash_json
@@ -170,7 +171,8 @@ def test_draft_then_api_final_then_lock(client: TestClient) -> None:
     assert draft["stage"] == "draft" and draft["model_key"] == "comfy/qwen-image"
     cands = [f for f in draft["files"] if f["role"] == "candidate"]
     assert [f["idx"] for f in cands] == [0, 1, 2, 3]
-    assert (cands[0]["w"], cands[0]["h"]) == (768, 1366)  # 9:16 at the draft tier
+    # A scene is drawn 16:9 whatever the spec (components.yaml ``aspects``), at the draft tier.
+    assert (cands[0]["w"], cands[0]["h"]) == (1366, 768) and draft["payload"]["aspect"] == "16:9"
     assert client.patch(f"{V1}/assets/room", json={"pick": 2}).json()["pick"] == 2
 
     params = {"source_version_id": draft["id"], "source_idx": 2}
@@ -181,7 +183,7 @@ def test_draft_then_api_final_then_lock(client: TestClient) -> None:
     assert (final["stage"], final["parent_version_id"]) == ("final", draft["id"])
     assert final["model_key"] == "google/nano-banana-pro" and final["cost_usd"] == 0.134
     (one,) = [f for f in final["files"] if f["role"] == "candidate"]
-    assert (one["w"], one["h"]) == (1080, 1920)  # the delivery tier
+    assert (one["w"], one["h"]) == (1920, 1080)  # the delivery tier
     assert room["adopted_version_id"] is None  # nothing adopted before the lock
     call = next(c for c in _rows(client, ModelCall) if c.model_key == "google/nano-banana-pro")
     assert call.product_id == room["id"] and call.images == 1
@@ -196,6 +198,16 @@ def test_draft_then_api_final_then_lock(client: TestClient) -> None:
     (decision,) = _gates(client, "room")
     assert decision.product_hashes_json == {room["id"]: _file_hash(one["sha256"])}
     assert _code(client.post(f"{V1}/assets/room/lock")) == "product_locked"
+
+
+def test_only_scenes_have_a_fixed_aspect(client: TestClient) -> None:
+    """A prop follows the output spec (the demo's 9:16); a scene stays 16:9 after 改画幅 too."""
+    _run(client, "band")
+    draft = _product(client, "band")["versions"][-1]
+    cand = next(f for f in draft["files"] if f["role"] == "candidate")
+    assert (cand["w"], cand["h"]) == (768, 1366) and draft["payload"]["aspect"] == "9:16"
+    assert asset_aspect("scene", "9:16") == asset_aspect("scene", "1:1") == "16:9"
+    assert asset_aspect("character", "1:1") == "1:1"
 
 
 def test_upload_then_lock(client: TestClient) -> None:
@@ -393,8 +405,10 @@ def _fake_comfy(client: TestClient, out: str) -> list[dict[str, Any]]:
             done = {"status_str": "success", "completed": True, "messages": []}
             return httpx.Response(200, json={pid: {"outputs": {out: {"images": [image]}},
                                                    "status": done}})  # fmt: skip
-        if path == "/view":
-            return httpx.Response(200, content=gradient_png(928, 1664, (90, 90, 120)))
+        if path == "/view":  # at the size the last prompt asked for
+            size = next(n["inputs"] for n in prompts[-1].values() if "width" in n["inputs"])
+            png = gradient_png(int(size["width"]), int(size["height"]), (90, 90, 120))
+            return httpx.Response(200, content=png)
         return httpx.Response(404)
 
     state = _state(client)
@@ -406,7 +420,7 @@ def _fake_comfy(client: TestClient, out: str) -> list[dict[str, Any]]:
 
 def test_a_local_draft_through_the_real_comfyui_adapter(client: TestClient) -> None:
     """The draft against a fake ComfyUI: four prompts on the shipped Qwen-Image workflow at its
-    9:16 size, and the version records which workflow made it (SPEC 6.4.5)."""
+    16:9 size (a scene), and the version records which workflow made it (SPEC 6.4.5)."""
     wf = shipped_workflow("qwen-image")
     prompts = _fake_comfy(client, wf.output_nodes("image_out")[0])
     job = _run(client, "room")
@@ -416,10 +430,10 @@ def test_a_local_draft_through_the_real_comfyui_adapter(client: TestClient) -> N
         "draft", "comfy/qwen-image", "local"
     )  # fmt: skip
     cands = [f for f in draft["files"] if f["role"] == "candidate"]
-    assert [(f["w"], f["h"]) for f in cands] == [(928, 1664)] * 4
+    assert [(f["w"], f["h"]) for f in cands] == [(1664, 928)] * 4
     size = wf.node_id("Size")
     assert [(p[size]["inputs"]["width"], p[size]["inputs"]["height"]) for p in prompts] == [
-        (928, 1664)
+        (1664, 928)
     ] * 4
     row = next(v for v in _rows(client, ProductVersion) if v.id == draft["id"])
     assert (row.workflow_id, row.workflow_sha256) == ("qwen-image", wf.sha256)

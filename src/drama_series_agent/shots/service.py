@@ -62,6 +62,7 @@ from drama_series_agent.episodes.service import (
     scene_numbers,
 )
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
+from drama_series_agent.pipeline.components.img import asset_aspect
 from drama_series_agent.pipeline.components.plan import (
     SHOT_PLAN_SLOT,
     PlanComponent,
@@ -657,8 +658,13 @@ class ShotService:
                     )
                 ).all()
             )
-            scenes = await _scene_refs_drawn_for(session, series_id, old)
-        new = body.aspect or old
+            new = body.aspect or old
+            # Scene pictures follow the spec only when components.yaml does not fix their
+            # aspect (it draws them 16:9): then the new spec leaves them as they are.
+            drawn, wanted = asset_aspect("scene", old), asset_aspect("scene", new)
+            scenes = (
+                await _scene_refs_drawn_for(session, series_id, drawn) if drawn != wanted else 0
+            )
         changed = new != old
         lines: list[dict[str, Any]] = []
         if changed and keyframes:

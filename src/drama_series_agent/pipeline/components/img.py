@@ -10,7 +10,9 @@ user locks as the reference every shot uses.
   each character its description names (「戴在林晚左手腕上」), and depends on it, so locking
   another picture of that character makes the prop 「待更新」. Scenes and characters take none
   (a scene is drawn empty).
-- The size comes from the output spec (``media.frame_size``).
+- The size comes from the output spec (``media.frame_size``), except for a kind whose aspect
+  ``components.yaml`` fixes (``aspects``): scenes are drawn 16:9 whatever the spec, since
+  Qwen-Image draws an empty place in 9:16 as a grid of panels (M4 step 9, Kelvin 2026-10-26).
 
 The description is the prompt's intent layer; the product does not depend on the script or the
 bible, so editing the script never redraws a reference (M3 plan).
@@ -23,6 +25,7 @@ from typing import Any
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.core.config import get_config
 from drama_series_agent.core.models_db import Asset, Product, ProductVersion
 from drama_series_agent.modelhub.adapters.base import Estimate
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
@@ -46,6 +49,16 @@ KIND_GUIDE = {
     "prop": "道具单独放在干净的浅色背景上，居中，看得清材质和细节。",
 }
 FINAL_NOTE = "以参考图里的草稿为准，画得更精细：构图、样子和颜色都不要改。"
+
+
+def asset_aspect(kind: str, spec_aspect: str) -> str:
+    """The aspect a reference picture of ``kind`` is drawn at: the one ``components.yaml``
+    fixes for it, else the output spec's."""
+    try:
+        fixed = get_config().components.component("img").aspects
+    except KeyError:
+        fixed = {}
+    return fixed.get(kind) or spec_aspect
 
 
 async def locked_characters(session: AsyncSession, series_id: str) -> list[dict[str, Any]]:
@@ -80,6 +93,7 @@ class ImgComponent(MediaComponent):
         if asset is None or asset.retired:
             raise PipelineError(404, "asset_not_found", id=product.owner_id)
         frame = await output_frame(session, product.series_id)
+        frame = {**frame, "aspect": asset_aspect(asset.kind, frame["aspect"])}
         characters = []
         if asset.kind == "prop":
             for c in await locked_characters(session, product.series_id):

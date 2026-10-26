@@ -15,7 +15,6 @@ import {
   assetUnlockImpact,
   editFakeAsset,
   fakeAssetsGate,
-  lockedSceneRefs,
   unlockFakeAsset,
 } from "@/test/fakes/assets";
 import { fakeBible } from "@/test/fakes/bible";
@@ -108,7 +107,7 @@ function linesOf(kind: string, target: string, patch: Record<string, unknown>): 
   if (slot) return novelLines(slot);
   if (kind === "beat_move") return beatLines(target, patch);
   if (kind === "shot_edit") return shotEditImpact(target, patch);
-  if (kind === "spec_aspect") return specAspectImpact(lockedSceneRefs());
+  if (kind === "spec_aspect") return specAspectImpact();
   return null;
 }
 
@@ -171,7 +170,7 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
         : kind === "asset_edit"
           ? assetEditImpact(target_id)
           : kind === "spec_aspect"
-            ? { lines: specAspectImpact(lockedSceneRefs()), unaffected: SPEC_UNAFFECTED }
+            ? { lines: specAspectImpact(), unaffected: SPEC_UNAFFECTED }
             : undefined;
     if (unlock === null) return error(409, "not_locked", { id: target_id });
     const lines = unlock?.lines ?? linesOf(kind, target_id, patch);

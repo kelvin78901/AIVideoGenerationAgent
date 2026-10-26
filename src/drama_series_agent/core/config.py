@@ -152,6 +152,9 @@ class ComponentDefault(_Loose):
     candidates: int | None = None
     gate: str | None = None
     follows_output_spec: bool = False
+    # Asset kind → the aspect its reference pictures are drawn at, whatever the output spec
+    # (img: scenes 16:9, Kelvin 2026-10-26); a kind not listed follows the spec.
+    aspects: dict[str, str] = Field(default_factory=dict)
 
 
 class FallbackDefaults(_Loose):
