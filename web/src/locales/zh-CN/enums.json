@@ -124,6 +124,10 @@
     "tts": "先配音再对口型",
     "none": "无人声"
   },
+  "durationSource": {
+    "audio": "按配音",
+    "manual": "手动"
+  },
   "qaIssue": {
     "face_mismatch": "人脸",
     "finger_fusion": "手指",

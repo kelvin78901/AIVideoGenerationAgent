@@ -1,0 +1,122 @@
+M4 第 10 步 · 真实冒烟（2026-10-26，scripts/smoke/live_storyboard.py）
+
+跑了两次，合计 $0.1665（Kelvin 批准的清单约 $0.16，上限 $1）。
+- 第 1 次（01:28）：$0.0272。分镜规划跑通；关键帧终版在 Nano Banana Pro 上 402（Google 预付额度用完），
+  兜底到 Seedream 5.0 出了。
+- 第 2 次（03:46，--only kf，Kelvin 给 Google 充值之后）：$0.1393。Nano Banana Pro 24.8 秒出 1 张
+  1536×2752（估价 $0.1340，多 4%，和 M3 一样是没算输入和思考 token）。人物、动作（低头举着便利贴）照着
+  草稿 #0，背景换成了参考图里的楼道（草稿的背景更像室外），质感明显比本地草稿好；但构图没有完全照草稿，
+  提示词里要求的是「构图不要改」。完整输出在最后。
+- Kelvin 看图的结论：Seedream 的终版比本地草稿好。
+
+- 分镜规划（DeepSeek V4 Pro，23 秒，$0.0103；估价 $0.0254）：第 1 集 10 个镜头（示例按原型是 9 个），
+  两场各 5 个。和示例的不同：画外音「三年了。他凭什么。」单独成了一个近景（示例叠在 1-06 的动作镜头上），
+  只有最后一个镜头是连续动作；每个镜头的参考素材都带上了场景（楼道 / 出租屋），（规则后处理之后的版本里）
+  每一行都只在一个镜头里。重跑时按「同一场 + 拍的行有重叠」沿用了已采纳版本的 id（第 10 个接
+  demo-shot-1-08 的尾帧，就是示例里拍同一行 b11 的那个）。新版本没有采纳（不跟着自动重做，Kelvin 定第 3 项）。
+- 关键帧：林晚、楼道在本地 Qwen-Image 重画并锁第 1 张（13.6 秒、54.0 秒；楼道又是三格拼图，见
+  m4-local-smoke.txt），1-04 本地 Qwen-Image-Edit 草稿 3 张 34.8 秒，然后「用 API 出终版」：
+  · Nano Banana Pro：402 RESOURCE_EXHAUSTED「Your prepayment credits are depleted」——Gemini 密钥所在的
+    AI Studio 项目是预付费，额度用完了（M3 时是免费层 429）。花费 $0。适配器当时把 402 归成 bad_request，
+    这一步改成 quota_exceeded（不重试，界面提示额度用完；modelhub/adapters/http.py）。
+  · 兜底 Seedream 5.0（fallback_to）：1088×1920，$0.0169，和估价一致；但这次用了 3 分 57 秒
+    （M3 时十几秒，这次多传了 3 张参考图：草稿、林晚、楼道）。构图照着草稿 #0，林晚的脸、低马尾、卡其色风衣
+    都对得上，还按[画面]让她举着便利贴、表情是愣住，比草稿更贴近描述。
+  · 脚本要求终版是 Nano Banana Pro，所以在这里停下（STOPPED），下面的输出是原样。
+
+M4 live smoke · 2026-10-26 01:28 · LIVE, cap $1.0 · steps ['plan', 'kf']
+ComfyUI 0.41.2 at http://127.0.0.1:8188; models C:\Users\kelvin\DramaStudio
+connection deepseek: ok
+connection google_llm: ok google/nano-banana-pro
+== plan: 第 1 集分镜规划 · deepseek/v4-pro
+   plan: done in 23.2 s
+   10 shots (the demo's plan: 9), per scene {'demo-b1': 5, 'demo-b7': 5}
+   types {'scene_change': 2, 'same_scene_cut': 7, 'continuous': 1}
+    1. scene_change/wide/follow 5.0 s · lines demo-b2 · refs linwan,hall
+       林晚走上六楼 | 林晚（26岁，米色风衣湿了半边，挎帆布画板袋）走上六楼楼梯，楼道声控灯忽明忽暗，环境阴暗，只有灯光闪烁照亮她的轮廓。
+    2. same_scene_cut/medium/static 3.0 s · lines demo-b3 · refs linwan,umbrella,note,hall
+       门口的红伞 | 林晚站在门口，低头看着靠在墙边的红色长柄伞，伞柄上贴着黄色便利贴。
+    3. same_scene_cut/closeup/static 3.0 s · lines demo-b4 · refs note,umbrella,txt1,hall
+       便利贴特写 | 特写：黄色便利贴贴在红色伞柄上，字迹歪扭：“楼下便利店，等你到十二点。”
+    4. same_scene_cut/close/static 2.0 s · lines demo-b5 · refs linwan,vlinwan,hall
+       林晚愣住 | 林晚愣住，低声说：“……周屿？”她的表情有些恍惚，眼睛微微睁大。
+    5. same_scene_cut/closeup/static 4.0 s · lines demo-b6 · refs linwan,band,note,hall
+       摸发圈 | 林晚的指尖停在黄色便利贴上，另一只手摸了摸左手腕上的旧黑发圈。
+    6. scene_change/medium/follow 5.0 s · lines demo-b8 · refs linwan,room,umbrella
+       林晚进屋靠门 | 林晚把伞靠回墙边，进屋，关门，背靠着门。
+    7. same_scene_cut/closeup/static 3.0 s · lines demo-b9 · refs phone,txt2,room
+       手机时间特写 | 特写：手机亮屏，显示时间23:52。
+    8. same_scene_cut/close/static 4.0 s · lines demo-b10 · refs linwan,vlinwan,room
+       画外音 | 林晚背靠着门，表情复杂，画外音：“三年了。他凭什么。”
+    9. same_scene_cut/medium/static 5.0 s · lines demo-b11 · refs linwan,room
+       犹豫开门 | 林晚拉开门，又关上，停了两秒，再拉开。
+   10. continuous/medium/static 3.0 s ← demo-shot-1-08 · lines demo-b12 · refs linwan,umbrella,room
+       拿起红伞 | 门外，林晚拿起了靠在墙边的红色长柄伞。
+== kf: 1-04 · 林晚、楼道本地重画锁定 → Qwen-Image-Edit 草稿 → google/nano-banana-pro 终版
+   linwan draft: done in 13.6 s
+   model comfy/qwen-image [local], files: linwan-candidate-0.png (928x1664), linwan-candidate-1.png (928x1664), linwan-candidate-2.png (928x1664), linwan-candidate-3.png (928x1664)
+   hall draft: done in 54.0 s
+   model comfy/qwen-image [local], files: hall-candidate-0.png (928x1664), hall-candidate-1.png (928x1664), hall-candidate-2.png (928x1664), hall-candidate-3.png (928x1664)
+   1-04 draft: done in 34.8 s
+   draft refs ['林晚', '老小区楼道 · 夜']
+   model comfy/qwen-image-edit [local], files: kf-1-04-draft-candidate-0.png (928x1664), kf-1-04-draft-candidate-1.png (928x1664), kf-1-04-draft-candidate-2.png (928x1664)
+   1-04 final: done in 238.9 s
+
+STOPPED: 1-04 final: got final on volc/seedream-5.0, not google/nano-banana-pro
+
+== model_call
+id   component  model                       where  status   fb  out        cost
+1    plan       deepseek/v4-pro             api    success  -   0 chars    $0.0103
+2    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+3    views      comfy/qwen-image-edit-hq    local  canceled -   0 chars    $0.0000  canceled
+4    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+5    kf         comfy/qwen-image-edit       local  success  -   3 img      $0.0000
+6    kf         google/nano-banana-pro      api    error    -   0 chars    $0.0000  bad_request
+7    kf         volc/seedream-5.0           api    success  yes 1 img      $0.0169
+total $0.0272 over 7 calls; failures 2
+
+job                          estimate   spent      seconds
+plan                         $0.0254    $0.0103    23.2
+linwan draft                 $0.0000    $0.0000    13.6
+hall draft                   $0.0000    $0.0000    54.0
+1-04 draft                   $0.0000    $0.0000    34.8
+1-04 final                   $0.1340    $0.0169    238.9
+
+result: STOPPED
+files: C:\Users\kelvin\AppData\Local\Temp\drama-live-storyboard-ugdgo946\out
+
+
+== 第 2 次（原样输出）
+
+M4 live smoke · 2026-10-26 03:46 · LIVE, cap $1.0 · steps ['kf']
+ComfyUI 0.41.2 at http://127.0.0.1:8188; models C:\Users\kelvin\DramaStudio
+connection google_llm: ok google/nano-banana-pro
+== kf: 1-04 · 林晚、楼道本地重画锁定 → Qwen-Image-Edit 草稿 → google/nano-banana-pro 终版
+   linwan draft: done in 14.6 s
+   model comfy/qwen-image [local], files: linwan-candidate-0.png (928x1664), linwan-candidate-1.png (928x1664), linwan-candidate-2.png (928x1664), linwan-candidate-3.png (928x1664)
+   hall draft: done in 55.5 s
+   model comfy/qwen-image [local], files: hall-candidate-0.png (1664x928), hall-candidate-1.png (1664x928), hall-candidate-2.png (1664x928), hall-candidate-3.png (1664x928)
+   1-04 draft: done in 35.8 s
+   draft refs ['林晚', '老小区楼道 · 夜']
+   model comfy/qwen-image-edit [local], files: kf-1-04-draft-candidate-0.png (928x1664), kf-1-04-draft-candidate-1.png (928x1664), kf-1-04-draft-candidate-2.png (928x1664)
+   1-04 final: done in 24.8 s
+   final refs 草稿 + ['林晚', '老小区楼道 · 夜']
+   model google/nano-banana-pro [api], files: kf-1-04-final-candidate-0.jpg (1536x2752)
+
+== model_call
+id   component  model                       where  status   fb  out        cost
+1    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+2    views      comfy/qwen-image-edit-hq    local  canceled -   0 chars    $0.0000  canceled
+3    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+4    kf         comfy/qwen-image-edit       local  success  -   3 img      $0.0000
+5    kf         google/nano-banana-pro      api    success  -   1 img      $0.1393
+total $0.1393 over 5 calls; failures 1
+
+job                          estimate   spent      seconds
+linwan draft                 $0.0000    $0.0000    14.6
+hall draft                   $0.0000    $0.0000    55.5
+1-04 draft                   $0.0000    $0.0000    35.8
+1-04 final                   $0.1340    $0.1393    24.8
+
+result: all steps ran
+files: C:\Users\kelvin\AppData\Local\Temp\drama-live-storyboard-sx_8xuxz\out

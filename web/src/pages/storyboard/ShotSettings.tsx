@@ -1,8 +1,9 @@
-import { Check, CheckCircle2, Film, Plus } from "lucide-react";
+import { CheckCircle2, Combine, Film, Plus, RotateCcw, Scissors } from "lucide-react";
 import { useId, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 
+import { fileUrl } from "@/api/client";
 import { useProduct } from "@/api/hooks/products";
 import { CandidatesPayloadSchema, type Asset } from "@/api/schemas/assets";
 import {
@@ -13,10 +14,13 @@ import {
   type Shot,
   type ShotPatch,
 } from "@/api/schemas/shots";
-import type { Aspect } from "@/api/schemas/spec";
+import type { Aspect, SafeArea } from "@/api/schemas/spec";
+import { CandidateGrid } from "@/components/CandidateGrid";
 import { Chip } from "@/components/Chip";
 import { EmptyState } from "@/components/EmptyState";
+import { FinalButton } from "@/components/FinalButton";
 import { MediaThumb } from "@/components/MediaThumb";
+import { SafeAreaOverlay } from "@/components/SafeAreaOverlay";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -25,6 +29,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { currentVersion } from "@/lib/versions";
 import { Blocking } from "@/pages/storyboard/Blocking";
+import { durationSource } from "@/pages/storyboard/duration";
 
 const LETTERS = "ABC";
 
@@ -37,14 +42,17 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
-/** 首帧: the shot's own keyframe candidates, or the last frame of an earlier shot. */
+/** 首帧: the shot's own keyframe candidates (pick one; a local draft can be finished on the API
+ * model, M3 混合), or the last frame of an earlier shot. */
 function FirstFrame({
   shot,
   aspect,
+  safeArea,
   onPick,
 }: {
   shot: Shot;
   aspect: Aspect;
+  safeArea: SafeArea | null;
   onPick: (i: number) => void;
 }) {
   const { t } = useTranslation("storyboard");
@@ -68,47 +76,42 @@ function FirstFrame({
       </div>
     );
   }
-  if (!version || !cands.length) return <EmptyState icon={Film} title={t("shot.noKeyframe")} />;
+  if (!version || !cands.length || !product.data)
+    return <EmptyState icon={Film} title={t("shot.noKeyframe")} />;
+  const made = t(version.stage === "final" ? "shot.kfFinal" : "shot.kfDraft");
+  const cards = cands.map((c, i) => {
+    const file = version.files.find((f) => f.role === "candidate" && f.idx === i);
+    return {
+      label: t("shot.kfLabel", { n: version.n, letter: LETTERS[i] }),
+      letter: LETTERS[i] ?? "",
+      seed: `${shot.id}-${version.n}-${i}`,
+      src: file ? fileUrl(file.sha256) : null,
+      overlay: safeArea ? <SafeAreaOverlay area={safeArea} /> : undefined,
+      meta: <span className="text-xs text-muted-foreground">{c.label ?? made}</span>,
+    };
+  });
   return (
-    <div
-      role="radiogroup"
-      aria-label={t("shot.firstFrame")}
-      className="grid max-w-md grid-cols-3 gap-2.5"
-    >
-      {cands.map((c, i) => {
-        const on = shot.keyframe_pick === i;
-        const label = t("shot.kfLabel", { n: version.n, letter: LETTERS[i] });
-        return (
-          <button
-            key={i}
-            type="button"
-            role="radio"
-            aria-checked={on}
-            aria-label={label}
-            disabled={shot.confirmed}
-            onClick={() => onPick(i)}
-            className={cn(
-              "flex flex-col gap-1 rounded-lg border-2 p-1.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-default",
-              on ? "border-primary" : "border-transparent hover:border-border",
-            )}
-          >
-            <div className="relative">
-              <MediaThumb
-                aspect={aspect}
-                seed={`${shot.label}-${version.n}-${i}`}
-                label={LETTERS[i]}
-              />
-              {on ? (
-                <StatusBadge tone="info" icon={Check} className="absolute top-1.5 right-1.5">
-                  {t("shot.picked")}
-                </StatusBadge>
-              ) : null}
-            </div>
-            <span className="text-xs font-medium">{label}</span>
-            <span className="text-xs text-muted-foreground">{c.label}</span>
-          </button>
-        );
-      })}
+    <div className="flex flex-col gap-2">
+      <CandidateGrid
+        label={t("shot.firstFrame")}
+        cards={cards}
+        aspect={aspect}
+        picked={shot.keyframe_pick}
+        pickedText={t("shot.picked")}
+        disabled={shot.confirmed}
+        onPick={onPick}
+      />
+      {shot.confirmed ? null : (
+        <div>
+          <FinalButton
+            componentId="kf"
+            product={product.data}
+            version={version}
+            pick={shot.keyframe_pick}
+            letter={LETTERS[shot.keyframe_pick] ?? "A"}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -122,21 +125,129 @@ export interface ShotLine {
   paras: number[];
 }
 
+/** 时长: how long the shot runs and where that comes from (its audio, the user, the plan);
+ * typed in, saved on leaving it; 「恢复」 goes back to automatic. */
+function DurationNote({ shot, onPatch }: { shot: Shot; onPatch: (patch: ShotPatch) => void }) {
+  const { t } = useTranslation("storyboard");
+  const source = durationSource(shot);
+  const text =
+    source === "audio"
+      ? t("shot.durationSource.audio", { min: shot.min_s })
+      : source === "manual" && shot.min_s > 0
+        ? t("shot.durationSource.manualMin", { min: shot.min_s })
+        : t(`shot.durationSource.${source}`);
+  return (
+    <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
+      <span>{text}</span>
+      {shot.manual_s !== null ? (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-6 px-1.5 text-xs"
+          onClick={() => onPatch({ duration_s: null })}
+        >
+          <RotateCcw aria-hidden />
+          {shot.min_s > 0 || shot.planned_s === null
+            ? t("shot.durationReset")
+            : t("shot.durationResetPlan", { s: shot.planned_s })}
+        </Button>
+      ) : null}
+      {shot.split_hint && shot.longest_s !== null ? (
+        <span role="status" className="text-tone-warn-fg">
+          {t("shot.splitHint", { max: shot.longest_s })}
+        </span>
+      ) : null}
+    </div>
+  );
+}
+
+/** 拆分 (several lines: choose where to cut) and 和下一个合并 (the next shot of the scene). */
+function SplitMerge({
+  lines,
+  canMerge,
+  busy,
+  onSplit,
+  onMerge,
+}: {
+  lines: ShotLine[];
+  canMerge: boolean;
+  busy: boolean;
+  onSplit: (afterLineId?: string) => void;
+  onMerge: () => void;
+}) {
+  const { t } = useTranslation("storyboard");
+  const [open, setOpen] = useState(false);
+  const split = (
+    <Button
+      size="sm"
+      variant="outline"
+      disabled={busy}
+      onClick={lines.length > 1 ? undefined : () => onSplit()}
+    >
+      <Scissors aria-hidden />
+      {t("shot.split")}
+    </Button>
+  );
+  return (
+    <div className="flex flex-wrap items-center gap-2">
+      {lines.length > 1 ? (
+        <Popover open={open} onOpenChange={setOpen}>
+          <PopoverTrigger asChild>{split}</PopoverTrigger>
+          <PopoverContent className="flex w-80 flex-col gap-1 p-2">
+            {lines.slice(0, -1).map((l) => (
+              <Button
+                key={l.id}
+                size="sm"
+                variant="ghost"
+                className="h-auto justify-start py-1.5 text-left whitespace-normal"
+                onClick={() => {
+                  setOpen(false);
+                  onSplit(l.id);
+                }}
+              >
+                {t("shot.splitAfter", { text: l.text })}
+              </Button>
+            ))}
+          </PopoverContent>
+        </Popover>
+      ) : (
+        split
+      )}
+      <Button
+        size="sm"
+        variant="outline"
+        disabled={busy || !canMerge}
+        title={canMerge ? undefined : t("shot.mergeNone")}
+        onClick={onMerge}
+      >
+        <Combine aria-hidden />
+        {t("shot.merge")}
+      </Button>
+    </div>
+  );
+}
+
 /** 镜头设定: everything about one shot, saved as you change it. */
 export function ShotSettings({
   shot,
   assets,
   aspect,
+  safeArea,
   assetsPath,
   lines,
   scriptPath,
   novelPath,
   busy,
+  canMerge,
   onPatch,
+  onSplit,
+  onMerge,
 }: {
   shot: Shot;
   assets: Asset[];
   aspect: Aspect;
+  /** 安全区 on: laid over the keyframe candidates. */
+  safeArea: SafeArea | null;
   assetsPath: string;
   lines: ShotLine[];
   /** The script page with this line selected. */
@@ -144,7 +255,11 @@ export function ShotSettings({
   /** The novel page with this paragraph (0-based) in view. */
   novelPath: (idx: number) => string;
   busy: boolean;
+  /** The next shot is in the same scene. */
+  canMerge: boolean;
   onPatch: (patch: ShotPatch) => void;
+  onSplit: (afterLineId?: string) => void;
+  onMerge: () => void;
 }) {
   const { t } = useTranslation("storyboard");
   const { t: te } = useTranslation("enums");
@@ -162,9 +277,17 @@ export function ShotSettings({
     >
       <div className="flex flex-wrap items-center gap-2">
         <h2 className="text-lg font-bold">{t("shot.title", { id: shot.label })}</h2>
-        <span className="text-xs text-muted-foreground">{shot.scene_label}</span>
-        <StatusBadge tone={shot.confirmed ? "info" : "warn"} icon={null}>
-          {t(shot.confirmed ? "status.confirmed" : "status.draft")}
+        <span className="text-xs text-muted-foreground">
+          {t("shot.scene", { n: shot.scene_no, place: shot.scene_place })}
+        </span>
+        <StatusBadge tone={shot.confirmed && !shot.confirm_stale ? "info" : "warn"} icon={null}>
+          {t(
+            shot.confirm_stale
+              ? "status.stale"
+              : shot.confirmed
+                ? "status.confirmed"
+                : "status.draft",
+          )}
         </StatusBadge>
         <Button
           className="ml-auto"
@@ -204,6 +327,13 @@ export function ShotSettings({
         ) : (
           <p className="text-sm text-muted-foreground">{t("shot.noLines")}</p>
         )}
+        <SplitMerge
+          lines={lines}
+          canMerge={canMerge}
+          busy={busy}
+          onSplit={onSplit}
+          onMerge={onMerge}
+        />
       </Field>
 
       <div className="flex flex-col gap-2">
@@ -215,7 +345,12 @@ export function ShotSettings({
               : t("shot.ownKeyframe")}
           </span>
         </div>
-        <FirstFrame shot={shot} aspect={aspect} onPick={(i) => onPatch({ keyframe_pick: i })} />
+        <FirstFrame
+          shot={shot}
+          aspect={aspect}
+          safeArea={safeArea}
+          onPick={(i) => onPatch({ keyframe_pick: i })}
+        />
       </div>
 
       <Field label={t("shot.type")}>
@@ -262,20 +397,21 @@ export function ShotSettings({
           <Input
             id={`${ids}-dur`}
             type="number"
-            min={2}
-            max={15}
-            step={1}
+            min={shot.min_s || 0.5}
+            max={60}
+            step={0.5}
             value={duration}
             onChange={(e) => setDuration(e.target.value)}
             onBlur={() => {
               const n = Number(duration);
-              if (Number.isFinite(n) && n >= 2 && n <= 15 && n !== shot.duration_s)
+              if (Number.isFinite(n) && n > 0 && n <= 60 && n !== shot.duration_s)
                 onPatch({ duration_s: n });
               else setDuration(String(shot.duration_s));
             }}
           />
         </div>
       </div>
+      <DurationNote shot={shot} onPatch={onPatch} />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${ids}-desc`}>{t("shot.desc")}</Label>

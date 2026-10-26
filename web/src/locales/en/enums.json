@@ -124,6 +124,10 @@
     "tts": "Voice first, then lip-sync",
     "none": "No voice"
   },
+  "durationSource": {
+    "audio": "from the audio",
+    "manual": "set by hand"
+  },
   "qaIssue": {
     "face_mismatch": "face",
     "finger_fusion": "fingers",

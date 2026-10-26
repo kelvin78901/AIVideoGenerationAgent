@@ -70,8 +70,11 @@ async def script_slicer(
 ) -> Any:
     """``assets`` (素材分析, M3): scenes with their place and time, each line's id, type and
     character, and the text of the lines that are not spoken, so rewording dialogue never makes
-    the asset list stale. ``line:<id>`` (台词配音): what that line says, how and by whom (None
-    once the script drops it). Any other name is a key of the payload."""
+    the asset list stale. ``shots`` (分镜规划, M4): the same without any text, so only adding,
+    removing or recasting lines makes the plan stale; rewording an action line makes only the
+    keyframes of its shots stale (Kelvin 2026-10-21). ``line:<id>`` (台词配音, 关键帧): what that
+    line says, how and by whom (None once the script drops it). Any other name is a key of the
+    payload."""
     if name.startswith("line:"):
         wanted = name.removeprefix("line:")
         for s in ops.scenes_of(version.payload_json):
@@ -80,7 +83,7 @@ async def script_slicer(
                     keys = ("type", "character_id", "tone", "text")
                     return {k: x.get(k) for k in keys}
         return None
-    if name != "assets":
+    if name not in ("assets", "shots"):
         return version.payload_json if name == "" else version.payload_json.get(name)
     return [
         {
@@ -92,7 +95,11 @@ async def script_slicer(
                     "id": x["id"],
                     "type": x.get("type"),
                     "character_id": x.get("character_id"),
-                    **({} if x.get("type") in SPEAKING else {"text": x.get("text")}),
+                    **(
+                        {}
+                        if x.get("type") in SPEAKING or name == "shots"
+                        else {"text": x.get("text")}
+                    ),
                 }
                 for x in s.get("lines") or []
             ],

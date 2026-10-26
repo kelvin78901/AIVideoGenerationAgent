@@ -7,7 +7,7 @@ import type { Asset } from "@/api/schemas/assets";
 import type { Aspect } from "@/api/schemas/spec";
 import { MediaLightbox } from "@/components/MediaLightbox";
 import { MediaThumb } from "@/components/MediaThumb";
-import { CARD_WIDTH } from "@/pages/assets/status";
+import { CARD_WIDTH } from "@/lib/cards";
 
 /** The views a version lists (`payload.views`), in its order; versions before 2026-10-21 have
  * one `expressions` sheet where newer ones have four expressions, one a picture. */

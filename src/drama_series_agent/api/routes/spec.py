@@ -43,16 +43,24 @@ async def put_spec(
 ) -> OutputSpec:
     """Partial update. Once locked, a new aspect needs a confirmed impact preview (SPEC 13.3).
 
-    ``confirmed_impact`` is the id of the impact preview the user applied. M1 only checks that
-    it is present; the id is validated once invalidation is real (M2).
+    ``confirmed_impact`` is the id of an applied ``spec_aspect`` preview of this series to this
+    aspect. Applying one writes the spec itself (``shots/service.py:plan_aspect``), so this is
+    for a client that saves the aspect after applying it; any other id is refused like none.
     """
     async with state.db.session() as session:
         row = await session.get(OutputSpecRow, series_id)
         if row is None:
             raise ApiError(404, "series_not_found", id=series_id)
         new_aspect = body.aspect is not None and body.aspect != row.aspect
-        if row.locked_at is not None and new_aspect and not confirmed_impact:
-            raise ApiError(409, "spec_locked", aspect=row.aspect)
+        if row.locked_at is not None and new_aspect:
+            change = state.impact.applied(confirmed_impact) if confirmed_impact else None
+            if (
+                change is None
+                or change.kind != "spec_aspect"
+                or change.target_id != series_id
+                or change.patch.get("aspect") != body.aspect
+            ):
+                raise ApiError(409, "spec_locked", aspect=row.aspect)
         apply_patch(row, body)
         session.add(row)
         await session.commit()

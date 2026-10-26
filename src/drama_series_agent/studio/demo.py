@@ -8,11 +8,14 @@ v1 local → v2 DeepSeek, adopted, the first suggestion accepted; ``enrich.json`
 bible (设定提取 v1, read with that accepted addition; ``extract.json``) and its episode plan
 (分集规划 v1 on DeepSeek, three episodes with a $15 budget each; ``split.json``) and episode 1's
 script (剧本化 v1 local → v2 「不满意换一个」 on Kimi, adopted; ``script.json``) and its asset
-list (素材分析 v1 on DeepSeek, the prototype's 13 assets with their ids; ``assets.json``), each
-assembled exactly as a Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``.
-Then the novel gate and episode 1's script gate are confirmed, once: a gate the user reopened
-stays open. ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset``
-deletes the demo series first.
+list (素材分析 v1 on DeepSeek, the prototype's 13 assets with their ids; ``assets.json``) and
+its shot plan (分镜规划 v1 on DeepSeek, the prototype's nine shots ``demo-shot-1-01`` …;
+``plan.json``) and the keyframes of its seven shots that are not continuous (1-01–1-03 a local
+draft then the Nano Banana Pro final, confirmed; 1-04–1-07 a draft), each assembled exactly as a
+Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``. Then the novel gate and
+episode 1's script gate are confirmed, once: a gate the user reopened stays open.
+``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset`` deletes the demo
+series first.
 """
 
 from __future__ import annotations
@@ -38,6 +41,7 @@ from drama_series_agent.core.models_db import (
     Product,
     ProductVersion,
     Series,
+    Shot,
     SuggestionDecision,
 )
 from drama_series_agent.core.paths import REPO_ROOT, database_path
@@ -46,8 +50,10 @@ from drama_series_agent.episodes import service as episodes
 from drama_series_agent.episodes.service import latest_gate
 from drama_series_agent.modelhub.adapters.mock import MOCK_TEXT_KEY, mock_picture, sine_wav
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
-from drama_series_agent.pipeline.components import assets, enrich, script, split
+from drama_series_agent.pipeline.components import assets, enrich, kf, plan, script, split
 from drama_series_agent.pipeline.components.extract import demo_payload
+from drama_series_agent.pipeline.components.img import asset_aspect
+from drama_series_agent.pipeline.components.media import prompt_text
 from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.components.views import (
     REF_VIEWS_SLOT,
@@ -63,6 +69,8 @@ from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.qa import ocr
 from drama_series_agent.script import service as script_service
+from drama_series_agent.shots import service as shots_service
+from drama_series_agent.spec.compat import model_caps
 from drama_series_agent.spec.dims import dims
 from drama_series_agent.spec.schema import default_row
 from drama_series_agent.suggestions import service as suggestions
@@ -153,6 +161,23 @@ DEMO_ASSET_IDS = {
     "voice:c-linwan": "vlinwan",
     "voice:c-zhouyu": "vzhouyu",
 }
+# 分镜规划 of episode 1 on DeepSeek, 10:48 +08:00.
+PLAN_MODEL = "deepseek/v4-pro"
+# 关键帧 of episode 1 (MSW fixtures/demo/shots.ts): the local draft (three pictures) and, for the
+# confirmed shots, the Nano Banana 2.1 final from its first picture (+08:00 on the demo day).
+KF_DRAFT_MODEL = "comfy/flux3-klein"
+KF_FINAL_MODEL = "google/nano-banana-2.1"
+KF_FINAL_COST = 0.06  # what 2.1 cost in the bake-off (thinking on: a little over the estimate)
+DEMO_KEYFRAMES: dict[str, tuple[str, bool]] = {  # label → (draft time, confirmed at 11:02)
+    "1-01": ("10:55", True),
+    "1-02": ("10:55", True),
+    "1-03": ("10:55", True),
+    "1-04": ("11:06", False),
+    "1-05": ("11:06", False),
+    "1-06": ("11:06", False),
+    "1-07": ("11:06", False),
+}
+KF_FINAL_AT = "11:02"
 # Confirmed by the seed (the prototype's demo: 小说 and episode 1's 剧本 已确认).
 CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 
@@ -160,6 +185,16 @@ CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
 def script_product_id(episode_id: str) -> str:
     """``demo-e1`` → ``demo-p-script-e1`` (MSW ``scriptProductId``)."""
     return f"demo-p-script-{episode_id.removeprefix('demo-')}"
+
+
+def plan_product_id(episode_id: str) -> str:
+    """``demo-p-plan-e1`` (the MSW fixture's)."""
+    return f"demo-p-plan-{episode_id.removeprefix('demo-')}"
+
+
+def keyframe_product_id(label: str) -> str:
+    """``1-04`` → ``demo-p-kf-1-04`` (MSW ``kfProductId``)."""
+    return f"demo-p-kf-{label}"
 
 
 def assets_product_id(episode_id: str) -> str:
@@ -211,6 +246,23 @@ async def seed_demo(
                     component_id=assets.AssetsComponent.id,
                     product_id=assets_product_id(e["id"]),
                 )
+                await products.ensure(
+                    series_id=DEMO_SERIES_ID,
+                    owner_type="episode",
+                    owner_id=e["id"],
+                    slot=plan.SHOT_PLAN_SLOT,
+                    component_id=plan.PlanComponent.id,
+                    product_id=plan_product_id(e["id"]),
+                )
+            for label in DEMO_KEYFRAMES:
+                await products.ensure(
+                    series_id=DEMO_SERIES_ID,
+                    owner_type="shot",
+                    owner_id=f"demo-shot-{label}",
+                    slot=shots_service.KEYFRAME_SLOT,
+                    component_id=kf.KfComponent.id,
+                    product_id=keyframe_product_id(label),
+                )
         await _seed_novel(novel)
         if products is not None and compiler is not None:
             await _seed_enrich(db, novel, products, compiler)
@@ -219,6 +271,8 @@ async def seed_demo(
             await _seed_script(db, novel, products, compiler)
             await _seed_assets(db, products, compiler)
             await _seed_asset_versions(db, products, compiler)
+            await _seed_plan(db, products, compiler)
+            await _seed_keyframes(db, products, compiler)
         if gates is not None:
             await _seed_gates(db, gates)
     return created
@@ -246,7 +300,10 @@ async def build_demo(*, reset: bool) -> None:
         products.on_adopt(suggestions.SUGGESTIONS_SLOT, suggestions.materialize)
         products.on_adopt(episodes.EPISODES_SLOT, episodes.materialize)
         products.on_adopt(episodes.SCRIPT_SLOT, script_service.materialize)
+        products.on_adopt(episodes.SCRIPT_SLOT, shots_service.ensure_plan)
         products.on_adopt(assets.ASSET_LIST_SLOT, assets_service.materialize)
+        products.on_adopt(plan.SHOT_PLAN_SLOT, shots_service.materialize)
+        products.on_adopt(shots_service.KEYFRAME_SLOT, shots_service.lock_spec)
         if reset:
             await delete_demo(db)
         novel = NovelService(db, BlobStore(), products)
@@ -303,6 +360,9 @@ def slicers() -> Invalidation:
     invalidation.slicer(suggestions.SUGGESTIONS_SLOT, suggestions.suggestions_slicer)
     invalidation.slicer(episodes.EPISODES_SLOT, episodes.episodes_slicer)
     invalidation.slicer(episodes.SCRIPT_SLOT, script_service.script_slicer)
+    invalidation.slicer(assets.ASSET_LIST_SLOT, plan.asset_list_slicer)
+    invalidation.slicer(plan.SHOT_PLAN_SLOT, plan.shot_plan_slicer)
+    invalidation.check(shots_service.KEYFRAME_SLOT, kf.stale_aspect)
     return invalidation
 
 
@@ -544,6 +604,153 @@ async def _seed_assets(db: Database, products: ProductService, compiler: PromptC
     await products.append(product_id, draft, origin="run")
 
 
+async def _seed_plan(db: Database, products: ProductService, compiler: PromptCompiler) -> None:
+    """Episode 1's shot plan from the fixture, with the prototype's shot ids, adopted (its
+    mirror gives each shot that is not continuous its keyframe product)."""
+    product_id = plan_product_id("demo-e1")
+    async with db.session() as session:
+        product = await session.get(Product, product_id)
+        if product is None or product.current_version_id is not None:
+            return
+        try:
+            inputs = await plan.gather(session, slicers(), DEMO_SERIES_ID, "demo-e1")
+        except PipelineError:
+            return  # the script is not there yet
+    payload = plan.build(plan.demo_fixture()["answer"], inputs.context)
+    ids = {s["id"]: f"demo-shot-1-{n:02d}" for n, s in enumerate(payload["shots"], 1)}
+    for s in payload["shots"]:
+        s["id"] = ids[s["id"]]
+        if s.get("tail_from"):
+            s["tail_from"] = ids[s["tail_from"]]
+    intent = compiler.default_intent("plan", "zh-CN")
+    draft = VersionDraft(
+        payload=payload,
+        intent=intent,
+        compiled=compiler.compile("plan", intent, PLAN_MODEL),
+        model_key=PLAN_MODEL,
+        where="api",
+        seed=1301,
+        params={"mode": "run", "calls": 1},
+        dependencies=list(inputs.deps),
+        id=f"{product_id}-v1",
+        created_at=_demo_time("10:48"),
+    )
+    await products.append(product_id, draft, origin="run")
+
+
+async def _seed_keyframes(db: Database, products: ProductService, compiler: PromptCompiler) -> None:
+    """Episode 1's keyframes, each built from what a run reads (``kf.gather``): a local draft,
+    then for 1-01–1-03 the API final from its first picture, locked with the shot's decision
+    (确认这个镜头)."""
+    store = BlobStore()
+    invalidation = slicers()
+    plan_id = plan_product_id("demo-e1")
+    async with db.session() as session:
+        found = await shots_service.keyframe_products(
+            session, [f"demo-shot-{label}" for label in DEMO_KEYFRAMES]
+        )
+        plan_row = await session.get(Product, plan_id)
+    if plan_row is None or plan_row.adopted_version_id is None:
+        return  # the plan is not there yet
+    for n, (label, (at, confirmed)) in enumerate(DEMO_KEYFRAMES.items(), 1):
+        shot_id = f"demo-shot-{label}"
+        product = found.get(shot_id)
+        if product is None or product.current_version_id is not None:
+            continue
+        async with db.session() as session:
+            shot = await session.get(Shot, shot_id)
+            try:
+                inputs = await kf.gather(session, invalidation, product)
+            except PipelineError as exc:
+                logger.warning("demo keyframe {} not seeded: {}", label, exc.code)
+                continue
+        intent = shot.intent if shot is not None else ""
+        draft = await products.append(
+            product.id,
+            _keyframe_draft(store, compiler, product, inputs, intent, None, n, at),
+            origin="run",
+            adopt=False,
+        )
+        if not confirmed:
+            continue
+        first = next(f for f in draft.files_json if f.get("role") == "candidate")
+        final = _keyframe_draft(store, compiler, product, inputs, intent, first, n, KF_FINAL_AT)
+        final.params["source"] = {"version_id": draft.id, "idx": 0}
+        v = await products.append(
+            product.id, final, origin="run", parent_version_id=draft.id, adopt=False
+        )
+
+        async def record(
+            session: AsyncSession, p: Product, _: ProductVersion, shot_id: str = shot_id
+        ) -> None:
+            at = _demo_time(KF_FINAL_AT)
+            await shots_service.record_shot_gate(
+                session, invalidation, DEMO_SERIES_ID, shot_id, plan_row, p, "confirm", at
+            )
+
+        await products.lock_pick(product.id, v.id, None, record=record)
+
+
+def _keyframe_draft(
+    store: BlobStore,
+    compiler: PromptCompiler,
+    product: Product,
+    inputs: Any,
+    intent: str,
+    source: dict[str, Any] | None,
+    n: int,
+    at: str,
+) -> VersionDraft:
+    """A keyframe version as ``KfComponent.run`` makes it: the local draft (three pictures at
+    the draft tier) or the API final from ``source`` (one at the delivery tier)."""
+    final = source is not None
+    model = KF_FINAL_MODEL if final else KF_DRAFT_MODEL
+    cfg = get_config()
+    local = next((m for m in cfg.providers.local_models if m.key == model), None)
+    limit = kf.ref_limit(
+        model_caps(cfg, model).get("max_refs"),
+        "local" if local is not None else "api",
+        local.workflow if local is not None else None,
+    )
+    refs, deps, blocks = kf.pick_refs(inputs, source["sha256"] if source else None, limit)
+    frame = inputs.context["frame"]
+    size = dims(frame["aspect"], frame["delivery"] if final else "draft")
+    stage = "final" if final else "draft"
+    files = [
+        file_entry(
+            "candidate",
+            store.put_bytes(mock_picture(size.w, size.h, model, product.id, stage, i)),
+            "image/png",
+            w=size.w,
+            h=size.h,
+            idx=i,
+        )
+        for i in range(1 if final else 3)
+    ]
+    compiled = compiler.compile(kf.KfComponent.id, intent, model)
+    prompt = store.put_bytes(prompt_text(compiled, blocks).encode("utf-8"))
+    files.append(file_entry("prompt", prompt, "text/plain; charset=utf-8"))
+    return VersionDraft(
+        payload={
+            "candidates": [{} for _ in range(len(files) - 1)],
+            "aspect": frame["aspect"],
+            "refs": [r["name"] for r in refs if r["kind"] != "draft"],
+        },
+        files=files,
+        intent=intent,
+        compiled=compiled,
+        model_key=model,
+        where="api" if final else "local",
+        seed=1400 + n,
+        params={"mode": "run", "calls": 1},
+        cost_usd=KF_FINAL_COST if final else 0.0,
+        stage=stage,
+        dependencies=[*inputs.deps, *deps],
+        id=f"{product.id}-v{2 if final else 1}",
+        created_at=_demo_time(at),
+    )
+
+
 def _demo_time(hhmm: str) -> datetime:
     """``10:31`` on the demo day, +08:00."""
     h, m = (int(x) for x in hhmm.split(":"))
@@ -620,7 +827,8 @@ def _asset_files(
     """A demo version's payload and candidate files (Mock pictures, or tones for a voice)."""
     if asset.kind == "voice":
         return _voice_files(store, asset, stage)
-    size = dims("9:16", "draft" if stage == "draft" else "1080p")
+    aspect = asset_aspect(asset.kind, "9:16")  # the demo's spec; scenes are drawn 16:9
+    size = dims(aspect, "draft" if stage == "draft" else "1080p")  # type: ignore[arg-type]
     text = text_settings(asset, None)
     reads: list[str | None] = [None] * (1 if stage == "final" else 4)
     if asset.kind == "text":
@@ -633,8 +841,8 @@ def _asset_files(
         files.append(file_entry("candidate", sha, "image/png", w=size.w, h=size.h, idx=i))
     if asset.kind == "text":
         checks = [ocr.check(text["exact"], r, text["method"]) for r in reads]
-        return {"candidates": checks, "aspect": "9:16", "refs": [], "text": text}, files
-    return {"candidates": [{} for _ in reads], "aspect": "9:16", "refs": []}, files
+        return {"candidates": checks, "aspect": aspect, "refs": [], "text": text}, files
+    return {"candidates": [{} for _ in reads], "aspect": aspect, "refs": []}, files
 
 
 async def _seed_asset_versions(

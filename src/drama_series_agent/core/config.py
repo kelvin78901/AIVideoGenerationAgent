@@ -152,6 +152,9 @@ class ComponentDefault(_Loose):
     candidates: int | None = None
     gate: str | None = None
     follows_output_spec: bool = False
+    # Asset kind → the aspect its reference pictures are drawn at, whatever the output spec
+    # (img: scenes 16:9, Kelvin 2026-10-26); a kind not listed follows the spec.
+    aspects: dict[str, str] = Field(default_factory=dict)
 
 
 class FallbackDefaults(_Loose):
@@ -481,5 +484,5 @@ def resolve(
         for path, value in _flatten(ov.data).items():
             _set_path(values, path, value)
             sources[path] = ov.scope
-    unavailable = restrict(values, cfg.providers, caps) if caps is not None else {}
+    unavailable = restrict(values, cfg.providers, caps, comp.local) if caps is not None else {}
     return Resolved(values=values, sources=sources, unavailable=unavailable)

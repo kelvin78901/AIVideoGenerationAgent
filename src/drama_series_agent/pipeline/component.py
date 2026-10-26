@@ -26,6 +26,7 @@ from typing import Any, ClassVar
 from pydantic import BaseModel, ValidationError
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.core.config import Resolved
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import LlmCache, Product, ProductVersion
 from drama_series_agent.core.storage import BlobStore
@@ -155,6 +156,9 @@ class Component(ABC):
     # True when a run is the user's explicit ask and only adds, so it is adopted every time
     # (素材分析's 「重新分析剧本」; what the user set lives elsewhere, M3).
     adopt_every_run: ClassVar[bool] = False
+    # False when 确认并同步 must not redo it on its own (M4: 分镜规划; a new plan would overwrite
+    # the user's framing, blocking and confirmed shots), so it is only marked 待更新.
+    cascade_rerun: ClassVar[bool] = True
 
     def __init__(self, services: Services) -> None:
         self.services = services
@@ -181,6 +185,12 @@ class Component(ABC):
         """The intent a product that never saved a prompt starts with (an asset's: its
         description, M3)."""
         return self.services.compiler.default_intent(self.id, lang)
+
+    def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
+        """The model a run goes to: ``model`` is the route's (or the one the user picked). A
+        component takes another when this run's inputs do not suit it (M4: a keyframe with no
+        locked reference picture cannot go to an edit-only model)."""
+        return model
 
     # ------------------------------------------------------------------ run
 
@@ -312,6 +322,7 @@ class Component(ABC):
             component_id=self.id,
             series_id=ctx.product.series_id,
             episode_id=episode_id,
+            shot_id=ctx.product.owner_id if ctx.product.owner_type == "shot" else None,
             product_id=ctx.product.id,
             job_id=ctx.job_id,
             attempt=ctx.attempt,
@@ -337,6 +348,12 @@ class Component(ABC):
                     LlmCache(key=key, model_key=model, value_json=data.model_dump(mode="json"))
                 )
                 await session.commit()
+
+
+def reruns_in_cascade(comp: Component) -> bool:
+    """确认并同步 reruns it and adopts what comes: not a candidate component (M3: its takes wait
+    for the user's pick) nor one that says no (M4: 分镜规划)."""
+    return comp.cascade_rerun and (comp.auto_adopt or comp.adopt_every_run)
 
 
 class ComponentRegistry:

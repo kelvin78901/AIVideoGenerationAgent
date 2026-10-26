@@ -714,3 +714,47 @@ class AssetUse(SQLModel, table=True):
     scene_id: str
     version_id: str  # the asset_list version it came from
     line_ids_json: list[str] = _json(list)  # the lines it is in (speaker, or named in action)
+
+
+# --------------------------------------------------------------------------- M4: shots
+
+
+class Shot(SQLModel, table=True):
+    """One shot of an episode (SPEC 4.1), mirroring the adopted ``shot_plan`` version (分镜规划).
+
+    Rebuilt on every adopt like ``script_line`` (upsert by id, ``retired`` instead of a
+    delete). ``idx`` is 1-based within the episode; the 「1-04」 label is counted when read.
+    ``duration_s`` is the plan's seconds and ``manual_s`` what the user typed; a shot with
+    dialogue runs as long as its audio, so the seconds shown are worked out when read
+    (``pipeline/timing.py:shot_duration``). The keyframe prompt's intent lives on the shot's
+    keyframe product; ``intent`` here is only the plan's seed for it (M3: 描述 = 意图层).
+    """
+
+    __tablename__ = "shot"
+
+    id: str = Field(primary_key=True)
+    series_id: str = Field(foreign_key="series.id", ondelete="CASCADE", index=True)
+    episode_id: str = Field(index=True)
+    scene_id: str = Field(index=True)
+    version_id: str  # the adopted version this row mirrors
+    idx: int
+    shot_type: str = "same_scene_cut"  # continuous / same_scene_cut / scene_change
+    framing: str = "medium"  # wide / medium / close / closeup (SPEC ``size``)
+    camera_move: str = "static"  # static / push / follow / pan
+    duration_s: float | None = None  # the plan's seconds
+    manual_s: float | None = None  # the user's seconds (never below the audio)
+    intent: str = ""  # the plan's seed of the keyframe prompt
+    summary: str = ""
+    sound: str | None = None  # ambience and effects (「雨声、脚步、灯的电流声」)
+    line_ids_json: list[str] = _json(list)  # the script lines it films, in order
+    asset_ids_json: list[str] = _json(list)  # its references (only locked ones reach a model)
+    tail_from: str | None = None  # a continuous shot starts from this shot's last frame
+    tail_note: str | None = None  # why that shot and not the one before (an insert between)
+    blocking_json: list[dict[str, Any]] = _json(list)  # [{id, kind, label, x, y}], 0–1
+    audio_mode: str = "native"  # native / tts / none (SPEC A / B / C)
+    difficulty: int = 1  # 1–6 (PLAN 空间与物理)
+    control_json: dict[str, Any] | None = _json()  # a control video's settings (M5)
+    retired: bool = False
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )

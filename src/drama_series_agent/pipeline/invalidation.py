@@ -10,6 +10,9 @@ A slot whose slices are not just keys of the payload registers a slicer (``slice
 default reads ``payload[slice]`` (``""`` = the whole payload). Media slots (M3: pictures and
 audio) use ``media_slicer``, which adds the content of the files, so a gate or a downstream
 dependency changes when the picture does.
+
+A slot can also say what else makes a version stale that no product holds (``check()``; M4: a
+keyframe drawn for another aspect than the output spec's now).
 """
 
 from __future__ import annotations
@@ -29,6 +32,8 @@ from drama_series_agent.pipeline.hashing import hash_json
 DISPLAY_KEYS = frozenset({"idx", "edited", "duration_s", "overlay_shot", "frozen"})
 
 Slicer = Callable[[AsyncSession, Product, ProductVersion, str], Awaitable[Any]]
+# (session, product, the version shown) → stale for a reason no dependency row holds.
+Check = Callable[[AsyncSession, Product, ProductVersion], Awaitable[bool]]
 
 
 def strip_display(value: Any) -> Any:
@@ -50,7 +55,7 @@ async def _default_slicer(
 
 
 # Slots whose versions are files more than JSON (M3).
-MEDIA_SLOTS = ("ref_image", "ref_views", "text_image", "voice", "line_audio")
+MEDIA_SLOTS = ("ref_image", "ref_views", "text_image", "voice", "line_audio", "keyframe")
 
 
 async def media_slicer(
@@ -65,9 +70,13 @@ async def media_slicer(
 class Invalidation:
     def __init__(self) -> None:
         self._slicers: dict[str, Slicer] = dict.fromkeys(MEDIA_SLOTS, media_slicer)
+        self._checks: dict[str, Check] = {}
 
     def slicer(self, slot: str, fn: Slicer) -> None:
         self._slicers[slot] = fn
+
+    def check(self, slot: str, fn: Check) -> None:
+        self._checks[slot] = fn
 
     async def current_hash(
         self, session: AsyncSession, upstream_product_id: str, name: str = ""
@@ -92,8 +101,9 @@ class Invalidation:
         return DependencyDraft(upstream_product_id=upstream_product_id, upstream_hash=h, slice=name)
 
     async def stale_ids(self, session: AsyncSession, products: Iterable[Product]) -> set[str]:
-        """Products whose adopted (else current) version was built from slices that changed.
-        A retired product (its line left the script) is never stale."""
+        """Products whose adopted (else current) version was built from slices that changed, or
+        that their slot's ``check`` finds stale. A retired product (its line left the script)
+        is never stale."""
         products = [p for p in products if not p.retired]
         by_version = {
             v: p.id
@@ -115,4 +125,12 @@ class Invalidation:
                 hashes[key] = await self.current_hash(session, *key)
             if hashes[key] != dep.upstream_hash:
                 stale.add(by_version[dep.version_id])
+        for p in products:
+            fn = self._checks.get(p.slot)
+            version_id = p.adopted_version_id or p.current_version_id
+            if fn is None or version_id is None or p.id in stale:
+                continue
+            shown = await session.get(ProductVersion, version_id)
+            if shown is not None and await fn(session, p, shown):
+                stale.add(p.id)
         return stale

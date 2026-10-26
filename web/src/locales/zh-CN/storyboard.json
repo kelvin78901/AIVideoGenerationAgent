@@ -11,9 +11,55 @@
     "label": "预演",
     "play": "播放预演",
     "pause": "暂停预演",
-    "total": "共 {{seconds}} 秒 · 用当前关键帧 + 本地临时配音 + 字幕，不花钱",
+    "total": "共 {{seconds}} 秒 · 用当前关键帧 + 台词配音 + 字幕，不花钱",
     "shot": "镜头 {{id}}，{{seconds}} 秒",
-    "seconds": "{{n}}s"
+    "seconds": "{{n}}s",
+    "frame": "镜头 {{id}}：{{summary}}",
+    "tail": "接 {{id}} 尾帧",
+    "clock": "{{at}} / {{total}}",
+    "safe": "安全区",
+    "keys": "空格键播放 / 暂停，点时间条跳转",
+    "missing": "{{count}} 句还没配音",
+    "toDub": "去配音"
+  },
+  "list": {
+    "title": "镜头 · {{count}} 个 · {{seconds}} 秒",
+    "views": "镜头显示方式",
+    "view": {
+      "board": "分镜板",
+      "table": "表格"
+    }
+  },
+  "table": {
+    "label": "镜头表",
+    "col": {
+      "shot": "镜头",
+      "scene": "场",
+      "type": "类型",
+      "framing": "景别",
+      "move": "运动",
+      "duration": "时长（秒）",
+      "dialogue": "台词",
+      "refs": "参考素材",
+      "keyframe": "关键帧",
+      "status": "状态",
+      "actions": "拆分 / 合并"
+    },
+    "none": "—",
+    "kfPick": "已选 {{letter}}",
+    "kfTail": "接 {{id}} 尾帧",
+    "kfNone": "还没有",
+    "typeOf": "镜头 {{id}} 的类型",
+    "framingOf": "镜头 {{id}} 的景别",
+    "moveOf": "镜头 {{id}} 的机位运动",
+    "durationOf": "镜头 {{id}} 的时长（秒）",
+    "source": {
+      "audio": "按音频",
+      "manual": "手动",
+      "plan": "按规划"
+    },
+    "splitOf": "拆分镜头 {{id}}",
+    "mergeOf": "把镜头 {{id}} 和下一个合并"
   },
   "cards": {
     "label": "镜头列表",
@@ -21,20 +67,25 @@
   },
   "status": {
     "confirmed": "已确认",
-    "draft": "草稿"
+    "draft": "草稿",
+    "stale": "待更新"
   },
   "shot": {
     "label": "镜头设定",
     "title": "镜头 {{id}}",
+    "scene": "场 {{n}} · {{place}}",
     "confirm": "确认这个镜头",
     "unconfirm": "取消确认",
     "confirmed": "{{id}} 已确认：首帧、参考和镜头设定锁定，可以去生成视频。",
     "unconfirmed": "已取消确认 {{id}}。",
+    "editTitle": "镜头 {{id}} 已确认，改动会影响下游",
     "firstFrame": "首帧",
     "ownKeyframe": "本镜关键帧",
     "tailOf": "接续 {{id}} 的尾帧",
     "kfLabel": "v{{n}} · {{letter}}",
     "picked": "已选",
+    "kfDraft": "本地草稿",
+    "kfFinal": "API 终版",
     "noKeyframe": "这个镜头还没有关键帧。在右侧选「关键帧」组件后点「重跑」。",
     "tailTitle": "{{id}} 尾帧",
     "tailText": "不单独做关键帧：视频生成时取 {{id}} 的最后一帧当首帧，动作和光线连着走。",
@@ -72,6 +123,21 @@
     "noLines": "这个镜头没有对应的剧本行。",
     "lineLink": "在剧本里看：{{text}}",
     "paras": "原文第 {{paras}} 段",
-    "paraSep": "、"
+    "paraSep": "、",
+    "durationSource": {
+      "audio": "按台词音频算（含前后留白），最短 {{min}} 秒",
+      "manual": "手动设定",
+      "manualMin": "手动设定 · 不能短于台词音频 {{min}} 秒",
+      "plan": "按分镜规划"
+    },
+    "durationReset": "恢复按音频",
+    "durationResetPlan": "恢复规划的 {{s}} 秒",
+    "splitHint": "超过 {{max}} 秒（视频单段上限），建议拆镜",
+    "split": "拆分",
+    "splitAfter": "在「{{text}}」之后切",
+    "merge": "和下一个合并",
+    "mergeNone": "同一场里后面没有镜头了",
+    "splitDone": "已拆分：{{id}} 后面多了 {{next}}",
+    "mergeDone": "已把下一个镜头并进 {{id}}"
   }
 }

@@ -333,6 +333,27 @@ items:
         revision: 4609161e308ce82018a42c2a0c9b107e865bb751
         files:
           - { path: Qwen-Image-2512-Lightning-4steps-V1.0-fp32.safetensors, folder: loras, sha256: ad12117461cb41e2ea637fec8df6392ce8e8550c47fbe2b829ed3deb98262066 }   # 1.70 GB
+  - id: w_flux3
+    group: w
+    name: { zh: "FLUX 3 Klein 关键帧（int8）", en: "FLUX 3 Klein keyframes (int8)" }
+    required: false
+    depends_on: [comfy]
+    macos: { required: false, fix: { optional: mac_image_slow } }
+    # 关键帧本地草稿的默认模型（Kelvin 2026-10-26，对比见 reports/m4-kf-bakeoff.txt）：workflows/flux3-klein、flux3-klein-t2i。
+    # 官方 ComfyUI 仓库（2026-10-26 核对）：蒸馏版 int8、Qwen3-VL 4B 文本编码器 int8、官方提示词扩写 Qwen3.5 9B int8、FLUX.2 VAE。
+    # 这个仓库要登录 HF 并同意 FLUX Kommunity License（自动批准）；安装器还不会带 HF token，所以不是必装项，
+    # 现在要手动 `hf auth login` 后 `hf download`（见 DECISIONS 2026-10-26「关键帧模型对比」）。没装时关键帧草稿按路由换 Qwen-Image-Edit。
+    detect: { type: downloads }
+    size_gb: 20.8
+    install:
+      - type: download
+        hf_repo: black-forest-labs/flux-3-image-klein-comfy
+        revision: feef60b0aaf63a4773ace96636ebbcf43b881312
+        files:
+          - { path: diffusion_models/flux3-image-klein-int8-convrot.safetensors, folder: diffusion_models, sha256: 847d8933548afd93df4af2cac2498e70891bf28d9dae06d695f536992e168fe2 }   # 5.83 GB
+          - { path: text_encoders/qwen3vl_4b_int8_convrot.safetensors, folder: text_encoders, sha256: 32de113cbf8282b02cbff0794b637b9d6676da09314a1db5a30bcea9bf4ee01c }   # 4.86 GB
+          - { path: text_encoders/qwen3.5_9b_flux3_prompt_upsampler_int8_convrot.safetensors, folder: text_encoders, sha256: cb8cb9b9dcd2569509de755dca54d96fd93a16a7aabfd2f4051f0a144230620f }   # 9.75 GB
+          - { path: vae/flux2-vae.safetensors, folder: vae, sha256: 868fe7b343cc8f3a19dbcfcafbc3d5f888802be3f89bd81b65b3621a066ce8f3 }   # 0.34 GB
   - id: w_sr
     group: w
     name: { zh: "SeedVR2 7B 权重（int8）", en: "SeedVR2 7B weights (int8)" }

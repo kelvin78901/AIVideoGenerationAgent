@@ -44,9 +44,30 @@ export const SpecPatchSchema = OutputSpecSchema.pick({
 }).partial();
 export type SpecPatch = z.infer<typeof SpecPatchSchema>;
 
+/** Where platform UI covers the picture (`config/spec.yaml` safe_areas; percentages of the
+ * frame): named boxes, and where subtitles sit (their top, the margin kept clear on the right). */
+export const SafeAreaSchema = z.object({
+  zones: z.array(
+    z.object({
+      /** `spec:preview.zone.<key>` */
+      key: z.enum(["top", "buttons", "caption", "controls", "controlsWide"]),
+      l: z.number(),
+      t: z.number(),
+      w: z.number(),
+      h: z.number(),
+    }),
+  ),
+  subtitle: z.object({ top: z.number(), right: z.number() }),
+});
+export type SafeArea = z.infer<typeof SafeAreaSchema>;
+
+/** Portrait short-drama apps / other portrait players / landscape and square players. */
+export const SafeAreaKindSchema = z.enum(["vertical_app", "vertical_player", "horizontal"]);
+export type SafeAreaKind = z.infer<typeof SafeAreaKindSchema>;
+
 /**
- * `GET /spec/presets` (SPEC 13.1): platform presets and the sizes `spec/dims.py` gives every
- * aspect, so the page can show them before saving.
+ * `GET /spec/presets` (SPEC 13.1): platform presets, the sizes `spec/dims.py` gives every
+ * aspect (so the page can show them before saving) and the platforms' safe areas.
  */
 export const SpecPresetsSchema = z.object({
   platforms: z.array(
@@ -58,6 +79,7 @@ export const SpecPresetsSchema = z.object({
     }),
   ),
   dims: z.record(AspectSchema, z.object({ "1080p": Dims, "2k": Dims, draft: Dims })),
+  safe_areas: z.record(SafeAreaKindSchema, SafeAreaSchema),
 });
 export type SpecPresets = z.infer<typeof SpecPresetsSchema>;
 

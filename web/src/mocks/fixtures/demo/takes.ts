@@ -17,7 +17,10 @@ import type {
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { demoAt, demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
-import { shotId, videoProductId } from "@/mocks/fixtures/demo/shots";
+
+/** Episode 1's shots are the backend's (M4); its demo plan keeps these ids. */
+const shotId = (label: string) => `demo-shot-${label}`;
+const videoProductId = (label: string) => `demo-p-vid-${label}`;
 
 export const PRODUCT_UPSCALE = "demo-p-up-e1";
 export const PRODUCT_LIPSYNC = "demo-p-lip-e1";

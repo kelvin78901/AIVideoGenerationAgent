@@ -1,0 +1,494 @@
+{
+  "_comment": "分镜规划 of the demo's episode 1, as a model would answer (the prototype's Storyboard.dc.html shots(): 9 shots, 34 s; line numbers L1-L10 are the episode's script lines in order, L8 the voice-over over L6; continues = the number of the shot it follows). The demo seed is built from it; shot ids are the demo's (demo-shot-1-01 ...), not the model's.",
+  "answer": {
+    "shots": [
+      {
+        "scene": 1,
+        "lines": [
+          1
+        ],
+        "type": "scene_change",
+        "framing": "wide",
+        "move": "push",
+        "seconds": 4,
+        "picture": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+        "summary": "楼道全景，林晚走上六楼",
+        "refs": [
+          "linwan",
+          "hall"
+        ],
+        "audio": "native",
+        "blocking": [
+          {
+            "id": "stairs",
+            "kind": "landmark",
+            "label": "楼梯",
+            "x": 0.14,
+            "y": 0.7
+          },
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "家门",
+            "x": 0.78,
+            "y": 0.14
+          },
+          {
+            "id": "umbrella",
+            "kind": "prop",
+            "label": "红伞",
+            "x": 0.9,
+            "y": 0.36
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.62,
+            "y": 0.4
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.5,
+            "y": 0.92
+          }
+        ],
+        "difficulty": 1,
+        "sound": "雨声、脚步、灯的电流声"
+      },
+      {
+        "scene": 1,
+        "lines": [
+          2
+        ],
+        "type": "same_scene_cut",
+        "framing": "medium",
+        "move": "static",
+        "seconds": 3,
+        "picture": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+        "summary": "门口的红伞和便利贴",
+        "refs": [
+          "hall",
+          "umbrella",
+          "note"
+        ],
+        "audio": "native",
+        "blocking": [
+          {
+            "id": "stairs",
+            "kind": "landmark",
+            "label": "楼梯",
+            "x": 0.14,
+            "y": 0.7
+          },
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "家门",
+            "x": 0.78,
+            "y": 0.14
+          },
+          {
+            "id": "umbrella",
+            "kind": "prop",
+            "label": "红伞",
+            "x": 0.9,
+            "y": 0.36
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.62,
+            "y": 0.4
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.5,
+            "y": 0.8
+          }
+        ],
+        "difficulty": 1
+      },
+      {
+        "scene": 1,
+        "lines": [
+          3
+        ],
+        "type": "same_scene_cut",
+        "framing": "closeup",
+        "move": "static",
+        "seconds": 3,
+        "picture": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+        "summary": "便利贴上的字",
+        "refs": [
+          "note",
+          "txt1"
+        ],
+        "audio": "native",
+        "blocking": [
+          {
+            "id": "stairs",
+            "kind": "landmark",
+            "label": "楼梯",
+            "x": 0.14,
+            "y": 0.7
+          },
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "家门",
+            "x": 0.78,
+            "y": 0.14
+          },
+          {
+            "id": "umbrella",
+            "kind": "prop",
+            "label": "红伞",
+            "x": 0.9,
+            "y": 0.36
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.62,
+            "y": 0.4
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.55,
+            "y": 0.62
+          }
+        ],
+        "difficulty": 1
+      },
+      {
+        "scene": 1,
+        "lines": [
+          4
+        ],
+        "type": "same_scene_cut",
+        "framing": "close",
+        "move": "push",
+        "seconds": 4,
+        "picture": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+        "summary": "林晚愣住：……周屿？",
+        "refs": [
+          "linwan",
+          "hall",
+          "vlinwan"
+        ],
+        "audio": "native",
+        "blocking": [
+          {
+            "id": "stairs",
+            "kind": "landmark",
+            "label": "楼梯",
+            "x": 0.14,
+            "y": 0.7
+          },
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "家门",
+            "x": 0.78,
+            "y": 0.14
+          },
+          {
+            "id": "umbrella",
+            "kind": "prop",
+            "label": "红伞",
+            "x": 0.9,
+            "y": 0.36
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.62,
+            "y": 0.4
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.38,
+            "y": 0.7
+          }
+        ],
+        "difficulty": 1
+      },
+      {
+        "scene": 1,
+        "lines": [
+          5
+        ],
+        "type": "same_scene_cut",
+        "framing": "closeup",
+        "move": "static",
+        "seconds": 3,
+        "picture": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+        "summary": "指尖、旧发圈",
+        "refs": [
+          "linwan",
+          "note",
+          "band"
+        ],
+        "audio": "native",
+        "blocking": [
+          {
+            "id": "stairs",
+            "kind": "landmark",
+            "label": "楼梯",
+            "x": 0.14,
+            "y": 0.7
+          },
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "家门",
+            "x": 0.78,
+            "y": 0.14
+          },
+          {
+            "id": "umbrella",
+            "kind": "prop",
+            "label": "红伞",
+            "x": 0.9,
+            "y": 0.36
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.62,
+            "y": 0.4
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.55,
+            "y": 0.62
+          }
+        ],
+        "difficulty": 1
+      },
+      {
+        "scene": 2,
+        "lines": [
+          6,
+          8
+        ],
+        "type": "scene_change",
+        "framing": "medium",
+        "move": "static",
+        "seconds": 5,
+        "picture": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+        "summary": "背靠着门，画外音",
+        "refs": [
+          "linwan",
+          "room",
+          "vlinwan"
+        ],
+        "audio": "tts",
+        "blocking": [
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "门",
+            "x": 0.5,
+            "y": 0.12
+          },
+          {
+            "id": "desk",
+            "kind": "landmark",
+            "label": "桌",
+            "x": 0.82,
+            "y": 0.45
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.5,
+            "y": 0.3
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.5,
+            "y": 0.8
+          }
+        ],
+        "difficulty": 1
+      },
+      {
+        "scene": 2,
+        "lines": [
+          7
+        ],
+        "type": "same_scene_cut",
+        "framing": "closeup",
+        "move": "static",
+        "seconds": 2,
+        "picture": "手机亮屏，锁屏时间 23:52，没有新消息。",
+        "summary": "手机亮屏 23:52",
+        "refs": [
+          "phone",
+          "txt2"
+        ],
+        "audio": "native",
+        "blocking": [
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "门",
+            "x": 0.5,
+            "y": 0.12
+          },
+          {
+            "id": "desk",
+            "kind": "landmark",
+            "label": "桌",
+            "x": 0.82,
+            "y": 0.45
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.5,
+            "y": 0.3
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.55,
+            "y": 0.62
+          }
+        ],
+        "difficulty": 1
+      },
+      {
+        "scene": 2,
+        "lines": [
+          9
+        ],
+        "type": "continuous",
+        "framing": "medium",
+        "move": "static",
+        "seconds": 6,
+        "picture": "她拉开门，又关上；停两秒，再拉开。",
+        "summary": "开门，关门，再开门",
+        "refs": [
+          "linwan",
+          "room"
+        ],
+        "audio": "native",
+        "blocking": [
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "门",
+            "x": 0.5,
+            "y": 0.12
+          },
+          {
+            "id": "desk",
+            "kind": "landmark",
+            "label": "桌",
+            "x": 0.82,
+            "y": 0.45
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.5,
+            "y": 0.3
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.5,
+            "y": 0.8
+          }
+        ],
+        "difficulty": 1,
+        "sound": "门轴声、雨声",
+        "continues": 6,
+        "note": "中间的 1-07 是插入镜头，所以接的是 1-06，不是上一个镜头。"
+      },
+      {
+        "scene": 2,
+        "lines": [
+          10
+        ],
+        "type": "continuous",
+        "framing": "close",
+        "move": "push",
+        "seconds": 4,
+        "picture": "门外，她弯腰拿起那把红伞，最后一帧定格。",
+        "summary": "她拿起了那把伞（卡点）",
+        "refs": [
+          "linwan",
+          "umbrella",
+          "hall"
+        ],
+        "audio": "native",
+        "blocking": [
+          {
+            "id": "stairs",
+            "kind": "landmark",
+            "label": "楼梯",
+            "x": 0.14,
+            "y": 0.7
+          },
+          {
+            "id": "door",
+            "kind": "landmark",
+            "label": "家门",
+            "x": 0.78,
+            "y": 0.14
+          },
+          {
+            "id": "umbrella",
+            "kind": "prop",
+            "label": "红伞",
+            "x": 0.9,
+            "y": 0.36
+          },
+          {
+            "id": "linwan",
+            "kind": "character",
+            "label": "林晚",
+            "x": 0.62,
+            "y": 0.4
+          },
+          {
+            "id": "camera",
+            "kind": "camera",
+            "label": "",
+            "x": 0.38,
+            "y": 0.7
+          }
+        ],
+        "difficulty": 1,
+        "sound": "卡点音效",
+        "continues": 8,
+        "note": "最后一帧定格做卡点，后期加音效。"
+      }
+    ]
+  }
+}

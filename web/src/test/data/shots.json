@@ -1,0 +1,2382 @@
+{
+  "shots": [
+    {
+      "id": "demo-shot-1-01",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-01",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 1,
+      "summary": "楼道全景，林晚走上六楼",
+      "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+      "seed_changed": false,
+      "shot_type": "scene_change",
+      "framing": "wide",
+      "camera_move": "push",
+      "duration_s": 4.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 4.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b2"
+      ],
+      "dialogue": null,
+      "sound": "雨声、脚步、灯的电流声",
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "hall"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.5,
+          "y": 0.92
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-01",
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-02",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-02",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 2,
+      "summary": "门口的红伞和便利贴",
+      "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "medium",
+      "camera_move": "static",
+      "duration_s": 3.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 3.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b3"
+      ],
+      "dialogue": null,
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "hall",
+        "umbrella",
+        "note"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.5,
+          "y": 0.8
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-02",
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-03",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-03",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 3,
+      "summary": "便利贴上的字",
+      "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "closeup",
+      "camera_move": "static",
+      "duration_s": 3.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 3.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b4"
+      ],
+      "dialogue": null,
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "note",
+        "txt1"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.55,
+          "y": 0.62
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-03",
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-04",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-04",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 4,
+      "summary": "林晚愣住：……周屿？",
+      "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "close",
+      "camera_move": "push",
+      "duration_s": 4.5,
+      "duration_source": "audio",
+      "min_s": 4.5,
+      "planned_s": 4.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b5"
+      ],
+      "dialogue": "林晚（低声，愣住）：……周屿？",
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "hall",
+        "vlinwan"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.38,
+          "y": 0.7
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-04",
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
+      "confirmed": false,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-05",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-05",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 5,
+      "summary": "指尖、旧发圈",
+      "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "closeup",
+      "camera_move": "static",
+      "duration_s": 3.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 3.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b6"
+      ],
+      "dialogue": null,
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "note",
+        "band"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.55,
+          "y": 0.62
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-05",
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": "2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
+      "confirmed": false,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-06",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b7",
+      "label": "1-06",
+      "scene_no": 2,
+      "scene_place": "林晚出租屋",
+      "idx": 6,
+      "summary": "背靠着门，画外音",
+      "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+      "seed_changed": false,
+      "shot_type": "scene_change",
+      "framing": "medium",
+      "camera_move": "static",
+      "duration_s": 5.0,
+      "duration_source": "manual",
+      "min_s": 2.75,
+      "planned_s": 5.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b8",
+        "demo-b10"
+      ],
+      "dialogue": "林晚（OS）：三年了。他凭什么。",
+      "sound": null,
+      "audio_mode": "tts",
+      "asset_ids": [
+        "linwan",
+        "room",
+        "vlinwan"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "门",
+          "x": 0.5,
+          "y": 0.12
+        },
+        {
+          "id": "desk",
+          "kind": "landmark",
+          "label": "桌",
+          "x": 0.82,
+          "y": 0.45
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.5,
+          "y": 0.3
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.5,
+          "y": 0.8
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-06",
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": "41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
+      "confirmed": false,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-07",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b7",
+      "label": "1-07",
+      "scene_no": 2,
+      "scene_place": "林晚出租屋",
+      "idx": 7,
+      "summary": "手机亮屏 23:52",
+      "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "closeup",
+      "camera_move": "static",
+      "duration_s": 2.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 2.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b9"
+      ],
+      "dialogue": null,
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "phone",
+        "txt2"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "门",
+          "x": 0.5,
+          "y": 0.12
+        },
+        {
+          "id": "desk",
+          "kind": "landmark",
+          "label": "桌",
+          "x": 0.82,
+          "y": 0.45
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.5,
+          "y": 0.3
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.55,
+          "y": 0.62
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-07",
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": "c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
+      "confirmed": false,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-08",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b7",
+      "label": "1-08",
+      "scene_no": 2,
+      "scene_place": "林晚出租屋",
+      "idx": 8,
+      "summary": "开门，关门，再开门",
+      "intent": "她拉开门，又关上；停两秒，再拉开。",
+      "seed_changed": false,
+      "shot_type": "continuous",
+      "framing": "medium",
+      "camera_move": "static",
+      "duration_s": 6.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 6.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b11"
+      ],
+      "dialogue": null,
+      "sound": "门轴声、雨声",
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "room"
+      ],
+      "tail_from": "1-06",
+      "tail_note": "中间的 1-07 是插入镜头，所以接的是 1-06，不是上一个镜头。",
+      "blocking": [
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "门",
+          "x": 0.5,
+          "y": 0.12
+        },
+        {
+          "id": "desk",
+          "kind": "landmark",
+          "label": "桌",
+          "x": 0.82,
+          "y": 0.45
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.5,
+          "y": 0.3
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.5,
+          "y": 0.8
+        }
+      ],
+      "keyframe_product_id": null,
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": null,
+      "confirmed": false,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-09",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b7",
+      "label": "1-09",
+      "scene_no": 2,
+      "scene_place": "林晚出租屋",
+      "idx": 9,
+      "summary": "她拿起了那把伞（卡点）",
+      "intent": "门外，她弯腰拿起那把红伞，最后一帧定格。",
+      "seed_changed": false,
+      "shot_type": "continuous",
+      "framing": "close",
+      "camera_move": "push",
+      "duration_s": 4.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 4.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b12"
+      ],
+      "dialogue": null,
+      "sound": "卡点音效",
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "umbrella",
+        "hall"
+      ],
+      "tail_from": "1-08",
+      "tail_note": "最后一帧定格做卡点，后期加音效。",
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.38,
+          "y": 0.7
+        }
+      ],
+      "keyframe_product_id": null,
+      "video_product_id": null,
+      "keyframe_pick": 0,
+      "keyframe_sha256": null,
+      "confirmed": false,
+      "confirm_stale": false
+    }
+  ],
+  "plan": {
+    "id": "demo-p-plan-e1",
+    "series_id": "demo",
+    "owner_type": "episode",
+    "owner_id": "demo-e1",
+    "slot": "shot_plan",
+    "component_id": "plan",
+    "current_version_id": "demo-p-plan-e1-v1",
+    "adopted_version_id": "demo-p-plan-e1-v1",
+    "locked_hash": null,
+    "status": "adopted",
+    "versions": [
+      {
+        "id": "demo-p-plan-e1-v1",
+        "product_id": "demo-p-plan-e1",
+        "n": 1,
+        "origin": "run",
+        "parent_version_id": null,
+        "payload": {
+          "episode_id": "demo-e1",
+          "shots": [
+            {
+              "id": "demo-shot-1-01",
+              "scene_id": "demo-b1",
+              "line_ids": [
+                "demo-b2"
+              ],
+              "shot_type": "scene_change",
+              "framing": "wide",
+              "camera_move": "push",
+              "duration_s": 4.0,
+              "manual_s": null,
+              "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+              "summary": "楼道全景，林晚走上六楼",
+              "sound": "雨声、脚步、灯的电流声",
+              "asset_ids": [
+                "linwan",
+                "hall"
+              ],
+              "tail_from": null,
+              "tail_note": null,
+              "audio_mode": "native",
+              "blocking": [
+                {
+                  "id": "stairs",
+                  "kind": "landmark",
+                  "label": "楼梯",
+                  "x": 0.14,
+                  "y": 0.7
+                },
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "家门",
+                  "x": 0.78,
+                  "y": 0.14
+                },
+                {
+                  "id": "umbrella",
+                  "kind": "prop",
+                  "label": "红伞",
+                  "x": 0.9,
+                  "y": 0.36
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.62,
+                  "y": 0.4
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.5,
+                  "y": 0.92
+                }
+              ],
+              "difficulty": 1
+            },
+            {
+              "id": "demo-shot-1-02",
+              "scene_id": "demo-b1",
+              "line_ids": [
+                "demo-b3"
+              ],
+              "shot_type": "same_scene_cut",
+              "framing": "medium",
+              "camera_move": "static",
+              "duration_s": 3.0,
+              "manual_s": null,
+              "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+              "summary": "门口的红伞和便利贴",
+              "sound": null,
+              "asset_ids": [
+                "hall",
+                "umbrella",
+                "note"
+              ],
+              "tail_from": null,
+              "tail_note": null,
+              "audio_mode": "native",
+              "blocking": [
+                {
+                  "id": "stairs",
+                  "kind": "landmark",
+                  "label": "楼梯",
+                  "x": 0.14,
+                  "y": 0.7
+                },
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "家门",
+                  "x": 0.78,
+                  "y": 0.14
+                },
+                {
+                  "id": "umbrella",
+                  "kind": "prop",
+                  "label": "红伞",
+                  "x": 0.9,
+                  "y": 0.36
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.62,
+                  "y": 0.4
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.5,
+                  "y": 0.8
+                }
+              ],
+              "difficulty": 1
+            },
+            {
+              "id": "demo-shot-1-03",
+              "scene_id": "demo-b1",
+              "line_ids": [
+                "demo-b4"
+              ],
+              "shot_type": "same_scene_cut",
+              "framing": "closeup",
+              "camera_move": "static",
+              "duration_s": 3.0,
+              "manual_s": null,
+              "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+              "summary": "便利贴上的字",
+              "sound": null,
+              "asset_ids": [
+                "note",
+                "txt1"
+              ],
+              "tail_from": null,
+              "tail_note": null,
+              "audio_mode": "native",
+              "blocking": [
+                {
+                  "id": "stairs",
+                  "kind": "landmark",
+                  "label": "楼梯",
+                  "x": 0.14,
+                  "y": 0.7
+                },
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "家门",
+                  "x": 0.78,
+                  "y": 0.14
+                },
+                {
+                  "id": "umbrella",
+                  "kind": "prop",
+                  "label": "红伞",
+                  "x": 0.9,
+                  "y": 0.36
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.62,
+                  "y": 0.4
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.55,
+                  "y": 0.62
+                }
+              ],
+              "difficulty": 1
+            },
+            {
+              "id": "demo-shot-1-04",
+              "scene_id": "demo-b1",
+              "line_ids": [
+                "demo-b5"
+              ],
+              "shot_type": "same_scene_cut",
+              "framing": "close",
+              "camera_move": "push",
+              "duration_s": 4.0,
+              "manual_s": null,
+              "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+              "summary": "林晚愣住：……周屿？",
+              "sound": null,
+              "asset_ids": [
+                "linwan",
+                "hall",
+                "vlinwan"
+              ],
+              "tail_from": null,
+              "tail_note": null,
+              "audio_mode": "native",
+              "blocking": [
+                {
+                  "id": "stairs",
+                  "kind": "landmark",
+                  "label": "楼梯",
+                  "x": 0.14,
+                  "y": 0.7
+                },
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "家门",
+                  "x": 0.78,
+                  "y": 0.14
+                },
+                {
+                  "id": "umbrella",
+                  "kind": "prop",
+                  "label": "红伞",
+                  "x": 0.9,
+                  "y": 0.36
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.62,
+                  "y": 0.4
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.38,
+                  "y": 0.7
+                }
+              ],
+              "difficulty": 1
+            },
+            {
+              "id": "demo-shot-1-05",
+              "scene_id": "demo-b1",
+              "line_ids": [
+                "demo-b6"
+              ],
+              "shot_type": "same_scene_cut",
+              "framing": "closeup",
+              "camera_move": "static",
+              "duration_s": 3.0,
+              "manual_s": null,
+              "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+              "summary": "指尖、旧发圈",
+              "sound": null,
+              "asset_ids": [
+                "linwan",
+                "note",
+                "band"
+              ],
+              "tail_from": null,
+              "tail_note": null,
+              "audio_mode": "native",
+              "blocking": [
+                {
+                  "id": "stairs",
+                  "kind": "landmark",
+                  "label": "楼梯",
+                  "x": 0.14,
+                  "y": 0.7
+                },
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "家门",
+                  "x": 0.78,
+                  "y": 0.14
+                },
+                {
+                  "id": "umbrella",
+                  "kind": "prop",
+                  "label": "红伞",
+                  "x": 0.9,
+                  "y": 0.36
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.62,
+                  "y": 0.4
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.55,
+                  "y": 0.62
+                }
+              ],
+              "difficulty": 1
+            },
+            {
+              "id": "demo-shot-1-06",
+              "scene_id": "demo-b7",
+              "line_ids": [
+                "demo-b8",
+                "demo-b10"
+              ],
+              "shot_type": "scene_change",
+              "framing": "medium",
+              "camera_move": "static",
+              "duration_s": 5.0,
+              "manual_s": null,
+              "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+              "summary": "背靠着门，画外音",
+              "sound": null,
+              "asset_ids": [
+                "linwan",
+                "room",
+                "vlinwan"
+              ],
+              "tail_from": null,
+              "tail_note": null,
+              "audio_mode": "tts",
+              "blocking": [
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "门",
+                  "x": 0.5,
+                  "y": 0.12
+                },
+                {
+                  "id": "desk",
+                  "kind": "landmark",
+                  "label": "桌",
+                  "x": 0.82,
+                  "y": 0.45
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.5,
+                  "y": 0.3
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.5,
+                  "y": 0.8
+                }
+              ],
+              "difficulty": 1
+            },
+            {
+              "id": "demo-shot-1-07",
+              "scene_id": "demo-b7",
+              "line_ids": [
+                "demo-b9"
+              ],
+              "shot_type": "same_scene_cut",
+              "framing": "closeup",
+              "camera_move": "static",
+              "duration_s": 2.0,
+              "manual_s": null,
+              "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
+              "summary": "手机亮屏 23:52",
+              "sound": null,
+              "asset_ids": [
+                "phone",
+                "txt2"
+              ],
+              "tail_from": null,
+              "tail_note": null,
+              "audio_mode": "native",
+              "blocking": [
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "门",
+                  "x": 0.5,
+                  "y": 0.12
+                },
+                {
+                  "id": "desk",
+                  "kind": "landmark",
+                  "label": "桌",
+                  "x": 0.82,
+                  "y": 0.45
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.5,
+                  "y": 0.3
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.55,
+                  "y": 0.62
+                }
+              ],
+              "difficulty": 1
+            },
+            {
+              "id": "demo-shot-1-08",
+              "scene_id": "demo-b7",
+              "line_ids": [
+                "demo-b11"
+              ],
+              "shot_type": "continuous",
+              "framing": "medium",
+              "camera_move": "static",
+              "duration_s": 6.0,
+              "manual_s": null,
+              "intent": "她拉开门，又关上；停两秒，再拉开。",
+              "summary": "开门，关门，再开门",
+              "sound": "门轴声、雨声",
+              "asset_ids": [
+                "linwan",
+                "room"
+              ],
+              "tail_from": "demo-shot-1-06",
+              "tail_note": "中间的 1-07 是插入镜头，所以接的是 1-06，不是上一个镜头。",
+              "audio_mode": "native",
+              "blocking": [
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "门",
+                  "x": 0.5,
+                  "y": 0.12
+                },
+                {
+                  "id": "desk",
+                  "kind": "landmark",
+                  "label": "桌",
+                  "x": 0.82,
+                  "y": 0.45
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.5,
+                  "y": 0.3
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.5,
+                  "y": 0.8
+                }
+              ],
+              "difficulty": 1
+            },
+            {
+              "id": "demo-shot-1-09",
+              "scene_id": "demo-b7",
+              "line_ids": [
+                "demo-b12"
+              ],
+              "shot_type": "continuous",
+              "framing": "close",
+              "camera_move": "push",
+              "duration_s": 4.0,
+              "manual_s": null,
+              "intent": "门外，她弯腰拿起那把红伞，最后一帧定格。",
+              "summary": "她拿起了那把伞（卡点）",
+              "sound": "卡点音效",
+              "asset_ids": [
+                "linwan",
+                "umbrella",
+                "hall"
+              ],
+              "tail_from": "demo-shot-1-08",
+              "tail_note": "最后一帧定格做卡点，后期加音效。",
+              "audio_mode": "native",
+              "blocking": [
+                {
+                  "id": "stairs",
+                  "kind": "landmark",
+                  "label": "楼梯",
+                  "x": 0.14,
+                  "y": 0.7
+                },
+                {
+                  "id": "door",
+                  "kind": "landmark",
+                  "label": "家门",
+                  "x": 0.78,
+                  "y": 0.14
+                },
+                {
+                  "id": "umbrella",
+                  "kind": "prop",
+                  "label": "红伞",
+                  "x": 0.9,
+                  "y": 0.36
+                },
+                {
+                  "id": "linwan",
+                  "kind": "character",
+                  "label": "林晚",
+                  "x": 0.62,
+                  "y": 0.4
+                },
+                {
+                  "id": "camera",
+                  "kind": "camera",
+                  "label": "",
+                  "x": 0.38,
+                  "y": 0.7
+                }
+              ],
+              "difficulty": 1
+            }
+          ]
+        },
+        "files": [],
+        "content_hash": "sha256:f105643a578ac7dab34dee4f45fa181e078c8fb2c2a6d9d69a6a7539453da4a2",
+        "intent": "每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。",
+        "compiled": "你是竖屏短剧的分镜师：把一集剧本拆成镜头。下游按你写的画面描述出每个镜头的首帧（关键帧），再从关键帧生成视频。\n\n[规则]\n每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。\n- [剧本] 每行前面是 L 号，lines 写这个镜头拍哪几行。每句对白（「名字：」那种行）只能放在一个镜头里；画外音叠在它所在的动作镜头上，和那行动作放在同一个镜头；每行动作（△）都要有镜头拍到，一行动作可以拆成几个镜头。不拍任何一行的镜头（反应、空镜）lines 留空，写 scene（第几场）。\n- type：scene_change 换场（每场第一个镜头）；same_scene_cut 同场切镜（换角度或景别，出新关键帧）；continuous 连续动作（接着前面某个镜头的动作拍，不出新关键帧，continues 写接第几个镜头，从 1 数；中间隔着插入镜头时跳过它，接它前面那个）。\n- framing：wide 远景、medium 中景、close 近景、closeup 特写。move：static 固定、push 缓推、follow 跟拍、pan 摇。\n- picture 写首帧的画面描述：人物在哪、在做什么、什么表情，光线，镜头里看到什么，具体到能直接画出来；summary 写十个字左右的摘要。continuous 的 note 写一句为什么接那个镜头。\n- seconds：没有对白的镜头写时长（秒）；有对白的镜头按配音定时长，写个估计就行。\n- refs 写用到的素材 id，只能从 [素材] 里选：出镜的角色、场景、道具、画面文字，说话角色的音色。\n- audio：native（视频模型直接出声音和口型）、tts（先配音再对口型，画外音、长台词用这个）、none（不出人声）。sound 写环境声和音效。\n- blocking 是俯视站位图，镜头朝图的上方看：人物、道具、地标各一项（label、kind：character / prop / landmark，x、y 在 0 到 1 之间），机位一项（kind：camera）。\n- difficulty：1 普通对话、2 同一空间多机位、3 复杂运镜、4 身体动作和接触、5 物体碰撞和破坏、6 特效。每个镜头只安排一个主要动作，写清至少两个空间关系，遵守 180 度轴线。\n\n[输出 JSON]\n{\"shots\": [{\"scene\": 1, \"lines\": [1], \"type\": \"scene_change\", \"framing\": \"wide\", \"move\": \"push\", \"seconds\": 4, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"hall\"], \"audio\": \"native\", \"sound\": \"雨声、脚步\", \"blocking\": [{\"label\": \"林晚\", \"kind\": \"character\", \"x\": 0.6, \"y\": 0.4}, {\"label\": \"\", \"kind\": \"camera\", \"x\": 0.5, \"y\": 0.9}], \"difficulty\": 1}, {\"scene\": 2, \"lines\": [9], \"type\": \"continuous\", \"continues\": 6, \"note\": \"中间的第 7 个是插入镜头，所以接第 6 个\", \"framing\": \"medium\", \"move\": \"static\", \"seconds\": 6, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"room\"], \"audio\": \"native\", \"blocking\": [], \"difficulty\": 1}]}\n\n# 目标模型：deepseek/v4-pro",
+        "compiled_overridden": false,
+        "model_key": "deepseek/v4-pro",
+        "where": "api",
+        "seed": 1301,
+        "params": {
+          "mode": "run",
+          "calls": 1
+        },
+        "qa": null,
+        "qa_pass": null,
+        "fallback_reason": null,
+        "stage": null,
+        "rating": null,
+        "cost_usd": 0.0,
+        "job_id": null,
+        "created_at": "2026-10-18T09:00:00Z",
+        "note": null
+      }
+    ],
+    "prompt": {
+      "intent": "每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。",
+      "compiled": "你是竖屏短剧的分镜师：把一集剧本拆成镜头。下游按你写的画面描述出每个镜头的首帧（关键帧），再从关键帧生成视频。\n\n[规则]\n每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。\n- [剧本] 每行前面是 L 号，lines 写这个镜头拍哪几行。每句对白（「名字：」那种行）只能放在一个镜头里；画外音叠在它所在的动作镜头上，和那行动作放在同一个镜头；每行动作（△）都要有镜头拍到，一行动作可以拆成几个镜头。不拍任何一行的镜头（反应、空镜）lines 留空，写 scene（第几场）。\n- type：scene_change 换场（每场第一个镜头）；same_scene_cut 同场切镜（换角度或景别，出新关键帧）；continuous 连续动作（接着前面某个镜头的动作拍，不出新关键帧，continues 写接第几个镜头，从 1 数；中间隔着插入镜头时跳过它，接它前面那个）。\n- framing：wide 远景、medium 中景、close 近景、closeup 特写。move：static 固定、push 缓推、follow 跟拍、pan 摇。\n- picture 写首帧的画面描述：人物在哪、在做什么、什么表情，光线，镜头里看到什么，具体到能直接画出来；summary 写十个字左右的摘要。continuous 的 note 写一句为什么接那个镜头。\n- seconds：没有对白的镜头写时长（秒）；有对白的镜头按配音定时长，写个估计就行。\n- refs 写用到的素材 id，只能从 [素材] 里选：出镜的角色、场景、道具、画面文字，说话角色的音色。\n- audio：native（视频模型直接出声音和口型）、tts（先配音再对口型，画外音、长台词用这个）、none（不出人声）。sound 写环境声和音效。\n- blocking 是俯视站位图，镜头朝图的上方看：人物、道具、地标各一项（label、kind：character / prop / landmark，x、y 在 0 到 1 之间），机位一项（kind：camera）。\n- difficulty：1 普通对话、2 同一空间多机位、3 复杂运镜、4 身体动作和接触、5 物体碰撞和破坏、6 特效。每个镜头只安排一个主要动作，写清至少两个空间关系，遵守 180 度轴线。\n\n[输出 JSON]\n{\"shots\": [{\"scene\": 1, \"lines\": [1], \"type\": \"scene_change\", \"framing\": \"wide\", \"move\": \"push\", \"seconds\": 4, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"hall\"], \"audio\": \"native\", \"sound\": \"雨声、脚步\", \"blocking\": [{\"label\": \"林晚\", \"kind\": \"character\", \"x\": 0.6, \"y\": 0.4}, {\"label\": \"\", \"kind\": \"camera\", \"x\": 0.5, \"y\": 0.9}], \"difficulty\": 1}, {\"scene\": 2, \"lines\": [9], \"type\": \"continuous\", \"continues\": 6, \"note\": \"中间的第 7 个是插入镜头，所以接第 6 个\", \"framing\": \"medium\", \"move\": \"static\", \"seconds\": 6, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"room\"], \"audio\": \"native\", \"blocking\": [], \"difficulty\": 1}]}\n\n# 目标模型：deepseek/v4-pro",
+      "compiled_overridden": false,
+      "model_key": "deepseek/v4-pro"
+    },
+    "estimate": {
+      "model_key": "deepseek/v4-pro",
+      "where": "api",
+      "cost_usd": 0.0254,
+      "seconds": 0.0
+    },
+    "running": null,
+    "pick": null,
+    "settings": null,
+    "retired": false
+  },
+  "keyframes": [
+    {
+      "id": "demo-p-kf-1-01",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-01",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-01-v2",
+      "adopted_version_id": "demo-p-kf-1-01-v2",
+      "locked_hash": "sha256:72405a4b9a735679ecc999fc5b0f6d6cd26d978bc341d3cd0bd5c8d114fd1e6c",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-01-v1",
+          "product_id": "demo-p-kf-1-01",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/9f/9fc6652b10fefd3c59f7b093fc0cb908c577439a55d80c7b7fda0f68b68032fc",
+              "sha256": "9fc6652b10fefd3c59f7b093fc0cb908c577439a55d80c7b7fda0f68b68032fc",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/d8/d808ad7a91c98903099b6b8bfeb89e537d0660d24499883c0e43b5d955efd922",
+              "sha256": "d808ad7a91c98903099b6b8bfeb89e537d0660d24499883c0e43b5d955efd922",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/da/da98c48863ef3aaf40e3e228334c3014e013d461823d78034f26af26c22d36ba",
+              "sha256": "da98c48863ef3aaf40e3e228334c3014e013d461823d78034f26af26c22d36ba",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/86/86c1014b5fd95bebfacf95f80f4a69b3c7221f3d16f11aaea45d9386213caeb6",
+              "sha256": "86c1014b5fd95bebfacf95f80f4a69b3c7221f3d16f11aaea45d9386213caeb6",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:581a2ad931973950f60c1a446df5583f0aba2eb77451562d6ab5b73b4db9e5a4",
+          "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+          "compiled_overridden": false,
+          "model_key": "comfy/flux3-klein",
+          "where": "local",
+          "seed": 1401,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-kf-1-01-v2",
+          "product_id": "demo-p-kf-1-01",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-kf-1-01-v1",
+          "payload": {
+            "candidates": [
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/fa/faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
+              "sha256": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/72/72576ff1cc0f4ff6140d7c477e190004b9324aab8b4cd15ea5898eaa644d1663",
+              "sha256": "72576ff1cc0f4ff6140d7c477e190004b9324aab8b4cd15ea5898eaa644d1663",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:72405a4b9a735679ecc999fc5b0f6d6cd26d978bc341d3cd0bd5c8d114fd1e6c",
+          "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-2.1",
+          "compiled_overridden": false,
+          "model_key": "google/nano-banana-2.1",
+          "where": "api",
+          "seed": 1401,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-kf-1-01-v1",
+              "idx": 0
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.06,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+        "compiled_overridden": false,
+        "model_key": "comfy/flux3-klein"
+      },
+      "estimate": {
+        "model_key": "comfy/flux3-klein",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-kf-1-01-v2",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-02",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-02",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-02-v2",
+      "adopted_version_id": "demo-p-kf-1-02-v2",
+      "locked_hash": "sha256:c534d9c0a8c64eda01d2eca6f4f7c7b8a36fbf2dc94f9f749537766f8235cd6d",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-02-v1",
+          "product_id": "demo-p-kf-1-02",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "老小区楼道 · 夜",
+              "红色长柄伞",
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/cc/cc7ef9459e65441f762851978feed2586ce0c7f908fe088d6d2fea70d37a16c6",
+              "sha256": "cc7ef9459e65441f762851978feed2586ce0c7f908fe088d6d2fea70d37a16c6",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/f7/f7e682fad8b72329313fabaa6fc57760045afe5df9d223afcaddcbc4bb2988f3",
+              "sha256": "f7e682fad8b72329313fabaa6fc57760045afe5df9d223afcaddcbc4bb2988f3",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/9b/9b078a87a13d261ed60f4bd067eb8173816d90c569b6fcc9dd28d3f4bd659d4d",
+              "sha256": "9b078a87a13d261ed60f4bd067eb8173816d90c569b6fcc9dd28d3f4bd659d4d",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/78/788f63dbda714472e4eb539ee08e1ec65e3d3d95784c1c6c3cad1208f4d9e2a6",
+              "sha256": "788f63dbda714472e4eb539ee08e1ec65e3d3d95784c1c6c3cad1208f4d9e2a6",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:f427d5f03ee91e642f3b36407a80aa97f81c56bab5906e6beba13ba063d69fc9",
+          "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+          "compiled_overridden": false,
+          "model_key": "comfy/flux3-klein",
+          "where": "local",
+          "seed": 1402,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-kf-1-02-v2",
+          "product_id": "demo-p-kf-1-02",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-kf-1-02-v1",
+          "payload": {
+            "candidates": [
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "老小区楼道 · 夜",
+              "红色长柄伞",
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/c2/c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
+              "sha256": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/f9/f9183c1283ffcd45a11964e663b0168fda5e7862e88a7dbb12a66d163ff92d56",
+              "sha256": "f9183c1283ffcd45a11964e663b0168fda5e7862e88a7dbb12a66d163ff92d56",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:c534d9c0a8c64eda01d2eca6f4f7c7b8a36fbf2dc94f9f749537766f8235cd6d",
+          "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-2.1",
+          "compiled_overridden": false,
+          "model_key": "google/nano-banana-2.1",
+          "where": "api",
+          "seed": 1402,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-kf-1-02-v1",
+              "idx": 0
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.06,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+        "compiled_overridden": false,
+        "model_key": "comfy/flux3-klein"
+      },
+      "estimate": {
+        "model_key": "comfy/flux3-klein",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-kf-1-02-v2",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-03",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-03",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-03-v2",
+      "adopted_version_id": "demo-p-kf-1-03-v2",
+      "locked_hash": "sha256:9e20fb80bb19dbebf89c10d56e2902dc88a120be9a2d6b335ca62a460a998f7d",
+      "status": "locked",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-03-v1",
+          "product_id": "demo-p-kf-1-03",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ed/ed2b43785539fd4b91e6cc3ddf4b92797396794308b3ebe007d05425fe9f213a",
+              "sha256": "ed2b43785539fd4b91e6cc3ddf4b92797396794308b3ebe007d05425fe9f213a",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/dd/ddef7335220fd8988ac18d18f062d0ed2a0471db84378e61f32dc7b8b318a7ae",
+              "sha256": "ddef7335220fd8988ac18d18f062d0ed2a0471db84378e61f32dc7b8b318a7ae",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/c4/c4fa78e543dec993e32355ad6a87265c59bd987a98ccd9371ff06cbcedb86e32",
+              "sha256": "c4fa78e543dec993e32355ad6a87265c59bd987a98ccd9371ff06cbcedb86e32",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/6e/6e5f15fe3bf0ff1f4bf62dbf20999049746c519d07187723a57260faee4c4486",
+              "sha256": "6e5f15fe3bf0ff1f4bf62dbf20999049746c519d07187723a57260faee4c4486",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:1f2d7f14c8193925fd7a0d99f293b52cf425bcd5c98ceb3420a65479fe36f16f",
+          "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+          "compiled_overridden": false,
+          "model_key": "comfy/flux3-klein",
+          "where": "local",
+          "seed": 1403,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-kf-1-03-v2",
+          "product_id": "demo-p-kf-1-03",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-kf-1-03-v1",
+          "payload": {
+            "candidates": [
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/8c/8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
+              "sha256": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/28/28345f4ffe588043149cc63984b37d256de53ecc74ee46c9132c7f489c30b672",
+              "sha256": "28345f4ffe588043149cc63984b37d256de53ecc74ee46c9132c7f489c30b672",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:9e20fb80bb19dbebf89c10d56e2902dc88a120be9a2d6b335ca62a460a998f7d",
+          "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-2.1",
+          "compiled_overridden": false,
+          "model_key": "google/nano-banana-2.1",
+          "where": "api",
+          "seed": 1403,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-kf-1-03-v1",
+              "idx": 0
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.06,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+        "compiled_overridden": false,
+        "model_key": "comfy/flux3-klein"
+      },
+      "estimate": {
+        "model_key": "comfy/flux3-klein",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": {
+        "version_id": "demo-p-kf-1-03-v2",
+        "idx": 0
+      },
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-04",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-04",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-04-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-04-v1",
+          "product_id": "demo-p-kf-1-04",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/55/55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
+              "sha256": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/ce/ce7c3c4d10ec89ecb119834ef1627686597bca184dc07114f74eeaacdb27bfbd",
+              "sha256": "ce7c3c4d10ec89ecb119834ef1627686597bca184dc07114f74eeaacdb27bfbd",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/c1/c1d5f36b870e16f543df509a31bc50471ebcfdacaa6c3abaf7256f760f773761",
+              "sha256": "c1d5f36b870e16f543df509a31bc50471ebcfdacaa6c3abaf7256f760f773761",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/57/574fe5115d553928a66b819cb759b68bbaeefa2fbfdadfa67afd402d593a4d0e",
+              "sha256": "574fe5115d553928a66b819cb759b68bbaeefa2fbfdadfa67afd402d593a4d0e",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:d81852c28afc7e66646ea67e94215b9316fd541b6b1d7ab8a2ce4a033605fd20",
+          "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+          "compiled_overridden": false,
+          "model_key": "comfy/flux3-klein",
+          "where": "local",
+          "seed": 1404,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+        "compiled_overridden": false,
+        "model_key": "comfy/flux3-klein"
+      },
+      "estimate": {
+        "model_key": "comfy/flux3-klein",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-05",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-05",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-05-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-05-v1",
+          "product_id": "demo-p-kf-1-05",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚",
+              "黄色便利贴"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/2e/2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
+              "sha256": "2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/14/146e4dda158c052a1cbdc943a0af0ec0fe8ea5277c22374902e2b3c69910e095",
+              "sha256": "146e4dda158c052a1cbdc943a0af0ec0fe8ea5277c22374902e2b3c69910e095",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/e5/e589194aa093d2d2c7868db664340026d10e0c8a096326205e9cea0cc0af7c6f",
+              "sha256": "e589194aa093d2d2c7868db664340026d10e0c8a096326205e9cea0cc0af7c6f",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/4f/4fad322ce7a7f4de8c9eaaa348508aebc8b55f61b25f12b6fe0e36f3df446001",
+              "sha256": "4fad322ce7a7f4de8c9eaaa348508aebc8b55f61b25f12b6fe0e36f3df446001",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:8d2b25e01a5560f5b766f90e6a12c5a1eaddf2f744b5ef8f82365ebcd25b99d1",
+          "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+          "compiled_overridden": false,
+          "model_key": "comfy/flux3-klein",
+          "where": "local",
+          "seed": 1405,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+        "compiled_overridden": false,
+        "model_key": "comfy/flux3-klein"
+      },
+      "estimate": {
+        "model_key": "comfy/flux3-klein",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-06",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-06",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-06-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-06-v1",
+          "product_id": "demo-p-kf-1-06",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "林晚"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/41/41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
+              "sha256": "41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/6e/6ee6d756633a0237d0afc2973c6df11e878a86041c92237858950ef42ec2cb9c",
+              "sha256": "6ee6d756633a0237d0afc2973c6df11e878a86041c92237858950ef42ec2cb9c",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/13/13d4825bc5455fe3090c2c3dff63d0581e1a384d7d522c7196998230a8e8731b",
+              "sha256": "13d4825bc5455fe3090c2c3dff63d0581e1a384d7d522c7196998230a8e8731b",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/cd/cd20595d9987317634d7ed39d90db6673d450840c0a7f94fe2eac97c333f8f3b",
+              "sha256": "cd20595d9987317634d7ed39d90db6673d450840c0a7f94fe2eac97c333f8f3b",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:46c4a2639b0e0fa134fb1d7af66fcee2010c08f1cb5f9e3828e72891ff23b8e7",
+          "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+          "compiled_overridden": false,
+          "model_key": "comfy/flux3-klein",
+          "where": "local",
+          "seed": 1406,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+        "compiled_overridden": false,
+        "model_key": "comfy/flux3-klein"
+      },
+      "estimate": {
+        "model_key": "comfy/flux3-klein",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-kf-1-07",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-07",
+      "slot": "keyframe",
+      "component_id": "kf",
+      "current_version_id": "demo-p-kf-1-07-v1",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-kf-1-07-v1",
+          "product_id": "demo-p-kf-1-07",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "candidates": [
+              {},
+              {},
+              {}
+            ],
+            "aspect": "9:16",
+            "refs": [
+              "手机",
+              "手机锁屏时间"
+            ]
+          },
+          "files": [
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/c5/c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
+              "sha256": "c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 0,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/71/71b30daf17d8f57534416b6e3ad298776fbac5bf90da58e914ce74f49a739d08",
+              "sha256": "71b30daf17d8f57534416b6e3ad298776fbac5bf90da58e914ce74f49a739d08",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 1,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "candidate",
+              "path": "blobs/sha256/20/2058779fe9ee47922eed2833a9f3831049605da4a38f45a2cd369fd3458ca56f",
+              "sha256": "2058779fe9ee47922eed2833a9f3831049605da4a38f45a2cd369fd3458ca56f",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": 2,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/ba/babaf822f54203dcd20d7580a9087db3e5d2c4e420d1108355a8b0176cfeffe9",
+              "sha256": "babaf822f54203dcd20d7580a9087db3e5d2c4e420d1108355a8b0176cfeffe9",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:4bd8b100b21182b4e7559a54e64d2271e301c3d5e61b16451e0df57a0a46a675",
+          "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+          "compiled_overridden": false,
+          "model_key": "comfy/flux3-klein",
+          "where": "local",
+          "seed": 1407,
+          "params": {
+            "mode": "run",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
+        "compiled_overridden": false,
+        "model_key": "comfy/flux3-klein"
+      },
+      "estimate": {
+        "model_key": "comfy/flux3-klein",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    }
+  ]
+}

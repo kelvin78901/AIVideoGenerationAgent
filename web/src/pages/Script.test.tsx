@@ -38,7 +38,7 @@ function renderScript(path = "/s/demo/e/1/script") {
 
 const lineOf = (id: string) => fakeScript.scripts[EP1]?.lines.find((l) => l.id === id);
 const block = (text: RegExp) => screen.getByRole("button", { name: text, pressed: false });
-const stale = () => getDb().progress[EP1]?.steps;
+const stale = () => getDb().progress[EP1];
 const META = "2 场 · 12 段 · 其中 AI 新增 2 段";
 
 beforeEach(() => {
@@ -153,9 +153,8 @@ describe("ScriptPage", () => {
     await user.click(screen.getByRole("button", { name: "保存" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent(`改的是：△ ${EDITED}`);
-    // The backend's line, then the demo's downstream of the script.
+    // The backend's line, then the demo's videos after the script (M5).
     expect(dialog).toHaveTextContent("已确认的第 1 集剧本会改成新内容");
-    expect(dialog).toHaveTextContent("素材 · 道具「红色长柄伞、黄色便利贴」");
     expect(dialog).toHaveTextContent("视频 · 1-02（已采纳）");
     // Nothing is saved while the dialog is open.
     expect(lineOf("demo-b3")?.edited).toBe(false);
@@ -166,8 +165,6 @@ describe("ScriptPage", () => {
       { kind: "line_edit", target_id: "demo-b3", action: "mark" },
     ]);
     expect(lineOf("demo-b3")).toMatchObject({ text: EDITED, edited: true });
-    expect(stale()?.assets.stale).toBe(2);
-    expect(stale()?.storyboard.stale).toBe(1);
     expect(stale()?.generate.stale).toBe(1);
     expect(
       await screen.findByRole("button", { name: new RegExp(EDITED), pressed: true }),
@@ -188,7 +185,7 @@ describe("ScriptPage", () => {
     expect(fakeScript.patches).toEqual([]);
     expect(fakeImpact.applied.map((a) => a.action)).toEqual(["undo"]);
     expect(lineOf("demo-b3")?.edited).toBe(false);
-    expect(stale()?.assets.stale).toBe(0);
+    expect(stale()?.generate.stale).toBe(0);
     expect(screen.getByRole("button", { name: /门口靠着一把红色长柄伞/ })).not.toHaveTextContent(
       "已修改",
     );

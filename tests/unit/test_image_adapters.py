@@ -211,6 +211,18 @@ async def test_gemini_without_billing_is_out_of_quota_not_retried(store: BlobSto
     assert (exc.value.code, exc.value.retryable, route.call_count) == ("quota_exceeded", False, 1)
 
 
+@respx.mock
+async def test_gemini_out_of_prepaid_credits_is_out_of_quota(store: BlobStore) -> None:
+    """The M4 live smoke (2026-10-26): a prepaid project with no credits left answers 402."""
+    message = "Your prepayment credits are depleted. Please go to AI Studio to manage billing."
+    body = {"error": {"code": 402, "message": message, "status": "RESOURCE_EXHAUSTED"}}
+    route = respx.post(f"{GEMINI}:generateContent")
+    route.mock(return_value=httpx.Response(402, json=body))
+    with pytest.raises(ModelError) as exc:
+        await _adapter("google/nano-banana-pro", store).run(_req(), CallContext())
+    assert (exc.value.code, exc.value.retryable, route.call_count) == ("quota_exceeded", False, 1)
+
+
 # ---------------------------------------------------------------------------- GPT Image 2
 
 

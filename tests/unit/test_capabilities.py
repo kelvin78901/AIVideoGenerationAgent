@@ -14,8 +14,8 @@ PC_READY = Capabilities.of(
     found=[
         "os", "gpu", "driver", "python", "uv", "torch", "ffmpeg", "git", "comfy", "node_h3",
         "node_vhs", "node_seedvr2", "node_flashvsr", "node_ctrl", "node_dramastudio", "w_h3",
-        "w_te", "w_img", "w_img_t2i", "w_sr", "w_tts", "w_llm", "llmsrv", "rt_qwentts",
-        "rt_indextts", "rt_ocr",
+        "w_te", "w_img", "w_img_t2i", "w_flux3", "w_sr", "w_tts", "w_llm", "llmsrv",
+        "rt_qwentts", "rt_indextts", "rt_ocr",
     ],
 )  # fmt: skip
 # The Mac sample after its scan: no CUDA, no ComfyUI, no local LLM server.
@@ -67,6 +67,19 @@ def test_a_ready_5090_keeps_the_local_routes() -> None:
         assert res.unavailable == {}
 
 
+def test_a_blocked_local_model_gives_way_to_the_next_local_one() -> None:
+    """Keyframes default to FLUX 3 Klein; a 5090 without its weights drafts on Qwen-Image-Edit
+    rather than paying the API (Klein's own text-to-image is blocked as well)."""
+    no_klein = Capabilities.of(cuda=True, found=[f for f in PC_READY.found if f != "w_flux3"])
+    kf = resolve("kf", [], caps=no_klein)
+    assert kf.values["mode"] == "hybrid" and kf.values["local_model"] == "comfy/qwen-image-edit"
+    assert set(kf.unavailable) == {"comfy/flux3-klein", "comfy/flux3-klein-t2i"}
+    # ComfyUI with no image weights at all: FLUX.2 dev has no workflow, so the API drafts.
+    bare = Capabilities.of(cuda=True, found=["comfy"])
+    kf = resolve("kf", [], caps=bare)
+    assert kf.values["mode"] == "api" and kf.values["local_model"] is None
+
+
 def test_what_else_is_taken_off_the_route() -> None:
     up = resolve("up", [], caps=MAC)
     assert up.values["fallback"]["to"] is None  # FlashVSR needs CUDA too
@@ -81,7 +94,11 @@ def test_what_else_is_taken_off_the_route() -> None:
     script = resolve("script", [], caps=no_llm)
     assert "local/qwen3.6-27b" in resolve("script", []).values["alt_order"]
     assert "local/qwen3.6-27b" not in script.values["alt_order"]
-    assert script.unavailable == {"local/qwen3.6-27b": ["llmsrv"]}
+    # The component's other local models are listed too (none of them can run here).
+    assert script.unavailable == {
+        "local/qwen3.6-27b": ["llmsrv"],
+        "local/qwen3-30b-a3b": ["llmsrv"],
+    }
     extract = resolve("extract", [], caps=no_llm)
     assert extract.values["mode"] == "api" and extract.values["api_model"] == "qwen/qwen3.8-flash"
 
@@ -90,7 +107,8 @@ def test_a_hand_picked_local_model_is_dropped_too() -> None:
     picked = [Override("component", None, "vid", {"mode": "local", "local_model": "comfy/wan-2.2"})]
     res = resolve("vid", picked, caps=MAC)
     assert res.values["mode"] == "api" and res.values["local_model"] is None
-    assert res.unavailable == {"comfy/wan-2.2": ["cuda", "comfy"]}
+    assert res.unavailable["comfy/wan-2.2"] == ["cuda", "comfy"]
+    assert set(res.unavailable) == {"comfy/wan-2.2", "comfy/h3", "comfy/ltx"}
     assert res.sources["mode"] == "component"
     # On a machine that has it, the user's choice stands.
     assert resolve("vid", picked, caps=PC_READY).values["local_model"] == "comfy/wan-2.2"

@@ -43,17 +43,17 @@ afterEach(() => {
 });
 
 describe("PostPage", () => {
-  it("lays out 9 clips over 34 s with the audio and subtitle tracks", async () => {
+  it("lays out 9 clips over 34.5 s (the shots' durations) with the audio and subtitle tracks", async () => {
     renderPost();
     await ready();
     const picture = within(timeline()).getAllByRole("button", { name: /^画面：/ });
     expect(picture).toHaveLength(9);
-    expect(segment("画面：1-04")).toHaveStyle({ left: "29.412%", width: "11.765%" });
-    expect(segment("对白：林晚：……周屿？")).toHaveStyle({ left: "32.353%" });
+    expect(segment("画面：1-04")).toHaveStyle({ left: "28.986%", width: "13.043%" });
+    expect(segment("对白：林晚：……周屿？")).toHaveStyle({ left: "31.884%" });
     expect(segment("对白：画外音：三年了。他凭什么。")).toBeInTheDocument();
     expect(segment("环境/音效：雨声（视频原生音频）")).toHaveStyle({ width: "100.000%" });
-    expect(segment("环境/音效：门轴声 ×2")).toHaveStyle({ left: "73.529%" });
-    expect(segment("音乐：钢琴 · 压低 · 卡点停")).toHaveStyle({ left: "50.000%" });
+    expect(segment("环境/音效：门轴声 ×2")).toHaveStyle({ left: "73.913%" });
+    expect(segment("音乐：钢琴 · 压低 · 卡点停")).toHaveStyle({ left: "50.725%" });
     expect(within(timeline()).getAllByRole("button", { name: /^字幕：/ })).toHaveLength(2);
     expect(screen.getByTestId("timecode")).toHaveTextContent("00:12 / 00:34");
   });
@@ -73,11 +73,11 @@ describe("PostPage", () => {
     renderPost();
     await ready();
     fireEvent.click(screen.getByRole("button", { name: "播放" }));
-    act(() => vi.advanceTimersByTime(2000));
-    expect(screen.getByTestId("timecode")).toHaveTextContent("00:14 / 00:34");
+    act(() => vi.advanceTimersByTime(3000));
+    expect(screen.getByTestId("timecode")).toHaveTextContent("00:15 / 00:34");
     fireEvent.click(screen.getByRole("button", { name: "暂停" }));
     act(() => vi.advanceTimersByTime(2000));
-    expect(screen.getByTestId("timecode")).toHaveTextContent("00:14 / 00:34");
+    expect(screen.getByTestId("timecode")).toHaveTextContent("00:15 / 00:34");
     expect(
       within(screen.getByRole("region", { name: "预览" })).getByText("1-05"),
     ).toBeInTheDocument();

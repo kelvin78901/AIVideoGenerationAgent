@@ -37,6 +37,7 @@ from drama_series_agent.core.models_db import (
     Episode,
     Product,
     ProductVersion,
+    Shot,
     new_id,
 )
 from drama_series_agent.episodes.schema import BeatPatch
@@ -56,6 +57,8 @@ from drama_series_agent.suggestions.service import SUGGESTIONS_SLOT, SuggestionS
 
 ImpactAction = Literal["mark", "rerun", "undo"]
 Planner = Callable[[str, dict[str, Any]], Awaitable[PlannedChange]]
+# (target id, patch) → more impact lines {code, params, cost_usd, optional} for that kind.
+Extra = Callable[[str, dict[str, Any]], Awaitable[list[dict[str, Any]]]]
 # The next run's price of a product on its current route; None = free (local) or unknown.
 Estimator = Callable[[Product], Awaitable[float | None]]
 
@@ -75,6 +78,8 @@ PIPELINE_ORDER = {
     "voice": 6,
     "ref_views": 7,
     "line_audio": 8,
+    "shot_plan": 9,
+    "keyframe": 10,
 }
 _STEP = {
     NOVEL_SLOT: "novel",
@@ -88,6 +93,8 @@ _STEP = {
     "voice": "assets",
     "ref_views": "assets",
     "line_audio": "assets",
+    "shot_plan": "storyboard",
+    "keyframe": "storyboard",
 }
 _KEPT = 100  # previews kept in memory
 
@@ -150,7 +157,8 @@ class Node:
     owner_id: str
     locked: bool
     edited: bool  # its adopted version is the user's edit
-    n: int | None  # episode number of an episode's product
+    n: int | None  # episode number of an episode's (or one of its shots') product
+    label: str | None = None  # a shot's 「1-04」
 
 
 @dataclass
@@ -168,9 +176,14 @@ class _Preview:
     stale: dict[str, int] = field(default_factory=dict)
 
 
+def label_order(label: str) -> tuple[int, ...]:
+    """「2-01」 after 「1-10」."""
+    return tuple(int(x) for x in label.split("-") if x.isdigit())
+
+
 def rank(node: Node) -> tuple[int, int]:
     """Where a product comes in the pipeline (an episode's after the one before)."""
-    return PIPELINE_ORDER.get(node.slot, 9), node.n or 0
+    return PIPELINE_ORDER.get(node.slot, 99), node.n or 0
 
 
 async def series_graph(
@@ -188,19 +201,30 @@ async def series_graph(
     origins = {v.id: v.origin for v in versions.all()}
     rows = await session.exec(select(Episode).where(Episode.series_id == series_id))
     episodes = {e.id: e.idx for e in rows.all()}
-    nodes = {
-        p.id: Node(
+    shots = {
+        s.id: (episodes.get(s.episode_id), s.idx)
+        for s in (await session.exec(select(Shot).where(Shot.series_id == series_id))).all()
+    }
+
+    def node(p: Product) -> Node:
+        n, label = None, None
+        if p.owner_type == "episode":
+            n = episodes.get(p.owner_id)
+        elif p.owner_type == "shot" and p.owner_id in shots:
+            n, idx = shots[p.owner_id]
+            label = f"{n}-{idx:02d}"
+        return Node(
             id=p.id,
             slot=p.slot,
             owner_type=p.owner_type,
             owner_id=p.owner_id,
             locked=bool(p.locked_hash),
             edited=origins.get(p.adopted_version_id or "") == "edit",
-            n=episodes.get(p.owner_id) if p.owner_type == "episode" else None,
+            n=n,
+            label=label,
         )
-        for p in products
-    }
-    return nodes, edges
+
+    return {p.id: node(p) for p in products}, edges
 
 
 class ImpactService:
@@ -216,11 +240,18 @@ class ImpactService:
         self._invalidation = invalidation
         self._estimate = estimate
         self._planners: dict[str, Planner] = {}
+        self._extras: dict[str, list[Extra]] = {}
         self.cascade: Cascader | None = None
         self._previews: OrderedDict[str, _Preview] = OrderedDict()
+        # Applied previews (not 撤销), for an endpoint that needs one (SPEC 13.3 改画幅).
+        self._applied: OrderedDict[str, ImpactChangeIn] = OrderedDict()
 
     def kind(self, name: str, planner: Planner) -> None:
         self._planners[name] = planner
+
+    def extra(self, name: str, fn: Extra) -> None:
+        """More lines for a kind another service plans (M4: the shots a script line is in)."""
+        self._extras.setdefault(name, []).append(fn)
 
     # ------------------------------------------------------------------ preview
 
@@ -255,12 +286,20 @@ class ImpactService:
         if (planned.base_version_id, planned.content) != (before.base_version_id, before.content):
             raise PipelineError(409, "impact_outdated", id=body.impact_id)
         await self._write(planned)
+        self._applied[body.impact_id] = preview.change
+        while len(self._applied) > _KEPT:
+            self._applied.popitem(last=False)
         jobs: list[str] = []
         if body.action == "rerun" and planned.rerun is not None:
             jobs = await planned.rerun()
         elif body.action == "rerun" and self.cascade is not None:
             jobs = await self.cascade.start(planned.series_id, planned.product_id)
         return ImpactApplyOut(action=body.action, stale=preview.stale, job_ids=jobs)
+
+    def applied(self, impact_id: str) -> ImpactChangeIn | None:
+        """The change of a preview applied with 只改这里 or 确认并同步; None otherwise (unknown,
+        撤销, or applied before a restart)."""
+        return self._applied.get(impact_id)
 
     async def _write(self, planned: PlannedChange) -> None:
         """Commit a change to a locked product: unlock for the write, lock what it adopted."""
@@ -285,9 +324,12 @@ class ImpactService:
         if planner is None:
             raise PipelineError(422, "unknown_change_kind", kind=change.kind)
         try:
-            return await planner(change.target_id, change.patch)
+            planned = await planner(change.target_id, change.patch)
         except ValidationError as exc:
             raise PipelineError(422, "invalid_patch", kind=change.kind, issues=str(exc)) from exc
+        for fn in self._extras.get(change.kind, []):
+            planned.lines = [*planned.lines, *await fn(change.target_id, change.patch)]
+        return planned
 
     async def _affected(self, planned: PlannedChange) -> _Affected:
         async with self._db.session() as session:
@@ -387,7 +429,7 @@ class ImpactService:
         lines += [line(f"edited_{nodes[i].slot}", nodes[i]) for i in ids if nodes[i].edited]
         lines += [ImpactLineOut.model_validate(x) for x in planned.lines]
 
-        stale: dict[str, int] = {}
+        stale: dict[str, int] = dict(planned.stale)
         for i in found.direct:
             step = _STEP.get(nodes[i].slot)
             if step:
@@ -407,15 +449,19 @@ class ImpactService:
         optional: bool,
     ) -> list[ImpactLineOut]:
         """One line per slot (and episode): 60 lines of dubbing are 「配音 · 60 句」, with their
-        costs added up. Slots made by the dozen always say how many."""
+        costs added up. Slots made by the dozen always say how many; a shot's products say
+        which shots (「1-01、1-04」)."""
         groups: dict[tuple[str, int | None], list[str]] = {}
         for i in ids:
             groups.setdefault((nodes[i].slot, nodes[i].n), []).append(i)
         out: list[ImpactLineOut] = []
         for (slot, n), members in groups.items():
             params: dict[str, Any] = {"n": n} if n is not None else {}
-            if len(members) > 1 or slot in self._products.quiet_slots:
+            labels = [x for i in members if (x := nodes[i].label)]
+            if len(members) > 1 or slot in self._products.quiet_slots or labels:
                 params["count"] = len(members)
+            if labels:
+                params["shots"] = "、".join(sorted(labels, key=label_order))
             priced = [c for i in members if (c := costs.get(i)) is not None]
             out.append(
                 ImpactLineOut(

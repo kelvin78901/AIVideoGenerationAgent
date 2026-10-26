@@ -42,6 +42,7 @@ import {
 import { primaryModel } from "@/mocks/route";
 import data from "@/test/data/assets.json";
 import { fakeResolve } from "@/test/fakes/config";
+import { assetShotLines } from "@/test/fakes/shots";
 
 const demoAssets = data.assets.map((a) => AssetSchema.parse(a));
 const demoProducts = data.products.map((p) => ProductSchema.parse(p));
@@ -125,6 +126,7 @@ export function assetEditImpact(assetId: string): Pick<Impact, "lines" | "unaffe
       ...(scenes.length
         ? [line("asset_in_scenes", { scenes: scenes.join("、"), count: scenes.length }, null)]
         : []),
+      ...assetShotLines(a.id),
     ],
     unaffected: { code: "edit_keeps_ref", params: { name: a.name } },
   };
@@ -379,14 +381,6 @@ function run(p: Product, body: RunRequest): Job {
   return job(p, v.id, model, body.mode);
 }
 
-/** The fake backend's asset list (the MSW demo lays its shots over it), or null. */
-export function assetsBackendFetch(url: URL): Response | null {
-  const m = /\/api\/v1\/series\/([^/]+)\/assets$/.exec(url.pathname);
-  if (!m) return null;
-  const id = decodeURIComponent(m[1] ?? "");
-  return HttpResponse.json(fakeAssets.assets.filter((a) => a.series_id === id).map(withStatus));
-}
-
 /** `asset_unlock`: what uses the locked picture (`assets/service.py:plan_unlock`), or null
  * when it is not locked. */
 export function assetUnlockImpact(assetId: string): Pick<Impact, "lines" | "unaffected"> | null {
@@ -395,9 +389,12 @@ export function assetUnlockImpact(assetId: string): Pick<Impact, "lines" | "unaf
   if (!a || !p?.locked_hash) return null;
   const views = fakeAssets.views.some((v) => v.owner_id === a.id);
   return {
-    lines: views
-      ? [{ code: "uses_ref_views", params: { name: a.name }, cost_usd: null, optional: false }]
-      : [],
+    lines: [
+      ...(views
+        ? [{ code: "uses_ref_views", params: { name: a.name }, cost_usd: null, optional: false }]
+        : []),
+      ...assetShotLines(a.id),
+    ],
     unaffected: { code: "unlock_keeps_ref", params: {} },
   };
 }
@@ -414,6 +411,11 @@ export function unlockFakeAsset(assetId: string) {
 
 export function assetHandlers() {
   return [
+    // `?episode=`: the fixture's are about episode 1 (`scenes`, `shots`).
+    http.get("*/api/v1/series/:id/assets", ({ params }) =>
+      HttpResponse.json(fakeAssets.assets.filter((a) => a.series_id === params.id).map(withStatus)),
+    ),
+
     http.patch("*/api/v1/assets/:id", async ({ params, request }) => {
       const a = findAsset(params.id);
       const p = a && productOf(a);

@@ -199,6 +199,17 @@
       "self_asset_list": "Episode {{n}}'s asset list will change",
       "stale_asset_list": "Episode {{n}} asset list · will be analysed again",
       "then_asset_list": "Episode {{n}} asset list · analysed again only if what it reads changes",
+      "stale_shot_plan": "Episode {{n}} shot plan · marked out of date, not redone by itself (a new plan would replace your edits and confirmed shots); rerun it on the storyboard page when you want",
+      "then_shot_plan": "Episode {{n}} shot plan · marked out of date only if what it reads changes; never redone by itself",
+      "stale_keyframe": "Episode {{n}} keyframes · shots {{shots}} become out of date: draw new candidates, pick one and confirm (not redrawn on their own)",
+      "then_keyframe": "Episode {{n}} keyframes · shots {{shots}} · out of date only if what they read really changes",
+      "uses_keyframe": "Keyframes · shots {{names}} use it as a reference ({{count}}); they become out of date once a new picture is locked",
+      "self_shot_plan": "Episode {{n}}'s confirmed shot plan changes to the new content",
+      "gate_storyboard": "Episode {{n}}'s storyboard confirmation reopens: confirm it again afterwards",
+      "shot_reconfirm": "Shots {{shots}} lose their confirmation: confirm them again afterwards",
+      "shot_redraw": "Keyframes · shot {{shot}} gets new candidates for the new picture description (with sync); pick one and confirm",
+      "shots_confirmed_redraw": "Of these, shots {{shots}} are confirmed: once a new picture is locked they become out of date and need confirming again",
+      "shot_duration_follows": "Shots {{shots}} run as long as the line's new audio; the storyboard needs no change",
       "edited_asset_list": "Hand edits in episode {{n}}'s asset list may be rewritten",
       "stale_line_audio": "Dialogue audio · {{count}} line(s) redubbed with the new wording",
       "then_line_audio": "Dialogue audio · {{count}} line(s) · redubbed only if upstream really changes",
@@ -256,5 +267,10 @@
     "position": "{{n}} / {{total}}",
     "hint": "Press Esc to close",
     "hintMany": "← → to switch, Esc to close"
+  },
+  "final": {
+    "button": "Final via API",
+    "buttonCost": "Final via API · about {{cost}}",
+    "started": "Making the final: candidate {{letter}} as the reference, one picture on {{model}}."
   }
 }

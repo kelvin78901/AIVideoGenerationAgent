@@ -97,3 +97,5 @@ class PlannedChange:
     # 确认并同步 of a change whose follow-up is not a rerun of what it made stale (M3: editing a
     # locked asset draws new candidates of it): returns the job ids it started.
     rerun: Callable[[], Awaitable[list[str]]] | None = None
+    # What it makes 待更新 per step when no product it adopts says so (M4: the output spec).
+    stale: dict[str, int] = field(default_factory=dict)

@@ -19,6 +19,7 @@ import {
 import type { Aspect } from "@/api/schemas/spec";
 import { Chip } from "@/components/Chip";
 import { EmptyState } from "@/components/EmptyState";
+import { FinalButton } from "@/components/FinalButton";
 import { ImpactDialog } from "@/components/ImpactDialog";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
@@ -28,7 +29,6 @@ import { currentVersion } from "@/lib/versions";
 import { AssetViews } from "@/pages/assets/AssetViews";
 import { ImageCandidates } from "@/pages/assets/Candidates";
 import { VoiceDubLines } from "@/pages/assets/Dub";
-import { FinalButton } from "@/pages/assets/FinalButton";
 import { isVoiceDraft, STATUS_TONE } from "@/pages/assets/status";
 import { VoicePanel } from "@/pages/assets/Voice";
 

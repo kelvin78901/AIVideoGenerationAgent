@@ -78,12 +78,12 @@ function editScene(id: string, value: string | undefined): Edited {
 const answer = (r: Edited) =>
   "script" in r ? HttpResponse.json(r.script) : error(r.status, r.code);
 
-/** The fake backend's 剧本化 products of a demo episode (merged into the MSW list), or null. */
-export function scriptBackendFetch(url: URL): Response | null {
-  const owner = url.searchParams.get("owner") ?? "";
-  if (!url.pathname.endsWith("/products") || !owner.startsWith("episode:")) return null;
+/** The fake backend's 剧本化 products of a demo episode (`episode:<id>`; merged into the MSW
+ * list). */
+export function fakeScriptProducts(owner: string) {
+  if (!owner.startsWith("episode:")) return [];
   const id = owner.slice("episode:".length);
-  return HttpResponse.json(fakeScript.products.filter((p) => p.owner_id === id));
+  return fakeScript.products.filter((p) => p.owner_id === id);
 }
 
 /** One scene of the episode's beats, as a first run writes it (enough for the page). */

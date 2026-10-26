@@ -25,8 +25,7 @@ llm_api: &llm_api
   - openrouter/any
   - custom
 llm_local: &llm_local [local/qwen3.6-27b, local/qwen3-30b-a3b]
-img_api: &img_api [openai/gpt-image-2, google/nano-banana-pro, volc/seedream-5.0]
-img_local: &img_local [comfy/qwen-image-edit, comfy/flux2-dev]
+img_api: &img_api [openai/gpt-image-2, google/nano-banana-pro, google/nano-banana-2.1, volc/seedream-5.0]
 
 fallback_defaults:
   on: [error, timeout, qa_fail]
@@ -115,6 +114,8 @@ components:
     cheap_api: volc/seedream-5.0
     candidates: 4
     gate: assets
+    # 场景参考图固定横屏（Kelvin 2026-10-26）：Qwen-Image 竖屏画空景几乎总是分格拼图；没写的类别跟成片规格
+    aspects: { scene: "16:9" }
 
   - id: views
     stage: assets
@@ -185,11 +186,13 @@ components:
     name: { zh: 关键帧, en: Keyframes }
     kind: image
     api: *img_api
-    local: *img_local
-    balanced: { mode: hybrid, api: google/nano-banana-pro, local: comfy/qwen-image-edit, fallback_to: volc/seedream-5.0 }
+    local: [comfy/flux3-klein, comfy/flux3-klein-t2i, comfy/qwen-image-edit, comfy/qwen-image, comfy/flux2-dev]
+    # 默认：本地 FLUX 3 Klein 草稿 → Nano Banana 2.1 出终版（Kelvin 2026-10-26，对比见 docs/studio/reports/m4-kf-bakeoff.txt）
+    balanced: { mode: hybrid, api: google/nano-banana-2.1, local: comfy/flux3-klein, fallback_to: volc/seedream-5.0 }
     per_call_cap_usd: 1
     cheap_api: volc/seedream-5.0
     candidates: 3
+    note: 本地按锁定的参考图编辑（FLUX 3 Klein，没装时换 Qwen-Image-Edit）；镜头没有锁定的参考图时草稿改用同家的文生图（两家的编辑版都只能按参考图编辑）
     follows_output_spec: true
     gate: storyboard
 

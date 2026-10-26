@@ -174,6 +174,12 @@ class RunService:
         comp = self.components.get(product.component_id)
         async with self.services.db.session() as session:
             lang = await self._lang(session, product.series_id)
+            try:
+                inputs = await comp.inputs(session, product) if comp is not None else None
+            except (LookupError, PipelineError, ComponentError):
+                inputs = None  # upstream not ready yet: no price to show
+            if comp is not None and inputs is not None:
+                model = comp.model_for(inputs, model, settings)
             if product.prompt_json:
                 compiled = str(product.prompt_json.get("compiled", ""))
             else:
@@ -186,16 +192,36 @@ class RunService:
                 prompt = PromptOut(
                     intent=intent, compiled=compiled, compiled_overridden=False, model_key=model
                 )
-            if comp is None:
-                return prompt, None
-            try:
-                est = comp.estimate(await comp.inputs(session, product), compiled, model)
-            except (LookupError, PipelineError, ComponentError):
-                return prompt, None  # upstream not ready yet: no price to show
+        if comp is None or inputs is None:
+            return prompt, None
+        try:
+            est = comp.estimate(inputs, compiled, model)
+        except (LookupError, PipelineError, ComponentError):
+            return prompt, None
         spec = self.services.registry.spec(model)
         return prompt, EstimateOut(
             model_key=model, where=spec.where, cost_usd=round(est.cost_usd, 4), seconds=est.seconds
         )
+
+    async def final_cost(self, product: Product) -> float | None:
+        """What 「用 API 出终版」 of a candidate product costs on its route's API model (M4: the
+        keyframes 改画幅 redraws); None without an API model or before the upstream is ready."""
+        comp = self.components.get(product.component_id)
+        if comp is None:
+            return None
+        settings = await self.services.router.settings(product.component_id, item_of(product))
+        try:
+            model = Router.primary_model(settings, "api")
+        except ModelError:
+            return None
+        async with self.services.db.session() as session:
+            try:
+                inputs = await comp.inputs(session, product)
+            except (LookupError, PipelineError, ComponentError):
+                return None
+        inputs.params = {"source_version_id": product.current_version_id or "-"}
+        compiled = self.services.compiler.compile(product.component_id, "", model)
+        return round(comp.estimate(inputs, compiled, model).cost_usd, 4)
 
     # ------------------------------------------------------------------ commands
 
@@ -240,6 +266,10 @@ class RunService:
             target = model or await self._primary(settings, where)
         self._known(target)
         params = dict(params or {})
+        async with self.services.db.session() as session:
+            inputs = await comp.inputs(session, p)
+        inputs.params = params
+        target = comp.model_for(inputs, target, settings)
 
         saved = PromptOut.model_validate(p.prompt_json) if p.prompt_json else None
         # A plain rerun keeps a hand-edited compiled layer; a new intent or another model
@@ -257,9 +287,6 @@ class RunService:
         )
         await self.products.set_prompt(p.id, prompt.model_dump())
 
-        async with self.services.db.session() as session:
-            inputs = await comp.inputs(session, p)
-        inputs.params = params
         estimate = comp.estimate(inputs, compiled, target)
         # Hard rule 6: over the per-call cap or what is left of the episode → ask first.
         verdict = await self.budget.before_enqueue(

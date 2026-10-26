@@ -37,18 +37,32 @@ export const ShotSchema = z.object({
   scene_id: z.string(),
   /** 「1-04」: episode-shot number shown everywhere. */
   label: z.string(),
-  /** 「场 1 · 楼道」 */
-  scene_label: z.string(),
+  /** Series-wide 场号. */
+  scene_no: z.number().int().nonnegative(),
+  /** Where the scene is: its heading without day / night and 内 / 外 (「林晚出租屋」). */
+  scene_place: z.string(),
   idx: z.number().int().positive(),
   /** One-line summary for cards and the preview strip. */
   summary: z.string(),
   /** Picture description = intent layer of the keyframe prompt. */
   intent: z.string(),
+  /** The plan gave a new picture description since the user edited this one. */
+  seed_changed: z.boolean(),
   shot_type: ShotTypeSchema,
   framing: FramingSchema,
   camera_move: CameraMoveSchema,
+  /** How long it runs (M4, Kelvin 2026-10-21): dialogue by its audio, the rest by the plan or
+   * the user, never shorter than its spoken lines (`min_s`). */
   duration_s: z.number().positive(),
   duration_source: z.enum(["audio", "manual"]),
+  /** Its spoken lines' audio with a breath each side; 0 when nobody speaks. */
+  min_s: z.number().nonnegative(),
+  planned_s: z.number().nullable(),
+  manual_s: z.number().nullable(),
+  /** The longest take the video route makes (H3: 15 s); null = no limit known. */
+  longest_s: z.number().nullable(),
+  /** Longer than that: split the shot. */
+  split_hint: z.boolean(),
   /** The script lines the shot films (SPEC 4.1 `line_ids`): 镜头 ↔ 剧本行. */
   line_ids: z.array(z.string()),
   /** 「林晚（低声，愣住）：……周屿？」; null = no dialogue. */
@@ -66,21 +80,30 @@ export const ShotSchema = z.object({
   video_product_id: z.string().nullable(),
   /** Picked keyframe candidate (0-based) in the current version. */
   keyframe_pick: z.number().int().nonnegative(),
+  /** That candidate's picture (`fileUrl`); null = no keyframe yet, or a continuous shot. */
+  keyframe_sha256: z.string().nullable(),
   confirmed: z.boolean(),
+  /** Confirmed, but the shot's settings or its keyframe changed since (「待更新」). */
+  confirm_stale: z.boolean(),
 });
 export type Shot = z.infer<typeof ShotSchema>;
 
-/** `PATCH /shots/{id}` */
+/** `PATCH /shots/{id}`; `duration_s: null` = back to automatic (its audio, or the plan's). */
 export const ShotPatchSchema = ShotSchema.pick({
   shot_type: true,
   framing: true,
   camera_move: true,
-  duration_s: true,
   intent: true,
   audio_mode: true,
   asset_ids: true,
   blocking: true,
   keyframe_pick: true,
   confirmed: true,
-}).partial();
+})
+  .extend({ duration_s: z.number().positive().nullable() })
+  .partial();
 export type ShotPatch = z.infer<typeof ShotPatchSchema>;
+
+/** The impact preview's `shot_edit`: settings, or a split (after a line) / a merge with the
+ * next shot of a confirmed shot. */
+export type ShotEdit = ShotPatch & { split?: { after_line_id: string | null }; merge?: boolean };

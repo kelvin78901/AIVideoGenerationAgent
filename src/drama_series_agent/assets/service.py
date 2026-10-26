@@ -66,6 +66,7 @@ from drama_series_agent.core.models_db import (
     ProductVersion,
     Scene,
     ScriptLine,
+    Shot,
     utcnow,
 )
 from drama_series_agent.core.storage import BlobStore
@@ -74,7 +75,7 @@ from drama_series_agent.episodes.service import (
     EpisodeService,
     gate_confirmed,
     latest_gate,
-    scene_counts,
+    scene_numbers,
 )
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_info
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
@@ -89,7 +90,7 @@ from drama_series_agent.pipeline.components.voice import VOICE_SLOT
 from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
-from drama_series_agent.pipeline.impact import ImpactService, series_graph
+from drama_series_agent.pipeline.impact import ImpactService, label_order, series_graph
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import RunService
@@ -335,7 +336,7 @@ class AssetService:
             episode = await session.get(Episode, episode_id)
             if episode is None:
                 raise PipelineError(404, "episode_not_found", id=episode_id)
-            numbers = await _scene_numbers(session, episode.series_id)
+            numbers = await scene_numbers(session, episode.series_id)
             scenes = list(
                 (
                     await session.exec(
@@ -580,7 +581,7 @@ class AssetService:
             if product is None or not product.locked_hash:
                 raise PipelineError(409, "not_locked", id=asset_id)
             uses = await self._uses(session, asset, product)
-            numbers = await _scene_numbers(session, product.series_id)
+            numbers = await scene_numbers(session, product.series_id)
             scenes = sorted(
                 {
                     numbers.get(u.scene_id, 0)
@@ -633,7 +634,8 @@ class AssetService:
         self, session: AsyncSession, asset: Asset, product: Product
     ) -> list[dict[str, Any]]:
         """Impact lines for what reads the locked reference: views, assets drawn from it
-        (names), the lines dubbed in a voice (how many)."""
+        (names), the shots' keyframes drawn from it (labels), the lines dubbed in a voice (how
+        many)."""
         nodes, edges = await series_graph(session, product.series_id)
         users = sorted({down for down, up, _ in edges if up == product.id})
         owners = {nodes[u].owner_id for u in users if u in nodes}
@@ -641,13 +643,15 @@ class AssetService:
             a.id: a.name
             for a in (await session.exec(select(Asset).where(col(Asset.id).in_(owners))))
         }
-        by_slot: dict[str, list[str]] = {}
+        by_slot: dict[str, list[tuple[tuple[int, ...], str]]] = {}
         for u in users:
             node = nodes.get(u)
             if node is not None:
-                by_slot.setdefault(node.slot, []).append(names.get(node.owner_id, node.owner_id))
+                name = names.get(node.owner_id) or node.label or node.owner_id
+                by_slot.setdefault(node.slot, []).append((label_order(node.label or ""), name))
         lines: list[dict[str, Any]] = []
-        for slot, who in by_slot.items():
+        for slot, entries in by_slot.items():
+            who = [name for _, name in sorted(entries)]
             params: dict[str, Any] = {"count": len(who), "names": "、".join(who)}
             if slot == REF_VIEWS_SLOT:
                 params = {"name": asset.name}
@@ -709,11 +713,24 @@ class AssetService:
             await session.exec(select(AssetUse).where(col(AssetUse.asset_id).in_(ids)))
         ).all():
             uses.setdefault(u.asset_id, []).append(u)
-        numbers = await _scene_numbers(session, series_id)
+        numbers = await scene_numbers(session, series_id)
         episodes = {
             e.id: e.idx
             for e in (await session.exec(select(Episode).where(Episode.series_id == series_id)))
         }
+        # 出现在: the shots (of the adopted plans) that reference each asset, 「1-04」.
+        shot_rows = (
+            await session.exec(
+                select(Shot).where(Shot.series_id == series_id, col(Shot.retired).is_(False))
+            )
+        ).all()
+        in_shots: dict[str, list[str]] = {}
+        for s in shot_rows:
+            if episode_id is not None and s.episode_id != episode_id:
+                continue
+            label = f"{episodes.get(s.episode_id, 0)}-{s.idx:02d}"
+            for asset_id in s.asset_ids_json:
+                in_shots.setdefault(asset_id, []).append(label)
         line_ids = {i for us in uses.values() for u in us for i in u.line_ids_json}
         lines = {
             r.id: r
@@ -757,7 +774,7 @@ class AssetService:
                         name=a.name,
                         intent=intent,
                         source=_source(a, here, mine, numbers, episodes, lines),
-                        shots=[],
+                        shots=sorted(in_shots.get(a.id, []), key=label_order),
                         scenes=[
                             AssetSceneOut(
                                 scene_id=u.scene_id,
@@ -807,20 +824,6 @@ async def _refuse_ocr_mismatch(
             exact=exact,
             issue=entry.get("ocr_issue") or "",
         )
-
-
-async def _scene_numbers(session: AsyncSession, series_id: str) -> dict[str, int]:
-    """Scene id → its series-wide 场号 (as the script page numbers them)."""
-    offsets: dict[str, int] = {}
-    first = 1
-    for e in await scene_counts(session, series_id):
-        offsets[e["id"]] = first
-        first += int(e["scene_count"] or 0)
-    out: dict[str, int] = {}
-    rows = (await session.exec(select(Scene).where(Scene.series_id == series_id))).all()
-    for s in rows:
-        out[s.id] = offsets.get(s.episode_id, 1) + s.idx - 1
-    return out
 
 
 def _source(

@@ -1,12 +1,15 @@
 import { useTranslation } from "react-i18next";
 
+import { fileUrl } from "@/api/client";
 import type { Shot } from "@/api/schemas/shots";
 import type { Aspect } from "@/api/schemas/spec";
 import { MediaThumb } from "@/components/MediaThumb";
 import { StatusBadge } from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
+import { framePicture } from "@/pages/storyboard/timeline";
 
-/** 镜头列表: one card per shot; landscape specs get wider cards (SPEC 16.4). */
+/** 镜头列表: one card per shot, its picked keyframe (a continuous shot: the one it continues);
+ * landscape specs get wider cards (SPEC 16.4). */
 export function ShotCards({
   shots,
   aspect,
@@ -21,6 +24,10 @@ export function ShotCards({
   const { t } = useTranslation("storyboard");
   const { t: te } = useTranslation("enums");
   const wide = aspect === "16:9" || aspect === "21:9";
+  const picture = (s: Shot) => {
+    const sha = framePicture(shots, s).sha256;
+    return sha ? fileUrl(sha) : null;
+  };
   return (
     <section
       aria-label={t("cards.label")}
@@ -42,11 +49,34 @@ export function ShotCards({
               on ? "border-primary" : "border-transparent hover:border-border",
             )}
           >
-            <MediaThumb aspect={aspect} seed={s.label} label={s.label} caption={s.summary} />
+            <MediaThumb
+              aspect={aspect}
+              seed={s.label}
+              src={picture(s)}
+              label={s.label}
+              caption={s.summary}
+              overlay={
+                s.shot_type === "continuous" && s.tail_from ? (
+                  <span className="absolute top-1.5 right-1.5 rounded-sm bg-black/55 px-1 py-0.5 text-[10px] text-white">
+                    {t("preview.tail", { id: s.tail_from })}
+                  </span>
+                ) : null
+              }
+            />
             <span className="flex items-center gap-1">
               <span className="font-mono text-xs font-medium">{s.label}</span>
-              <StatusBadge tone={s.confirmed ? "info" : "warn"} icon={null} className="ml-auto">
-                {t(s.confirmed ? "status.confirmed" : "status.draft")}
+              <StatusBadge
+                tone={s.confirmed && !s.confirm_stale ? "info" : "warn"}
+                icon={null}
+                className="ml-auto"
+              >
+                {t(
+                  s.confirm_stale
+                    ? "status.stale"
+                    : s.confirmed
+                      ? "status.confirmed"
+                      : "status.draft",
+                )}
               </StatusBadge>
             </span>
             <span className="text-xs">{te(`shotType.${s.shot_type}`)}</span>

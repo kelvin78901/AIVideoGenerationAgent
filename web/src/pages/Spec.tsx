@@ -40,6 +40,7 @@ import { formatSpecTag, formatTime, formatUsd } from "@/lib/format";
 import { modelName as nameOf } from "@/lib/versions";
 import { cn } from "@/lib/utils";
 import { CompatTable } from "@/pages/spec/CompatTable";
+import { safeAreaOf } from "@/lib/safeArea";
 import { SafeAreaPreview } from "@/pages/spec/SafeAreaPreview";
 
 type Draft = Required<SpecPatch>;
@@ -371,7 +372,7 @@ export default function SpecPage() {
                 <p className="text-xs leading-relaxed text-muted-foreground">{t("preview.lead")}</p>
                 <SafeAreaPreview
                   aspect={draft.aspect}
-                  platform={draft.platform}
+                  area={safeAreaOf(presets.data, draft.aspect, draft.platform)}
                   showSafe={showSafe}
                   showSub={showSub}
                   name={t(`aspect.name.${ak(draft.aspect)}`)}

@@ -175,15 +175,17 @@ class ProductService:
         self._db = db
         self._bus = bus
         self._invalidation = invalidation
-        self._materializers: dict[str, Materializer] = {}
+        self._materializers: dict[str, list[Materializer]] = {}
         self.describer: Describer | None = None
         # Slots of products made by the dozen (a line's audio): listed without the next run's
         # prompt and estimate, and a new take of one is not toasted.
         self.quiet_slots: set[str] = set()
 
     def on_adopt(self, slot: str, materializer: Materializer) -> None:
-        """Rebuild the domain rows of ``slot`` from a newly adopted version (same transaction)."""
-        self._materializers[slot] = materializer
+        """Rebuild the domain rows of ``slot`` from a newly adopted version (same transaction).
+        Several run in the order they were registered (M4: an adopted script also gives its
+        episode a 分镜规划 product)."""
+        self._materializers.setdefault(slot, []).append(materializer)
 
     # ------------------------------------------------------------------ reads
 
@@ -624,8 +626,7 @@ class ProductService:
         p.adopted_version_id = v.id
         if p.status == "failed":
             p.status = "ready"
-        materialize = self._materializers.get(p.slot)
-        if materialize is not None:
+        for materialize in self._materializers.get(p.slot, []):
             await materialize(session, p, v)
 
     async def _announce(self, p: Product) -> None:

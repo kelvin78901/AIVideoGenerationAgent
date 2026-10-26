@@ -10,14 +10,15 @@ import { GateButton } from "@/components/GateButton";
 import { ImpactDialog } from "@/components/ImpactDialog";
 import { Inspector } from "@/components/Inspector";
 import { Toaster } from "@/components/ui/sonner";
-import { getDb } from "@/mocks/db";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { PRODUCT_ENRICH, PRODUCT_EXTRACT } from "@/mocks/fixtures/demo/products";
 import { useInspectorStore } from "@/stores/inspector";
-import { backend } from "@/test/backend";
+import { backend, fake } from "@/test/backend";
 import { fakeAssets } from "@/test/fakes/assets";
 import { fakeConfig } from "@/test/fakes/config";
 import { fakeEpisodes } from "@/test/fakes/episodes";
+import { fakeImpact } from "@/test/fakes/impact";
+import { fakeShots } from "@/test/fakes/shots";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
 
@@ -189,21 +190,21 @@ describe("ImpactDialog", () => {
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="inline" onResolved={resolved} />);
     const dialog = await screen.findByRole("alertdialog");
-    expect(dialog).toHaveTextContent("关键帧 9 张（9 个镜头）要按新画幅重画 · 约 $1.26");
-    expect(dialog).toHaveTextContent("API 终版 · 约 $2.76");
-    expect(dialog).toHaveTextContent("建议重出（可选）");
+    // 7 keyframes at the API final's price (1-08 and 1-09 continue an earlier shot).
+    expect(dialog).toHaveTextContent("关键帧 7 张（9 个镜头）要按新画幅重画 · 约 $0.35");
+    expect(dialog).not.toHaveTextContent("场景参考图"); // drawn 16:9 whatever the spec
     expect(dialog).toHaveTextContent("剧本、分镜表、配音和音色不受影响");
     // 确认并同步 comes first (the filled button), then 只改这里 and 撤销.
     expect(
       within(dialog)
         .getAllByRole("button")
         .map((b) => b.textContent),
-    ).toEqual(["确认并同步 · 预计 $4.02", "只改这里，下游标待更新", "撤销"]);
+    ).toEqual(["确认并同步 · 预计 $0.35", "只改这里，下游标待更新", "撤销"]);
     await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("mark"));
-    const steps = getDb().progress[EP1]?.steps;
-    expect(steps?.storyboard.stale).toBe(9);
-    expect(steps?.generate.stale).toBe(10);
+    // The aspect written; the confirmed shots go back to 待确认.
+    expect(fake.spec.aspect).toBe("16:9");
+    expect(fakeShots.shots.filter((s) => s.confirmed)).toEqual([]);
   });
 
   it("「确认并同步」 shows the total and queues the rerun", async () => {
@@ -211,9 +212,13 @@ describe("ImpactDialog", () => {
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="modal" onResolved={resolved} />);
     const dialog = await screen.findByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $4.02" }));
+    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $0.35" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("rerun"));
-    expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(9);
+    expect(fakeImpact.applied).toEqual([
+      { kind: "spec_aspect", target_id: "demo", action: "rerun" },
+    ]);
+    // Each keyframe drawn again as local drafts.
+    expect(fakeShots.keyframes.every((p) => p.versions.at(-1)?.stage === "draft")).toBe(true);
   });
 
   it("「撤销」 leaves everything as it was", async () => {
@@ -222,7 +227,8 @@ describe("ImpactDialog", () => {
     renderAt(<SpecImpact variant="inline" onResolved={resolved} />);
     await user.click(await screen.findByRole("button", { name: "撤销" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("undo"));
-    expect(getDb().progress[EP1]?.steps.storyboard.stale).toBe(0);
+    expect(fake.spec.aspect).toBe("9:16");
+    expect(fakeShots.shots.filter((s) => s.confirmed)).toHaveLength(3);
   });
 });
 

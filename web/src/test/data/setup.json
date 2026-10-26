@@ -640,6 +640,29 @@
           "install": null
         },
         {
+          "id": "w_flux3",
+          "group": "w",
+          "name": {
+            "zh": "FLUX 3 Klein 关键帧（int8）",
+            "en": "FLUX 3 Klein keyframes (int8)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 20800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_sr",
           "group": "w",
           "name": {
@@ -848,6 +871,7 @@
         "w_te",
         "w_img",
         "w_img_t2i",
+        "w_flux3",
         "w_sr",
         "w_tts",
         "llmsrv"
@@ -933,6 +957,16 @@
         {
           "code": "comfy_change",
           "params": {
+            "item": "w_flux3",
+            "action": "install",
+            "to": "feef60b",
+            "source": "black-forest-labs/flux-3-image-klein-comfy",
+            "gb": 20.8
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
             "item": "w_sr",
             "action": "install",
             "to": "df48879",
@@ -966,6 +1000,13 @@
           "params": {
             "item": "w_img_t2i",
             "gb": 31.8
+          }
+        },
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_flux3",
+            "gb": 20.8
           }
         }
       ]
@@ -1675,6 +1716,29 @@
           "install": null
         },
         {
+          "id": "w_flux3",
+          "group": "w",
+          "name": {
+            "zh": "FLUX 3 Klein 关键帧（int8）",
+            "en": "FLUX 3 Klein keyframes (int8)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "mac_image_slow",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 20800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_sr",
           "group": "w",
           "name": {
@@ -1879,6 +1943,7 @@
         "node_vhs",
         "w_img",
         "w_img_t2i",
+        "w_flux3",
         "w_tts",
         "llmsrv"
       ],
@@ -1895,6 +1960,13 @@
           "params": {
             "item": "w_img_t2i",
             "gb": 31.8
+          }
+        },
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_flux3",
+            "gb": 20.8
           }
         }
       ]

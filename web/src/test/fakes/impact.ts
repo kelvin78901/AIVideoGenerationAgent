@@ -1,5 +1,5 @@
 /**
- * Fake gates (小说, 剧本) and impact previews for page tests, following the backend's rules
+ * Fake gates (小说, 剧本, 素材, 分镜) and impact previews for page tests, following the backend's rules
  * (`pipeline/gates.py`, `pipeline/impact.py`) as far as the pages need them: confirming flips
  * the step badges and the script status; a preview of an edit to confirmed work lists
  * 「已确认的 … 会改成新内容」 and what reads it, and 只改这里 / 确认并同步 write the edit through
@@ -20,8 +20,18 @@ import {
 import { fakeBible } from "@/test/fakes/bible";
 import { fakeEpisodes } from "@/test/fakes/episodes";
 import { fakeScript, findBlock } from "@/test/fakes/script";
+import {
+  aspectFakeShots,
+  editFakeShot,
+  fakeStoryboardGate,
+  shotEditImpact,
+  specAspectImpact,
+} from "@/test/fakes/shots";
 
 type Line = Impact["lines"][number];
+
+/** 改画幅 leaves the script, the shot list, the dubbing and the voices as they are. */
+const SPEC_UNAFFECTED = { code: "unaffected_spec", params: {} };
 
 /** State of the fake; `resetFakeImpact()` (called by `backend()`) restores it. */
 export const fakeImpact = {
@@ -96,6 +106,8 @@ function linesOf(kind: string, target: string, patch: Record<string, unknown>): 
   const slot = NOVEL_SLOT[kind];
   if (slot) return novelLines(slot);
   if (kind === "beat_move") return beatLines(target, patch);
+  if (kind === "shot_edit") return shotEditImpact(target, patch);
+  if (kind === "spec_aspect") return specAspectImpact();
   return null;
 }
 
@@ -125,6 +137,9 @@ function direct(kind: string, id: string, p: Record<string, unknown>) {
       return { method: "POST", path: `/suggestions/${enc(id)}/${String(p.action)}`, body: {} };
     case "beat_move":
       return { method: "PATCH", path: `/beats/${enc(id)}`, body: p };
+    case "spec_aspect":
+      // The fake spec takes any confirmed preview (the real one checks it, SPEC 13.3).
+      return { method: "PUT", path: `/series/${enc(id)}/spec?confirmed_impact=fake`, body: p };
     default:
       return null; // novel_replace: the stored upload is the backend's; only recorded here
   }
@@ -154,7 +169,9 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
         ? assetUnlockImpact(target_id)
         : kind === "asset_edit"
           ? assetEditImpact(target_id)
-          : undefined;
+          : kind === "spec_aspect"
+            ? { lines: specAspectImpact(), unaffected: SPEC_UNAFFECTED }
+            : undefined;
     if (unlock === null) return error(409, "not_locked", { id: target_id });
     const lines = unlock?.lines ?? linesOf(kind, target_id, patch);
     if (!lines) return error(422, "unknown_change_kind", { kind });
@@ -182,9 +199,12 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
     if (action !== "undo" && kind === "asset_unlock") unlockFakeAsset(target_id);
     else if (action !== "undo" && kind === "asset_edit")
       editFakeAsset(target_id, patch, action === "rerun");
+    else if (action !== "undo" && kind === "shot_edit")
+      editFakeShot(target_id, patch, action === "rerun");
     else if (action !== "undo") {
       const failed = await write(kind, target_id, patch);
       if (failed) return failed;
+      if (kind === "spec_aspect") aspectFakeShots(action === "rerun");
     }
     const jobs = action === "rerun" && impact.lines.length ? ["job-sync-1"] : [];
     return HttpResponse.json({ action, stale: impact.stale, job_ids: jobs });
@@ -192,19 +212,21 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
   return null;
 }
 
-/** `POST /gates/novel|script|assets/confirm|reopen`; the later gates fall through to the MSW demo. */
+/** `POST /gates/novel|script|assets|storyboard/confirm|reopen`; 生成 and 后期 fall through to the
+ * MSW demo. */
 export function gateHandlers() {
   return [
     http.post("*/api/v1/gates/:gate/:action", async ({ params, request }) => {
       const gate = String(params.gate);
       const action = String(params.action);
-      if (gate !== "novel" && gate !== "script" && gate !== "assets") return undefined;
+      if (!["novel", "script", "assets", "storyboard"].includes(gate)) return undefined;
       const { scope_id: scope } = (await request.json()) as { scope_id: string };
-      if (gate === "assets") {
-        const refused = fakeAssetsGate(scope, action);
+      if (gate === "assets" || gate === "storyboard") {
+        const refused =
+          gate === "assets" ? fakeAssetsGate(scope, action) : fakeStoryboardGate(scope, action);
         if (refused) return refused;
         return HttpResponse.json({
-          id: `gate-assets-${action}`,
+          id: `gate-${gate}-${action}`,
           gate,
           scope_id: scope,
           action,

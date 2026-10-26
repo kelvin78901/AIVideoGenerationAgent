@@ -199,6 +199,17 @@
       "self_asset_list": "第 {{n}} 集的素材清单会改成新内容",
       "stale_asset_list": "第 {{n}} 集素材清单 · 会重新分析",
       "then_asset_list": "第 {{n}} 集素材清单 · 上游真的有变化才重新分析",
+      "stale_shot_plan": "第 {{n}} 集分镜规划 · 标待更新，不自动重做（重做会盖掉手改和已确认的镜头），要用时去分镜页重跑",
+      "then_shot_plan": "第 {{n}} 集分镜规划 · 上游真的有变化才标待更新，不自动重做",
+      "stale_keyframe": "第 {{n}} 集关键帧 · 镜头 {{shots}} 变「待更新」：重出候选，选好再确认（不自动重画）",
+      "then_keyframe": "第 {{n}} 集关键帧 · 镜头 {{shots}} · 上游真的有变化才变「待更新」",
+      "uses_keyframe": "关键帧 · 镜头 {{names}} 用它做参考（{{count}} 个），锁定新的一张后变「待更新」",
+      "self_shot_plan": "已确认的第 {{n}} 集分镜会改成新内容",
+      "gate_storyboard": "第 {{n}} 集的「分镜确认」会重新打开：改完要你再确认一次",
+      "shot_reconfirm": "镜头 {{shots}} 会取消确认：改完要重新确认",
+      "shot_redraw": "关键帧 · 镜头 {{shot}} 按新的画面描述重出候选（「确认并同步」时），选好再确认",
+      "shots_confirmed_redraw": "其中镜头 {{shots}} 已确认：锁定新的一张后变「待更新」，要重新确认",
+      "shot_duration_follows": "镜头 {{shots}} 的时长跟着重配的台词变，分镜不用改",
       "edited_asset_list": "第 {{n}} 集素材清单里手动改过的地方，可能会按新的内容重写",
       "stale_line_audio": "台词配音 · {{count}} 句按新台词重配",
       "then_line_audio": "台词配音 · {{count}} 句 · 上游真的有变化才重配",
@@ -256,5 +267,10 @@
     "position": "{{n}} / {{total}}",
     "hint": "按 Esc 关闭",
     "hintMany": "← → 切换，按 Esc 关闭"
+  },
+  "final": {
+    "button": "用 API 出终版",
+    "buttonCost": "用 API 出终版 · 约 {{cost}}",
+    "started": "已开始出终版：以候选 {{letter}} 为参考，用 {{model}} 出 1 张。"
   }
 }

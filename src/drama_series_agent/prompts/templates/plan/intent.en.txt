@@ -1,0 +1,1 @@
+Keep each shot 2–6 seconds. A continuous action picks up the previous shot's last frame; a cut within the scene or a scene change gets a new keyframe. Dialogue in close shots, inserts (a phone, a note) in close-up. The beat that ends the episode goes last.

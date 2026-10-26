@@ -131,11 +131,6 @@
     "list": "清单",
     "matrix": "出场矩阵"
   },
-  "final": {
-    "button": "用 API 出终版",
-    "buttonCost": "用 API 出终版 · 约 {{cost}}",
-    "started": "已开始出终版：以候选 {{letter}} 为参考，用 {{model}} 出 1 张。"
-  },
   "views": {
     "title": "补视图",
     "note": "锁定后按锁定的图自动补齐，换了锁定图会重画",

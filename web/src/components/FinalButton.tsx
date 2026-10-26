@@ -12,7 +12,8 @@ import { formatUsd } from "@/lib/format";
 /**
  * 「用 API 出终版」 (hybrid mode, SPEC 7.7): the picked local draft becomes the reference of one
  * picture on the route's API model, a new version whose parent is the draft. Shown for a local
- * draft while the asset is not locked; the price is that model's, for one picture.
+ * draft while the product (an asset, a keyframe) is not locked; the price is that model's, for
+ * one picture.
  */
 export function FinalButton({
   componentId,
@@ -27,7 +28,7 @@ export function FinalButton({
   pick: number;
   letter: string;
 }) {
-  const { t } = useTranslation("assets");
+  const { t } = useTranslation("components");
   const { t: tc } = useTranslation();
   const config = useResolvedConfig(componentId).data?.values;
   const models = useComponentModels(componentId);
