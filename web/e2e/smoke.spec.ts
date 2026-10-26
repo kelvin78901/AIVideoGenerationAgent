@@ -40,11 +40,27 @@ test("a locked spec changes aspect through the impact dialog and keeps it after 
 }) => {
   const errors = trackConsoleErrors(page);
   await setUi(page, {});
+  // A retry starts from the demo's 9:16 even when the failed try left 16:9 behind.
+  const spec = await (await page.request.get("/api/v1/series/demo/spec")).json();
+  if (spec.aspect !== "9:16") {
+    const write = { "X-Drama-Studio": "1" };
+    const preview = await page.request.post("/api/v1/impact/preview", {
+      headers: write,
+      data: { kind: "spec_aspect", target_id: "demo", patch: { aspect: "9:16" } },
+    });
+    const { id } = (await preview.json()) as { id: string };
+    const applied = await page.request.post("/api/v1/impact/apply", {
+      headers: write,
+      data: { impact_id: id, action: "mark" },
+    });
+    expect(applied.ok()).toBe(true);
+  }
   const tag = (text: string) => page.getByRole("link", { name: text });
   const change = async (platform: RegExp, aspect: string) => {
     await page.getByRole("button", { name: platform }).click();
     await page.getByRole("button", { name: "改，并标记待更新" }).click();
-    await expect(page.getByText(/会影响已经做好的部分/)).toHaveCount(0);
+    // Slow CI machines take a while to write it and close the dialog.
+    await expect(page.getByText(/会影响已经做好的部分/)).toHaveCount(0, { timeout: 20_000 });
     // Written by the backend's /impact/apply (`spec_aspect`, M4); the shots' confirmations go.
     await page.reload();
     await expect(page.locator("[data-loading]")).toHaveCount(0, { timeout: 15_000 });
