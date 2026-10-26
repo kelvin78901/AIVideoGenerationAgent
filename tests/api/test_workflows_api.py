@@ -108,6 +108,10 @@ def test_the_repo_workflows_are_platform_recommended(client: TestClient) -> None
     assert klein["model_key"] == "comfy/flux3-klein" and "kf" in klein["components"]
     assert klein["bindings"] and all(b["state"] == "confirmed" for b in klein["bindings"])
     assert klein["nodes"] and not klein["file_changed"]
+    # A workflow a providers.yaml model runs is that model, not a second one.
+    h3 = by_slug["h3-i2v"]
+    assert h3["model_key"] == "comfy/h3" and "vid" in h3["components"]
+    assert not any(w["model_key"] == "comfy/h3-i2v" for w in rows)
     assert (
         client.patch(f"{V1}/workflows/{klein['id']}", json={"tier": "unverified"}).json()["detail"][
             "code"

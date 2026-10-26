@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 4 步：ComfyUI 适配器完整版、H3 本地工作流
+
+- **H3 本地工作流 `workflows/h3-i2v/` 照官方 I2V 模板**（`video_minimax_h3_i2v.json`，子图展开成 API 格式），节点名、输入名、可选值对着 Kelvin 本机 ComfyUI 0.41.2 的 `/object_info` 静态核过（没真跑，真跑在第 14 步）。用 `MiniMaxH3ImageToVideo`（fl2va 权重）而不是上游 `selfhost/` 的 `MiniMaxH3ReferenceToVideo`：首帧是硬锚定，不是提示词里的「<Picture 1> 是首帧」。草稿固定开 8 步 Turbo LoRA（官方开关默认关，参数照官方 Turbo 默认）。尺寸按画幅取 768P 档（短边 768，和 H3 API 768P、Regenerate-2K 的输入对上），帧率固定 24，时长落到 5–15 秒，帧数照官方表达式落到 17k+5。每秒成片的估时 `est_seconds_per_s: 25` 是估的，第 14 步实测后改。
+- **配音方式 `tts` 的台词音频用 `MiniMaxH3AddGuide` 挂在第 0 帧**：I2V 节点本身不收音频，官方的 AddGuide 把音频按原样锚进去（相当于 PLAN 模式 A 的 fully_copy）。**`native` 模式的锁定音色样本这个工作流收不了**（音色参考只有 Reference to Video 节点的 `ref_audios`，配 ref2va 权重）：第 5 步 `native` 先只靠提示词让 H3 自己出声；要不要加一个 R2V 工作流接音色样本，第 5 步做到时再定（会先问 Kelvin）。
+- **绑定加 `bypass`**：可选的文件槽位（`first_frame`、`video_in`、`ref_image`、`dialogue_audio`）没给文件时，绑定的节点删掉；`bypass` 列的节点也去掉，但把它某个输入的连线交给读它的节点（没有台词音频时 AddGuide 的 `positive` 直接进引导器）。不能像参考图那样直接删：引导器的 `conditioning` 是必填的。第 12 步的可开关分支（LoRA、ControlNet）也用这个。必填的文件槽位没给文件 → `ref_missing`。
+- **适配器**：输入文件按 sha256 从 blob 库取，和参考图一样传 `/upload/image`（ComfyUI 收任何文件）；参数名 `first_frame` / `video_in` / `dialogue_audio`（sha256）、`duration_s`、`fps`，和 Mock 视频一致。WebSocket（`/ws?clientId=`，`websockets` 库，原来是 uvicorn 带进来的，现在写进依赖）收 `progress` → `CallContext.on_progress`（新字段，试跑任务接到 `job.updated`）；收到「跑完」就马上读 `/history`，有 socket 时历史每 5 秒兜底读一次，连不上或断了回到每秒轮询。取输出按槽位：`image_out` / `video_out` / `audio_out`，SaveVideo 的文件在 `images` 下、VideoHelperSuite 在 `gifs` 下都认。视频取回后探测：读不了 `invalid_response`、比要的短 0.5 秒以上 `video_too_short`、画幅差 2% 以上 `video_wrong_size`；`usage.output_seconds` 记实际秒数。试跑（`params.trial`）缺必填的输入文件时自己造一张图 / 一段音 / 一段视频。
+- **仓库工作流被 `providers.yaml` 的模型点名时，库里就是那个模型**（`h3-i2v` → `comfy/h3`），不再另登记一个 `comfy/h3-i2v`；否则视频组件会多出一个只要 ComfyUI 就能跑的本地模型，绕过 `comfy/h3` 的 `needs`（节点、权重、CUDA）。
+
 ## 2026-10-26 · M5 第 3 步：体检、装依赖、试跑
 
 - **体检只靠 `/object_info`**：图里的节点类 ComfyUI 不认识的算缺；**模型文件对照加载器那一项的可选列表**（ComfyUI 把模型文件夹里的文件列成下拉选项），不在里面的算缺，不另调 `/models/<folder>`。缺的节点类按 ComfyUI-Manager 的节点表（`/v2/customnode/getmappings?mode=cache`，旧版 Manager 不带 `/v2`）归到节点包；节点表里也没有的记成问题 `unknown_node`，状态「坏了」。绑定对不上图（标题没了、字段改名）记 `binding_broken`。导入后马上体检一次（ComfyUI 没开就先不体检）。

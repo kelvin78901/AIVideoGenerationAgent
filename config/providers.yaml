@@ -295,9 +295,9 @@ media_models:
 # needs: 跑它要有的清单项（config/setup-manifest.yaml 的 id）；requires_cuda: 要 NVIDIA 显卡。
 # 扫描后缺任何一项，resolve() 就绕开它（local / hybrid 改走 API，见 core/capabilities.py）。
 # 没写 needs 的（清单里还没有对应项）视为能跑，跑时失败照常兜底。
-# runtime: comfyui 的模型由 workflow 指的 workflows/<slug>/ 跑（adapters/comfyui.py）；文件夹还没有的（H3 等，M5）暂不可用。
+# runtime: comfyui 的模型由 workflow 指的 workflows/<slug>/ 跑（adapters/comfyui.py）；文件夹还没有的（H3 ControlNet 等）暂不可用。
 local_models:
-  - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3_i2v, caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440 }, needs: [comfy, node_h3, w_h3, w_te], requires_cuda: true }
+  - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3-i2v, caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440 }, needs: [comfy, node_h3, w_h3, w_te], requires_cuda: true }
   - { key: comfy/h3-fun-controlnet, kind: video,   display: H3 Fun ControlNet（本地）, runtime: comfyui, workflow: h3_controlnet, needs: [comfy, node_h3, node_ctrl, w_h3, w_te], requires_cuda: true }
   - { key: comfy/wan-2.2,           kind: video,   display: Wan 2.2（本地）,          runtime: comfyui, needs: [comfy], requires_cuda: true }
   - { key: comfy/ltx,               kind: video,   display: LTX（本地）,              runtime: comfyui, verify: true, needs: [comfy], requires_cuda: true }

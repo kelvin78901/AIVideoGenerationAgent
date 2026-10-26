@@ -9,7 +9,8 @@
   import came from. A user workflow whose file changed since is shown ``file_changed`` and loses
   我的工作流 until a trial passes again.
 - **Config**: every workflow not already in ``providers.yaml`` becomes local model
-  ``comfy/<slug>`` in the components that serve its kind (``core.config.set_library``); the
+  ``comfy/<slug>`` in the components that serve its kind (a repo workflow a ``providers.yaml``
+  model names, like ``comfy/h3`` → ``h3-i2v``, is that model) (``core.config.set_library``); the
   registry gets its spec. Unverified workflows only run when picked by hand.
 
 Tier rules (SPEC 6.4.4; the M1 contract): recommended cannot change; 我的工作流 needs every
@@ -170,6 +171,7 @@ class WorkflowLibrary:
                 if row is None:
                     s.add(self._new_row(source, root, wf))
                 elif source == "repo":  # the repo's files are the truth for its workflows
+                    row.model_key = _repo_key(wf.slug)
                     row.file_sha256 = wf.sha256
                     row.bindings_json = _meta_bindings(wf)
                     row.caps_json = dict(wf.meta.caps)
@@ -197,7 +199,7 @@ class WorkflowLibrary:
         return ComfyWorkflowRow(
             id=f"wf_{wf.slug}",
             slug=wf.slug,
-            model_key=f"comfy/{wf.slug}",
+            model_key=_repo_key(wf.slug) if source == "repo" else f"comfy/{wf.slug}",
             name_json=dict(wf.meta.name),
             kind=wf.meta.kind,
             tier=wf.meta.tier if source == "repo" else "unverified",
@@ -598,7 +600,12 @@ class WorkflowLibrary:
             seed=1,
             params={"width": w, "height": h, "duration_s": seconds, "n": 1, "trial": True},
         )
-        call = CallContext(component_id=component, job_id=ctx.job.id, attempt=ctx.job.attempt)
+        call = CallContext(
+            component_id=component,
+            job_id=ctx.job.id,
+            attempt=ctx.job.attempt,
+            on_progress=ctx.progress,  # ComfyUI's sampler steps → job.updated
+        )
         started = time.monotonic()
         trial = TrialOut(at=utcnow(), status="passed", job_id=ctx.job.id, w=w, h=h, seconds=seconds)
         try:
@@ -624,6 +631,14 @@ class WorkflowLibrary:
         while slug in taken:
             slug, n = f"{base}-{n}", n + 1
         return slug
+
+
+def _repo_key(slug: str) -> str:
+    """A repo workflow's model: the ``providers.yaml`` one that runs it, else ``comfy/<slug>``."""
+    for m in load_config().providers.local_models:
+        if m.runtime == "comfyui" and m.workflow == slug:
+            return m.key
+    return f"comfy/{slug}"
 
 
 def _title(node: dict[str, Any]) -> str:

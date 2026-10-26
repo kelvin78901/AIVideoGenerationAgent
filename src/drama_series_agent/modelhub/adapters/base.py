@@ -153,6 +153,8 @@ class CallContext:
     confirmed_usd: float | None = None
     # Streaming LLMs push text deltas here (e.g. to forward them over SSE).
     on_delta: Callable[[str], Awaitable[None]] | None = None
+    # Long local runs (ComfyUI) report how far they are here, e.g. to a job's ``progress``.
+    on_progress: Callable[[dict[str, Any]], Awaitable[None]] | None = None
 
 
 class ModelError(Exception):

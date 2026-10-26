@@ -165,7 +165,8 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
         assert isinstance(registry.get(key), LocalPythonAdapter)
     for key in ("comfy/qwen-image", "comfy/qwen-image-edit", "comfy/qwen-image-edit-hq"):
         assert isinstance(registry.get(key), ComfyUIAdapter)
-    assert isinstance(registry.get("comfy/h3"), UnavailableAdapter)  # no workflow folder yet
+    assert isinstance(registry.get("comfy/h3"), ComfyUIAdapter)
+    assert isinstance(registry.get("comfy/h3-fun-controlnet"), UnavailableAdapter)  # no folder yet
 
 
 def test_real_local_runs_local_models_for_real_and_keeps_the_rest_mock(

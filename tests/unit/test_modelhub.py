@@ -97,7 +97,7 @@ def test_registry_reads_all_model_sections() -> None:
     # Media models use their account's key (one MiniMax / Google key for everything).
     assert tts.key_name == "MINIMAX_API_KEY" and tts.base_url
     assert reg.spec("google/nano-banana-pro").key_name == "GEMINI_API_KEY"
-    assert reg.spec("comfy/h3").caps.aspects and reg.spec("comfy/h3").workflow == "h3_i2v"
+    assert reg.spec("comfy/h3").caps.aspects and reg.spec("comfy/h3").workflow == "h3-i2v"
     assert reg.spec("comfy/h3").where == "local" and reg.spec("comfy/h3").pricing.unit == "free"
     assert isinstance(reg.get("deepseek/v4-pro"), UnavailableAdapter)
     with pytest.raises(ModelError) as err:

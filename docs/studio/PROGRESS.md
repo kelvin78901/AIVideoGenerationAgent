@@ -12,11 +12,12 @@
 - 第 0 步（afb8bc4）：开分支，存 `plans/M5.md`，DECISIONS「M5 计划」，ROADMAP 把拼节点挪到「之后（P3）」，PROGRESS 换成 M5。只改文档。
 - 第 1 步（c58354c，DECISIONS「M5 第 1 步」）：迁移 `0019`（`comfy_workflow` 表、`model_call` 4 列）；路由写工作流三列；`media/video.py`（探测、裁头、首尾帧）；Mock 视频可带音轨。新测试 `test_video.py` 5 个、路由 1 个。全量 pytest 714 个过；ruff、mypy（含 linux）干净。
 - 第 2 步（704434c，DECISIONS「M5 第 2 步」）：新包 `wflib/`（`service.py` 库服务、`guess.py` 猜绑定、`convert.py` UI→API、`comfy.py` ComfyUI 访问、`demo/` 示例机器的文件）；`core.config` 的 `Library` 覆盖层和 `unverified` 过滤；`api/routes/workflows.py`（列表、详情、改档位、改绑定、导入、ComfyUI 列表）；迁移 `0019` 加 `origin` 列（还没发布，直接改）。新测试 `test_wflib.py` 5 个、`test_workflows_api.py` 6 个。全量 pytest 725 个、Playwright e2e 37 个过；ruff、mypy（含 linux）干净。
-- 第 3 步（本提交，DECISIONS「M5 第 3 步」）：`wflib/service.py` 体检（`/object_info` + Manager 节点表）、`deps`、`install_deps`（`SetupService.install_node_packs`：先快照、再 git clone + pip）、试跑任务 `workflow_trial`、全部体检和 `broke_after_install`；导入后自动体检；路由 5 个；示例机器加节点表、更多核心节点。`test_workflows_api.py` 共 9 个。全量 pytest 728 个、Playwright e2e 37 个过；ruff、mypy（含 linux）干净。
+- 第 3 步（22a0206；ruff 格式补丁 8588eb1，CI 那次因此红，DECISIONS「M5 第 3 步」）：`wflib/service.py` 体检（`/object_info` + Manager 节点表）、`deps`、`install_deps`（`SetupService.install_node_packs`：先快照、再 git clone + pip）、试跑任务 `workflow_trial`、全部体检和 `broke_after_install`；导入后自动体检；路由 5 个；示例机器加节点表、更多核心节点。`test_workflows_api.py` 共 9 个。全量 pytest 728 个、Playwright e2e 37 个过；ruff、mypy（含 linux）干净。
+- 第 4 步（本提交，DECISIONS「M5 第 4 步」）：`workflows/h3-i2v/`（官方 I2V 模板展开，对着本机 `/object_info` 静态核过；8 步 Turbo LoRA、768P 档、台词音频走 `MiniMaxH3AddGuide`，没音频时旁路）；`comfy/h3` 指过去；`modelhub/workflows.py` 的文件槽位通用化 + `bypass`；`ComfyUIAdapter` 上传首帧 / 视频 / 台词音频、WebSocket 进度（`CallContext.on_progress`，试跑接到 `job.updated`）、取视频 / 音频并探测校验、试跑自造输入；库里仓库工作流用 `providers.yaml` 点名它的模型键（`h3-i2v` → `comfy/h3`）；`websockets` 写进依赖（只 `uv lock`）。`test_comfyui_adapter.py` 共 21 个（新 7 个）。全量 pytest 735 个过；ruff、mypy（含 linux）干净。
 
 ## 下一步
 
-- **第 4 步 ComfyUI 适配器完整版 + H3 本地工作流**：`modelhub/adapters/comfyui.py` 加 WebSocket 进度（`/ws?clientId=`，`progress` / `executing` → `JobContext.progress`；连不上回退 `/history` 轮询）；填 `first_frame / video_in / fps / seconds / dialogue_audio`（图片音频都 `/upload/image`）；取 `video_out / audio_out`（`_fetch` 现在只取 `image_out`）。新 `workflows/h3-i2v/`（官方 H3 模板展开 + `workflow.yaml`，推荐档，草稿 Turbo LoRA），`providers.yaml` 的 `comfy/h3` 的 `workflow:` 改成 `h3-i2v`。测试照 `tests/unit/test_comfyui_adapter.py`（httpx MockTransport 假 ComfyUI）。H3 节点名和参数第 14 步本机核对，先按官方文档写、标 verify。
+- **第 5 步 视频组件（后端，Mock）**：照 `plans/M5.md`「视频组件 `vid`」：`vid` 组件（照 `pipeline/` 里关键帧组件 `kf` 的写法）、物化（分镜闸门确认后每镜一个 owner `shot` / slot `video` 的产物）、输入（首帧 = 采纳的关键帧；连续镜头 = 上一镜采纳 take 的尾帧，没采纳 409 `upstream_not_adopted`；参考图按模型张数；音频按 `audio_mode`：`tts` 传 `dialogue_audio`，`native` 先只靠提示词——音色样本见「等 Kelvin」）、六段式模板 `prompts/templates/vid/*.j2`、裁头 0.3 秒、依赖失效、`GET /episodes/{id}/shots` 的 `video_product_id`、`takes` 闸门、进度、影响范围视频行。适配器参数约定：`first_frame` / `video_in` / `dialogue_audio` 是 blob sha256，`duration_s`、`fps`、`aspect`、`n`。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -28,6 +29,8 @@
 - 无。
 
 ## 踩过的坑 / 临时绕过
+
+- **Kelvin 的 ComfyUI 是 Comfy Desktop**（0.41.2，127.0.0.1:8188，源码在 `%LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI`，不在 `D:\ComfyUI`），H3 节点是自带的、权重和两个 Turbo LoRA 已经在。核对节点用只读的 `GET /object_info/<类名>`、`/models/<文件夹>`；**别往它 `/prompt` 发东西**（会真跑）。**测试里的 `ComfyUIAdapter` 一定传 `websocket=None` 或假的**，默认的会连真 8188。
 
 - **CI**：`/continue` 时先 `gh run list -R kelvin78901/AIVideoGenerationAgent --branch m5-video` 看一眼。连着推送会取消上一轮没跑完的 CI，要等结果就别急着推。
 - **两个偶发失败的测试**（M4 收尾时见到，没修）：Playwright `smoke.spec.ts`「a locked spec changes aspect…」在 CI 慢机器上影响范围弹窗 5 秒内没关，失败后重试必挂（第一次已经改成 16:9，测试不能重复跑）；pytest `test_web_script_fixture_is_current` 全量里偶尔两个产物 id 顺序对调（单独跑过）。再碰到就修：前者放宽等待并在开头把画幅改回 9:16，后者查导出时的排序键。
@@ -65,5 +68,6 @@
 
 ## 等 Kelvin 的事
 
-- 无。（「湿了半边」Kelvin 2026-10-26 定：示例剧本不改，留着考新模型；默认的 Klein 画 1-01 没有污渍。）
+- **`native` 配音方式的锁定音色样本**（第 5 步前定）：H3 的图生视频节点收不了音色参考，只有「参考生视频」节点（另一套 ref2va 权重，你机器上也有）收。两条路：A. `native` 先只靠提示词让 H3 自己出声，音色参考以后再说；B. 第 5 步加一个 `h3-r2v` 工作流专门接音色样本（首帧变成软约束）。我倾向 A，第 14 步真跑时对比一下再决定。
+- 无其他。（「湿了半边」Kelvin 2026-10-26 定：示例剧本不改，留着考新模型；默认的 Klein 画 1-01 没有污渍。）
 

@@ -1,10 +1,14 @@
-"""The ComfyUI adapter against a fake ComfyUI (httpx MockTransport): upload, prompt, history,
-view; interrupts on timeout; the VRAM lease's /free; the shipped workflows' bindings."""
+"""The ComfyUI adapter against a fake ComfyUI (httpx MockTransport, a fake /ws): upload,
+prompt, history, view; interrupts on timeout; the VRAM lease's /free; the shipped workflows'
+bindings; video takes (M5): input files, progress, the take checked against what was asked."""
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
+import shutil
+from collections.abc import AsyncIterator
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -19,10 +23,15 @@ from drama_series_agent.modelhub.adapters.base import (
     ModelRequest,
     ModelSpec,
 )
-from drama_series_agent.modelhub.adapters.comfyui import ComfyTarget, ComfyUIAdapter
-from drama_series_agent.modelhub.adapters.mock import solid_png
+from drama_series_agent.modelhub.adapters.comfyui import ComfyTarget, ComfyUIAdapter, WsConnect
+from drama_series_agent.modelhub.adapters.mock import sine_wav, solid_mp4, solid_png
 from drama_series_agent.modelhub.vram import VramLease
-from drama_series_agent.modelhub.workflows import WorkflowError, load_workflow, shipped_workflow
+from drama_series_agent.modelhub.workflows import (
+    WORKFLOWS_DIR,
+    WorkflowError,
+    load_workflow,
+    shipped_workflow,
+)
 
 URL = "http://127.0.0.1:8188"
 
@@ -67,6 +76,8 @@ class FakeComfy:
     ends with this status; ``lost``: the prompt is neither queued nor in the history."""
 
     def __init__(self) -> None:
+        self.video: bytes | None = None  # answer with this clip from node 92 (h3-i2v's output)
+        self.sockets: list[asyncio.Queue[str | None]] = []
         self.polls = 0
         self.hang = False
         self.lost = False
@@ -101,7 +112,14 @@ class FakeComfy:
                 return httpx.Response(400, json=self.refuse)
             assert body is not None
             self.prompts.append(body["prompt"])
-            return httpx.Response(200, json={"prompt_id": f"p{len(self.prompts)}", "number": 1})
+            pid = f"p{len(self.prompts)}"
+            for q in self.sockets:  # what ComfyUI says over /ws while it runs the prompt
+                for step in (1, 2):
+                    data = {"value": step, "max": 2, "prompt_id": pid, "node": "14"}
+                    q.put_nowait(json.dumps({"type": "progress", "data": data}))
+                done = {"node": None, "prompt_id": pid}
+                q.put_nowait(json.dumps({"type": "executing", "data": done}))
+            return httpx.Response(200, json={"prompt_id": pid, "number": 1})
         if path.startswith("/history/"):
             pid = path.rsplit("/", 1)[1]
             seen = self._seen[pid] = self._seen.get(pid, 0) + 1
@@ -109,13 +127,19 @@ class FakeComfy:
                 return httpx.Response(200, json={})
             if self.fail is not None:
                 return httpx.Response(200, json={pid: {"outputs": {}, "status": self.fail}})
-            out = {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "temp"}]}
             status = {"status_str": "success", "completed": True, "messages": []}
+            if self.video is not None:
+                clip = {"filename": f"{pid}.mp4", "subfolder": "dramastudio", "type": "output"}
+                outputs = {"92": {"images": [clip], "animated": [True]}}
+                return httpx.Response(200, json={pid: {"outputs": outputs, "status": status}})
+            out = {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "temp"}]}
             return httpx.Response(200, json={pid: {"outputs": {"8": out}, "status": status}})
         if path == "/queue" and method == "GET":
             running = [] if self.lost else [[1, f"p{len(self.prompts)}", {}, {}, []]]
             return httpx.Response(200, json={"queue_running": running, "queue_pending": []})
         if path == "/view":
+            if request.url.params["filename"].endswith(".mp4"):
+                return httpx.Response(200, content=self.video or b"")
             return httpx.Response(200, content=solid_png(928, 1664, (10, 20, 30)))
         if path in ("/interrupt", "/queue", "/free"):
             return httpx.Response(200)
@@ -123,6 +147,23 @@ class FakeComfy:
 
     def posted(self, path: str) -> list[Any]:
         return [b for m, p, b in self.calls if m == "POST" and p == path]
+
+    def websocket(self) -> WsConnect:
+        """A fake ``/ws``: what the fake says while running prompts, until the run ends."""
+
+        @contextlib.asynccontextmanager
+        async def connect(url: str) -> AsyncIterator[AsyncIterator[str]]:
+            assert url.startswith("ws://127.0.0.1:8188/ws?clientId=")
+            q: asyncio.Queue[str | None] = asyncio.Queue()
+            self.sockets.append(q)
+
+            async def messages() -> AsyncIterator[str]:
+                while (msg := await q.get()) is not None:
+                    yield msg
+
+            yield messages()
+
+        return connect
 
 
 @pytest.fixture
@@ -151,6 +192,8 @@ def _adapter(
     store: BlobStore,
     lease: VramLease | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
+    websocket: WsConnect | None = None,
+    spec: ModelSpec = SPEC,
 ) -> ComfyUIAdapter:
     async def target() -> ComfyTarget:
         return ComfyTarget(url=URL, env_hash="env123")
@@ -159,13 +202,14 @@ def _adapter(
         await asyncio.sleep(0)
 
     return ComfyUIAdapter(
-        SPEC,
+        spec,
         target=target,
         store=store,
         lease=lease or VramLease(),
         transport=transport or httpx.MockTransport(fake.handler),
         workflows_dir=root,
         sleep=no_sleep,
+        websocket=websocket,  # never the real /ws: a ComfyUI may be listening on 8188
     )
 
 
@@ -341,3 +385,123 @@ async def test_workflows_on_the_same_weights_do_not_free_each_other(
     assert fake.posted("/free") == []
     await on("fake-other").run(_req(store), CallContext())
     assert fake.posted("/free") == [{"unload_models": True, "free_memory": True}]
+
+
+# --------------------------------------------------------------------------- video (M5)
+
+H3 = ModelSpec(
+    key="comfy/h3", kind="video", where="local", display="H3", runtime="comfyui",
+    workflow="h3-i2v",
+)  # fmt: skip
+
+
+@pytest.fixture
+def h3_root(root: Path) -> Path:
+    shutil.copytree(WORKFLOWS_DIR / "h3-i2v", root / "h3-i2v")
+    return root
+
+
+def _video_req(
+    store: BlobStore, *, audio: bool = True, n: int = 1, seconds: float = 3.0
+) -> ModelRequest:
+    params: dict[str, Any] = {"n": n, "width": 1080, "height": 1920, "aspect": "9:16",
+                              "duration_s": seconds, "fps": 30}  # fmt: skip
+    params["first_frame"] = store.put_bytes(solid_png(72, 128, (1, 2, 3)))
+    if audio:
+        params["dialogue_audio"] = store.put_bytes(sine_wav(1.0))
+    return ModelRequest(kind="video", prompt="她回头，雨还在下。", seed=7, params=params)
+
+
+def test_the_h3_workflow_bypasses_its_audio_guide_without_audio() -> None:
+    wf = shipped_workflow("h3-i2v")
+    assert wf.meta.kind == "video" and wf.output_nodes("video_out") == ["92"]
+    names = {m.name for m in wf.meta.models}
+    for node in wf.graph.values():
+        for key in ("unet_name", "clip_name", "vae_name", "lora_name"):
+            if key in node["inputs"]:
+                assert node["inputs"][key] in names, key
+    for w, h in wf.meta.caps["sizes"].values():
+        assert w % 32 == 0 and h % 32 == 0 and w * h <= wf.meta.caps["max_pixels"]
+    silent = wf.fill({"first_frame": "dramastudio/f.png"})
+    assert "130" not in silent and "131" not in silent
+    assert silent["16"]["inputs"]["conditioning"] == ["104", 0]  # the guide's positive, passed on
+    voiced = wf.fill({"first_frame": "dramastudio/f.png", "dialogue_audio": "dramastudio/a.wav"})
+    assert voiced["130"]["inputs"]["audio"] == "dramastudio/a.wav"
+    assert voiced["16"]["inputs"]["conditioning"] == ["131", 0]
+    with pytest.raises(WorkflowError, match="needs first_frame"):
+        wf.fill({})
+
+
+async def test_a_video_take_with_its_inputs_and_progress(h3_root: Path, store: BlobStore) -> None:
+    fake = FakeComfy()
+    fake.video = await solid_mp4(72, 128, 5.0, 24, "336699", audio_hz=440)
+    fake.polls = 1
+    seen: list[dict[str, Any]] = []
+
+    async def on_progress(data: dict[str, Any]) -> None:
+        seen.append(data)
+
+    adapter = _adapter(fake, h3_root, store, websocket=fake.websocket(), spec=H3)
+    req = _video_req(store)
+    result = await adapter.run(req, CallContext(on_progress=on_progress))
+    graph = fake.prompts[0]
+    frame, audio = req.params["first_frame"], req.params["dialogue_audio"]
+    assert fake.uploads == [("dramastudio", f"{frame}.png"), ("dramastudio", f"{audio}.wav")]
+    assert graph["114"]["inputs"]["image"] == f"dramastudio/{frame}.png"
+    assert graph["130"]["inputs"]["audio"] == f"dramastudio/{audio}.wav"
+    assert (graph["104"]["inputs"]["width"], graph["104"]["inputs"]["height"]) == (768, 1344)
+    assert graph["111"]["inputs"]["value"] == 5.0  # 3 s asked, H3 makes 5-15 s
+    assert graph["91"]["inputs"]["fps"] == 24.0  # the model's own rate, not the frame's 30
+    assert graph["15"]["inputs"]["noise_seed"] == 7
+    assert graph["104"]["inputs"]["prompt"] == "她回头，雨还在下。"
+    [take] = result.files
+    assert (take.role, take.mime, take.w, take.h) == ("video", "video/mp4", 72, 128)
+    assert take.duration_s == pytest.approx(5.0, abs=0.1)
+    assert result.usage.output_seconds == take.duration_s and result.raw["seconds"] == 5.0
+    assert result.raw["comfy"]["workflow_id"] == "h3-i2v"
+    assert seen[0] == {"take": 1, "takes": 1, "step": 0, "steps": 0, "pct": 0.0}
+    assert seen[-1] == {"take": 1, "takes": 1, "step": 2, "steps": 2, "pct": 1.0}
+    assert adapter.estimate(_video_req(store, n=2)).seconds == 2 * 25 * 5.0
+
+
+async def test_without_a_socket_it_polls(h3_root: Path, store: BlobStore) -> None:
+    @contextlib.asynccontextmanager
+    async def refused(url: str) -> AsyncIterator[AsyncIterator[str]]:
+        raise OSError("connection refused")
+        yield  # pragma: no cover
+
+    fake = FakeComfy()
+    fake.video = await solid_mp4(72, 128, 5.0, 24, "336699")
+    fake.polls = 3
+    adapter = _adapter(fake, h3_root, store, websocket=refused, spec=H3)
+    result = await adapter.run(_video_req(store, audio=False), CallContext())
+    assert [f.role for f in result.files] == ["video"]
+    assert "130" not in fake.prompts[0]  # no dialogue audio: the guide is bypassed
+
+
+@pytest.mark.parametrize(
+    ("w", "h", "seconds", "code"),
+    [(72, 128, 2.0, "video_too_short"), (128, 72, 5.0, "video_wrong_size"),
+     (0, 0, 0.0, "invalid_response")],
+)  # fmt: skip
+async def test_a_take_unlike_what_was_asked_fails(
+    h3_root: Path, store: BlobStore, w: int, h: int, seconds: float, code: str
+) -> None:
+    fake = FakeComfy()
+    fake.video = await solid_mp4(w, h, seconds, 24, "336699") if w else b"not a video"
+    adapter = _adapter(fake, h3_root, store, spec=H3)
+    with pytest.raises(ModelError) as err:
+        await adapter.run(_video_req(store, seconds=5.0), CallContext())
+    assert err.value.code == code
+
+
+async def test_a_trial_makes_up_the_first_frame(h3_root: Path, store: BlobStore) -> None:
+    fake = FakeComfy()
+    fake.video = await solid_mp4(92, 160, 5.0, 24, "336699")  # 736 x 1280, scaled
+    params = {"width": 720, "height": 1280, "duration_s": 5, "n": 1, "trial": True}
+    req = ModelRequest(kind="video", prompt="试跑", seed=1, params=params)
+    await _adapter(fake, h3_root, store, spec=H3).run(req, CallContext())
+    assert fake.uploads == [("dramastudio", "trial-frame.png")]  # the audio is optional
+    graph = fake.prompts[0]
+    size = (graph["104"]["inputs"]["width"], graph["104"]["inputs"]["height"])
+    assert size == (736, 1280) and "131" not in graph  # 720 x 1280 in steps of 32

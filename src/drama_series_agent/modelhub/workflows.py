@@ -6,8 +6,11 @@
 - ``bindings``: a slot (``prompt``, ``width``, ``ref_image`` 1, 2 … ``image_out``; SPEC 6.4.3) →
   the node's title (``_meta.title``, never its id) and the input field. A bound title must be
   unique in the graph and the field must be one of the node's inputs. ``optional: true`` on a
-  ``ref_image``: with fewer pictures than nodes, the unfilled node is removed together with the
-  inputs that read from it (those inputs must be optional on their nodes).
+  file slot (``first_frame``, ``video_in``, ``ref_image``, ``dialogue_audio``): without a file
+  (for ``ref_image``: fewer pictures than nodes) the bound node is removed together with the
+  inputs that read from it (those inputs must be optional on their nodes). ``bypass`` names
+  nodes that go too but pass one of their inputs on: whatever read the bypassed node now reads
+  what that input read (H3's audio guide hands its ``positive`` on when there is no audio).
 - ``models``: the files its loaders name, by ComfyUI model folder (the health check asks the
   running ComfyUI for them).
 - ``caps``: like ``providers.yaml`` caps; ``sizes`` maps an aspect to the width and height the
@@ -63,10 +66,19 @@ Slot = Literal[
     "audio_out",
 ]
 OUTPUT_SLOTS = frozenset({"video_out", "image_out", "audio_out"})
+# Slots filled with an uploaded file's name (``input/dramastudio/…``).
+FILE_SLOTS = frozenset({"first_frame", "video_in", "ref_image", "dialogue_audio"})
 
 
 class WorkflowError(ValueError):
     pass
+
+
+class Bypass(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    node: str  # the node's title
+    input: str  # the input whose link its readers take over
 
 
 class Binding(BaseModel):
@@ -77,6 +89,7 @@ class Binding(BaseModel):
     node: str  # the node's title
     field: str | None = None  # the input; None for an output node
     optional: bool = False
+    bypass: list[Bypass] = Field(default_factory=list)  # with an optional slot left empty
 
 
 class ModelFile(BaseModel):
@@ -122,6 +135,13 @@ class Workflow:
             if b.field is None and b.slot not in OUTPUT_SLOTS:
                 raise WorkflowError(f"{slug}: {b.slot} needs a field")
             self._ids[b.node] = ids[0]
+            for by in b.bypass:
+                found_ids = titles.get(by.node, [])
+                if len(found_ids) != 1:
+                    raise WorkflowError(f"{slug}: bypass {by.node!r} is not one node")
+                if not _is_link((graph[found_ids[0]].get("inputs") or {}).get(by.input)):
+                    raise WorkflowError(f"{slug}: bypass {by.node!r} has no link {by.input!r}")
+                self._ids[by.node] = found_ids[0]
 
     def bindings(self, slot: Slot) -> list[Binding]:
         return sorted((b for b in self.meta.bindings if b.slot == slot), key=lambda b: b.index or 0)
@@ -142,22 +162,33 @@ class Workflow:
 
     def fill(self, values: dict[Slot, Any], refs: list[str] | None = None) -> dict[str, Any]:
         """A copy of the graph with the slots filled. ``refs``: the uploaded reference names,
-        for ``ref_image`` 1, 2 …; optional reference nodes left without one are removed."""
+        for ``ref_image`` 1, 2 …; the other file slots take theirs from ``values``. An optional
+        file slot left without one is removed (with its bypasses); a required one is an error."""
         graph = copy.deepcopy(self.graph)
         for slot, value in values.items():
+            if slot == "ref_image":
+                continue
             for b in self.bindings(slot):
                 graph[self._ids[b.node]]["inputs"][str(b.field)] = value
         refs = refs or []
-        ref_slots = self.bindings("ref_image")
-        for i, b in enumerate(ref_slots):
-            node_id = self._ids[b.node]
+        for i, b in enumerate(self.bindings("ref_image")):
             if i < len(refs):
-                graph[node_id]["inputs"][str(b.field)] = refs[i]
+                graph[self._ids[b.node]]["inputs"][str(b.field)] = refs[i]
             elif b.optional:
-                _remove(graph, node_id)
+                self._drop(graph, b)
             else:
                 raise WorkflowError(f"{self.slug}: needs at least {i + 1} reference pictures")
+        for b in self.meta.bindings:
+            if b.slot in FILE_SLOTS and b.slot != "ref_image" and values.get(b.slot) is None:
+                if not b.optional:
+                    raise WorkflowError(f"{self.slug}: needs {b.slot}")
+                self._drop(graph, b)
         return graph
+
+    def _drop(self, graph: dict[str, Any], b: Binding) -> None:
+        for by in b.bypass:
+            _bypass(graph, self._ids[by.node], by.input)
+        _remove(graph, self._ids[b.node])
 
 
 def _remove(graph: dict[str, Any], node_id: str) -> None:
@@ -167,6 +198,20 @@ def _remove(graph: dict[str, Any], node_id: str) -> None:
         inputs = node.get("inputs") or {}
         for name in [k for k, v in inputs.items() if _links_to(v, node_id)]:
             del inputs[name]
+
+
+def _bypass(graph: dict[str, Any], node_id: str, input_name: str) -> None:
+    """Drop a node; whatever read it now reads what its ``input_name`` read."""
+    source = graph[node_id]["inputs"][input_name]
+    del graph[node_id]
+    for node in graph.values():
+        inputs = node.get("inputs") or {}
+        for name in [k for k, v in inputs.items() if _links_to(v, node_id)]:
+            inputs[name] = list(source)
+
+
+def _is_link(value: Any) -> bool:
+    return isinstance(value, list) and len(value) == 2 and isinstance(value[1], int)
 
 
 def _links_to(value: Any, node_id: str) -> bool:
