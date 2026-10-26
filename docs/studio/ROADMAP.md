@@ -130,7 +130,7 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 - [x] 镜头时长由台词音频算出（`pipeline/timing.py:shot_seconds`，M3 写好；从 M3 验收挪来。M4 第 1 步 `timing.shot_duration`，第 8 步全集配音后验证）
 - [x] 锁定的素材改描述后，提示哪些镜头受影响（从 M3 验收挪来；M4 第 4 步，改林晚列出 6 个镜头）
 - [x] 本机真跑：Qwen-Image-Edit 拿锁定的参考图出关键帧草稿（M4 第 9 步：`scripts/smoke/local_storyboard.py`，`reports/m4-local-smoke.txt`）
-- [x] 手动冒烟：DeepSeek 分镜规划、API 关键帧终版（`DRAMA_LIVE=1`，上限 $1；M4 第 10 步：`scripts/smoke/live_storyboard.py`，$0.027，Nano Banana Pro 因 Google 额度用完兜底到 Seedream，`reports/m4-live-smoke.txt`）
+- [x] 手动冒烟：DeepSeek 分镜规划、API 关键帧终版（`DRAMA_LIVE=1`，上限 $1；M4 第 10 步：`scripts/smoke/live_storyboard.py`，两次共 $0.167：第一次 Nano Banana Pro 因 Google 额度用完兜底到 Seedream，充值后补跑成功，`reports/m4-live-smoke.txt`）
 
 ## M5 视频生成（约 2 周）
 

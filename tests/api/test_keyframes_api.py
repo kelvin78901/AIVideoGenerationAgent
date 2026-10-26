@@ -121,6 +121,13 @@ def test_a_shot_with_no_locked_picture_drafts_on_qwen_image(client: TestClient) 
     assert "旧黑发圈（未锁定" in _prompt(client, version)
 
 
+def test_a_shot_with_no_character_says_so(client: TestClient) -> None:
+    """Left unsaid, the model adds a stranger (M4 step 9: 1-02, the umbrella at the door)."""
+    phone = _prompt(client, _run(client, "1-07")["versions"][-1])
+    assert "这个镜头里没有人物，不要画人。" in phone
+    assert "没有人物" not in _prompt(client, _run(client, "1-05")["versions"][-1])
+
+
 def _prompt(client: TestClient, version: dict[str, Any]) -> str:
     f = next(x for x in version["files"] if x["role"] == "prompt")
     return client.get(f"{V1}/files/{f['sha256']}").content.decode("utf-8")

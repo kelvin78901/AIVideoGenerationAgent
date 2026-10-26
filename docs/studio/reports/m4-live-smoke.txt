@@ -1,7 +1,13 @@
 M4 第 10 步 · 真实冒烟（2026-10-26，scripts/smoke/live_storyboard.py）
 
-跑了一次，花费 $0.0272（Kelvin 批准的清单约 $0.16，上限 $1）。分镜规划跑通；关键帧终版没在
-Nano Banana Pro 上出成，按规则兜底到 Seedream 5.0 出了。Kelvin 定：不充值重跑，就用这次的结果。
+跑了两次，合计 $0.1665（Kelvin 批准的清单约 $0.16，上限 $1）。
+- 第 1 次（01:28）：$0.0272。分镜规划跑通；关键帧终版在 Nano Banana Pro 上 402（Google 预付额度用完），
+  兜底到 Seedream 5.0 出了。
+- 第 2 次（03:46，--only kf，Kelvin 给 Google 充值之后）：$0.1393。Nano Banana Pro 24.8 秒出 1 张
+  1536×2752（估价 $0.1340，多 4%，和 M3 一样是没算输入和思考 token）。人物、动作（低头举着便利贴）照着
+  草稿 #0，背景换成了参考图里的楼道（草稿的背景更像室外），质感明显比本地草稿好；但构图没有完全照草稿，
+  提示词里要求的是「构图不要改」。完整输出在最后。
+- Kelvin 看图的结论：Seedream 的终版比本地草稿好。
 
 - 分镜规划（DeepSeek V4 Pro，23 秒，$0.0103；估价 $0.0254）：第 1 集 10 个镜头（示例按原型是 9 个），
   两场各 5 个。和示例的不同：画外音「三年了。他凭什么。」单独成了一个近景（示例叠在 1-06 的动作镜头上），
@@ -78,3 +84,39 @@ hall draft                   $0.0000    $0.0000    54.0
 
 result: STOPPED
 files: C:\Users\kelvin\AppData\Local\Temp\drama-live-storyboard-ugdgo946\out
+
+
+== 第 2 次（原样输出）
+
+M4 live smoke · 2026-10-26 03:46 · LIVE, cap $1.0 · steps ['kf']
+ComfyUI 0.41.2 at http://127.0.0.1:8188; models C:\Users\kelvin\DramaStudio
+connection google_llm: ok google/nano-banana-pro
+== kf: 1-04 · 林晚、楼道本地重画锁定 → Qwen-Image-Edit 草稿 → google/nano-banana-pro 终版
+   linwan draft: done in 14.6 s
+   model comfy/qwen-image [local], files: linwan-candidate-0.png (928x1664), linwan-candidate-1.png (928x1664), linwan-candidate-2.png (928x1664), linwan-candidate-3.png (928x1664)
+   hall draft: done in 55.5 s
+   model comfy/qwen-image [local], files: hall-candidate-0.png (1664x928), hall-candidate-1.png (1664x928), hall-candidate-2.png (1664x928), hall-candidate-3.png (1664x928)
+   1-04 draft: done in 35.8 s
+   draft refs ['林晚', '老小区楼道 · 夜']
+   model comfy/qwen-image-edit [local], files: kf-1-04-draft-candidate-0.png (928x1664), kf-1-04-draft-candidate-1.png (928x1664), kf-1-04-draft-candidate-2.png (928x1664)
+   1-04 final: done in 24.8 s
+   final refs 草稿 + ['林晚', '老小区楼道 · 夜']
+   model google/nano-banana-pro [api], files: kf-1-04-final-candidate-0.jpg (1536x2752)
+
+== model_call
+id   component  model                       where  status   fb  out        cost
+1    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+2    views      comfy/qwen-image-edit-hq    local  canceled -   0 chars    $0.0000  canceled
+3    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+4    kf         comfy/qwen-image-edit       local  success  -   3 img      $0.0000
+5    kf         google/nano-banana-pro      api    success  -   1 img      $0.1393
+total $0.1393 over 5 calls; failures 1
+
+job                          estimate   spent      seconds
+linwan draft                 $0.0000    $0.0000    14.6
+hall draft                   $0.0000    $0.0000    55.5
+1-04 draft                   $0.0000    $0.0000    35.8
+1-04 final                   $0.1340    $0.1393    24.8
+
+result: all steps ran
+files: C:\Users\kelvin\AppData\Local\Temp\drama-live-storyboard-sx_8xuxz\out

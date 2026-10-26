@@ -60,6 +60,9 @@ REF_SLOTS = ("ref_image", "text_image")
 KIND_LABEL = {"character": "角色", "scene": "场景", "prop": "道具", "text": "画面文字"}
 FRAMING = {"wide": "远景", "medium": "中景", "close": "近景", "closeup": "特写"}
 MOVE = {"static": "固定机位", "push": "缓推", "follow": "跟拍", "pan": "摇镜"}
+# A shot whose references have no character: said outright, or the model adds a stranger
+# (1-02, the umbrella at the door: 5 of 6 drafts had a woman in them; 1 of 6 with this).
+NO_PEOPLE = "这个镜头里没有人物，不要画人。"
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
 
@@ -180,6 +183,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             blocks.append(Block("画面文字，必须逐字一致", f"「{t['exact']}」（{t['name']}）"))
         else:
             blocks.append(Block("画面文字", f"{t['name']}：留出位置，不要画字（后期贴字）"))
+    if not await _has_character(session, shot.get("asset_ids") or []):
+        blocks.append(Block("人物", NO_PEOPLE))
     return Inputs(
         blocks=blocks,
         deps=deps,
@@ -240,6 +245,16 @@ async def _references(
             }
         )
     return refs, unlocked, texts
+
+
+async def _has_character(session: AsyncSession, ids: list[str]) -> bool:
+    """Whether one of the shot's references is a character (locked or not)."""
+    rows = await session.exec(
+        select(Asset.id).where(
+            col(Asset.id).in_(ids), Asset.kind == "character", col(Asset.retired).is_(False)
+        )
+    )
+    return rows.first() is not None
 
 
 def pick_refs(

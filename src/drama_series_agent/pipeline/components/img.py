@@ -45,7 +45,7 @@ from drama_series_agent.prompts.compiler import Block
 REF_IMAGE_SLOT = "ref_image"
 KIND_GUIDE = {
     "character": "人物全身，正面站姿，双臂自然下垂；五官、发型和整套衣着都看得清。",
-    "scene": "只画空景，不要出现人物；交代空间结构、光线和天气。",
+    "scene": "只画空景，不要出现人物；一个视角、一张完整的照片，看得清空间、光线和天气。",
     "prop": "道具单独放在干净的浅色背景上，居中，看得清材质和细节。",
 }
 FINAL_NOTE = "以参考图里的草稿为准，画得更精细：构图、样子和颜色都不要改。"

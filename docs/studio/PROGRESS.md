@@ -11,7 +11,8 @@
 
 - M4 第 0–11 步全部做完，每步做了什么、提交 hash、测试结果挪进了里程碑报告 [`reports/M4.md`](reports/M4.md)（「附：各步的提交」）。
 - 第 11 步（5a3a2f5）：SPEC 补 M4 的实际做法（4.1、4.2、5.1、9.1、13.3）；ROADMAP 勾 M4；写 `reports/M4.md`；开 PR。全量 pytest 704 个（7c6af1a）、vitest 297 个、Playwright e2e 37 个过；ruff、mypy（含 linux）、eslint、tsc、prettier 干净。
-- 追加（本提交，DECISIONS「场景参考图固定横屏」）：`components.yaml` 的 `img.aspects: {scene: "16:9"}`、`img.asset_aspect`；改画幅不再列场景参考图；本机第 3 轮楼道 2/4 单幅、关键帧 9/9 单幅。全量 pytest 705 个、vitest 297 个过；ruff、mypy、eslint、tsc 干净。
+- 追加（4e98a6d，DECISIONS「场景参考图固定横屏」）：`components.yaml` 的 `img.aspects: {scene: "16:9"}`、`img.asset_aspect`；改画幅不再列场景参考图；本机第 3 轮楼道 2/4 单幅、关键帧 9/9 单幅。全量 pytest 705 个、vitest 297 个过；ruff、mypy、eslint、tsc 干净。
+- 追加（本提交，DECISIONS「Kelvin 看图之后」）：对照实验（`reports/m4-local-smoke.txt` 末尾）；参考图模板任务行改「一张单幅写实照片，单一视角」（楼道 8/8 单幅）；没有角色的镜头加 `kf.NO_PEOPLE`（陌生人 5/6 → 1/6）；Google 充值后补跑 Nano Banana Pro 成功（$0.1393，真实冒烟合计 $0.167）。
 
 ## 下一步
 
@@ -64,6 +65,5 @@
 
 ## 等 Kelvin 的事
 
-- **Google AI Studio 预付额度用完了**（M4 第 10 步，402）：Nano Banana Pro 现在调不通，关键帧和参考图的终版会兜底到 Seedream。充值后可补跑 `DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/live_storyboard.py --only kf`（约 $0.14）。
-- ~~场景参考图是分格拼图~~：Kelvin 2026-10-26 定改画横屏，已做（DECISIONS「场景参考图固定横屏」，改横屏后 2/4 单幅）。原记录：Qwen-Image-2512 9:16 画空景几乎总是 2×2 或 3 格拼图（楼道 4/4，提示词里说「不要拼图」也没用），关键帧的空间结构跟着不稳。可选：场景参考图改画横屏、场景走 API 终版、或在候选上提示「这是拼图」。看 `reports/m4-local-smoke.txt` 末尾。
-- 看截图（原型没有的部分，都在 `reports/ui/`）：**M4 第 5 步 `storyboard`、`storyboard-shot-edit`（改已确认的镜头）、`spec-aspect-impact`（改画幅，后端估价 $0.94）；第 6 步 `storyboard-table`（表格视图）；第 7 步 `storyboard-animatic`（预演播放中、开着安全区）**；M3 第 4 步 `assets-{draft,views,matrix}`；第 5 步 `assets-{text,text-composite,ocr-confirm}`（Mock 的图不真画字）；第 6 步 `assets-voice-{final,drafts}`；第 15 步重截的 `assets-views`（6 张视图）；第 7、8 步 `assets-dub-{confirm,voice}`、`script-dub{,-table,-impact}`、`assets-{gate-refused,edit-locked}`；第 10 步 `spec`（兼容表两行变「原生支持」）。
+- **1-01 剧本里的「米色风衣湿了半边」**：模型会画成半边风衣泼了黑色汁液（换成「被雨淋湿」就没有，换 40 步也有）。改不改示例剧本的措辞、要不要别的处理，等 Kelvin 定。
+
