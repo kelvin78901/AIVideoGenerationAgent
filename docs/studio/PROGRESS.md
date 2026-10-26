@@ -14,12 +14,12 @@
 - 追加（4e98a6d，DECISIONS「场景参考图固定横屏」）：`components.yaml` 的 `img.aspects: {scene: "16:9"}`、`img.asset_aspect`；改画幅不再列场景参考图；本机第 3 轮楼道 2/4 单幅、关键帧 9/9 单幅。全量 pytest 705 个、vitest 297 个过；ruff、mypy、eslint、tsc 干净。
 - 追加（59b7557，DECISIONS「Kelvin 看图之后」）：对照实验（`reports/m4-local-smoke.txt` 末尾）；参考图模板任务行改「一张单幅写实照片，单一视角」（楼道 8/8 单幅）；没有角色的镜头加 `kf.NO_PEOPLE`（陌生人 5/6 → 1/6）；Google 充值后补跑 Nano Banana Pro 成功（$0.1393，真实冒烟合计 $0.167）。
 - 追加（6f51215，DECISIONS「关键帧模型对比」）：FLUX 3 Klein 两个工作流（`workflows/flux3-klein`、`-t2i`，官方扩写）、Nano Banana 2.1（只填配置）、`kf.model_for` 取排在后面的同家文生图、ComfyUI 租约按权重文件区分；对比 `scripts/smoke/kf_bakeoff.py` → `reports/m4-kf-bakeoff.txt`（$0.605）：本地 Klein 明显好于 Qwen-Image-Edit，API 2.1 ≈ Pro、便宜一半多。全量 pytest 707 个、vitest 297 个过。
-- 追加（本提交，DECISIONS「关键帧默认模型」）：kf 默认本地 `comfy/flux3-klein` → API `google/nano-banana-2.1`；清单新项 `w_flux3`（可选）；`capabilities.restrict` 本地默认跑不了先换组件里下一个能跑、有工作流的本地模型（没装 Klein → Qwen-Image-Edit），`unavailable` 列出组件所有跑不了的本地模型；示例种子、前端快照、兼容表、安装页项数跟着改。全量 pytest 708 个里 707 个过，`test_web_script_fixture_is_current` 1 个偶发失败（两个产物 id 顺序对调，单独跑 10 个都过，上一次全量也过，疑似同一时刻建的行排序）；vitest 297 个、Playwright e2e 37 个过；ruff、mypy（含 linux）、eslint、tsc、prettier 干净。
+- 追加（c870eae，DECISIONS「关键帧默认模型」）：kf 默认本地 `comfy/flux3-klein` → API `google/nano-banana-2.1`；清单新项 `w_flux3`（可选）；`capabilities.restrict` 本地默认跑不了先换组件里下一个能跑、有工作流的本地模型（没装 Klein → Qwen-Image-Edit），`unavailable` 列出组件所有跑不了的本地模型；示例种子、前端快照、兼容表、安装页项数跟着改。全量 pytest 708 个里 707 个过，`test_web_script_fixture_is_current` 1 个偶发失败（两个产物 id 顺序对调，单独跑 10 个都过，上一次全量也过，疑似同一时刻建的行排序）；vitest 297 个、Playwright e2e 37 个过；ruff、mypy（含 linux）、eslint、tsc、prettier 干净。
 
 ## 下一步
 
 - **等 Kelvin 看完 PR #6 合并**（`reports/M4.md` 已更新；PR 描述用 `gh pr edit 6 -R kelvin78901/AIVideoGenerationAgent --body-file docs/studio/reports/M4.md` 刷新）。合并后下一个里程碑用 `/milestone` 出计划。
-- **提醒 Kelvin 重启后端并 `demo --reset`**（第 1 步加了迁移 `0018`，第 2、3 步加了示例分镜和关键帧；本地库里关键帧产物是第 2 步的随机 id，`--reset` 后才是 `demo-p-kf-1-0X`；第 5 步起分镜页完全读后端，MSW 不再兜底）：`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`。不重启的话热更新后的前端读旧后端，会报「接口返回的数据和约定不符」。
+- Kelvin 2026-10-26 已重启后端、跑过 `demo --reset`，环境页检测到 Klein（`w_flux3`）；本机关键帧路由是 hybrid：`comfy/flux3-klein` → `google/nano-banana-2.1`。以后改了后端接口仍要提醒重启。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
