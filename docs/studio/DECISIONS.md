@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · 关键帧模型对比：FLUX 3 Klein、Nano Banana 2.1
+
+Kelvin 要求在 M4 分支上做（「湿了半边」保留不改，用来考新模型）。结果见 `reports/m4-kf-bakeoff.txt`。
+
+- **FLUX 3 Image Klein 两个工作流** `workflows/flux3-klein`（按 1–4 张参考图编辑）、`workflows/flux3-klein-t2i`（文生图）：照 BFL 官方的 `flux3_klein_int8_mi2i.json` / `_t2i.json` 把子图展开成 API 格式。保留官方的 Qwen3.5 9B 提示词扩写（官方明说不要不带它用；系统提示词和贪心解码照抄），去掉框选那条路，输出尺寸按成片画幅；扩写的种子固定，同一提示词的几张候选共用一次扩写。全是 ComfyUI 0.41.2 的原生节点，不用装自定义节点包。权重 int8（主模型 5.8 GB + 文本编码器 4.9 GB + 扩写 9.8 GB + VAE 0.3 GB）这次手动用 `hf download` 放进 ComfyUI-Shared 的模型目录：HF 仓库要登录同意许可，安装器还不支持，`providers.yaml` 里因此没写 `needs`。以后进安装清单时，HF token 按硬规则 3 存钥匙串。
+- **`kf.model_for` 改成取「排在当前模型后面」的第一个文生图模型**（到末尾再从头找）：每个编辑模型后面跟它本家的文生图（Qwen-Image-Edit → Qwen-Image，FLUX 3 Klein → FLUX 3 Klein 文生图）。`kf.local` 现在是 `[qwen-image-edit, qwen-image, flux3-klein, flux3-klein-t2i, flux2-dev]`，默认路由没改。
+- **ComfyUI 的显存租约按权重文件区分占用者**（`ComfyUIAdapter._owner`，原来按工作流）：Klein 的编辑和文生图用同一套权重，原来两者之间也会 `/free`，把 20 GB 重新读一遍，读的时候 ComfyUI 报 `hostbuf_file_reader_read failed`（这台机器内存 32 GB）。用不同权重的工作流之间照旧释放（硬规则 8）。
+- **Nano Banana 2.1**（`google/nano-banana-2.1`，`gemini-nano-banana-2.1`，按官方模型页和价格页核对）：和 Pro 同一个适配器，只填配置；2K 每张 $0.0504（我们 1080p 交付走 2K），最多 14 张参考图；进了 `img_api`（参考图、补视图、关键帧的可选 API 模型），默认路由没改。实测比估价贵 15–35%（默认中等思考），确认余量 max(10%, $0.05) 兜得住。
+- **默认模型换不换等 Kelvin 定**（产品决定）：对比的结论是本地草稿 Klein 明显好于 Qwen-Image-Edit，API 终版 Nano Banana 2.1 和 Pro 差不多、便宜一半多。
+
 ## 2026-10-26 · Kelvin 看图之后：拼图、陌生人、风衣污渍
 
 对照实验见 `reports/m4-local-smoke.txt` 末尾（同样的种子直接对本机 ComfyUI）。

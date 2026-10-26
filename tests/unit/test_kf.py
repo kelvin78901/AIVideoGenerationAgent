@@ -54,6 +54,9 @@ def test_which_workflows_need_a_reference_picture() -> None:
     assert load_workflow("qwen-image-edit").needs_refs()
     assert load_workflow("qwen-image-edit-hq").needs_refs()
     assert not load_workflow("qwen-image").needs_refs()
+    assert load_workflow("flux3-klein").needs_refs()
+    assert len(load_workflow("flux3-klein").bindings("ref_image")) == 4
+    assert not load_workflow("flux3-klein-t2i").needs_refs()
 
 
 def test_the_top_view_in_words() -> None:

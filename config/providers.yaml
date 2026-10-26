@@ -200,6 +200,19 @@ media_models:
     currency: USD
     caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"], max_refs: 14 }
     docs: https://ai.google.dev/gemini-api/docs/pricing
+  - key: google/nano-banana-2.1
+    kind: image
+    display: Nano Banana 2.1
+    account: google_llm
+    adapter: gemini_image
+    base_url: https://generativelanguage.googleapis.com/v1beta
+    model_id: gemini-nano-banana-2.1   # 2026-10-26 按官方模型页核对（2026-10-06 发布，Stable）
+    unit: image
+    price: 0.0504           # 2K 每张（1680 个输出 token；1K $0.0336，4K $0.113）；我们的 1080p 交付走 2K
+    token_rates: { text_in: 1.50, image_in: 1.50, text_out: 7.50, image_out: 30.00 }   # 思考按 text_out 计
+    currency: USD
+    caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "4:5", "5:4", "9:16", "16:9", "21:9"], max_refs: 14 }   # 官方：最多 14 张参考图
+    docs: https://ai.google.dev/gemini-api/docs/models/gemini-nano-banana-2.1
   - key: openai/gpt-image-2
     kind: image
     display: GPT Image 2
@@ -292,6 +305,9 @@ local_models:
   - { key: comfy/qwen-image-edit-hq, kind: image, display: Qwen-Image-Edit 40 步（本地）, runtime: comfyui, workflow: qwen-image-edit-hq, needs: [comfy, w_img] }
   - { key: comfy/qwen-image,        kind: image,   display: Qwen-Image（本地）,       runtime: comfyui, workflow: qwen-image, needs: [comfy, w_img_t2i] }
   - { key: comfy/flux2-dev,         kind: image,   display: FLUX.2 dev（本地）,       runtime: comfyui, needs: [comfy] }
+  # FLUX 3 Image Klein（BFL，2026-10-15）：权重在要登录同意许可的 HF 仓库，安装清单还没有这一项，所以没写 needs
+  - { key: comfy/flux3-klein,       kind: image,   display: FLUX 3 Klein（本地）,     runtime: comfyui, workflow: flux3-klein }
+  - { key: comfy/flux3-klein-t2i,   kind: image,   display: FLUX 3 Klein 文生图（本地）, runtime: comfyui, workflow: flux3-klein-t2i }
   - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui, needs: [comfy, node_seedvr2, w_sr], requires_cuda: true }
   - { key: comfy/flashvsr,          kind: upscale, display: FlashVSR（本地）,         runtime: comfyui, needs: [comfy, node_flashvsr], requires_cuda: true }
   # runtime: python 的模型由 worker 跑（adapters/local_python.py）：worker 是 workers/ 下的脚本，env 是

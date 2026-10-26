@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import asyncio
 import json
+from dataclasses import replace
 from pathlib import Path
 from typing import Any
 
@@ -309,7 +310,34 @@ async def test_another_model_taking_the_gpu_frees_comfy(root: Path, store: BlobS
     fake = FakeComfy()
     lease = VramLease()
     await _adapter(fake, root, store, lease=lease).run(_req(store), CallContext())
-    assert lease.resident == "comfy:fake-edit" and fake.posted("/free") == []
+    assert lease.resident == "comfy:diffusion_models/m.safetensors" and fake.posted("/free") == []
     async with lease.hold("python:local/indextts2"):
         pass
+    assert fake.posted("/free") == [{"unload_models": True, "free_memory": True}]
+
+
+async def test_workflows_on_the_same_weights_do_not_free_each_other(
+    root: Path, store: BlobStore
+) -> None:
+    """FLUX 3 Klein's edit and text-to-image workflows load the same files: no reread between."""
+    for slug, model in (("fake-t2i", "m.safetensors"), ("fake-other", "other.safetensors")):
+        folder = root / slug
+        folder.mkdir()
+        (folder / "workflow.api.json").write_text(json.dumps(GRAPH), encoding="utf-8")
+        meta = META.replace("name: m.safetensors", f"name: {model}")
+        (folder / "workflow.yaml").write_text(meta, encoding="utf-8")
+    fake = FakeComfy()
+    fake.models = {"diffusion_models": ["m.safetensors", "other.safetensors"]}
+    lease = VramLease()
+
+    def on(slug: str) -> ComfyUIAdapter:
+        adapter = _adapter(fake, root, store, lease=lease)
+        adapter.spec = replace(SPEC, key=f"comfy/{slug}", workflow=slug)
+        lease.register(adapter._owner, adapter.free)
+        return adapter
+
+    await on("fake-edit").run(_req(store), CallContext())
+    await on("fake-t2i").run(_req(store), CallContext())
+    assert fake.posted("/free") == []
+    await on("fake-other").run(_req(store), CallContext())
     assert fake.posted("/free") == [{"unload_models": True, "free_memory": True}]

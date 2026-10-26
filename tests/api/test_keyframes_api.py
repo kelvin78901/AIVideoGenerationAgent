@@ -119,6 +119,9 @@ def test_a_shot_with_no_locked_picture_drafts_on_qwen_image(client: TestClient) 
     assert version["model_key"] == "comfy/qwen-image" and version["stage"] == "draft"
     assert version["payload"]["refs"] == []
     assert "旧黑发圈（未锁定" in _prompt(client, version)
+    # Another family's edit model goes to its own text-to-image workflow, next in kf.local.
+    klein = _run(client, "1-05", model="comfy/flux3-klein")["versions"][-1]
+    assert klein["model_key"] == "comfy/flux3-klein-t2i"
 
 
 def test_a_shot_with_no_character_says_so(client: TestClient) -> None:

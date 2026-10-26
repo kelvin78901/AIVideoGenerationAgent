@@ -1,0 +1,122 @@
+M4 · 关键帧模型对比（2026-10-26，scripts/smoke/kf_bakeoff.py；Kelvin 定的，「湿了半边」保留不改）
+
+同一套锁定参考图（本地 Qwen-Image-2512 画的林晚、楼道（16:9）、红伞，各锁第 1 张），同样的镜头：
+- 本地草稿（各 3 张，免费）：Qwen-Image-Edit-2511（4 步加速）vs FLUX 3 Image Klein（int8，带官方 Qwen3.5 9B 提示词扩写）；
+  1-07 没有锁定参考图，各自换成本家的文生图（Qwen-Image-2512 / FLUX 3 Klein 文生图）。
+- API 终版（各 1 张）：以 Qwen 草稿 #0 为参考，Nano Banana Pro vs Nano Banana 2.1。花费 $0.6052（上限 $1）。
+先跑了一次只本地的（Klein 文生图碰上 ComfyUI 的 hostbuf_file_reader_read failed，原因和修法见 DECISIONS），
+然后这次完整的。
+
+== 结论（人逐张看过）
+本地草稿：FLUX 3 Klein 明显好于 Qwen-Image-Edit。
+- 1-01「米色风衣湿了半边」：Qwen 3/3 风衣上有黑白汁液，Klein 0/3（它先把提示词扩写成完整的场景描述再画）。
+- 场景还原：Klein 的楼梯、窗、绿色墙裙几乎就是锁定的楼道参考图；Qwen 只沿用颜色和元素，空间重新编。
+- 1-04 近景：Klein 是标准近景、林晚的脸和风衣对得上；Qwen 景别偏远，有一张背景里多了一个人、#0 画了两个林晚。
+- 1-02 门口的伞（没有人物）：两边都没有人；Klein 更像参考图里的楼道。
+- 不如 Qwen 的：「夜」不够（Klein 窗外偏亮）；3 张候选构图很像（扩写用贪心解码，同一段描述）；
+  1-07 两边都画出了 23:52（「后期贴字」没守住），Klein 的手机立在桌上、没有手。
+- 速度：每个镜头 3 张 Klein 26–33 秒（含扩写）、Qwen 15–37 秒；显存峰值 Klein 23–25 GB、Qwen 31 GB。
+API 终版（从 Qwen 草稿 #0 出）：Nano Banana 2.1 和 Pro 差不多，便宜一半多。
+- 两家都照着草稿精修，草稿的毛病会留下来：1-01 两张终版都保留了风衣上的汁液。
+- 两家都会修掉一部分：1-04 草稿 #0 的两个林晚只剩一个；1-07 都按「后期贴字」去掉了 23:52（本地两个都没做到）。
+- Pro 会重新打光（1-04 换成了壁灯下的构图），2.1 更贴草稿的光线和构图。
+- 花费：Pro $0.1366–0.1393 / 张（估价 $0.134），2.1 $0.0578–0.0683 / 张（估价 $0.0504，低估 15–35%：默认开着中等思考，思考 token 另算）。
+- 耗时：都是 24–42 秒一张。
+
+== 原样输出
+
+M4 keyframe bake-off · 2026-10-26 05:16 · LIVE, cap $1.0
+GPU NVIDIA GeForce RTX 5090 32607 MiB; local ['comfy/qwen-image-edit', 'comfy/flux3-klein']; API ['google/nano-banana-pro', 'google/nano-banana-2.1']
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+connection google_llm: ok google/nano-banana-pro, google/nano-banana-2.1
+== refs: 林晚、楼道、红伞 · Qwen-Image-2512（本地），各锁第 1 张
+   linwan draft: done in 32.8 s
+   model comfy/qwen-image [local], files: ref-linwan-candidate-0.png (928x1664), ref-linwan-candidate-1.png (928x1664), ref-linwan-candidate-2.png (928x1664), ref-linwan-candidate-3.png (928x1664)
+   hall draft: done in 34.9 s
+   model comfy/qwen-image [local], files: ref-hall-candidate-0.png (1664x928), ref-hall-candidate-1.png (1664x928), ref-hall-candidate-2.png (1664x928), ref-hall-candidate-3.png (1664x928)
+   umbrella draft: done in 13.7 s
+   model comfy/qwen-image [local], files: ref-umbrella-candidate-0.png (928x1664), ref-umbrella-candidate-1.png (928x1664), ref-umbrella-candidate-2.png (928x1664), ref-umbrella-candidate-3.png (928x1664)
+== drafts: comfy/qwen-image-edit
+   1-01 comfy/qwen-image-edit: done in 35.9 s
+   1-01: ran on comfy/qwen-image-edit [local] · refs ['林晚', '老小区楼道 · 夜'] · GPU memory peak 31472 MiB
+   model comfy/qwen-image-edit [local], files: qwen-image-edit-1-01-candidate-0.png (928x1664), qwen-image-edit-1-01-candidate-1.png (928x1664), qwen-image-edit-1-01-candidate-2.png (928x1664)
+   1-02 comfy/qwen-image-edit: done in 17.7 s
+   1-02: ran on comfy/qwen-image-edit [local] · refs ['老小区楼道 · 夜', '红色长柄伞'] · GPU memory peak 31568 MiB
+   model comfy/qwen-image-edit [local], files: qwen-image-edit-1-02-candidate-0.png (928x1664), qwen-image-edit-1-02-candidate-1.png (928x1664), qwen-image-edit-1-02-candidate-2.png (928x1664)
+   1-04 comfy/qwen-image-edit: done in 14.6 s
+   1-04: ran on comfy/qwen-image-edit [local] · refs ['林晚', '老小区楼道 · 夜'] · GPU memory peak 31440 MiB
+   model comfy/qwen-image-edit [local], files: qwen-image-edit-1-04-candidate-0.png (928x1664), qwen-image-edit-1-04-candidate-1.png (928x1664), qwen-image-edit-1-04-candidate-2.png (928x1664)
+   1-07 comfy/qwen-image-edit: done in 30.8 s
+   1-07: ran on comfy/qwen-image [local] · refs none · GPU memory peak 30383 MiB
+   model comfy/qwen-image [local], files: qwen-image-edit-1-07-candidate-0.png (928x1664), qwen-image-edit-1-07-candidate-1.png (928x1664), qwen-image-edit-1-07-candidate-2.png (928x1664)
+== drafts: comfy/flux3-klein
+   1-01 comfy/flux3-klein: done in 32.6 s
+   1-01: ran on comfy/flux3-klein [local] · refs ['林晚', '老小区楼道 · 夜'] · GPU memory peak 23287 MiB
+   model comfy/flux3-klein [local], files: flux3-klein-1-01-candidate-0.png (928x1664), flux3-klein-1-01-candidate-1.png (928x1664), flux3-klein-1-01-candidate-2.png (928x1664)
+   1-02 comfy/flux3-klein: done in 25.7 s
+   1-02: ran on comfy/flux3-klein [local] · refs ['老小区楼道 · 夜', '红色长柄伞'] · GPU memory peak 23285 MiB
+   model comfy/flux3-klein [local], files: flux3-klein-1-02-candidate-0.png (928x1664), flux3-klein-1-02-candidate-1.png (928x1664), flux3-klein-1-02-candidate-2.png (928x1664)
+   1-04 comfy/flux3-klein: done in 25.7 s
+   1-04: ran on comfy/flux3-klein [local] · refs ['林晚', '老小区楼道 · 夜'] · GPU memory peak 23285 MiB
+   model comfy/flux3-klein [local], files: flux3-klein-1-04-candidate-0.png (928x1664), flux3-klein-1-04-candidate-1.png (928x1664), flux3-klein-1-04-candidate-2.png (928x1664)
+   1-07 comfy/flux3-klein: done in 13.7 s
+   1-07: ran on comfy/flux3-klein-t2i [local] · refs none · GPU memory peak 25453 MiB
+   model comfy/flux3-klein-t2i [local], files: flux3-klein-1-07-candidate-0.png (928x1664), flux3-klein-1-07-candidate-1.png (928x1664), flux3-klein-1-07-candidate-2.png (928x1664)
+== finals: google/nano-banana-pro（以 comfy/qwen-image-edit 的草稿 #0 为参考）
+   1-01 google/nano-banana-pro: done in 24.2 s
+   model google/nano-banana-pro [api], files: nano-banana-pro-1-01-candidate-0.jpg (1536x2752)
+   1-04 google/nano-banana-pro: done in 29.7 s
+   model google/nano-banana-pro [api], files: nano-banana-pro-1-04-candidate-0.jpg (1536x2752)
+   1-07 google/nano-banana-pro: done in 24.7 s
+   model google/nano-banana-pro [api], files: nano-banana-pro-1-07-candidate-0.jpg (1536x2752)
+== finals: google/nano-banana-2.1（以 comfy/qwen-image-edit 的草稿 #0 为参考）
+   1-01 google/nano-banana-2.1: done in 42.3 s
+   model google/nano-banana-2.1 [api], files: nano-banana-2.1-1-01-candidate-0.jpg (1536x2752)
+   1-04 google/nano-banana-2.1: done in 25.7 s
+   model google/nano-banana-2.1 [api], files: nano-banana-2.1-1-04-candidate-0.jpg (1536x2752)
+   1-07 google/nano-banana-2.1: done in 23.7 s
+   model google/nano-banana-2.1 [api], files: nano-banana-2.1-1-07-candidate-0.jpg (1536x2752)
+
+== model_call
+id   component  model                       where  status   fb  out        cost
+1    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+2    views      comfy/qwen-image-edit-hq    local  canceled -   0 chars    $0.0000  canceled
+3    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+4    img        comfy/qwen-image            local  success  -   4 img      $0.0000
+5    kf         comfy/qwen-image-edit       local  success  -   3 img      $0.0000
+6    kf         comfy/qwen-image-edit       local  success  -   3 img      $0.0000
+7    kf         comfy/qwen-image-edit       local  success  -   3 img      $0.0000
+8    kf         comfy/qwen-image            local  success  -   3 img      $0.0000
+9    kf         comfy/flux3-klein           local  success  -   3 img      $0.0000
+10   kf         comfy/flux3-klein           local  success  -   3 img      $0.0000
+11   kf         comfy/flux3-klein           local  success  -   3 img      $0.0000
+12   kf         comfy/flux3-klein-t2i       local  success  -   3 img      $0.0000
+13   kf         google/nano-banana-pro      api    success  -   1 img      $0.1389
+14   kf         google/nano-banana-pro      api    success  -   1 img      $0.1366
+15   kf         google/nano-banana-pro      api    success  -   1 img      $0.1393
+16   kf         google/nano-banana-2.1      api    success  -   1 img      $0.0683
+17   kf         google/nano-banana-2.1      api    success  -   1 img      $0.0645
+18   kf         google/nano-banana-2.1      api    success  -   1 img      $0.0578
+total $0.6052 over 18 calls; failures 1
+
+job                          estimate   spent      seconds
+linwan draft                 $0.0000    $0.0000    32.8
+hall draft                   $0.0000    $0.0000    34.9
+umbrella draft               $0.0000    $0.0000    13.7
+1-01 comfy/qwen-image-edit   $0.0000    $0.0000    35.9
+1-02 comfy/qwen-image-edit   $0.0000    $0.0000    17.7
+1-04 comfy/qwen-image-edit   $0.0000    $0.0000    14.6
+1-07 comfy/qwen-image-edit   $0.0000    $0.0000    30.8
+1-01 comfy/flux3-klein       $0.0000    $0.0000    32.6
+1-02 comfy/flux3-klein       $0.0000    $0.0000    25.7
+1-04 comfy/flux3-klein       $0.0000    $0.0000    25.7
+1-07 comfy/flux3-klein       $0.0000    $0.0000    13.7
+1-01 google/nano-banana-pro  $0.1340    $0.1389    24.2
+1-04 google/nano-banana-pro  $0.1340    $0.1366    29.7
+1-07 google/nano-banana-pro  $0.1340    $0.1393    24.7
+1-01 google/nano-banana-2.1  $0.0504    $0.0683    42.3
+1-04 google/nano-banana-2.1  $0.0504    $0.0645    25.7
+1-07 google/nano-banana-2.1  $0.0504    $0.0578    23.7
+
+result: all steps ran
+files: C:\Users\kelvin\AppData\Local\Temp\drama-kf-bakeoff-3p5gqcqz\out

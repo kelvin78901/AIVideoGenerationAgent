@@ -1,0 +1,32 @@
+# FLUX 3 Image Klein 文生图（没有锁定参考图的关键帧，M4 对比）。按官方工作流 flux3_klein_int8_t2i.json
+# （black-forest-labs/flux-3-image-klein-comfy，2026-10-26 下载）把子图展开改写成 API 格式：Qwen3.5 9B 提示词扩写
+# （官方「不要不带扩写用」；系统提示词、贪心解码 top_k 1、最长 3584 照抄）→ Qwen3-VL 4B 编码
+# → 蒸馏版 16 步、cfg 1.0、ModelSamplingFlux 的 shift = log(16)。和官方不同：去掉了框选
+# （bounding box）那条路，输出尺寸按成片画幅；扩写的种子固定，同一提示词的几张候选共用一次扩写
+# （ComfyUI 缓存），只有采样的种子变。许可：FLUX Kommunity License（年收入低于 500 万美元可商用出图）。
+name: { zh: FLUX 3 Klein 文生图, en: FLUX 3 Klein text to image }
+kind: image
+tier: recommended
+bindings:
+  - { slot: prompt, node: Prompt upsampler, field: prompt }
+  - { slot: width, node: Size, field: width }
+  - { slot: height, node: Size, field: height }
+  - { slot: seed, node: Sampler, field: seed }
+  - { slot: image_out, node: Output }
+# 加载器用到的文件（HF 上 black-forest-labs/flux-3-image-klein-comfy 是要登录同意许可的仓库，安装清单还没有）
+models:
+  - { folder: diffusion_models, name: flux3-image-klein-int8-convrot.safetensors }
+  - { folder: text_encoders, name: qwen3vl_4b_int8_convrot.safetensors }
+  - { folder: text_encoders, name: qwen3.5_9b_flux3_prompt_upsampler_int8_convrot.safetensors }
+  - { folder: vae, name: flux2-vae.safetensors }
+caps:
+  est_seconds: 15
+  sizes:
+    "1:1": [1328, 1328]
+    "16:9": [1664, 928]
+    "9:16": [928, 1664]
+    "4:3": [1472, 1104]
+    "3:4": [1104, 1472]
+    "3:2": [1584, 1056]
+    "2:3": [1056, 1584]
+  max_pixels: 1763584

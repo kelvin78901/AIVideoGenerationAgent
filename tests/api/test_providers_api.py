@@ -95,7 +95,10 @@ def test_test_connection_checks_the_media_models_on_the_key(
     google = next(
         p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "google_llm"
     )
-    assert google["media"] == [{"key": "google/nano-banana-pro", "display": "Nano Banana Pro"}]
+    assert google["media"] == [
+        {"key": "google/nano-banana-pro", "display": "Nano Banana Pro"},
+        {"key": "google/nano-banana-2.1", "display": "Nano Banana 2.1"},
+    ]
 
     client.post("/api/v1/providers/google_llm/key", json={"api_key": GEMINI_KEY})
     respx_mock.get("https://generativelanguage.googleapis.com/v1beta/openai/models").mock(
@@ -104,6 +107,9 @@ def test_test_connection_checks_the_media_models_on_the_key(
     image = respx_mock.get(
         "https://generativelanguage.googleapis.com/v1beta/models/gemini-3-pro-image"
     ).mock(return_value=httpx.Response(404))
+    respx_mock.get(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-nano-banana-2.1"
+    ).mock(return_value=httpx.Response(200, json={"name": "models/gemini-nano-banana-2.1"}))
     resp = client.post("/api/v1/providers/google_llm/test")
     assert resp.json()["ok"] is True
     assert resp.json()["media"] == [
@@ -112,7 +118,8 @@ def test_test_connection_checks_the_media_models_on_the_key(
             "display": "Nano Banana Pro",
             "ok": False,
             "detail": "model_not_found",
-        }
+        },
+        {"key": "google/nano-banana-2.1", "display": "Nano Banana 2.1", "ok": True, "detail": None},
     ]
     assert image.calls.last.request.headers["x-goog-api-key"] == GEMINI_KEY
     assert GEMINI_KEY not in resp.text

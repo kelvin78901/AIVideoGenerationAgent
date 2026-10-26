@@ -321,8 +321,10 @@ class KfComponent(MediaComponent):
 
     def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
         """A draft with no locked reference picture cannot go to an edit-only model: take the
-        first local model of the component that draws from words and this machine can run
-        (Qwen-Image). An API final always sends the draft."""
+        next local model of the component after it (wrapping round) that draws from words and
+        this machine can run, so each edit model is followed by its own family's (Qwen-Image
+        after Qwen-Image-Edit, FLUX 3 Klein's text-to-image after FLUX 3 Klein). An API final
+        always sends the draft."""
         registry = self.services.registry
         if inputs.params.get("source_version_id") or inputs.context.get("refs"):
             return model
@@ -333,7 +335,8 @@ class KfComponent(MediaComponent):
             local = get_config().components.component(self.id).local
         except KeyError:
             local = []
-        for other in local:
+        i = local.index(model) if model in local else -1
+        for other in local[i + 1 :] + local[: i + 1]:
             alt = local_workflow(registry, other)
             if other not in settings.unavailable and alt is not None and not alt.needs_refs():
                 return other

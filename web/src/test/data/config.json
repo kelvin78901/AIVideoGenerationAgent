@@ -138,6 +138,7 @@
         "api_models": [
           "openai/gpt-image-2",
           "google/nano-banana-pro",
+          "google/nano-banana-2.1",
           "volc/seedream-5.0"
         ],
         "local_models": [
@@ -154,6 +155,7 @@
         "api_models": [
           "openai/gpt-image-2",
           "google/nano-banana-pro",
+          "google/nano-banana-2.1",
           "volc/seedream-5.0"
         ],
         "local_models": [
@@ -246,11 +248,14 @@
         "api_models": [
           "openai/gpt-image-2",
           "google/nano-banana-pro",
+          "google/nano-banana-2.1",
           "volc/seedream-5.0"
         ],
         "local_models": [
           "comfy/qwen-image-edit",
           "comfy/qwen-image",
+          "comfy/flux3-klein",
+          "comfy/flux3-klein-t2i",
           "comfy/flux2-dev"
         ],
         "unavailable": {}
@@ -551,6 +556,16 @@
         }
       },
       {
+        "key": "google/nano-banana-2.1",
+        "display": "Nano Banana 2.1",
+        "where": "api",
+        "price": {
+          "unit": "image",
+          "amount": 0.0504,
+          "currency": "USD"
+        }
+      },
+      {
         "key": "openai/gpt-image-2",
         "display": "GPT Image 2",
         "where": "api",
@@ -757,6 +772,18 @@
       {
         "key": "comfy/flux2-dev",
         "display": "FLUX.2 dev（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/flux3-klein",
+        "display": "FLUX 3 Klein（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/flux3-klein-t2i",
+        "display": "FLUX 3 Klein 文生图（本地）",
         "where": "local",
         "price": null
       },
@@ -1039,6 +1066,7 @@
           "comfy/qwen-image-edit",
           "comfy/flux2-dev",
           "google/nano-banana-pro",
+          "google/nano-banana-2.1",
           "volc/seedream-5.0"
         ],
         "per_call_cap_usd": 1.5
@@ -1063,6 +1091,7 @@
           "comfy/qwen-image-edit-hq",
           "comfy/qwen-image-edit",
           "google/nano-banana-pro",
+          "google/nano-banana-2.1",
           "volc/seedream-5.0"
         ],
         "per_call_cap_usd": 1.0
@@ -1208,8 +1237,11 @@
         "alt_order": [
           "comfy/qwen-image-edit",
           "comfy/qwen-image",
+          "comfy/flux3-klein",
+          "comfy/flux3-klein-t2i",
           "comfy/flux2-dev",
           "google/nano-banana-pro",
+          "google/nano-banana-2.1",
           "volc/seedream-5.0"
         ],
         "per_call_cap_usd": 1.0
@@ -1597,7 +1629,8 @@
           "comfy/qwen-image-edit",
           "comfy/flux2-dev",
           "openai/gpt-image-2",
-          "google/nano-banana-pro"
+          "google/nano-banana-pro",
+          "google/nano-banana-2.1"
         ],
         "per_call_cap_usd": 1.5
       },
@@ -1621,6 +1654,7 @@
           "google/nano-banana-pro",
           "comfy/qwen-image-edit",
           "openai/gpt-image-2",
+          "google/nano-banana-2.1",
           "volc/seedream-5.0"
         ],
         "per_call_cap_usd": 1.0
@@ -1766,9 +1800,12 @@
         "alt_order": [
           "volc/seedream-5.0",
           "comfy/qwen-image",
+          "comfy/flux3-klein",
+          "comfy/flux3-klein-t2i",
           "comfy/flux2-dev",
           "openai/gpt-image-2",
-          "google/nano-banana-pro"
+          "google/nano-banana-pro",
+          "google/nano-banana-2.1"
         ],
         "per_call_cap_usd": 1.0
       },
@@ -2162,7 +2199,8 @@
           "comfy/qwen-image-edit",
           "comfy/flux2-dev",
           "openai/gpt-image-2",
-          "google/nano-banana-pro"
+          "google/nano-banana-pro",
+          "google/nano-banana-2.1"
         ],
         "per_call_cap_usd": 1.5
       },
@@ -2186,7 +2224,8 @@
           "volc/seedream-5.0",
           "comfy/qwen-image-edit",
           "openai/gpt-image-2",
-          "google/nano-banana-pro"
+          "google/nano-banana-pro",
+          "google/nano-banana-2.1"
         ],
         "per_call_cap_usd": 1.0
       },
@@ -2331,9 +2370,12 @@
         "alt_order": [
           "volc/seedream-5.0",
           "comfy/qwen-image",
+          "comfy/flux3-klein",
+          "comfy/flux3-klein-t2i",
           "comfy/flux2-dev",
           "openai/gpt-image-2",
-          "google/nano-banana-pro"
+          "google/nano-banana-pro",
+          "google/nano-banana-2.1"
         ],
         "per_call_cap_usd": 1.0
       },
@@ -2796,6 +2838,8 @@
         },
         "alt_order": [
           "comfy/qwen-image",
+          "comfy/flux3-klein",
+          "comfy/flux3-klein-t2i",
           "comfy/flux2-dev"
         ],
         "per_call_cap_usd": 1.0

@@ -11,7 +11,10 @@ One adapter per workflow folder (``workflows/<slug>/``, ``modelhub/workflows.py`
   and takes it off the queue (``POST /queue {"delete": [id]}``). A prompt that vanishes from
   both the queue and the history (the user cleared the queue) fails with ``comfy_lost``.
 - **VRAM lease**: each workflow holds the lease for its run; when another model (a TTS worker,
-  another workflow) asks for it, ComfyUI is told to let go (``POST /free``).
+  a workflow on other weights) asks for it, ComfyUI is told to let go (``POST /free``).
+  Workflows on the same weights (FLUX 3 Klein's edit and text-to-image) share one owner: freeing
+  between them only reads the same 20 GB again, and that reread is where ComfyUI failed with
+  ``hostbuf_file_reader_read failed`` (M4 keyframe bake-off).
 - **Where**: the ComfyUI the last scan found (its port), and that scan's environment hash; the
   version records ``workflow_id``, ``workflow_sha256`` and ``comfy_env_hash`` (SPEC 6.4.5),
   passed back in ``ModelResult.raw["comfy"]``.
@@ -144,7 +147,12 @@ class ComfyUIAdapter:
 
     @property
     def _owner(self) -> str:
-        return f"comfy:{self.spec.workflow}"
+        """The lease owner: the weights the workflow loads (its slug when it names none)."""
+        try:
+            files = sorted(f"{m.folder}/{m.name}" for m in self.workflow().meta.models)
+        except ModelError:
+            files = []
+        return "comfy:" + ("+".join(files) if files else str(self.spec.workflow))
 
     def workflow(self) -> Workflow:
         slug = self.spec.workflow
