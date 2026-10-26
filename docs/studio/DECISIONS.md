@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 计划（Kelvin 定的四项）
+
+计划见 `plans/M5.md`。
+- **视频出终版按按钮**：本地草稿采纳后不自动出 2K，和关键帧一样在候选卡上点「用 API 出终版 · 约 $x」才花钱（H3 Regenerate-2K）。SPEC 7.7 写的「采纳时自动出」按这条改。原因：每次采纳草稿都花钱，用户控制不了。
+- **按镜头选工作流做规则表 + LLM 建议，建议走 API 模型**（默认 DeepSeek，不占本机显卡、不跑本地 LLM）；**拼节点（beta）挪到之后（P3）**，ROADMAP 跟着改。
+- **本机真跑 + 真实冒烟上限 $3**：本机下 H3 权重（约 65 GB，先存快照）跑草稿；API 冒烟 H3 API、Regenerate-2K、Seedance 2.5 各 1 条（视频比图片贵，默认的 $1 不够）。
+- **配音方式两种都保留，每个镜头自己选**：分镜规划按镜头建议、用户在分镜页改，不设全局默认。对照 PLAN 的音频驱动模式：`tts`（先配音再对口型）= 模式 A（台词音频喂给 H3，`fully_copy`）；`native`（原生同步）= 模式 B（H3 自己出声，给锁定音色样本，说话人编号 S1/S2）；`none` = 不出声。模式 C（后期对口型）是 M6 的口型修复。`models_db.py` 注释里的「SPEC A / B / C」按这个对照改。
+- **不在 M5 做**：自动质检和不达标重跑（M6，M5 的 take 显示「未检查」）、2K 精修接口和口型修复（M6）、后期页裁头开关和混音（M7）、看板其他指标（M8，M5 只做表头要的 `/metrics/summary`）、素材板和存回工作台节点（M9）。
+
 ## 2026-10-26 · 关键帧默认模型：本地 FLUX 3 Klein、API Nano Banana 2.1（Kelvin 定）
 
 - **默认路由**：`components.yaml` 的 `kf` 预设 `balanced` 改成 `local: comfy/flux3-klein`、`api: google/nano-banana-2.1`；`kf.local` 改成 Klein 在前（`[flux3-klein, flux3-klein-t2i, qwen-image-edit, qwen-image, flux2-dev]`）。参考图 `img` 不换（仍是 Qwen-Image 草稿 → Nano Banana Pro）。
