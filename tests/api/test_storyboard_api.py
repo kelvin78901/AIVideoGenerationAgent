@@ -163,7 +163,7 @@ def test_a_new_aspect_lists_the_keyframes(client: TestClient) -> None:
     lines = _lines(impact)
     redraw = lines["keyframes_redraw"]
     assert redraw["params"] == {"count": 7, "shots": 9}
-    assert redraw["cost_usd"] == pytest.approx(7 * 0.134, abs=0.01)  # an API final each
+    assert redraw["cost_usd"] == pytest.approx(7 * 0.0504, abs=0.01)  # a Nano Banana 2.1 final each
     # Scene pictures are drawn 16:9 whatever the spec (components.yaml): nothing to redraw.
     assert "ref_images_suggest" not in lines
     assert impact["stale"] == {"storyboard": 7}

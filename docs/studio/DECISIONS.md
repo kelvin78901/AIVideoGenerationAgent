@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · 关键帧默认模型：本地 FLUX 3 Klein、API Nano Banana 2.1（Kelvin 定）
+
+- **默认路由**：`components.yaml` 的 `kf` 预设 `balanced` 改成 `local: comfy/flux3-klein`、`api: google/nano-banana-2.1`；`kf.local` 改成 Klein 在前（`[flux3-klein, flux3-klein-t2i, qwen-image-edit, qwen-image, flux2-dev]`）。参考图 `img` 不换（仍是 Qwen-Image 草稿 → Nano Banana Pro）。
+- **Klein 进安装清单但不是必装项**（`setup-manifest.yaml` 的 `w_flux3`，20.8 GB，固定 HF 修订和 sha256）：仓库要登录 HF 并同意许可，安装器还不会带 HF token，勾上会下载失败（可选项失败只记录）。两个 Klein 模型的 `needs` 写上 `[comfy, w_flux3]`，能力过滤因此认得它。以后安装器支持 HF token（存钥匙串，硬规则 3）时再考虑改成必装。
+- **本地默认模型跑不了时先换同组件的下一个本地模型**（`capabilities.restrict` 新参数 `local_models`，`config.resolve` 传 `comp.local`）：按 `kf.local` 的顺序从当前模型往后找（到末尾从头找）这台机器能跑的，都不行才像原来一样改走 API / 关掉。不这样的话，没装 Klein 的 5090 草稿会走收费 API。替补只取有办法跑的：ComfyUI 模型要有工作流（FLUX.2 dev 只写了 `needs: [comfy]`、还没有工作流，不能当替补，否则只装了 ComfyUI 的机器会把草稿派给它）。
+- **`Resolved.unavailable` 列出组件所有跑不了的本地模型**（原来只有路由上被拿掉的）：`kf.model_for` 靠它跳过跑不了的文生图模型，原来漏了不在路由上的（例如没装 `w_img_t2i` 时会选 Qwen-Image）。
+- **示例种子**：关键帧草稿记成 `comfy/flux3-klein`，终版 `google/nano-banana-2.1`、$0.06（对比里的实际花费）；前端快照重导。
+
 ## 2026-10-26 · 关键帧模型对比：FLUX 3 Klein、Nano Banana 2.1
 
 Kelvin 要求在 M4 分支上做（「湿了半边」保留不改，用来考新模型）。结果见 `reports/m4-kf-bakeoff.txt`。
@@ -10,7 +18,7 @@ Kelvin 要求在 M4 分支上做（「湿了半边」保留不改，用来考新
 - **`kf.model_for` 改成取「排在当前模型后面」的第一个文生图模型**（到末尾再从头找）：每个编辑模型后面跟它本家的文生图（Qwen-Image-Edit → Qwen-Image，FLUX 3 Klein → FLUX 3 Klein 文生图）。`kf.local` 现在是 `[qwen-image-edit, qwen-image, flux3-klein, flux3-klein-t2i, flux2-dev]`，默认路由没改。
 - **ComfyUI 的显存租约按权重文件区分占用者**（`ComfyUIAdapter._owner`，原来按工作流）：Klein 的编辑和文生图用同一套权重，原来两者之间也会 `/free`，把 20 GB 重新读一遍，读的时候 ComfyUI 报 `hostbuf_file_reader_read failed`（这台机器内存 32 GB）。用不同权重的工作流之间照旧释放（硬规则 8）。
 - **Nano Banana 2.1**（`google/nano-banana-2.1`，`gemini-nano-banana-2.1`，按官方模型页和价格页核对）：和 Pro 同一个适配器，只填配置；2K 每张 $0.0504（我们 1080p 交付走 2K），最多 14 张参考图；进了 `img_api`（参考图、补视图、关键帧的可选 API 模型），默认路由没改。实测比估价贵 15–35%（默认中等思考），确认余量 max(10%, $0.05) 兜得住。
-- **默认模型换不换等 Kelvin 定**（产品决定）：对比的结论是本地草稿 Klein 明显好于 Qwen-Image-Edit，API 终版 Nano Banana 2.1 和 Pro 差不多、便宜一半多。
+- **默认模型换不换等 Kelvin 定**（产品决定；已定，见上一条）：对比的结论是本地草稿 Klein 明显好于 Qwen-Image-Edit，API 终版 Nano Banana 2.1 和 Pro 差不多、便宜一半多。
 
 ## 2026-10-26 · Kelvin 看图之后：拼图、陌生人、风衣污渍
 

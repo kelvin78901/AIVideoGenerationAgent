@@ -113,7 +113,7 @@ def test_compat(client: TestClient) -> None:
     assert data["aspect"] == "9:16" and len(data["rows"]) == 7
     assert data["rows"][0] == {
         "stage": "keyframe",
-        "model_keys": ["google/nano-banana-pro"],
+        "model_keys": ["google/nano-banana-2.1"],
         "status": "native",
         "how": {"code": "native_4k", "params": {}},
     }

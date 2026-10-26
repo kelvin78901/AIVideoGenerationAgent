@@ -88,7 +88,7 @@ function compatRows(): CompatRow[] {
     how: { code, params: {} },
   });
   return [
-    row("keyframe", ["google/nano-banana-pro"], "native", "native_4k"),
+    row("keyframe", ["google/nano-banana-2.1"], "native", "native_4k"),
     row("text_keyframe", ["openai/gpt-image-2"], "native", "native"),
     row("sketch", ["volc/seedream-5.0"], "native", "cheap_sketch"),
     row("video_draft", ["comfy/h3"], "native", "h3_aspects"),

@@ -27,7 +27,7 @@ INSTALL = f"{V1}/setup/install"
 # the scan finds them missing but offers no install.
 PC_INSTALLABLE = [
     "torch", "ffmpeg", "rt_qwentts", "rt_indextts", "rt_ocr", "comfy", "node_flashvsr", "sage",
-    "w_h3", "w_te", "w_img", "w_img_t2i", "w_sr", "w_tts", "llmsrv",
+    "w_h3", "w_te", "w_img", "w_img_t2i", "w_flux3", "w_sr", "w_tts", "llmsrv",
 ]  # fmt: skip
 
 
@@ -113,7 +113,8 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
     touching = [x["id"] for x in started["items"] if x["touches_comfy"] and x["install"]]
     # (the weights for ComfyUI too: they go into its model folders; IndexTTS does not)
     assert touching == [
-        "torch", "comfy", "node_flashvsr", "sage", "w_h3", "w_te", "w_img", "w_img_t2i", "w_sr",
+        "torch", "comfy", "node_flashvsr", "sage", "w_h3", "w_te", "w_img", "w_img_t2i",
+        "w_flux3", "w_sr",
     ]  # fmt: skip
     confirm = started["install"]["confirm"]
     changes = [c for c in confirm if c["code"] == "comfy_change"]
@@ -126,6 +127,7 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
         {"item": "w_te", "gb": 15.7},
         {"item": "w_img", "gb": 31.0},
         {"item": "w_img_t2i", "gb": 31.8},
+        {"item": "w_flux3", "gb": 20.8},
     ]
     assert changes[0] == {
         "code": "comfy_change",
@@ -140,7 +142,7 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
 
     done = _wait(client, "done")
     states = _states(done)
-    assert Counter(states.values()) == {"done": 14, "failed": 1}
+    assert Counter(states.values()) == {"done": 15, "failed": 1}
     assert done["download_bps"] == 25e6  # what the weights' downloads measured
     sage = next(x for x in done["items"] if x["id"] == "sage")
     assert sage["install"] == {
@@ -195,7 +197,7 @@ def test_rescan_only_reports_the_difference(client: TestClient) -> None:
     after = _scan(client)
     by_id = {x["id"]: x for x in after["items"]}
     assert Counter(x["status"] for x in after["items"]) == {
-        "ok": 24,
+        "ok": 25,
         "missing": 3,
         "optional": 6,
         "warn": 1,

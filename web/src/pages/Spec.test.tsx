@@ -46,7 +46,7 @@ describe("SpecPage", () => {
     expect(screen.getByRole("radio", { name: "1080p 1080×1920" })).toBeChecked();
     expect(screen.getByText(/草稿固定用 768p 档（768×1366）/)).toBeInTheDocument();
     expect(
-      await screen.findByRole("row", { name: /^关键帧 Nano Banana Pro 原生支持/ }),
+      await screen.findByRole("row", { name: /^关键帧 Nano Banana 2.1 原生支持/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("已锁定 · 第 1 集已有 9 个镜头")).toBeInTheDocument();
     expect(screen.getByText("48 kHz · 响度 -14 LUFS · 峰值 -1 dBTP")).toBeInTheDocument();
@@ -62,7 +62,7 @@ describe("SpecPage", () => {
     await user.click(aspect(/^21:9 宽银幕/));
     expect(await screen.findByText("改成 21:9 宽银幕 会影响已经做好的部分")).toBeInTheDocument();
     expect(screen.getByText(/关键帧 7 张（9 个镜头）要按新画幅重画/)).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "改，并自动重做（约 $0.94）" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "改，并自动重做（约 $0.35）" })).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /自定义/ })).toHaveAttribute("aria-pressed", "true");
     await waitFor(() =>
       expect(compatRow("视频（备选）")).toHaveTextContent("支持这个画幅；部分渠道只到 720p"),

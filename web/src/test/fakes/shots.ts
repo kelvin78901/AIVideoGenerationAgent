@@ -42,8 +42,8 @@ const demoKeyframes = data.keyframes.map((p) => ProductSchema.parse(p));
 
 /** The episode the fixture's shots are of. */
 const EPISODE = "demo-e1";
-/** 「用 API 出终版」 of one keyframe (Nano Banana Pro, one picture: `RunService.final_cost`). */
-export const FINAL_COST = 0.134;
+/** 「用 API 出终版」 of one keyframe (Nano Banana 2.1, one picture: `RunService.final_cost`). */
+export const FINAL_COST = 0.0504;
 
 /** State of the fake; `resetFakeShots()` (called by `backend()`) restores it. */
 export const fakeShots = {

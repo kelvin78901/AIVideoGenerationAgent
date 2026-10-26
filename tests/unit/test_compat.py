@@ -25,9 +25,10 @@ def _table(
 def _msw_rows(aspect: Aspect) -> list[tuple[str, list[str], str, str]]:
     """The prototype's table (``web/src/test/backend.ts:compatRows``), with the image models as
     their official docs have them (DECISIONS 2026-10-21「第 10 步」): Nano Banana Pro makes
-    21:9 and GPT Image 2 makes the delivery size directly, so both are native everywhere."""
+    21:9 and GPT Image 2 makes the delivery size directly, so both are native everywhere. The
+    keyframe final is Nano Banana 2.1 since 2026-10-26 (DECISIONS「关键帧默认模型」)."""
     return [
-        ("keyframe", ["google/nano-banana-pro"], "native", "native_4k"),
+        ("keyframe", ["google/nano-banana-2.1"], "native", "native_4k"),
         ("text_keyframe", ["openai/gpt-image-2"], "native", "native"),
         ("sketch", ["volc/seedream-5.0"], "native", "cheap_sketch"),
         ("video_draft", ["comfy/h3"], "native", "h3_aspects"),

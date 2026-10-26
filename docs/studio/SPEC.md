@@ -237,7 +237,8 @@ class Component(Protocol):
 - **分镜规划和关键帧（M4）**：
   - `plan`：模型每场拆镜，给拍哪几行、类型、景别、运动、画面描述、参考素材、站位、没对白的时长初值；规则后处理（`shots/ops.py:normalize`）把能确定修好的直接修好、不为此重试：没拍到的行补一个镜头（画外音叠到前一个镜头）、说话的行重复了只留第一次、每场第一个镜头不是连续动作、连续动作接同一场前面最近的非插入镜头（插入镜头 = 特写且没有角色）、参考素材只留本集的、没给站位按参考素材摆、机位按景别放。
   - `kf`：和 `img` 一样是候选类（一次 3 张）、混合模式（本地草稿 → 选一张 →「用 API 出终版」1 张，父版本是草稿）。编译层写画幅、景别和之后的机位运动、场景、站位（俯视图转成「林晚在画面右侧，远处；机位在正前方」，只写这个镜头参考素材里有的角色和道具）、拍的动作行、画面文字（模型出字写逐字内容，后期贴字写「留出位置」）。参考图只传已锁定的，按角色 → 场景 → 道具 → 画面文字取到模型能收的张数（`caps.max_refs`，本地工作流按 `ref_image` 槽数），出终版时草稿占第 1 张；没传的在提示词里点名。
-  - **组件可以按输入换模型**（`Component.model_for`，`RunService` 先读输入再定模型、编译和估价）：Qwen-Image-Edit 2511 只能按参考图编辑，一个镜头没有锁定的参考图时本地草稿改用 `components.yaml` 里 `kf.local` 第一个不需要参考图的模型（Qwen-Image）。
+  - **默认模型**（Kelvin 2026-10-26，对比见 `reports/m4-kf-bakeoff.txt`）：本地草稿 FLUX 3 Klein（`comfy/flux3-klein`），API 终版 Nano Banana 2.1（`google/nano-banana-2.1`）。`kf.local` 是 `[flux3-klein, flux3-klein-t2i, qwen-image-edit, qwen-image, flux2-dev]`。Klein 的权重（清单 `w_flux3`）在要登录的 HF 仓库，不是必装项；**没装的机器草稿换 `kf.local` 里下一个能跑、有工作流的本地模型**（Qwen-Image-Edit），都跑不了才改走 API（`capabilities.restrict` 的 `local_models`）。`Resolved.unavailable` 列出组件所有跑不了的本地模型，不只是路由上被拿掉的。
+  - **组件可以按输入换模型**（`Component.model_for`，`RunService` 先读输入再定模型、编译和估价）：Klein 和 Qwen-Image-Edit 2511 都只能按参考图编辑，一个镜头没有锁定的参考图时本地草稿改用 `kf.local` 里排在当前模型后面、这台机器能跑的第一个文生图模型（本家的：Klein 文生图 / Qwen-Image）。
 - **画面文字**：分镜表里记录每个镜头的预期文字；质检用 OCR 逐字比对。
   - M3 先在素材上做（`qa/ocr.py`）：每张候选过一次 OCR（`router.call()`、写 `model_call`，$0）。两边 NFKC、去空白后逐字比，标点也算；只有句末标点没读到算一致。不一致分 `missing` / `wrong` / `has_text`（后期贴字的底图上读出了字）。没有 OCR 时标「未检查」（`ocr_ok: null`），不拦锁定。
   - 两种做法：模型直接出字（提示词带逐字内容和字体），或后期贴字（底图不要字、留位置；真正的合成在 M7）。

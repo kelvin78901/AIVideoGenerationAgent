@@ -327,11 +327,11 @@ describe("StoryboardPage", () => {
     await user.click(await screen.findByRole("radio", { name: "v1 · C" }));
     await waitFor(() => expect(shot("1-04")?.keyframe_pick).toBe(2));
     const draft = keyframe("1-04")?.versions.at(-1);
-    await user.click(screen.getByRole("button", { name: "用 API 出终版 · 约 $0.13" }));
+    await user.click(screen.getByRole("button", { name: "用 API 出终版 · 约 $0.05" }));
     await waitFor(() => expect(keyframe("1-04")?.versions).toHaveLength(2));
     const final = keyframe("1-04")?.versions.at(-1);
     expect(final).toMatchObject({ stage: "final", parent_version_id: draft?.id });
-    expect(final?.model_key).toBe("google/nano-banana-pro");
+    expect(final?.model_key).toBe("google/nano-banana-2.1");
     expect(await screen.findByRole("radio", { name: "v2 · A" })).toHaveAttribute(
       "aria-checked",
       "true",

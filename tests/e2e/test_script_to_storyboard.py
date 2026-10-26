@@ -143,7 +143,7 @@ def test_from_the_script_to_a_confirmed_storyboard(backend: Backend) -> None:
     impact = _preview(api, "spec_aspect", series, {"aspect": "16:9", "platform": "wide"})
     redraw = next(x for x in impact["lines"] if x["code"] == "keyframes_redraw")
     assert redraw["params"] == {"count": 7, "shots": 9}
-    assert redraw["cost_usd"] == pytest.approx(7 * 0.134, abs=0.01)
+    assert redraw["cost_usd"] == pytest.approx(7 * 0.0504, abs=0.01)  # a Nano Banana 2.1 final each
 
     # Editing the locked 林晚 lists the shots she is in.
     impact = _preview(api, "asset_edit", linwan["id"], {"intent": "26 岁，短发，米色风衣。"})

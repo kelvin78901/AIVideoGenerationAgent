@@ -73,7 +73,7 @@
       "keyframe_product_id": "demo-p-kf-1-01",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "keyframe_sha256": "94a3f1898afad1c7c5ddfafbe87f8fcc9e238aa51590507310a767650153ceaf",
+      "keyframe_sha256": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
       "confirmed": true,
       "confirm_stale": false
     },
@@ -151,7 +151,7 @@
       "keyframe_product_id": "demo-p-kf-1-02",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "keyframe_sha256": "b442aead22dd03902dc62c442ceba0a990215e93852923fe753c8eb37fed0e32",
+      "keyframe_sha256": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
       "confirmed": true,
       "confirm_stale": false
     },
@@ -228,7 +228,7 @@
       "keyframe_product_id": "demo-p-kf-1-03",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "keyframe_sha256": "7bd9b9a3484f9a9e39fb99e0caada4c205f9e850a65b81f219fdc77c0347fa89",
+      "keyframe_sha256": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
       "confirmed": true,
       "confirm_stale": false
     },
@@ -306,7 +306,7 @@
       "keyframe_product_id": "demo-p-kf-1-04",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "keyframe_sha256": "0161873e1951d88cac952b84a2344ddaf7b98920cc1f80a789dcdee1bb0e7129",
+      "keyframe_sha256": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
       "confirmed": false,
       "confirm_stale": false
     },
@@ -384,7 +384,7 @@
       "keyframe_product_id": "demo-p-kf-1-05",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "keyframe_sha256": "3ec8e13e67199f1195d37ee8dc77654db87ab2c60a432fd777e9f5f7db6de0c4",
+      "keyframe_sha256": "2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
       "confirmed": false,
       "confirm_stale": false
     },
@@ -456,7 +456,7 @@
       "keyframe_product_id": "demo-p-kf-1-06",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "keyframe_sha256": "e2442f470f5fdb1f3aeb6f87d519aa526310f7c9940312649b723cfa7c575320",
+      "keyframe_sha256": "41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
       "confirmed": false,
       "confirm_stale": false
     },
@@ -526,7 +526,7 @@
       "keyframe_product_id": "demo-p-kf-1-07",
       "video_product_id": null,
       "keyframe_pick": 0,
-      "keyframe_sha256": "7bb4cc6f8c7e84ae9eef8209932469a630a19ccd2f01a3de942d941ef48bb6e5",
+      "keyframe_sha256": "c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
       "confirmed": false,
       "confirm_stale": false
     },
@@ -1277,7 +1277,7 @@
       "component_id": "kf",
       "current_version_id": "demo-p-kf-1-01-v2",
       "adopted_version_id": "demo-p-kf-1-01-v2",
-      "locked_hash": "sha256:f488b6ab12878f2ee0af215b9195a0edbe63387e9a63379fae021c12ac347829",
+      "locked_hash": "sha256:72405a4b9a735679ecc999fc5b0f6d6cd26d978bc341d3cd0bd5c8d114fd1e6c",
       "status": "locked",
       "versions": [
         {
@@ -1301,8 +1301,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/b6/b6e6b9b6eb5a06e7b097a941eb86e6e3328c952aa181b968def238ae0b37826a",
-              "sha256": "b6e6b9b6eb5a06e7b097a941eb86e6e3328c952aa181b968def238ae0b37826a",
+              "path": "blobs/sha256/9f/9fc6652b10fefd3c59f7b093fc0cb908c577439a55d80c7b7fda0f68b68032fc",
+              "sha256": "9fc6652b10fefd3c59f7b093fc0cb908c577439a55d80c7b7fda0f68b68032fc",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1315,8 +1315,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/89/8929a9bdda06453b0af6d719c8ae53e9b7f991a45c3965cb2d10ec774ce04eb1",
-              "sha256": "8929a9bdda06453b0af6d719c8ae53e9b7f991a45c3965cb2d10ec774ce04eb1",
+              "path": "blobs/sha256/d8/d808ad7a91c98903099b6b8bfeb89e537d0660d24499883c0e43b5d955efd922",
+              "sha256": "d808ad7a91c98903099b6b8bfeb89e537d0660d24499883c0e43b5d955efd922",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1329,8 +1329,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/19/196b42f12141e13dd17be6a25469ffb54c27ab1babf18e472fa757d0703cbcc1",
-              "sha256": "196b42f12141e13dd17be6a25469ffb54c27ab1babf18e472fa757d0703cbcc1",
+              "path": "blobs/sha256/da/da98c48863ef3aaf40e3e228334c3014e013d461823d78034f26af26c22d36ba",
+              "sha256": "da98c48863ef3aaf40e3e228334c3014e013d461823d78034f26af26c22d36ba",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1343,8 +1343,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/e6/e65661f24c3614863c79baef9152ae2b9455901fa45f09a56555e9f77f2c56b6",
-              "sha256": "e65661f24c3614863c79baef9152ae2b9455901fa45f09a56555e9f77f2c56b6",
+              "path": "blobs/sha256/86/86c1014b5fd95bebfacf95f80f4a69b3c7221f3d16f11aaea45d9386213caeb6",
+              "sha256": "86c1014b5fd95bebfacf95f80f4a69b3c7221f3d16f11aaea45d9386213caeb6",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1356,11 +1356,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:e1967ce83f22b2e58392762ab2fa9c923aacfa46c37eb5e1ddff0955345f81e8",
+          "content_hash": "sha256:581a2ad931973950f60c1a446df5583f0aba2eb77451562d6ab5b73b4db9e5a4",
           "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
-          "model_key": "comfy/qwen-image-edit",
+          "model_key": "comfy/flux3-klein",
           "where": "local",
           "seed": 1401,
           "params": {
@@ -1396,8 +1396,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/94/94a3f1898afad1c7c5ddfafbe87f8fcc9e238aa51590507310a767650153ceaf",
-              "sha256": "94a3f1898afad1c7c5ddfafbe87f8fcc9e238aa51590507310a767650153ceaf",
+              "path": "blobs/sha256/fa/faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
+              "sha256": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1410,8 +1410,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/a9/a9a91ea5281a85aa079ba2da3e664e7b09cffb8a27706f1f93f5eaaeddab5130",
-              "sha256": "a9a91ea5281a85aa079ba2da3e664e7b09cffb8a27706f1f93f5eaaeddab5130",
+              "path": "blobs/sha256/72/72576ff1cc0f4ff6140d7c477e190004b9324aab8b4cd15ea5898eaa644d1663",
+              "sha256": "72576ff1cc0f4ff6140d7c477e190004b9324aab8b4cd15ea5898eaa644d1663",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1423,11 +1423,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:f488b6ab12878f2ee0af215b9195a0edbe63387e9a63379fae021c12ac347829",
+          "content_hash": "sha256:72405a4b9a735679ecc999fc5b0f6d6cd26d978bc341d3cd0bd5c8d114fd1e6c",
           "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-pro",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-2.1",
           "compiled_overridden": false,
-          "model_key": "google/nano-banana-pro",
+          "model_key": "google/nano-banana-2.1",
           "where": "api",
           "seed": 1401,
           "params": {
@@ -1443,7 +1443,7 @@
           "fallback_reason": null,
           "stage": "final",
           "rating": null,
-          "cost_usd": 0.14,
+          "cost_usd": 0.06,
           "job_id": null,
           "created_at": "2026-10-18T09:00:00Z",
           "note": null
@@ -1451,12 +1451,12 @@
       ],
       "prompt": {
         "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
-        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
         "compiled_overridden": false,
-        "model_key": "comfy/qwen-image-edit"
+        "model_key": "comfy/flux3-klein"
       },
       "estimate": {
-        "model_key": "comfy/qwen-image-edit",
+        "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0
@@ -1478,7 +1478,7 @@
       "component_id": "kf",
       "current_version_id": "demo-p-kf-1-02-v2",
       "adopted_version_id": "demo-p-kf-1-02-v2",
-      "locked_hash": "sha256:ede5b553ef612459131b10c989943539dddcdb5200330195dd243512bb82e87a",
+      "locked_hash": "sha256:c534d9c0a8c64eda01d2eca6f4f7c7b8a36fbf2dc94f9f749537766f8235cd6d",
       "status": "locked",
       "versions": [
         {
@@ -1503,8 +1503,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/6d/6de6ea505a5011447c3643013cce8c6e51f5ce70725675dc45a84373074098b6",
-              "sha256": "6de6ea505a5011447c3643013cce8c6e51f5ce70725675dc45a84373074098b6",
+              "path": "blobs/sha256/cc/cc7ef9459e65441f762851978feed2586ce0c7f908fe088d6d2fea70d37a16c6",
+              "sha256": "cc7ef9459e65441f762851978feed2586ce0c7f908fe088d6d2fea70d37a16c6",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1517,8 +1517,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/9d/9da7d764666bc2efdd99845c7c904d221e9fffedeeb36682e68c5e4d2d9c147a",
-              "sha256": "9da7d764666bc2efdd99845c7c904d221e9fffedeeb36682e68c5e4d2d9c147a",
+              "path": "blobs/sha256/f7/f7e682fad8b72329313fabaa6fc57760045afe5df9d223afcaddcbc4bb2988f3",
+              "sha256": "f7e682fad8b72329313fabaa6fc57760045afe5df9d223afcaddcbc4bb2988f3",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1531,8 +1531,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/c4/c479e4b63ac8bbcc2511d45d8365b936306b57cc419a093e54704ef796e6a66d",
-              "sha256": "c479e4b63ac8bbcc2511d45d8365b936306b57cc419a093e54704ef796e6a66d",
+              "path": "blobs/sha256/9b/9b078a87a13d261ed60f4bd067eb8173816d90c569b6fcc9dd28d3f4bd659d4d",
+              "sha256": "9b078a87a13d261ed60f4bd067eb8173816d90c569b6fcc9dd28d3f4bd659d4d",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1545,8 +1545,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/d8/d86ae4266aef3c0e01328de31a769de109ead69346ceaee455c8a56b5c2155bb",
-              "sha256": "d86ae4266aef3c0e01328de31a769de109ead69346ceaee455c8a56b5c2155bb",
+              "path": "blobs/sha256/78/788f63dbda714472e4eb539ee08e1ec65e3d3d95784c1c6c3cad1208f4d9e2a6",
+              "sha256": "788f63dbda714472e4eb539ee08e1ec65e3d3d95784c1c6c3cad1208f4d9e2a6",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1558,11 +1558,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:fe6391913d29fdcf7355c90d6f9ed69cf8e1c63d558addba3c672c93f3aa0fba",
+          "content_hash": "sha256:f427d5f03ee91e642f3b36407a80aa97f81c56bab5906e6beba13ba063d69fc9",
           "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
-          "model_key": "comfy/qwen-image-edit",
+          "model_key": "comfy/flux3-klein",
           "where": "local",
           "seed": 1402,
           "params": {
@@ -1599,8 +1599,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/b4/b442aead22dd03902dc62c442ceba0a990215e93852923fe753c8eb37fed0e32",
-              "sha256": "b442aead22dd03902dc62c442ceba0a990215e93852923fe753c8eb37fed0e32",
+              "path": "blobs/sha256/c2/c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
+              "sha256": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1613,8 +1613,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/db/dbf5feb4e1535d5dcf1e8cb2dc30a64ac958e76549d76e49a3f7466839b18563",
-              "sha256": "dbf5feb4e1535d5dcf1e8cb2dc30a64ac958e76549d76e49a3f7466839b18563",
+              "path": "blobs/sha256/f9/f9183c1283ffcd45a11964e663b0168fda5e7862e88a7dbb12a66d163ff92d56",
+              "sha256": "f9183c1283ffcd45a11964e663b0168fda5e7862e88a7dbb12a66d163ff92d56",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1626,11 +1626,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:ede5b553ef612459131b10c989943539dddcdb5200330195dd243512bb82e87a",
+          "content_hash": "sha256:c534d9c0a8c64eda01d2eca6f4f7c7b8a36fbf2dc94f9f749537766f8235cd6d",
           "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-pro",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-2.1",
           "compiled_overridden": false,
-          "model_key": "google/nano-banana-pro",
+          "model_key": "google/nano-banana-2.1",
           "where": "api",
           "seed": 1402,
           "params": {
@@ -1646,7 +1646,7 @@
           "fallback_reason": null,
           "stage": "final",
           "rating": null,
-          "cost_usd": 0.14,
+          "cost_usd": 0.06,
           "job_id": null,
           "created_at": "2026-10-18T09:00:00Z",
           "note": null
@@ -1654,12 +1654,12 @@
       ],
       "prompt": {
         "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
-        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
         "compiled_overridden": false,
-        "model_key": "comfy/qwen-image-edit"
+        "model_key": "comfy/flux3-klein"
       },
       "estimate": {
-        "model_key": "comfy/qwen-image-edit",
+        "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0
@@ -1681,7 +1681,7 @@
       "component_id": "kf",
       "current_version_id": "demo-p-kf-1-03-v2",
       "adopted_version_id": "demo-p-kf-1-03-v2",
-      "locked_hash": "sha256:f9a028536319a0ab83b793456cf01c49be3a6d7a39bb3e770029a4db47527c58",
+      "locked_hash": "sha256:9e20fb80bb19dbebf89c10d56e2902dc88a120be9a2d6b335ca62a460a998f7d",
       "status": "locked",
       "versions": [
         {
@@ -1704,8 +1704,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/ed/ed1a58c7c61367f6524ef72386e345ae36a58c1e0713bcc949858835ec38c120",
-              "sha256": "ed1a58c7c61367f6524ef72386e345ae36a58c1e0713bcc949858835ec38c120",
+              "path": "blobs/sha256/ed/ed2b43785539fd4b91e6cc3ddf4b92797396794308b3ebe007d05425fe9f213a",
+              "sha256": "ed2b43785539fd4b91e6cc3ddf4b92797396794308b3ebe007d05425fe9f213a",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1718,8 +1718,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/9d/9d0c6436438225f6928784f25296c19a28d8f6ce80866d78c56af84b937c261a",
-              "sha256": "9d0c6436438225f6928784f25296c19a28d8f6ce80866d78c56af84b937c261a",
+              "path": "blobs/sha256/dd/ddef7335220fd8988ac18d18f062d0ed2a0471db84378e61f32dc7b8b318a7ae",
+              "sha256": "ddef7335220fd8988ac18d18f062d0ed2a0471db84378e61f32dc7b8b318a7ae",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1732,8 +1732,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/7a/7aaf2bf53eb22f21c5bbd7f28462bc4a1dfab4e6f59b3d82f556dbc4ddd40412",
-              "sha256": "7aaf2bf53eb22f21c5bbd7f28462bc4a1dfab4e6f59b3d82f556dbc4ddd40412",
+              "path": "blobs/sha256/c4/c4fa78e543dec993e32355ad6a87265c59bd987a98ccd9371ff06cbcedb86e32",
+              "sha256": "c4fa78e543dec993e32355ad6a87265c59bd987a98ccd9371ff06cbcedb86e32",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1746,8 +1746,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/44/44ba6d39c6c5fd0446a4bf75ee604e37972c97cf882b65342d78ee23013a9091",
-              "sha256": "44ba6d39c6c5fd0446a4bf75ee604e37972c97cf882b65342d78ee23013a9091",
+              "path": "blobs/sha256/6e/6e5f15fe3bf0ff1f4bf62dbf20999049746c519d07187723a57260faee4c4486",
+              "sha256": "6e5f15fe3bf0ff1f4bf62dbf20999049746c519d07187723a57260faee4c4486",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1759,11 +1759,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:1eacd6f9bb940692816a45e5dd0ccbb48cc85629c1b02f28648e39718f084186",
+          "content_hash": "sha256:1f2d7f14c8193925fd7a0d99f293b52cf425bcd5c98ceb3420a65479fe36f16f",
           "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
-          "model_key": "comfy/qwen-image-edit",
+          "model_key": "comfy/flux3-klein",
           "where": "local",
           "seed": 1403,
           "params": {
@@ -1798,8 +1798,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/7b/7bd9b9a3484f9a9e39fb99e0caada4c205f9e850a65b81f219fdc77c0347fa89",
-              "sha256": "7bd9b9a3484f9a9e39fb99e0caada4c205f9e850a65b81f219fdc77c0347fa89",
+              "path": "blobs/sha256/8c/8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
+              "sha256": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
               "mime": "image/png",
               "duration_s": null,
               "w": 1080,
@@ -1812,8 +1812,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/6b/6b71094da701a13c0da3ae2673904a80f3744fcae4efd3d5fef552dd5b52c49f",
-              "sha256": "6b71094da701a13c0da3ae2673904a80f3744fcae4efd3d5fef552dd5b52c49f",
+              "path": "blobs/sha256/28/28345f4ffe588043149cc63984b37d256de53ecc74ee46c9132c7f489c30b672",
+              "sha256": "28345f4ffe588043149cc63984b37d256de53ecc74ee46c9132c7f489c30b672",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1825,11 +1825,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:f9a028536319a0ab83b793456cf01c49be3a6d7a39bb3e770029a4db47527c58",
+          "content_hash": "sha256:9e20fb80bb19dbebf89c10d56e2902dc88a120be9a2d6b335ca62a460a998f7d",
           "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-pro",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：google/nano-banana-2.1",
           "compiled_overridden": false,
-          "model_key": "google/nano-banana-pro",
+          "model_key": "google/nano-banana-2.1",
           "where": "api",
           "seed": 1403,
           "params": {
@@ -1845,7 +1845,7 @@
           "fallback_reason": null,
           "stage": "final",
           "rating": null,
-          "cost_usd": 0.14,
+          "cost_usd": 0.06,
           "job_id": null,
           "created_at": "2026-10-18T09:00:00Z",
           "note": null
@@ -1853,12 +1853,12 @@
       ],
       "prompt": {
         "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
-        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
         "compiled_overridden": false,
-        "model_key": "comfy/qwen-image-edit"
+        "model_key": "comfy/flux3-klein"
       },
       "estimate": {
-        "model_key": "comfy/qwen-image-edit",
+        "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0
@@ -1904,8 +1904,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/01/0161873e1951d88cac952b84a2344ddaf7b98920cc1f80a789dcdee1bb0e7129",
-              "sha256": "0161873e1951d88cac952b84a2344ddaf7b98920cc1f80a789dcdee1bb0e7129",
+              "path": "blobs/sha256/55/55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
+              "sha256": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1918,8 +1918,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/ef/efdc573cfbb0eff53ea803bc11c89717f64e7f8f0132be612c0017ea091d7085",
-              "sha256": "efdc573cfbb0eff53ea803bc11c89717f64e7f8f0132be612c0017ea091d7085",
+              "path": "blobs/sha256/ce/ce7c3c4d10ec89ecb119834ef1627686597bca184dc07114f74eeaacdb27bfbd",
+              "sha256": "ce7c3c4d10ec89ecb119834ef1627686597bca184dc07114f74eeaacdb27bfbd",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1932,8 +1932,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/d6/d60936f2f0ed3fa298104b5df1f2951cecdd530150cf465d3ff11a78fabe67a4",
-              "sha256": "d60936f2f0ed3fa298104b5df1f2951cecdd530150cf465d3ff11a78fabe67a4",
+              "path": "blobs/sha256/c1/c1d5f36b870e16f543df509a31bc50471ebcfdacaa6c3abaf7256f760f773761",
+              "sha256": "c1d5f36b870e16f543df509a31bc50471ebcfdacaa6c3abaf7256f760f773761",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1946,8 +1946,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/31/3180ae31e2328b7783a3c1a0ca90b0427d62070e966130e5a17d61026a84a54d",
-              "sha256": "3180ae31e2328b7783a3c1a0ca90b0427d62070e966130e5a17d61026a84a54d",
+              "path": "blobs/sha256/57/574fe5115d553928a66b819cb759b68bbaeefa2fbfdadfa67afd402d593a4d0e",
+              "sha256": "574fe5115d553928a66b819cb759b68bbaeefa2fbfdadfa67afd402d593a4d0e",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1959,11 +1959,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:1c3627ae1990067b4ded99f4db9f8239501ddae626e24e617f173f1380d4c76b",
+          "content_hash": "sha256:d81852c28afc7e66646ea67e94215b9316fd541b6b1d7ab8a2ce4a033605fd20",
           "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
-          "model_key": "comfy/qwen-image-edit",
+          "model_key": "comfy/flux3-klein",
           "where": "local",
           "seed": 1404,
           "params": {
@@ -1983,12 +1983,12 @@
       ],
       "prompt": {
         "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
-        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
         "compiled_overridden": false,
-        "model_key": "comfy/qwen-image-edit"
+        "model_key": "comfy/flux3-klein"
       },
       "estimate": {
-        "model_key": "comfy/qwen-image-edit",
+        "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0
@@ -2031,8 +2031,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/3e/3ec8e13e67199f1195d37ee8dc77654db87ab2c60a432fd777e9f5f7db6de0c4",
-              "sha256": "3ec8e13e67199f1195d37ee8dc77654db87ab2c60a432fd777e9f5f7db6de0c4",
+              "path": "blobs/sha256/2e/2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
+              "sha256": "2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2045,8 +2045,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/2e/2ecfa57d002753487061dd160f7c6a7438e7f8524d240dfa0a6d65c3cc41b359",
-              "sha256": "2ecfa57d002753487061dd160f7c6a7438e7f8524d240dfa0a6d65c3cc41b359",
+              "path": "blobs/sha256/14/146e4dda158c052a1cbdc943a0af0ec0fe8ea5277c22374902e2b3c69910e095",
+              "sha256": "146e4dda158c052a1cbdc943a0af0ec0fe8ea5277c22374902e2b3c69910e095",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2059,8 +2059,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/16/16d5cd3b73d42e889962a7043667e8717305dd9f7c03540b1746bd451525fd08",
-              "sha256": "16d5cd3b73d42e889962a7043667e8717305dd9f7c03540b1746bd451525fd08",
+              "path": "blobs/sha256/e5/e589194aa093d2d2c7868db664340026d10e0c8a096326205e9cea0cc0af7c6f",
+              "sha256": "e589194aa093d2d2c7868db664340026d10e0c8a096326205e9cea0cc0af7c6f",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2073,8 +2073,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/93/93e31c1800a62512167a116fec3bf4c168ce1b0f3eac8035cc7e339c41d68ceb",
-              "sha256": "93e31c1800a62512167a116fec3bf4c168ce1b0f3eac8035cc7e339c41d68ceb",
+              "path": "blobs/sha256/4f/4fad322ce7a7f4de8c9eaaa348508aebc8b55f61b25f12b6fe0e36f3df446001",
+              "sha256": "4fad322ce7a7f4de8c9eaaa348508aebc8b55f61b25f12b6fe0e36f3df446001",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2086,11 +2086,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:fc6fb1a98f5474a5a3bb3ec1e3b29c8cf3083bec25ac3fea1f0b587789eafb6d",
+          "content_hash": "sha256:8d2b25e01a5560f5b766f90e6a12c5a1eaddf2f744b5ef8f82365ebcd25b99d1",
           "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
-          "model_key": "comfy/qwen-image-edit",
+          "model_key": "comfy/flux3-klein",
           "where": "local",
           "seed": 1405,
           "params": {
@@ -2110,12 +2110,12 @@
       ],
       "prompt": {
         "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
-        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
         "compiled_overridden": false,
-        "model_key": "comfy/qwen-image-edit"
+        "model_key": "comfy/flux3-klein"
       },
       "estimate": {
-        "model_key": "comfy/qwen-image-edit",
+        "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0
@@ -2157,8 +2157,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/e2/e2442f470f5fdb1f3aeb6f87d519aa526310f7c9940312649b723cfa7c575320",
-              "sha256": "e2442f470f5fdb1f3aeb6f87d519aa526310f7c9940312649b723cfa7c575320",
+              "path": "blobs/sha256/41/41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
+              "sha256": "41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2171,8 +2171,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/0d/0d162c2aeb1fac31247ecff4b8502691aeb71be25edfd68983d1bf29b93cbdf0",
-              "sha256": "0d162c2aeb1fac31247ecff4b8502691aeb71be25edfd68983d1bf29b93cbdf0",
+              "path": "blobs/sha256/6e/6ee6d756633a0237d0afc2973c6df11e878a86041c92237858950ef42ec2cb9c",
+              "sha256": "6ee6d756633a0237d0afc2973c6df11e878a86041c92237858950ef42ec2cb9c",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2185,8 +2185,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/c8/c8c492487db2f1bee6c6cdf76301066e22c812e6dea2395e40231651ffcf6c79",
-              "sha256": "c8c492487db2f1bee6c6cdf76301066e22c812e6dea2395e40231651ffcf6c79",
+              "path": "blobs/sha256/13/13d4825bc5455fe3090c2c3dff63d0581e1a384d7d522c7196998230a8e8731b",
+              "sha256": "13d4825bc5455fe3090c2c3dff63d0581e1a384d7d522c7196998230a8e8731b",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2199,8 +2199,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/ae/ae8e53d5ee36daee2d8becec3a442cd835ac26deca7aad46b40a740d5ea71889",
-              "sha256": "ae8e53d5ee36daee2d8becec3a442cd835ac26deca7aad46b40a740d5ea71889",
+              "path": "blobs/sha256/cd/cd20595d9987317634d7ed39d90db6673d450840c0a7f94fe2eac97c333f8f3b",
+              "sha256": "cd20595d9987317634d7ed39d90db6673d450840c0a7f94fe2eac97c333f8f3b",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2212,11 +2212,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:fd18621ceb297274684774dbd9c1afed4c3441df9a567b3ad25ba966eb4c9413",
+          "content_hash": "sha256:46c4a2639b0e0fa134fb1d7af66fcee2010c08f1cb5f9e3828e72891ff23b8e7",
           "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
-          "model_key": "comfy/qwen-image-edit",
+          "model_key": "comfy/flux3-klein",
           "where": "local",
           "seed": 1406,
           "params": {
@@ -2236,12 +2236,12 @@
       ],
       "prompt": {
         "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
-        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
         "compiled_overridden": false,
-        "model_key": "comfy/qwen-image-edit"
+        "model_key": "comfy/flux3-klein"
       },
       "estimate": {
-        "model_key": "comfy/qwen-image-edit",
+        "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0
@@ -2284,8 +2284,8 @@
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/7b/7bb4cc6f8c7e84ae9eef8209932469a630a19ccd2f01a3de942d941ef48bb6e5",
-              "sha256": "7bb4cc6f8c7e84ae9eef8209932469a630a19ccd2f01a3de942d941ef48bb6e5",
+              "path": "blobs/sha256/c5/c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
+              "sha256": "c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2298,8 +2298,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/ec/ec589f77e92a1679459ae41071cd04d356a207fc6535a8e19eb2d37c86261939",
-              "sha256": "ec589f77e92a1679459ae41071cd04d356a207fc6535a8e19eb2d37c86261939",
+              "path": "blobs/sha256/71/71b30daf17d8f57534416b6e3ad298776fbac5bf90da58e914ce74f49a739d08",
+              "sha256": "71b30daf17d8f57534416b6e3ad298776fbac5bf90da58e914ce74f49a739d08",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2312,8 +2312,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/ee/ee6af95e2e2ebbeeb720535b8ee51427080a22838173c416e53fb644fe5d2e78",
-              "sha256": "ee6af95e2e2ebbeeb720535b8ee51427080a22838173c416e53fb644fe5d2e78",
+              "path": "blobs/sha256/20/2058779fe9ee47922eed2833a9f3831049605da4a38f45a2cd369fd3458ca56f",
+              "sha256": "2058779fe9ee47922eed2833a9f3831049605da4a38f45a2cd369fd3458ca56f",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -2326,8 +2326,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/e1/e1d25f6a23e579ddd3a6fe2a0f36f90854099618a5e5fe8b8916bdc3e9c6a5fa",
-              "sha256": "e1d25f6a23e579ddd3a6fe2a0f36f90854099618a5e5fe8b8916bdc3e9c6a5fa",
+              "path": "blobs/sha256/ba/babaf822f54203dcd20d7580a9087db3e5d2c4e420d1108355a8b0176cfeffe9",
+              "sha256": "babaf822f54203dcd20d7580a9087db3e5d2c4e420d1108355a8b0176cfeffe9",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2339,11 +2339,11 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:96e74bc647ed69b917a01ad9859d2d2f782ad7ae5e65285423d8086d179c188e",
+          "content_hash": "sha256:4bd8b100b21182b4e7559a54e64d2271e301c3d5e61b16451e0df57a0a46a675",
           "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
-          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+          "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
-          "model_key": "comfy/qwen-image-edit",
+          "model_key": "comfy/flux3-klein",
           "where": "local",
           "seed": 1407,
           "params": {
@@ -2363,12 +2363,12 @@
       ],
       "prompt": {
         "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
-        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/qwen-image-edit",
+        "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
         "compiled_overridden": false,
-        "model_key": "comfy/qwen-image-edit"
+        "model_key": "comfy/flux3-klein"
       },
       "estimate": {
-        "model_key": "comfy/qwen-image-edit",
+        "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0

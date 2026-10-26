@@ -105,23 +105,23 @@ def test_only_locked_references_are_sent(client: TestClient) -> None:
     assert calls and calls[-1].shot_id == "demo-shot-1-05" and calls[-1].episode_id == EP1
 
 
-def test_a_shot_with_no_locked_picture_drafts_on_qwen_image(client: TestClient) -> None:
-    """Qwen-Image-Edit 2511 only edits from references: with none locked, the local draft goes
-    to Qwen-Image (``kf.model_for``); the estimate says so before the run."""
-    assert _run(client, "1-05")["versions"][-1]["model_key"] == "comfy/qwen-image-edit"
+def test_a_shot_with_no_locked_picture_drafts_on_text_to_image(client: TestClient) -> None:
+    """FLUX 3 Klein (the default) only edits from references: with none locked, the local draft
+    goes to Klein's text-to-image (``kf.model_for``); the estimate says so before the run."""
+    assert _run(client, "1-05")["versions"][-1]["model_key"] == "comfy/flux3-klein"
     shot = _shot(client, "1-05")
     band = [a for a in shot["asset_ids"] if a == "band"]
     assert band, shot["asset_ids"]  # 旧黑发圈 is not locked in the demo
     client.patch(f"{V1}/shots/{shot['id']}", json={"asset_ids": band}).raise_for_status()
     before = _kf(client, "1-05")
-    assert before["estimate"]["model_key"] == "comfy/qwen-image"
+    assert before["estimate"]["model_key"] == "comfy/flux3-klein-t2i"
     version = _run(client, "1-05")["versions"][-1]
-    assert version["model_key"] == "comfy/qwen-image" and version["stage"] == "draft"
+    assert version["model_key"] == "comfy/flux3-klein-t2i" and version["stage"] == "draft"
     assert version["payload"]["refs"] == []
     assert "旧黑发圈（未锁定" in _prompt(client, version)
     # Another family's edit model goes to its own text-to-image workflow, next in kf.local.
-    klein = _run(client, "1-05", model="comfy/flux3-klein")["versions"][-1]
-    assert klein["model_key"] == "comfy/flux3-klein-t2i"
+    qwen = _run(client, "1-05", model="comfy/qwen-image-edit")["versions"][-1]
+    assert qwen["model_key"] == "comfy/qwen-image"
 
 
 def test_a_shot_with_no_character_says_so(client: TestClient) -> None:

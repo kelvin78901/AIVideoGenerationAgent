@@ -164,10 +164,10 @@ DEMO_ASSET_IDS = {
 # 分镜规划 of episode 1 on DeepSeek, 10:48 +08:00.
 PLAN_MODEL = "deepseek/v4-pro"
 # 关键帧 of episode 1 (MSW fixtures/demo/shots.ts): the local draft (three pictures) and, for the
-# confirmed shots, the Nano Banana Pro final from its first picture (+08:00 on the demo day).
-KF_DRAFT_MODEL = "comfy/qwen-image-edit"
-KF_FINAL_MODEL = "google/nano-banana-pro"
-KF_FINAL_COST = 0.14
+# confirmed shots, the Nano Banana 2.1 final from its first picture (+08:00 on the demo day).
+KF_DRAFT_MODEL = "comfy/flux3-klein"
+KF_FINAL_MODEL = "google/nano-banana-2.1"
+KF_FINAL_COST = 0.06  # what 2.1 cost in the bake-off (thinking on: a little over the estimate)
 DEMO_KEYFRAMES: dict[str, tuple[str, bool]] = {  # label → (draft time, confirmed at 11:02)
     "1-01": ("10:55", True),
     "1-02": ("10:55", True),

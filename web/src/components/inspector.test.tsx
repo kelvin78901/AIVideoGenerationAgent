@@ -191,7 +191,7 @@ describe("ImpactDialog", () => {
     renderAt(<SpecImpact variant="inline" onResolved={resolved} />);
     const dialog = await screen.findByRole("alertdialog");
     // 7 keyframes at the API final's price (1-08 and 1-09 continue an earlier shot).
-    expect(dialog).toHaveTextContent("关键帧 7 张（9 个镜头）要按新画幅重画 · 约 $0.94");
+    expect(dialog).toHaveTextContent("关键帧 7 张（9 个镜头）要按新画幅重画 · 约 $0.35");
     expect(dialog).not.toHaveTextContent("场景参考图"); // drawn 16:9 whatever the spec
     expect(dialog).toHaveTextContent("剧本、分镜表、配音和音色不受影响");
     // 确认并同步 comes first (the filled button), then 只改这里 and 撤销.
@@ -199,7 +199,7 @@ describe("ImpactDialog", () => {
       within(dialog)
         .getAllByRole("button")
         .map((b) => b.textContent),
-    ).toEqual(["确认并同步 · 预计 $0.94", "只改这里，下游标待更新", "撤销"]);
+    ).toEqual(["确认并同步 · 预计 $0.35", "只改这里，下游标待更新", "撤销"]);
     await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("mark"));
     // The aspect written; the confirmed shots go back to 待确认.
@@ -212,7 +212,7 @@ describe("ImpactDialog", () => {
     const resolved = vi.fn();
     renderAt(<SpecImpact variant="modal" onResolved={resolved} />);
     const dialog = await screen.findByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $0.94" }));
+    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $0.35" }));
     await waitFor(() => expect(resolved).toHaveBeenCalledWith("rerun"));
     expect(fakeImpact.applied).toEqual([
       { kind: "spec_aspect", target_id: "demo", action: "rerun" },

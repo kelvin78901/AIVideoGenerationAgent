@@ -484,5 +484,5 @@ def resolve(
         for path, value in _flatten(ov.data).items():
             _set_path(values, path, value)
             sources[path] = ov.scope
-    unavailable = restrict(values, cfg.providers, caps) if caps is not None else {}
+    unavailable = restrict(values, cfg.providers, caps, comp.local) if caps is not None else {}
     return Resolved(values=values, sources=sources, unavailable=unavailable)

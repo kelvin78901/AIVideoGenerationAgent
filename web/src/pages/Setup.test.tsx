@@ -37,7 +37,7 @@ async function scan(user: User) {
 /** Ticks everything, installs, approves the ComfyUI changes and waits for the end. */
 async function installAll(user: User) {
   await user.click(screen.getByRole("button", { name: "全选" }));
-  await user.click(screen.getByRole("button", { name: "安装选中的 15 项" }));
+  await user.click(screen.getByRole("button", { name: "安装选中的 16 项" }));
   const dialog = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
   await user.click(within(dialog).getByRole("button", { name: "确认，开始安装" }));
   await screen.findByRole("heading", { name: "准备好了" });
@@ -82,7 +82,7 @@ describe("SetupPage", () => {
     expect(within(summary()).getByText("通过 10")).toBeInTheDocument();
     expect(within(summary()).getByText("缺少 13")).toBeInTheDocument();
     expect(within(summary()).getByText("需更新 2")).toBeInTheDocument();
-    expect(within(summary()).getByText("可选 8")).toBeInTheDocument();
+    expect(within(summary()).getByText("可选 9")).toBeInTheDocument();
     expect(within(summary()).getByText("注意 1")).toBeInTheDocument();
     expect(row("PyTorch")).toHaveTextContent("已装，但不是 CUDA 13 版");
     expect(row("显卡")).toHaveTextContent("NVIDIA RTX 5090 · 32 GB 显存");
@@ -119,12 +119,12 @@ describe("SetupPage", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "全选" }));
-    expect(screen.getByRole("button", { name: "安装选中的 15 项" })).toBeInTheDocument();
-    expect(screen.getByText("约 149.4 GB，预计 2 小时 13 分钟")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "安装选中的 16 项" })).toBeInTheDocument();
+    expect(screen.getByText("约 170.2 GB，预计 2 小时 28 分钟")).toBeInTheDocument();
     await user.click(
       screen.getByRole("checkbox", { name: "安装（可选） FlashVSR 节点（快速超分）" }),
     );
-    expect(screen.getByRole("button", { name: "安装选中的 14 项" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "安装选中的 15 项" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "只选必需的" }));
     expect(screen.getByRole("button", { name: "安装选中的 5 项" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "先跳过，进入工作台" })).toHaveAttribute(
@@ -174,9 +174,9 @@ describe("SetupPage", () => {
     renderSetup();
     await scan(user);
     await user.click(screen.getByRole("button", { name: "全选" }));
-    await user.click(screen.getByRole("button", { name: "安装选中的 15 项" }));
+    await user.click(screen.getByRole("button", { name: "安装选中的 16 项" }));
     const dialog = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
-    expect(within(dialog).getByText("会改动你的 ComfyUI（9 项）")).toBeInTheDocument();
+    expect(within(dialog).getByText("会改动你的 ComfyUI（10 项）")).toBeInTheDocument();
     expect(within(dialog).getByText("D:\\ComfyUI")).toBeInTheDocument();
     const change = (name: string) => within(dialog).getByRole("cell", { name }).closest("tr");
     expect(change("PyTorch")).toHaveTextContent(
@@ -192,19 +192,19 @@ describe("SetupPage", () => {
     expect(change("MiniMax H3 权重（int8）")).toHaveTextContent(
       "安装e5eb578Comfy-Org/MiniMax-H3约 49.3 GB",
     );
-    expect(within(dialog).getAllByRole("row")).toHaveLength(10);
+    expect(within(dialog).getAllByRole("row")).toHaveLength(11);
     expect(
       within(dialog).getByText("MiniMax H3 权重（int8） 要下载约 49.3 GB"),
     ).toBeInTheDocument();
     expect(within(dialog).getByText(/动手前先用 ComfyUI-Manager 存一份快照/)).toBeInTheDocument();
-    expect(within(dialog).getByText("约 149.4 GB，预计 2 小时 13 分钟")).toBeInTheDocument();
+    expect(within(dialog).getByText("约 170.2 GB，预计 2 小时 28 分钟")).toBeInTheDocument();
     expect(await screen.findByText("等你确认后开始安装")).toBeInTheDocument();
 
     await user.click(within(dialog).getByRole("button", { name: "取消" }));
     await phaseIs("检测完成");
     expect(screen.queryByRole("alertdialog")).toBeNull();
     // Back at the scan result, the selection kept.
-    expect(screen.getByRole("button", { name: "安装选中的 15 项" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "安装选中的 16 项" })).toBeEnabled();
     expect(fakeSetup.profile.items.every((x) => x.install === null)).toBe(true);
     expect(fakeSetup.installed.size).toBe(0);
     expect(fakeSetup.snapshots).toHaveLength(0);
@@ -216,7 +216,7 @@ describe("SetupPage", () => {
     await scan(user);
     await installAll(user);
 
-    expect(screen.getByText("装好 14 项，失败 1 项（都是可选项）。")).toBeInTheDocument();
+    expect(screen.getByText("装好 15 项，失败 1 项（都是可选项）。")).toBeInTheDocument();
     expect(screen.getByText("均衡：草稿和重跑在本地跑，采纳前用 API 出终版")).toBeInTheDocument();
     const lines = within(screen.getByRole("region", { name: "安装日志" })).getAllByRole("listitem");
     const text = lines.map((l) => l.textContent);
@@ -225,7 +225,7 @@ describe("SetupPage", () => {
     expect(snapshotAt).toBeLessThan(text.indexOf("完成：PyTorch"));
     expect(text).toContain("失败（可选项，不影响使用）：SageAttention 加速");
     expect(text.at(-1)).toBe("全部结束。");
-    expect(within(summary()).getByText("已装好 14")).toBeInTheDocument();
+    expect(within(summary()).getByText("已装好 15")).toBeInTheDocument();
     expect(within(summary()).getByText("失败 1")).toBeInTheDocument();
     const sage = row("SageAttention 加速");
     expect(sage).toHaveTextContent("没有适合这台机器的预编译包");
