@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 1 步：工作流表、model_call 的工作流列、视频小工具
+
+- **表 `comfy_workflow`**（迁移 `0019`）按 SPEC 4 的列，另加两列：`name_json`（`{zh, en}`，SPEC 写的 `name` 是单语言）和 `kind`（image / video / upscale…，ModelPicker 按组件的 kind 分组要用）。`slug` 唯一。文件还在 `workflows/<slug>/`，表里存档位、确认过的绑定、体检和试跑结果、做这些时的文件哈希。
+- **`model_call` 加 `workflow_id / workflow_sha256 / comfy_env_hash / select_json`**：路由在开始调用时就写 `workflow_id`（本地模型的 `spec.workflow`，失败的调用也有），成功后从适配器的 `raw["comfy"]` 补哈希和环境；`select_json` 留给第 12 步按镜头选工作流的理由。节点包版本不另存：`comfy_env_hash` → `comfy_env.node_packs_json`。
+- **`media/video.py`**：`probe`（解析 FFmpeg 对输入的输出：尺寸、时长、帧率、有没有声音；`imageio-ffmpeg` 不带 ffprobe）、`trim_head`（默认 0.3 秒，**重新编码** H.264 CRF 16 + AAC，保证按帧切而不是落到最近的关键帧）、`frame`（第一帧当封面、最后一帧给连续镜头当首帧，PNG）。都在线程里跑 FFmpeg。
+- **Mock 视频可以带声音**（`with_audio` 参数 → 正弦波 AAC 音轨）：H3 原生音频、按台词对口型时视频本身有声音，后面的组件和后期要能区分。
+
 ## 2026-10-26 · M5 计划（Kelvin 定的四项）
 
 计划见 `plans/M5.md`。

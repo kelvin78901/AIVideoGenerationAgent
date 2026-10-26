@@ -9,11 +9,12 @@
 
 ## 已完成的小步
 
-- 第 0 步（本提交）：开分支，存 `plans/M5.md`，DECISIONS「M5 计划」，ROADMAP 把拼节点挪到「之后（P3）」，PROGRESS 换成 M5。只改文档，没跑测试。
+- 第 0 步（afb8bc4）：开分支，存 `plans/M5.md`，DECISIONS「M5 计划」，ROADMAP 把拼节点挪到「之后（P3）」，PROGRESS 换成 M5。只改文档。
+- 第 1 步（本提交，DECISIONS「M5 第 1 步」）：迁移 `0019`（`comfy_workflow` 表、`model_call` 4 列）；路由写工作流三列；`media/video.py`（探测、裁头、首尾帧）；Mock 视频可带音轨。新测试 `test_video.py` 5 个、路由 1 个。全量 pytest 714 个过；ruff、mypy（含 linux）干净。
 
 ## 下一步
 
-- **第 1 步 框架**：迁移 `0019`（`comfy_workflow` 表；`model_call` 加 `workflow_id / workflow_sha256 / comfy_env_hash / select_json`）；新 `media/video.py`（探测、裁头 0.3 秒、取尾帧、取封面帧，FFmpeg 用 `media/audio.py:ffmpeg_exe`）和测试；Mock 视频（`modelhub/adapters/mock.py:_video`、`solid_mp4`）带台词音轨；`model_call` 写工作流三列（从 `raw["comfy"]` 取，`modelhub/router.py` 写记录处）。从 `core/models_db.py` 和 `core/migrations/versions/0018_shot.py` 开始。
+- **第 2 步 工作流库后端（一）：登记、档位、导入、绑定**：新包 `workflows/`（库服务：扫仓库 `workflows/<slug>/` 和 `~/.drama-studio/workflows/<slug>/` 入表 `ComfyWorkflowRow`、哈希变了降为未验证、按档位登记成本地模型 `comfy/<slug>`（`Registry.add_spec`）、未验证的不进自动路由 / `alt_order` / 兜底）；接口 `GET /workflows`、`GET/PATCH /workflows/{id}`、`PUT /workflows/{id}/bindings`、`POST /workflows/import`（猜绑定）、`GET /comfy/workflows`，契约照 `web/src/api/schemas/workflows.ts` 和 `web/src/mocks/handlers/workflows.ts`（错误码也照它）。读 `modelhub/workflows.py`（`WorkflowMeta`、`Workflow`）、`modelhub/registry.py`、`core/capabilities.py`、`api/routes/comfy.py` 开始。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

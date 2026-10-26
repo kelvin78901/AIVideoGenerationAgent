@@ -171,10 +171,23 @@ def sine_wav(duration_s: float, freq_hz: float = 440.0, rate: int = 48000) -> by
     return buf.getvalue()
 
 
-async def solid_mp4(width: int, height: int, duration_s: float, fps: int, rgb_hex: str) -> bytes:
+async def solid_mp4(
+    width: int,
+    height: int,
+    duration_s: float,
+    fps: int,
+    rgb_hex: str,
+    audio_hz: float | None = None,
+) -> bytes:
+    """A solid-colour H.264 clip; with ``audio_hz`` it has a sine sound track (AAC) too."""
     import imageio_ffmpeg
 
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    sound = (
+        ["-f", "lavfi", "-i", f"sine=frequency={audio_hz}:duration={duration_s}"]
+        if audio_hz is not None
+        else []
+    )
     with TemporaryDirectory() as tmp:
         out = Path(tmp) / "mock.mp4"
         proc = await asyncio.create_subprocess_exec(
@@ -186,8 +199,10 @@ async def solid_mp4(width: int, height: int, duration_s: float, fps: int, rgb_he
             "lavfi",
             "-i",
             f"color=c=0x{rgb_hex}:s={width}x{height}:d={duration_s}:r={fps}",
+            *sound,
             "-pix_fmt",
             "yuv420p",
+            *(["-c:a", "aac", "-shortest"] if sound else []),
             "-y",
             str(out),
             stdout=asyncio.subprocess.DEVNULL,
@@ -335,8 +350,11 @@ class MockAdapter:
         h = int(req.params.get("height", 192))
         fps = int(req.params.get("fps", 24))
         duration = float(req.params.get("duration_s", 2.0))
-        colour = _digest(self.key, req.text(), req.seed).hex()[:6]
-        data = await solid_mp4(w, h, duration, fps, colour)
+        d = _digest(self.key, req.text(), req.seed)
+        # A video model that makes sound (H3 native audio, or lip-sync to the dialogue) returns
+        # a sound track; ``with_audio`` says so.
+        hz = 200 + d[1] * 2.0 if req.params.get("with_audio") else None
+        data = await solid_mp4(w, h, duration, fps, d.hex()[:6], audio_hz=hz)
         return ModelResult(
             files=[
                 OutputFile(role="video", mime="video/mp4", data=data, w=w, h=h, duration_s=duration)

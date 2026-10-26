@@ -132,6 +132,13 @@ class ModelCall(SQLModel, table=True):
     error_code: str | None = None
     qa_scores_json: dict[str, Any] | None = _json()
     qa_pass: bool | None = None
+    # reproducible local runs (SPEC 6.4.5, M5): the ComfyUI workflow, its file hash and the
+    # environment (``comfy_env.hash``, which lists the node packs)
+    workflow_id: str | None = None
+    workflow_sha256: str | None = None
+    comfy_env_hash: str | None = None
+    # why this workflow for this shot (SPEC 6.4.8): {source: rule|llm|manual, rule?, reason?}
+    select_json: dict[str, Any] | None = _json()
 
 
 class ConfigOverride(SQLModel, table=True):
@@ -279,6 +286,38 @@ class ComfyEnvRow(SQLModel, table=True):
     torch: str | None = None
     node_packs_json: list[dict[str, Any]] = _json(list)
     captured_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class ComfyWorkflowRow(SQLModel, table=True):
+    """A ComfyUI workflow in the library (SPEC 6.4.2, M5): the repo's ``workflows/<slug>/`` and
+    the user's ``~/.drama-studio/workflows/<slug>/``, registered as local model ``comfy/<slug>``.
+
+    The folder holds the files; this row keeps what the library adds: the tier, the bindings
+    as confirmed, the last health check and trial run, and the file hash they were made on.
+    """
+
+    __tablename__ = "comfy_workflow"
+
+    id: str = Field(primary_key=True)
+    slug: str = Field(index=True, unique=True)
+    model_key: str
+    name_json: dict[str, Any] = _json(dict)  # {zh, en}
+    kind: str  # image / video / upscale / lipsync …
+    tier: str  # recommended / mine / unverified
+    source: str  # repo / user
+    dir: str
+    file_sha256: str
+    bindings_json: list[dict[str, Any]] = _json(list)
+    deps_json: dict[str, Any] = _json(dict)  # {packs: [...], models: [...]}
+    caps_json: dict[str, Any] = _json(dict)
+    check_json: dict[str, Any] | None = _json()
+    trial_json: dict[str, Any] | None = _json()
+    created_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+    updated_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )
 
@@ -751,7 +790,7 @@ class Shot(SQLModel, table=True):
     tail_from: str | None = None  # a continuous shot starts from this shot's last frame
     tail_note: str | None = None  # why that shot and not the one before (an insert between)
     blocking_json: list[dict[str, Any]] = _json(list)  # [{id, kind, label, x, y}], 0–1
-    audio_mode: str = "native"  # native / tts / none (SPEC A / B / C)
+    audio_mode: str = "native"  # native (PLAN mode B) / tts (mode A) / none (DECISIONS M5 plan)
     difficulty: int = 1  # 1–6 (PLAN 空间与物理)
     control_json: dict[str, Any] | None = _json()  # a control video's settings (M5)
     retired: bool = False

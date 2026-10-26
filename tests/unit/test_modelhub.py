@@ -18,6 +18,7 @@ from drama_series_agent.modelhub.adapters.base import (
     Estimate,
     ModelError,
     ModelRequest,
+    ModelResult,
     ModelSpec,
     Pricing,
     Usage,
@@ -220,6 +221,34 @@ async def test_call_uses_component_default_and_logs(hub: tuple[Router, Registry,
     assert await calllog.total_cost(router.db, episode_id="e1") == pytest.approx(expected)
     cost_events = [e for e in await bus.replay(0) if e.type == "cost.updated"]
     assert cost_events[0].data["call_id"] == routed.call_id
+
+
+async def test_a_local_workflow_call_logs_the_workflow(
+    hub: tuple[Router, Registry, EventBus], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SPEC 6.4.5: model_call says which workflow file and which ComfyUI made it."""
+    router, reg, _ = hub
+    adapter = reg.get("comfy/flux3-klein")
+    real_run = adapter.run
+
+    async def run(req: ModelRequest, ctx: CallContext) -> ModelResult:
+        result = await real_run(req, ctx)
+        comfy = {"workflow_id": "flux3-klein", "workflow_sha256": "ab" * 32, "comfy_env_hash": "e1"}
+        return ModelResult(files=result.files, usage=result.usage, raw={"comfy": comfy})
+
+    monkeypatch.setattr(adapter, "run", run)
+    req = ModelRequest(kind="image", prompt="林晚站在楼道口", params={"n": 1})
+    await router.call("kf", req, model="comfy/flux3-klein")
+    row = (await calllog.recent(router.db))[0]
+    assert (row.workflow_id, row.workflow_sha256, row.comfy_env_hash) == (
+        "flux3-klein",
+        "ab" * 32,
+        "e1",
+    )
+    # An API model has none of them.
+    await router.call("kf", req, model="google/nano-banana-2.1")
+    api = next(r for r in await calllog.recent(router.db) if r.where == "api")
+    assert (api.workflow_id, api.workflow_sha256, api.comfy_env_hash) == (None, None, None)
 
 
 async def test_hybrid_defaults_to_local_draft_and_api_on_request(

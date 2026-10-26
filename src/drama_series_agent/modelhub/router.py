@@ -240,6 +240,7 @@ class Router:
             unit_prices_json=spec.pricing.snapshot(),
             status="error",
             billed=False,
+            workflow_id=spec.workflow if spec.where == "local" else None,
         )
         row.started_at = utcnow()
         try:
@@ -272,6 +273,11 @@ class Router:
         row.output_seconds = usage.output_seconds
         row.chars = usage.chars
         row.input_seconds = usage.input_seconds
+        comfy = result.raw.get("comfy")
+        if isinstance(comfy, dict):  # SPEC 6.4.5: which workflow file, which ComfyUI
+            row.workflow_id = comfy.get("workflow_id") or row.workflow_id
+            row.workflow_sha256 = comfy.get("workflow_sha256")
+            row.comfy_env_hash = comfy.get("comfy_env_hash")
         row.cost_usd = cost_usd(
             spec.pricing,
             usage,
