@@ -1,0 +1,22 @@
+{
+ "https://github.com/Lightricks/ComfyUI-LTXVideo": [
+  [
+   "LTXVConditioning",
+   "EmptyLTXVLatentVideo",
+   "LTXVImgToVideo",
+   "LTXVScheduler"
+  ],
+  {
+   "title_aux": "ComfyUI-LTXVideo"
+  }
+ ],
+ "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite": [
+  [
+   "VHS_VideoCombine",
+   "VHS_LoadVideo"
+  ],
+  {
+   "title_aux": "ComfyUI-VideoHelperSuite"
+  }
+ ]
+}

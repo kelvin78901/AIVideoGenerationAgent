@@ -1,4 +1,5 @@
-"""What the library asks the user's ComfyUI: its workflow list, a workflow file, ``/object_info``.
+"""What the library asks the user's ComfyUI: its workflow list, a workflow file, ``/object_info``
+and ComfyUI-Manager's node map (which node pack provides which node class).
 
 ``HttpComfy`` talks to the running ComfyUI (the address of the last scan): the list and the
 files come from its user-data API (``/api/userdata?dir=workflows``), which works for every kind
@@ -38,8 +39,17 @@ class ComfyAccess(Protocol):
 
     async def object_info(self) -> dict[str, Any]: ...
 
+    async def node_map(self) -> dict[str, Any]: ...
+
+    @property
+    def needs_restart(self) -> bool:
+        """New node packs load only when ComfyUI restarts (the sample machine: at once)."""
+        ...
+
 
 class HttpComfy:
+    needs_restart = True
+
     def __init__(
         self,
         url: Callable[[], Awaitable[str]],
@@ -83,12 +93,32 @@ class HttpComfy:
         data = await self._get("/object_info", timeout_s=30)
         return data if isinstance(data, dict) else {}
 
+    async def node_map(self) -> dict[str, Any]:
+        """ComfyUI-Manager's ``extension-node-map`` (repository → [classes, info]); empty
+        without Manager (version 4 serves it under ``/v2``, older ones without)."""
+        for path in ("/v2/customnode/getmappings?mode=cache", "/customnode/getmappings?mode=cache"):
+            try:
+                data = await self._get(path, timeout_s=30)
+            except ComfyUnavailable:
+                continue
+            if isinstance(data, dict):
+                return data
+        return {}
+
 
 class DemoComfy:
-    """Mock's sample machine: ``wflib/demo/workflows/`` and ``wflib/demo/object_info.json``."""
+    """Mock's sample machine: ``wflib/demo/workflows/``, ``object_info.json`` and
+    ``node_map.json``. A node pack it "installs" adds its classes at once (no restart)."""
+
+    needs_restart = False
 
     def __init__(self, root: Path = DEMO_DIR) -> None:
         self._root = root
+        self._added: dict[str, Any] = {}
+
+    def add_classes(self, classes: list[str]) -> None:
+        for cls in classes:
+            self._added[cls] = {"display_name": cls, "input": {"required": {}}}
 
     async def files(self) -> list[ComfyFile]:
         index = json.loads((self._root / "files.json").read_text(encoding="utf-8"))
@@ -107,5 +137,10 @@ class DemoComfy:
 
     async def object_info(self) -> dict[str, Any]:
         data = json.loads((self._root / "object_info.json").read_text(encoding="utf-8"))
+        assert isinstance(data, dict)
+        return {**data, **self._added}
+
+    async def node_map(self) -> dict[str, Any]:
+        data = json.loads((self._root / "node_map.json").read_text(encoding="utf-8"))
         assert isinstance(data, dict)
         return data

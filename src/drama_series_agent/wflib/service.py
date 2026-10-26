@@ -20,9 +20,10 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from collections.abc import Callable
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import yaml
 from loguru import logger
@@ -36,7 +37,9 @@ from drama_series_agent.core.config import (
     set_library,
 )
 from drama_series_agent.core.db import Database
+from drama_series_agent.core.jobs import JobContext
 from drama_series_agent.core.models_db import ComfyWorkflowRow, utcnow
+from drama_series_agent.modelhub.adapters.base import CallContext, ModelError, ModelRequest
 from drama_series_agent.modelhub.registry import Registry, local_spec
 from drama_series_agent.modelhub.workflows import (
     WORKFLOWS_DIR,
@@ -47,7 +50,11 @@ from drama_series_agent.modelhub.workflows import (
     load_workflow,
     user_workflows_dir,
 )
-from drama_series_agent.wflib.comfy import ComfyAccess, ComfyUnavailable
+from drama_series_agent.setup.manifest import Message
+from drama_series_agent.setup.schema import NodePackSource
+from drama_series_agent.setup.service import NoComfy, SetupBusy, SnapshotFailed
+from drama_series_agent.spec.dims import ASPECTS, dims
+from drama_series_agent.wflib.comfy import ComfyAccess, ComfyUnavailable, DemoComfy
 from drama_series_agent.wflib.convert import ConvertError, is_ui_format, ui_to_api
 from drama_series_agent.wflib.guess import (
     DRAMASTUDIO_PREFIX,
@@ -62,13 +69,22 @@ from drama_series_agent.wflib.schema import (
     BindingOut,
     CapsOut,
     CheckOut,
+    ClassCount,
     ComfyWorkflowFile,
+    DepsInstalled,
     ImportIn,
+    MissingModel,
+    MissingPack,
     NodeOut,
     Tier,
     TrialOut,
     WorkflowOut,
 )
+
+if TYPE_CHECKING:
+    from drama_series_agent.core.jobs import JobQueue
+    from drama_series_agent.modelhub.router import Router
+    from drama_series_agent.setup.service import SetupService
 
 SKIP_REPO = frozenset({"selfhost"})
 # Which components a workflow of each kind serves when providers.yaml does not place it.
@@ -109,12 +125,23 @@ class WorkflowLibrary:
         *,
         repo_dir: Path = WORKFLOWS_DIR,
         user_dir: Callable[[], Path] = user_workflows_dir,
+        setup: SetupService | None = None,
+        jobs: JobQueue | None = None,
+        router: Router | None = None,
     ) -> None:
         self.db = db
         self.registry = registry
         self.comfy = comfy
         self.repo_dir = repo_dir
         self.user_dir = user_dir
+        self.setup = setup
+        self.jobs = jobs
+        self.router = router
+        # The snapshot taken before the last node-pack install: a workflow that worked before
+        # it and is broken after points back to it (SPEC 6.4.5).
+        self.install_snapshot: str | None = None
+        if jobs is not None:
+            jobs.register(WORKFLOW_TRIAL, self._run_trial)
 
     # ------------------------------------------------------------------ folders → rows
 
@@ -405,8 +432,188 @@ class WorkflowLibrary:
             s.add(row)
             await s.commit()
             await s.refresh(row)
+        try:  # checked right away when ComfyUI answers (the page shows what is missing)
+            access, info = await self._object_info()
+            row.check_json = await self._checked(row, access, info)
+        except LibraryError:
+            pass
+        return await self._save(row)
+
+    # ------------------------------------------------------------------ health check
+
+    async def _object_info(self) -> tuple[ComfyAccess, dict[str, Any]]:
+        access = self.comfy()
+        try:
+            return access, await access.object_info()
+        except ComfyUnavailable:
+            raise LibraryError(409, "comfy_not_running") from None
+
+    async def _checked(
+        self, row: ComfyWorkflowRow, access: ComfyAccess, info: dict[str, Any]
+    ) -> dict[str, Any]:
+        """SPEC 6.4.4-1: node classes ComfyUI does not have (and the packs that provide them),
+        model files its loaders do not list, bindings that no longer fit the graph."""
+        problems: list[Message] = []
+        wf = self.load(row)
+        if wf is not None:
+            graph = wf.graph
+        else:
+            problems.append(Message(code="binding_broken"))
+            try:
+                graph = json.loads((Path(row.dir) / "workflow.api.json").read_text("utf-8"))
+            except (OSError, ValueError):
+                graph = {}
+        classes = sorted({str(n.get("class_type")) for n in graph.values()})
+        missing = [c for c in classes if c not in info]
+        packs, unknown = _packs_for(missing, await _node_map(access))
+        problems += [Message(code="unknown_node", params={"class": c}) for c in unknown]
+        models = _missing_models(graph, info, row.deps_json.get("models") or [])
+        status = "broken" if problems else "missing" if packs or models else "ok"
+        before = (row.check_json or {}).get("status")
+        if status != "ok" and before == "ok" and self.install_snapshot:
+            problems.append(
+                Message(code="broke_after_install", params={"snapshot": self.install_snapshot})
+            )
+            status = "broken"
+        return CheckOut(
+            at=utcnow(),
+            status=status,
+            node_classes=ClassCount(found=len(classes) - len(missing), total=len(classes)),
+            missing_packs=packs,
+            missing_models=models,
+            problems=problems,
+        ).model_dump(mode="json")
+
+    async def check(self, workflow_id: str) -> WorkflowOut:
+        row = await self._row(workflow_id)
+        access, info = await self._object_info()
+        row.check_json = await self._checked(row, access, info)
+        return await self._save(row)
+
+    async def check_all(self) -> list[WorkflowOut]:
+        access, info = await self._object_info()
+        for row in await self.rows():
+            row.check_json = await self._checked(row, access, info)
+            row.updated_at = utcnow()
+            async with self.db.session() as s:
+                s.add(row)
+                await s.commit()
         await self._publish()
-        return self.out(row)
+        return await self.all()
+
+    async def deps(self, workflow_id: str) -> list[Message]:
+        """The change list installing what is missing would make (the 6.4.1 dialog)."""
+        row = await self._row(workflow_id)
+        check = CheckOut.model_validate(row.check_json) if row.check_json else None
+        if check is None:
+            return []
+        out = [
+            Message(
+                code="comfy_change",
+                params={
+                    "item": p.name,
+                    "action": "install",
+                    **({"to": p.version} if p.version else {}),
+                    **({"source": p.url} if p.url else {}),
+                },
+            )
+            for p in check.missing_packs
+        ]
+        out += [
+            Message(
+                code="comfy_change",
+                params={"item": f"{m.folder}/{m.name}", "action": "install", **_gb(m.size_bytes)},
+            )
+            for m in check.missing_models
+        ]
+        return out
+
+    async def install_deps(self, workflow_id: str) -> DepsInstalled:
+        """Approved: snapshot, then the missing node packs. Model files without a download
+        address stay listed (the user puts them in place). A real ComfyUI loads new packs
+        when it restarts; until then the check still shows them missing."""
+        row = await self._row(workflow_id)
+        check = CheckOut.model_validate(row.check_json) if row.check_json else None
+        if self.setup is None or check is None or not check.missing_packs:
+            raise LibraryError(409, "workflow_nothing_to_install")
+        sources = [NodePackSource(name=p.name, url=p.url or "") for p in check.missing_packs]
+        try:
+            result = await self.setup.install_node_packs([s for s in sources if s.url])
+        except NoComfy:
+            raise LibraryError(409, "comfy_not_found") from None
+        except SetupBusy:
+            raise LibraryError(409, "setup_busy") from None
+        except SnapshotFailed as exc:
+            raise LibraryError(409, "comfy_snapshot_failed", reason=exc.reason) from None
+        self.install_snapshot = result.snapshot.manager_name
+        access = self.comfy()
+        if isinstance(access, DemoComfy):
+            access.add_classes(
+                [c for p in check.missing_packs if p.name in result.installed for c in p.classes]
+            )
+        if not access.needs_restart:  # SPEC 6.4.5: every workflow checked after an install
+            await self.check_all()
+        return DepsInstalled(
+            workflow=await self.get(workflow_id),
+            packs=len(result.installed),
+            models=0,
+            snapshot=result.snapshot.manager_name,
+            restart_required=access.needs_restart,
+            failed=result.failed,
+        )
+
+    # ------------------------------------------------------------------ trial run
+
+    async def trial(self, workflow_id: str) -> WorkflowOut:
+        """SPEC 6.4.4-3: the sample inputs at the draft size and the shortest duration, on the
+        GPU queue (a job; its progress is ``job.updated``)."""
+        row = await self._row(workflow_id)
+        if self.jobs is None:
+            raise LibraryError(409, "workflow_trial_unavailable")
+        if _pending(row):
+            raise LibraryError(409, "workflow_bindings_pending", count=_pending(row))
+        if (row.check_json or {}).get("status") != "ok":
+            raise LibraryError(409, "workflow_check_failed")
+        w, h, seconds = _trial_size(row)
+        job = await self.jobs.enqueue(
+            WORKFLOW_TRIAL,
+            "gpu",
+            {"workflow_id": row.id, "model_key": row.model_key},
+            max_attempts=1,
+        )
+        row.trial_json = TrialOut(
+            at=utcnow(), status="running", job_id=job.id, w=w, h=h, seconds=seconds
+        ).model_dump(mode="json")
+        return await self._save(row)
+
+    async def _run_trial(self, ctx: JobContext) -> dict[str, Any]:
+        row = await self._row(str(ctx.params["workflow_id"]))
+        assert self.router is not None
+        component = self.out(row).components[0] if self.out(row).components else "kf"
+        w, h, seconds = _trial_size(row)
+        kind = row.kind if row.kind in ("image", "video", "upscale", "lipsync") else "image"
+        req = ModelRequest(
+            kind=kind,
+            prompt=TRIAL_PROMPT,
+            seed=1,
+            params={"width": w, "height": h, "duration_s": seconds, "n": 1, "trial": True},
+        )
+        call = CallContext(component_id=component, job_id=ctx.job.id, attempt=ctx.job.attempt)
+        started = time.monotonic()
+        trial = TrialOut(at=utcnow(), status="passed", job_id=ctx.job.id, w=w, h=h, seconds=seconds)
+        try:
+            await self.router.call(component, req, call, model=row.model_key, fallback=False)
+            trial.duration_s = round(time.monotonic() - started, 1)
+            wf = self.load(row)
+            if wf is not None:
+                row.file_sha256 = wf.sha256  # it passed on this file
+        except ModelError as exc:
+            trial.status = "failed"
+            trial.error = Message(code=exc.code)
+        row = await self._row(row.id)  # the bindings may have been saved meanwhile
+        row.trial_json = trial.model_dump(mode="json")
+        await self._save(row)
+        return {"workflow_id": row.id, "status": trial.status}
 
     def _free_slug(self, base: str, taken: set[str]) -> str:
         taken = taken | {p.name for p in self.repo_dir.iterdir() if p.is_dir()}
@@ -483,3 +690,77 @@ def _meta(row: ComfyWorkflowRow, bindings: list[Binding]) -> Any:
     from drama_series_agent.modelhub.workflows import WorkflowMeta
 
     return WorkflowMeta(name=row.name_json, kind=row.kind, tier="unverified", bindings=bindings)
+
+
+WORKFLOW_TRIAL = "workflow_trial"
+TRIAL_PROMPT = "雨夜的楼道，一个撑红伞的女人慢慢走上台阶，镜头缓缓推近。"
+
+
+def _trial_size(row: ComfyWorkflowRow) -> tuple[int, int, float]:
+    """The draft tier of the first aspect it supports (9:16 when it says nothing), and its
+    shortest duration (3 s when it says nothing; pictures have none)."""
+    sizes = row.caps_json.get("sizes")
+    aspects = [a for a in ASPECTS if not isinstance(sizes, dict) or a in sizes]
+    d = dims(aspects[0] if aspects else "9:16", "draft")
+    durations = row.caps_json.get("duration_s")
+    if row.kind != "video":
+        return d.w, d.h, 0
+    seconds = float(min(durations)) if isinstance(durations, list) and durations else 3.0
+    return d.w, d.h, seconds
+
+
+async def _node_map(access: ComfyAccess) -> dict[str, Any]:
+    try:
+        return await access.node_map()
+    except ComfyUnavailable:
+        return {}
+
+
+def _packs_for(missing: list[str], node_map: dict[str, Any]) -> tuple[list[MissingPack], list[str]]:
+    """Group missing node classes by the pack that provides them; classes no pack lists."""
+    by_class: dict[str, tuple[str, str]] = {}
+    for url, entry in node_map.items():
+        if not isinstance(entry, list) or not entry or not isinstance(entry[0], list):
+            continue
+        info = entry[1] if len(entry) > 1 and isinstance(entry[1], dict) else {}
+        name = str(info.get("title_aux") or url.rstrip("/").rsplit("/", 1)[-1])
+        for cls in entry[0]:
+            by_class.setdefault(str(cls), (name, url))
+    packs: dict[str, MissingPack] = {}
+    unknown: list[str] = []
+    for cls in missing:
+        if cls not in by_class:
+            unknown.append(cls)
+            continue
+        name, url = by_class[cls]
+        pack = packs.setdefault(
+            url, MissingPack(name=name, classes=[], source="git", version=None, url=url)
+        )
+        pack.classes.append(cls)
+    return list(packs.values()), unknown
+
+
+def _missing_models(
+    graph: dict[str, Any], info: dict[str, Any], wanted: list[dict[str, Any]]
+) -> list[MissingModel]:
+    """A model file a loader names that is not among the loader's choices in ComfyUI."""
+    out: list[MissingModel] = []
+    names = {str(m.get("name")): str(m.get("folder")) for m in wanted}
+    for node in graph.values():
+        spec = (info.get(str(node.get("class_type"))) or {}).get("input") or {}
+        for field, value in (node.get("inputs") or {}).items():
+            if not isinstance(value, str) or value not in names:
+                continue
+            entry = (spec.get("required") or {}).get(field) or (spec.get("optional") or {}).get(
+                field
+            )
+            choices = entry[0] if isinstance(entry, list) and entry else None
+            if isinstance(choices, list) and value not in choices:
+                model = MissingModel(folder=names[value], name=value)
+                if model not in out:
+                    out.append(model)
+    return out
+
+
+def _gb(size_bytes: int | None) -> dict[str, float]:
+    return {"gb": round(size_bytes / 1024**3, 1)} if size_bytes else {}

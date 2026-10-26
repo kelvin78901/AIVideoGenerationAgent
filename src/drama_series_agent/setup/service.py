@@ -76,7 +76,7 @@ from drama_series_agent.setup.installer import (
     size_bytes,
     work_s,
 )
-from drama_series_agent.setup.manifest import OS, Item, Manifest, load_manifest
+from drama_series_agent.setup.manifest import OS, Item, Manifest, Message, load_manifest
 from drama_series_agent.setup.pathutil import dirname, inside, join, same_path
 from drama_series_agent.setup.probe import FakeProbe, HostInfo, Probe, RealProbe
 from drama_series_agent.setup.schema import (
@@ -87,6 +87,8 @@ from drama_series_agent.setup.schema import (
     InstallRequest,
     ItemInstall,
     MachineProfile,
+    NodePackSource,
+    PacksInstalled,
     ProfileData,
     Recommendation,
     RestoreCheck,
@@ -879,6 +881,65 @@ class SetupService:
             raise SnapshotFailed(exc.reason) from None
         return self._snapshot_of(await self._add_snapshot(row.id, name, data, "manual", []))
 
+    async def install_node_packs(self, packs: list[NodePackSource]) -> PacksInstalled:
+        """Node packs a workflow needs (SPEC 6.4.4-2): a ComfyUI-Manager snapshot first, then
+        each pack cloned into ``custom_nodes`` and its requirements installed into ComfyUI's
+        Python, as the installer does for its own packs. ComfyUI loads them when it restarts."""
+        loaded = await self._load(self.profile_id)
+        if loaded is None or loaded[1].comfy is None:
+            raise NoComfy
+        row, data = loaded
+        if data.phase == "installing":
+            raise SetupBusy
+        changes = [
+            Message(
+                code="comfy_change",
+                params={"item": p.name, "action": "install", "source": p.url},
+            )
+            for p in packs
+        ]
+        try:
+            name = await self.snapshots_for(row, data).save()
+        except SnapshotError as exc:
+            raise SnapshotFailed(exc.reason) from None
+        snap = await self._add_snapshot(row.id, name, data, "install", changes)
+        env = await self._install_env(row, data)
+        runner = self.runner_for(row)
+        done: list[str] = []
+        failed: list[dict[str, str]] = []
+
+        async def log(level: Any, code: str, params: dict[str, Any]) -> None:
+            logger.info("node pack install {} {} {}", level, code, params)
+
+        async def progress(pct: float, transfer: Any = None) -> None:
+            return None
+
+        for pack in packs:
+            folder = pack.url.rstrip("/").rsplit("/", 1)[-1].removesuffix(".git")
+            dest = "{comfy}/custom_nodes/" + folder
+            item = Item.model_validate(
+                {
+                    "id": f"pack:{folder}",
+                    "group": "comfy",
+                    "name": {"zh": pack.name, "en": pack.name},
+                    "detect": {"type": "comfy_node", "dir": folder},
+                    "install": [
+                        {"type": "git_clone", "url": pack.url, "ref": pack.ref, "dest": dest},
+                        {
+                            "type": "uv_pip",
+                            "env": "comfy",
+                            "requirements": "{dest}/requirements.txt",
+                        },
+                    ],
+                }
+            )  # fmt: skip
+            try:
+                await runner.install(item, env, log, progress)
+                done.append(pack.name)
+            except InstallError as exc:
+                failed.append({"name": pack.name, "code": exc.code})
+        return PacksInstalled(snapshot=self._snapshot_of(snap), installed=done, failed=failed)
+
     async def restore_snapshot(self, snapshot_id: str) -> Restored:
         """Ask ComfyUI-Manager to restore it; it takes effect when ComfyUI next starts."""
         loaded = await self._load(self.profile_id)
@@ -949,15 +1010,16 @@ class SetupService:
             await s.commit()
 
     async def _install_env(self, row: MachineProfileRow, data: ProfileData) -> InstallEnv:
-        assert data.install is not None
+        """Where an install goes; before our installer ever ran (a workflow's node packs),
+        the automatic mirror and no weights folder."""
         probe = self.probe_for(row)
         host = await probe.host()
         envs = self._envs(host, simulated=probe.simulated)
         comfy = data.facts.get("comfy", {})
         return InstallEnv(
             os=host.os,
-            mirror=data.install.mirror,
-            models=data.install.dir,
+            mirror=data.install.mirror if data.install else "auto",
+            models=data.install.dir if data.install else "",
             envs=envs,
             comfy=comfy.get("root") or join(dirname(envs), "ComfyUI"),
             comfy_python=comfy.get("python"),

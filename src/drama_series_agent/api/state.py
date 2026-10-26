@@ -220,16 +220,20 @@ class StudioState:
         assets.register(impact, gates, episodes)
         shots.register(gates, episodes, impact)
 
+        demo_comfy = DemoComfy()  # one, so what it "installs" stays
+
         def comfy_access() -> ComfyAccess:
             if setup.profile_id == PROFILE_DEMO:
-                return DemoComfy()
+                return demo_comfy
 
             async def url() -> str:
                 return (await setup.comfy_target()).url
 
             return HttpComfy(url, transport=state.http_transport)
 
-        workflows = WorkflowLibrary(db, registry, comfy_access)
+        workflows = WorkflowLibrary(
+            db, registry, comfy_access, setup=setup, jobs=jobs, router=router
+        )
         await workflows.sync()
         state = cls(
             db=db,

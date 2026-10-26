@@ -129,3 +129,14 @@ class ImportIn(BaseModel):
 
 class TierIn(BaseModel):
     tier: Tier
+
+
+class DepsInstalled(BaseModel):
+    """``POST /workflows/{id}/deps/install``: what got installed, and the snapshot taken first."""
+
+    workflow: WorkflowOut
+    packs: int
+    models: int
+    snapshot: str
+    restart_required: bool  # a real ComfyUI loads new node packs when it restarts
+    failed: list[dict[str, str]] = Field(default_factory=list)  # {name, code}

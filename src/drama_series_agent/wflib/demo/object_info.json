@@ -5,7 +5,8 @@
    "required": {
     "ckpt_name": [
      [
-      "sd_xl_base_1.0.safetensors"
+      "sd_xl_base_1.0.safetensors",
+      "flux1-dev-fp8.safetensors"
      ]
     ]
    }
@@ -147,6 +148,128 @@
      ],
      {
       "image_upload": true
+     }
+    ]
+   }
+  }
+ },
+ "RandomNoise": {
+  "display_name": "RandomNoise",
+  "input": {
+   "required": {
+    "noise_seed": [
+     "INT",
+     {
+      "default": 0,
+      "control_after_generate": true
+     }
+    ]
+   }
+  }
+ },
+ "CFGGuider": {
+  "display_name": "CFGGuider",
+  "input": {
+   "required": {
+    "model": [
+     "MODEL"
+    ],
+    "positive": [
+     "CONDITIONING"
+    ],
+    "negative": [
+     "CONDITIONING"
+    ],
+    "cfg": [
+     "FLOAT",
+     {
+      "default": 8.0
+     }
+    ]
+   }
+  }
+ },
+ "SamplerCustomAdvanced": {
+  "display_name": "SamplerCustomAdvanced",
+  "input": {
+   "required": {
+    "noise": [
+     "NOISE"
+    ],
+    "guider": [
+     "GUIDER"
+    ],
+    "sampler": [
+     "SAMPLER"
+    ],
+    "sigmas": [
+     "SIGMAS"
+    ],
+    "latent_image": [
+     "LATENT"
+    ]
+   }
+  }
+ },
+ "CreateVideo": {
+  "display_name": "Create Video",
+  "input": {
+   "required": {
+    "images": [
+     "IMAGE"
+    ],
+    "fps": [
+     "FLOAT",
+     {
+      "default": 30.0
+     }
+    ]
+   },
+   "optional": {
+    "audio": [
+     "AUDIO"
+    ]
+   }
+  }
+ },
+ "SaveVideo": {
+  "display_name": "Save Video",
+  "input": {
+   "required": {
+    "video": [
+     "VIDEO"
+    ],
+    "filename_prefix": [
+     "STRING",
+     {
+      "default": "video/ComfyUI"
+     }
+    ],
+    "format": [
+     [
+      "auto",
+      "mp4"
+     ]
+    ],
+    "codec": [
+     [
+      "auto",
+      "h264"
+     ]
+    ]
+   }
+  }
+ },
+ "LoadAudio": {
+  "display_name": "Load Audio",
+  "input": {
+   "required": {
+    "audio": [
+     [
+      "line.wav"
+     ],
+     {
+      "audio_upload": true
      }
     ]
    }

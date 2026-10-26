@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 3 步：体检、装依赖、试跑
+
+- **体检只靠 `/object_info`**：图里的节点类 ComfyUI 不认识的算缺；**模型文件对照加载器那一项的可选列表**（ComfyUI 把模型文件夹里的文件列成下拉选项），不在里面的算缺，不另调 `/models/<folder>`。缺的节点类按 ComfyUI-Manager 的节点表（`/v2/customnode/getmappings?mode=cache`，旧版 Manager 不带 `/v2`）归到节点包；节点表里也没有的记成问题 `unknown_node`，状态「坏了」。绑定对不上图（标题没了、字段改名）记 `binding_broken`。导入后马上体检一次（ComfyUI 没开就先不体检）。
+- **装节点包复用安装器**：`SetupService.install_node_packs` 先存 ComfyUI-Manager 快照（原因记 `install`，改动清单写节点包；快照列表的契约只有 install / manual 两种），再给每个包拼一个临时安装项（`git_clone` 到 `custom_nodes/<仓库名>` + `uv_pip` 装它的 requirements，和清单里的节点包一样），交给同一个 runner；示例机器走 FakeRunner。还没跑过我们安装器的机器也能装（镜像用 auto，没有权重文件夹）。**真实 ComfyUI 要重启才加载新节点包**：接口返回 `restart_required: true`，重启后再「全部体检」；示例机器装完立刻生效并自动全部体检。没有下载地址的模型文件不装，继续列着，让用户自己放。
+- **装完节点包后坏了的工作流指回快照**：库记住最近一次装节点包前的快照；之前体检是「正常」、现在不是的工作流，加问题 `broke_after_install`（带快照名），状态记「坏了」，界面据此提示回滚（回滚走已有的 `/comfy/snapshots/{id}/restore`）。
+- **试跑是 GPU 队列的任务**（`workflow_trial`，只跑一次不重试），通过 `router.call()` 用工作流对应的第一个组件、指定这个模型、不兜底，所以有 `model_call`。示例输入：固定一句提示词，尺寸是它支持的第一个画幅的草稿档（`spec/dims.py`，没写就 9:16 → 768×1366），视频取最短时长（没写 3 秒），图片时长记 0。通过后把「这次通过的文件哈希」记成登记哈希。试跑不属于某部剧，所以不读某集的成片规格，这是硬规则 10 的一个明确例外。
+
 ## 2026-10-26 · M5 第 2 步：工作流库（登记、档位、导入、绑定）
 
 - **库进配置，而不是另开一套**：`core.config` 加 `Library` 覆盖层（`set_library`）。`get_config()` = 工厂 YAML + 库：`providers.yaml` 里没有的工作流变成本地模型 `comfy/<slug>`，按 kind 放进组件的 `local`（video → 视频生成；image → 关键帧、参考图；upscale → 超分；lipsync → 口型）。这样 ModelPicker、路由、能力过滤、注册表都不用改就认得导入的工作流。启动、导入、改档位、改绑定时重新发布；应用停止和每个测试开始时清空（否则上一个应用的库会漏进后面的测试）。

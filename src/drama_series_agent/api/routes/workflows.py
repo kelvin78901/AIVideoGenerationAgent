@@ -1,7 +1,4 @@
-"""The workflow library (SPEC 6.4.6, 9.1 ``/workflows/*``) and ComfyUI's own workflow list.
-
-Health check, dependencies and trial runs come in M5 step 3.
-"""
+"""The workflow library (SPEC 6.4.6, 9.1 ``/workflows/*``) and ComfyUI's own workflow list."""
 
 from __future__ import annotations
 
@@ -12,9 +9,11 @@ from fastapi import APIRouter, Depends
 
 from drama_series_agent.api.errors import ApiError
 from drama_series_agent.api.state import StudioState, get_state
+from drama_series_agent.setup.manifest import Message
 from drama_series_agent.wflib.schema import (
     BindingOut,
     ComfyWorkflowFile,
+    DepsInstalled,
     ImportIn,
     TierIn,
     WorkflowOut,
@@ -66,3 +65,33 @@ async def import_workflow(body: ImportIn, state: State) -> WorkflowOut:
 async def comfy_workflows(state: State) -> list[ComfyWorkflowFile]:
     """ComfyUI's own workflow list (its user-data folder), newest first."""
     return await _call(state.workflows.comfy_files())
+
+
+@router.post("/workflows/check-all")
+async def check_all(state: State) -> list[WorkflowOut]:
+    """Every workflow against the running ComfyUI (after a node-pack install, SPEC 6.4.5)."""
+    return await _call(state.workflows.check_all())
+
+
+@router.post("/workflows/{workflow_id}/check")
+async def check(workflow_id: str, state: State) -> WorkflowOut:
+    """Missing node classes (and their packs), missing model files, broken bindings."""
+    return await _call(state.workflows.check(workflow_id))
+
+
+@router.post("/workflows/{workflow_id}/deps")
+async def deps(workflow_id: str, state: State) -> dict[str, list[Message]]:
+    """The change list installing what the last check found missing would make."""
+    return {"changes": await _call(state.workflows.deps(workflow_id))}
+
+
+@router.post("/workflows/{workflow_id}/deps/install")
+async def install_deps(workflow_id: str, state: State) -> DepsInstalled:
+    """Approved: a ComfyUI-Manager snapshot first, then the missing node packs."""
+    return await _call(state.workflows.install_deps(workflow_id))
+
+
+@router.post("/workflows/{workflow_id}/trial", status_code=202)
+async def trial(workflow_id: str, state: State) -> WorkflowOut:
+    """A trial run on the sample inputs (a GPU-queue job; ``job.updated`` reports it)."""
+    return await _call(state.workflows.trial(workflow_id))
