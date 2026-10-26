@@ -284,6 +284,7 @@
         ],
         "local_models": [
           "comfy/h3",
+          "comfy/h3-r2v",
           "comfy/wan-2.2",
           "comfy/ltx"
         ],
@@ -730,6 +731,12 @@
       {
         "key": "comfy/h3",
         "display": "MiniMax H3（本地）",
+        "where": "local",
+        "price": null
+      },
+      {
+        "key": "comfy/h3-r2v",
+        "display": "MiniMax H3 参考生视频（本地）",
         "where": "local",
         "price": null
       },
@@ -1283,6 +1290,7 @@
         },
         "alt_order": [
           "comfy/h3",
+          "comfy/h3-r2v",
           "comfy/wan-2.2",
           "comfy/ltx",
           "volc/seedance-2.5",
@@ -2416,6 +2424,7 @@
         },
         "alt_order": [
           "google/veo-3.1",
+          "comfy/h3-r2v",
           "comfy/wan-2.2",
           "comfy/ltx",
           "minimax/h3-api",
@@ -2880,6 +2889,7 @@
           "notify": "after"
         },
         "alt_order": [
+          "comfy/h3-r2v",
           "comfy/wan-2.2",
           "comfy/ltx"
         ],

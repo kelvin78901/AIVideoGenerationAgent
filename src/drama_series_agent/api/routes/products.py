@@ -32,7 +32,7 @@ class RunBody(BaseModel):
     model: str | None = None
     intent: str | None = None
     compiled: str | None = None  # a hand-edited compiled layer (「保存并重跑」)
-    count: int = Field(default=1, ge=1, le=8)
+    count: int | None = Field(default=None, ge=1, le=8)  # None: the component's (first takes)
     # ``api``: hybrid mode's 「用 API 出终版」 (SPEC 7.3).
     where: Literal["local", "api"] | None = None
     params: RunParams | None = None

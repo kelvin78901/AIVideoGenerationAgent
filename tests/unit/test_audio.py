@@ -14,6 +14,7 @@ from drama_series_agent.media.audio import (
     WAVEFORM_BARS,
     AudioError,
     DialogueTarget,
+    dialogue_track,
     prepare_dialogue,
 )
 
@@ -81,3 +82,19 @@ async def test_a_whispered_line_keeps_its_soft_ending_and_a_tail() -> None:
         frames = w.readframes(w.getnframes())
     last = struct.unpack(f"<{int(0.1 * 48000)}h", frames[-int(0.1 * 48000) * 2 :])
     assert max(abs(s) for s in last) == 0  # it ends on silence, not mid-sound
+
+
+def test_a_shots_dialogue_track_strings_its_lines_after_a_breath() -> None:
+    """M5: the 先配音 shot's lines one after another from 0.3 s, padded to the shot's length;
+    a clip at another rate is resampled to 48 kHz."""
+    first = _wav([(1.0, 0.5)], rate=48000)
+    second = _wav([(0.5, 0.5)], rate=44100)
+    track = dialogue_track([first, second], total_s=2.5, lead_s=0.3)
+    with wave.open(io.BytesIO(track)) as w:
+        assert (w.getframerate(), w.getnchannels(), w.getsampwidth()) == (48000, 1, 2)
+        frames = w.readframes(w.getnframes())
+        assert w.getnframes() / 48000 == pytest.approx(2.5, abs=0.01)
+    samples = struct.unpack(f"<{len(frames) // 2}h", frames)
+    lead = round(0.3 * 48000)
+    assert not any(samples[:lead]) and any(samples[lead : lead + 4800])
+    assert not any(samples[round(1.85 * 48000) :])  # after the two lines (1.8 s): silence

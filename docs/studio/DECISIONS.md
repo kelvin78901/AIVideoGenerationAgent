@@ -2,6 +2,19 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 5 步：视频组件 `vid`（后端，Mock）
+
+- **视频产物在物化时就建，不等分镜确认**（和计划写的「分镜闸门确认后」不同）：`shots/service.py:materialize` 给每个镜头（连续镜头也有）建 owner `shot`、slot `video` 的产物，跟着镜头退役、回来，和关键帧一个写法；**出视频要分镜已确认**（409 `storyboard_not_confirmed`）。这样产物 id 稳定（示例固定成 `demo-p-vid-<镜头号>`，和 MSW 的一致），影响范围和失效也有地方挂。已有的镜头由迁移 `0020`（只改数据）补上。
+- **一条 take = 一个版本**（前端契约：评分、质检、采纳都按版本）。第一次出 `candidates` 条（2），之后「再出一条」1 条：组件新钩子 `run_count`，`POST /products/{id}/run` 的 `count` 默认改成「由组件定」。**估价乘上条数**：以前 `count` > 1 时只按一条估价和查预算（硬规则 6 的漏洞），现在 `start` 按 `count` 倍。
+- **首帧**：普通镜头用锁定的关键帧（没锁 409 `keyframe_not_locked`）；连续镜头用它接的那个镜头**已采纳 take 的尾帧**（没采纳 409 `upstream_not_adopted {id: 镜头号}`）。依赖记关键帧产物或上一镜的视频产物，上游换了就「待更新」。
+- **声音按 `audio_mode`**：`tts` 把这个镜头说话的行的已采纳配音从 0.3 秒起一句接一句拼成一条 48 kHz 单声道（`media/audio.py:dialogue_track`，补静音到镜头时长），当 `dialogue_audio` 传；有一句没配音就 409 `line_audio_missing`。`native` 把说话人锁定音色的 `anchor` 样本按说话顺序（S1、S2 …）当 `ref_audio` 传，`model_for` 换到工作流收 `ref_audio` 的本地模型（`comfy/h3-r2v`）；没锁音色的说话人只写在提示词里。`none` 不要声音（`with_audio: false`，`overall_soundscape: N/A`）。
+- **新槽位 `ref_audio`**（带序号的音色样本，`h3-r2v` 用）：后端 `Slot`、库的 `SlotName`、前端 `SlotSchema` 和两种语言的词表都加了。`workflows/h3-r2v/` 照官方 R2V 模板（ref2va 权重、4 步 Turbo LoRA、首帧当 `<Picture 1>`、参考图最多 4 张、音色最多 3 个），同样对本机 `/object_info` 静态核过；`providers.yaml` 加 `comfy/h3-r2v`，视频组件的本地列表加上它。
+- **提示词两层不变**：编译层是 `templates/vid/default.j2`（中文，用户能改）；发给 H3 时套 H3 自己的格式（`h3_i2v.j2`：首帧那一行 + 三个字段；`h3_r2v.j2`：参考模式的六段 `subject_definitions` … `non_diegetic_music`），台词写成 `(S1) says: <d>[Chinese] …</d>`、画外音照官方写法、配乐一律 `N/A`。格式照 MiniMax 官方的两份提示词指南（HF `MiniMaxAI/MiniMax-H3` 的 docs）。官方要英文正文：现在是中文描述放进英文字段，第 6 步的 Context-IR 再按官方指南写英文。「六段式」指的就是参考模式的六段。
+- **每条 take 裁掉开头 0.3 秒**，文件 `video`（带时长、宽高）、`poster`（第一帧）、`last_frame`（最后一帧）、`prompt`；payload 记 `duration_s`、`asked_s`、`resolution`、`aspect`、`audio_mode`、`refs`、`voices`。本地出的 `stage=draft`（终版第 7 步）。质检是 M6，`qa` 为空。
+- **生成确认 `takes`**：GateService 的 members 闸门加 `lock=True`：确认时每个镜头都要有采纳的 take（409 `takes_not_adopted {count, labels}`），然后锁定；重新打开时解锁。导航徽标「生成 n/m」：分镜确认前「未开始」，之后是有采纳 take 的镜头数，待更新数按失效算。
+- **影响范围**：`video` 进影响范围的排序和步骤表（步骤 `generate`），镜头设定、台词、关键帧变了走通用的 `stale_video` / `then_video` 行；改画幅另加 `videos_redo`（已有几条 take、几条已采纳、已采纳的出 API 终版要多少钱）。「确认并同步」不自动重出视频（和关键帧一样只标待更新）。
+- **本地运行的进度**：组件的 `CallContext` 带上 `on_progress = RunContext.progress`，ComfyUI 的采样步数直接走 `job.updated`。
+
 ## 2026-10-26 · M5 第 4 步：ComfyUI 适配器完整版、H3 本地工作流
 
 - **H3 本地工作流 `workflows/h3-i2v/` 照官方 I2V 模板**（`video_minimax_h3_i2v.json`，子图展开成 API 格式），节点名、输入名、可选值对着 Kelvin 本机 ComfyUI 0.41.2 的 `/object_info` 静态核过（没真跑，真跑在第 14 步）。用 `MiniMaxH3ImageToVideo`（fl2va 权重）而不是上游 `selfhost/` 的 `MiniMaxH3ReferenceToVideo`：首帧是硬锚定，不是提示词里的「<Picture 1> 是首帧」。草稿固定开 8 步 Turbo LoRA（官方开关默认关，参数照官方 Turbo 默认）。尺寸按画幅取 768P 档（短边 768，和 H3 API 768P、Regenerate-2K 的输入对上），帧率固定 24，时长落到 5–15 秒，帧数照官方表达式落到 17k+5。每秒成片的估时 `est_seconds_per_s: 25` 是估的，第 14 步实测后改。

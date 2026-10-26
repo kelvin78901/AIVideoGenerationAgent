@@ -103,6 +103,7 @@
     "prompt": "提示词（正向）",
     "negative": "提示词（反向）",
     "dialogue_audio": "台词音频",
+    "ref_audio": "音色样本",
     "width": "宽",
     "height": "高",
     "fps": "帧率",

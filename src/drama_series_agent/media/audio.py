@@ -243,3 +243,36 @@ def _prepare(data: bytes, t: DialogueTarget) -> PreparedAudio:
         peak_db=after.peak_db,
         waveform=waveform(samples),
     )
+
+
+TRACK_RATE = 48_000
+
+
+def dialogue_track(clips: list[bytes], total_s: float, lead_s: float) -> bytes:
+    """A shot's dialogue as one track (M5, the 先配音 shots' audio for the video model): its
+    lines' clips one after another from ``lead_s``, silence after them up to ``total_s``;
+    48 kHz mono 16-bit WAV."""
+    track = array.array("h", bytes(2 * round(lead_s * TRACK_RATE)))
+    for clip in clips:
+        samples, rate = _samples(clip)
+        if rate != TRACK_RATE:
+            samples, rate = _samples(_resampled(clip))
+        track.extend(samples)
+    track.extend(array.array("h", bytes(2 * max(0, round(total_s * TRACK_RATE) - len(track)))))
+    if sys.byteorder == "big":
+        track.byteswap()
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(TRACK_RATE)
+        w.writeframes(track.tobytes())
+    return buf.getvalue()
+
+
+def _resampled(clip: bytes) -> bytes:
+    with TemporaryDirectory(prefix="drama-audio-") as tmp:
+        src, out = Path(tmp, "in.wav"), Path(tmp, "out.wav")
+        src.write_bytes(clip)
+        _ffmpeg("-i", str(src), "-ar", str(TRACK_RATE), "-ac", "1", "-c:a", "pcm_s16le", str(out))
+        return out.read_bytes()

@@ -243,7 +243,7 @@ def test_an_unfilled_optional_reference_goes_with_its_links(root: Path) -> None:
     assert graph["5"]["inputs"]["image"] == "dramastudio/a.png"
     assert "6" not in graph and "image2" not in graph["7"]["inputs"]
     assert graph["7"]["inputs"]["image1"] == ["5", 0] and graph["2"]["inputs"]["text"] == "雨"
-    with pytest.raises(WorkflowError, match="at least 1 reference"):
+    with pytest.raises(WorkflowError, match="at least 1 of ref_image"):
         load_workflow("fake-edit", root).fill({}, [])
 
 
@@ -505,3 +505,21 @@ async def test_a_trial_makes_up_the_first_frame(h3_root: Path, store: BlobStore)
     graph = fake.prompts[0]
     size = (graph["104"]["inputs"]["width"], graph["104"]["inputs"]["height"])
     assert size == (736, 1280) and "131" not in graph  # 720 x 1280 in steps of 32
+
+
+def test_the_h3_reference_workflow_drops_unused_references_and_voices() -> None:
+    wf = shipped_workflow("h3-r2v")
+    graph = wf.fill(
+        {"first_frame": "dramastudio/f.png", "ref_audio": ["dramastudio/v1.wav"]},
+        ["dramastudio/r1.png"],
+    )
+    node = graph["136"]["inputs"]
+    assert graph["200"]["inputs"]["image"] == "dramastudio/f.png"  # <Picture 1>
+    assert graph["201"]["inputs"]["image"] == "dramastudio/r1.png"  # <Picture 2>
+    assert graph["210"]["inputs"]["audio"] == "dramastudio/v1.wav"  # <Audio 1>
+    assert {"202", "203", "204", "211", "212"}.isdisjoint(graph)
+    assert sorted(k for k in node if k.startswith(("ref_images.", "ref_audios."))) == [
+        "ref_audios.ref_audio_0",
+        "ref_images.ref_image_0",
+        "ref_images.ref_image_1",
+    ]

@@ -197,6 +197,15 @@ def keyframe_product_id(label: str) -> str:
     return f"demo-p-kf-{label}"
 
 
+# Episode 1's shots (1-08 and 1-09 continue the shot before; no keyframe of their own).
+DEMO_SHOTS = (*DEMO_KEYFRAMES, "1-08", "1-09")
+
+
+def video_product_id(label: str) -> str:
+    """``1-04`` → ``demo-p-vid-1-04`` (MSW ``videoProductId``)."""
+    return f"demo-p-vid-{label}"
+
+
 def assets_product_id(episode_id: str) -> str:
     """``demo-e1`` → ``demo-p-assets-e1``: the episode's 素材分析."""
     return f"demo-p-assets-{episode_id.removeprefix('demo-')}"
@@ -262,6 +271,15 @@ async def seed_demo(
                     slot=shots_service.KEYFRAME_SLOT,
                     component_id=kf.KfComponent.id,
                     product_id=keyframe_product_id(label),
+                )
+            for label in DEMO_SHOTS:
+                await products.ensure(
+                    series_id=DEMO_SERIES_ID,
+                    owner_type="shot",
+                    owner_id=f"demo-shot-{label}",
+                    slot=shots_service.VIDEO_SLOT,
+                    component_id=shots_service.VID_COMPONENT,
+                    product_id=video_product_id(label),
                 )
         await _seed_novel(novel)
         if products is not None and compiler is not None:

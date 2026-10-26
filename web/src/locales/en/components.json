@@ -203,6 +203,8 @@
       "then_shot_plan": "Episode {{n}} shot plan · marked out of date only if what it reads changes; never redone by itself",
       "stale_keyframe": "Episode {{n}} keyframes · shots {{shots}} become out of date: draw new candidates, pick one and confirm (not redrawn on their own)",
       "then_keyframe": "Episode {{n}} keyframes · shots {{shots}} · out of date only if what they read really changes",
+      "stale_video": "Episode {{n}} video · shots {{shots}} become out of date: make new takes and adopt one (not redone on their own)",
+      "then_video": "Episode {{n}} video · shots {{shots}} · out of date only if what they read really changes",
       "uses_keyframe": "Keyframes · shots {{names}} use it as a reference ({{count}}); they become out of date once a new picture is locked",
       "self_shot_plan": "Episode {{n}}'s confirmed shot plan changes to the new content",
       "gate_storyboard": "Episode {{n}}'s storyboard confirmation reopens: confirm it again afterwards",

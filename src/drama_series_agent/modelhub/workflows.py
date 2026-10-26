@@ -53,6 +53,7 @@ Slot = Literal[
     "first_frame",
     "video_in",
     "ref_image",
+    "ref_audio",
     "prompt",
     "negative",
     "dialogue_audio",
@@ -67,7 +68,9 @@ Slot = Literal[
 ]
 OUTPUT_SLOTS = frozenset({"video_out", "image_out", "audio_out"})
 # Slots filled with an uploaded file's name (``input/dramastudio/…``).
-FILE_SLOTS = frozenset({"first_frame", "video_in", "ref_image", "dialogue_audio"})
+FILE_SLOTS = frozenset({"first_frame", "video_in", "ref_image", "ref_audio", "dialogue_audio"})
+# Numbered file slots (1, 2 …): a list of names, filled in order.
+LIST_SLOTS: tuple[Slot, ...] = ("ref_image", "ref_audio")
 
 
 class WorkflowError(ValueError):
@@ -162,24 +165,29 @@ class Workflow:
 
     def fill(self, values: dict[Slot, Any], refs: list[str] | None = None) -> dict[str, Any]:
         """A copy of the graph with the slots filled. ``refs``: the uploaded reference names,
-        for ``ref_image`` 1, 2 …; the other file slots take theirs from ``values``. An optional
-        file slot left without one is removed (with its bypasses); a required one is an error."""
+        for ``ref_image`` 1, 2 … (``values["ref_audio"]``: the voice samples', a list too);
+        the other file slots take theirs from ``values``. An optional file slot left without
+        one is removed (with its bypasses); a required one is an error."""
         graph = copy.deepcopy(self.graph)
         for slot, value in values.items():
-            if slot == "ref_image":
+            if slot in LIST_SLOTS:
                 continue
             for b in self.bindings(slot):
                 graph[self._ids[b.node]]["inputs"][str(b.field)] = value
-        refs = refs or []
-        for i, b in enumerate(self.bindings("ref_image")):
-            if i < len(refs):
-                graph[self._ids[b.node]]["inputs"][str(b.field)] = refs[i]
-            elif b.optional:
-                self._drop(graph, b)
-            else:
-                raise WorkflowError(f"{self.slug}: needs at least {i + 1} reference pictures")
+        lists: dict[Slot, list[str]] = {
+            "ref_image": list(refs or []),
+            "ref_audio": list(values.get("ref_audio") or []),
+        }
+        for slot, names in lists.items():
+            for i, b in enumerate(self.bindings(slot)):
+                if i < len(names):
+                    graph[self._ids[b.node]]["inputs"][str(b.field)] = names[i]
+                elif b.optional:
+                    self._drop(graph, b)
+                else:
+                    raise WorkflowError(f"{self.slug}: needs at least {i + 1} of {slot}")
         for b in self.meta.bindings:
-            if b.slot in FILE_SLOTS and b.slot != "ref_image" and values.get(b.slot) is None:
+            if b.slot in FILE_SLOTS and b.slot not in LIST_SLOTS and values.get(b.slot) is None:
                 if not b.optional:
                     raise WorkflowError(f"{self.slug}: needs {b.slot}")
                 self._drop(graph, b)

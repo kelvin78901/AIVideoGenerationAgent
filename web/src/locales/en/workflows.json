@@ -103,6 +103,7 @@
     "prompt": "Prompt (positive)",
     "negative": "Prompt (negative)",
     "dialogue_audio": "Dialogue audio",
+    "ref_audio": "Voice sample",
     "width": "Width",
     "height": "Height",
     "fps": "Frame rate",

@@ -14,6 +14,7 @@ SlotName = Literal[
     "first_frame",
     "video_in",
     "ref_image",
+    "ref_audio",
     "prompt",
     "negative",
     "dialogue_audio",

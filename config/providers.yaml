@@ -298,6 +298,8 @@ media_models:
 # runtime: comfyui 的模型由 workflow 指的 workflows/<slug>/ 跑（adapters/comfyui.py）；文件夹还没有的（H3 ControlNet 等）暂不可用。
 local_models:
   - { key: comfy/h3,                kind: video,   display: MiniMax H3（本地）,      runtime: comfyui, workflow: h3-i2v, caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440 }, needs: [comfy, node_h3, w_h3, w_te], requires_cuda: true }
+  # 配音方式 native 的镜头（锁定音色样本当 <Audio N>，Kelvin 2026-10-26 定）：参考生视频节点 + ref2va 权重，视频组件按镜头换过来
+  - { key: comfy/h3-r2v,            kind: video,   display: MiniMax H3 参考生视频（本地）, runtime: comfyui, workflow: h3-r2v, caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440, max_refs: 4, audio_in: true }, needs: [comfy, node_h3, w_h3, w_te], requires_cuda: true }
   - { key: comfy/h3-fun-controlnet, kind: video,   display: H3 Fun ControlNet（本地）, runtime: comfyui, workflow: h3_controlnet, needs: [comfy, node_h3, node_ctrl, w_h3, w_te], requires_cuda: true }
   - { key: comfy/wan-2.2,           kind: video,   display: Wan 2.2（本地）,          runtime: comfyui, needs: [comfy], requires_cuda: true }
   - { key: comfy/ltx,               kind: video,   display: LTX（本地）,              runtime: comfyui, verify: true, needs: [comfy], requires_cuda: true }

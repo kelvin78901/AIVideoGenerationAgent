@@ -211,7 +211,7 @@ components:
     name: { zh: 视频生成, en: Video generation }
     kind: video
     api: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1, alibaba/wan-3.0, kling/kling-3.0, google/veo-3.1]
-    local: [comfy/h3, comfy/wan-2.2, comfy/ltx]
+    local: [comfy/h3, comfy/h3-r2v, comfy/wan-2.2, comfy/ltx]
     balanced: { mode: hybrid, api: minimax/h3-api, local: comfy/h3, fallback_to: minimax/h3-api }
     per_call_cap_usd: 2
     alt_order: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1]

@@ -13,6 +13,7 @@ from __future__ import annotations
 
 import asyncio
 import random
+from dataclasses import replace
 from typing import Any, Literal
 
 from sqlmodel import col, select
@@ -233,7 +234,7 @@ class RunService:
         model: str | None = None,
         intent: str | None = None,
         compiled: str | None = None,
-        count: int = 1,
+        count: int | None = None,
         cascade: dict[str, str] | None = None,
         where: Where | None = None,
         params: dict[str, Any] | None = None,
@@ -241,7 +242,8 @@ class RunService:
         """Queue a run. ``cascade`` (``{id, origin}``): one rerun of 确认并同步
         (``pipeline/cascade.py``), adopted when it succeeds. ``where``: ``api`` is hybrid
         mode's 「用 API 出终版」 (SPEC 7.3; the route's API model). ``params``: what the
-        component reads besides the prompt (``Inputs.params``)."""
+        component reads besides the prompt (``Inputs.params``). ``count``: versions to make,
+        the component's ``run_count`` when None; the estimate covers them all."""
         router = self.services.router
         async with self.services.db.session() as session:
             p = await require_product(session, product_id)
@@ -255,6 +257,7 @@ class RunService:
             )
             lang = await self._lang(session, p.series_id)
             starting = None if p.prompt_json else await comp.default_intent(session, p, lang)
+            count = count or comp.run_count(p)
         settings = await router.settings(comp.id, item_of(p))
         if mode == "switch":
             base = current.model_key if current and current.model_key else None
@@ -287,7 +290,8 @@ class RunService:
         )
         await self.products.set_prompt(p.id, prompt.model_dump())
 
-        estimate = comp.estimate(inputs, compiled, target)
+        one = comp.estimate(inputs, compiled, target)
+        estimate = replace(one, cost_usd=one.cost_usd * count, seconds=one.seconds * count)
         # Hard rule 6: over the per-call cap or what is left of the episode → ask first.
         verdict = await self.budget.before_enqueue(
             estimate.cost_usd, cap=cap_of(settings), episode_id=inputs.episode_id

@@ -454,27 +454,34 @@ class ComfyUIAdapter:
         req: ModelRequest,
         size: tuple[int, int],
         seconds: float,
-    ) -> dict[Slot, str]:
-        """The first frame, input video and dialogue audio the workflow takes, uploaded."""
-        names: dict[Slot, str] = {}
+    ) -> dict[Slot, Any]:
+        """The first frame, input video, dialogue audio and voice samples (``ref_audio``, a
+        list) the workflow takes, uploaded."""
+        names: dict[Slot, Any] = {}
         for slot, kind in INPUT_FILES:
             bound = wf.bindings(slot)
             if not bound:
                 continue
             sha = req.params.get(slot)
             if sha:
-                path = self._store.path_for(str(sha))
-                if not path.is_file():
-                    raise ModelError("ref_missing", f"{slot}: {sha} is not in the store")
-                data = path.read_bytes()
-                mime = _sniff(data, kind)
-                name = f"{sha}.{FILE_EXTS[kind].get(mime, 'bin')}"
+                names[slot] = await self._upload_blob(client, slot, str(sha), kind)
             elif req.params.get("trial") and not all(b.optional for b in bound):
                 data, mime, name = await _sample(kind, size, seconds)
-            else:
-                continue
-            names[slot] = await self._upload(client, name, data, mime)
+                names[slot] = await self._upload(client, name, data, mime)
+        voices = list(req.params.get("ref_audio") or [])[: len(wf.bindings("ref_audio"))]
+        if voices:
+            names["ref_audio"] = [
+                await self._upload_blob(client, "ref_audio", str(sha), "audio") for sha in voices
+            ]
         return names
+
+    async def _upload_blob(self, client: httpx.AsyncClient, slot: str, sha: str, kind: str) -> str:
+        path = self._store.path_for(sha)
+        if not path.is_file():
+            raise ModelError("ref_missing", f"{slot}: {sha} is not in the store")
+        data = path.read_bytes()
+        mime = _sniff(data, kind)
+        return await self._upload(client, f"{sha}.{FILE_EXTS[kind].get(mime, 'bin')}", data, mime)
 
     async def _one(
         self,

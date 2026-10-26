@@ -108,7 +108,7 @@ def test_a_hand_picked_local_model_is_dropped_too() -> None:
     res = resolve("vid", picked, caps=MAC)
     assert res.values["mode"] == "api" and res.values["local_model"] is None
     assert res.unavailable["comfy/wan-2.2"] == ["cuda", "comfy"]
-    assert set(res.unavailable) == {"comfy/wan-2.2", "comfy/h3", "comfy/ltx"}
+    assert set(res.unavailable) == {"comfy/wan-2.2", "comfy/h3", "comfy/h3-r2v", "comfy/ltx"}
     assert res.sources["mode"] == "component"
     # On a machine that has it, the user's choice stands.
     assert resolve("vid", picked, caps=PC_READY).values["local_model"] == "comfy/wan-2.2"

@@ -186,6 +186,11 @@ class Component(ABC):
         description, M3)."""
         return self.services.compiler.default_intent(self.id, lang)
 
+    def run_count(self, product: Product) -> int:
+        """How many versions a run makes when the caller does not say (M5: a shot's first
+        video run makes ``candidates`` takes)."""
+        return 1
+
     def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
         """The model a run goes to: ``model`` is the route's (or the one the user picked). A
         component takes another when this run's inputs do not suit it (M4: a keyframe with no
@@ -329,6 +334,7 @@ class Component(ABC):
             is_switch=ctx.mode == "switch",
             confirmed_usd=ctx.confirmed_usd,
             on_delta=on_delta,
+            on_progress=ctx.progress,  # a local run's steps (ComfyUI), as they come
         )
 
     async def _cache_get(self, key: str, schema: type[BaseModel]) -> BaseModel | None:

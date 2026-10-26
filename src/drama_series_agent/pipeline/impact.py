@@ -80,6 +80,7 @@ PIPELINE_ORDER = {
     "line_audio": 8,
     "shot_plan": 9,
     "keyframe": 10,
+    "video": 11,
 }
 _STEP = {
     NOVEL_SLOT: "novel",
@@ -95,6 +96,7 @@ _STEP = {
     "line_audio": "assets",
     "shot_plan": "storyboard",
     "keyframe": "storyboard",
+    "video": "generate",
 }
 _KEPT = 100  # previews kept in memory
 

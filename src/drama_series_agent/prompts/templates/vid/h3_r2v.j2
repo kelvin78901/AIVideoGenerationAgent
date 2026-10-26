@@ -1,0 +1,31 @@
+{#- MiniMax H3 reference to video (full-reference mode): the six sections in order (MiniMax-H3
+    docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md, 2026-10-26). <Picture 1> is the first frame, the
+    locked pictures follow, <Audio N> are the speakers' voice-timbre references. -#}
+subject_definitions:
+<Picture 1> is the first frame of [Shot 1].
+{% for r in refs %}
+<Picture {{ loop.index + 1 }}> is the reference for {{ r.name }}.
+{% endfor %}
+{% for v in voices %}
+<Audio {{ loop.index }}> is the voice-timbre reference for {{ v.who }} (S{{ v.sx }}).
+{% endfor %}
+
+summary: [keyframe completion{% if refs %} + reference generation{% endif %}{% if voices %} + audio reference{% endif %}] The target video starts exactly on <Picture 1> and continues as one shot.
+
+retention_analysis:
+<Picture 1> ([Shot 1] first frame): fully_preserved - the opening composition, the people and the scene.
+{% for r in refs %}
+<Picture {{ loop.index + 1 }}>: partially_preserved - how {{ r.name }} looks.
+{% endfor %}
+{% for v in voices %}
+<Audio {{ loop.index }}>: reference - {{ v.who }}'s voice timbre, without copying the original signal.
+{% endfor %}
+
+detailed_description: [Shot 1] {{ description }}
+{%- for d in dialogue %} {{ d.who }} (S{{ d.sx }}) {% if d.vo %}says in an off-screen voiceover{% else %}says{% endif %}{% if d.audio %}, using the voice timbre referenced from <Audio {{ d.audio }}>{% endif %}: <d>[{{ language }}] {{ d.text }}</d>{% if d.vo %} while the lips remain completely closed.{% endif %}
+{%- endfor %}
+
+
+overall_soundscape: {{ soundscape }}
+
+non_diegetic_music: N/A

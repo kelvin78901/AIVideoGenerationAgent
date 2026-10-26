@@ -71,7 +71,7 @@
         }
       ],
       "keyframe_product_id": "demo-p-kf-1-01",
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-01",
       "keyframe_pick": 0,
       "keyframe_sha256": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
       "confirmed": true,
@@ -149,7 +149,7 @@
         }
       ],
       "keyframe_product_id": "demo-p-kf-1-02",
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-02",
       "keyframe_pick": 0,
       "keyframe_sha256": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
       "confirmed": true,
@@ -226,7 +226,7 @@
         }
       ],
       "keyframe_product_id": "demo-p-kf-1-03",
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-03",
       "keyframe_pick": 0,
       "keyframe_sha256": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
       "confirmed": true,
@@ -304,7 +304,7 @@
         }
       ],
       "keyframe_product_id": "demo-p-kf-1-04",
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-04",
       "keyframe_pick": 0,
       "keyframe_sha256": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
       "confirmed": false,
@@ -382,7 +382,7 @@
         }
       ],
       "keyframe_product_id": "demo-p-kf-1-05",
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-05",
       "keyframe_pick": 0,
       "keyframe_sha256": "2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
       "confirmed": false,
@@ -454,7 +454,7 @@
         }
       ],
       "keyframe_product_id": "demo-p-kf-1-06",
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-06",
       "keyframe_pick": 0,
       "keyframe_sha256": "41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
       "confirmed": false,
@@ -524,7 +524,7 @@
         }
       ],
       "keyframe_product_id": "demo-p-kf-1-07",
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-07",
       "keyframe_pick": 0,
       "keyframe_sha256": "c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
       "confirmed": false,
@@ -594,7 +594,7 @@
         }
       ],
       "keyframe_product_id": null,
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-08",
       "keyframe_pick": 0,
       "keyframe_sha256": null,
       "confirmed": false,
@@ -672,7 +672,7 @@
         }
       ],
       "keyframe_product_id": null,
-      "video_product_id": null,
+      "video_product_id": "demo-p-vid-1-09",
       "keyframe_pick": 0,
       "keyframe_sha256": null,
       "confirmed": false,
