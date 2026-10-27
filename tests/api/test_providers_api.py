@@ -101,10 +101,11 @@ def test_test_connection_checks_the_media_models_on_the_key(
     google = next(
         p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "google_llm"
     )
-    assert google["media"] == [
-        {"key": "google/nano-banana-pro", "display": "Nano Banana Pro"},
-        {"key": "google/nano-banana-2.1", "display": "Nano Banana 2.1"},
+    assert [(m["key"], m["display"], m["custom_model_id"]) for m in google["media"]] == [
+        ("google/nano-banana-pro", "Nano Banana Pro", False),
+        ("google/nano-banana-2.1", "Nano Banana 2.1", False),
     ]
+    assert all(m["model_id"] for m in google["media"])
 
     client.post("/api/v1/providers/google_llm/key", json={"api_key": GEMINI_KEY})
     respx_mock.get("https://generativelanguage.googleapis.com/v1beta/openai/models").mock(

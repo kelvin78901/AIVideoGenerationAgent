@@ -136,7 +136,9 @@
       "machine_cuda": "这台机器没有 NVIDIA 显卡（CUDA），本地模型跑不了",
       "machine_missing": "这台机器还缺 {{count}} 项运行环境，去「环境与安装」补装"
     },
-    "reasonLine": "{{mode}}：{{reason}}"
+    "reasonLine": "{{mode}}：{{reason}}",
+    "unpriced": "价格未知 · 运行前会先问你",
+    "gone": "这里设的 {{model}} 现在用不了（在模型页没勾选，或换站点后列表里没有），请换一个。"
   },
   "impact": {
     "sync": "确认并同步 · 预计 {{cost}}",

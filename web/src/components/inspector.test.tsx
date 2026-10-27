@@ -91,6 +91,23 @@ describe("ModelPicker", () => {
     expect(screen.getByRole("button", { name: "收起" })).toBeInTheDocument();
   });
 
+  it("marks models without a price and a route on a model no longer picked", async () => {
+    const user = userEvent.setup();
+    const def = fakeConfig.catalog.components.find((c) => c.id === "enrich");
+    if (def) def.api_models = def.api_models.filter((k) => k !== "deepseek/v4-pro");
+    renderAt(<Panel />);
+    expect(
+      await screen.findByText(
+        "这里设的 deepseek/v4-pro 现在用不了（在模型页没勾选，或换站点后列表里没有），请换一个。",
+      ),
+    ).toBeInTheDocument();
+    const api = screen.getByRole("radiogroup", { name: "API 服务" });
+    expect(within(api).queryByRole("radio", { checked: true })).toBeNull();
+    await user.click(screen.getByRole("button", { name: /更多供应商/ }));
+    const any = within(api).getByRole("radio", { name: /Claude Sonnet 5.5（经 OpenRouter）/ });
+    expect(any).toHaveTextContent("价格未知 · 运行前会先问你");
+  });
+
   it("writes changes as component overrides and labels their source", async () => {
     const user = userEvent.setup();
     renderAt(<Panel />);

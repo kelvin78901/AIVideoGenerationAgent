@@ -11,5 +11,7 @@ export const ModelOptionSchema = z.object({
   where: WhereSchema,
   /** List price; null for local models and custom endpoints without a price. */
   price: PriceSchema.nullable(),
+  /** False: an API model nobody priced yet; every run on it asks first (absent = priced). */
+  priced: z.boolean().optional(),
 });
 export type ModelOption = z.infer<typeof ModelOptionSchema>;

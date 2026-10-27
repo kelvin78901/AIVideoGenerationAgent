@@ -400,7 +400,8 @@
           "in": 1.32,
           "out": 3.96,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "deepseek/v4.1-flash",
@@ -411,7 +412,8 @@
           "in": 0.3,
           "out": 1.2,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "moonshot/kimi-k3.1-pro",
@@ -422,7 +424,8 @@
           "in": 13.0,
           "out": 68.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "moonshot/kimi-k2.6",
@@ -433,7 +436,8 @@
           "in": 6.5,
           "out": 27.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "qwen/qwen3.8-max",
@@ -444,7 +448,8 @@
           "in": 12.0,
           "out": 36.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "qwen/qwen3.7-plus",
@@ -455,7 +460,8 @@
           "in": 2.0,
           "out": 8.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "qwen/qwen3.8-flash",
@@ -466,7 +472,8 @@
           "in": 0.8,
           "out": 2.7,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "volc/doubao-2.1-pro",
@@ -477,7 +484,8 @@
           "in": 6.0,
           "out": 30.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "zhipu/glm-5.3",
@@ -488,7 +496,8 @@
           "in": 8.0,
           "out": 28.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "zhipu/glm-5.3-flash",
@@ -499,7 +508,8 @@
           "in": 0.8,
           "out": 2.8,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "minimax/m3",
@@ -510,7 +520,8 @@
           "in": 2.1,
           "out": 8.4,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "google/gemini-3.6-flash",
@@ -521,7 +532,8 @@
           "in": 0.75,
           "out": 3.75,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "google/gemini-3.1-flash-lite",
@@ -532,7 +544,8 @@
           "in": 0.25,
           "out": 1.5,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "openai/gpt-6-luna",
@@ -543,31 +556,36 @@
           "in": 0.1,
           "out": 0.5,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "openrouter/claude-sonnet-5.5",
         "display": "Claude Sonnet 5.5（经 OpenRouter）",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false
       },
       {
         "key": "openrouter/any",
         "display": "任意模型",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false
       },
       {
         "key": "local/qwen3.6-27b",
         "display": "Qwen3.6-27B（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/qwen3-30b-a3b",
         "display": "Qwen3-30B-A3B（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "google/nano-banana-pro",
@@ -577,7 +595,8 @@
           "unit": "image",
           "amount": 0.134,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "google/nano-banana-2.1",
@@ -587,7 +606,8 @@
           "unit": "image",
           "amount": 0.0504,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "openai/gpt-image-2",
@@ -597,7 +617,8 @@
           "unit": "image",
           "amount": 0.23,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "volc/seedream-5.0",
@@ -607,7 +628,8 @@
           "unit": "image",
           "amount": 0.12,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "minimax/h3-api",
@@ -617,7 +639,8 @@
           "unit": "second",
           "amount": 0.5,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "minimax/h3-regenerate-2k",
@@ -627,13 +650,15 @@
           "unit": "second",
           "amount": 0.3,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "minimax/context-ir",
         "display": "H3 Context-IR",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "volc/seedance-2.5",
@@ -643,7 +668,8 @@
           "unit": "second",
           "amount": 0.673,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "google/gemini-omni-flash-1.1",
@@ -653,7 +679,8 @@
           "unit": "second",
           "amount": 0.152,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "alibaba/wan-3.0",
@@ -663,19 +690,22 @@
           "unit": "second",
           "amount": 0.2,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "kling/kling-3.0",
         "display": "Kling 3.0",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false
       },
       {
         "key": "google/veo-3.1",
         "display": "Veo 3.1",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false
       },
       {
         "key": "minimax/speech-2.8-hd",
@@ -685,7 +715,8 @@
           "unit": "mchar",
           "amount": 350.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "minimax/speech-2.6-hd",
@@ -695,13 +726,15 @@
           "unit": "mchar",
           "amount": 350.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true
       },
       {
         "key": "elevenlabs/v3",
         "display": "ElevenLabs v3",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false
       },
       {
         "key": "sync/lipsync-2-pro",
@@ -711,7 +744,8 @@
           "unit": "second",
           "amount": 0.067,
           "currency": "USD"
-        }
+        },
+        "priced": false
       },
       {
         "key": "topaz/starlight-precise-2.5",
@@ -721,25 +755,29 @@
           "unit": "second",
           "amount": 0.12,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "elevenlabs/music",
         "display": "ElevenLabs Music",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false
       },
       {
         "key": "elevenlabs/sfx",
         "display": "ElevenLabs Sound Effects",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false
       },
       {
         "key": "elevenlabs/scribe",
         "display": "ElevenLabs Scribe",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false
       },
       {
         "key": "worldlabs/marble",
@@ -749,151 +787,176 @@
           "unit": "call",
           "amount": 1.2,
           "currency": "USD"
-        }
+        },
+        "priced": true
       },
       {
         "key": "comfy/h3",
         "display": "MiniMax H3（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/h3-r2v",
         "display": "MiniMax H3 参考生视频（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/h3-fun-controlnet",
         "display": "H3 Fun ControlNet（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/wan-2.2",
         "display": "Wan 2.2（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/ltx",
         "display": "LTX（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/qwen-image-edit",
         "display": "Qwen-Image-Edit（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/qwen-image-edit-hq",
         "display": "Qwen-Image-Edit 40 步（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/qwen-image",
         "display": "Qwen-Image（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/flux2-dev",
         "display": "FLUX.2 dev（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/flux3-klein",
         "display": "FLUX 3 Klein（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/flux3-klein-t2i",
         "display": "FLUX 3 Klein 文生图（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/seedvr2",
         "display": "SeedVR2（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "comfy/flashvsr",
         "display": "FlashVSR（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/indextts2",
         "display": "IndexTTS2（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/cosyvoice",
         "display": "CosyVoice（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/qwen3-tts",
         "display": "Qwen3-TTS（本地试听）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/latentsync",
         "display": "LatentSync（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/infinitetalk",
         "display": "InfiniteTalk（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/qwen3-vl-32b",
         "display": "Qwen3-VL-32B（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/ace-step",
         "display": "ACE-Step（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/mmaudio",
         "display": "MMAudio（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/whisper-large-v3",
         "display": "Whisper large-v3（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/paraformer",
         "display": "Paraformer（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       },
       {
         "key": "local/rapidocr",
         "display": "RapidOCR（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true
       }
     ],
     "local_runtime_ok": true

@@ -119,6 +119,9 @@ function ComponentRow({
   const hasApi = def.api_models.length > 0;
   const hasLocal = def.local_models.length > 0;
   const off = v.mode === "off";
+  // The route's API model is no longer picked (or not on the provider's current site).
+  const gone =
+    !off && v.mode !== "local" && !!v.api_model && !models.some((m) => m.key === v.api_model);
   const changed = Object.values(resolved.sources).includes("component");
   const others = othersOf(def, v);
   const fbTo =
@@ -178,8 +181,16 @@ function ComponentRow({
             }))}
           />
         </div>
-        <div role="cell" className={cn("text-[13px] leading-normal", off && "text-tone-warn-fg")}>
-          {primary}
+        <div
+          role="cell"
+          className={cn(
+            "flex flex-col text-[13px] leading-normal",
+            off && "text-tone-warn-fg",
+            gone && "text-tone-fail-fg",
+          )}
+        >
+          <span>{primary}</span>
+          {gone ? <span className="text-[11px]">{t("table.gone")}</span> : null}
         </div>
         <div role="cell">
           <Switch

@@ -136,7 +136,9 @@
       "machine_cuda": "This machine has no NVIDIA GPU (CUDA), so the local models cannot run",
       "machine_missing": "This machine still lacks {{count}} runtime item(s); add them under Environment"
     },
-    "reasonLine": "{{mode}}: {{reason}}"
+    "reasonLine": "{{mode}}: {{reason}}",
+    "unpriced": "Price unknown · asks before each run",
+    "gone": "{{model}} is set here but can't be used now (not picked on the Models page, or not listed on the provider's current site). Pick another."
   },
   "impact": {
     "sync": "Confirm and sync · est. {{cost}}",

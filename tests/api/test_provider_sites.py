@@ -239,3 +239,22 @@ def test_a_listed_model_is_picked_priced_and_called(
     client.patch(f"{V1}/moonshot", json={"site": "intl"}).raise_for_status()
     assert _provider(client, "moonshot")["listed"] is None
     assert "moonshot/kimi-k2.6" in {s.key for s in registry.specs()}  # the table again
+
+
+def test_pickers_flag_models_without_a_price_and_media_ids_can_change(client: TestClient) -> None:
+    catalog = client.get("/api/v1/config/components").json()
+    priced = {m["key"]: m["priced"] for m in catalog["models"]}
+    assert priced["deepseek/v4-pro"] and priced["local/qwen3.6-27b"]
+    assert not priced["openrouter/any"] and not priced["kling/kling-3.0"]
+
+    media = _provider(client, "minimax_llm")["media"]
+    h3 = next(m for m in media if m["key"] == "minimax/h3-api")
+    assert h3["model_id"] and h3["custom_model_id"] is False
+    resp = client.put(f"{V1}/settings/minimax/h3-api", json={"model_id": "MiniMax-H3.1"})
+    assert resp.status_code == 200, resp.text
+    h3 = next(m for m in _provider(client, "minimax_llm")["media"] if m["key"] == "minimax/h3-api")
+    assert (h3["model_id"], h3["custom_model_id"]) == ("MiniMax-H3.1", True)
+    assert _state(client).registry.spec("minimax/h3-api").model_id == "MiniMax-H3.1"
+    client.delete(f"{V1}/settings/minimax/h3-api").raise_for_status()
+    h3 = next(m for m in _provider(client, "minimax_llm")["media"] if m["key"] == "minimax/h3-api")
+    assert h3["custom_model_id"] is False and h3["model_id"] != "MiniMax-H3.1"

@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 7a 步（四）：服务页的站点、模型列表和价格（前端）
+
+- **密钥对话框**（`KeyDialog.tsx` + 新的 `ProviderModels.tsx`；原型里没有，按现有对话框的样式做）：两个站点的厂商顶部有「国内站 / 国际站」切换（有密钥的站点标「已有密钥」），切换就是 `PATCH /providers/{id}`，提示「两个站点是两个账号」；测试连接后出**模型列表**（勾选、参考价 / 你填的价 / 「价格未知」徽标、「填价格 / 改 / 清除」行内小表单：输入、输出每百万 token，¥ / $），超过 12 个模型出筛选框（OpenRouter）；没拉过列表时一句提示「用内置的参考表」。原来那句「这个密钥也用于：…」换成**媒体模型 ID** 小节：每个媒体模型一个输入框（有列表的厂商用 `datalist` 给建议），「保存」「已改」「恢复默认」。
+- **后端补两个字段**：`/config/components` 的每个模型加 `priced`（API 写作模型有没有单价；媒体模型按 `pricing_for_media(...).known`，所以订阅制、没价的也算未知）；`GET /providers` 的 `media` 每项加 `model_id`（当前生效的）和 `custom_model_id`。
+- **选择器**：API 模型没单价时，价格那行换成徽标「价格未知 · 运行前会先问你」；路由里的 API 模型不在这个组件的可选列表里（没勾选 / 换站点后没有）时，「API 服务」下面红字提示去换。模型页的组件表里，主用模型那格同样标红「没启用，点开换一个」。
+- **改了站点、勾选、价格、媒体 ID、测试连接之后**一起刷新 `providers`、`config`（选择器目录、路由）和 `products`（估价）三组查询。
+- **和计划不同**：计划说删掉 `mocks/fixtures/demo/models.ts` 里写死的模型表；它现在只给 MSW 示例版本起模型名，选择器早就读真实的 `/config/components`，所以留着不删。
+
 ## 2026-10-26 · M5 第 7a 步（三）：价格未知的模型先确认
 
 - **补硬规则 6 的漏洞**：以前没单价的模型按 $0 估价，从不进 `waiting_confirm`。现在 `Budget.before_enqueue(…, priced=False)` 一律返回 `Verdict(False, reason="unpriced")`（不看上限和本集预算），任务进 `waiting_confirm`，`params.confirm = {reason: "unpriced", estimate_usd: 0, limit_usd: null}`。填了单价（`model_setting`）就回到正常的上限检查。

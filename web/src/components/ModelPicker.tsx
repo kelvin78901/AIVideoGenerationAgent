@@ -108,7 +108,13 @@ function ModelRadios({
               <StatusBadge tone="warn">{t("picker.keyMissing")}</StatusBadge>
             ) : null}
           </span>
-          <CostBadge where={m.where} price={m.price} className="block" />
+          {m.where === "api" && m.priced === false ? (
+            <StatusBadge tone="warn" icon={null} className="self-start">
+              {t("picker.unpriced")}
+            </StatusBadge>
+          ) : (
+            <CostBadge where={m.where} price={m.price} className="block" />
+          )}
         </RadioCard>
       ))}
     </RadioGroup>
@@ -183,6 +189,8 @@ function PickerForm({
   const override = useSetOverride(componentId, item);
   const missingKeys = useMissingKeys();
   const selectedApi = apiModels.findIndex((m) => m.key === values.api_model);
+  // The route names a model that is no longer picked (or not on the provider's current site).
+  const goneApi = values.api_model && selectedApi < 0 ? values.api_model : null;
   const [showAll, setShowAll] = useState(selectedApi >= API_VISIBLE);
   const [cap, setCap] = useState(values.per_call_cap_usd?.toString() ?? "");
 
@@ -262,6 +270,11 @@ function PickerForm({
         >
           {t("picker.api")}
         </FieldHead>
+        {goneApi ? (
+          <p role="alert" className="text-xs leading-relaxed text-tone-fail-fg">
+            {t("picker.gone", { model: goneApi })}
+          </p>
+        ) : null}
         {hasApi ? (
           <>
             <ModelRadios

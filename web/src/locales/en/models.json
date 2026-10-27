@@ -57,8 +57,6 @@
     "saved": "{{name}} key saved.",
     "deleted": "{{name}} key deleted.",
     "envNote": "This key comes from the environment or .env; change it there to remove it.",
-    "sharedWith": "This key is also used by: {{names}}",
-    "listSep": ", ",
     "testOk": "Connected. {{count}} models available.",
     "testOkNoList": "Connected.",
     "testFail": "Connection failed: {{detail}}",
@@ -67,6 +65,53 @@
     "docs": "Get a key from the provider",
     "baseUrl": "Endpoint: {{url}}",
     "close": "Close"
+  },
+  "site": {
+    "label": "Site",
+    "cn": "China site",
+    "intl": "International site",
+    "main": "Default",
+    "withKey": "{{site}} · key set",
+    "hint": "The two sites are two accounts, each with its own key, model list and prices. After switching, this provider's models are all called on that site: test the connection and pick models there again.",
+    "switched": "{{name}} now uses its {{site}}."
+  },
+  "list": {
+    "title": "Models",
+    "count": "{{count}} listed, {{picked}} picked",
+    "fetched": "fetched {{time}}",
+    "lead": "Only picked models show up in the model pickers. A model without a price asks you before every run; fill in its price and runs are estimated from it.",
+    "none": "Test the connection to list all of this provider's models, then pick the ones to use. Until then the built-in reference table is used.",
+    "filter": "Filter models",
+    "empty": "No matching models"
+  },
+  "price": {
+    "table": "List price {{price}}",
+    "user": "Your price {{price}}",
+    "unknown": "Price unknown",
+    "fill": "Add price",
+    "fillFor": "Add a price for {{model}}",
+    "edit": "Edit",
+    "editFor": "Edit the price of {{model}}",
+    "clear": "Clear",
+    "formFor": "Price of {{model}}",
+    "in": "Input",
+    "out": "Output",
+    "currency": "Currency",
+    "unit": "per M tokens",
+    "save": "Save",
+    "cancel": "Cancel",
+    "saved": "Price of {{model}} saved.",
+    "cleared": "Price of {{model}} cleared."
+  },
+  "media": {
+    "title": "Media models on this key",
+    "lead": "When the provider releases a new version you can change the model id (check the official docs).",
+    "leadListed": "When the provider releases a new version you can change the model id; the field suggests ids from this provider's list.",
+    "custom": "Changed",
+    "save": "Save",
+    "saved": "{{name}} now uses {{id}}.",
+    "resetButton": "Reset",
+    "reset": "{{name}} is back on its default model id."
   },
   "fallback": {
     "title": "When something fails",
@@ -115,6 +160,7 @@
     "up": "Move {{name}} up",
     "down": "Move {{name}} down",
     "reset": "Reset to preset",
-    "resetDone": "{{name}} reset to the preset."
+    "resetDone": "{{name}} reset to the preset.",
+    "gone": "Not picked — open to change"
   }
 }

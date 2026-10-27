@@ -125,7 +125,19 @@ def _public(state: StudioState, provider: LlmProvider, account: ProviderAccount)
             for m in provider.models
         ],
         "listed": _listed(provider, account),
-        "media": [{"key": s.key, "display": s.display} for s in _media_specs(state, provider.id)],
+        "media": [_media_public(s) for s in _media_specs(state, provider.id)],
+    }
+
+
+def _media_public(spec: ModelSpec) -> dict[str, Any]:
+    """A media model on this key: the model id it calls, and whether that is the user's."""
+    row = next((m for m in get_config().providers.media_models if m.key == spec.key), None)
+    own = current_accounts().settings.get(spec.key)
+    return {
+        "key": spec.key,
+        "display": spec.display,
+        "model_id": row.model_id if row is not None else spec.model_id,
+        "custom_model_id": bool(own and own.model_id),
     }
 
 

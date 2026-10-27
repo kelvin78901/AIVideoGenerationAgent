@@ -13,6 +13,7 @@ from pydantic import BaseModel
 
 from drama_series_agent.core.capabilities import CUDA, Capabilities, local_model
 from drama_series_agent.core.config import ComponentDefault, MediaModel, StudioConfig
+from drama_series_agent.modelhub.pricing import pricing_for_media
 
 Where = Literal["local", "api"]
 
@@ -22,6 +23,8 @@ class ModelOption(BaseModel):
     display: str
     where: Where
     price: dict[str, Any] | None
+    # False: an API model nobody priced yet (a listed model, M5 step 7a); a run asks first.
+    priced: bool = True
 
 
 class Message(BaseModel):
@@ -87,11 +90,20 @@ def model_options(cfg: StudioConfig) -> list[ModelOption]:
                     "out": m.price.out,
                     "currency": _currency(m.price.currency),
                 }
-            out.append(ModelOption(key=m.key, display=m.display, where=provider.where, price=price))
+            priced = provider.where != "api" or m.price is not None
+            out.append(
+                ModelOption(
+                    key=m.key, display=m.display, where=provider.where, price=price, priced=priced
+                )
+            )
     for media in cfg.providers.media_models:
         out.append(
             ModelOption(
-                key=media.key, display=media.display, where="api", price=_media_price(media)
+                key=media.key,
+                display=media.display,
+                where="api",
+                price=_media_price(media),
+                priced=pricing_for_media(media, None).known,
             )
         )
     for loc in cfg.providers.local_models:

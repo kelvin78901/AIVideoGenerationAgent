@@ -220,12 +220,24 @@ describe("ModelsPage", () => {
       key_source: "keyring",
       enabled: true,
       models: [],
-      media: [{ key: "google/nano-banana-pro", display: "Nano Banana Pro" }],
+      media: [
+        {
+          key: "google/nano-banana-pro",
+          display: "Nano Banana Pro",
+          model_id: "gemini-3-pro-image",
+          custom_model_id: false,
+        },
+      ],
     };
+    const settings: unknown[] = [];
     server.use(
       http.get("*/api/v1/providers", () =>
         HttpResponse.json({ providers: [google], llm_ui_order: [] }),
       ),
+      http.put("*/api/v1/providers/settings/*", async ({ request }) => {
+        settings.push({ url: new URL(request.url).pathname, body: await request.json() });
+        return HttpResponse.json({ model_key: "x", model_id: "y", price: null });
+      }),
       http.post("*/api/v1/providers/google_llm/test", () =>
         HttpResponse.json({
           ok: true,
@@ -245,11 +257,138 @@ describe("ModelsPage", () => {
     renderModels();
     await user.click(await screen.findByRole("button", { name: "Google（Gemini） · 已配置" }));
     const dialog = await screen.findByRole("dialog", { name: "Google（Gemini） 的 API 密钥" });
-    expect(within(dialog).getByText("这个密钥也用于：Nano Banana Pro")).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("heading", { name: "用这个密钥的媒体模型" }),
+    ).toBeInTheDocument();
+    const id = within(dialog).getByLabelText("Nano Banana Pro");
+    expect(id).toHaveValue("gemini-3-pro-image");
+    await user.clear(id);
+    await user.type(id, "gemini-3.5-pro-image");
+    await user.click(within(dialog).getByRole("button", { name: "保存" }));
+    await waitFor(() =>
+      expect(settings).toEqual([
+        {
+          url: "/api/v1/providers/settings/google/nano-banana-pro",
+          body: { model_id: "gemini-3.5-pro-image" },
+        },
+      ]),
+    );
     await user.click(within(dialog).getByRole("button", { name: "测试连接" }));
     expect(await within(dialog).findByText("连接正常，能看到 1 个模型。")).toBeInTheDocument();
     expect(
       within(dialog).getByText("Nano Banana Pro：不能用（model_not_found）"),
     ).toBeInTheDocument();
+  });
+
+  it("switches a provider's site, picks listed models and prices one", async () => {
+    const user = userEvent.setup();
+    let site = "cn";
+    let picked = ["kimi-k3.1-pro"];
+    let own: { in: number; out: number; currency: string } | null = null;
+    const calls: unknown[] = [];
+    const listed = () =>
+      site !== "cn"
+        ? null
+        : {
+            site: "cn",
+            fetched_at: "2026-10-26T08:00:00Z",
+            models: [
+              {
+                model_id: "kimi-k3.1-pro",
+                key: "moonshot/kimi-k3.1-pro",
+                display: "Kimi K3.1 Pro",
+                in_table: true,
+                enabled: picked.includes("kimi-k3.1-pro"),
+                price: { in: 13, out: 68, currency: "CNY" },
+                price_source: "table",
+              },
+              {
+                model_id: "kimi-k2.7-code",
+                key: "moonshot/kimi-k2.7-code",
+                display: "kimi-k2.7-code",
+                in_table: false,
+                enabled: picked.includes("kimi-k2.7-code"),
+                price: own,
+                price_source: own ? "user" : null,
+              },
+            ],
+          };
+    const moonshot = () => ({
+      id: "moonshot",
+      name: "Moonshot（Kimi）",
+      where: "api",
+      site,
+      sites: [
+        { id: "cn", base_url: "https://api.moonshot.cn/v1", docs: null, has_key: true },
+        { id: "intl", base_url: "https://api.moonshot.ai/v1", docs: null, has_key: false },
+      ],
+      base_url: site === "cn" ? "https://api.moonshot.cn/v1" : "https://api.moonshot.ai/v1",
+      docs: null,
+      verify: false,
+      needs_key: true,
+      has_key: site === "cn",
+      key_source: site === "cn" ? "keyring" : "none",
+      enabled: true,
+      models: [],
+      listed: listed(),
+      media: [],
+    });
+    server.use(
+      http.get("*/api/v1/providers", () =>
+        HttpResponse.json({ providers: [moonshot()], llm_ui_order: [] }),
+      ),
+      http.put("*/api/v1/providers/moonshot/models", async ({ request }) => {
+        const body = (await request.json()) as { enabled: string[] };
+        calls.push({ models: body.enabled });
+        picked = body.enabled;
+        return HttpResponse.json(moonshot());
+      }),
+      http.put("*/api/v1/providers/settings/*", async ({ request }) => {
+        const body = (await request.json()) as { price: typeof own };
+        calls.push({ price: body.price });
+        own = body.price;
+        return HttpResponse.json({
+          model_key: "moonshot/kimi-k2.7-code",
+          model_id: null,
+          price: own,
+        });
+      }),
+      http.patch("*/api/v1/providers/moonshot", async ({ request }) => {
+        const body = (await request.json()) as { site: string };
+        calls.push({ site: body.site });
+        site = body.site;
+        return HttpResponse.json(moonshot());
+      }),
+    );
+    renderModels();
+    await user.click(await screen.findByRole("button", { name: "Moonshot（Kimi） · 已配置" }));
+    const dialog = await screen.findByRole("dialog", { name: "Moonshot（Kimi） 的 API 密钥" });
+    const sites = within(dialog).getByRole("radiogroup", { name: "站点" });
+    expect(within(sites).getByRole("radio", { name: "国内站 · 已有密钥" })).toBeChecked();
+    expect(within(dialog).getByText("共 2 个，勾了 1 个", { exact: false })).toBeInTheDocument();
+    expect(within(dialog).getByText("参考价 ¥13 / ¥68 每百万 token")).toBeInTheDocument();
+    expect(within(dialog).getByText("价格未知")).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("checkbox", { name: /kimi-k2\.7-code/ }));
+    await waitFor(() =>
+      expect(within(dialog).getByRole("checkbox", { name: /kimi-k2\.7-code/ })).toBeChecked(),
+    );
+    await user.click(within(dialog).getByRole("button", { name: "给 kimi-k2.7-code 填价格" }));
+    const form = within(dialog).getByRole("form", { name: "kimi-k2.7-code 的单价" });
+    await user.type(within(form).getByLabelText("输入"), "4");
+    await user.type(within(form).getByLabelText("输出"), "16");
+    await user.click(within(form).getByRole("button", { name: "保存" }));
+    expect(await within(dialog).findByText("你填的 ¥4 / ¥16 每百万 token")).toBeInTheDocument();
+
+    await user.click(within(sites).getByRole("radio", { name: "国际站" }));
+    expect(await screen.findByText("Moonshot（Kimi） 改用国际站。")).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText("测试连接后会列出这家的全部模型", { exact: false }),
+    ).toBeInTheDocument();
+    expect(calls).toEqual([
+      { models: ["kimi-k3.1-pro", "kimi-k2.7-code"] },
+      { price: { in: 4, out: 16, currency: "CNY" } },
+      { site: "intl" },
+    ]);
   });
 });
