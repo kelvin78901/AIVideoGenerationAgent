@@ -273,6 +273,7 @@ class ComponentsConfig(_Loose):
     fallback_defaults: FallbackDefaults = Field(default_factory=FallbackDefaults)
     audio: AudioDefaults = Field(default_factory=AudioDefaults)
     per_call_cap_usd: float | None = 0.5  # hard rule 6: a run above this waits for a yes
+    shot_cap_usd: float = 2.0  # a shot's spend above this waits for a yes (generate rules)
     confirm_margin: ConfirmMargin = Field(default_factory=ConfirmMargin)
     components: list[ComponentDefault] = Field(default_factory=list)
 

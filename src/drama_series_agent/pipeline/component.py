@@ -186,9 +186,9 @@ class Component(ABC):
         description, M3)."""
         return self.services.compiler.default_intent(self.id, lang)
 
-    def run_count(self, product: Product) -> int:
+    async def run_count(self, session: AsyncSession, product: Product) -> int:
         """How many versions a run makes when the caller does not say (M5: a shot's first
-        video run makes ``candidates`` takes)."""
+        video run makes the generate rules' ``takes_per_shot``)."""
         return 1
 
     def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:

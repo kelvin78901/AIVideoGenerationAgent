@@ -43,6 +43,12 @@ class PickBody(BaseModel):
     idx: int = Field(ge=0)
 
 
+class VersionPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    rating: int | None = Field(ge=1, le=5)
+
+
 class PromptBody(BaseModel):
     intent: str
     compiled: str | None  # None = compile from the intent
@@ -77,6 +83,18 @@ async def set_current(version_id: str, state: State) -> ProductOut:
 async def adopt(version_id: str, state: State) -> ProductOut:
     """Adopt (and show) a version; 409 ``product_locked`` while a gate has it locked."""
     return await state.products.adopt(version_id)
+
+
+@router.post("/products/{product_id}/unadopt")
+async def unadopt(product_id: str, state: State) -> ProductOut:
+    """「取消采纳」 a take; 409 ``product_locked`` while locked."""
+    return await state.products.unadopt(product_id)
+
+
+@router.patch("/versions/{version_id}")
+async def patch_version(version_id: str, body: VersionPatch, state: State) -> ProductOut:
+    """数字键打分 on the take wall."""
+    return await state.products.rate(version_id, body.rating)
 
 
 @router.post("/products/{product_id}/lock")

@@ -126,6 +126,14 @@ describe("ConfirmJobs", () => {
     expect(screen.getByRole("button", { name: "确认，开始运行（价格未知）" })).toBeInTheDocument();
   });
 
+  it("names the shot's cap when a shot would pass it", async () => {
+    serve(waitingJob({ reason: "shot", estimate_usd: 0.92, limit_usd: 0.4 }));
+    renderAt(<ConfirmJobs />);
+    expect(
+      await screen.findByText("用 DeepSeek V4 Pro 预计 $0.92，这个镜头离单镜上限只剩 $0.40。"),
+    ).toBeInTheDocument();
+  });
+
   it("shows nothing when no run is waiting", async () => {
     renderAt(<ConfirmJobs />);
     await new Promise((r) => setTimeout(r, 50));

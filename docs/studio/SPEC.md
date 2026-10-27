@@ -477,7 +477,8 @@ per_call_cap_usd: 0.50
 - **每次模型调用前**（路由器的 `BudgetGuard`）：用户确认过的任务可以花到确认的金额（`job.confirmed_usd`，重启续跑不再问），其余每次调用都要在单次上限内；兜底换到更贵的模型超了就失败（`budget_exceeded`），不悄悄多花。兜底方式「先问」时任务进 `waiting_confirm`，确认后用兜底模型继续。
 - 同步接口的改写（剧本行 / 场、补全建议按要求重写）超限返回 409 `over_budget {estimate_usd, limit_usd}`，前端确认后带 `confirm_budget: true` 再发一次。
 - 估价按 `max_tokens` 算输出，是上限：真实花费通常低得多（第 13 步冒烟：剧本化估 $0.025，实花 $0.005）。各模型默认关掉「思考」，否则思考过程的 token 不在估价里（见 6.2 `providers.yaml` 的 `request`）。
-- 还没做：上面的「全局开关」（单独的暂停开关；超过本集剩余的新任务已经会先问），表头花费仍是示例数据（`/metrics/summary` 在 M8）。
+- 还没做：上面的「全局开关」（单独的暂停开关；超过本集剩余的新任务已经会先问）。表头花费 M5 起读后端的 `/metrics/summary`（最小版，见下）。
+- **M5 加的**：单镜头上限。镜头上的工作（`owner_type=shot` 的产物）入队前还要对比「镜头已花（`model_call.shot_id`）+ 这个镜头还在排队 / 运行的预留 + 这次估价」和生成页自动规则的 `shot_cap_usd`（按剧集存，默认取 `components.yaml` 的 `shot_cap_usd`），超了 `reason: shot`。检查顺序：未知价 → 单次 → 单镜 → 本集。`/metrics/summary` 的预计 = 已花 + 活动任务还要花的 + 视频没跑过的镜头 × 估价 × 每镜候选数（其他组件 M8 补）。
 - **M3 加的**：确认过的任务最多花到「确认金额 + 余量」，余量取确认金额的 10% 和 $0.05 中大的（`components.yaml` 的 `confirm_margin`，Kelvin 2026-10-21 定）；没确认的任务仍按单次上限、不留余量。原因：估价稍低时（Nano Banana Pro 实测低 2.7%），多次调用的任务会停在最后一次，前面的钱白花。媒体调用的结果按请求缓存（`llm_cache`，key 前缀 `media:`，含返回的 JSON 如 `voice_id`），任务重试或重启续跑时出过的不再花钱。
 
 ### 7.7 混合模式
@@ -509,7 +510,7 @@ per_call_cap_usd: 0.50
 
 ### 9.1 HTTP 接口概览（`/api/v1`）
 
-标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`unadopt`、打分、`upscale` 除外，M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；M3 加上资产、台词配音、取文件、`pick`、素材闸门（`assets`）；M4 加上镜头、拆分合并、分镜闸门（`storyboard`）、确认镜头、影响范围 `shot_edit` / `spec_aspect`；其余仍由 MSW 返回示例数据（生成页、后期页的示例数据读后端的镜头；`GET /episodes/{id}/shots` 只给示例第 1 集叠加 `video_product_id`，M5 删）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
+标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`upscale` 除外，M6；`unadopt`、打分 M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；M3 加上资产、台词配音、取文件、`pick`、素材闸门（`assets`）；M4 加上镜头、拆分合并、分镜闸门（`storyboard`）、确认镜头、影响范围 `shot_edit` / `spec_aspect`；M5 加上生成规则、运行记录、取消采纳、打分、`/metrics/summary`（最小版）；其余仍由 MSW 返回示例数据（生成页、后期页的示例数据读后端的镜头；`GET /episodes/{id}/shots` 只给示例第 1 集叠加 `video_product_id`，M5 删）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
 
 | 资源 | 接口 |
 | --- | --- |

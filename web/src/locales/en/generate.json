@@ -120,6 +120,11 @@
     "switch_pass": "You tried another model → {{model}} made T{{take}}{{cost}} · QA passed",
     "switch_fail": "You tried another model → {{model}} made T{{take}}{{cost}} · {{fails}} failed",
     "fallback_timeout": "Local job ran over {{minutes}} min → fell back to {{model}}",
-    "fallback_error": "Local job failed → fell back to {{model}}"
+    "fallback_error": "Local job failed → fell back to {{model}}",
+    "take": "{{model}} made T{{take}}{{cost}}",
+    "switch": "You tried another model → {{model}} made T{{take}}{{cost}}",
+    "final": "Final on the API → {{model}} made T{{take}}{{cost}}",
+    "waiting": "Waiting for your OK · {{model}}{{cost}}",
+    "failed": "{{model}} failed ({{error}})"
   }
 }

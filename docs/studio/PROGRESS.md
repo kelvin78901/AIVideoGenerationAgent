@@ -19,11 +19,12 @@
 - 第 7a-2 步（a9fa62f，DECISIONS「M5 第 7a 步（二）」）：账号叠加层 `set_accounts` / `with_accounts`（站点、勾选的模型、用户单价和模型 ID、`api: [llm]` 展开），`Registry.reload`、`StudioState.refresh_accounts`；迁移 `0022`（`models_json`、`enabled_json`、`model_setting` 表）；测试连接存列表、`PUT /providers/{id}/models`、`PUT/DELETE /providers/settings/{key}`；参考表加 Kimi K3.1 Pro（`reasoning_effort: low`），默认路由 K2.6 → K3.1 Pro；各厂商 `model_defaults`。`test_provider_sites.py` 共 7 个；相关 pytest、Vitest 297 个、lint、typecheck、prettier、ruff、mypy 过；全量交给 CI。
 - 第 7a-3 步（314b524，DECISIONS「M5 第 7a 步（三）」）：未知价先确认——`before_enqueue(priced=False)` → `waiting_confirm`（`reason: unpriced`）；路由守卫对没确认过的未知价调用抛 `BudgetExceeded(scope=unpriced)`；同步重写 409 `over_budget` + `unpriced`；`EstimateOut.priced`、兜底确认带 `priced`；迁移 `0023`（`model_call.unpriced`）、`calllog.unpriced_calls`；前端确认弹窗的「价格未知」文案（`JobConfirmSchema` 加 `unpriced`）。新测试：`test_runs_api` 1 个、`test_script_api` 1 个、`confirmJobs.test.tsx` 1 个；Web 快照重导（`assets`、`bible`、`script`、`shots` 多了 `priced`）；相关 pytest、Vitest 298 个、lint、typecheck、prettier、ruff、mypy 过；全量交给 CI。
 - 第 7a-4 步（f3c2073，DECISIONS「M5 第 7a 步（四）」）：密钥对话框加站点切换、模型列表（勾选、参考价 / 你填的价 / 价格未知、行内填价）、媒体模型 ID（`ProviderModels.tsx`）；选择器「价格未知」徽标、路由用了没启用的模型时红字，组件表同样标红；后端 `/config/components` 加 `priced`、`/providers` 的 `media` 加 `model_id` / `custom_model_id`；`config.json` 快照重导。新测试：`Models.test.tsx` 1 个（另改 1 个）、`inspector.test.tsx` 1 个、`test_provider_sites` 1 个（`test_providers_api` 改 1 处）。Vitest 300 个、lint、typecheck、prettier、ruff、mypy、相关 pytest 过；截图（临时 Playwright，拦 `/providers`）在会话 scratchpad，没进仓库。
-- 第 7a-5 步（本提交）：本机核对（运行中的后端已带 7a-4 的新字段）。`POST /providers/moonshot/test` 国内站 ok，列出 6 个模型；表里的 K2.6、K3.1 Pro 自动勾上（¥6.5 / ¥27、¥13 / ¥68）；`/config/components` 的 `script` 里有 K3.1 Pro；临时勾表外的 `kimi-k3` → `priced: false`，看完恢复原勾选。浏览器扩展连不上本机 5173，界面那一眼没看；没做真实 LLM 调用（可选，要 Kelvin 点头）。
+- 第 7a-5 步（3a8a232）：本机核对（运行中的后端已带 7a-4 的新字段）。`POST /providers/moonshot/test` 国内站 ok，列出 6 个模型；表里的 K2.6、K3.1 Pro 自动勾上（¥6.5 / ¥27、¥13 / ¥68）；`/config/components` 的 `script` 里有 K3.1 Pro；临时勾表外的 `kimi-k3` → `priced: false`，看完恢复原勾选。浏览器扩展连不上本机 5173，界面那一眼没看；没做真实 LLM 调用（可选，要 Kelvin 点头）。
+- 第 8 步（本提交，DECISIONS「M5 第 8 步」）：`pipeline/generate.py`（自动规则按剧集存 `app_setting`、默认读配置；运行记录从视频产物和任务推出，新 code `take` / `switch` / `final` / `waiting` / `failed`）、`api/routes/generate.py`、`api/routes/metrics.py`（最小 `/metrics/summary`）；`unadopt`（有物化的槽位 409 `unadopt_unsupported`）、`PATCH /versions/{id}` 打分；单镜头上限 `Budget.before_enqueue(shot=…)`、`reason: shot`（`components.yaml` 加 `shot_cap_usd: 2.0`）；`run_count` 改 async 读 `takes_per_shot`。前端只补契约：`JobConfirmSchema` 加 `shot`、确认弹窗文案、运行记录新 code 的中英文。新测试 `test_generate_api.py` 5 个、`confirmJobs.test.tsx` 1 个；相关 pytest 84 个、Vitest 301 个、lint、typecheck、prettier、ruff、mypy（含 linux）过；全量交给 CI。
 
 ## 下一步
 
-- **第 8 步 生成页接口（后端）**：`generate-rules`、`generate-log`、`unadopt`、评分、最小 `/metrics/summary`。先看原型 `generate.dc.html` 和 MSW 里 `handlers/` 的生成页接口，按它的形状做后端。
+- **第 9 步 生成页接后端（前端）**：删 MSW 的生成页 handler（`mocks/handlers/generate.ts`、`products.ts` 的 `unadopt` / `PATCH versions`、`metrics.ts` 的 `summary`）、挪成 `test/fakes/` 测试假后端；真视频播放、队列卡片、`?shot=` 和 `item` 统一用镜头 id、示例种子、快照重导（计划第 9 条）。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -36,6 +37,7 @@
 
 ## 踩过的坑 / 临时绕过
 
+- **Mock 下 H3 API 的视频按 0 元算**（第 8 步发现）：`MockAdapter.estimate/run` 拿 `params.resolution`（API 跑时是 `delivery`，比如 `1080p`）去查 `price_by_res`（只有 `768p` / `2k`），查不到 → 0；真实适配器按宽高选 768P / 2K，没问题。Mock 里只有 Context-IR 记钱。第 13 步 Mock 端到端（表头花费要跟着变）时修，修了要重导快照的估价。
 - **Kelvin 的 ComfyUI 是 Comfy Desktop**（0.41.2，127.0.0.1:8188，源码在 `%LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI`，不在 `D:\ComfyUI`），H3 节点是自带的、权重和两个 Turbo LoRA 已经在。核对节点用只读的 `GET /object_info/<类名>`、`/models/<文件夹>`；**别往它 `/prompt` 发东西**（会真跑）。**测试里的 `ComfyUIAdapter` 一定传 `websocket=None` 或假的**，默认的会连真 8188。
 
 - **CI**：`/continue` 时先 `gh run list -R kelvin78901/AIVideoGenerationAgent --branch m5-video` 看一眼。连着推送会取消上一轮没跑完的 CI，要等结果就别急着推。

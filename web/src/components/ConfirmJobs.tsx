@@ -79,7 +79,9 @@ function ConfirmDialog({ job }: { job: Job }) {
                 ? t("confirmJob.unpriced", { model })
                 : why?.reason === "episode"
                   ? t("confirmJob.episode", { model, estimate, limit })
-                  : t("confirmJob.perCall", { model, estimate, limit })}
+                  : why?.reason === "shot"
+                    ? t("confirmJob.shot", { model, estimate, limit })
+                    : t("confirmJob.perCall", { model, estimate, limit })}
           </DialogDescription>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">

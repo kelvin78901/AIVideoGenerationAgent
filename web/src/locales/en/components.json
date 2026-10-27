@@ -252,6 +252,7 @@
     "title": "{{component}} needs your OK to start",
     "perCall": "On {{model}} this is estimated at {{estimate}}, over this step's per-call cap of {{limit}}.",
     "episode": "On {{model}} this is estimated at {{estimate}}; only {{limit}} is left of the episode budget.",
+    "shot": "On {{model}} this is estimated at {{estimate}}; only {{limit}} is left of this shot's cap.",
     "fallback": "{{failed}} failed ({{error}}). Switch to {{model}}? Estimated {{estimate}}.",
     "unpriced": "{{model}} has no price yet, so what this run costs is not known. You can fill in its price on the Models page.",
     "unknownPrice": "price unknown",

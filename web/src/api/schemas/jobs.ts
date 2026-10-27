@@ -42,11 +42,11 @@ export type Job = z.infer<typeof JobSchema>;
 
 /**
  * Why a `product.run` job waits for a yes (`params.confirm`): over the component's per-call
- * cap, over what is left of the episode budget, a model without a known price, or a fallback
- * set to ask first (`priced` false: the fallback model has no known price).
+ * cap, over what is left of the shot's cap (generate rules) or of the episode budget, a model
+ * without a known price, or a fallback set to ask first (`priced` false: the fallback model has no known price).
  */
 export const JobConfirmSchema = z.object({
-  reason: z.enum(["per_call", "episode", "unpriced", "fallback"]),
+  reason: z.enum(["per_call", "shot", "episode", "unpriced", "fallback"]),
   estimate_usd: z.number(),
   limit_usd: z.number().nullable(),
   failed_model: z.string().optional(),

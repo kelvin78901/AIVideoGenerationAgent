@@ -120,6 +120,11 @@
     "switch_pass": "你点了「不满意换一个」→ {{model}} 出 T{{take}}{{cost}} · 质检通过",
     "switch_fail": "你点了「不满意换一个」→ {{model}} 出 T{{take}}{{cost}} · 未过 {{fails}} 项",
     "fallback_timeout": "本地任务超过 {{minutes}} 分钟 → 自动兜底到 {{model}}",
-    "fallback_error": "本地任务出错 → 自动兜底到 {{model}}"
+    "fallback_error": "本地任务出错 → 自动兜底到 {{model}}",
+    "take": "{{model}} 出 T{{take}}{{cost}}",
+    "switch": "你点了「不满意换一个」→ {{model}} 出 T{{take}}{{cost}}",
+    "final": "用 API 出终版 → {{model}} 出 T{{take}}{{cost}}",
+    "waiting": "等你确认 · {{model}}{{cost}}",
+    "failed": "{{model}} 出错（{{error}}）"
   }
 }

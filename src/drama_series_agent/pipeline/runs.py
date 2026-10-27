@@ -39,6 +39,7 @@ from drama_series_agent.pipeline.component import (
     RunContext,
 )
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.generate import load_rules
 from drama_series_agent.pipeline.products import ProductService, require_product
 from drama_series_agent.pipeline.schema import EstimateOut, ProductOut, PromptOut
 
@@ -263,7 +264,13 @@ class RunService:
             starting = None if p.prompt_json else await comp.default_intent(session, p, lang)
             # An API final is one version from one draft.
             final = bool((params or {}).get("source_version_id"))
-            count = count or (1 if final else comp.run_count(p))
+            count = count or (1 if final else await comp.run_count(session, p))
+            # Work on a shot also meets the shot's cap (generate rules).
+            shot = (
+                (p.owner_id, (await load_rules(session, p.series_id)).shot_cap_usd)
+                if p.owner_type == "shot"
+                else None
+            )
         settings = await router.settings(comp.id, item_of(p))
         if mode == "switch":
             base = current.model_key if current and current.model_key else None
@@ -305,6 +312,7 @@ class RunService:
             cap=cap_of(settings),
             episode_id=inputs.episode_id,
             priced=estimate.priced,
+            shot=shot,
         )
         spec = self.services.registry.spec(target)
         queue = "gpu" if spec.where == "local" else f"api:{spec.provider_id}"

@@ -71,6 +71,7 @@ from drama_series_agent.pipeline.components.media import (
 from drama_series_agent.pipeline.components.plan import plan_product, shot_slice
 from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.generate import load_rules
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.timing import PRE_ROLL_S, line_seconds, shot_duration
 from drama_series_agent.prompts.compiler import Block
@@ -340,9 +341,12 @@ class VidComponent(MediaComponent):
     async def inputs(self, session: AsyncSession, product: Product) -> Inputs:
         return await gather(session, self.services.invalidation, product)
 
-    def run_count(self, product: Product) -> int:
-        """The first run makes ``candidates`` takes (2); 「再出一条」 one."""
-        return self.candidates() if product.current_version_id is None else 1
+    async def run_count(self, session: AsyncSession, product: Product) -> int:
+        """The first run makes the series' ``takes_per_shot`` (``candidates``, 2, unless the
+        generate rules say otherwise); 「再出一条」 one."""
+        if product.current_version_id is not None:
+            return 1
+        return (await load_rules(session, product.series_id)).takes_per_shot
 
     def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
         """「用 API 出终版」 goes to ``final_api`` (H3 Regenerate-2K). A 原生同步 shot with voice

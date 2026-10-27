@@ -3,7 +3,8 @@
 Two checks:
 
 - **Before a job is queued** (``before_enqueue``): its whole estimate against the component's
-  单次上限 (``per_call_cap_usd``) and against what is left of the episode budget. Either one
+  单次上限 (``per_call_cap_usd``), against what is left of the shot's cap (the generate rules'
+  ``shot_cap_usd``, for work on a shot) and against what is left of the episode budget. Any one
   over → the job waits for a yes (``waiting_confirm``). Work that belongs to no episode (bible,
   enrichment, episode planning) only meets the per-call cap. A model without a known price
   (a listed model nobody priced, M5 step 7a) always waits: what it costs is not known.
@@ -15,12 +16,14 @@ Two checks:
   ``budget_exceeded`` instead of spending silently.
 
 Left of the episode budget = budget − spent − the estimates of its queued / waiting jobs − what
-its running jobs are still expected to spend (estimate − spent so far, at least 0).
+its running jobs are still expected to spend (estimate − spent so far, at least 0). Left of a
+shot's cap is the same over the calls made for the shot (``model_call.shot_id``) and the jobs of
+the products it owns.
 """
 
 from __future__ import annotations
 
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
 from typing import Any
 
@@ -28,12 +31,13 @@ from sqlmodel import col, select
 
 from drama_series_agent.core.config import ConfirmMargin, Resolved, get_config
 from drama_series_agent.core.db import Database
-from drama_series_agent.core.models_db import Job
+from drama_series_agent.core.models_db import Job, Product
 from drama_series_agent.modelhub import calllog
 from drama_series_agent.modelhub.adapters.base import CallContext, Estimate, ModelSpec
 from drama_series_agent.modelhub.router import BudgetExceeded
 
 EPSILON = 1e-6
+ACTIVE = ("queued", "waiting_confirm", "running")
 # episode id → its budget in USD (None = no budget set)
 EpisodeBudget = Callable[[str], Awaitable[float | None]]
 
@@ -42,7 +46,7 @@ EpisodeBudget = Callable[[str], Awaitable[float | None]]
 class Verdict:
     ok: bool
     estimate_usd: float
-    reason: str | None = None  # per_call / episode / unpriced
+    reason: str | None = None  # per_call / shot / episode / unpriced
     limit_usd: float | None = None
 
     def params(self) -> dict[str, Any]:
@@ -78,10 +82,31 @@ class Budget:
                 await session.exec(
                     select(Job).where(
                         Job.episode_id == episode_id,
-                        col(Job.state).in_(["queued", "waiting_confirm", "running"]),
+                        col(Job.state).in_(ACTIVE),
                     )
                 )
             ).all()
+        return budget - spent - await self.reserved(jobs, exclude_job_id)
+
+    async def left_on_shot(self, shot_id: str, cap: float) -> float:
+        """What is left of a shot's cap after its spending and reservations."""
+        spent = await calllog.total_cost(self.db, shot_id=shot_id)
+        async with self.db.session() as session:
+            jobs = (
+                await session.exec(
+                    select(Job)
+                    .join(Product, col(Product.id) == col(Job.product_id))
+                    .where(
+                        Product.owner_type == "shot",
+                        Product.owner_id == shot_id,
+                        col(Job.state).in_(ACTIVE),
+                    )
+                )
+            ).all()
+        return cap - spent - await self.reserved(jobs)
+
+    async def reserved(self, jobs: Sequence[Job], exclude_job_id: str | None = None) -> float:
+        """What active ``jobs`` are still expected to spend."""
         reserved = 0.0
         for job in jobs:
             if job.id == exclude_job_id or not job.est_cost_usd:
@@ -91,7 +116,7 @@ class Budget:
                 reserved += max(0.0, job.est_cost_usd - done)
             else:
                 reserved += job.est_cost_usd
-        return budget - spent - reserved
+        return reserved
 
     async def before_enqueue(
         self,
@@ -100,11 +125,17 @@ class Budget:
         cap: float | None,
         episode_id: str | None,
         priced: bool = True,
+        shot: tuple[str, float] | None = None,
     ) -> Verdict:
+        """``shot``: (shot id, its cap) for work on a shot."""
         if not priced:
             return Verdict(False, estimate_usd, "unpriced")
         if cap is not None and estimate_usd > cap + EPSILON:
             return Verdict(False, estimate_usd, "per_call", cap)
+        if shot is not None:
+            shot_left = await self.left_on_shot(*shot)
+            if estimate_usd > shot_left + EPSILON:
+                return Verdict(False, estimate_usd, "shot", max(0.0, shot_left))
         if episode_id is not None:
             left = await self.left(episode_id)
             if left is not None and estimate_usd > left + EPSILON:

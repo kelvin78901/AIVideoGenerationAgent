@@ -252,6 +252,7 @@
     "title": "「{{component}}」要你点头才会开始",
     "perCall": "用 {{model}} 预计 {{estimate}}，超过了这一步的单次上限 {{limit}}。",
     "episode": "用 {{model}} 预计 {{estimate}}，本集预算只剩 {{limit}}。",
+    "shot": "用 {{model}} 预计 {{estimate}}，这个镜头离单镜上限只剩 {{limit}}。",
     "fallback": "{{failed}} 出错了（{{error}}）。要改用 {{model}} 吗？预计 {{estimate}}。",
     "unpriced": "{{model}} 没有单价，这次花多少不知道。可以在模型页给它填上单价。",
     "unknownPrice": "价格未知",

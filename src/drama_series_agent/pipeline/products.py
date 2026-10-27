@@ -394,6 +394,34 @@ class ProductService:
         await self._announce(p)
         return await self.get(p.id)
 
+    async def unadopt(self, product_id: str) -> ProductOut:
+        """「取消采纳」 (the take wall): nothing adopted until the user picks again. Refused
+        while locked, and for slots whose adopted version is mirrored into domain tables
+        (undoing that is not a thing those tables know)."""
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+            if p.locked_hash:
+                raise PipelineError(409, "product_locked", id=p.id)
+            if self._materializers.get(p.slot):
+                raise PipelineError(409, "unadopt_unsupported", id=p.id, slot=p.slot)
+            p.adopted_version_id = None
+            p.updated_at = utcnow()
+            session.add(p)
+            await session.commit()
+        await self._announce(p)
+        return await self.get(p.id)
+
+    async def rate(self, version_id: str, rating: int | None) -> ProductOut:
+        """数字键打分 (1–5, None clears it); like ``note``, not part of what was made."""
+        async with self._db.session() as session:
+            v = await require_version(session, version_id)
+            v.rating = rating
+            session.add(v)
+            await session.commit()
+            p = await require_product(session, v.product_id)
+        await self._announce(p)
+        return await self.get(p.id)
+
     async def lock(self, product_id: str) -> ProductOut:
         async with self._db.session() as session:
             p = await require_product(session, product_id)

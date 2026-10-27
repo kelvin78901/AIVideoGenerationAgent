@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-27 · M5 第 8 步：生成页接口（后端）
+
+- **自动规则按剧集存在 `app_setting`**（key `generate.rules.<剧集 id>`，只存改过的字段），没改过的读配置：`takes_per_shot` ← `vid.candidates`（2），`qa_retry_max` ← `fallback_defaults.qa_fail_n`（2），`shot_cap_usd` ← `components.yaml` 新加的顶层 `shot_cap_usd`（$2，原型的值），`thresholds` ← `qa` 组件的阈值（只读，PUT 里带它 422）。没有新表、没有迁移。原因：这三项是「这部剧怎么出片」的设置，不是某个组件的路由；放进组件覆盖层会和模型页的「恢复成预设」搅在一起。`qa_retry_max` 现在只存不用，M6 的质检重跑读它（模型页的 `fallback.qa_fail_n` 仍是兜底配置的默认）。
+- **`takes_per_shot` 生效**：`Component.run_count` 改成 `async (session, product)`，视频组件首跑读剧集的规则；再出一条仍是 1 条。
+- **单镜头上限**（硬规则 6 原来缺的一档）：`Budget.before_enqueue(shot=(镜头 id, 上限))`，镜头上的工作（关键帧、视频，`owner_type=shot` 的产物）入队前检查「镜头已花（`model_call.shot_id`）+ 这个镜头的产物还在排队 / 运行的预留 + 这次估价」；超了进 `waiting_confirm`，`reason: shot`，`limit_usd` 是镜头剩下的。顺序：未知价 → 单次 → 单镜 → 本集。路由守卫（每次调用前）不查单镜：入队时已经问过，确认的任务按确认金额走。前端 `JobConfirmSchema` 加 `shot`，确认弹窗一句新文案。
+- **运行记录不建表**，读时从本集镜头的视频产物推出：每个 take（`origin` 是 run / rerun / switch / fallback 的版本）一行，code `take` / `switch` / `final`（M5 没质检；有 `qa` 后是 `take_pass|fail`、`switch_pass|fail`）；兜底出的 take 前面加一行 `fallback_timeout`（分钟数取视频组件的 `fallback.timeout_s`）/ `fallback_error`；还在运行、等确认、失败的任务各一行（`started`、`waiting`、`failed`，后两个标黄）。按时间排，id 带前缀（`v-` / `fb-` / `job-`）。新加的 code 中英文都加了。
+- **取消采纳**只给没有物化的槽位（视频、关键帧候选这类）：设定、剧本、分镜规划这些采纳后写进业务表的，`unadopt` 返回 409 `unadopt_unsupported`（业务表不知道怎么「退回」）；锁定时 409 `product_locked`。**打分**（`PATCH /versions/{id} {rating}`，1–5 或 null）和 `note` 一样是版本上唯一可改的字段，不算内容、不改哈希。
+- **最小 `/metrics/summary`**：已花 = 范围内 billed 的 `model_call.cost_usd`；预算 = 本集的，全剧是各集已设的之和（都没设就 null）；预计 = 已花 + 活动任务还要花的（和本集剩余同一算法，`Budget.reserved`）+ 视频从没跑过的镜头 × 下一次估价 × `takes_per_shot`。上游没好（没有估价）的镜头先不算，其他组件的「剩余」M8 再加；`insights` 先返回空。
+
 ## 2026-10-26 · M5 第 7a 步（四）：服务页的站点、模型列表和价格（前端）
 
 - **密钥对话框**（`KeyDialog.tsx` + 新的 `ProviderModels.tsx`；原型里没有，按现有对话框的样式做）：两个站点的厂商顶部有「国内站 / 国际站」切换（有密钥的站点标「已有密钥」），切换就是 `PATCH /providers/{id}`，提示「两个站点是两个账号」；测试连接后出**模型列表**（勾选、参考价 / 你填的价 / 「价格未知」徽标、「填价格 / 改 / 清除」行内小表单：输入、输出每百万 token，¥ / $），超过 12 个模型出筛选框（OpenRouter）；没拉过列表时一句提示「用内置的参考表」。原来那句「这个密钥也用于：…」换成**媒体模型 ID** 小节：每个媒体模型一个输入框（有列表的厂商用 `datalist` 给建议），「保存」「已改」「恢复默认」。
