@@ -48,7 +48,10 @@ function ConfirmDialog({ job }: { job: Job }) {
     models,
     typeof job.params.model_key === "string" ? job.params.model_key : null,
   );
-  const estimate = formatCost(why?.estimate_usd ?? job.est_cost_usd ?? 0);
+  const unpriced = why?.reason === "unpriced" || why?.priced === false;
+  const estimate = unpriced
+    ? t("confirmJob.unknownPrice")
+    : formatCost(why?.estimate_usd ?? job.est_cost_usd ?? 0);
   const limit = formatCost(why?.limit_usd ?? 0);
   const component = job.component_id
     ? te(`component.${job.component_id}` as "component.extract")
@@ -72,9 +75,11 @@ function ConfirmDialog({ job }: { job: Job }) {
                   model,
                   estimate,
                 })
-              : why?.reason === "episode"
-                ? t("confirmJob.episode", { model, estimate, limit })
-                : t("confirmJob.perCall", { model, estimate, limit })}
+              : why?.reason === "unpriced"
+                ? t("confirmJob.unpriced", { model })
+                : why?.reason === "episode"
+                  ? t("confirmJob.episode", { model, estimate, limit })
+                  : t("confirmJob.perCall", { model, estimate, limit })}
           </DialogDescription>
         </DialogHeader>
         <p className="text-sm text-muted-foreground">

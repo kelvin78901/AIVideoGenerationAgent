@@ -72,6 +72,8 @@ class EstimateOut(BaseModel):
     where: Literal["local", "api"]
     cost_usd: float
     seconds: float | None
+    # False: the model has no known price (cost_usd is 0); a run waits for a yes first.
+    priced: bool = True
 
 
 class RunningOut(BaseModel):

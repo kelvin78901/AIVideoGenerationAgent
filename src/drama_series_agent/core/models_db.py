@@ -124,6 +124,8 @@ class ModelCall(SQLModel, table=True):
     unit_prices_json: dict[str, Any] | None = _json()
     cost_usd: float = 0.0
     billed: bool = True
+    # The model had no known price: cost_usd is 0 and the spend is shown as incomplete (7a).
+    unpriced: bool = False
     # local resources
     vram_peak_mb: int | None = None
     gpu_util_avg: float | None = None

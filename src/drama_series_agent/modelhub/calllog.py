@@ -40,6 +40,21 @@ async def total_cost(
     return float(value)
 
 
+async def unpriced_calls(
+    db: Database, *, series_id: str | None = None, episode_id: str | None = None
+) -> int:
+    """Billed calls to models without a known price: the spend shown leaves them out."""
+    stmt = select(func.count()).where(
+        col(ModelCall.billed).is_(True), col(ModelCall.unpriced).is_(True)
+    )
+    if series_id is not None:
+        stmt = stmt.where(ModelCall.series_id == series_id)
+    if episode_id is not None:
+        stmt = stmt.where(ModelCall.episode_id == episode_id)
+    async with db.session() as session:
+        return int((await session.exec(stmt)).one())
+
+
 async def recent(db: Database, limit: int = 50) -> list[ModelCall]:
     async with db.session() as session:
         stmt = select(ModelCall).order_by(col(ModelCall.id).desc()).limit(limit)

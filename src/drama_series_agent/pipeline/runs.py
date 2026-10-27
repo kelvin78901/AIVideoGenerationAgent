@@ -201,7 +201,11 @@ class RunService:
             return prompt, None
         spec = self.services.registry.spec(model)
         return prompt, EstimateOut(
-            model_key=model, where=spec.where, cost_usd=round(est.cost_usd, 4), seconds=est.seconds
+            model_key=model,
+            where=spec.where,
+            cost_usd=round(est.cost_usd, 4),
+            seconds=est.seconds,
+            priced=est.priced,
         )
 
     async def final_cost(self, product: Product) -> float | None:
@@ -294,9 +298,13 @@ class RunService:
 
         one = comp.estimate(inputs, compiled, target)
         estimate = replace(one, cost_usd=one.cost_usd * count, seconds=one.seconds * count)
-        # Hard rule 6: over the per-call cap or what is left of the episode → ask first.
+        # Hard rule 6: over the per-call cap or what is left of the episode, or no known
+        # price → ask first.
         verdict = await self.budget.before_enqueue(
-            estimate.cost_usd, cap=cap_of(settings), episode_id=inputs.episode_id
+            estimate.cost_usd,
+            cap=cap_of(settings),
+            episode_id=inputs.episode_id,
+            priced=estimate.priced,
         )
         spec = self.services.registry.spec(target)
         queue = "gpu" if spec.where == "local" else f"api:{spec.provider_id}"
@@ -442,7 +450,8 @@ class RunService:
             job = await session.get(Job, p.running_job_id) if p.running_job_id else None
         inputs.params = dict((job.params_json if job else {}).get("params") or {})
         compiled = str((p.prompt_json or {}).get("compiled", ""))
-        est = comp.estimate(inputs, compiled, exc.fallback).cost_usd
+        estimate = comp.estimate(inputs, compiled, exc.fallback)
+        est = estimate.cost_usd
         return JobNeedsConfirm(
             {
                 "model_key": exc.fallback,
@@ -453,6 +462,7 @@ class RunService:
                     "error": exc.reason,
                     "estimate_usd": round(est, 4),
                     "limit_usd": None,
+                    "priced": estimate.priced,
                 },
             },
             est_cost_usd=round(est, 6),

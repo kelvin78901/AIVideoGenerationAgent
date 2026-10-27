@@ -985,7 +985,8 @@
         "model_key": "deepseek/v4-pro",
         "where": "api",
         "cost_usd": 0.0251,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -1284,7 +1285,8 @@
         "model_key": "deepseek/v4.1-flash",
         "where": "api",
         "cost_usd": 0.0052,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -1872,7 +1874,8 @@
         "model_key": "deepseek/v4-pro",
         "where": "api",
         "cost_usd": 0.0254,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -1901,7 +1904,8 @@
         "model_key": "deepseek/v4-pro",
         "where": "api",
         "cost_usd": 0.0266,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -1978,7 +1982,8 @@
         "model_key": "deepseek/v4-pro",
         "where": "api",
         "cost_usd": 0.0271,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,

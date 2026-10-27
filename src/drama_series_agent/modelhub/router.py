@@ -238,6 +238,7 @@ class Router:
             attempt=ctx.attempt,
             queued_at=utcnow(),
             unit_prices_json=spec.pricing.snapshot(),
+            unpriced=not spec.pricing.known,
             status="error",
             billed=False,
             workflow_id=spec.workflow if spec.where == "local" else None,

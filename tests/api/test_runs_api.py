@@ -21,9 +21,11 @@ from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.config import ConfirmMargin
 from drama_series_agent.core.models_db import Dependency, Event, ModelCall, Product
-from drama_series_agent.modelhub.adapters.base import ModelRequest
+from drama_series_agent.modelhub import calllog
+from drama_series_agent.modelhub.adapters.base import CallContext, ModelRequest
 from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.budget import BudgetGuardImpl
+from drama_series_agent.modelhub.router import BudgetExceeded
 from drama_series_agent.pipeline.component import Component, Inputs, RunContext
 from drama_series_agent.pipeline.products import VersionDraft
 from drama_series_agent.prompts.compiler import TEMPLATES, Block, PromptCompiler
@@ -445,3 +447,56 @@ def test_episode_budget_counts_reservations(client: TestClient) -> None:
     assert left == pytest.approx(0.75) and other is None
     assert (verdict.ok, verdict.reason) == (False, "episode")
     assert verdict.limit_usd == pytest.approx(0.75)
+
+
+def test_a_model_without_a_price_asks_first(client: TestClient) -> None:
+    """Hard rule 6 for models nobody priced (M5 step 7a): every run waits for a yes, the call is
+    recorded as unpriced, and once a price is filled in the usual caps decide."""
+    pid = _setup(client)
+    model = "openrouter/any"
+    registry = _state(client).registry
+    assert not registry.spec(model).pricing.known
+    body = {"scope": "component", "scope_id": None, "component_id": "split"}
+    data = {"mode": "api", "api_model": model}
+    client.put(f"{V1}/config/override", json={**body, "data": data}).raise_for_status()
+    estimate = client.get(f"{V1}/products/{pid}").json()["estimate"]
+    assert estimate["model_key"] == model and estimate["priced"] is False
+    assert estimate["cost_usd"] == 0
+
+    job = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"}).json()
+    assert job["state"] == "waiting_confirm"
+    assert job["params"]["confirm"] == {
+        "reason": "unpriced",
+        "estimate_usd": 0.0,
+        "limit_usd": None,
+    }
+    client.post(f"{V1}/jobs/{job['id']}/confirm").raise_for_status()
+    assert _wait(client, job["id"])["state"] == "succeeded"
+    (row,) = [c for c in _rows(client, ModelCall) if c.product_id == pid]
+    assert row.model_key == model and row.unpriced and row.cost_usd == 0
+
+    async def unpriced() -> int:
+        return await calllog.unpriced_calls(_state(client).db, series_id="demo")
+
+    assert _call(client, unpriced) == 1
+
+    # Not through a job and not confirmed: the guard stops it before anything is spent.
+    async def direct() -> None:
+        req = ModelRequest(kind="llm", prompt="雨停之前。")
+        await _state(client).router.call("split", req, CallContext(), model=model)
+
+    with pytest.raises(BudgetExceeded) as stopped:
+        _call(client, direct)
+    assert stopped.value.scope == "unpriced"
+
+    # A price of one's own: the per-call cap decides again.
+    price = {"in": 1, "out": 2, "currency": "USD"}
+    resp = client.put(f"{V1}/providers/settings/{model}", json={"price": price})
+    assert resp.status_code == 200, resp.text
+    assert client.get(f"{V1}/products/{pid}").json()["estimate"]["priced"] is True
+    job = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"}).json()
+    assert job["state"] != "waiting_confirm"
+    assert _wait(client, job["id"])["state"] == "succeeded"
+    _cap(client, 0.00001)
+    job = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"}).json()
+    assert job["params"]["confirm"]["reason"] == "per_call"

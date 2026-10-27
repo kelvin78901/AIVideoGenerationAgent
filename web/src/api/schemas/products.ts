@@ -179,6 +179,8 @@ export const RunEstimateSchema = z.object({
   where: WhereSchema,
   cost_usd: z.number(),
   seconds: z.number().nullable(),
+  /** False: the model has no known price (`cost_usd` is 0); a run asks first. */
+  priced: z.boolean().optional(),
 });
 export type RunEstimate = z.infer<typeof RunEstimateSchema>;
 

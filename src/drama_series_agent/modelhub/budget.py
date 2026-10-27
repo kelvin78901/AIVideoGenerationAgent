@@ -5,12 +5,14 @@ Two checks:
 - **Before a job is queued** (``before_enqueue``): its whole estimate against the component's
   单次上限 (``per_call_cap_usd``) and against what is left of the episode budget. Either one
   over → the job waits for a yes (``waiting_confirm``). Work that belongs to no episode (bible,
-  enrichment, episode planning) only meets the per-call cap.
+  enrichment, episode planning) only meets the per-call cap. A model without a known price
+  (a listed model nobody priced, M5 step 7a) always waits: what it costs is not known.
 - **Before each model call** (``BudgetGuardImpl``, the router's guard): a confirmed job may
   spend up to what was confirmed plus a margin (``confirm_margin``: the larger of 10% and
   $0.05, so a job of several calls does not stop on its last one because the estimate was a
-  little low); anything else must stay under the per-call cap. A fallback that would cost more
-  fails with ``budget_exceeded`` instead of spending silently.
+  little low); anything else must stay under the per-call cap, and an unconfirmed call to a
+  model without a price stops (scope ``unpriced``). A fallback that would cost more fails with
+  ``budget_exceeded`` instead of spending silently.
 
 Left of the episode budget = budget − spent − the estimates of its queued / waiting jobs − what
 its running jobs are still expected to spend (estimate − spent so far, at least 0).
@@ -40,7 +42,7 @@ EpisodeBudget = Callable[[str], Awaitable[float | None]]
 class Verdict:
     ok: bool
     estimate_usd: float
-    reason: str | None = None  # per_call / episode
+    reason: str | None = None  # per_call / episode / unpriced
     limit_usd: float | None = None
 
     def params(self) -> dict[str, Any]:
@@ -92,8 +94,15 @@ class Budget:
         return budget - spent - reserved
 
     async def before_enqueue(
-        self, estimate_usd: float, *, cap: float | None, episode_id: str | None
+        self,
+        estimate_usd: float,
+        *,
+        cap: float | None,
+        episode_id: str | None,
+        priced: bool = True,
     ) -> Verdict:
+        if not priced:
+            return Verdict(False, estimate_usd, "unpriced")
         if cap is not None and estimate_usd > cap + EPSILON:
             return Verdict(False, estimate_usd, "per_call", cap)
         if episode_id is not None:
@@ -127,6 +136,8 @@ class BudgetGuardImpl:
             if spent + cost > allowed + EPSILON:
                 raise BudgetExceeded(cost, max(0.0, allowed - spent), "confirmed")
             return
+        if not estimate.priced:
+            raise BudgetExceeded(cost, 0.0, "unpriced")
         cap = cap_of(settings)
         if cap is not None and cost > cap + EPSILON:
             raise BudgetExceeded(cost, cap, "per_call")

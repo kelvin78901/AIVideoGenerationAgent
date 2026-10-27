@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 7a 步（三）：价格未知的模型先确认
+
+- **补硬规则 6 的漏洞**：以前没单价的模型按 $0 估价，从不进 `waiting_confirm`。现在 `Budget.before_enqueue(…, priced=False)` 一律返回 `Verdict(False, reason="unpriced")`（不看上限和本集预算），任务进 `waiting_confirm`，`params.confirm = {reason: "unpriced", estimate_usd: 0, limit_usd: null}`。填了单价（`model_setting`）就回到正常的上限检查。
+- **路由守卫用 `BudgetExceeded(scope="unpriced")`，不用计划里写的 `NeedsConfirm`**：`NeedsConfirm` 是「兜底要先问」专用（带失败的模型和兜底目标），挪作他用会让任务走 `_ask_fallback`；而同步调用的地方（重写、补全的「按要求重写」）本来就把 `BudgetExceeded` 转成 409 `over_budget`。规则：没确认过（`confirmed_usd` 为空、任务也没确认）的调用遇到未知价就停；确认过的任务照旧按「确认额 + 余量」判断（未知价的花费记 0，所以一定放行）。后果：一个没确认过的任务兜底到未知价的模型会以 `budget_exceeded` 失败，而不是悄悄花钱——和「兜底更贵就失败」一致。
+- **同步重写**：剧本化的重写（`_check_budget`）和补全的「按要求重写」遇到未知价返回 409 `over_budget`，`reason: "unpriced"`；带 `confirm_budget` 重发就跑。
+- **兜底要先问的确认**里加 `priced`（兜底目标没单价时为 false），前端把预计花费显示成「价格未知」。
+- **记账**：迁移 `0023` 给 `model_call` 加 `unpriced`（路由按 `spec.pricing.known` 写，`cost_usd` 仍是 0）；`calllog.unpriced_calls(series_id / episode_id)` 数「价格未知的已计费调用」，给第 9 步表头用。`EstimateOut` 加 `priced`（前端 schema 可选字段）。
+- **前端只做了最小的**：`JobConfirmSchema.reason` 加 `unpriced`（不加的话确认弹窗解析失败）、确认弹窗文案「{{model}} 没有单价，这次花多少不知道。可以在模型页给它填上单价。」、按钮「确认，开始运行（价格未知）」。选择器徽标等在 7a-4。
+
 ## 2026-10-26 · M5 第 7a 步（二）：写作模型按厂商列表选
 
 - **「账号叠加层」代替第 7a-1 步注册表里的站点参数**：仿照工作流库的 `set_library` / `with_library`，`core/config.py` 加 `set_accounts` / `with_accounts`，`get_config()` = 出厂配置 + 工作流库 + 账号。叠加后：每个厂商的 `base_url` / `key_name` / `docs` 是当前站点的；写作模型行是**勾选的模型**（参考表里有的用表里那行，表外的 `<厂商>/<model_id>`、参数用厂商新字段 `model_defaults`、价格未知）；表里各行的价格换成当前站点的；用户的单价、媒体模型 ID 叠上去；`components.yaml` 里写 `api: [llm]` 的组件展开成所有已启用的写作模型（按 `llm_ui_order`，再按厂商顺序）。好处：目录、估价、选择器、路由都直接读 `get_config()`，选择器里的价格也跟着站点走。`specs_from_config` 退回只读配置，`Registry.set_account` 换成 `Registry.reload(cfg)`（重建 API 模型、删掉不再勾选的写作模型）；`StudioState.refresh_accounts()` 在账号或设置变了之后调用。

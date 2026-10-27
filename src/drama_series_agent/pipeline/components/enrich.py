@@ -268,10 +268,16 @@ class EnrichComponent(ChunkedComponent):
             ],
         )
         req = self.request(messages, None, "rewrite", REWRITE_MAX_TOKENS)
-        cost = self.services.registry.get(model).estimate(req).cost_usd
+        estimate = self.services.registry.get(model).estimate(req)
+        cost = estimate.cost_usd
         cap = cap_of(settings)
-        over = cap is not None and cost > cap + EPSILON
+        # No known price asks first too (hard rule 6), like going over the cap.
+        over = not estimate.priced or (cap is not None and cost > cap + EPSILON)
         if over and not confirm_budget:
+            if not estimate.priced:
+                raise PipelineError(
+                    409, "over_budget", reason="unpriced", estimate_usd=0.0, limit_usd=None
+                )
             raise PipelineError(
                 409, "over_budget", estimate_usd=round(cost, 4), limit_usd=round(cap or 0.0, 4)
             )

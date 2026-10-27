@@ -674,7 +674,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -706,7 +707,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -877,7 +879,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -1005,7 +1008,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -1034,7 +1038,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -1205,7 +1210,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -1379,7 +1385,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -1507,7 +1514,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -1678,7 +1686,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -1827,7 +1836,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -2023,7 +2033,8 @@
         "model_key": "comfy/qwen-image",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -3288,7 +3299,8 @@
         "model_key": "local/qwen3-tts",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -3320,7 +3332,8 @@
         "model_key": "local/qwen3-tts",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -3484,7 +3497,8 @@
         "model_key": "comfy/qwen-image-edit-hq",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,

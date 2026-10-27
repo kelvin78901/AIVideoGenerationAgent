@@ -1010,7 +1010,8 @@
         "model_key": "deepseek/v4-pro",
         "where": "api",
         "cost_usd": 0.0163,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -1889,7 +1890,8 @@
         "model_key": "local/qwen3.6-27b",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -2631,7 +2633,8 @@
         "model_key": "deepseek/v4.1-flash",
         "where": "api",
         "cost_usd": 0.0083,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,

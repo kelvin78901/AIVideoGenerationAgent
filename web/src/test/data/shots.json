@@ -1260,7 +1260,8 @@
       "model_key": "deepseek/v4-pro",
       "where": "api",
       "cost_usd": 0.0254,
-      "seconds": 0.0
+      "seconds": 0.0,
+      "priced": true
     },
     "running": null,
     "pick": null,
@@ -1459,7 +1460,8 @@
         "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -1662,7 +1664,8 @@
         "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -1861,7 +1864,8 @@
         "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": {
@@ -1991,7 +1995,8 @@
         "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -2118,7 +2123,8 @@
         "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -2244,7 +2250,8 @@
         "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,
@@ -2371,7 +2378,8 @@
         "model_key": "comfy/flux3-klein",
         "where": "local",
         "cost_usd": 0.0,
-        "seconds": 0.0
+        "seconds": 0.0,
+        "priced": true
       },
       "running": null,
       "pick": null,

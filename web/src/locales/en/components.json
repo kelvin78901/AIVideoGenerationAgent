@@ -251,6 +251,8 @@
     "perCall": "On {{model}} this is estimated at {{estimate}}, over this step's per-call cap of {{limit}}.",
     "episode": "On {{model}} this is estimated at {{estimate}}; only {{limit}} is left of the episode budget.",
     "fallback": "{{failed}} failed ({{error}}). Switch to {{model}}? Estimated {{estimate}}.",
+    "unpriced": "{{model}} has no price yet, so what this run costs is not known. You can fill in its price on the Models page.",
+    "unknownPrice": "price unknown",
     "where": "Caps and fallback behaviour are under",
     "models": "Models & fallback",
     "confirm": "Confirm and run ({{estimate}})",
