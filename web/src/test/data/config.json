@@ -592,8 +592,8 @@
         "where": "api",
         "price": {
           "unit": "second",
-          "amount": 0.08,
-          "currency": "USD"
+          "amount": 0.5,
+          "currency": "CNY"
         }
       },
       {
@@ -602,8 +602,8 @@
         "where": "api",
         "price": {
           "unit": "second",
-          "amount": 0.05,
-          "currency": "USD"
+          "amount": 0.3,
+          "currency": "CNY"
         }
       },
       {
@@ -618,8 +618,8 @@
         "where": "api",
         "price": {
           "unit": "second",
-          "amount": 0.41000000000000003,
-          "currency": "USD"
+          "amount": 0.673,
+          "currency": "CNY"
         }
       },
       {

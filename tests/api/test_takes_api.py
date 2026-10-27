@@ -144,6 +144,33 @@ def test_a_native_shot_sends_its_voices_to_the_reference_workflow(client: TestCl
     assert "using the voice timbre referenced from <Audio 1>: <d>[Chinese]" in text
 
 
+def test_an_h3_api_take_goes_through_context_ir(client: TestClient) -> None:
+    """M5 step 6: the H3 API gets the official rewriter's prompt (one Context-IR call for the
+    takes of a run); a native shot with voices is reference-to-video there too."""
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    product = _run(client, shots["1-01"]["video_product_id"], model="minimax/h3-api")
+    take = product["versions"][0]
+    assert (take["model_key"], take["where"], take["stage"]) == ("minimax/h3-api", "api", None)
+    assert take["payload"]["prompt_ir"] is True and take["payload"]["refs"] == []
+    assert _prompt(client, take).startswith("[Context-IR] For the target video, at 0.00 seconds")
+    ir = _rows(client, ModelCall, ModelCall.model_key == "minimax/context-ir")
+    assert len(ir) == 1 and ir[0].component_id == "vid" and ir[0].cost_usd > 0
+
+    take = _run(client, shots["1-04"]["video_product_id"], model="minimax/h3-api")["versions"][0]
+    assert take["model_key"] == "minimax/h3-api" and take["payload"]["voices"]
+    text = _prompt(client, take)
+    assert text.startswith("[Context-IR] subject_definitions:\n<Picture 1> is the first frame")
+    assert "<Audio 1> is the voice-timbre reference for" in text
+
+    # 先配音: the dubbed lines are <Audio 1>, copied as the whole sound track.
+    _dub_shot(client, shots["1-06"])
+    take = _run(client, shots["1-06"]["video_product_id"], model="minimax/h3-api")["versions"][0]
+    text = _prompt(client, take)
+    assert "<Audio 1>: fully_copy - <Audio 1> is reused 1:1" in text
+    assert "overall_soundscape: <Audio 1> as it is, with no other sound." in text
+
+
 def test_continuing_shots_wait_for_the_take_they_continue(client: TestClient) -> None:
     _confirm_storyboard(client)
     shots = _shots(client)

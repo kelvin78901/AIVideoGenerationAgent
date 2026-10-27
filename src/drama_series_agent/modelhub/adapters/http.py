@@ -15,7 +15,7 @@ import httpx
 
 from drama_series_agent.modelhub.adapters.base import ModelError
 
-RETRY_STATUSES = frozenset({408, 409, 425, 429, 500, 502, 503, 504})
+RETRY_STATUSES = frozenset({408, 409, 425, 429, 500, 502, 503, 504, 529})
 # A 429 that is out of quota rather than too fast, so retrying will not help: Gemini's free
 # tier has no quota for some models at all ("limit: 0", billing not enabled), OpenAI's
 # ``insufficient_quota`` (no credit).

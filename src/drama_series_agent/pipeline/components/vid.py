@@ -29,6 +29,7 @@ from __future__ import annotations
 
 from typing import Any
 
+from loguru import logger
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
@@ -44,7 +45,9 @@ from drama_series_agent.core.models_db import (
 from drama_series_agent.episodes.service import gate_confirmed, script_product
 from drama_series_agent.media.audio import dialogue_track
 from drama_series_agent.media.video import VideoError, frame, probe, trim_head
-from drama_series_agent.modelhub.adapters.base import Estimate, ModelRequest
+from drama_series_agent.modelhub.adapters.base import Estimate, ModelError, ModelRequest
+from drama_series_agent.modelhub.adapters.mock import Responder
+from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, voice_of
 from drama_series_agent.pipeline.components.kf import (
@@ -343,8 +346,14 @@ class VidComponent(MediaComponent):
 
     # ------------------------------------------------------------------ run
 
+    def mock_responders(self) -> dict[str, Responder]:
+        return {"context_ir": lambda req: {"prompt": f"[Context-IR] {req.prompt or ''}"}}
+
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
         req, refs, deps, voices = await self._request(inputs, ctx.compiled, ctx.model_key, ctx)
+        rewritten = await self._context_ir(ctx, inputs, req)
+        if rewritten:
+            req = req.model_copy(update={"prompt": rewritten})
         call = await self.media_call(
             ctx, req, inputs.episode_id, model=ctx.model_key, fallback_reason=ctx.fallback_reason
         )
@@ -380,6 +389,8 @@ class VidComponent(MediaComponent):
             "refs": [r["name"] for r in refs],
             "voices": [v["who"] for v in voices],
         }
+        if rewritten is not None:
+            payload["prompt_ir"] = bool(rewritten)
         stage = "draft" if call.where == "local" else None
         draft = self.media_draft(ctx, inputs, payload, files, [call], req.prompt or "", stage=stage)
         draft.dependencies = [*draft.dependencies, *deps]
@@ -400,9 +411,49 @@ class VidComponent(MediaComponent):
                 "fps": int(frame_["fps"]),
             },
         )
-        return self.services.registry.get(model).estimate(req)
+        estimate = self.services.registry.get(model).estimate(req)
+        ir = self._ir_model(model)
+        if ir is None:
+            return estimate
+        rewrite = self.services.registry.get(ir).estimate(
+            ModelRequest(kind="llm_aux", prompt=compiled, params=req.params)
+        )
+        return Estimate(
+            cost_usd=estimate.cost_usd + rewrite.cost_usd,
+            seconds=estimate.seconds + rewrite.seconds,
+            priced=estimate.priced and rewrite.priced,
+        )
 
     # ------------------------------------------------------------------ internals
+
+    def _ir_model(self, model: str) -> str | None:
+        """The prompt rewriter an API model asks for (``caps.prompt_ir``: H3's Context-IR)."""
+        spec = self.services.registry.spec(model)
+        ir = (spec.caps.model_extra or {}).get("prompt_ir") if spec.where == "api" else None
+        return str(ir) if ir else None
+
+    async def _context_ir(self, ctx: RunContext, inputs: Inputs, req: ModelRequest) -> str | None:
+        """H3 API runs: the official rewriter turns our layout (Chinese description in H3's
+        fields) into the English prompt its guide asks for, seeing the same pictures and audio.
+        None when the model has no rewriter; "" when it failed (the run goes on with ours)."""
+        ir = self._ir_model(ctx.model_key)
+        if ir is None:
+            return None
+        ask = ModelRequest(
+            kind="llm_aux",
+            prompt=req.prompt,
+            json_mode=True,
+            params={k: v for k, v in req.params.items() if k not in ("n", "task")},
+            meta={"component": self.id, "task": "context_ir"},
+        )
+        try:
+            call = await self.media_call(ctx, ask, inputs.episode_id, model=ir, fallback=False)
+        except (BudgetExceeded, NeedsConfirm):
+            raise
+        except ModelError as exc:
+            logger.warning("Context-IR failed ({}); the take uses our prompt", exc.code)
+            return ""
+        return str((call.data or {}).get("prompt") or "").strip()
 
     async def _request(
         self, inputs: Inputs, compiled: str, model: str, ctx: RunContext
@@ -410,13 +461,24 @@ class VidComponent(MediaComponent):
         context = inputs.context
         spec = self.services.registry.spec(model)
         wf = local_workflow(self.services.registry, model)
-        r2v = wf is not None and wf.has("ref_audio")
-        limit = ref_limit(spec.caps.max_refs, spec.where, spec.workflow)
-        if spec.where == "local" and wf is not None and not wf.has("ref_image"):
-            limit = 0
+        extra = spec.caps.model_extra or {}
+        api_h3 = spec.where == "api" and is_h3(model)
+        if api_h3:
+            # H3 API: audio goes in reference mode only (first frames and references do not
+            # mix), so voices or the dubbed lines make it reference-to-video, the first frame
+            # <Picture 1>; without audio it is image-to-video and takes no other pictures.
+            native = context["audio_mode"] == "native"
+            voices = list(context["voices"])[: int(extra.get("max_audios", 3))] if native else []
+            r2v = bool(voices or context["dub"])
+            limit: int | None = int(extra.get("max_images", 9)) - 1 if r2v else 0
+        else:
+            r2v = wf is not None and wf.has("ref_audio")
+            limit = ref_limit(spec.caps.max_refs, spec.where, spec.workflow)
+            if spec.where == "local" and wf is not None and not wf.has("ref_image"):
+                limit = 0
+            voices = list(context["voices"]) if r2v else []
+            voices = voices[: len(wf.bindings("ref_audio"))] if wf is not None and r2v else voices
         refs, deps, blocks = pick_refs(inputs, None, limit)
-        voices = list(context["voices"]) if r2v else []
-        voices = voices[: len(wf.bindings("ref_audio"))] if wf is not None and r2v else voices
         deps += [DependencyDraft(v["product_id"], v["hash"], "") for v in voices if v.get("hash")]
         frame_ = context["frame"]
         size = frame_size(frame_, spec.where)
@@ -474,6 +536,7 @@ class VidComponent(MediaComponent):
             description=description,
             dialogue=[] if none else dialogue,
             voices=voices,
+            dub=r2v and bool(context["dub"]),
             refs=refs,
             language=LANGUAGE.get(lang, "Chinese"),
             soundscape="N/A" if none else (context.get("sound") or DEFAULT_SOUND),

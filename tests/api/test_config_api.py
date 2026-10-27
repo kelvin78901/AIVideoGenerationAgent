@@ -39,7 +39,8 @@ def test_components_catalog(client: TestClient) -> None:
     prices = {m["key"]: m["price"] for m in data["models"]}
     assert prices["deepseek/v4-pro"] == {"unit": "mtok", "in": 1.32, "out": 3.96, "currency": "USD"}
     assert prices["google/nano-banana-pro"] == {"unit": "image", "amount": 0.134, "currency": "USD"}
-    assert prices["minimax/h3-api"]["amount"] == 0.08  # from the draft tier
+    assert prices["minimax/h3-api"]["amount"] == 0.5  # from the draft tier (768P, 元 / 秒)
+    assert prices["minimax/h3-api"]["currency"] == "CNY"
     assert prices["volc/seedance-2.5"]["unit"] == "second"
     assert prices["minimax/speech-2.8-hd"] == {"unit": "mchar", "amount": 350.0, "currency": "CNY"}
     assert prices["volc/seedream-5.0"] == {"unit": "image", "amount": 0.12, "currency": "CNY"}

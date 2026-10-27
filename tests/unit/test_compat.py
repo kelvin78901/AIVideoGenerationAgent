@@ -26,14 +26,15 @@ def _msw_rows(aspect: Aspect) -> list[tuple[str, list[str], str, str]]:
     """The prototype's table (``web/src/test/backend.ts:compatRows``), with the image models as
     their official docs have them (DECISIONS 2026-10-21「第 10 步」): Nano Banana Pro makes
     21:9 and GPT Image 2 makes the delivery size directly, so both are native everywhere. The
-    keyframe final is Nano Banana 2.1 since 2026-10-26 (DECISIONS「关键帧默认模型」)."""
+    keyframe final is Nano Banana 2.1 since 2026-10-26 (DECISIONS「关键帧默认模型」). Seedance
+    2.5 on Ark makes 1080p (DECISIONS 2026-10-26「M5 第 6 步」)."""
     return [
         ("keyframe", ["google/nano-banana-2.1"], "native", "native_4k"),
         ("text_keyframe", ["openai/gpt-image-2"], "native", "native"),
         ("sketch", ["volc/seedream-5.0"], "native", "cheap_sketch"),
         ("video_draft", ["comfy/h3"], "native", "h3_aspects"),
         ("video_final", ["minimax/h3-regenerate-2k"], "native", "follow_draft"),
-        ("video_alt", ["volc/seedance-2.5"], "convert", "upscale_from_720p"),
+        ("video_alt", ["volc/seedance-2.5"], "native", "native"),
         ("upscale", ["comfy/seedvr2", "comfy/flashvsr"], "native", "any_aspect"),
     ]
 
@@ -61,11 +62,11 @@ def test_every_code_has_copy() -> None:
 
 
 def test_follows_route_overrides() -> None:
-    # Keyframes switched to Seedance (720p at most): needs an upscale; 3D world stays off and
-    # has no row.
+    # Keyframes switched to Seedance (1080p at most) for a 2K delivery: needs an upscale; 3D
+    # world stays off and has no row.
     ov = Override("component", None, "kf", {"api_model": "volc/seedance-2.5"})
-    rows = {r[0]: r for r in _table("9:16", overrides=[ov])}
-    assert rows["keyframe"][1:] == (["volc/seedance-2.5"], "convert", "upscale_from_720p")
+    rows = {r[0]: r for r in _table("9:16", "2k", overrides=[ov])}
+    assert rows["keyframe"][1:] == (["volc/seedance-2.5"], "convert", "upscale_from_1k")
     # Fallback cleared: no sketch row.
     ov = Override("component", None, "kf", {"fallback": {"to": None}})
     assert "sketch" not in {r[0] for r in _table("9:16", overrides=[ov])}

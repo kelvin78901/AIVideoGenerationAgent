@@ -44,8 +44,9 @@ class Pricing(BaseModel):
     # ``Usage.calls``.
     extras: dict[str, float] | None = None
     # Per million tokens by kind (``text_in``, ``image_in``, ``text_out``, ``image_out``) for
-    # image models billed by tokens (Gemini, GPT Image): a call that reports ``Usage.tokens``
-    # costs its tokens; ``price`` per image is then only the estimate.
+    # image models billed by tokens (Gemini, GPT Image), and video billed by tokens per
+    # resolution (Seedance: ``video_720p`` …): a call that reports ``Usage.tokens`` costs its
+    # tokens; ``price`` per image / ``price_by_res`` per second is then only the estimate.
     token_rates: dict[str, float] | None = None
     currency: str = "USD"
     as_of: str | None = None
@@ -98,6 +99,9 @@ class Usage(BaseModel):
     calls: dict[str, int] | None = None
     # Tokens by kind as the provider reported them, priced by ``Pricing.token_rates``.
     tokens: dict[str, int] | None = None
+    # The resolution the provider made and billed (``Pricing.price_by_res``), when the adapter
+    # chose it rather than the request (H3's 768P / 2K).
+    resolution: str | None = None
 
 
 @dataclass

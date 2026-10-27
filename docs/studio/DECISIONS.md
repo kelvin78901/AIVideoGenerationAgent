@@ -2,6 +2,19 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 6 步：视频 API 适配器（MiniMax H3、Seedance 2.5）
+
+按官方文档核对（MiniMax 国内文档在 platform.minimaxi.com，`platform.minimax.cn` 只有控制台；火山方舟 docs.volcengine.com 82379/1520757、1521309、1521720、1330310、1544106、1299023）。没真调过，真调在第 15 步。
+
+- **H3 走 V2 接口，不是旧的海螺接口**：`POST /v2/video_generation`、`/v2/h3_context_ir`、`/v2/video_regeneration` 三种异步任务，共用 `GET /v2/query/video_generation/{task_id}` 轮询（指数退避，5 秒起、×1.5、封顶 30 秒），视频在 `content.url`，下载后探测（读不了 `invalid_response`、短了 `video_too_short`，都算已花钱）。地址是账号的 `…/v1` 去掉版本号。一个适配器 `adapters/minimax_video.py` 按 `kind` 分三种（`video` / `llm_aux` / `upscale`），`model_id` 都是 `MiniMax-H3`。调用被取消或超时时 `DELETE` 掉还在排队的任务（运行中的停不了）。
+- **H3 API 的两种模式**：首帧和参考素材不能混用。有声音输入（`tts` 的台词音轨、`native` 的音色样本）→ 参考生视频，首帧当 `<Picture 1>`、再加锁定参考图（共 9 张）、音频最多 3 条；没有声音输入 → 图生视频，首帧是硬锚定，不带参考图。`tts` 镜头经 API 时台词音轨是 `<Audio 1>`、`fully_copy`（`h3_r2v.j2` 加了 `dub` 分支），对应 PLAN 的模式 A；本地 `h3-i2v` 照旧用 AddGuide。H3 总会出声，`with_audio` 关不掉；没有种子。
+- **Context-IR 是官方的多模态提示词改写（异步任务，只出提示词）**，不是聊天接口。`vid` 对 `caps.prompt_ir` 有值的 API 模型（H3 API）先调一次（经 `router.call()`，单独一条 `model_call`，同一次运行的几条 take 共用缓存），把我们的 H3 格式（中文描述 + 英文字段）连同同样的图片、音频交给它，拿回英文提示词再出视频；版本的 `prompt` 文件存的就是实际发出的提示词（Regenerate-2K 要原样重发）。改写失败不挡出视频，用我们自己的提示词，payload `prompt_ir: false`。估价把它加进去。
+- **分辨率由适配器按画面短边选**：H3 短边超过 768 → `2K`，否则 `768P`（API 跑交付档，所以 1080p 交付也出 2K，和 PLAN 的方案 B 一致）；Seedance 取短边够得着的最高档（1080p / 720p / 480p）。实际出的档位写进新字段 `Usage.resolution`，路由按它记账（以前只认请求里的 `resolution`，视频组件没传，H3 估价会是 0）。
+- **价格用人民币存配置**（计划写的是「换算成美元存配置」）：和配音、Seedream 一样存 CNY，按 `currency_rates` 折算，汇率变了不用改单价。H3 768P 0.50 元 / 秒、2K 0.80 元 / 秒，每个任务前 5 张图免费、之后 0.20 元 / 张（`extras.extra_image`）；Regenerate-2K 输出 0.30 元 / 秒 + 输入视频 0.30 元 / 秒（官方示例里 `base_video` 记 0 秒，估价按收算，记账按返回的 `usage`）；Context-IR 5.80 / 23.00 元每百万 token。
+- **Seedance 2.5**（`doubao-seedance-2-5-260628`，`adapters/seedance.py`）：参数用 JSON 字段（强校验），不用 `--rs` 文本指令；只发首帧（`ratio: adaptive`，2.5 首帧模式只能这样，画幅跟着关键帧），不发参考图（`max_refs: 0`）和音频；`tts` 镜头 `generate_audio: false`（台词后期铺）。**按 token 计费**（宽 × 高 × 24 × 秒 / 1024；480p / 720p 70 元、1080p 77 元每百万 token）：`price_by_res` 存 9:16 每秒的估价，记账用返回的 `completion_tokens` × `token_rates`（`cost_usd` 的 token 计费从图片扩到按秒的单位）。**1080p 原生支持**，规格兼容表里 Seedance 从「部分渠道只到 720p，需要再超分」变成原生（2K 交付时仍要超分）。
+- **API 视频的超时按模型配**：`caps.timeout_s`（H3、Regenerate、Seedance 1800 秒），没有就用路由默认的 600 秒。HTTP 529（过载）加进重试。
+- **之后的事**：本地 → API 兜底时请求是按本地模型做的（I2V 格式、不过 Context-IR），第 7 步做兜底时再按 API 模型重建请求。Regenerate-2K 要未裁头的 768P 原片（帧数 17k+5、带音轨、宽高是 32 的倍数、面积 ≤ 768 × 1344）：现在 take 只存裁头后的视频，第 7 步要另存原片；本地工作流 1:1（1024 × 1024）和 21:9（1568 × 672）的面积超过这个上限，到时要核对。
+
 ## 2026-10-26 · M5 第 5 步：视频组件 `vid`（后端，Mock）
 
 - **视频产物在物化时就建，不等分镜确认**（和计划写的「分镜闸门确认后」不同）：`shots/service.py:materialize` 给每个镜头（连续镜头也有）建 owner `shot`、slot `video` 的产物，跟着镜头退役、回来，和关键帧一个写法；**出视频要分镜已确认**（409 `storyboard_not_confirmed`）。这样产物 id 稳定（示例固定成 `demo-p-vid-<镜头号>`，和 MSW 的一致），影响范围和失效也有地方挂。已有的镜头由迁移 `0020`（只改数据）补上。

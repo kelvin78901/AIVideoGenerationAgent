@@ -56,6 +56,14 @@ def test_media_pricing_units() -> None:
     assert cost_usd(h3, Usage(output_seconds=10), resolution="2k") == pytest.approx(1.3)
     seedance = Pricing(unit="minute", price=24.6)
     assert cost_usd(seedance, Usage(output_seconds=30)) == pytest.approx(12.3)
+    # Seedance: per second by resolution up front, the reported tokens as the bill.
+    tok = Pricing(
+        unit="second", price_by_res={"720p": 1.512}, token_rates={"video_720p": 70}, currency="CNY"
+    )
+    five = Usage(output_seconds=5, resolution="720p")
+    assert cost_usd(tok, five, resolution="720p") == pytest.approx(7.56 / 7.1)
+    billed = five.model_copy(update={"tokens": {"video_720p": 108_000}})
+    assert cost_usd(tok, billed, resolution="720p") == pytest.approx(7.56 / 7.1)
     regen = Pricing(unit="second", price=0.05, input_price_per_second=0.05)
     assert cost_usd(regen, Usage(output_seconds=10, input_seconds=10)) == pytest.approx(1.0)
     cny = Pricing(unit="call", price=7.1, currency="CNY")
@@ -84,7 +92,8 @@ def test_registry_reads_all_model_sections() -> None:
     assert llm.pricing.price_in == pytest.approx(1.32)
     assert reg.spec("local/qwen3.6-27b").where == "local"
     h3 = reg.spec("minimax/h3-api")
-    assert h3.pricing.unit == "second" and h3.pricing.price_by_res == {"768p": 0.08, "2k": 0.13}
+    assert h3.pricing.unit == "second" and h3.pricing.price_by_res == {"768p": 0.50, "2k": 0.80}
+    assert h3.pricing.currency == "CNY"
     tts = reg.spec("minimax/speech-2.8-hd")
     assert tts.pricing.unit == "char" and tts.pricing.price == pytest.approx(350 / 1e6)
     assert tts.pricing.currency == "CNY" and tts.base_url == "https://api.minimax.cn/v1"

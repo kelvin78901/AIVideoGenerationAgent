@@ -93,7 +93,7 @@ function compatRows(): CompatRow[] {
     row("sketch", ["volc/seedream-5.0"], "native", "cheap_sketch"),
     row("video_draft", ["comfy/h3"], "native", "h3_aspects"),
     row("video_final", ["minimax/h3-regenerate-2k"], "native", "follow_draft"),
-    row("video_alt", ["volc/seedance-2.5"], "convert", "upscale_from_720p"),
+    row("video_alt", ["volc/seedance-2.5"], "native", "native"),
     row("upscale", ["comfy/seedvr2", "comfy/flashvsr"], "native", "any_aspect"),
   ];
 }

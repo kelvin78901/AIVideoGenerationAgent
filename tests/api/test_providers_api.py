@@ -141,7 +141,9 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
     from drama_series_agent.modelhub.adapters.google import GeminiImageAdapter
     from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
     from drama_series_agent.modelhub.adapters.minimax import MiniMaxSpeechAdapter
+    from drama_series_agent.modelhub.adapters.minimax_video import MiniMaxVideoAdapter
     from drama_series_agent.modelhub.adapters.openai_images import OpenAIImageAdapter
+    from drama_series_agent.modelhub.adapters.seedance import SeedanceAdapter
     from drama_series_agent.modelhub.adapters.volcengine import SeedreamAdapter
     from drama_series_agent.modelhub.registry import UnavailableAdapter
 
@@ -157,10 +159,16 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
         p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "minimax_llm"
     )
     assert [m["key"] for m in minimax["media"]] == [
+        "minimax/h3-api",
+        "minimax/h3-regenerate-2k",
+        "minimax/context-ir",
         "minimax/speech-2.8-hd",
         "minimax/speech-2.6-hd",
     ]
-    assert isinstance(registry.get("minimax/h3-api"), UnavailableAdapter)  # not yet
+    for key in ("minimax/h3-api", "minimax/h3-regenerate-2k", "minimax/context-ir"):
+        assert isinstance(registry.get(key), MiniMaxVideoAdapter)
+    assert isinstance(registry.get("volc/seedance-2.5"), SeedanceAdapter)
+    assert isinstance(registry.get("kling/kling-3.0"), UnavailableAdapter)  # not yet
     for key in ("local/qwen3-tts", "local/indextts2", "local/rapidocr"):
         assert isinstance(registry.get(key), LocalPythonAdapter)
     for key in ("comfy/qwen-image", "comfy/qwen-image-edit", "comfy/qwen-image-edit-hq"):

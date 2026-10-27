@@ -218,7 +218,7 @@ class Router:
         timeout_s = (
             float(settings.values["fallback"].get("timeout_s") or 600)
             if spec.where == "local"
-            else self.api_timeout_s
+            else float((spec.caps.model_extra or {}).get("timeout_s") or self.api_timeout_s)
         )
         row = ModelCall(
             series_id=ctx.series_id,
@@ -281,7 +281,7 @@ class Router:
         row.cost_usd = cost_usd(
             spec.pricing,
             usage,
-            resolution=req.params.get("resolution"),
+            resolution=usage.resolution or req.params.get("resolution"),
             rates=self._config().providers.currency_rates,
         )
         saved = await calllog.record(self.db, row)

@@ -239,17 +239,66 @@ media_models:
     caps: { aspects: ["1:1", "2:3", "3:2", "3:4", "4:3", "9:16", "16:9", "21:9"], max_refs: 10 }
     docs: https://docs.volcengine.com/docs/82379/1541523
   # 视频
+  # MiniMax H3 视频 V2 接口（2026-10-26 按官方文档核对，M5 第 6 步，DECISIONS 同日「M5 第 6 步」）：
+  # 国内站人民币价（platform.minimaxi.com/docs/pricing/overview）：768P 0.50 元 / 秒、2K 0.80 元 / 秒；
+  # 输入视频按同价每秒（我们不传参考视频）；每个任务前 5 张图免费，之后 0.20 元 / 张；音频免费。
+  # 适配器 adapters/minimax_video.py；timeout_s：视频任务排队 + 生成，比默认 600 秒长。
   - key: minimax/h3-api
     kind: video
     display: MiniMax H3 API
+    account: minimax_llm
+    adapter: minimax_video
+    model_id: MiniMax-H3
     unit: second
-    price_by_res: { "768p": 0.08, "2k": 0.13 }
-    currency: USD
-    caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [5, 15], max_short_edge: 1440, max_images: 9, max_videos: 3, max_audios: 3, max_files: 12, audio_needs_visual: true }
-    docs: https://platform.minimax.io/docs/guides/pricing-paygo.md
-  - { key: minimax/h3-regenerate-2k, kind: upscale, display: H3 Regenerate-2K, unit: second, price: 0.05, input_price_per_second: 0.05, currency: USD, note: "输出 $0.05/秒 + 输入视频 $0.05/秒" }
-  - { key: minimax/context-ir, kind: llm_aux, display: H3 Context-IR, unit: token, price: { in: 0.90, out: 3.60 }, currency: USD }
-  - { key: volc/seedance-2.5, kind: video, display: Seedance 2.5, unit: minute, price: 24.60, currency: USD, caps: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], max_short_edge: 720, note: "部分渠道只到 720p" }, verify: true }
+    price_by_res: { "768p": 0.50, "2k": 0.80 }
+    input_price_per_second: 0.80
+    extras: { extra_image: 0.20 }
+    currency: CNY
+    caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [4, 15], resolutions: ["768P", "2K"], max_short_edge: 1440, max_images: 9, max_videos: 3, max_audios: 3, max_files: 12, audio_needs_visual: true, prompt_ir: minimax/context-ir, timeout_s: 1800 }
+    docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-create
+  # 768P 草稿重生成到 2K：输出 0.30 元 / 秒，输入视频 0.30 元 / 秒（官方示例里 base_video 记 0 秒，估价按收算），
+  # 原任务的输入素材再收一次（图片超 5 张 0.15 元 / 张）。
+  - key: minimax/h3-regenerate-2k
+    kind: upscale
+    display: H3 Regenerate-2K
+    account: minimax_llm
+    adapter: minimax_video
+    model_id: MiniMax-H3
+    unit: second
+    price: 0.30
+    input_price_per_second: 0.30
+    extras: { extra_image: 0.15 }
+    currency: CNY
+    caps: { duration_s: [4, 15], timeout_s: 1800 }
+    docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-regeneration
+  # H3 官方提示词改写（多模态，异步任务，只出提示词）：5.80 / 23.00 元每百万 token。
+  - key: minimax/context-ir
+    kind: llm_aux
+    display: H3 Context-IR
+    account: minimax_llm
+    adapter: minimax_video
+    model_id: MiniMax-H3
+    unit: token
+    price: { in: 5.80, out: 23.00 }
+    currency: CNY
+    caps: { duration_s: [4, 15], timeout_s: 600 }
+    docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-h3-context-ir
+  # Seedance 2.5（2026-10-26 按火山方舟文档核对）：按 token 计费，token = 宽 × 高 × 24 × 秒 / 1024，
+  # 480p / 720p 70 元、1080p 77 元每百万 token（没有输入视频时）；失败不收费。
+  # price_by_res 是 9:16 每秒的估价（720×1280 → 1.512 元，1080×1920 → 3.742 元，480×854 → 0.673 元），
+  # 记账按返回的 completion_tokens × token_rates。个人账号同时 3 个任务。
+  - key: volc/seedance-2.5
+    kind: video
+    display: Seedance 2.5
+    account: volcengine
+    adapter: seedance
+    model_id: doubao-seedance-2-5-260628
+    unit: second
+    price_by_res: { "480p": 0.673, "720p": 1.512, "1080p": 3.742 }
+    token_rates: { video_480p: 70.00, video_720p: 70.00, video_1080p: 77.00 }
+    currency: CNY
+    caps: { aspects: ["16:9", "9:16", "1:1", "4:3", "3:4", "21:9"], fps: 24, duration_s: [4, 30], resolutions: ["480p", "720p", "1080p"], max_short_edge: 1080, max_refs: 0, timeout_s: 1800 }
+    docs: https://docs.volcengine.com/docs/82379/1520757
   - { key: google/gemini-omni-flash-1.1, kind: video, display: Gemini Omni Flash 1.1, unit: minute, price: 9.12, currency: USD, verify: true }
   - { key: alibaba/wan-3.0, kind: video, display: Wan 3.0, unit: minute, price: 12.00, currency: USD, verify: true }
   - { key: kling/kling-3.0, kind: video, display: Kling 3.0, unit: second, price: null, verify: true }
