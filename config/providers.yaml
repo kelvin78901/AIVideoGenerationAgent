@@ -43,37 +43,42 @@ llm_providers:
         max_context: 1000000
         request: { thinking: { type: disabled } }
 
+  # 国内站 / 国际站（M5 第 7a 步，Kelvin 2026-10-26 定：默认国内站）：两个站是独立账号，地址和密钥都不通用；
+  # 「模型与兜底 → 服务」里按厂商切换。sites 写两个站，default_site 是没选过时用的；价格按默认站写，
+  # 另一个站的写在模型的 by_site 里。2026-10-26 按两站官方价格页核对（DECISIONS「M5 第 7a 步」）。
   - id: moonshot
     name: Moonshot（Kimi）
-    base_url: https://api.moonshot.ai/v1        # 国内站：https://api.moonshot.cn/v1
-    key_name: MOONSHOT_API_KEY
-    docs: https://platform.kimi.ai/docs/pricing/chat
-    # 2026-10-20 按官方 K2.6 quickstart 核对（M2 第 13 步）：模型 ID、上下文 256K、默认开思考
-    # （关掉见 DeepSeek 的说明）；temperature 固定，传别的值会报错（我们不传）。价格页的表格
-    # 没读到，价格仍是 2026-10-14 的来源；没有密钥，没真调过。
+    default_site: cn
+    sites:
+      cn:   { base_url: https://api.moonshot.cn/v1, key_name: MOONSHOT_API_KEY,      docs: https://platform.kimi.com/docs/pricing/chat }
+      intl: { base_url: https://api.moonshot.ai/v1, key_name: MOONSHOT_INTL_API_KEY, docs: https://platform.kimi.ai/docs/pricing/chat }
+    # K2.6：默认开思考，thinking: disabled 关掉（关掉后 temperature 固定 0.6，我们不传）。上下文 262,144。
+    # K2 系列 2026-10-31 起不对新用户开放、2026 年底退役（两站价格页都这么写）。
     verify: false
     models:
       - key: moonshot/kimi-k2.6
         display: Kimi K2.6
         model_id: kimi-k2.6
-        price: { in: 0.95, out: 4.00, currency: USD }
+        price: { in: 6.5, out: 27, currency: CNY }
+        by_site: { intl: { price: { in: 0.95, out: 4.00, currency: USD } } }
         json_mode: true
-        max_context: 256000
+        max_context: 262144
         request: { thinking: { type: disabled } }
 
   - id: dashscope
     name: 阿里云百炼（Qwen）
-    base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1   # 国内：https://dashscope.aliyuncs.com/compatible-mode/v1
-    key_name: DASHSCOPE_API_KEY
-    docs: https://www.alibabacloud.com/help/en/model-studio/model-pricing
-    # 2026-10-20 按官方价格页（新加坡）和「深度思考」页核对（M2 第 13 步）：模型 ID、价格
-    # （qwen3.7-plus 是 256K 以内那一档）；三个都默认开思考，enable_thinking: false 关掉。
-    # 上下文没写明，按 32k 分块；没有密钥，没真调过。
+    default_site: cn
+    sites:
+      cn:   { base_url: https://dashscope.aliyuncs.com/compatible-mode/v1,      key_name: DASHSCOPE_API_KEY,      docs: https://help.aliyun.com/zh/model-studio/model-pricing }
+      intl: { base_url: https://dashscope-intl.aliyuncs.com/compatible-mode/v1, key_name: DASHSCOPE_INTL_API_KEY, docs: https://www.alibabacloud.com/help/en/model-studio/model-pricing }
+    # 国内价按北京（华北2），国际价按新加坡。三个都默认开思考，enable_thinking: false 关掉（思考不另收费）。
+    # qwen3.7-plus 按输入长度分档，这里是 256K 以内那一档（256K–1M 是三倍）；两站都标「限时 8 折」，这里写原价。
+    # 上下文没写明（价格档到 1M），仍按 32k 分块；没有密钥，没真调过。
     verify: false
     models:
-      - { key: qwen/qwen3.8-max,   display: Qwen3.8-max,   model_id: qwen3.8-max,   price: { in: 2.00, out: 6.00, currency: USD }, json_mode: true, request: { enable_thinking: false } }
-      - { key: qwen/qwen3.7-plus,  display: Qwen3.7-plus,  model_id: qwen3.7-plus,  price: { in: 0.40, out: 1.60, currency: USD }, json_mode: true, request: { enable_thinking: false } }
-      - { key: qwen/qwen3.8-flash, display: Qwen3.8-flash, model_id: qwen3.8-flash, price: { in: 0.15, out: 0.47, currency: USD }, json_mode: true, request: { enable_thinking: false } }
+      - { key: qwen/qwen3.8-max,   display: Qwen3.8-max,   model_id: qwen3.8-max,   price: { in: 12, out: 36, currency: CNY },  by_site: { intl: { price: { in: 2.00, out: 6.00, currency: USD } } }, json_mode: true, request: { enable_thinking: false } }
+      - { key: qwen/qwen3.7-plus,  display: Qwen3.7-plus,  model_id: qwen3.7-plus,  price: { in: 2, out: 8, currency: CNY },    by_site: { intl: { price: { in: 0.40, out: 1.60, currency: USD } } }, json_mode: true, request: { enable_thinking: false } }
+      - { key: qwen/qwen3.8-flash, display: Qwen3.8-flash, model_id: qwen3.8-flash, price: { in: 0.8, out: 2.7, currency: CNY },  by_site: { intl: { price: { in: 0.15, out: 0.47, currency: USD } } }, json_mode: true, request: { enable_thinking: false } }
 
   - id: volcengine
     name: 火山引擎（豆包）
@@ -86,24 +91,30 @@ llm_providers:
 
   - id: zhipu
     name: 智谱（GLM）
-    base_url: https://open.bigmodel.cn/api/paas/v4    # 海外：https://api.z.ai/api/paas/v4
-    key_name: ZHIPU_API_KEY
-    docs: https://docs.z.ai/guides/overview/pricing
-    verify: true
+    default_site: cn
+    sites:
+      cn:   { base_url: https://open.bigmodel.cn/api/paas/v4, key_name: ZHIPU_API_KEY,      docs: https://docs.bigmodel.cn/cn/guide/start/pricing }
+      intl: { base_url: https://api.z.ai/api/paas/v4,         key_name: ZHIPU_INTL_API_KEY, docs: https://docs.z.ai/guides/overview/pricing }
+    # GLM-5.3 / 5.3-Flash 总是思考，关不掉（发 thinking: disabled 会报错）；上下文 1M、最多输出 128K。
+    # 国内的 5.3-Flash 不免费（免费的是 GLM-4.x Flash）。JSON 模式文档只拿 glm-5 / 5.2 举例，5.3 没明说。
+    verify: false
     models:
-      - { key: zhipu/glm-5.3,       display: GLM-5.3,       model_id: null, price: { in: 1.40, out: 4.40, currency: USD }, json_mode: true }
-      - { key: zhipu/glm-5.3-flash, display: GLM-5.3-Flash, model_id: null, price: { in: 0.15, out: 0.50, currency: USD }, json_mode: true }
+      - { key: zhipu/glm-5.3,       display: GLM-5.3,       model_id: glm-5.3,       price: { in: 8, out: 28, currency: CNY },    by_site: { intl: { price: { in: 1.40, out: 4.40, currency: USD } } }, json_mode: true, max_context: 1000000 }
+      - { key: zhipu/glm-5.3-flash, display: GLM-5.3-Flash, model_id: glm-5.3-flash, price: { in: 0.8, out: 2.8, currency: CNY }, by_site: { intl: { price: { in: 0.15, out: 0.50, currency: USD } } }, json_mode: true, max_context: 1000000 }
 
   - id: minimax_llm
     name: MiniMax
-    # 用国内站（Kelvin 2026-10-21 定：配音和音色设计约是国际站的一半）。国际站 https://api.minimax.io/v1，
-    # 两个是独立账号，密钥不通用；换站时连同下面配音的人民币单价一起改。
-    base_url: https://api.minimax.cn/v1
-    key_name: MINIMAX_API_KEY                         # 和配音、视频共用账号
-    docs: https://platform.minimax.cn/docs/guides/pricing-paygo
-    verify: true
+    # 默认国内站（Kelvin 2026-10-21 定：配音和音色设计约是国际站的一半）。写作、配音、视频共用一个账号，
+    # 换站时下面配音、视频的价格跟着 by_site 换。
+    default_site: cn
+    sites:
+      cn:   { base_url: https://api.minimax.cn/v1, key_name: MINIMAX_API_KEY,      docs: https://platform.minimax.cn/docs/pricing/overview }
+      intl: { base_url: https://api.minimax.io/v1, key_name: MINIMAX_INTL_API_KEY, docs: https://platform.minimax.io/docs/pricing/overview }
+    # MiniMax-M3：两站标的都是「永久五折」后的价（512K 以内；以上翻倍）；默认开思考，thinking: disabled 关掉；
+    # 上下文 1M。Chat Completions 的文档里没有 response_format，所以不开 JSON 模式（提示词里要求 JSON）。
+    verify: false
     models:
-      - { key: minimax/m3, display: MiniMax-M3, model_id: null, price: { in: 0.30, out: 1.20, currency: USD }, json_mode: true }
+      - { key: minimax/m3, display: MiniMax-M3, model_id: MiniMax-M3, price: { in: 2.10, out: 8.40, currency: CNY }, by_site: { intl: { price: { in: 0.30, out: 1.20, currency: USD } } }, json_mode: false, max_context: 1000000, request: { thinking: { type: disabled } } }
 
   - id: google_llm
     name: Google（Gemini）
@@ -254,6 +265,7 @@ media_models:
     input_price_per_second: 0.80
     extras: { extra_image: 0.20 }
     currency: CNY
+    by_site: { intl: { price_by_res: { "768p": 0.08, "2k": 0.13 }, input_price_per_second: 0.13, extras: { extra_image: 0.04 }, currency: USD } }
     caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [4, 15], resolutions: ["768P", "2K"], max_short_edge: 1440, max_images: 9, max_videos: 3, max_audios: 3, max_files: 12, audio_needs_visual: true, prompt_ir: minimax/context-ir, timeout_s: 1800 }
     docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-create
   # 768P 草稿重生成到 2K：输出 0.30 元 / 秒，输入视频 0.30 元 / 秒（官方示例里 base_video 记 0 秒，估价按收算），
@@ -269,6 +281,7 @@ media_models:
     input_price_per_second: 0.30
     extras: { extra_image: 0.15 }
     currency: CNY
+    by_site: { intl: { price: 0.05, input_price_per_second: 0.05, extras: { extra_image: 0.025 }, currency: USD } }
     caps: { duration_s: [4, 15], timeout_s: 1800 }
     docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-regeneration
   # H3 官方提示词改写（多模态，异步任务，只出提示词）：5.80 / 23.00 元每百万 token。
@@ -281,6 +294,7 @@ media_models:
     unit: token
     price: { in: 5.80, out: 23.00 }
     currency: CNY
+    by_site: { intl: { price: { in: 0.90, out: 3.60 }, currency: USD } }
     caps: { duration_s: [4, 15], timeout_s: 600 }
     docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-h3-context-ir
   # Seedance 2.5（2026-10-26 按火山方舟文档核对）：按 token 计费，token = 宽 × 高 × 24 × 秒 / 1024，
@@ -317,6 +331,7 @@ media_models:
     price_per_million: 350
     currency: CNY
     extras: { voice_design: 9.90, voice_clone: 9.90, design_preview_char: 0.0002 }
+    by_site: { intl: { price_per_million: 100, extras: { voice_design: 3.00, voice_clone: 1.50, design_preview_char: 0.00006 }, currency: USD } }
     caps: { request: { language_boost: auto } }
     docs: https://platform.minimax.cn/docs/guides/pricing-paygo
   # 只用来出耳语变体（2.8 没有 whisper，config/voice.yaml）；不在「模型与兜底」的可选列表里。
@@ -330,6 +345,7 @@ media_models:
     price_per_million: 350
     currency: CNY
     extras: { voice_design: 9.90, design_preview_char: 0.0002 }
+    by_site: { intl: { price_per_million: 100, extras: { voice_design: 3.00, design_preview_char: 0.00006 }, currency: USD } }
     caps: { request: { language_boost: auto } }
   - { key: elevenlabs/v3, kind: tts, display: ElevenLabs v3, unit: char, price: null, docs: https://invideo.io/blog/ai-voice-model-pricing/, verify: true }
   # 口型、超分、配乐、字幕、3D

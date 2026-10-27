@@ -163,6 +163,8 @@ class ProviderAccount(SQLModel, table=True):
     provider_id: str = Field(primary_key=True)
     has_key: bool = False
     key_ref: str | None = None  # keyring entry name
+    # Which of the provider's sites (``cn`` / ``intl``); None = its ``default_site``.
+    site: str | None = None
     base_url_override: str | None = None
     enabled: bool = True
     updated_at: datetime = Field(

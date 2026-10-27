@@ -407,9 +407,9 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.95,
-          "out": 4.0,
-          "currency": "USD"
+          "in": 6.5,
+          "out": 27.0,
+          "currency": "CNY"
         }
       },
       {
@@ -418,9 +418,9 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 2.0,
-          "out": 6.0,
-          "currency": "USD"
+          "in": 12.0,
+          "out": 36.0,
+          "currency": "CNY"
         }
       },
       {
@@ -429,9 +429,9 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.4,
-          "out": 1.6,
-          "currency": "USD"
+          "in": 2.0,
+          "out": 8.0,
+          "currency": "CNY"
         }
       },
       {
@@ -440,9 +440,9 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.15,
-          "out": 0.47,
-          "currency": "USD"
+          "in": 0.8,
+          "out": 2.7,
+          "currency": "CNY"
         }
       },
       {
@@ -462,9 +462,9 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 1.4,
-          "out": 4.4,
-          "currency": "USD"
+          "in": 8.0,
+          "out": 28.0,
+          "currency": "CNY"
         }
       },
       {
@@ -473,9 +473,9 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.15,
-          "out": 0.5,
-          "currency": "USD"
+          "in": 0.8,
+          "out": 2.8,
+          "currency": "CNY"
         }
       },
       {
@@ -484,9 +484,9 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.3,
-          "out": 1.2,
-          "currency": "USD"
+          "in": 2.1,
+          "out": 8.4,
+          "currency": "CNY"
         }
       },
       {

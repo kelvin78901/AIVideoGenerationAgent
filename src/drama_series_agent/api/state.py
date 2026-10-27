@@ -8,6 +8,7 @@ from pathlib import Path
 
 import httpx
 from fastapi import Request
+from sqlmodel import select
 
 from drama_series_agent.assets import service as assets_service
 from drama_series_agent.assets.dub import DubService
@@ -18,7 +19,7 @@ from drama_series_agent.core.config import Library, get_config, resolve, set_lib
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.jobs import JobQueue
-from drama_series_agent.core.models_db import Product
+from drama_series_agent.core.models_db import Product, ProviderAccount
 from drama_series_agent.core.overrides import load_defaults, load_overrides
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
@@ -30,7 +31,7 @@ from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
 from drama_series_agent.modelhub.media_adapters import has_media_adapter, media_adapter
-from drama_series_agent.modelhub.registry import Registry
+from drama_series_agent.modelhub.registry import Account, Registry
 from drama_series_agent.modelhub.router import Router
 from drama_series_agent.modelhub.workflows import has_workflow, spec_workflows_dir
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
@@ -113,7 +114,7 @@ class StudioState:
         bus = EventBus(db)
         store = BlobStore()
         set_library(Library())  # a library left over from another app in this process (tests)
-        registry = Registry.from_config(get_config())
+        registry = Registry.from_config(get_config(), await provider_accounts(db))
         jobs = JobQueue(db, bus)
         setup = SetupService(db, bus, jobs)
         router = Router(
@@ -329,3 +330,10 @@ class StudioState:
 def get_state(request: Request) -> StudioState:
     state: StudioState = request.app.state.studio
     return state
+
+
+async def provider_accounts(db: Database) -> dict[str, Account]:
+    """Each provider account's site and address override, as the registry builds specs."""
+    async with db.session() as session:
+        rows = (await session.exec(select(ProviderAccount))).all()
+    return {r.provider_id: Account(site=r.site, base_url=r.base_url_override) for r in rows}

@@ -72,7 +72,13 @@ def test_test_connection_ok_and_bad(client: TestClient, respx_mock: respx.MockRo
     client.post("/api/v1/providers/deepseek/key", json={"api_key": SECRET})
     route.mock(return_value=httpx.Response(200, json={"data": [{"id": "deepseek-v4-pro"}]}))
     resp = client.post("/api/v1/providers/deepseek/test")
-    assert resp.json() == {"ok": True, "detail": None, "models": ["deepseek-v4-pro"], "media": []}
+    assert resp.json() == {
+        "ok": True,
+        "detail": None,
+        "site": "main",
+        "models": ["deepseek-v4-pro"],
+        "media": [],
+    }
     assert route.calls.last.request.headers["authorization"] == f"Bearer {SECRET}"
     assert SECRET not in resp.text
 

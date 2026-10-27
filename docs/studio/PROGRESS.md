@@ -14,11 +14,12 @@
 - 第 4 步（9ad44b7；Kelvin 选 B 的记录 a5c6848，DECISIONS「M5 第 4 步」）：`workflows/h3-i2v/`（官方 I2V 模板展开，对着本机 `/object_info` 静态核过；8 步 Turbo LoRA、768P 档、台词音频走 `MiniMaxH3AddGuide`，没音频时旁路）；`comfy/h3` 指过去；`modelhub/workflows.py` 的文件槽位通用化 + `bypass`；`ComfyUIAdapter` 上传首帧 / 视频 / 台词音频、WebSocket 进度（`CallContext.on_progress`，试跑接到 `job.updated`）、取视频 / 音频并探测校验、试跑自造输入；库里仓库工作流用 `providers.yaml` 点名它的模型键（`h3-i2v` → `comfy/h3`）；`websockets` 写进依赖（只 `uv lock`）。`test_comfyui_adapter.py` 共 21 个（新 7 个）。全量 pytest 735 个过；ruff、mypy（含 linux）干净。
 - 第 5 步（a427890；Playwright 偶发修复 bf3de3f，DECISIONS「M5 第 5 步」）：`pipeline/components/vid.py`（首帧 / 尾帧、参考图、按 `audio_mode` 的声音、H3 提示词格式、裁头、海报帧和尾帧）；`templates/vid/`（`default.j2`、`h3_i2v.j2`、`h3_r2v.j2`）；`workflows/h3-r2v/` + `comfy/h3-r2v` + 新槽位 `ref_audio`；`materialize` 建视频产物、迁移 `0020` 补旧镜头、示例固定 id `demo-p-vid-*`；`video_product_id`；`takes` 闸门（members `lock=True`）、徽标「生成」；`run_count`（首次 2 条）、估价乘条数；影响范围 `stale_video` / `videos_redo`；`media/audio.py:dialogue_track`。新测试 `test_takes_api.py` 6 个、适配器 1 个、音频 1 个；Web 快照重导（`shots.json`、`config.json`）。全量 pytest 743 个过；前端 typecheck / lint / prettier / Vitest 297 个过；ruff、mypy 干净。
 - 第 6 步（11a5d6c，DECISIONS「M5 第 6 步」）：`adapters/minimax_video.py`（H3 V2：生成 / Context-IR / Regenerate-2K 三种异步任务，按有没有声音输入分图生 / 参考生视频，取消时删排队任务）、`adapters/seedance.py`（Seedance 2.5，首帧、按 token 记账）、`adapters/tasks.py`（轮询、下载、探测）；`Usage.resolution`、按模型的 `caps.timeout_s`、按秒计价也能按 token 记账、529 重试；`vid` 的 H3 API 先过 Context-IR（`caps.prompt_ir`）、`tts` 经 API 走参考模式 `fully_copy`；价格改人民币；兼容表 Seedance 变原生 1080p。新测试 `test_video_api_adapters.py` 12 个（respx）、`test_takes_api` 加 1 个；Web `config.json` 快照重导、`Spec.test.tsx` 改一句。前端 Vitest 297 个、lint、typecheck、prettier 过；全量 pytest 756 个过（第一轮漏改 `test_spec_api` 的兼容表一句，改后单跑过）；ruff、mypy 干净。
-- 第 7 步（本提交，DECISIONS「M5 第 7 步」）：`vid.final_api`（Regenerate-2K）出终版：本地 take 多存 `raw` 原片和 `params_json.request`，终版原样重发、裁头、`stage=final`、父版本是草稿，非本地 H3 草稿 `draft_not_regenerable`；出终版只出 1 条；本地 take 失败 / 超时用 `run_flow` 在 H3 API 上重建请求重做（Context-IR 花费进版本）。`test_takes_api` 加 4 个（终版、失败兜底、超时兜底、GPU 分组）。全量 pytest 760 个过；ruff、mypy（含 linux）干净。
+- 第 7 步（198055c，DECISIONS「M5 第 7 步」）：`vid.final_api`（Regenerate-2K）出终版：本地 take 多存 `raw` 原片和 `params_json.request`，终版原样重发、裁头、`stage=final`、父版本是草稿，非本地 H3 草稿 `draft_not_regenerable`；出终版只出 1 条；本地 take 失败 / 超时用 `run_flow` 在 H3 API 上重建请求重做（Context-IR 花费进版本）。`test_takes_api` 加 4 个（终版、失败兜底、超时兜底、GPU 分组）。全量 pytest 760 个过；ruff、mypy（含 linux）干净。
+- 第 7a-1 步（本提交，DECISIONS「M5 第 7a 步（一）」）：厂商 `sites` / `default_site`（Kimi、百炼、智谱、MiniMax 默认国内站，国际价写 `by_site`，两站价格 2026-10-26 核过）、迁移 `0021`（`provider_account.site`）、密钥按站点分（国际加 `_INTL`）、`specs_from_config(cfg, accounts)` + `Registry.set_account`、`PATCH /providers/{id} {site}`、按站点存删密钥、测试连接用当前站点；智谱 / M3 的 `model_id` 填上。新测试 `test_provider_sites.py` 6 个；Web `config.json` 重导；Vitest 297 个过；相关 pytest（厂商、配置、路由、模型、快照）过，全量交给 CI。
 
 ## 下一步
 
-- **第 7a 步 厂商站点和模型列表**（Kelvin 2026-10-26 插入，计划 `plans/M5-7a.md`，在第 8 步之前）：从 **7a-1 站点** 开始：`core/config.py` 的 `LlmProvider` 加 `sites` / `default_site`（旧的单 `base_url` 写法照读），迁移 `0021` 给 `provider_account` 加 `site`，密钥按站点分（国内沿用现名，国际加 `_INTL`），`registry.specs_from_config` 按账号当前站点取地址和密钥，`PATCH /providers/{id} {site}`。起因：Kelvin 的 Kimi 密钥是国内站的，国际站 401、国内站 200（2026-10-26 实测，免费的 `GET /models`）。之后才是第 8 步生成页接口（照 `plans/M5.md`）。
+- **第 7a-2 步 模型列表**（计划 `plans/M5-7a.md`）：迁移 `0022`：`provider_account.models_json`（拉到的列表 + 时间）、`enabled_json`（勾选），新表 `model_setting`（`model_key`、`model_id` 覆盖、`price_json` 手填价）；测试连接把列表存库、自动勾参考表里有的；`PUT /providers/{id}/models`；`specs_from_config` 的写作模型 = 启用的 id（参考表的 key 不变；表外的 `<厂商>/<model_id>`、参数用新的厂商级 `model_defaults`）；`components.yaml` 写作组件 `api: [llm]`；参考表加 **Kimi K3.1 Pro**（¥13/68、$2/10，1M 上下文，**思考关不掉**，只能 `reasoning_effort: low|high|max`，默认 max——估价没算思考，要定默认 low 还是别的，记 DECISIONS）并把默认路由里的 `moonshot/kimi-k2.6` 换成它。其他新模型（K3、K3.1-pro-highspeed、GLM-5.3-FlashX、M3.1-Flash）价格见 DECISIONS「M5 第 7a 步（一）」和子代理报告，按需进参考表。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -46,7 +47,7 @@
 - **Chromium 新版 `scrollIntoView()` 返回 Promise**：`useEffect(() => el.scrollIntoView())` 这种箭头表达式会把 Promise 当清理函数，整页白屏（jsdom 里测不出来）。effect 一律写花括号；滚动日志用容器的 `scrollTop`。
 - 页面里有演示事件驱动的长流程时，用临时的 `e2e/tmp-*-shots.spec.ts`（`--project=shots` 能匹配）在真浏览器里走一遍、截图到 scratchpad，跑完删掉。
 - `test_restart_resume` 偶发失败（2026-10-18、10-20）的原因：Windows 上 `.venv/Scripts/python.exe` 是启动器，真正的解释器是它的子进程，`kill()` 后还要零点几秒才退出，期间读数据库报 disk I/O error。第 13 步起 `tests/e2e/conftest.py:Backend.kill()` 等端口关掉再返回（连跑 5 次都过）。
-- **全部 pytest 约 11 分钟**（超过 Bash 前台 10 分钟上限）：用 `run_in_background` 跑，输出写到 scratchpad。**跑的时候别改已有的源文件**：模型和迁移在收集时已加载、e2e 子进程启动时读当前文件，半路改会出假失败（M4 第 1 步踩过）；只加新文件没事。
+- **测试节奏（Kelvin 2026-10-26 定）**：每个小步只跑改动涉及的 pytest（对应的单元 / API 测试）+ ruff、mypy，然后提交推送；**全量交给 CI**（每次 push 都跑）。本机全量（约 17 分钟，要 `run_in_background`）只在开 PR 前或复现 CI 失败时跑。**跑的时候别改已有的源文件**：模型和迁移在收集时已加载、e2e 子进程启动时读当前文件，半路改会出假失败（M4 第 1 步踩过）；只加新文件没事。
 - **单元测试绝不能触网**：`test_steps.py` 的 `_install` 默认离线 transport；别给 RealRunner 的测试传 `transport=None`（清单有真实下载地址，曾真的下了 30 GB 到 pytest 临时目录）。
 - **示例机器切换**：点已选中的那台不会触发切换；e2e 里切 Mac 再切回 PC 要等前一次 `aria-checked` 变了再点。
 - MSW 在 jsdom 里能拦相对路径的 fetch；handler 路径写 `*/api/v1/...`（`mocks/http.ts:v1()`）。
@@ -69,5 +70,6 @@
 
 ## 等 Kelvin 的事
 
-- 无。（「湿了半边」Kelvin 2026-10-26 定：示例剧本不改，留着考新模型；默认的 Klein 画 1-01 没有污渍。）
+- **Kimi K3.1 Pro 的思考强度**（7a-2 要用）：K3.1 Pro 的思考关不掉，只能设 `reasoning_effort` 为 low / high / max（默认 max）。思考按输出计费，也占 `max_tokens`。默认用 low 还是 max？
+- 已定：「湿了半边」（Kelvin 2026-10-26 定：示例剧本不改，留着考新模型；默认的 Klein 画 1-01 没有污渍。）
 

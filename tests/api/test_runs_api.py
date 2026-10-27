@@ -373,6 +373,9 @@ def test_a_pricier_fallback_after_a_yes_fails(client: TestClient) -> None:
     pid = _setup(client)
     _cap(client, 0.00001)
     _margin(client, ConfirmMargin(ratio=0.0, min_usd=0.0))
+    # Qwen on its international site ($0.40 / $1.60) costs more than DeepSeek Flash; at home
+    # (¥2 / ¥8) it costs less.
+    client.patch(f"{V1}/providers/dashscope", json={"site": "intl"}).raise_for_status()
     settings = _state(client).registry.mock_settings
     settings.fail_keys = {"deepseek/v4.1-flash"}  # fallback: Qwen3.7-plus, which costs more
     job = client.post(f"{V1}/products/{pid}/run", json={"mode": "run"}).json()

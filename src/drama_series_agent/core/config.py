@@ -19,7 +19,7 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from drama_series_agent.core.capabilities import Capabilities, restrict
 from drama_series_agent.core.paths import config_dir
@@ -51,7 +51,10 @@ class LlmModel(_Loose):
     key: str
     display: str
     model_id: str | None = None
+    # The price on the provider's default site; ``by_site`` overrides it (and any other field)
+    # on another site, e.g. ``{intl: {price: {in, out, currency: USD}}}``.
     price: TokenPrice | None = None
+    by_site: dict[str, dict[str, Any]] = Field(default_factory=dict)
     offpeak: dict[str, Any] | None = None
     json_mode: bool = False
     verify: bool = False
@@ -64,19 +67,62 @@ class LlmModel(_Loose):
     needs: list[str] = Field(default_factory=list)
     requires_cuda: bool = False
 
+    def on_site(self, site: str | None) -> LlmModel:
+        """This row as priced on ``site`` of its provider."""
+        over = self.by_site.get(site or "")
+        if not over:
+            return self
+        return LlmModel.model_validate(
+            {**self.model_dump(by_alias=True, exclude={"by_site"}), **over}
+        )
+
+
+class Site(_Loose):
+    """Where a provider is reached: its China and international sites are separate accounts
+    (different base URLs, keys that do not carry over)."""
+
+    base_url: str | None = None
+    key_name: str | None = None
+    docs: str | None = None
+
+
+MAIN_SITE = "main"
+
 
 class LlmProvider(_Loose):
     id: str
     name: str
+    # One site: ``base_url`` / ``key_name`` / ``docs``. Two: ``sites`` (``cn``, ``intl``) and
+    # ``default_site``; then these three fields mirror the default site.
     base_url: str | None = None
     key_name: str | None = None
     where: Literal["local", "api"] = "api"
     docs: str | None = None
+    sites: dict[str, Site] = Field(default_factory=dict)
+    default_site: str | None = None
     verify: bool = False
     # Ask the server for a context of ``max_context`` (``options.num_ctx``, Ollama): its
     # default can be as small as 2–4k and silently cuts long prompts.
     send_num_ctx: bool = False
     models: list[LlmModel] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _sites(self) -> LlmProvider:
+        if not self.sites:
+            self.sites = {
+                MAIN_SITE: Site(base_url=self.base_url, key_name=self.key_name, docs=self.docs)
+            }
+        if self.default_site not in self.sites:
+            self.default_site = next(iter(self.sites))
+        main = self.sites[self.default_site]
+        self.base_url, self.key_name, self.docs = main.base_url, main.key_name, main.docs
+        return self
+
+    def site(self, site: str | None) -> tuple[str, Site]:
+        """The named site, or the default one when it is unknown or None."""
+        name = site if site in self.sites else self.default_site
+        assert name is not None
+        return name, self.sites[name]
 
 
 class MediaModel(_Loose):
@@ -94,6 +140,18 @@ class MediaModel(_Loose):
     currency: str = "USD"
     caps: dict[str, Any] = Field(default_factory=dict)
     verify: bool = False
+    # Fields that differ on another site of its account (prices, currency), e.g.
+    # ``{intl: {price_by_res: {…}, currency: USD}}``.
+    by_site: dict[str, dict[str, Any]] = Field(default_factory=dict)
+
+    def on_site(self, site: str | None) -> MediaModel:
+        """This row as priced on ``site`` of its account."""
+        over = self.by_site.get(site or "")
+        if not over:
+            return self
+        return MediaModel.model_validate(
+            {**self.model_dump(by_alias=True, exclude={"by_site"}), **over}
+        )
 
 
 class LocalModel(_Loose):
@@ -129,6 +187,15 @@ class ProvidersConfig(_Loose):
 
     def provider(self, provider_id: str) -> LlmProvider | None:
         return next((p for p in self.llm_providers if p.id == provider_id), None)
+
+    def account_of(self, model_key: str) -> LlmProvider | None:
+        """The provider whose key (and site) a model uses: its own for a writing model, its
+        ``account`` for a media model."""
+        for provider in self.llm_providers:
+            if any(m.key == model_key for m in provider.models):
+                return provider
+        media = next((m for m in self.media_models if m.key == model_key), None)
+        return self.provider(media.account) if media and media.account else None
 
 
 # --------------------------------------------------------------------------- components.yaml

@@ -2,6 +2,19 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 7a 步（一）：厂商的国内站 / 国际站
+
+起因：Kelvin 的 Kimi 密钥是国内站的，配置写死国际站，测试连接 401（国内站 200）。Kelvin 定：每个厂商能切站点、默认国内站；模型改成按厂商返回的列表选（第 7a-2 步）。计划见 `plans/M5-7a.md`。
+
+- **配置**：厂商行可以写 `sites`（`cn` / `intl`，各自的 `base_url`、`key_name`、`docs`）和 `default_site`；只写 `base_url` / `key_name` 的旧写法照读（当成一个叫 `main` 的站点）。有两站的：Kimi、百炼（Qwen）、智谱、MiniMax，四家都默认国内站。价格按默认站写，另一站的写在模型行的 `by_site`（写作模型和媒体模型都能用，媒体模型跟着它 `account` 的站点走：MiniMax 换国际站时配音、H3、Regenerate、Context-IR 都换成美元价）。
+- **密钥按站点分开存**：国内用原来的名字（`MOONSHOT_API_KEY`、`MINIMAX_API_KEY` …），国际加 `_INTL`（`MOONSHOT_INTL_API_KEY` …）。两站是独立账号，换站不丢另一站的密钥。百炼的 `DASHSCOPE_API_KEY` 以前指国际站，现在指国内站（这台机器没存过百炼密钥）。
+- **账号的站点存 `provider_account.site`**（迁移 `0021`），空 = `default_site`。注册表启动时按账号建 spec（`specs_from_config(cfg, accounts)`）；`PATCH /providers/{id} {site}` 换站后 `Registry.set_account` 重建这个厂商的写作模型和用它密钥的媒体模型（地址、密钥、价格）。`base_url_override`（以前只有测试连接读）现在实际调用也认，优先于站点地址。
+- **接口**：`GET /providers` 每个厂商加 `site`、`sites`（各站地址、有没有密钥），原来的 `base_url` / `has_key` / `docs` 是当前站点的；`POST …/key {site?}`、`DELETE …/key?site=` 按站点存删（不写是当前站点）；测试连接用当前站点，结果带 `site`。不认识的站点 422 `unknown_site`。
+- **2026-10-26 按两站官方价格页核对的价**（每百万 token，国内人民币 / 国际美元）：Kimi K2.6 ¥6.5/27、$0.95/4.00（K2 系列 2026 年底退役）；Qwen3.8-max ¥12/36、$2/6，3.7-plus ¥2/8、$0.40/1.60（256K 以内，两站都有限时 8 折，写原价），3.8-flash ¥0.8/2.7、$0.15/0.47；GLM-5.3 ¥8/28、$1.40/4.40，5.3-Flash ¥0.8/2.8、$0.15/0.50（国内不免费）；MiniMax-M3 ¥2.10/8.40、$0.30/1.20（两站都是「永久五折」后的价）。MiniMax 国际站媒体价：配音 $100 / 百万字符、音色设计 $3、快速复刻 $1.5、设计试听 $60 / 百万字符；H3 768P $0.08/s、2K $0.13/s、超 5 张的图 $0.04；Regenerate $0.05/s（输入同价、图 $0.025）；Context-IR $0.90/3.60。
+- **顺带改正的模型参数**：智谱 `model_id` 填上 `glm-5.3` / `glm-5.3-flash`（以前是 null，调不了）；GLM-5.3 关不掉思考（发 `thinking: disabled` 会报错），不加 `request`；MiniMax-M3 的 `model_id` 填 `MiniMax-M3`、加 `thinking: disabled`、`json_mode` 改 false（文档的 Chat Completions 没有 `response_format`）；上下文：K2.6 262,144，GLM-5.3、M3 1M。
+- **`docs/studio/seed/providers.yaml` 不跟着改**（计划写了「同步」）：它是 M0 拷进 `config/` 的初始数据，之后从没同步过，`config/` 才是现行配置。
+- 测试里「兜底模型比原模型贵」那条（`test_a_pricier_fallback_after_a_yes_fails`）的前提变了：Qwen3.7-plus 国内价比 DeepSeek Flash 便宜，测试改成先把百炼切到国际站。
+
 ## 2026-10-26 · M5 第 7 步：视频出终版、本地失败 / 超时兜底
 
 - **「用 API 出终版」走组件的 `final_api`**（`components.yaml` 的 `vid.final_api: minimax/h3-regenerate-2k`，新配置项），不是路由的 API 模型（H3 API 是重新出一条，不是把草稿出成 2K）。前端照关键帧的写法：`POST /products/{id}/run {where: api, params: {source_version_id}}`；`model_for` 换到 `final_api`，估价（含影响范围的 `final_cost`）也按它算。**出终版只出一个版本**（`RunService.start` 有 `source_version_id` 时条数是 1，以前按 `run_count`，视频第一次会是 2）。
