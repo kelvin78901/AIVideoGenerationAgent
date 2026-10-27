@@ -216,6 +216,7 @@ components:
     per_call_cap_usd: 2
     alt_order: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1]
     candidates: 2
+    final_api: minimax/h3-regenerate-2k   # 「用 API 出终版」：本地 H3 草稿重生成到 2K
     follows_output_spec: true
     gate: takes
 

@@ -27,6 +27,7 @@ voices and pictures it sent.
 
 from __future__ import annotations
 
+from dataclasses import dataclass
 from typing import Any
 
 from loguru import logger
@@ -44,7 +45,7 @@ from drama_series_agent.core.models_db import (
 )
 from drama_series_agent.episodes.service import gate_confirmed, script_product
 from drama_series_agent.media.audio import dialogue_track
-from drama_series_agent.media.video import VideoError, frame, probe, trim_head
+from drama_series_agent.media.video import VideoError, VideoInfo, frame, probe, trim_head
 from drama_series_agent.modelhub.adapters.base import Estimate, ModelError, ModelRequest
 from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm
@@ -60,6 +61,7 @@ from drama_series_agent.pipeline.components.kf import (
     ref_limit,
 )
 from drama_series_agent.pipeline.components.media import (
+    MediaCall,
     MediaComponent,
     frame_size,
     locked_ref,
@@ -75,6 +77,7 @@ from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import ops
 from drama_series_agent.shots.service import KEYFRAME_SLOT, STORYBOARD_GATE, VIDEO_SLOT
+from drama_series_agent.spec.dims import dims
 
 LANGUAGE = {"zh-CN": "Chinese", "en": "English"}
 DEFAULT_SOUND = "Natural ambient sound of the scene, matching what is on screen."
@@ -304,6 +307,21 @@ def is_h3(model: str) -> bool:
     return "h3" in model.split("/", 1)[-1]
 
 
+def _sent(params: dict[str, Any]) -> dict[str, Any]:
+    """A take's request as a final resends it (the pictures and audio by sha256)."""
+    return {k: v for k, v in params.items() if k not in ("n", "task", "width", "height")}
+
+
+@dataclass
+class Take:
+    req: ModelRequest
+    calls: list[MediaCall]
+    refs: list[dict[str, Any]]
+    deps: list[DependencyDraft]
+    voices: list[dict[str, Any]]
+    rewritten: str | None
+
+
 class VidComponent(MediaComponent):
     id = "vid"
     slot = VIDEO_SLOT
@@ -327,8 +345,11 @@ class VidComponent(MediaComponent):
         return self.candidates() if product.current_version_id is None else 1
 
     def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
-        """A 原生同步 shot with voice samples goes to a local model whose workflow takes them
-        (``h3-r2v``); the others stay where the route put them."""
+        """「用 API 出终版」 goes to ``final_api`` (H3 Regenerate-2K). A 原生同步 shot with voice
+        samples goes to a local model whose workflow takes them (``h3-r2v``); the others stay
+        where the route put them."""
+        if inputs.params.get("source_version_id"):
+            return self._final_model() or model
         if inputs.context.get("audio_mode") != "native" or not inputs.context.get("voices"):
             return model
         wf = local_workflow(self.services.registry, model)
@@ -350,21 +371,121 @@ class VidComponent(MediaComponent):
         return {"context_ir": lambda req: {"prompt": f"[Context-IR] {req.prompt or ''}"}}
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
-        req, refs, deps, voices = await self._request(inputs, ctx.compiled, ctx.model_key, ctx)
-        rewritten = await self._context_ir(ctx, inputs, req)
+        source = await self._source_take(ctx.product, inputs.params)
+        if source is not None:
+            return await self._final(ctx, inputs, source)
+
+        async def flow(model: str, reason: str | None) -> Take:
+            return await self._take(ctx, inputs, model, reason)
+
+        # A local take that fails or times out is made again on the fallback (the H3 API), its
+        # request built for that model (SPEC 7.3).
+        take, reason = await self.run_flow(ctx, flow)
+        call = take.calls[-1]
+        files, info = await self._clip_files(call, raw=call.where == "local")
+        frame_ = inputs.context["frame"]
+        payload: dict[str, Any] = {
+            "duration_s": round(info.duration_s, 3),
+            "asked_s": inputs.context["seconds"],
+            "resolution": "768p" if call.where == "local" else frame_["delivery"],
+            "aspect": frame_["aspect"],
+            "audio_mode": inputs.context["audio_mode"],
+            "refs": [r["name"] for r in take.refs],
+            "voices": [v["who"] for v in take.voices],
+        }
+        if take.rewritten is not None:
+            payload["prompt_ir"] = bool(take.rewritten)
+        stage = "draft" if call.where == "local" else None
+        draft = self.media_draft(
+            ctx,
+            inputs,
+            payload,
+            files,
+            take.calls,
+            take.req.prompt or "",
+            stage=stage,
+            fallback_reason=reason,
+            # What 「用 API 出终版」 resends (Regenerate-2K takes the draft's own inputs).
+            params={"request": _sent(take.req.params)},
+        )
+        draft.dependencies = [*draft.dependencies, *take.deps]
+        return draft
+
+    async def _take(self, ctx: RunContext, inputs: Inputs, model: str, reason: str | None) -> Take:
+        req, refs, deps, voices = await self._request(inputs, ctx.compiled, model, ctx)
+        calls: list[MediaCall] = []
+        rewritten, ir_call = await self._context_ir(ctx, inputs, req, model)
+        if ir_call is not None:
+            calls.append(ir_call)
         if rewritten:
             req = req.model_copy(update={"prompt": rewritten})
         call = await self.media_call(
-            ctx, req, inputs.episode_id, model=ctx.model_key, fallback_reason=ctx.fallback_reason
+            ctx, req, inputs.episode_id, model=model, fallback=False, fallback_reason=reason
         )
+        calls.append(call)
+        return Take(req, calls, refs, deps, voices, rewritten)
+
+    async def _final(self, ctx: RunContext, inputs: Inputs, source: ProductVersion) -> VersionDraft:
+        """「用 API 出终版」: the picked local H3 draft regenerated at 2K (Regenerate-2K) from its
+        own inputs and the prompt it was made with, the untrimmed clip as ``video_in``; trimmed
+        like a take. No fallback: a failed final leaves the draft as it is."""
+        raw = next((f for f in source.files_json if f.get("role") == "raw"), None)
+        sent = (source.params_json or {}).get("request")
+        prompt_file = next((f for f in source.files_json if f.get("role") == "prompt"), None)
+        if (
+            source.where != "local"
+            or not is_h3(source.model_key or "")
+            or raw is None
+            or not sent
+            or prompt_file is None
+        ):
+            raise ComponentError("draft_not_regenerable", id=source.id)
+        store = self.services.store
+        prompt = store.path_for(prompt_file["sha256"]).read_text(encoding="utf-8")
+        frame_ = inputs.context["frame"]
+        size = dims(frame_["aspect"], "2k")
+        req = ModelRequest(
+            kind="upscale",
+            prompt=prompt,
+            seed=source.seed,
+            params={
+                **sent,
+                "width": size.w,
+                "height": size.h,
+                "duration_s": raw.get("duration_s") or sent.get("duration_s"),
+                "video_in": raw["sha256"],
+            },
+            meta={"component": self.id, "task": "final"},
+        )
+        call = await self.media_call(
+            ctx, req, inputs.episode_id, model=ctx.model_key, fallback=False
+        )
+        files, info = await self._clip_files(call, raw=False)
+        payload = {
+            **source.payload_json,
+            "duration_s": round(info.duration_s, 3),
+            "resolution": "2k",
+        }
+        payload.pop("prompt_ir", None)
+        draft = self.media_draft(ctx, inputs, payload, files, [call], prompt, stage="final")
+        draft.params["source"] = {"version_id": source.id}
+        return draft
+
+    async def _clip_files(
+        self, call: MediaCall, *, raw: bool
+    ) -> tuple[list[dict[str, Any]], VideoInfo]:
+        """The take as stored: the head cut off, its poster and last frame; a local draft keeps
+        the untrimmed clip too (``raw``: what Regenerate-2K takes)."""
         video = next((f for f in call.files if f.mime.startswith("video/")), None)
         if video is None:
             raise ComponentError("no_video")
         store = self.services.store
         try:
-            clip = await trim_head(store.path_for(video.sha256).read_bytes())
+            original = store.path_for(video.sha256).read_bytes()
+            clip = await trim_head(original)
             info = await probe(clip)
             poster, last = await frame(clip, "first"), await frame(clip, "last")
+            whole = await probe(original) if raw else None
         except VideoError as exc:
             raise ComponentError(exc.code) from exc
         files = [
@@ -379,25 +500,46 @@ class VidComponent(MediaComponent):
             file_entry("poster", store.put_bytes(poster), "image/png", w=info.w, h=info.h),
             file_entry("last_frame", store.put_bytes(last), "image/png", w=info.w, h=info.h),
         ]
-        frame_ = inputs.context["frame"]
-        payload: dict[str, Any] = {
-            "duration_s": round(info.duration_s, 3),
-            "asked_s": inputs.context["seconds"],
-            "resolution": "768p" if call.where == "local" else frame_["delivery"],
-            "aspect": frame_["aspect"],
-            "audio_mode": inputs.context["audio_mode"],
-            "refs": [r["name"] for r in refs],
-            "voices": [v["who"] for v in voices],
-        }
-        if rewritten is not None:
-            payload["prompt_ir"] = bool(rewritten)
-        stage = "draft" if call.where == "local" else None
-        draft = self.media_draft(ctx, inputs, payload, files, [call], req.prompt or "", stage=stage)
-        draft.dependencies = [*draft.dependencies, *deps]
-        return draft
+        if whole is not None:
+            files.append(
+                file_entry(
+                    "raw",
+                    video.sha256,
+                    "video/mp4",
+                    w=whole.w,
+                    h=whole.h,
+                    duration_s=round(whole.duration_s, 3),
+                )
+            )
+        return files, info
+
+    async def _source_take(self, product: Product, params: dict[str, Any]) -> ProductVersion | None:
+        """The take an API final starts from (``params.source_version_id``)."""
+        version_id = params.get("source_version_id")
+        if not version_id:
+            return None
+        async with self.services.db.session() as session:
+            v = await session.get(ProductVersion, str(version_id))
+        if v is None or v.product_id != product.id:
+            raise ComponentError("version_not_found", id=version_id)
+        return v
+
+    def _final_model(self) -> str | None:
+        try:
+            return get_config().components.component(self.id).final_api
+        except KeyError:
+            return None
 
     def estimate(self, inputs: Inputs, compiled: str, model: str) -> Estimate:
         frame_ = inputs.context["frame"]
+        final = self._final_model() if inputs.params.get("source_version_id") else None
+        if final is not None:  # 「用 API 出终版」: Regenerate-2K of the take's length
+            req = ModelRequest(
+                kind="upscale",
+                prompt=compiled,
+                params={"duration_s": inputs.context["seconds"], "first_frame": "-"},
+            )
+            return self.services.registry.get(final).estimate(req)
         size = frame_size(frame_, self.where_of(model))
         req = ModelRequest(
             kind="video",
@@ -432,13 +574,15 @@ class VidComponent(MediaComponent):
         ir = (spec.caps.model_extra or {}).get("prompt_ir") if spec.where == "api" else None
         return str(ir) if ir else None
 
-    async def _context_ir(self, ctx: RunContext, inputs: Inputs, req: ModelRequest) -> str | None:
+    async def _context_ir(
+        self, ctx: RunContext, inputs: Inputs, req: ModelRequest, model: str
+    ) -> tuple[str | None, MediaCall | None]:
         """H3 API runs: the official rewriter turns our layout (Chinese description in H3's
         fields) into the English prompt its guide asks for, seeing the same pictures and audio.
         None when the model has no rewriter; "" when it failed (the run goes on with ours)."""
-        ir = self._ir_model(ctx.model_key)
+        ir = self._ir_model(model)
         if ir is None:
-            return None
+            return None, None
         ask = ModelRequest(
             kind="llm_aux",
             prompt=req.prompt,
@@ -452,8 +596,8 @@ class VidComponent(MediaComponent):
             raise
         except ModelError as exc:
             logger.warning("Context-IR failed ({}); the take uses our prompt", exc.code)
-            return ""
-        return str((call.data or {}).get("prompt") or "").strip()
+            return "", None
+        return str((call.data or {}).get("prompt") or "").strip(), call
 
     async def _request(
         self, inputs: Inputs, compiled: str, model: str, ctx: RunContext

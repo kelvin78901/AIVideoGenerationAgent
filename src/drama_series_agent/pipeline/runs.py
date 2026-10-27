@@ -257,7 +257,9 @@ class RunService:
             )
             lang = await self._lang(session, p.series_id)
             starting = None if p.prompt_json else await comp.default_intent(session, p, lang)
-            count = count or comp.run_count(p)
+            # An API final is one version from one draft.
+            final = bool((params or {}).get("source_version_id"))
+            count = count or (1 if final else comp.run_count(p))
         settings = await router.settings(comp.id, item_of(p))
         if mode == "switch":
             base = current.model_key if current and current.model_key else None

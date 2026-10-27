@@ -153,6 +153,9 @@ class ComponentDefault(_Loose):
     cheap_api: str | None = None
     per_call_cap_usd: float | None = None  # 单次花费上限; default: ComponentsConfig's
     candidates: int | None = None
+    # 「用 API 出终版」 of a local draft goes to this model, not the route's API model (vid: H3
+    # Regenerate-2K).
+    final_api: str | None = None
     gate: str | None = None
     follows_output_spec: bool = False
     # Asset kind → the aspect its reference pictures are drawn at, whatever the output spec

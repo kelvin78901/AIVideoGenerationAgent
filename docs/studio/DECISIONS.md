@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 7 步：视频出终版、本地失败 / 超时兜底
+
+- **「用 API 出终版」走组件的 `final_api`**（`components.yaml` 的 `vid.final_api: minimax/h3-regenerate-2k`，新配置项），不是路由的 API 模型（H3 API 是重新出一条，不是把草稿出成 2K）。前端照关键帧的写法：`POST /products/{id}/run {where: api, params: {source_version_id}}`；`model_for` 换到 `final_api`，估价（含影响范围的 `final_cost`）也按它算。**出终版只出一个版本**（`RunService.start` 有 `source_version_id` 时条数是 1，以前按 `run_count`，视频第一次会是 2）。
+- **草稿多存两样，供 Regenerate-2K 原样重发**：本地 take 的文件加 `raw`（没裁头的原片，帧数和官方要求的 17k+5 对得上；裁头后的不行），版本 `params_json.request` 记实际发出的请求（首帧、参考图、音色 / 台词音轨的 sha256、画幅、时长、`with_audio`），`prompt` 文件本来就是实际发出的提示词。终版用这些 + `video_in: raw`，出来的 2K 视频同样裁头 0.3 秒、取封面和尾帧，`stage=final`、父版本是草稿，payload 沿用草稿的、`resolution: 2k`。不是本地 H3 出的草稿（API take、旧的没有 `raw` 的）→ 任务失败 `draft_not_regenerable`。终版失败不兜底，草稿不动。
+- **不预先检查 Regenerate-2K 的输入规格**（24 fps、带音轨、宽高 32 的倍数、面积 ≤ 768×1344）：不合格时 MiniMax 拒绝任务（失败不收费）。已知风险：本地工作流 1:1（1024×1024）、21:9（1568×672）面积超了；`none` 镜头的草稿可能没有音轨。第 14 / 15 步实测后再定是改工作流尺寸还是在 UI 上禁用。
+- **本地 take 失败或超时，整条 take 在兜底模型上重做**（`run_flow`，和配音终版一样）：请求按兜底模型重建（H3 API 的模式、提示词格式、Context-IR），不是把本地请求原样转发；每次调用 `fallback=False`。版本 `origin=fallback`、`fallback_reason` 是 `error` / `timeout`，本地那次的 `model_call` 记失败或超时（`notify: ask` 时先问，沿用 `run_flow`）。Context-IR 的花费算进版本的 `cost_usd`。
+- **GPU 分组**：视频 take 走 `gpu` 队列、按 `model_key` 分组（M1 的 `grouped`），新测试在 `vid` 这一层验证：H3 在跑时，后排的 H3 take 先于先排的 H3 参考生视频。
+
 ## 2026-10-26 · M5 第 6 步：视频 API 适配器（MiniMax H3、Seedance 2.5）
 
 按官方文档核对（MiniMax 国内文档在 platform.minimaxi.com，`platform.minimax.cn` 只有控制台；火山方舟 docs.volcengine.com 82379/1520757、1521309、1521720、1330310、1544106、1299023）。没真调过，真调在第 15 步。
