@@ -15,11 +15,20 @@ from drama_series_agent.assets.dub import DubService
 from drama_series_agent.assets.service import AssetService
 from drama_series_agent.bible.service import BIBLE_SLOT, BibleService, bible_slicer, materialize
 from drama_series_agent.core import secrets
-from drama_series_agent.core.config import Library, get_config, resolve, set_library
+from drama_series_agent.core.config import (
+    Accounts,
+    AccountState,
+    Library,
+    get_config,
+    resolve,
+    set_accounts,
+    set_library,
+)
+from drama_series_agent.core.config import ModelSetting as ModelSetting_
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.jobs import JobQueue
-from drama_series_agent.core.models_db import Product, ProviderAccount
+from drama_series_agent.core.models_db import ModelSetting, Product, ProviderAccount
 from drama_series_agent.core.overrides import load_defaults, load_overrides
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
@@ -31,7 +40,7 @@ from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
 from drama_series_agent.modelhub.media_adapters import has_media_adapter, media_adapter
-from drama_series_agent.modelhub.registry import Account, Registry
+from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
 from drama_series_agent.modelhub.workflows import has_workflow, spec_workflows_dir
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
@@ -106,6 +115,12 @@ class StudioState:
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
 
+    async def refresh_accounts(self) -> None:
+        """A provider account or model setting changed: lay it over the config again and
+        rebuild the API models (their address, key, prices; the writing models picked)."""
+        set_accounts(await load_accounts(self.db))
+        self.registry.reload(get_config())
+
     @classmethod
     async def start(cls, db_path: Path | None = None) -> StudioState:
         path = db_path or database_path()
@@ -114,7 +129,8 @@ class StudioState:
         bus = EventBus(db)
         store = BlobStore()
         set_library(Library())  # a library left over from another app in this process (tests)
-        registry = Registry.from_config(get_config(), await provider_accounts(db))
+        set_accounts(await load_accounts(db))
+        registry = Registry.from_config(get_config())
         jobs = JobQueue(db, bus)
         setup = SetupService(db, bus, jobs)
         router = Router(
@@ -332,8 +348,24 @@ def get_state(request: Request) -> StudioState:
     return state
 
 
-async def provider_accounts(db: Database) -> dict[str, Account]:
-    """Each provider account's site and address override, as the registry builds specs."""
+async def load_accounts(db: Database) -> Accounts:
+    """The provider accounts and model settings as ``get_config()`` lays them over the factory
+    config (``core/config.py:with_accounts``)."""
     async with db.session() as session:
         rows = (await session.exec(select(ProviderAccount))).all()
-    return {r.provider_id: Account(site=r.site, base_url=r.base_url_override) for r in rows}
+        settings = (await session.exec(select(ModelSetting))).all()
+    providers = {
+        r.provider_id: AccountState(
+            site=r.site,
+            base_url=r.base_url_override,
+            listed=tuple((r.models_json or {}).get("ids") or ()) if r.models_json else None,
+            enabled=tuple(r.enabled_json) if r.enabled_json is not None else None,
+        )
+        for r in rows
+    }
+    return Accounts(
+        providers=providers,
+        settings={
+            m.model_key: ModelSetting_(model_id=m.model_id, price=m.price_json) for m in settings
+        },
+    )

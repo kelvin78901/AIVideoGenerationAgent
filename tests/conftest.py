@@ -10,7 +10,7 @@ import keyring
 import pytest
 from keyring.backend import KeyringBackend
 
-from drama_series_agent.core.config import Library, set_library
+from drama_series_agent.core.config import Accounts, Library, set_accounts, set_library
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.studio import demo
@@ -51,10 +51,13 @@ def _isolated_env(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Iterator[N
 
 @pytest.fixture(autouse=True)
 def _factory_config() -> Iterator[None]:
-    """Each test starts from the factory config: no workflow library left by another app."""
+    """Each test starts from the factory config: no workflow library or provider accounts
+    left by another app."""
     set_library(Library())
+    set_accounts(Accounts())
     yield
     set_library(Library())
+    set_accounts(Accounts())
 
 
 @pytest.fixture(autouse=True)

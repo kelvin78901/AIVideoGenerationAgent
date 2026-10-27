@@ -80,14 +80,14 @@ describe("ModelPicker", () => {
     expect(screen.getByText("这个组件没有可本地运行的模型。")).toBeInTheDocument();
   });
 
-  it("lists 6 API services and expands 「更多供应商（8）」", async () => {
+  it("lists 6 API services and expands 「更多供应商（10）」", async () => {
     const user = userEvent.setup();
     renderAt(<Panel />);
     const api = await screen.findByRole("radiogroup", { name: "API 服务" });
     expect(within(api).getAllByRole("radio")).toHaveLength(6);
     expect(within(api).getByRole("radio", { name: /DeepSeek V4 Pro/ })).toBeChecked();
-    await user.click(screen.getByRole("button", { name: "更多供应商（8）" }));
-    expect(within(api).getAllByRole("radio")).toHaveLength(14);
+    await user.click(screen.getByRole("button", { name: "更多供应商（10）" }));
+    expect(within(api).getAllByRole("radio")).toHaveLength(16);
     expect(screen.getByRole("button", { name: "收起" })).toBeInTheDocument();
   });
 
@@ -96,8 +96,8 @@ describe("ModelPicker", () => {
     renderAt(<Panel />);
     const api = await screen.findByRole("radiogroup", { name: "API 服务" });
     expect(screen.getAllByTestId("config-source")[0]).toHaveTextContent("预设");
-    await user.click(within(api).getByRole("radio", { name: /Kimi K2.6/ }));
-    await waitFor(() => expect(override()?.api_model).toBe("moonshot/kimi-k2.6"));
+    await user.click(within(api).getByRole("radio", { name: /Kimi K3.1 Pro/ }));
+    await waitFor(() => expect(override()?.api_model).toBe("moonshot/kimi-k3.1-pro"));
     await waitFor(() =>
       expect(screen.getAllByTestId("config-source")[1]).toHaveTextContent("组件"),
     );
@@ -111,7 +111,9 @@ describe("ModelPicker", () => {
     const user = userEvent.setup();
     renderAt(<Panel />);
     expect(
-      await screen.findByText("主用的 DeepSeek V4 Pro 出问题时，自动改用 Kimi K2.6，并记进历史。"),
+      await screen.findByText(
+        "主用的 DeepSeek V4 Pro 出问题时，自动改用 Kimi K3.1 Pro，并记进历史。",
+      ),
     ).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: /自动质检连续 2 次不过/ }));
     await waitFor(() => expect(override()?.fallback?.on).toContain("qa_fail"));
@@ -156,7 +158,9 @@ describe("ModelPicker", () => {
         "未填密钥",
       ),
     );
-    expect(within(api).getByRole("radio", { name: /Kimi K2.6/ })).not.toHaveTextContent("未填密钥");
+    expect(within(api).getByRole("radio", { name: /Kimi K3.1 Pro/ })).not.toHaveTextContent(
+      "未填密钥",
+    );
   });
 });
 

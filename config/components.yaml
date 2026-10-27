@@ -8,22 +8,9 @@
 #   local    : 只用本地；没有本地版本的组件跳过
 # P0 实测后在这里调默认值，并在 docs/studio/DECISIONS.md 记一条。
 
-llm_api: &llm_api
-  - deepseek/v4-pro
-  - deepseek/v4.1-flash
-  - moonshot/kimi-k2.6
-  - qwen/qwen3.8-max
-  - qwen/qwen3.7-plus
-  - volc/doubao-2.1-pro
-  - zhipu/glm-5.3
-  - minimax/m3
-  - qwen/qwen3.8-flash
-  - zhipu/glm-5.3-flash
-  - google/gemini-3.6-flash
-  - openai/gpt-6-luna
-  - openrouter/claude-sonnet-5.5
-  - openrouter/any
-  - custom
+# 写作组件能选的 API 模型：llm = 所有已启用的写作模型（厂商列表里勾选的；没拉过列表的用参考表），
+# 按 providers.yaml 的 llm_ui_order 排。下面的默认路由仍写具体 key。
+llm_api: &llm_api [llm]
 llm_local: &llm_local [local/qwen3.6-27b, local/qwen3-30b-a3b]
 img_api: &img_api [openai/gpt-image-2, google/nano-banana-pro, google/nano-banana-2.1, volc/seedream-5.0]
 
@@ -66,7 +53,7 @@ components:
     kind: llm
     api: *llm_api
     local: *llm_local
-    balanced: { mode: api, api: deepseek/v4-pro, fallback_to: moonshot/kimi-k2.6 }
+    balanced: { mode: api, api: deepseek/v4-pro, fallback_to: moonshot/kimi-k3.1-pro }
     per_call_cap_usd: 0.5
     cheap_api: deepseek/v4.1-flash
     gate: novel
@@ -89,7 +76,7 @@ components:
     local: *llm_local
     balanced: { mode: api, api: deepseek/v4-pro, fallback_to: qwen/qwen3.8-max }
     per_call_cap_usd: 0.8
-    alt_order: [moonshot/kimi-k2.6, qwen/qwen3.8-max, qwen/qwen3.7-plus, local/qwen3.6-27b]
+    alt_order: [moonshot/kimi-k3.1-pro, qwen/qwen3.8-max, qwen/qwen3.7-plus, local/qwen3.6-27b]
     cheap_api: deepseek/v4.1-flash
     gate: script
 
@@ -177,7 +164,7 @@ components:
     kind: llm
     api: *llm_api
     local: [local/qwen3.6-27b]
-    balanced: { mode: api, api: deepseek/v4-pro, fallback_to: moonshot/kimi-k2.6 }
+    balanced: { mode: api, api: deepseek/v4-pro, fallback_to: moonshot/kimi-k3.1-pro }
     per_call_cap_usd: 0.8
     cheap_api: deepseek/v4.1-flash
 

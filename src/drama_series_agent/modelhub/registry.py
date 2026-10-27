@@ -9,8 +9,7 @@ models on this machine, while API and writing models stay Mock (the local smoke 
 from __future__ import annotations
 
 import os
-from collections.abc import Callable, Iterable, Mapping
-from dataclasses import dataclass
+from collections.abc import Callable, Iterable
 
 from drama_series_agent.core.config import LocalModel, StudioConfig
 from drama_series_agent.modelhub.adapters.base import (
@@ -43,29 +42,14 @@ def is_real_local() -> bool:
     return os.environ.get("DRAMA_REAL_LOCAL") == "1"
 
 
-@dataclass(frozen=True)
-class Account:
-    """A provider account's choices (``provider_account``): which site, and a base URL that
-    overrides the site's (a proxy, say)."""
-
-    site: str | None = None
-    base_url: str | None = None
-
-
-Accounts = Mapping[str, Account]
-
-
-def specs_from_config(cfg: StudioConfig, accounts: Accounts | None = None) -> list[ModelSpec]:
-    """Every configured model, its address, key and prices taken from its provider account's
-    current site (the default site when the account has not chosen one)."""
+def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
+    """Every model in the config. ``get_config()`` has the provider accounts on it already
+    (``core/config.py:with_accounts``): each provider on its current site, its writing models
+    the picked ones, the user's prices and model ids."""
     prov = cfg.providers
-    accounts = accounts or {}
     specs: list[ModelSpec] = []
     for provider in prov.llm_providers:
-        account = accounts.get(provider.id, Account())
-        site, place = provider.site(account.site)
-        for row in provider.models:
-            model = row.on_site(site)
+        for model in provider.models:
             extra = model.model_extra or {}
             specs.append(
                 ModelSpec(
@@ -75,8 +59,8 @@ def specs_from_config(cfg: StudioConfig, accounts: Accounts | None = None) -> li
                     display=model.display,
                     provider_id=provider.id,
                     model_id=model.model_id,
-                    base_url=account.base_url or place.base_url,
-                    key_name=place.key_name,
+                    base_url=provider.base_url,
+                    key_name=provider.key_name,
                     pricing=pricing_for_llm(model, prov.as_of),
                     caps=Caps(
                         json_mode=model.json_mode,
@@ -86,11 +70,8 @@ def specs_from_config(cfg: StudioConfig, accounts: Accounts | None = None) -> li
                     ),
                 )
             )
-    for media_row in prov.media_models:
-        owner = prov.provider(media_row.account) if media_row.account else None
-        owned = accounts.get(owner.id, Account()) if owner else Account()
-        where_to = owner.site(owned.site)[1] if owner else None
-        media = media_row.on_site(owner.site(owned.site)[0] if owner else None)
+    for media in prov.media_models:
+        account = prov.provider(media.account) if media.account else None
         specs.append(
             ModelSpec(
                 key=media.key,
@@ -99,10 +80,8 @@ def specs_from_config(cfg: StudioConfig, accounts: Accounts | None = None) -> li
                 display=media.display,
                 provider_id=media.key.split("/", 1)[0],
                 model_id=media.model_id,
-                base_url=media.base_url
-                or owned.base_url
-                or (where_to.base_url if where_to else None),
-                key_name=where_to.key_name if where_to else None,
+                base_url=media.base_url or (account.base_url if account else None),
+                key_name=account.key_name if account else None,
                 adapter=media.adapter,
                 pricing=pricing_for_media(media, prov.as_of),
                 caps=Caps.model_validate(media.caps),
@@ -169,17 +148,19 @@ class Registry:
         self._adapters: dict[str, ModelAdapter] = {}
 
     @classmethod
-    def from_config(
-        cls, cfg: StudioConfig, accounts: Accounts | None = None, **kwargs: object
-    ) -> Registry:
-        return cls(specs_from_config(cfg, accounts), **kwargs)  # type: ignore[arg-type]
+    def from_config(cls, cfg: StudioConfig, **kwargs: object) -> Registry:
+        return cls(specs_from_config(cfg), **kwargs)  # type: ignore[arg-type]
 
-    def set_account(self, cfg: StudioConfig, provider_id: str, accounts: Accounts) -> None:
-        """A provider switched site (or address): its models, and the media models on its key,
-        are built again with the new address, key and prices."""
-        for spec in specs_from_config(cfg, accounts):
-            owner = cfg.providers.account_of(spec.key)
-            if owner is not None and owner.id == provider_id:
+    def reload(self, cfg: StudioConfig) -> None:
+        """The provider accounts changed (a site, a pick, a price): the API models are built
+        again from ``cfg``; writing models no longer picked are dropped."""
+        fresh = {s.key: s for s in specs_from_config(cfg) if s.where == "api"}
+        for key, spec in list(self._specs.items()):
+            if spec.where == "api" and key not in fresh:
+                del self._specs[key]
+                self._adapters.pop(key, None)
+        for spec in fresh.values():
+            if self._specs.get(spec.key) != spec:
                 self.add_spec(spec)
 
     def add_factory(self, matches: Callable[[ModelSpec], bool], factory: AdapterFactory) -> None:

@@ -27,7 +27,7 @@ M2_TABLES = {
 }  # fmt: skip
 M3_TABLES = {"asset", "asset_use"}
 M4_TABLES = {"shot"}
-M5_TABLES = {"comfy_workflow"}
+M5_TABLES = {"comfy_workflow", "model_setting"}
 ALL_TABLES = M0_TABLES | M1_TABLES | M2_TABLES | M3_TABLES | M4_TABLES | M5_TABLES
 
 

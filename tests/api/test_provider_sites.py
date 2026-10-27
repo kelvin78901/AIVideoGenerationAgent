@@ -10,12 +10,22 @@ import httpx
 import pytest
 import respx
 from fastapi.testclient import TestClient
+from sqlmodel import select
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core import secrets
-from drama_series_agent.core.config import LlmProvider, get_config
-from drama_series_agent.modelhub.registry import Account, specs_from_config
+from drama_series_agent.core.config import (
+    Accounts,
+    AccountState,
+    LlmProvider,
+    ModelSetting,
+    get_config,
+    set_accounts,
+)
+from drama_series_agent.core.models_db import ModelCall
+from drama_series_agent.modelhub.adapters.base import CallContext, ModelRequest
+from drama_series_agent.modelhub.registry import specs_from_config
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1/providers"
@@ -68,16 +78,19 @@ def test_specs_follow_the_account_site() -> None:
     # Default: the China sites.
     assert (kimi.base_url, kimi.key_name) == (CN, "MOONSHOT_API_KEY")
     assert kimi.pricing.currency == "CNY" and h3.pricing.currency == "CNY"
-    accounts = {"moonshot": Account(site="intl"), "minimax_llm": Account(site="intl")}
-    by_key = {s.key: s for s in specs_from_config(cfg, accounts)}
+    intl = AccountState(site="intl")
+    set_accounts(Accounts(providers={"moonshot": intl, "minimax_llm": intl}))
+    by_key = {s.key: s for s in specs_from_config(get_config())}
     kimi, h3 = by_key["moonshot/kimi-k2.6"], by_key["minimax/h3-api"]
     assert (kimi.base_url, kimi.key_name) == (INTL, "MOONSHOT_INTL_API_KEY")
     assert kimi.pricing.currency == "USD"
     assert (h3.base_url, h3.key_name) == ("https://api.minimax.io/v1", "MINIMAX_INTL_API_KEY")
     assert h3.pricing.currency == "USD" and h3.pricing.price_by_res == {"768p": 0.08, "2k": 0.13}
     # An address override (a proxy) wins over the site's.
-    proxy = {"moonshot": Account(base_url="http://127.0.0.1:9999/v1")}
-    kimi = {s.key: s for s in specs_from_config(cfg, proxy)}["moonshot/kimi-k2.6"]
+    set_accounts(
+        Accounts(providers={"moonshot": AccountState(base_url="http://127.0.0.1:9999/v1")})
+    )
+    kimi = {s.key: s for s in specs_from_config(get_config())}["moonshot/kimi-k2.6"]
     assert kimi.base_url == "http://127.0.0.1:9999/v1" and kimi.key_name == "MOONSHOT_API_KEY"
 
 
@@ -133,3 +146,96 @@ def test_connection_uses_the_current_site(client: TestClient, respx_mock: respx.
     client.post(f"{V1}/moonshot/key", json={"api_key": "sk-china-0123456789"}).raise_for_status()
     data = client.post(f"{V1}/moonshot/test").json()
     assert data["ok"] is False and data["site"] == "intl" and data["detail"] == "auth_failed"
+
+
+# ---------------------------------------------------------------------- 7a-2: model lists
+
+
+def test_the_overlay_turns_picks_into_models() -> None:
+    from drama_series_agent.core.config import Accounts, AccountState, set_accounts
+
+    picks = ("kimi-k3.1-pro", "kimi-k2.7-code")
+    set_accounts(
+        Accounts(
+            providers={"moonshot": AccountState(listed=(*picks, "kimi-k2.6"), enabled=picks)},
+            settings={
+                "moonshot/kimi-k2.7-code": ModelSetting(
+                    price={"in": 4, "out": 16, "currency": "CNY"}
+                )
+            },
+        )
+    )
+    cfg = get_config()
+    kimi = cfg.providers.provider("moonshot")
+    assert kimi is not None
+    assert [m.key for m in kimi.models] == ["moonshot/kimi-k3.1-pro", "moonshot/kimi-k2.7-code"]
+    listed = kimi.models[1]
+    # Not in the table: the provider's defaults, the user's price.
+    assert listed.display == "kimi-k2.7-code" and listed.json_mode is True
+    assert listed.price is not None and (listed.price.in_, listed.price.currency) == (4, "CNY")
+    assert len(kimi.table) == 2  # the whole reference table stays known
+    api = cfg.components.component("script").api
+    assert "moonshot/kimi-k2.7-code" in api and "moonshot/kimi-k2.6" not in api
+    assert "deepseek/v4-pro" in api  # never listed: its reference table stands
+
+
+def test_a_listed_model_is_picked_priced_and_called(
+    client: TestClient, respx_mock: respx.MockRouter
+) -> None:
+
+    from drama_series_agent.core.models_db import ModelCall
+
+    respx_mock.route(host="127.0.0.1").pass_through()
+    client.post(f"{V1}/moonshot/key", json={"api_key": "sk-china-0123456789"}).raise_for_status()
+    ids = ["kimi-k2.6", "kimi-k2.7-code", "kimi-k3.1-pro"]
+    respx_mock.get(f"{CN}/models").mock(
+        return_value=httpx.Response(200, json={"data": [{"id": i} for i in ids]})
+    )
+    client.post(f"{V1}/moonshot/test").raise_for_status()
+    listed = _provider(client, "moonshot")["listed"]
+    rows = {r["model_id"]: r for r in listed["models"]}
+    # First fetch: the models the reference table knows are picked.
+    assert {m for m, r in rows.items() if r["enabled"]} == {"kimi-k2.6", "kimi-k3.1-pro"}
+    assert rows["kimi-k3.1-pro"]["price"] == {"in": 13.0, "out": 68.0, "currency": "CNY"}
+    assert (
+        rows["kimi-k2.7-code"]["price"] is None and rows["kimi-k2.7-code"]["price_source"] is None
+    )
+    registry = _state(client).registry
+    assert "moonshot/kimi-k2.7-code" not in {s.key for s in registry.specs()}
+
+    body = {"enabled": ["kimi-k3.1-pro", "kimi-k2.7-code"]}
+    client.put(f"{V1}/moonshot/models", json=body).raise_for_status()
+    spec = registry.spec("moonshot/kimi-k2.7-code")
+    assert spec.model_id == "kimi-k2.7-code" and spec.base_url == CN and not spec.pricing.known
+    assert "moonshot/kimi-k2.6" not in {s.key for s in registry.specs()}  # unpicked
+    catalog = client.get("/api/v1/config/components").json()
+    script = next(c for c in catalog["components"] if c["id"] == "script")
+    assert "moonshot/kimi-k2.7-code" in script["api_models"]
+
+    # A price of one's own, then a Mock call is recorded at it.
+    price = {"in": 4, "out": 16, "currency": "CNY"}
+    resp = client.put(f"{V1}/settings/moonshot/kimi-k2.7-code", json={"price": price})
+    assert resp.status_code == 200, resp.text
+    assert registry.spec("moonshot/kimi-k2.7-code").pricing.known
+
+    async def call() -> list[ModelCall]:
+        state = _state(client)
+        req = ModelRequest(kind="llm", prompt="林晚推门。")
+        await state.router.call("script", req, CallContext(), model="moonshot/kimi-k2.7-code")
+        async with state.db.session() as s:
+            return list((await s.exec(select(ModelCall))).all())
+
+    (row,) = client.portal.call(call)  # type: ignore[union-attr]
+    assert row.model_key == "moonshot/kimi-k2.7-code" and row.cost_usd > 0
+    assert _provider(client, "moonshot")["listed"]["models"][1]["price_source"] == "user"
+
+    assert client.put(f"{V1}/moonshot/models", json={"enabled": ["gpt-9"]}).status_code == 422
+    assert client.put(f"{V1}/deepseek/models", json={"enabled": []}).status_code == 409
+    assert client.put(f"{V1}/settings/no/such", json={}).status_code == 404
+    client.delete(f"{V1}/settings/moonshot/kimi-k2.7-code").raise_for_status()
+    assert not registry.spec("moonshot/kimi-k2.7-code").pricing.known
+
+    # Another site is another account: its list starts over.
+    client.patch(f"{V1}/moonshot", json={"site": "intl"}).raise_for_status()
+    assert _provider(client, "moonshot")["listed"] is None
+    assert "moonshot/kimi-k2.6" in {s.key for s in registry.specs()}  # the table again

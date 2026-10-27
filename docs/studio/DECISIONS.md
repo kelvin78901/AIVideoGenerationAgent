@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-26 · M5 第 7a 步（二）：写作模型按厂商列表选
+
+- **「账号叠加层」代替第 7a-1 步注册表里的站点参数**：仿照工作流库的 `set_library` / `with_library`，`core/config.py` 加 `set_accounts` / `with_accounts`，`get_config()` = 出厂配置 + 工作流库 + 账号。叠加后：每个厂商的 `base_url` / `key_name` / `docs` 是当前站点的；写作模型行是**勾选的模型**（参考表里有的用表里那行，表外的 `<厂商>/<model_id>`、参数用厂商新字段 `model_defaults`、价格未知）；表里各行的价格换成当前站点的；用户的单价、媒体模型 ID 叠上去；`components.yaml` 里写 `api: [llm]` 的组件展开成所有已启用的写作模型（按 `llm_ui_order`，再按厂商顺序）。好处：目录、估价、选择器、路由都直接读 `get_config()`，选择器里的价格也跟着站点走。`specs_from_config` 退回只读配置，`Registry.set_account` 换成 `Registry.reload(cfg)`（重建 API 模型、删掉不再勾选的写作模型）；`StudioState.refresh_accounts()` 在账号或设置变了之后调用。
+- **数据**（迁移 `0022`）：`provider_account.models_json`（`{site, ids, fetched_at}`）、`enabled_json`（勾选的 id；空 = 没拉过列表，参考表照旧生效）；新表 `model_setting`（`model_key`、`model_id`、`price_json`）。`custom_model` 表照旧没用上。
+- **列表怎么来、怎么勾**：「测试连接」成功就把 `GET /models` 的结果存下来；第一次拉到时自动勾上参考表认识的 id，之后保留用户的勾选、去掉厂商不再列出的 id（退役的模型自然消失，路由用到它时照常 `unknown_model`）。`PUT /providers/{id}/models {enabled}` 勾选（只能勾列表里有的，422 `unknown_model_id`；没拉过列表 409 `models_not_listed`）。**换站点会清掉列表和勾选**：另一站是另一个账号，列表要在那边重新拉，拉之前用参考表。
+- **单价和模型 ID**：`PUT /providers/settings/{model_key}` `{price: {in, out, currency}, model_id}`、`DELETE` 同路径。只认注册表里的模型、厂商列表里出现过的模型或参考表里的模型（404 `unknown_model`）。`GET /providers` 每个厂商加 `listed`：拉到的每个 id、是否勾选、是否在参考表、价格和来源（`user` / `table` / 未知）。
+- **参考表的变化**：Kimi 加 **K3.1 Pro**（`kimi-k3.1-pro`，¥13/68、$2/10 每百万 token，上下文 1,048,576）。思考关不掉，流水线默认 `reasoning_effort: low`（**Kelvin 2026-10-26 定**：思考按输出计费、占 `max_tokens`，估价也没算）。默认路由里的 `moonshot/kimi-k2.6`（剧本化、大纲的兜底，剧本化的「不满意换一个」第一个）换成 K3.1 Pro；K2.6 留在表里（示例数据、历史版本在用，2026 年底退役）。写作模型从 14 个变成 16 个（加了 K3.1 Pro；K2.6 也还在），选择器的「更多供应商」跟着变。各厂商的 `model_defaults`：DeepSeek 关思考、百炼 `enable_thinking: false`、MiniMax 关思考且不开 JSON 模式，其余开 JSON 模式。
+- **媒体模型的列表下拉**（OpenAI、Gemini 拉列表给媒体模型改 ID 当建议）留到前端那步（7a-4）一起做；后端现在能存媒体模型的 ID 覆盖。
+
 ## 2026-10-26 · M5 第 7a 步（一）：厂商的国内站 / 国际站
 
 起因：Kelvin 的 Kimi 密钥是国内站的，配置写死国际站，测试连接 401（国内站 200）。Kelvin 定：每个厂商能切站点、默认国内站；模型改成按厂商返回的列表选（第 7a-2 步）。计划见 `plans/M5-7a.md`。

@@ -1,4 +1,6 @@
 # 出厂默认的供应商与模型表（M0 时拷到 config/providers.yaml）。
+# 写作模型（M5 第 7a 步起）：能选哪些模型以厂商「测试连接」拉到的列表为准、用户在服务页勾选；这里的 models
+# 是参考表（显示名、按站点的单价、上下文、请求字段），列表里有、表里没有的按厂商的 model_defaults 调用、价格未知。
 # 价格截至 2026-10-14，来源见 docs/studio/PLAN.md 的「来源」。
 # verify: true 表示接口地址或模型 ID 没有逐一核对过：上线前对照 docs 链接核对，
 # 或在「模型与兜底 → 测试连接」里用 GET /models 拉取真实 ID 后再填。
@@ -25,6 +27,7 @@ llm_providers:
     # 两个模型默认开「思考」：思考过程按输出计费、也占 max_tokens（JSON 可能被截断），估价
     # 也没算它，所以流水线调用默认关掉（request.thinking）；要开就在这里改成 enabled。
     verify: false
+    model_defaults: { json_mode: true, request: { thinking: { type: disabled } } }
     models:
       - key: deepseek/v4-pro
         display: DeepSeek V4 Pro
@@ -55,7 +58,18 @@ llm_providers:
     # K2.6：默认开思考，thinking: disabled 关掉（关掉后 temperature 固定 0.6，我们不传）。上下文 262,144。
     # K2 系列 2026-10-31 起不对新用户开放、2026 年底退役（两站价格页都这么写）。
     verify: false
+    model_defaults: { json_mode: true }
     models:
+      # K3.1 Pro：思考关不掉，只能调强度 reasoning_effort（low / high / max，默认 max）；思考按输出计费、
+      # 也占 max_tokens，流水线默认 low（Kelvin 2026-10-26 定）。上下文 1,048,576，不分档。
+      - key: moonshot/kimi-k3.1-pro
+        display: Kimi K3.1 Pro
+        model_id: kimi-k3.1-pro
+        price: { in: 13, out: 68, currency: CNY }
+        by_site: { intl: { price: { in: 2.00, out: 10.00, currency: USD } } }
+        json_mode: true
+        max_context: 1048576
+        request: { reasoning_effort: low }
       - key: moonshot/kimi-k2.6
         display: Kimi K2.6
         model_id: kimi-k2.6
@@ -75,6 +89,7 @@ llm_providers:
     # qwen3.7-plus 按输入长度分档，这里是 256K 以内那一档（256K–1M 是三倍）；两站都标「限时 8 折」，这里写原价。
     # 上下文没写明（价格档到 1M），仍按 32k 分块；没有密钥，没真调过。
     verify: false
+    model_defaults: { json_mode: true, request: { enable_thinking: false } }
     models:
       - { key: qwen/qwen3.8-max,   display: Qwen3.8-max,   model_id: qwen3.8-max,   price: { in: 12, out: 36, currency: CNY },  by_site: { intl: { price: { in: 2.00, out: 6.00, currency: USD } } }, json_mode: true, request: { enable_thinking: false } }
       - { key: qwen/qwen3.7-plus,  display: Qwen3.7-plus,  model_id: qwen3.7-plus,  price: { in: 2, out: 8, currency: CNY },    by_site: { intl: { price: { in: 0.40, out: 1.60, currency: USD } } }, json_mode: true, request: { enable_thinking: false } }
@@ -86,6 +101,7 @@ llm_providers:
     key_name: ARK_API_KEY
     docs: https://tech.ifeng.com/c/8uBqB6LMgIn
     verify: true
+    model_defaults: { json_mode: true }
     models:
       - { key: volc/doubao-2.1-pro, display: 豆包 2.1 Pro, model_id: null, price: { in: 6, out: 30, currency: CNY }, json_mode: true }
 
@@ -98,6 +114,7 @@ llm_providers:
     # GLM-5.3 / 5.3-Flash 总是思考，关不掉（发 thinking: disabled 会报错）；上下文 1M、最多输出 128K。
     # 国内的 5.3-Flash 不免费（免费的是 GLM-4.x Flash）。JSON 模式文档只拿 glm-5 / 5.2 举例，5.3 没明说。
     verify: false
+    model_defaults: { json_mode: true }
     models:
       - { key: zhipu/glm-5.3,       display: GLM-5.3,       model_id: glm-5.3,       price: { in: 8, out: 28, currency: CNY },    by_site: { intl: { price: { in: 1.40, out: 4.40, currency: USD } } }, json_mode: true, max_context: 1000000 }
       - { key: zhipu/glm-5.3-flash, display: GLM-5.3-Flash, model_id: glm-5.3-flash, price: { in: 0.8, out: 2.8, currency: CNY }, by_site: { intl: { price: { in: 0.15, out: 0.50, currency: USD } } }, json_mode: true, max_context: 1000000 }
@@ -113,6 +130,7 @@ llm_providers:
     # MiniMax-M3：两站标的都是「永久五折」后的价（512K 以内；以上翻倍）；默认开思考，thinking: disabled 关掉；
     # 上下文 1M。Chat Completions 的文档里没有 response_format，所以不开 JSON 模式（提示词里要求 JSON）。
     verify: false
+    model_defaults: { json_mode: false, request: { thinking: { type: disabled } } }
     models:
       - { key: minimax/m3, display: MiniMax-M3, model_id: MiniMax-M3, price: { in: 2.10, out: 8.40, currency: CNY }, by_site: { intl: { price: { in: 0.30, out: 1.20, currency: USD } } }, json_mode: false, max_context: 1000000, request: { thinking: { type: disabled } } }
 
@@ -122,6 +140,7 @@ llm_providers:
     key_name: GEMINI_API_KEY
     docs: https://ai.google.dev/gemini-api/docs/pricing
     verify: true
+    model_defaults: { json_mode: true }
     models:
       - key: google/gemini-3.6-flash
         display: Gemini 3.6 Flash
@@ -138,6 +157,7 @@ llm_providers:
     key_name: OPENAI_API_KEY
     docs: https://www.eesel.ai/blog/gpt-6-luna-pricing
     verify: true
+    model_defaults: { json_mode: true }
     models:
       - { key: openai/gpt-6-luna, display: GPT-6 Luna, model_id: null, price: { in: 0.10, out: 0.50, currency: USD }, note: "价格来自第三方整理", json_mode: true }
 
@@ -174,7 +194,7 @@ llm_providers:
 llm_ui_order:
   - deepseek/v4-pro
   - deepseek/v4.1-flash
-  - moonshot/kimi-k2.6
+  - moonshot/kimi-k3.1-pro
   - qwen/qwen3.8-max
   - qwen/qwen3.7-plus
   - volc/doubao-2.1-pro

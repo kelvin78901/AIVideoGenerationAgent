@@ -166,7 +166,25 @@ class ProviderAccount(SQLModel, table=True):
     # Which of the provider's sites (``cn`` / ``intl``); None = its ``default_site``.
     site: str | None = None
     base_url_override: str | None = None
+    # The provider's model list as last fetched (``{site, ids, fetched_at}``) and the ids picked
+    # from it; None = never fetched / the reference table (M5 step 7a).
+    models_json: dict[str, Any] | None = _json()
+    enabled_json: list[str] | None = _json()
     enabled: bool = True
+    updated_at: datetime = Field(
+        default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
+    )
+
+
+class ModelSetting(SQLModel, table=True):
+    """What the user set for one model: another model id (a media model whose vendor renamed
+    it), a price (a listed model the reference table does not know)."""
+
+    __tablename__ = "model_setting"
+
+    model_key: str = Field(primary_key=True)
+    model_id: str | None = None
+    price_json: dict[str, Any] | None = _json()
     updated_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
     )

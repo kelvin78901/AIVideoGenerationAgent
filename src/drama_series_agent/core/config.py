@@ -104,7 +104,14 @@ class LlmProvider(_Loose):
     # Ask the server for a context of ``max_context`` (``options.num_ctx``, Ollama): its
     # default can be as small as 2–4k and silently cuts long prompts.
     send_num_ctx: bool = False
+    # The reference table: known models' names, prices (per site), context and request fields.
+    # Which models can be picked comes from the provider's own list once it has been fetched
+    # (``provider_account``); until then, this table (M5 step 7a).
     models: list[LlmModel] = Field(default_factory=list)
+    # How a listed model that is not in the table is called (``json_mode``, ``request`` …).
+    model_defaults: dict[str, Any] = Field(default_factory=dict)
+    # Set by ``with_accounts``: the whole table on the current site, picked or not.
+    table: list[LlmModel] = Field(default_factory=list)
 
     @model_validator(mode="after")
     def _sites(self) -> LlmProvider:
@@ -441,11 +448,126 @@ def load_config(directory: Path | None = None) -> StudioConfig:
     )
 
 
+@dataclass(frozen=True)
+class AccountState:
+    """A provider account as the user set it up (``provider_account``): its site, an address
+    override, the model ids its list returned and the ones picked (None: never listed, the
+    reference table stands)."""
+
+    site: str | None = None
+    base_url: str | None = None
+    listed: tuple[str, ...] | None = None
+    enabled: tuple[str, ...] | None = None
+
+
+@dataclass(frozen=True)
+class ModelSetting:
+    """What the user set for one model (``model_setting``): another model id, a price."""
+
+    model_id: str | None = None
+    price: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class Accounts:
+    providers: dict[str, AccountState] = field(default_factory=dict)
+    settings: dict[str, ModelSetting] = field(default_factory=dict)
+
+
+_accounts = Accounts()
+# In ``components.yaml`` a component's ``api`` list may say ``llm``: every writing model the
+# user has (picked from the providers' lists, or the reference tables).
+ALL_LLMS = "llm"
+
+
+def current_accounts() -> Accounts:
+    return _accounts
+
+
+def set_accounts(accounts: Accounts) -> None:
+    """Provider accounts changed (startup, a site, a list, a pick, a price): the next
+    ``get_config()`` includes them."""
+    global _accounts
+    _accounts = accounts
+    get_config.cache_clear()
+
+
+def listed_model(provider: LlmProvider, model_id: str) -> LlmModel:
+    """A model from the provider's list that the reference table does not know: called with
+    the provider's ``model_defaults``, price unknown."""
+    return LlmModel.model_validate(
+        {
+            **provider.model_defaults,
+            "key": f"{provider.id}/{model_id}",
+            "display": model_id,
+            "model_id": model_id,
+        }
+    )
+
+
+def _set(row: LlmModel, setting: ModelSetting | None) -> LlmModel:
+    if setting is None or setting.price is None:
+        return row
+    return row.model_copy(update={"price": TokenPrice.model_validate(setting.price)})
+
+
+def with_accounts(cfg: StudioConfig, acc: Accounts) -> StudioConfig:
+    """Each provider on its account's site (address, key, prices), its writing models the
+    picked ones, the user's prices and model ids; ``api: [llm]`` spelled out."""
+    prov = cfg.providers
+    providers: list[LlmProvider] = []
+    for p in prov.llm_providers:
+        state = acc.providers.get(p.id, AccountState())
+        site, place = p.site(state.site)
+        table = [row.on_site(site) for row in p.models]
+        rows = table
+        if state.enabled is not None and p.where == "api":
+            known = {r.model_id: r for r in table if r.model_id}
+            rows = [known.get(m) or listed_model(p, m) for m in state.enabled]
+        rows = [_set(r, acc.settings.get(r.key)) for r in rows]
+        update = {
+            "base_url": state.base_url or place.base_url,
+            "key_name": place.key_name,
+            "docs": place.docs,
+            "models": rows,
+            "table": table,
+        }
+        providers.append(p.model_copy(update=update))
+    media: list[MediaModel] = []
+    for m in prov.media_models:
+        owner = prov.provider(m.account) if m.account else None
+        state = acc.providers.get(owner.id, AccountState()) if owner else AccountState()
+        row = m.on_site(owner.site(state.site)[0] if owner else None)
+        setting = acc.settings.get(m.key)
+        if setting is not None and setting.model_id:
+            row = row.model_copy(update={"model_id": setting.model_id})
+        media.append(row)
+    llms = [r.key for p in providers if p.where == "api" for r in p.models]
+    order = [k for k in prov.llm_ui_order if k in llms]
+    llms = order + [k for k in llms if k not in order]
+    comps = [
+        c.model_copy(update={"api": _spelled(c.api, llms)}) if ALL_LLMS in c.api else c
+        for c in cfg.components.components
+    ]
+    return replace(
+        cfg,
+        providers=prov.model_copy(update={"llm_providers": providers, "media_models": media}),
+        components=cfg.components.model_copy(update={"components": comps}),
+    )
+
+
+def _spelled(keys: list[str], llms: list[str]) -> list[str]:
+    out: list[str] = []
+    for k in keys:
+        out += [m for m in llms if m not in out] if k == ALL_LLMS else [k]
+    return out
+
+
 @lru_cache(maxsize=1)
 def get_config() -> StudioConfig:
-    """Process-wide factory config plus the workflow library (tests changing
-    ``DRAMA_CONFIG_DIR`` call cache_clear)."""
-    return with_library(load_config(), _library)
+    """Process-wide factory config plus the workflow library and the provider accounts (tests
+    changing ``DRAMA_CONFIG_DIR`` call cache_clear)."""
+    return with_accounts(with_library(load_config(), _library), _accounts)
 
 
 # --------------------------------------------------------------------------- resolution
