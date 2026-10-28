@@ -242,6 +242,7 @@ class Router:
             status="error",
             billed=False,
             workflow_id=spec.workflow if spec.where == "local" else None,
+            select_json=ctx.select,
         )
         row.started_at = utcnow()
         try:

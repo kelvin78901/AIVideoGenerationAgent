@@ -209,6 +209,26 @@ components:
     final_api: minimax/h3-regenerate-2k   # 「用 API 出终版」：本地 H3 草稿重生成到 2K
     follows_output_spec: true
     gate: takes
+    # 按镜头选工作流（SPEC 6.4.8；M5 第 12a 步，Kelvin 2026-10-28 定）：按顺序匹配，第一条命中的生效，
+    # 每部剧可改（app_setting）。条件：shot_type、framing（景别）、dialogue（有台词）、audio_mode、
+    # refs（有锁定参考图）、voices（有锁定音色样本）。只能选推荐档和「我的工作流」；Inspector 手动选的优先。
+    select_rules:
+      - { when: { audio_mode: native, voices: true }, model: comfy/h3-r2v }
+    # 规则都没命中时，镜头第一次出片前让 vselect 建议一个（按镜头内容缓存）；默认关
+    select_suggest: false
+
+  # 按镜头选工作流的 LLM 建议（SPEC 6.4.8）：输入镜头摘要和候选工作流的能力，输出选哪个 + 理由；
+  # 走 API，不占本机显卡（Kelvin 2026-10-26 定）。理由记进视频那次调用的 model_call.select_json。
+  - id: vselect
+    stage: generate
+    name: { zh: 视频工作流建议, en: Video workflow suggestion }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: api, api: deepseek/v4.1-flash, local: local/qwen3.6-27b, fallback_to: qwen/qwen3.7-plus }
+    per_call_cap_usd: 0.05
+    cheap_api: deepseek/v4.1-flash
+    note: 只在规则表没命中、候选工作流不止一个时问；问不到就用组件默认
 
   # 本地 H3 出片前把提示词改写成 MiniMax 官方写法（英文、逐拍、参考图写进 <Subject N>；M5 第 14b 步，
   # Kelvin 2026-10-27 定）。API 的 H3 用官方的 Context-IR，不走这里。一次出几条候选只改写一次（缓存）。

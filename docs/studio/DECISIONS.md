@@ -2,6 +2,17 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 12a 步：按镜头选工作流（后端：规则表、LLM 建议、记进 model_call）
+
+第 12 步分三小步：12a 规则表和 LLM 建议的后端，12b 可开关分支，12c 界面（规则表放「模型与兜底」、Inspector 显示选了哪个和理由、按镜头开关分支）和截图。
+- **Kelvin 定（2026-10-28）**：LLM 建议在镜头第一次出片前自动问，开关默认关；默认规则表放一条「原生同步 + 有锁定音色样本 → `comfy/h3-r2v`」。原来写死在 `vid.model_for` 里的这条挪进表里（删掉表里这条，原生同步的镜头就走组件默认的 `h3-i2v`）。
+- **先后顺序**（`pipeline/vselect.py`）：调用方点名的模型（「不满意换一个」、指定模型）和这个镜头在 Inspector 里手动选的（`local_model` 的 item 覆盖）→ 剧集规则表第一条命中的 → LLM 建议（开着、规则都没命中、能选的不止一个时）→ 路由的本地模型。规则在 LLM 前面：表是用户明说的，LLM 只补没写到的。路由是 API 模型时不选（只在本地工作流之间挑）。
+- **能选的**（`pickable`）：视频组件 `local` 里有工作流的、不是「未验证」、这台机器跑得了的；规则指向的模型选不了就跳过这条。存规则时只查前三项（换机器不该让表存不进去）。
+- **规则表按剧存** `app_setting` 的 `vid.select.<series id>`（和生成规则一样）；没存过读 `components.yaml` 的 `vid.select_rules` / `select_suggest`。条件：`shot_type`、`framing`（景别）、`dialogue`、`audio_mode`、`refs`（有锁定参考图）、`voices`（有锁定音色样本），不写的不限；多的字段 422。接口 `GET / PUT / DELETE /series/{id}/workflow-rules`（`DELETE` 回到配置的表；返回带 `saved` 和能选的 `models`）；规则的模型不能选时 422 `workflow_rule_model`。
+- **LLM 建议**：新路由组件 `vselect`（视频工作流建议，默认 DeepSeek V4.1 Flash，单次上限 $0.05），在**入队时**问（不在任务里问：模型定了才能估价、排 GPU 队列、按模型分组）；估价只读缓存不问。告诉它镜头（景别、类型、时长、声音、台词条数、参考图张数、音色样本张数、画面描述）和候选工作流（名字、档位、是不是默认、最长秒数、参考图槽位数、收不收音色样本 / 台词音频），要 JSON `{model, reason}`，理由用剧的语言。答案按「模型 + 发出去的内容」缓存在 `llm_cache`：镜头或候选变了才再问。失败、超预算、答了不在候选里的 → 用默认，只记日志。Mock 下选收音色样本的（原生同步 + 有音色时），否则默认。
+- **记进 `model_call.select_json`**：`CallContext.select`（`RunContext.select` ← 任务参数 `params.select`）；视频那次调用写 `{by: manual | rule | suggest | default, rule?, reason?, suggested_by?}`，提示词改写、Context-IR 这些不写；LLM 建议本身另有一行 `component_id = vselect` 的调用记录。
+- **组件钩子** `Component.choose_model(...)`（异步，默认就是 `model_for`）：`runs.py` 的估价和入队都改走它。
+
 ## 2026-10-28 · M5 第 11 步：DramaStudio 节点包（工作流的输入 / 输出节点）
 
 - **节点包 `integrations/comfyui-dramastudio`**（`nodes.py`，13 个节点，版本 0.1.0）：输入 首帧、参考图（带 `index`）、输入视频、台词音频、音色样本（带 `index`，对应 `ref_audio`）、提示词、反向提示词、尺寸（宽、高）、帧率和时长（一个节点：`fps`、`seconds`，另出 `fps_int` 和 `frames` = 帧率 × 秒数取整；要 4n + 1 帧的模型自己接数学节点）、种子；输出 视频（MP4）、图片（PNG）、音频（FLAC），存进 `output/dramastudio/`，列文件的格式和 ComfyUI 自带的 SaveVideo / SaveImage / SaveAudio 一样，适配器取结果不用改。文件输入像 `LoadImage`：下拉列 `input` 文件夹（含子文件夹，平台上传在 `dramastudio/`）、能上传，`VALIDATE_INPUTS` 只查文件在不在（平台刚上传的文件不在 ComfyUI 启动时的列表里），`IS_CHANGED` 按文件哈希。每个输入都有默认值，在 ComfyUI 里能直接手动跑。

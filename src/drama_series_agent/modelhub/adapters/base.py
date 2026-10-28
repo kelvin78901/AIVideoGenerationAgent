@@ -159,6 +159,8 @@ class CallContext:
     on_delta: Callable[[str], Awaitable[None]] | None = None
     # Long local runs (ComfyUI) report how far they are here, e.g. to a job's ``progress``.
     on_progress: Callable[[dict[str, Any]], Awaitable[None]] | None = None
+    # Why this model (按镜头选工作流, ``pipeline/vselect.py``): ``model_call.select_json``.
+    select: dict[str, Any] | None = None
 
 
 class ModelError(Exception):

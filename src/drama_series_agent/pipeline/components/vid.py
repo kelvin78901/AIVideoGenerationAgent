@@ -54,10 +54,21 @@ from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes.service import gate_confirmed, script_product
 from drama_series_agent.media.audio import dialogue_track
 from drama_series_agent.media.video import VideoError, VideoInfo, frame, probe, trim_head
-from drama_series_agent.modelhub.adapters.base import Estimate, ModelError, ModelRequest
+from drama_series_agent.modelhub.adapters.base import (
+    CallContext,
+    Estimate,
+    ModelError,
+    ModelRequest,
+)
 from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm
-from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
+from drama_series_agent.pipeline import vselect
+from drama_series_agent.pipeline.component import (
+    ComponentError,
+    Inputs,
+    ModelChoice,
+    RunContext,
+)
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, voice_of
 from drama_series_agent.pipeline.components.kf import (
     FRAMING,
@@ -308,6 +319,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "seconds": seconds,
             "look": look,
             "sound": sound,
+            "shot": {"shot_type": shot["shot_type"], "framing": shot["framing"]},
         },
     )
 
@@ -424,25 +436,39 @@ class VidComponent(MediaComponent):
         return (await load_rules(session, product.series_id)).takes_per_shot
 
     def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
-        """「用 API 出终版」 goes to ``final_api`` (H3 Regenerate-2K). A 原生同步 shot with voice
-        samples goes to a local model whose workflow takes them (``h3-r2v``); the others stay
-        where the route put them."""
+        """「用 API 出终版」 goes to ``final_api`` (H3 Regenerate-2K)."""
         if inputs.params.get("source_version_id"):
             return self._final_model() or model
-        if inputs.context.get("audio_mode") != "native" or not inputs.context.get("voices"):
-            return model
-        wf = local_workflow(self.services.registry, model)
-        if wf is None or wf.has("ref_audio"):
-            return model
-        try:
-            local = get_config().components.component(self.id).local
-        except KeyError:
-            return model
-        for other in local:
-            alt = local_workflow(self.services.registry, other)
-            if other not in settings.unavailable and alt is not None and alt.has("ref_audio"):
-                return other
         return model
+
+    async def choose_model(
+        self,
+        product: Product,
+        inputs: Inputs,
+        model: str,
+        settings: Resolved,
+        *,
+        lang: str,
+        named: bool,
+        ask: bool,
+    ) -> ModelChoice:
+        """A final goes to ``final_api``; a take to the workflow 按镜头选工作流 picks
+        (``pipeline/vselect.py``: the shot's own pick, the series' rules — a 原生同步 shot with
+        voice samples goes to ``h3-r2v`` by default — the LLM's suggestion, the route)."""
+        if inputs.params.get("source_version_id"):
+            return ModelChoice(self.model_for(inputs, model, settings))
+        call_ctx = CallContext(
+            component_id=vselect.VSELECT,
+            series_id=product.series_id,
+            episode_id=inputs.episode_id,
+            shot_id=product.owner_id,
+            product_id=product.id,
+        )
+        chosen = await vselect.choose(
+            self.services, inputs, model, settings, series_id=product.series_id, lang=lang,
+            named=named, ask=ask, ctx=call_ctx,
+        )  # fmt: skip
+        return ModelChoice(chosen.model, chosen.select)
 
     # ------------------------------------------------------------------ run
 
@@ -450,6 +476,7 @@ class VidComponent(MediaComponent):
         return {
             "context_ir": lambda req: {"prompt": f"[Context-IR] {req.prompt or ''}"},
             "h3_prompt": _mock_rewrite,
+            "select": vselect.mock_suggest,
         }
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
@@ -756,7 +783,9 @@ class VidComponent(MediaComponent):
             return str(row.value_json["prompt"]), MediaCall(
                 [], row.model_key, where, 0.0, cached=True
             )
-        call_ctx = replace(self._call_ctx(ctx, inputs.episode_id), component_id=VPROMPT)
+        call_ctx = replace(
+            self._call_ctx(ctx, inputs.episode_id), component_id=VPROMPT, select=None
+        )
         cost = 0.0
         problems: list[str] = []
         text = ""

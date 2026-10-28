@@ -215,6 +215,28 @@ class BalancedRoute(_Loose):
     fallback_to: str | None = None
 
 
+class SelectWhen(BaseModel):
+    """A rule's conditions (SPEC 6.4.8); a field left out matches anything."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    shot_type: str | None = None  # continuous / same_scene_cut / scene_change
+    framing: str | None = None  # 景别: wide / medium / close / closeup
+    dialogue: bool | None = None  # the shot has lines
+    audio_mode: Literal["tts", "native", "none"] | None = None
+    refs: bool | None = None  # a locked reference picture
+    voices: bool | None = None  # a locked voice sample
+
+
+class SelectRule(BaseModel):
+    """按镜头选工作流: shots that meet ``when`` go to local model ``model``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    when: SelectWhen = Field(default_factory=SelectWhen)
+    model: str
+
+
 class ComponentDefault(_Loose):
     id: str
     stage: str
@@ -235,6 +257,10 @@ class ComponentDefault(_Loose):
     # Asset kind → the aspect its reference pictures are drawn at, whatever the output spec
     # (img: scenes 16:9, Kelvin 2026-10-26); a kind not listed follows the spec.
     aspects: dict[str, str] = Field(default_factory=dict)
+    # 按镜头选工作流 (vid, SPEC 6.4.8): the rules table a series starts from, and whether the
+    # LLM suggests a workflow when no rule matches.
+    select_rules: list[SelectRule] = Field(default_factory=list)
+    select_suggest: bool = False
 
 
 class FallbackDefaults(_Loose):

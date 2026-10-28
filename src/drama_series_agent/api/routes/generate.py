@@ -1,5 +1,6 @@
 """Generate step (M5 step 8): ``/series/{id}/generate-rules`` and ``/episodes/{id}/generate-log``
-(``pipeline/generate.py``)."""
+(``pipeline/generate.py``); 按镜头选工作流 (step 12a): ``/series/{id}/workflow-rules``
+(``pipeline/vselect.py``)."""
 
 from __future__ import annotations
 
@@ -20,6 +21,9 @@ from drama_series_agent.pipeline.generate import (
     load_rules,
     save_rules,
 )
+from drama_series_agent.pipeline.vselect import Rules, pickable
+from drama_series_agent.pipeline.vselect import load_rules as load_select_rules
+from drama_series_agent.pipeline.vselect import save_rules as save_select_rules
 
 router = APIRouter(tags=["generate"])
 
@@ -58,3 +62,48 @@ async def get_generate_log(episode_id: str, state: State) -> list[GenerateLogEnt
         if episode is None or episode.retired:
             raise ApiError(404, "episode_not_found", id=episode_id)
         return await generate_log(session, episode_id, timeout_minutes=round(timeout_s / 60))
+
+
+class WorkflowRulesOut(Rules):
+    """The series' rules table; ``saved`` False: the config's. ``models``: the workflows a rule
+    may name (平台推荐 and 我的工作流 of 视频生成, whether or not this machine runs them now)."""
+
+    saved: bool
+    models: list[str]
+
+
+async def _workflow_rules(state: StudioState, series_id: str) -> WorkflowRulesOut:
+    async with state.db.session() as session:
+        if await session.get(Series, series_id) is None:
+            raise ApiError(404, "series_not_found", id=series_id)
+        rules, saved = await load_select_rules(session, series_id)
+    return WorkflowRulesOut(**rules.model_dump(), saved=saved, models=pickable(state.registry))
+
+
+@router.get("/series/{series_id}/workflow-rules", response_model_exclude_none=True)
+async def get_workflow_rules(series_id: str, state: State) -> WorkflowRulesOut:
+    return await _workflow_rules(state, series_id)
+
+
+@router.put("/series/{series_id}/workflow-rules", response_model_exclude_none=True)
+async def put_workflow_rules(series_id: str, body: Rules, state: State) -> WorkflowRulesOut:
+    """Replace the table (order matters: the first rule a shot meets wins)."""
+    models = pickable(state.registry)
+    for rule in body.rules:
+        if rule.model not in models:
+            raise ApiError(422, "workflow_rule_model", model=rule.model)
+    async with state.db.session() as session:
+        if await session.get(Series, series_id) is None:
+            raise ApiError(404, "series_not_found", id=series_id)
+        await save_select_rules(session, series_id, body)
+    return await _workflow_rules(state, series_id)
+
+
+@router.delete("/series/{series_id}/workflow-rules", response_model_exclude_none=True)
+async def reset_workflow_rules(series_id: str, state: State) -> WorkflowRulesOut:
+    """Back to the config's table."""
+    async with state.db.session() as session:
+        if await session.get(Series, series_id) is None:
+            raise ApiError(404, "series_not_found", id=series_id)
+        await save_select_rules(session, series_id, None)
+    return await _workflow_rules(state, series_id)

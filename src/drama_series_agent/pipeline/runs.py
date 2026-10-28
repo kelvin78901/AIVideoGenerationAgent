@@ -182,7 +182,10 @@ class RunService:
             except (LookupError, PipelineError, ComponentError):
                 inputs = None  # upstream not ready yet: no price to show
             if comp is not None and inputs is not None:
-                model = comp.model_for(inputs, model, settings)
+                chosen = await comp.choose_model(
+                    product, inputs, model, settings, lang=lang, named=False, ask=False
+                )
+                model = chosen.model
             if product.prompt_json:
                 compiled = str(product.prompt_json.get("compiled", ""))
             else:
@@ -303,7 +306,13 @@ class RunService:
         async with self.services.db.session() as session:
             inputs = await comp.inputs(session, p)
         inputs.params = params
-        target = comp.model_for(inputs, target, settings)
+        chosen = await comp.choose_model(
+            p, inputs, target, settings, lang=lang, named=model is not None or mode == "switch",
+            ask=True,
+        )  # fmt: skip
+        target = chosen.model
+        if chosen.select is not None:
+            params["select"] = chosen.select
 
         saved = PromptOut.model_validate(p.prompt_json) if p.prompt_json else None
         # A plain rerun keeps a hand-edited compiled layer; a new intent or another model
@@ -441,6 +450,7 @@ class RunService:
                 base_version=base,
                 progress=jctx.progress,
                 fallback_reason=params.get("fallback_reason"),
+                select=inputs.params.get("select"),
             )
             draft = await comp.run(ctx, inputs)
             origin = "fallback" if draft.fallback_reason else mode

@@ -92,6 +92,17 @@ class RunContext:
     fallback_reason: str | None = None
     # A call outside a job the user agreed to pay up to this much for (over the per-call cap).
     confirmed_usd: float | None = None
+    # Why the run's model was chosen (按镜头选工作流), onto its calls' ``model_call``.
+    select: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class ModelChoice:
+    """The model a run goes to, and what decided it (``model_call.select_json``; None: the
+    route's, nothing to say)."""
+
+    model: str
+    select: dict[str, Any] | None = None
 
 
 @dataclass
@@ -196,6 +207,22 @@ class Component(ABC):
         component takes another when this run's inputs do not suit it (M4: a keyframe with no
         locked reference picture cannot go to an edit-only model)."""
         return model
+
+    async def choose_model(
+        self,
+        product: Product,
+        inputs: Inputs,
+        model: str,
+        settings: Resolved,
+        *,
+        lang: str,
+        named: bool,
+        ask: bool,
+    ) -> ModelChoice:
+        """``model_for`` with room to look things up (M5: the video component's 按镜头选工作流).
+        ``named``: the caller chose ``model``; ``ask``: a model may be asked (an enqueue; an
+        estimate only reads what was asked before)."""
+        return ModelChoice(self.model_for(inputs, model, settings))
 
     # ------------------------------------------------------------------ run
 
@@ -335,6 +362,7 @@ class Component(ABC):
             confirmed_usd=ctx.confirmed_usd,
             on_delta=on_delta,
             on_progress=ctx.progress,  # a local run's steps (ComfyUI), as they come
+            select=ctx.select,
         )
 
     async def _cache_get(self, key: str, schema: type[BaseModel]) -> BaseModel | None:
