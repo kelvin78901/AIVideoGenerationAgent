@@ -189,6 +189,28 @@ def test_a_ui_format_file_is_converted_on_import(client: TestClient) -> None:
     assert {"seed", "steps", "cfg"} <= set(sampler["fields"])
 
 
+def test_a_changed_repo_workflow_drops_its_old_check_and_models(client: TestClient) -> None:
+    """Step 14e took the Turbo LoRA out of h3-i2v: the library's row follows the new file."""
+    turbo = {"folder": "loras", "name": "minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors"}
+
+    async def age() -> None:
+        async with _state(client).db.session() as s:
+            row = await s.get(ComfyWorkflowRow, "wf_h3-i2v")
+            assert row is not None
+            row.file_sha256 = "old"
+            row.deps_json = {"models": [turbo], "packs": []}
+            row.check_json = {"status": "ok"}
+            s.add(row)
+            await s.commit()
+
+    client.portal.call(age)  # type: ignore[union-attr]
+    client.portal.call(_state(client).workflows.sync)  # type: ignore[union-attr]
+    h3 = client.get(f"{V1}/workflows/wf_h3-i2v").json()
+    assert h3["tier"] == "recommended" and h3["check"] is None and not h3["file_changed"]
+    [row] = [r for r in client.portal.call(_state(client).workflows.rows) if r.slug == "h3-i2v"]  # type: ignore[union-attr]
+    assert turbo not in row.deps_json["models"] and row.deps_json["models"]
+
+
 def test_imports_survive_a_restart(client: TestClient) -> None:
     w = _import(client, file_name="雨夜氛围-ltx2.json", workflow=_ltx())
     client.put(f"{V1}/workflows/{w['id']}/bindings", json=w["bindings"])

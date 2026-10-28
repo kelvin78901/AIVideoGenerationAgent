@@ -412,6 +412,19 @@ def _video_req(
     return ModelRequest(kind="video", prompt="她回头，雨还在下。", seed=7, params=params)
 
 
+@pytest.mark.parametrize("slug", ["h3-i2v", "h3-r2v"])
+def test_local_h3_drafts_sample_20_steps_without_turbo(slug: str) -> None:
+    """Kelvin 2026-10-27: Turbo (8 / 4 steps) looked too rough, drafts take the official 20."""
+    wf = shipped_workflow(slug)
+    assert not any(n["class_type"] == "LoraLoaderModelOnly" for n in wf.graph.values())
+    assert not any(m.folder == "loras" for m in wf.meta.models)
+    [unet] = [k for k, n in wf.graph.items() if n["class_type"] == "UNETLoader"]
+    [scheduler] = [n for n in wf.graph.values() if n["class_type"] == "BasicScheduler"]
+    [guider] = [n for n in wf.graph.values() if n["class_type"] == "BasicGuider"]
+    assert scheduler["inputs"]["steps"] == 20 and scheduler["inputs"]["model"] == [unet, 0]
+    assert guider["inputs"]["model"] == [unet, 0]
+
+
 def test_the_h3_workflow_bypasses_its_audio_guide_without_audio() -> None:
     wf = shipped_workflow("h3-i2v")
     assert wf.meta.kind == "video" and wf.output_nodes("video_out") == ["92"]
@@ -461,7 +474,7 @@ async def test_a_video_take_with_its_inputs_and_progress(h3_root: Path, store: B
     assert result.raw["comfy"]["workflow_id"] == "h3-i2v"
     assert seen[0] == {"take": 1, "takes": 1, "step": 0, "steps": 0, "pct": 0.0}
     assert seen[-1] == {"take": 1, "takes": 1, "step": 2, "steps": 2, "pct": 1.0}
-    assert adapter.estimate(_video_req(store, n=2)).seconds == 2 * 25 * 5.0
+    assert adapter.estimate(_video_req(store, n=2)).seconds == 2 * 30 * 5.0
 
 
 async def test_without_a_socket_it_polls(h3_root: Path, store: BlobStore) -> None:

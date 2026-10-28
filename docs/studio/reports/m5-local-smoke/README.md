@@ -11,6 +11,7 @@
 | `run3-workflows/` | 关 Turbo，换社区热度高的工作流：官方 20 步、SEED HUNTER、SEEDVR2 超分、关 SageAttention | `run3-workflows/README.md` |
 | `run4-1-04-cut/` | 1-04 为什么第 2 秒就切走：去场景图、改参考图写法、钉首帧、按官方写法重写，各 2 个种子 | `run4-1-04-cut/README.md` |
 | `run5-rewrite/` | 第 14c 步：DeepSeek 按官方写法改写 + 工作台现在的 Turbo 工作流，1-01、1-04 各 2 个种子：都不切走了 | `run5-rewrite/README.md` |
+| `run6-20steps/` | 第 14e 步：工作台的本地 H3 改成 20 步、不开 Turbo，和第五轮同种子、同提示词 A/B：光线稳、推镜克制、脸更自然；1-01 约 158 秒、1-04 约 188 秒一条 | `run6-20steps/README.md` |
 | — | 删掉第三轮装的潜空间放大节点包和模型（先存 Manager 快照），然后体检全部已登记的工作流：7 个都正常 | `comfyui-cleanup.md` |
 
 每张 `*.jpg` 的拼图是每秒两帧，从左到右、从上到下；`kf-*` 是关键帧候选，`take-*-poster` / `last_frame` 是首帧和尾帧，`1-04-face-*` 是 1:1 裁的脸部对比（左右两张）。

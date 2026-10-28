@@ -9,20 +9,6 @@
    "title": "H3 model"
   }
  },
- "145": {
-  "class_type": "LoraLoaderModelOnly",
-  "inputs": {
-   "lora_name": "minimax_h3_ref2v_turbo_4step_v0.1_comfyui_bf16.safetensors",
-   "strength_model": 1.0,
-   "model": [
-    "127",
-    0
-   ]
-  },
-  "_meta": {
-   "title": "Turbo LoRA"
-  }
- },
  "128": {
   "class_type": "CLIPLoader",
   "inputs": {
@@ -210,7 +196,7 @@
   "class_type": "BasicGuider",
   "inputs": {
    "model": [
-    "145",
+    "127",
     0
    ],
    "conditioning": [
@@ -244,10 +230,10 @@
   "class_type": "BasicScheduler",
   "inputs": {
    "scheduler": "simple",
-   "steps": 4,
+   "steps": 20,
    "denoise": 1.0,
    "model": [
-    "145",
+    "127",
     0
    ]
   },

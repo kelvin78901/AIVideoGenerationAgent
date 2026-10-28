@@ -171,6 +171,12 @@ class WorkflowLibrary:
                 if row is None:
                     s.add(self._new_row(source, root, wf))
                 elif source == "repo":  # the repo's files are the truth for its workflows
+                    if wf.sha256 != row.file_sha256:  # a new graph: the old check says nothing
+                        row.check_json = None
+                        row.deps_json = {
+                            **row.deps_json,
+                            "models": [m.model_dump() for m in wf.meta.models],
+                        }
                     row.model_key = _repo_key(wf.slug)
                     row.file_sha256 = wf.sha256
                     row.bindings_json = _meta_bindings(wf)

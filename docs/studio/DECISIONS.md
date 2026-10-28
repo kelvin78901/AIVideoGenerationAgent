@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 14e 步：本地 H3 草稿 20 步；媒体缓存认工作流文件；库同步跟着仓库文件走
+
+- **`workflows/h3-i2v`、`h3-r2v`**：删 `LoraLoaderModelOnly`（Turbo LoRA），`BasicGuider` 和 `BasicScheduler` 直接接 `UNETLoader`，`steps` 8 / 4 → 20（res_multistep + simple，官方关 Turbo 的默认）；`models` 去掉两个 LoRA，名字去掉「Turbo」；`est_seconds_per_s` 25 → 30 / 36（第六轮本机实测 158 / 188 秒一条 5.17 秒的片子，`reports/m5-local-smoke/run6-20steps/`）。
+- **媒体调用的结果缓存键加上工作流文件哈希**（`media._media_key` + `modelhub/workflows.py:workflow_sha256`，每次读文件，不走 `shipped_workflow` 的进程内缓存）。原因：这个缓存是为了重试 / 续跑不重复花钱，键只有「模型键 + 提示词 + 参数 + 种子」；工作流改成 20 步后，同种子的 take 1 秒内拿回 Turbo 的旧片子、不写 `model_call`。没有工作流的模型键不变，旧缓存照常命中。
+- **工作流库同步仓库工作流时，文件哈希变了就刷新 `deps_json.models`、清掉旧体检**（`wflib/service.py:sync`）：以前只更新哈希、名字、能力，旧的模型清单（含 LoRA）和旧图的体检结果一直留着。仍是推荐档；体检要再跑一次（工作流库「全部体检」或导入时）。
+- **安装清单的 `w_h3` 仍下载两个 Turbo LoRA（3.9 GB）**，没动：以后要不要做「快速草稿」档是产品问题，留给 Kelvin（PROGRESS「等 Kelvin 的事」）。
+- 顺带修 CI（379c314，第 14c / 14d 步之后红了三次）：安装 / 扫描测试补 `w_flashvsr`，运行记录测试改成本地 take 只有改写的花费。
+
 ## 2026-10-27 · Kelvin 定：本地 H3 草稿用 20 步、不开 Turbo；原生配音的声音合格
 
 - **本地 H3 草稿（`comfy/h3`、`comfy/h3-r2v`）改成 20 步、不开 Turbo LoRA**（res_multistep + simple，官方关 Turbo 的默认）。原因：Kelvin 看了第三轮（`reports/m5-local-smoke/run3-workflows/`）和第五轮（`run5-rewrite/`），Turbo（8 / 4 步）画质不够；20 步一条 5 秒片约 2.5–6 分钟，换来画质。提示词改写（第 14b 步）解决切走 / 漂移，步数解决画质，两者独立。做法见计划第 14e 步。

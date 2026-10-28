@@ -1,14 +1,15 @@
 # MiniMax H3 图生视频（视频草稿，M5）。按 ComfyUI 官方模板 video_minimax_h3_i2v.json（Comfy-Org/workflow_templates，
 # 2026-10-26 下载）把子图「Image to Video (MiniMax H3)」展开改写成 API 格式；节点名、输入名、可选值对照本机 ComfyUI 0.41.2
 # 的 /object_info 核过（2026-10-26）。和官方不同：
-# - 草稿固定开 Turbo LoRA（官方开关默认关）：8 步、强度 1.0，采样器 res_multistep、调度 simple，照官方 Turbo 默认；
+# - 草稿不开 Turbo LoRA（官方开关默认关）：20 步，采样器 res_multistep、调度 simple，照官方关 Turbo 的默认
+#   （Kelvin 2026-10-27 定，8 步画质不够，见 DECISIONS「本地 H3 草稿用 20 步」）；
 # - 台词音频（配音方式 tts，先配音再对口型）用官方的 MiniMaxH3AddGuide 挂在第 0 帧（I2V 节点本身不收音频）；没有台词
 #   音频时这个节点被旁路，I2V 的 positive 直接进引导器；
 # - 尺寸按成片画幅取 768P 档（短边 768，和 H3 API 的 768P、Regenerate-2K 的输入对上），帧数照官方表达式落到 17k+5；
 # - 帧率固定 24（H3 原生），25 / 30 在导出时转（PLAN「成片规格」）。
 # 锁定音色参考（配音方式 native 的音色样本）I2V 节点收不了，要 MiniMaxH3ReferenceToVideo，见 DECISIONS「M5 第 4 步」。
 # 许可：H3 本地权重商用要 MiniMax 授权（PLAN 风险），终版走 API。
-name: { zh: MiniMax H3 图生视频（Turbo 草稿）, en: MiniMax H3 image to video (Turbo draft) }
+name: { zh: MiniMax H3 图生视频（草稿）, en: MiniMax H3 image to video (draft) }
 kind: video
 tier: recommended
 bindings:
@@ -27,7 +28,6 @@ bindings:
   - { slot: video_out, node: Output }
 models:
   - { folder: diffusion_models, name: minimax_h3_fl2va_pruned_int8_convrot.safetensors }
-  - { folder: loras, name: minimax_h3_fl2v_turbo_8step_v1.0_comfyui_bf16.safetensors }
   - { folder: text_encoders, name: qwen3vl_32b_minimax_h3_nvfp4_awq.safetensors }
   - { folder: vae, name: minimax_h3_video_vae_int8_convrot.safetensors }
   - { folder: vae, name: minimax_h3_audio_vae_fp32.safetensors }
@@ -36,8 +36,8 @@ caps:
   fps: 24
   duration_s: [5, 15]
   audio: true
-  # 每秒成片大约要跑多久（5090 估的，第 14 步本机实测后改）
-  est_seconds_per_s: 25
+  # 每秒成片大约要跑多久（本机 5090 实测：5.17 秒的 1-01 跑 153 秒，含加载模型）
+  est_seconds_per_s: 30
   verify: true
   multiple: 32
   sizes:

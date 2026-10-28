@@ -251,3 +251,13 @@ def has_workflow(slug: str | None, root: Path | None = None) -> bool:
         return False
     folder = (root or WORKFLOWS_DIR) / slug
     return (folder / "workflow.api.json").is_file() and (folder / "workflow.yaml").is_file()
+
+
+def workflow_sha256(spec: ModelSpec) -> str | None:
+    """The hash of a ComfyUI model's workflow file as it is now (read each time, unlike
+    ``shipped_workflow``): what its results depend on besides the request. None without one."""
+    root = spec_workflows_dir(spec)
+    if not spec.workflow or not has_workflow(spec.workflow, root):
+        return None
+    api = (root or WORKFLOWS_DIR) / spec.workflow / "workflow.api.json"
+    return hashlib.sha256(api.read_bytes()).hexdigest()
