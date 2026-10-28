@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 13b 步：示例 ComfyUI 能装坏、能回滚；工作流库的端到端测试
+
+- **示例机器多两个「社区」工作流**（`wflib/demo/workflows/社区/`，在 ComfyUI 列表最上面）：`图生视频-wan22.json`（Wan 2.2 图生视频的写法，缺 ComfyUI-VideoHelperSuite，装上就能体检通过、试跑、升「我的工作流」）；`胶片颗粒-filmgrain.json`（缺示例坏包 ComfyUI-FilmGrainFX，地址用 `example.com`，一看就是假的）。示例 `object_info` 补核心节点 `WanImageToVideo`。
+- **坏包怎么坏**：`node_map.json` 里那个包的元数据带 `demo_breaks: ["KSampler"]`；`DemoComfy.install(snapshot, packs)` 加上包的节点类、拿掉它弄坏的类，并记下装之前的样子；`DemoComfy.restore(snapshot)` 退回去。示例坏包是我们自己的约定，真实 Manager 的节点表没有这个键。
+- **回滚后重新体检**：`POST /comfy/snapshots/{id}/restore` 排上回滚后调 `WorkflowLibrary.restored(manager_name)`：示例机器立刻复原并全部体检；真实 ComfyUI 要重启才生效，仍由下一次扫描核对（SPEC 6.4.1），这里什么都不做。
+- **「装后变坏」的提示带快照 id、会一直挂着**：`broke_after_install` 的参数加 `snapshot_id`（界面的「回滚到这次安装前的快照」要用）；之前只在「上次正常、这次坏了」那一次体检里出现，再点一次体检就没了。现在上次已经带着它、这次还没好，就继续带着，回滚或修好为止。
+- **界面还没接**：模型页工作流详情只列缺的节点包和模型，`problems`（包括 `broke_after_install`、`unknown_node`）一条都不显示，SPEC 6.4.5 要的回滚按钮也没有。放进第 13c 步，和 Playwright `m5` 一起做。
+
 ## 2026-10-28 · M5 第 13a 步：Mock 照真实适配器记钱、记工作流；生成的端到端测试
 
 - **Mock 按真实适配器的价档记钱**：视频按秒计价的模型（`price_by_res`）由真实适配器按画面挑价档（H3：短边超过 768 用 2K；Seedance：短边够得着的最高档）。Mock 以前拿 `params.resolution` 查表，API 出片时那是交付档（如 `1080p`），表里没有 → 0 元。现在两家适配器把挑档抽成模块函数 `resolution_tier(spec, params)`，Mock 按 `spec.adapter` 调同一个（`mock.billed_tier`），用量里带上 `resolution`，估价和记账都按它。示例种子的花费是写死的，快照没变。

@@ -502,5 +502,50 @@
   "input": {
    "required": {}
   }
+ },
+ "WanImageToVideo": {
+  "display_name": "WanImageToVideo",
+  "input": {
+   "required": {
+    "positive": [
+     "CONDITIONING"
+    ],
+    "negative": [
+     "CONDITIONING"
+    ],
+    "vae": [
+     "VAE"
+    ],
+    "width": [
+     "INT",
+     {
+      "default": 832
+     }
+    ],
+    "height": [
+     "INT",
+     {
+      "default": 480
+     }
+    ],
+    "length": [
+     "INT",
+     {
+      "default": 81
+     }
+    ],
+    "batch_size": [
+     "INT",
+     {
+      "default": 1
+     }
+    ]
+   },
+   "optional": {
+    "start_image": [
+     "IMAGE"
+    ]
+   }
+  }
  }
 }

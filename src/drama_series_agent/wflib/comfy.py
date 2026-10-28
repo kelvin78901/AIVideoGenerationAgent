@@ -108,17 +108,37 @@ class HttpComfy:
 
 class DemoComfy:
     """Mock's sample machine: ``wflib/demo/workflows/``, ``object_info.json`` and
-    ``node_map.json``. A node pack it "installs" adds its classes at once (no restart)."""
+    ``node_map.json``. A node pack it "installs" adds its classes at once (no restart); one the
+    node map marks ``demo_breaks`` takes those classes away (a bad pack). Restoring the snapshot
+    taken before an install puts things back as they were (a real one waits for a restart)."""
 
     needs_restart = False
 
     def __init__(self, root: Path = DEMO_DIR) -> None:
         self._root = root
         self._added: dict[str, Any] = {}
+        self._broken: set[str] = set()
+        # snapshot name → (added, broken) as they were when it was taken
+        self._before: dict[str, tuple[dict[str, Any], set[str]]] = {}
 
-    def add_classes(self, classes: list[str]) -> None:
-        for cls in classes:
-            self._added[cls] = {"display_name": cls, "input": {"required": {}}}
+    def install(self, snapshot: str, packs: list[tuple[str, list[str]]]) -> None:
+        """``packs``: (url, classes) of each pack installed after ``snapshot`` was taken."""
+        self._before.setdefault(snapshot, (dict(self._added), set(self._broken)))
+        meta = json.loads((self._root / "node_map.json").read_text(encoding="utf-8"))
+        for url, classes in packs:
+            for cls in classes:
+                self._added[cls] = {"display_name": cls, "input": {"required": {}}}
+            entry = meta.get(url) or []
+            info = entry[1] if len(entry) > 1 and isinstance(entry[1], dict) else {}
+            self._broken |= set(info.get("demo_breaks") or [])
+
+    def restore(self, snapshot: str) -> bool:
+        """Back to how it was when ``snapshot`` was taken; False for one it does not know."""
+        if snapshot not in self._before:
+            return False
+        added, broken = self._before[snapshot]
+        self._added, self._broken = dict(added), set(broken)
+        return True
 
     async def files(self) -> list[ComfyFile]:
         index = json.loads((self._root / "files.json").read_text(encoding="utf-8"))
@@ -138,7 +158,8 @@ class DemoComfy:
     async def object_info(self) -> dict[str, Any]:
         data = json.loads((self._root / "object_info.json").read_text(encoding="utf-8"))
         assert isinstance(data, dict)
-        return {**data, **self._added}
+        merged = {**data, **self._added}
+        return {k: v for k, v in merged.items() if k not in self._broken}
 
     async def node_map(self) -> dict[str, Any]:
         data = json.loads((self._root / "node_map.json").read_text(encoding="utf-8"))

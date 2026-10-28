@@ -326,9 +326,12 @@ def test_a_workflow_broken_after_a_node_install_points_at_the_snapshot(
     rows = {w["id"]: w for w in client.post(f"{V1}/workflows/check-all").json()}
     broken = rows[sdxl["id"]]["check"]
     assert broken["status"] == "broken"
-    assert {"code": "broke_after_install", "params": {"snapshot": res["snapshot"]}} in broken[
-        "problems"
-    ]
+    snap = client.get(f"{V1}/comfy/snapshots").json()[0]
+    params = {"snapshot": res["snapshot"], "snapshot_id": snap["id"]}
+    assert {"code": "broke_after_install", "params": params} in broken["problems"]
+    # Checked again, still broken: it keeps pointing back.
+    again = client.post(f"{V1}/workflows/{sdxl['id']}/check").json()["check"]
+    assert {"code": "broke_after_install", "params": params} in again["problems"]
 
 
 def _dramastudio_graph() -> dict[str, Any]:

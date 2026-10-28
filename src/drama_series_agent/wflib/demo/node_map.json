@@ -26,5 +26,16 @@
   {
    "title_aux": "ComfyUI-FlashVSR"
   }
+ ],
+ "https://example.com/ComfyUI-FilmGrainFX": [
+  [
+   "FilmGrainFX"
+  ],
+  {
+   "title_aux": "ComfyUI-FilmGrainFX",
+   "demo_breaks": [
+    "KSampler"
+   ]
+  }
  ]
 }

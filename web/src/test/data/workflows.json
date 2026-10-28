@@ -2446,6 +2446,18 @@
   ],
   "comfy_files": [
     {
+      "path": "社区/胶片颗粒-filmgrain.json",
+      "modified_at": "2026-10-18T09:00:00Z",
+      "imported_as": null,
+      "board": false
+    },
+    {
+      "path": "社区/图生视频-wan22.json",
+      "modified_at": "2026-10-18T09:00:00Z",
+      "imported_as": null,
+      "board": false
+    },
+    {
       "path": "我的/雨夜氛围-ltx2.json",
       "modified_at": "2026-10-18T09:00:00Z",
       "imported_as": "wf_ltx2",

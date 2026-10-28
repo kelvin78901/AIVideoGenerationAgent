@@ -52,7 +52,7 @@ from drama_series_agent.modelhub.workflows import (
     user_workflows_dir,
 )
 from drama_series_agent.setup.manifest import Message
-from drama_series_agent.setup.schema import NodePackSource
+from drama_series_agent.setup.schema import ComfySnapshot, NodePackSource
 from drama_series_agent.setup.service import NoComfy, SetupBusy, SnapshotFailed
 from drama_series_agent.spec.dims import ASPECTS, dims
 from drama_series_agent.wflib import dramastudio
@@ -142,7 +142,7 @@ class WorkflowLibrary:
         self.router = router
         # The snapshot taken before the last node-pack install: a workflow that worked before
         # it and is broken after points back to it (SPEC 6.4.5).
-        self.install_snapshot: str | None = None
+        self.install_snapshot: ComfySnapshot | None = None
         if jobs is not None:
             jobs.register(WORKFLOW_TRIAL, self._run_trial)
 
@@ -501,10 +501,15 @@ class WorkflowLibrary:
         models = _missing_models(graph, info, row.deps_json.get("models") or [])
         status = "broken" if problems else "missing" if packs or models else "ok"
         before = (row.check_json or {}).get("status")
-        if status != "ok" and before == "ok" and self.install_snapshot:
-            problems.append(
-                Message(code="broke_after_install", params={"snapshot": self.install_snapshot})
-            )
+        snap = self.install_snapshot
+        # Still broken on a later check (until a restore or a fix): it keeps pointing back.
+        was = any(
+            p.get("code") == "broke_after_install"
+            for p in (row.check_json or {}).get("problems") or []
+        )
+        if status != "ok" and (before == "ok" or was) and snap is not None:
+            params = {"snapshot": snap.manager_name, "snapshot_id": snap.id}
+            problems.append(Message(code="broke_after_install", params=params))
             status = "broken"
         return CheckOut(
             at=utcnow(),
@@ -583,12 +588,11 @@ class WorkflowLibrary:
             raise LibraryError(409, "setup_busy") from None
         except SnapshotFailed as exc:
             raise LibraryError(409, "comfy_snapshot_failed", reason=exc.reason) from None
-        self.install_snapshot = result.snapshot.manager_name
+        self.install_snapshot = result.snapshot
         access = self.comfy()
         if isinstance(access, DemoComfy):
-            access.add_classes(
-                [c for p in check.missing_packs if p.name in result.installed for c in p.classes]
-            )
+            done = [p for p in check.missing_packs if p.name in result.installed]
+            access.install(result.snapshot.manager_name, [(p.url or "", p.classes) for p in done])
         if not access.needs_restart:  # SPEC 6.4.5: every workflow checked after an install
             await self.check_all()
         return DepsInstalled(
@@ -599,6 +603,15 @@ class WorkflowLibrary:
             restart_required=access.needs_restart,
             failed=result.failed,
         )
+
+    async def restored(self, manager_name: str) -> None:
+        """A snapshot restore was asked for. The sample machine is back at once, so every
+        workflow is checked again; a real ComfyUI only after it restarts (the next scan)."""
+        access = self.comfy()
+        if isinstance(access, DemoComfy) and access.restore(manager_name):
+            if self.install_snapshot and self.install_snapshot.manager_name == manager_name:
+                self.install_snapshot = None
+            await self.check_all()
 
     # ------------------------------------------------------------------ trial run
 
