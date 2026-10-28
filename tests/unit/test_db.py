@@ -131,3 +131,32 @@ async def test_override_roundtrip() -> None:
                 await put_override(s, scope="global", data={})
     finally:
         await db.dispose()
+
+
+async def test_a_cancelled_request_does_not_keep_the_write_lock(tmp_path: Path) -> None:
+    """anyio (Starlette, on a closed SSE stream) cancels level-triggered: a query cancelled midway
+    left its connection holding the write lock, and every writer after it hung (CI, M5 step
+    12c). The session's work is shielded: it finishes, rolls back, and the next writer runs."""
+    import anyio
+    from sqlalchemy import text
+
+    db = Database(tmp_path / "x.db")
+    async with db.session() as s:
+        await s.exec(text("create table t (x integer)"))  # type: ignore[call-overload]
+        await s.commit()
+    # Cancelled in the middle of a long write, as a page closed during a request.
+    slow = (
+        "with recursive n(i) as (select 1 union all select i + 1 from n where i < 3000000) "
+        "insert into t select i from n"
+    )
+    with anyio.move_on_after(0.2):
+        async with db.session() as s:
+            await s.exec(text("insert into t values (1)"))  # type: ignore[call-overload]
+            await s.exec(text(slow))  # type: ignore[call-overload]
+    with anyio.fail_after(10):
+        async with db.session() as s:
+            await s.exec(text("insert into t values (2)"))  # type: ignore[call-overload]
+            await s.commit()
+            rows = (await s.exec(text("select x from t"))).all()  # type: ignore[call-overload]
+    assert [r[0] for r in rows] == [2]
+    await db.dispose()

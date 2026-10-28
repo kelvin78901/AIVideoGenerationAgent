@@ -7,6 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
+import anyio
 from alembic import command
 from alembic.config import Config as AlembicConfig
 from sqlalchemy import event
@@ -67,8 +68,19 @@ class Database:
 
     @asynccontextmanager
     async def session(self) -> AsyncIterator[AsyncSession]:
-        async with self._sessions() as session:
-            yield session
+        """A session whose work Starlette cannot cancel halfway.
+
+        Starlette cancels a streaming response (SSE) through an anyio cancel scope when the
+        browser leaves, and anyio cancels level-triggered: a query cancelled midway makes
+        SQLAlchemy terminate the connection, that await is cancelled too, and the connection
+        is left holding its transaction and SQLite's write lock, so every writer after it
+        waits (CI's e2e hangs, M5 step 12c). Shielded, the block finishes (it is short) and
+        the cancellation lands on the next await outside it. Native ``task.cancel()`` (job
+        cancel, ``asyncio.timeout``) still goes through.
+        """
+        with anyio.CancelScope(shield=True):
+            async with self._sessions() as session:
+                yield session
 
     async def dispose(self) -> None:
         await self.engine.dispose()

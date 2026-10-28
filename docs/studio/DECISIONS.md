@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · 数据库会话不让 Starlette 中途取消（修 CI 的 e2e 卡住）
+
+- **现象**：第 11 步起 CI 的 Playwright smoke 一轮比一轮红（后期页一直「正在加载」、检测一直「正在检测…」、SSE 没有任务更新），本机全过。e49a128 那轮后端日志在 smoke 页面测试期间报了 6 次「Exception terminating connection … CancelledError: Cancelled via cancel scope … by RequestResponseCycle.run_asgi」，之后读照常、写全卡住。
+- **原因**：浏览器关页面时 Starlette 用 anyio 取消作用域取消流式响应（SSE），anyio 的取消是电平触发的；数据库语句执行到一半被取消，SQLAlchemy 当场终止连接，终止这一步又被取消，连接带着写事务和 SQLite 的写锁留下，后面的写全在等。本机用「写到一半时 `move_on_after`」复现出同一条日志并卡死（`tests/unit/test_db.py`）。
+- **做法**：`Database.session()` 整段放在 `anyio.CancelScope(shield=True)` 里：会话里的工作做完、照常回滚 / 还连接，取消落到会话外的下一个 await。我们自己的代码不用 anyio 取消；任务队列的取消、`asyncio.timeout` 是原生 `task.cancel()`，屏蔽挡不住它们（验证过），所以只影响「客户端走了」这一种。只在关闭时屏蔽 `close()` 不够（试过：取消发生在语句执行中，轮不到 `close()`）。`core/events.py` 原来给两个 SSE 读单独加的屏蔽现在多余，留着不碍事。
+
 ## 2026-10-28 · M5 第 12c 步：按镜头选工作流的界面
 
 - **规则表放「模型与兜底」**（组件表和工作流库之间，`pages/models/WorkflowRules.tsx`）：一行一条规则，六个条件各一个下拉（「不限」= 不写这个条件），右边选工作流（只列接口给的 `models`，存过但现在不能选的也留在下拉里）、上移 / 下移 / 删除；每改一处整表 `PUT`；改过的剧显示「本剧已改」和「恢复默认」（`DELETE`）。LLM 建议开关在表下面，默认关。模型页没有剧集路由，按「最近打开的剧，否则示例剧」（`useSeriesId`），说明里写明只对哪部剧生效。没有原型，按 M0.5 风格；1440 和 2000 px 都是一行。
