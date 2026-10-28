@@ -14,7 +14,7 @@ PC_READY = Capabilities.of(
     found=[
         "os", "gpu", "driver", "python", "uv", "torch", "ffmpeg", "git", "comfy", "node_h3",
         "node_vhs", "node_seedvr2", "node_flashvsr", "node_ctrl", "node_dramastudio", "w_h3",
-        "w_te", "w_img", "w_img_t2i", "w_flux3", "w_sr", "w_tts", "w_llm", "llmsrv",
+        "w_te", "w_img", "w_img_t2i", "w_flux3", "w_sr", "w_flashvsr", "w_tts", "w_llm", "llmsrv",
         "rt_qwentts", "rt_indextts", "rt_ocr",
     ],
 )  # fmt: skip

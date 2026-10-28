@@ -1,0 +1,26 @@
+# SeedVR2 7B 一步修复放大（2K 精修的本地默认，Kelvin 2026-10-27 定；M5 第 14d 步）。按 ComfyUI 官方模板
+# utility_seedvr2_3b_int8_upscale_video（templates 0.11.86）改写成 API 格式，换成 7B int8（清单 w_sr，本机已有），
+# 和第三轮本机对比用的是同一张图（reports/m5-local-smoke/run3-workflows，1:1 裁图睫毛、发丝、皮肤纹理明显更清楚，
+# 脸没变）。和官方不同：
+# - 直接缩放到成片尺寸（scale dimensions，居中裁），不按倍数：768P 草稿 → 1080×1920，成片规格是唯一的尺寸来源；
+# - 时间方向按显存自动分块（SeedVR2TemporalChunk auto，重叠 2 帧），5–15 秒都不爆显存；
+# - lab 调色（官方默认 none，社区 SEEDVR2 工作流用 lab：颜色和原片一致）；
+# - 原片的声音、帧率原样带过去（GetVideoComponents → CreateVideo）。
+# 只放大、补细节，不改内容；要重新生成细节用 H3 Regenerate-2K（API）。
+name: { zh: SeedVR2 7B 超分（本地 2K 精修）, en: SeedVR2 7B upscale (local 2K finishing) }
+kind: upscale
+tier: recommended
+bindings:
+  - { slot: video_in, node: Video in, field: file }
+  - { slot: width, node: Size, field: resize_type.width }
+  - { slot: height, node: Size, field: resize_type.height }
+  - { slot: seed, node: Restore, field: seed }
+  - { slot: video_out, node: Output }
+models:
+  - { folder: diffusion_models, name: seedvr2_7b_int8_convrot.safetensors }
+  - { folder: vae, name: seedvr2_ema_vae_fp16.safetensors }
+caps:
+  # 本机实测（RTX 5090，2026-10-27）：5.17 秒的 768×1344 片子放大到 1080×1920 用 194 s / 211 s（含加载模型）
+  est_seconds_per_s: 40
+  duration_s: [1, 15]
+  multiple: 16

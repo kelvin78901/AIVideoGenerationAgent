@@ -663,6 +663,29 @@
           "install": null
         },
         {
+          "id": "w_flashvsr",
+          "group": "w",
+          "name": {
+            "zh": "FlashVSR 1.1 权重",
+            "en": "FlashVSR 1.1 weights"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 6700000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_sr",
           "group": "w",
           "name": {
@@ -872,6 +895,7 @@
         "w_img",
         "w_img_t2i",
         "w_flux3",
+        "w_flashvsr",
         "w_sr",
         "w_tts",
         "llmsrv"
@@ -962,6 +986,16 @@
             "to": "feef60b",
             "source": "black-forest-labs/flux-3-image-klein-comfy",
             "gb": 20.8
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "w_flashvsr",
+            "action": "install",
+            "to": "f1bc675",
+            "source": "1038lab/FlashVSR",
+            "gb": 6.7
           }
         },
         {
@@ -1735,6 +1769,29 @@
           "installable": true,
           "touches_comfy": false,
           "size_bytes": 20800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_flashvsr",
+          "group": "w",
+          "name": {
+            "zh": "FlashVSR 1.1 权重",
+            "en": "FlashVSR 1.1 weights"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_upscale_api",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 6700000000,
           "work_s": 0.0,
           "install": null
         },

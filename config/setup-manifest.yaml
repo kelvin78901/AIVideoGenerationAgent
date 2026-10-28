@@ -354,6 +354,26 @@ items:
           - { path: text_encoders/qwen3vl_4b_int8_convrot.safetensors, folder: text_encoders, sha256: 32de113cbf8282b02cbff0794b637b9d6676da09314a1db5a30bcea9bf4ee01c }   # 4.86 GB
           - { path: text_encoders/qwen3.5_9b_flux3_prompt_upsampler_int8_convrot.safetensors, folder: text_encoders, sha256: cb8cb9b9dcd2569509de755dca54d96fd93a16a7aabfd2f4051f0a144230620f }   # 9.75 GB
           - { path: vae/flux2-vae.safetensors, folder: vae, sha256: 868fe7b343cc8f3a19dbcfcafbc3d5f888802be3f89bd81b65b3621a066ce8f3 }   # 0.34 GB
+  - id: w_flashvsr
+    group: w
+    name: { zh: "FlashVSR 1.1 权重", en: "FlashVSR 1.1 weights" }
+    requires_cuda: true
+    depends_on: [comfy]
+    fix: { skip: unsupported_upscale_api }
+    # 给 1038lab 的 ComfyUI-FlashVSR 用（2K 精修的本地兜底，M5 第 14d 步）：节点从 ComfyUI/models/FlashVSR 读这五个文件，
+    # 缺了才自己整仓下载（13 GB，含用不上的两个）；这里只下要的五个，锁 2025-11-17 的版本。
+    detect: { type: downloads }
+    size_gb: 6.7
+    install:
+      - type: download
+        hf_repo: 1038lab/FlashVSR
+        revision: f1bc675696d43f05d183d9b7c49e44d84c843caf
+        files:
+          - { path: FlashVSR1_1.safetensors, folder: FlashVSR, sha256: bd28180edcf3446c028e32fc6b731a80bf7e4da2ab4caac3186b9499964d37be }   # 5.68 GB
+          - { path: LQ_proj_in.safetensors, folder: FlashVSR, sha256: b6b98d11ff78202d88bdb06bd9fc3b6e5c76dde18ac9a59922c16e194807b998 }   # 0.58 GB
+          - { path: Wan2.1_VAE.safetensors, folder: FlashVSR, sha256: 2fc39d31359a4b0a64f55876d8ff7fa8d780956ae2cb13463b0223e15148976b }   # 0.25 GB
+          - { path: TCDecoder.safetensors, folder: FlashVSR, sha256: cefcf8672d0173c4c50e7fcff18c34b2a1bf76f9d85c95f6108055c8d30e76a6 }   # 0.18 GB
+          - { path: Prompt.safetensors, folder: FlashVSR, sha256: 306b35796ddd406a635da753a815ee9a7d5a84fcd211974018329fe82df5bdb9 }   # 4 MB
   - id: w_sr
     group: w
     name: { zh: "SeedVR2 7B 权重（int8）", en: "SeedVR2 7B weights (int8)" }

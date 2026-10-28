@@ -20,7 +20,7 @@ def _item(item_id: str, **extra: Any) -> dict[str, Any]:
 def test_real_manifest_parses() -> None:
     m = load_manifest()
     ids = [x.id for x in m.items]
-    assert len(ids) == 35
+    assert len(ids) == 36
     assert len(set(ids)) == len(ids)
     assert {"official", "cn", "auto"} <= set(m.mirrors)
 
@@ -29,7 +29,7 @@ def test_platform_rows() -> None:
     m = load_manifest()
     win = [x.id for x in m.for_platform("windows")]
     mac = [x.id for x in m.for_platform("macos")]
-    assert len(win) == 35
+    assert len(win) == 36
     assert len(mac) == 34
     assert "driver" in win and "driver" not in mac
     assert [x for x in win if x != "driver"] == mac  # manifest order kept

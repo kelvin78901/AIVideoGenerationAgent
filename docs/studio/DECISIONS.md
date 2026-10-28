@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-27 · M5 第 14d 步：2K 精修的本地档（SeedVR2 默认、FlashVSR 兜底）
+
+- **Kelvin 定**：「2K 精修」（`up`）本地默认 SeedVR2，兜底 FlashVSR，按钮上显示预计耗时。范围：M5 做后端和工作流，按钮和 `POST /versions/{id}/upscale` 仍是 M6（计划原样）。`components.yaml` 的 `up` 本来就是 `local: comfy/seedvr2`、`fallback_to: comfy/flashvsr`，只补了注释。
+- **`workflows/seedvr2-up`**：第三轮本机对比验证过的图（ComfyUI 自带 SeedVR2 节点 + 7B int8，官方模板 `utility_seedvr2_3b_int8_upscale_video` 换 7B），直接缩放到成片尺寸（居中裁），时间方向按显存自动分块，lab 调色，原片的声音和帧率原样带过去。
+- **`workflows/flashvsr-up`**：1038lab 的 `AILab_FlashVSR`（Balanced 预设）只能 ×2 / ×4，所以 ×2 再缩到成片尺寸。
+- **FlashVSR 权重进安装清单 `w_flashvsr`**（锁 1038lab/FlashVSR f1bc6756，五个文件 6.7 GB、带 sha256，下到 `ComfyUI/models/FlashVSR`）：节点缺文件时会自己整仓下载 13 GB（含用不上的两个），而且绕过我们的快照和进度。`comfy/flashvsr` 的 `needs` 加上它；本机已经下好。
+- **预计耗时 = 估价的 `seconds`**：ComfyUI 适配器本来就按 `caps.est_seconds_per_s × 片长` 算，按钮（M6）直接用。本机实测：5.17 秒的 768×1344 片子放大到 1080×1920，SeedVR2 194 / 211 s（→ 40 s 每秒），FlashVSR 164 s（→ 32 s 每秒），都含加载模型。FlashVSR 并没有快很多，当兜底（SeedVR2 失败、超时）而不是「快速档」。
+- **本机体检 + 试跑都过**（工作流库的 `check` / `trial`）：SeedVR2 15 / 15 个节点、FlashVSR 6 / 6，试跑 27 s / 69 s。1:1 裁脸：两者都没改脸，FlashVSR 皮肤纹理多一点、略显锐化，SeedVR2 更顺（`reports/m5-local-smoke/run3-workflows/1-04-face-seedvr2-vs-flashvsr.jpg`）。
+
 ## 2026-10-27 · M5 第 14b 步：本地 H3 的提示词按官方写法改写
 
 - **原因**（本机对比 `reports/m5-local-smoke/run4-1-04-cut/`，同首帧、同种子、官方 20 步）：1-04 第 2 秒切走、画面漂到别处，换采样器、关 Turbo、换社区工作流、关 SageAttention 都没用；切过去的画面就是参考图本身（场景图、人物全身像）。按 MiniMax 官方 `h3-prompt-writing`（GitHub `MiniMax-AI/MiniMax-H3`，b731d8846cf7 的 `base-en.txt` / `ref-en.txt`）手写的提示词两个种子都一镜到底。我们原来的模板违反了三条：要英文（只有台词保留原文）、主体描述 350–500 词逐拍写、只定长相 / 场景的参考图不能单独写成 `<Picture N>` 一行（那是给首帧 / 关键帧的），要写进 `<Subject N>`。

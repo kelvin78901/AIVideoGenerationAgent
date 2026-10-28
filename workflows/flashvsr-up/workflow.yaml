@@ -1,0 +1,20 @@
+# FlashVSR 超分（2K 精修的本地兜底：SeedVR2 失败或显存不够时，Kelvin 2026-10-27 定；M5 第 14d 步）。
+# 节点包用 1038lab（AILab）的 ComfyUI-FlashVSR（清单 node_flashvsr，锁 8877fdd5），权重是清单 w_flashvsr 下到
+# ComfyUI/models/FlashVSR 的五个文件（节点第一次跑时会自己整仓下载 13 GB，清单只下它要的 6.7 GB）。
+# 节点只能按 2 或 4 倍放大：768P 草稿 ×2 再缩到成片尺寸（scale dimensions，居中裁）；原片的声音、帧率原样带过去。
+# 预设 Balanced（2 倍、质量档）；要更省显存时换 Long Video (Low VRAM)。
+name: { zh: FlashVSR 超分（本地 2K 精修兜底）, en: FlashVSR upscale (local 2K finishing fallback) }
+kind: upscale
+tier: recommended
+bindings:
+  - { slot: video_in, node: Video in, field: file }
+  - { slot: width, node: Size, field: resize_type.width }
+  - { slot: height, node: Size, field: resize_type.height }
+  - { slot: seed, node: FlashVSR, field: seed }
+  - { slot: video_out, node: Output }
+models: []
+caps:
+  # 本机实测（RTX 5090，2026-10-27）：5.17 秒的 768×1344 片子到 1080×1920 用 164 s（含加载模型）
+  est_seconds_per_s: 32
+  duration_s: [1, 15]
+  multiple: 16

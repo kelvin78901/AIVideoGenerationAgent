@@ -523,3 +523,19 @@ def test_the_h3_reference_workflow_drops_unused_references_and_voices() -> None:
         "ref_images.ref_image_0",
         "ref_images.ref_image_1",
     ]
+
+
+@pytest.mark.parametrize(("key", "per_s"), [("comfy/seedvr2", 40.0), ("comfy/flashvsr", 32.0)])
+def test_the_2k_finishing_workflows_say_how_long_they_take(
+    key: str, per_s: float, store: BlobStore
+) -> None:
+    """M5 step 14d: 2K 精修's button shows the estimate's seconds, the workflow's
+    ``caps.est_seconds_per_s`` times the clip (SeedVR2 measured on the 5090, 2026-10-27)."""
+    from drama_series_agent.core.config import get_config
+    from drama_series_agent.modelhub.registry import Registry
+
+    spec = Registry.from_config(get_config(), mock=False).spec(key)
+    adapter = _adapter(FakeComfy(), WORKFLOWS_DIR, store, spec=spec)
+    req = ModelRequest(kind="upscale", params={"duration_s": 5.0, "width": 1080, "height": 1920})
+    assert adapter.estimate(req).seconds == per_s * 5.0
+    assert adapter.estimate(req).cost_usd == 0.0

@@ -240,6 +240,8 @@ components:
     balanced: { mode: local, local: comfy/seedvr2, api: minimax/h3-regenerate-2k, fallback_to: comfy/flashvsr }
     per_call_cap_usd: 1
     cheap_api: minimax/h3-regenerate-2k
+    # 本地默认 SeedVR2 7B（workflows/seedvr2-up，5 秒片约 3.5 分钟），失败或超时兜底 FlashVSR（workflows/flashvsr-up），
+    # Kelvin 2026-10-27 定；按钮上的预计耗时来自估价的 seconds（工作流 caps.est_seconds_per_s × 片长，M6 接按钮）。
     note: 本地超分只放大不改内容；要补细节时用 H3 2K 重生成
 
   - id: lip

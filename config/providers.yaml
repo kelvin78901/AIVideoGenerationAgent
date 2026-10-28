@@ -395,8 +395,8 @@ local_models:
   # FLUX 3 Image Klein（BFL，2026-10-15）：权重在要登录同意许可的 HF 仓库（清单 w_flux3，安装器还不能自动下）
   - { key: comfy/flux3-klein,       kind: image,   display: FLUX 3 Klein（本地）,     runtime: comfyui, workflow: flux3-klein, needs: [comfy, w_flux3] }
   - { key: comfy/flux3-klein-t2i,   kind: image,   display: FLUX 3 Klein 文生图（本地）, runtime: comfyui, workflow: flux3-klein-t2i, needs: [comfy, w_flux3] }
-  - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui, needs: [comfy, node_seedvr2, w_sr], requires_cuda: true }
-  - { key: comfy/flashvsr,          kind: upscale, display: FlashVSR（本地）,         runtime: comfyui, needs: [comfy, node_flashvsr], requires_cuda: true }
+  - { key: comfy/seedvr2,           kind: upscale, display: SeedVR2（本地）,          runtime: comfyui, workflow: seedvr2-up, needs: [comfy, node_seedvr2, w_sr], requires_cuda: true }
+  - { key: comfy/flashvsr,          kind: upscale, display: FlashVSR（本地）,         runtime: comfyui, workflow: flashvsr-up, needs: [comfy, node_flashvsr, w_flashvsr], requires_cuda: true }
   # runtime: python 的模型由 worker 跑（adapters/local_python.py）：worker 是 workers/ 下的脚本，env 是
   # ~/.drama-studio/envs/ 下的环境（清单 rt_* 按 runtimes/ 的锁文件装），args 是它加载什么（{models} 是 Setup 页选的
 # 安装位置）；gpu: false 不占显存租约。
