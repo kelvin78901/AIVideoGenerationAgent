@@ -14,6 +14,7 @@ import {
   useCheckWorkflow,
   useDepsPlan,
   useInstallDeps,
+  useRollbackInstall,
   useSaveBindings,
   useSetWorkflowTier,
   useTrialWorkflow,
@@ -288,6 +289,7 @@ function Check({ w }: { w: Workflow }) {
       {!packs && !models && !c.problems.length ? (
         <p className="text-[13px] text-tone-pass-fg">{t("check.okLine")}</p>
       ) : null}
+      {c.problems.length ? <Problems problems={c.problems} /> : null}
       {packs ? (
         <div className="flex flex-col gap-1.5">
           <h4 className="text-sm font-bold">{t("check.packs")}</h4>
@@ -388,6 +390,70 @@ function Check({ w }: { w: Workflow }) {
             })
           }
         />
+      ) : null}
+    </div>
+  );
+}
+
+/** What else is wrong; a workflow a node-pack install broke offers its snapshot back. */
+function Problems({ problems }: { problems: Message[] }) {
+  const { t } = useTranslation("workflows");
+  const rollback = useRollbackInstall();
+  const onError = useOnError();
+  const [asked, setAsked] = useState(false);
+  const broke = problems.find((p) => p.code === "broke_after_install");
+  const snapshot = String(broke?.params?.snapshot ?? "");
+  const snapshotId = broke?.params?.snapshot_id;
+
+  return (
+    <div className="flex flex-col gap-1.5">
+      <h4 className="text-sm font-bold">{t("check.problems")}</h4>
+      <ul aria-label={t("check.problems")} className="flex flex-col gap-1 text-[13px]">
+        {problems.map((p, i) => (
+          <li key={i} className="text-tone-fail-fg">
+            {t(`problem.${p.code}` as "problem.unknown_node", {
+              ...p.params,
+              defaultValue: p.code,
+            })}
+          </li>
+        ))}
+      </ul>
+      {typeof snapshotId === "string" ? (
+        asked ? (
+          <div
+            role="group"
+            aria-label={t("check.rollback")}
+            className="flex flex-col gap-2 rounded-lg border bg-background/40 p-3"
+          >
+            <p className="text-[13px] leading-relaxed">{t("check.rollbackAsk", { snapshot })}</p>
+            <div className="flex gap-2">
+              <Button
+                size="sm"
+                disabled={rollback.isPending}
+                onClick={() =>
+                  rollback.mutate(snapshotId, {
+                    onSuccess: () => {
+                      setAsked(false);
+                      toast.success(t("check.rollbackDone", { snapshot }));
+                    },
+                    onError,
+                  })
+                }
+              >
+                {t("check.rollbackConfirm")}
+              </Button>
+              <Button size="sm" variant="ghost" onClick={() => setAsked(false)}>
+                {t("check.rollbackCancel")}
+              </Button>
+            </div>
+          </div>
+        ) : (
+          <div>
+            <Button size="sm" variant="outline" onClick={() => setAsked(true)}>
+              {t("check.rollback")}
+            </Button>
+          </div>
+        )
       ) : null}
     </div>
   );

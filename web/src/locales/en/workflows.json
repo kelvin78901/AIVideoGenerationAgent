@@ -137,7 +137,13 @@
     "installed": "Snapshot {{snapshot}} saved; installed {{count}} node packs",
     "installedRestart": "{{done}}; restart ComfyUI, then click Check again",
     "installFailed": "{{done}}; not installed: {{names}}",
-    "never": "Imported workflows are checked automatically."
+    "never": "Imported workflows are checked automatically.",
+    "problems": "Problems",
+    "rollback": "Roll back to the snapshot before this install",
+    "rollbackAsk": "Restores ComfyUI's node packs to snapshot {{snapshot}}, taken before this install. ComfyUI-Manager applies it the next time ComfyUI starts; the studio does not restart it for you.",
+    "rollbackConfirm": "Roll back",
+    "rollbackCancel": "Cancel",
+    "rollbackDone": "Rollback to {{snapshot}} is queued. Restart ComfyUI, then Check again; the sample machine is already back."
   },
   "trial": {
     "lead": "One run on the sample project's inputs: first frame, reference images, prompt, dialogue audio, at the draft size and shortest duration. Queued on the local GPU.",
@@ -172,5 +178,10 @@
     "close": "Close",
     "loading": "Reading ComfyUI's workflow list…"
   },
-  "empty": "No workflows in this tier yet."
+  "empty": "No workflows in this tier yet.",
+  "problem": {
+    "binding_broken": "The bindings no longer fit: a bound node title or field is not in the file",
+    "unknown_node": "Node class {{class}} is not in ComfyUI and no node pack provides it",
+    "broke_after_install": "It worked before the last node-pack install and is broken after it (snapshot {{snapshot}} was taken first)"
+  }
 }

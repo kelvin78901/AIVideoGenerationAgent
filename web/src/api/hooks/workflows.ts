@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { api, patch, post, put } from "@/api/client";
+import { comfyKeys } from "@/api/hooks/comfy";
+import { RestoredSchema } from "@/api/schemas/comfy";
 import {
   ComfyWorkflowFileSchema,
   DepsPlanSchema,
@@ -89,3 +91,18 @@ export const useTrialWorkflow = (id: string) =>
   useWorkflowMutation(() => post(`/workflows/${enc(id)}/trial`, WorkflowSchema));
 
 export type { Workflow };
+
+/** 「回滚到这次安装前的快照」 from a workflow broken by a node-pack install (SPEC 6.4.5): the
+ * library is checked again (the sample machine is back at once, a real ComfyUI on restart). */
+export function useRollbackInstall() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (snapshotId: string) =>
+      post(`/comfy/snapshots/${enc(snapshotId)}/restore`, RestoredSchema),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: workflowKeys.all }),
+        client.invalidateQueries({ queryKey: comfyKeys.snapshots }),
+      ]),
+  });
+}

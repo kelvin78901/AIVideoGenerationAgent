@@ -137,7 +137,13 @@
     "installed": "已存快照 {{snapshot}}，装好了 {{count}} 个节点包",
     "installedRestart": "{{done}}；重启 ComfyUI 后点「重新体检」",
     "installFailed": "{{done}}；没装上：{{names}}",
-    "never": "导入后会自动体检。"
+    "never": "导入后会自动体检。",
+    "problems": "问题",
+    "rollback": "回滚到这次安装前的快照",
+    "rollbackAsk": "把 ComfyUI 的节点包恢复到快照 {{snapshot}} 那时（这次安装之前）。ComfyUI-Manager 在 ComfyUI 下次启动时执行；工作台不替你重启。",
+    "rollbackConfirm": "确认回滚",
+    "rollbackCancel": "取消",
+    "rollbackDone": "已排上回滚到 {{snapshot}}。重启 ComfyUI 后点「重新体检」；示例机器已经恢复。"
   },
   "trial": {
     "lead": "用示例项目里的输入跑一次：首帧、参考图、提示词、台词音频，草稿档尺寸、最短时长。在本地 GPU 队列里排队。",
@@ -172,5 +178,10 @@
     "close": "关闭",
     "loading": "正在读 ComfyUI 的工作流列表…"
   },
-  "empty": "这个档位还没有工作流。"
+  "empty": "这个档位还没有工作流。",
+  "problem": {
+    "binding_broken": "绑定对不上工作流了：被绑定的节点标题或字段在文件里找不到",
+    "unknown_node": "节点类 {{class}} 在 ComfyUI 里找不到，也没有节点包提供它",
+    "broke_after_install": "上次装节点包之前是好的，装完坏了（安装前存了快照 {{snapshot}}）"
+  }
 }

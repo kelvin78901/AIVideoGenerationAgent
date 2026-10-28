@@ -1,6 +1,7 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { ComfySnapshotSchema } from "@/api/schemas/comfy";
 import { useEventStream } from "@/api/useEventStream";
 import { Toaster } from "@/components/ui/sonner";
 import { WorkflowLibrary } from "@/pages/models/WorkflowLibrary";
@@ -14,6 +15,7 @@ import {
   finishFakeTrial,
 } from "@/test/fakes/workflows";
 import { renderAt } from "@/test/render";
+import { fakeSetup } from "@/test/setupBackend";
 
 type User = ReturnType<typeof userEvent.setup>;
 
@@ -208,6 +210,54 @@ describe("WorkflowLibrary", () => {
     expect(await screen.findByRole("rowgroup", { name: "my_flow" })).toHaveTextContent(
       "导入自 my_flow.json",
     );
+  });
+
+  it("a workflow a node-pack install broke lists why and rolls back to its snapshot", async () => {
+    const user = userEvent.setup();
+    const sdxl = fakeImport("sdxl_basic.json");
+    const snap = ComfySnapshotSchema.parse({
+      id: "snap-grain",
+      manager_name: "2026-10-28_17-40-00_snapshot",
+      env_hash: null,
+      reason: "install",
+      changes: [],
+      created_at: "2026-10-28T09:40:00Z",
+      restore: null,
+      restored_at: null,
+    });
+    fakeSetup.snapshots.unshift(snap);
+    sdxl.bindings = sdxl.bindings.map((b) => ({ ...b, state: "confirmed" }));
+    if (!sdxl.check) throw new Error("sdxl_basic is checked in the export");
+    sdxl.check = {
+      ...sdxl.check,
+      status: "broken",
+      problems: [
+        { code: "unknown_node", params: { class: "KSampler" } },
+        {
+          code: "broke_after_install",
+          params: { snapshot: snap.manager_name, snapshot_id: snap.id },
+        },
+      ],
+    };
+    renderLibrary();
+    await screen.findByRole("rowgroup", { name: SDXL });
+    expect(header(SDXL)).toHaveTextContent("有问题 2 处");
+    const r = await open(user, SDXL);
+    await user.click(within(r).getByRole("tab", { name: "体检" }));
+    const problems = within(row(SDXL)).getByRole("list", { name: "问题" });
+    expect(problems).toHaveTextContent("节点类 KSampler 在 ComfyUI 里找不到，也没有节点包提供它");
+    expect(problems).toHaveTextContent(
+      "上次装节点包之前是好的，装完坏了（安装前存了快照 2026-10-28_17-40-00_snapshot）",
+    );
+
+    await user.click(within(row(SDXL)).getByRole("button", { name: "回滚到这次安装前的快照" }));
+    const ask = within(row(SDXL)).getByRole("group", { name: "回滚到这次安装前的快照" });
+    expect(ask).toHaveTextContent("ComfyUI-Manager 在 ComfyUI 下次启动时执行");
+    await user.click(within(ask).getByRole("button", { name: "确认回滚" }));
+    expect(
+      await screen.findByText(/已排上回滚到 2026-10-28_17-40-00_snapshot/),
+    ).toBeInTheDocument();
+    expect(fakeSetup.snapshots[0]?.restore?.state).toBe("pending");
   });
 
   it("my workflows can go back to unverified", async () => {

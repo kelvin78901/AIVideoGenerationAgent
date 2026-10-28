@@ -8,7 +8,7 @@
 - **坏包怎么坏**：`node_map.json` 里那个包的元数据带 `demo_breaks: ["KSampler"]`；`DemoComfy.install(snapshot, packs)` 加上包的节点类、拿掉它弄坏的类，并记下装之前的样子；`DemoComfy.restore(snapshot)` 退回去。示例坏包是我们自己的约定，真实 Manager 的节点表没有这个键。
 - **回滚后重新体检**：`POST /comfy/snapshots/{id}/restore` 排上回滚后调 `WorkflowLibrary.restored(manager_name)`：示例机器立刻复原并全部体检；真实 ComfyUI 要重启才生效，仍由下一次扫描核对（SPEC 6.4.1），这里什么都不做。
 - **「装后变坏」的提示带快照 id、会一直挂着**：`broke_after_install` 的参数加 `snapshot_id`（界面的「回滚到这次安装前的快照」要用）；之前只在「上次正常、这次坏了」那一次体检里出现，再点一次体检就没了。现在上次已经带着它、这次还没好，就继续带着，回滚或修好为止。
-- **界面还没接**：模型页工作流详情只列缺的节点包和模型，`problems`（包括 `broke_after_install`、`unknown_node`）一条都不显示，SPEC 6.4.5 要的回滚按钮也没有。放进第 13c 步，和 Playwright `m5` 一起做。
+- **界面**（第 13c 步）：之前模型页工作流详情只列缺的节点包和模型，`problems` 一条都不显示。现在「体检」页签多一节「问题」（`workflows:problem.<code>`：`binding_broken`、`unknown_node`、`broke_after_install`），`broke_after_install` 下面有「回滚到这次安装前的快照」：先在原地说明（Manager 下次启动 ComfyUI 时执行、不替你重启），确认后调回滚接口，刷新工作流库和快照列表。没用弹窗：只有一个按钮、一段说明，和「环境与安装」里的快照回滚同一个接口。第 13d 步做 Playwright `m5` 和截图。
 
 ## 2026-10-28 · M5 第 13a 步：Mock 照真实适配器记钱、记工作流；生成的端到端测试
 
