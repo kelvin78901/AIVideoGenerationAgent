@@ -38,3 +38,9 @@ docs/assets/demo-github.mp4
 # Claude Code local state
 .claude/state/
 .claude/settings.local.json
+
+# Skills Kelvin installs for other agents (he manages them himself)
+.agents/
+
+# Local-check originals (videos, full-size pictures); the reports keep JPEG copies
+docs/studio/reports/m5-local-smoke/originals/
