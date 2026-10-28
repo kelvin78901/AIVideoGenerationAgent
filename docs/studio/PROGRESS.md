@@ -20,11 +20,12 @@
 - 第 9c 步（899e910，DECISIONS「M5 第 9c 步」）：候选卡固定宽度（`TAKE_CARD_WIDTH`）、竖屏画面框 290 px；播放 / 空格在 `MediaLightbox`（新 `video`）里放后端的片子；本地 H3 草稿「用 API 出终版 · 约 $x」，价格来自新字段 `EstimateOut.final_usd`（`RunService._final_api_cost`，快照重导多了 `final_usd`）；队列卡按模型分组、兜底到 API、等确认。`Generate.test.tsx` 16 个（新 3 个）、`test_takes_api` 加一句；Vitest 305 个、lint、typecheck、prettier；pytest（takes、runs、products 28 个）；ruff、mypy；Playwright e2e 37 个过；截图（亮 / 暗 + 2000 px 和大图在 scratchpad）。
 - 第 14a 步（2f90ca6；Kelvin 定提前，计划里插在第 10 步前）：`scripts/smoke/local_video.py`（临时目录、`DRAMA_REAL_LOCAL=1`，`--only ab --home` 复用数据目录做同种子 A/B）；本机 ComfyUI 真跑 1-01、1-04 都本地出片、有声音、768x1344、显存峰值 31.6 GB，5 秒片约 57 秒；记录 `reports/m5-local-smoke.txt`。
 - 本机对比（2026-10-27，Kelvin 要求，没调 API）：`reports/m5-local-smoke/run3-workflows/`（关 Turbo 换三个社区工作流：官方 20 步、SEED HUNTER、SEEDVR2 超分；SEED HUNTER Kelvin 说效果不好，SeedVR2 最清楚）、`run4-1-04-cut/`（1-04 第 2 秒切走的原因：提示词没照官方写法，切到的就是参考图本身）。片子 `*.mp4` 被 `.gitignore` 挡着、拼图 `*.png` 没提交，见「等 Kelvin 的事」。临时对比脚本在 scratchpad（`wf_compare.py`），不进仓库。
-- 第 14b 步（本提交；Kelvin 2026-10-27 定插一步、务必符合官方模板，DECISIONS「M5 第 14b 步」）：`prompts/h3_format.py`（按 MiniMax 官方 h3-prompt-writing 校验：段落和顺序、I2VA 第一行、标签、英文、台词原文、单镜头、字数；`mock_prompt`）；`templates/vid/h3_rewrite_system.j2`（规则 + 1-04 范例）；新路由组件 `vprompt`（视频提示词改写，默认 DeepSeek V4.1 Flash，可选本地 Qwen）；本地 H3 的 take 先改写（缓存，同一次的几条候选只改一次），不合格带着问题重问一次，还不合格 `prompt_not_conformant` 不出片；`h3_r2v.j2` 参考图改成 `<Subject N>`；参考图带 `desc`、首帧带 `first_desc`；估价含改写（本地 H3 一条约 $0.008）。新测试 `test_h3_format.py` 16 个、`test_takes_api` 加 2 个改 1 个；`Models.test.tsx` 组件 23 行；快照 `config.json`、`generate.json` 重导。相关 pytest（h3_format、takes、config、快照 70 个）、Vitest 305 个、lint、typecheck、prettier、ruff、mypy 过；全量交给 CI。
+- 第 14b 步（e448225；Kelvin 2026-10-27 定插一步、务必符合官方模板，DECISIONS「M5 第 14b 步」）：`prompts/h3_format.py`（按 MiniMax 官方 h3-prompt-writing 校验：段落和顺序、I2VA 第一行、标签、英文、台词原文、单镜头、字数；`mock_prompt`）；`templates/vid/h3_rewrite_system.j2`（规则 + 1-04 范例）；新路由组件 `vprompt`（视频提示词改写，默认 DeepSeek V4.1 Flash，可选本地 Qwen）；本地 H3 的 take 先改写（缓存，同一次的几条候选只改一次），不合格带着问题重问一次，还不合格 `prompt_not_conformant` 不出片；`h3_r2v.j2` 参考图改成 `<Subject N>`；参考图带 `desc`、首帧带 `first_desc`；估价含改写（本地 H3 一条约 $0.008）。新测试 `test_h3_format.py` 16 个、`test_takes_api` 加 2 个改 1 个；`Models.test.tsx` 组件 23 行；快照 `config.json`、`generate.json` 重导。相关 pytest（h3_format、takes、config、快照 70 个）、Vitest 305 个、lint、typecheck、prettier、ruff、mypy 过；全量交给 CI。 对比图压缩进 git、原图进 `originals/`（001a271）；删潜空间放大节点包、7 个工作流体检正常（6f52677，`reports/m5-local-smoke/comfyui-cleanup.md`）。
+- 第 14c 步（本提交；Kelvin 定用 DeepSeek）：`registry.real_models()`（`DRAMA_REAL_MODELS` + `DRAMA_LIVE=1`：只放开点名的模型，其余仍 Mock）；`local_video.py --only rewrite`（真 DeepSeek 改写 + 本机 H3，关兜底、每条前 `POST /free`、失败本地重试一次、清掉旧数据目录遗留的任务）；1-01、1-04 各 2 个种子都不切走、改写一次就合格，DeepSeek 共 $0.0038（`reports/m5-local-smoke/run5-rewrite/`）。`test_providers_api` 加 1 个；ruff、mypy 过。
 
 ## 下一步
 
-- **第 14c 步 本机复核改写**（计划 14c）：真 LLM 改写 + 本机 H3，1-01、1-04 用 run4 的两个种子（191503631、22）出片，和 `run4-1-04-cut/1-04-guidefmt-*` 比。先问 Kelvin 改写用本地 Qwen 还是 API（DeepSeek 约 $0.01）；照 `scripts/smoke/local_video.py` 加一步，`DRAMA_REAL_LOCAL=1` 只放开 ComfyUI，改写那一步要单独放开（API 要 `DRAMA_LIVE=1` 和上限）。
+- **第 14d 步 2K 精修本地档**（计划 14d，Kelvin 定 M5 做后端 + 工作流、按钮 M6）：已写好没提交的：`workflows/seedvr2-up`、`workflows/flashvsr-up`，`providers.yaml` 指过去，清单加 `w_flashvsr`，`components.yaml` 的 `up` 注释；FlashVSR 权重已下到本机 `ComfyUI/models/FlashVSR`（6.7 GB，sha256 核过）。还要：跑 `test_manifest` 等相关测试；两个工作流本机体检 + 试跑（实测后改 `flashvsr-up` 的 `est_seconds_per_s`）；估价秒数的测试；DECISIONS。
 - **第 10 步 工作流库接后端（前端）+ ModelPicker 档位**（计划第 10 条）：删 `mocks/handlers/workflows.ts`（和 `fixtures/demo/workflows.ts`、`db.ts` 的 `workflows` / `comfyWorkflowFiles`），挪成 `test/fakes/workflows.ts`（数据从后端导出，照 `generate.json` 的做法加进 `test_web_fixtures.py`）；试跑进度改走任务事件（`job.updated`，后端第 3 步的 `workflow_trial`）；ModelPicker 显示工作流档位，未验证的单独一组、只能手动选。从 `web/src/pages/models/WorkflowLibrary.tsx` 和 `mocks/handlers/workflows.ts` 开始；e2e `smoke.spec.ts` 的「workflow library」那条要跟着改。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -34,7 +35,7 @@
 
 ## 没提交的改动
 
-- 本机对比的片子和拼图（`reports/m5-local-smoke/run1-*`、`run2-*`、`run3-*`、`run4-*` 下的 `*.mp4` / `*.png`，约 100 MB）；Kelvin 20:41 装的一批技能（`.agents/`、`.claude/skills/` 等约 90 个目录），不是我们的，别提交。
+- 第 14d 步的半成品（见「下一步」）。Kelvin 装的技能目录（`.agents/` 已进 `.gitignore`，`.claude/skills/` 等其余的他自己处理），别提交。
 
 ## 踩过的坑 / 临时绕过
 
@@ -75,6 +76,5 @@
 
 ## 等 Kelvin 的事
 
-- 第 14c 步改写用本地 Qwen 还是 API；对比的拼图要不要进 git（片子已被 `.gitignore` 挡着）；SeedVR2 要不要做成本地终版的一档；本机 ComfyUI 装的潜空间放大节点包（`custom_nodes/Comfyui_Minimax_h3_latent_Upscaler` + 690 MB 模型，SEED HUNTER 用的）要不要删。
-- 已定：K3.1 Pro 思考默认 low（2026-10-26）；「湿了半边」示例剧本不改（2026-10-26）。
+- 本地 H3 要不要从 Turbo（8 / 4 步）换成 20 步（第三轮画质更好，5 秒片 2.5–6 分钟）：等 Kelvin 看 `run5-rewrite` 和 `run3-workflows` 的片子；台词声音要他听。
 

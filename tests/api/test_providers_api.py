@@ -201,3 +201,25 @@ def test_real_local_runs_local_models_for_real_and_keeps_the_rest_mock(
     assert isinstance(registry.get("local/rapidocr"), LocalPythonAdapter)
     for key in ("google/nano-banana-pro", "minimax/speech-2.8-hd", "local/qwen3.6-27b"):
         assert isinstance(registry.get(key), MockAdapter), key
+
+
+def test_real_models_runs_only_the_named_models_for_real_and_only_when_live(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``DRAMA_REAL_MODELS`` (M5 step 14c): one paid model real in Mock mode, never without
+    ``DRAMA_LIVE=1``."""
+    from drama_series_agent.core.config import get_config
+    from drama_series_agent.modelhub.adapters.mock import MockAdapter
+    from drama_series_agent.modelhub.registry import Registry
+
+    monkeypatch.setenv("DRAMA_REAL_MODELS", "deepseek/v4.1-flash")
+    monkeypatch.delenv("DRAMA_LIVE", raising=False)
+    assert isinstance(
+        Registry.from_config(get_config(), mock=True).get("deepseek/v4.1-flash"), MockAdapter
+    )
+    monkeypatch.setenv("DRAMA_LIVE", "1")
+    registry = Registry.from_config(get_config(), mock=True)
+    assert registry.real_keys == {"deepseek/v4.1-flash"}
+    assert not isinstance(registry.get("deepseek/v4.1-flash"), MockAdapter)
+    for key in ("deepseek/v4-pro", "minimax/h3-api", "comfy/h3"):
+        assert isinstance(registry.get(key), MockAdapter), key

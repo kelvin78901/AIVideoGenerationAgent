@@ -22,6 +22,11 @@ Steps, in this order:
   of each take is written to look at (FFmpeg's scene score misses a camera that drifts to
   another place, 2026-10-27, so nothing is counted). ``--home`` reuses a data
   directory a ``--keep`` run left (its keyframes), so ``--only ab --home …`` skips ``frames``.
+- ``rewrite`` (M5 step 14c, not run by default; **spends money**, needs ``DRAMA_LIVE=1``): the
+  prompt rewrite (``vprompt``) on its real writing model, DeepSeek V4.1 Flash, and nothing else
+  real but ComfyUI (``DRAMA_REAL_MODELS``); 1-01 and 1-04 on the seeds of the 2026-10-27
+  comparison (``reports/m5-local-smoke/run4-1-04-cut``), so a take, its prompt and a contact
+  sheet sit next to the hand-written ones. Stops once DeepSeek's spend passes ``--cap``.
 
 The ComfyUI address comes from the studio you have open (its last scan; the studio itself is
 not touched). ComfyUI must be running; do not run it next to the full pytest. The takes (and
@@ -46,7 +51,9 @@ from local_assets import V1, Smoke, VramMeter, gpu_query, studio_facts
 from local_storyboard import DRAWN, LEFT_UNLOCKED, cancel_views, shots, unconfirm, unlock
 
 REPORT = Path(__file__).resolve().parents[2] / "docs" / "studio" / "reports" / "m5-local-smoke.txt"
-STEPS = ["frames", "vid", "ab"]
+STEPS = ["frames", "vid", "ab", "rewrite"]
+REWRITE_SEEDS = {"1-01": (325085565, 22), "1-04": (191503631, 22)}
+REWRITE_MODEL = "deepseek/v4.1-flash"  # the vprompt route's writing model (components.yaml)
 DEFAULT_STEPS = ["frames", "vid"]
 AB_SEEDS = (11, 22, 33)
 AB_SHOT = "1-04"
@@ -109,11 +116,16 @@ def main() -> int:
     ap.add_argument("--only", default=",".join(DEFAULT_STEPS), help="steps, comma-separated")
     ap.add_argument("--keep", action="store_true", help="keep the temporary data directory")
     ap.add_argument("--home", help="a data directory a --keep run left (reused, kept)")
+    ap.add_argument("--cap", type=float, default=0.10, help="rewrite: DeepSeek spend cap, USD")
     args = ap.parse_args()
     only = [s for s in args.only.split(",") if s]
     unknown = set(only) - set(STEPS)
     if unknown:
         raise SystemExit(f"unknown steps: {', '.join(sorted(unknown))}")
+    if "rewrite" in only:
+        if os.environ.get("DRAMA_LIVE") != "1":
+            raise SystemExit("rewrite calls DeepSeek for real (money): set DRAMA_LIVE=1")
+        os.environ["DRAMA_REAL_MODELS"] = REWRITE_MODEL
 
     facts = studio_facts(args.studio.rstrip("/"))
     tmp = Path(tempfile.mkdtemp(prefix="drama-local-video-"))
@@ -234,6 +246,87 @@ def main() -> int:
                         shutil.copyfile(path, out / f"{name}.mp4")
                         sheet(path, out / f"{name}.png")
                         smoke.say(f"   seed {v['seed']} → {name}.mp4, {name}.png")
+        if "rewrite" in only:
+            from drama_series_agent.pipeline import runs
+
+            def spent() -> float:
+                calls = smoke.get("/dev/model-calls", limit=500)
+                return sum(
+                    float(c.get("cost_usd") or 0)
+                    for c in calls
+                    if c.get("model_key") == REWRITE_MODEL
+                )
+
+            def free_comfy() -> None:
+                """Let ComfyUI drop its models and caches (no job runs): loading H3 with RAM
+                short fails (``hostbuf_file_reader_read failed``, 2026-10-27)."""
+                body = {"unload_models": True, "free_memory": True}
+                httpx.post(f"{facts['comfy_url']}/free", json=body, timeout=30)
+
+            def cancel_left(product_id: str) -> None:
+                """Jobs an earlier, stopped run of a kept data directory left (they resume
+                when the app starts and keep the product busy)."""
+                for j in smoke.get("/jobs", limit=200):
+                    if j.get("product_id") == product_id and j["state"] in ("queued", "running"):
+                        smoke.post(f"/jobs/{j['id']}/cancel")
+                        smoke.wait(j["id"])
+
+            # No fallback in this check: a local failure is retried locally, not made on the
+            # (Mock) API.
+            off = {"enabled": False, "on": [], "qa_fail_n": 2, "timeout_s": 600, "to": None}
+            off["notify"] = "after"
+            override = {"scope": "component", "scope_id": None, "component_id": "vid"}
+            put = smoke.client.put(
+                f"{V1}/config/override", json={**override, "data": {"fallback": off}}
+            )
+            put.raise_for_status()
+            by_label = shots(smoke)
+            for label, seeds in REWRITE_SEEDS.items():
+                product_id = by_label[label]["video_product_id"]
+                cancel_left(product_id)
+                for seed in seeds:
+                    if spent() > args.cap:
+                        smoke.ok = False
+                        smoke.say(
+                            f"   stopped: DeepSeek spent ${spent():.4f}, over the ${args.cap} cap"
+                        )
+                        break
+                    runs.random.randrange = lambda *_, seed=seed: seed  # type: ignore[assignment]
+
+                    def rw_take(product_id: str = product_id) -> list[str]:
+                        # A take that failed in ComfyUI is made again once, after freeing its
+                        # memory (the rewrite is cached, so DeepSeek is not asked again).
+                        ids: list[str] = []
+                        for _ in range(2):
+                            free_comfy()
+                            job = smoke.run(product_id)
+                            ids.append(job["id"])
+                            if smoke.wait(job["id"])["state"] == "succeeded":
+                                break
+                        return ids
+
+                    title = f"{label} 种子 {seed} · DeepSeek 按官方写法改写 + 本地 H3"
+                    if smoke.step(f"rewrite-{label}-s{seed}", title, rw_take):
+                        v = smoke.latest(product_id)
+                        name = f"rewrite-{label}-s{seed}"
+                        if v["where"] != "local" or v["seed"] != seed:
+                            smoke.ok = False
+                            smoke.say(f"   {name}: no local take on seed {seed} (twice)")
+                            continue
+                        prompt = next(f for f in v["files"] if f["role"] == "prompt")
+                        text = smoke.state.store.path_for(prompt["sha256"]).read_text("utf-8")
+                        (out / f"{name}.txt").write_text(text, encoding="utf-8", newline="\n")
+                        raw = next(f for f in v["files"] if f["role"] == "raw")
+                        path = smoke.state.store.path_for(raw["sha256"])
+                        shutil.copyfile(path, out / f"{name}.mp4")
+                        sheet(path, out / f"{name}.png")
+                        words = len(text.split())
+                        rewriter = v["payload"].get("prompt_rewrite")
+                        smoke.say(
+                            f"   seed {v['seed']}, rewritten by {rewriter} ({words} words) → "
+                            f"{name}.mp4 / .png / .txt"
+                        )
+            smoke.say(f"   DeepSeek spent ${spent():.4f} (cap ${args.cap})")
         smoke.say()
         smoke.say(f"result: {'all local steps ran' if smoke.ok else 'SOME STEPS FAILED'}")
         smoke.say(f"files: {out}")
