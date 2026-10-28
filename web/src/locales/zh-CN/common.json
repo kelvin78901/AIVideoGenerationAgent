@@ -131,6 +131,7 @@
     "no_model_configured": "这一步还没选模型",
     "no_alternative": "没有可以换的其他模型，去「运行设置」里加备选",
     "invalid_output": "模型两次都没按要求的格式回答，原始回答已保存",
+    "prompt_not_conformant": "提示词两次都没写成 H3 官方格式，没出片：{{errors}}",
     "budget_exceeded": "这次调用会超过上限（单次上限，或确认的金额加余量），没有花钱就停下了",
     "over_budget": "预计 ${{estimate_usd}}，超过上限 ${{limit_usd}}，确认后才会发出",
     "rights_not_confirmed": "要先勾选「我拥有这部小说的改编权」才能导入",

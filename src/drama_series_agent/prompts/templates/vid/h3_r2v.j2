@@ -1,11 +1,15 @@
 {#- MiniMax H3 reference to video (full-reference mode): the six sections in order (MiniMax-H3
     docs/VIDEO_PROMPT_WRITING_GUIDE_ref_en.md, 2026-10-26). <Picture 1> is the first frame, the
     locked pictures follow; <Audio N> are the speakers' voice-timbre references, or (``dub``,
-    先配音 through the H3 API) <Audio 1> is the dubbed lines, copied as the whole sound track. -#}
+    先配音 through the H3 API) <Audio 1> is the dubbed lines, copied as the whole sound track.
+    A locked picture only shows how a character or place looks, so it is cited inside a
+    <Subject N> line, never a standalone <Picture N> line (the guide keeps those for frames; as
+    its own line the model took it for a keyframe and cut to it, M5 step 14b). This layout is
+    what the rewriter (``vprompt``, local H3) or H3's Context-IR (the API) starts from. -#}
 subject_definitions:
 <Picture 1> is the first frame of [Shot 1].
 {% for r in refs %}
-<Picture {{ loop.index + 1 }}> is the reference for {{ r.name }}.
+<Subject {{ loop.index }}> is {{ r.name }}, whose look comes from <Picture {{ loop.index + 1 }}>.
 {% endfor %}
 {% for v in voices %}
 <Audio {{ loop.index }}> is the voice-timbre reference for {{ v.who }} (S{{ v.sx }}).
@@ -19,7 +23,7 @@ summary: [keyframe completion{% if refs %} + reference generation{% endif %}{% i
 retention_analysis:
 <Picture 1> ([Shot 1] first frame): fully_preserved - the opening composition, the people and the scene.
 {% for r in refs %}
-<Picture {{ loop.index + 1 }}>: partially_preserved - how {{ r.name }} looks.
+<Subject {{ loop.index }}> (appears in [Shot 1]): fully_preserved - how {{ r.name }} looks.
 {% endfor %}
 {% for v in voices %}
 <Audio {{ loop.index }}>: reference - {{ v.who }}'s voice timbre, without copying the original signal.

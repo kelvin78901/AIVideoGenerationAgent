@@ -1,0 +1,22 @@
+subject_definitions:
+<Subject 1> is Lin Wan (S1), the 26-year-old woman whose appearance comes from <Picture 2>: a pale, tired face, dark hair loosely tied back with wet strands stuck to her cheeks, a beige double-breasted trench coat soaked dark on one side over a black top.
+<Subject 2> is the old residential stairwell at night whose look comes from <Picture 3>: peeling pale-green and cream walls, a small brass wall lamp with a warm bulb, worn concrete stairs with a dark wooden handrail, and a rain-streaked window on the landing.
+<Picture 1> is the first frame of [Shot 1], showing <Subject 1> from the waist up on the sixth-floor landing of <Subject 2>, looking down at a small yellow sticky note held in both hands, the stairs rising behind her on the left.
+<Audio 1> is the voice-timbre reference for <Subject 1> (S1).
+
+summary:
+[keyframe completion + reference generation + audio reference] One continuous five-second shot with no cut. The video starts exactly on <Picture 1>: <Subject 1> stands still on the landing of <Subject 2>, stares at the sticky note, freezes in disbelief and whispers a single name in the voice timbre of <Audio 1>, while the camera slowly pushes in on her face.
+
+retention_analysis:
+<Picture 1> ([Shot 1] first frame): fully_preserved - the opening framing, her pose, the lighting and the stairwell behind her.
+<Subject 1> (appears in [Shot 1]): fully_preserved - Lin Wan's face, wet hair and soaked beige trench coat stay the same from the first frame to the last.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the walls, wall lamp, stairs and window are only ever seen behind her; the stairwell is never shown on its own.
+<Audio 1>: reference - Lin Wan's voice timbre, without copying the original signal.
+
+detailed_description:
+The target video is a realistic, quiet night-time drama shot with cinematic lighting, a muted green-and-amber palette, soft film grain and a steady, slow camera.
+[Shot 1] The shot begins from <Picture 1>. <Subject 1>, Lin Wan, stands in the center of the frame on the sixth-floor landing of <Subject 2>, seen from the waist up and slightly from the front. Her wet hair clings to her cheeks and the left side of her beige trench coat is soaked darker than the right. She holds a small yellow sticky note in both hands at chest height and looks down at it. Behind her on the left the worn concrete stairs rise toward a rain-streaked window; on the right the brass wall lamp throws warm light across the peeling wall and her face. From the start, the camera pushes in very slowly and steadily, straight toward her face, keeping her centered; it never pans, tilts away or cuts, and the stairwell stays behind her the whole time. For the first second and a half she does not move except for her eyes reading the note again. The wall lamp flickers once, dimming for a moment and coming back, and the light on her face dips and returns. Around the two-second mark she freezes: her breath catches, her shoulders go still, and her eyes widen slightly as she recognizes the handwriting. Her fingers tighten on the edge of the note. At about three seconds her lips part and she whispers, barely audible, using the soft, tired voice timbre referenced from <Audio 1>, <d>[Chinese] ……周屿？</d> She closes her lips after the line. For the last second and a half she keeps staring at the note without blinking, her face now filling most of the frame from the shoulders up, the wall lamp still flickering faintly behind her. The shot ends on this close-up of her stunned face, in the same stairwell, with no change of place, no other person and no cut.
+
+overall_soundscape: Steady rain against the stairwell window, the faint electrical buzz and click of the flickering wall lamp, Lin Wan's quiet breathing and her single whispered line; no other voices.
+
+non_diegetic_music: N/A

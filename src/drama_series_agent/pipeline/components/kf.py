@@ -248,6 +248,11 @@ async def _references(
                 "product_id": p.id,
                 "sha256": ref["sha256"],
                 "hash": h,
+                # How it looks in words (what the user wrote for its picture, else the analysis):
+                # the H3 prompt rewrite cannot see the picture (vid, M5 step 14b).
+                "desc": str(
+                    (p.prompt_json or {}).get("intent") or a.seed_json.get("description") or ""
+                ),
             }
         )
     return refs, unlocked, texts

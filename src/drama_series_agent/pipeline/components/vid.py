@@ -16,7 +16,11 @@ in one job, seeds ``seed``, ``seed + 1`` …), nothing is adopted until the user
 - **The prompt**: the compiled layer is the description; for H3 it goes into H3's own layout
   (``templates/vid/h3_i2v.j2``, ``h3_r2v.j2``: the first-frame line or the six reference
   sections, ``(S1) says: <d>[Chinese] …</d>``, no score); other models get it with the data
-  blocks.
+  blocks. **A local H3 take is rewritten first** into MiniMax's official layout (English, beat by
+  beat, references as ``<Subject N>``; ``prompts/h3_format.py``) by the writing model of the
+  ``vprompt`` route, checked, asked again once with what is wrong, and not made when it still
+  does not conform (``prompt_not_conformant``; M5 step 14b). The H3 API rewrites with its own
+  Context-IR instead.
 - **Every take loses its first 0.3 s** (H3's garbled opening sound, SPEC 5.1) and keeps a poster
   (its first frame) and its last frame (the next continuous shot starts there).
 
@@ -27,7 +31,9 @@ voices and pictures it sent.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+import hashlib
+import json
+from dataclasses import dataclass, replace
 from typing import Any
 
 from loguru import logger
@@ -37,6 +43,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from drama_series_agent.core.config import Resolved, get_config
 from drama_series_agent.core.models_db import (
     Episode,
+    LlmCache,
     OutputSpecRow,
     Product,
     ProductVersion,
@@ -73,8 +80,11 @@ from drama_series_agent.pipeline.components.plan import plan_product, shot_slice
 from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.generate import load_rules
+from drama_series_agent.pipeline.hashing import canonical_json
 from drama_series_agent.pipeline.invalidation import Invalidation
+from drama_series_agent.pipeline.runs import item_of
 from drama_series_agent.pipeline.timing import PRE_ROLL_S, line_seconds, shot_duration
+from drama_series_agent.prompts import h3_format
 from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import ops
@@ -83,6 +93,12 @@ from drama_series_agent.spec.dims import dims
 
 LANGUAGE = {"zh-CN": "Chinese", "en": "English"}
 DEFAULT_SOUND = "Natural ambient sound of the scene, matching what is on screen."
+VPROMPT = "vprompt"  # the route of the H3 prompt rewrite (config/components.yaml)
+REWRITE_TRIES = 2
+FIX_PROMPT = (
+    "This does not follow the official H3 layout yet. Fix every point and answer with the "
+    "whole prompt again, nothing else:"
+)
 
 
 def shot_label(episode: Episode | None, shots: list[dict[str, Any]], shot_id: str) -> str:
@@ -155,6 +171,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             raise PipelineError(409, "upstream_not_adopted", id=label)
         deps.append(await invalidation.dependency(session, upstream.id))
         first = str(last["sha256"])
+        first_desc = ""
     else:
         keyframe = await _shot_product(session, row.id, KEYFRAME_SLOT)
         ref = await locked_ref(session, keyframe) if keyframe is not None else None
@@ -162,6 +179,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             raise PipelineError(409, "keyframe_not_locked", id=shot_label(episode, shots, row.id))
         deps.append(await invalidation.dependency(session, keyframe.id))
         first = str(ref["sha256"])
+        first_desc = str((keyframe.prompt_json or {}).get("intent") or "")
 
     # The lines it films, in script order.
     script = await script_product(session, episode_id)
@@ -279,6 +297,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         context={
             "frame": frame_,
             "first_frame": first,
+            "first_desc": first_desc,
             "refs": refs,
             "unlocked": unlocked,
             "texts": texts,
@@ -303,6 +322,21 @@ def _secs(audio: dict[str, tuple[Product, dict[str, Any]]], line_id: str) -> flo
     found = audio.get(line_id)
     d = found[1].get("duration_s") if found else None
     return float(d) if isinstance(d, int | float) else None
+
+
+def _strip_fences(text: str) -> str:
+    """The prompt without a Markdown fence a model may wrap it in."""
+    t = text.strip()
+    if t.startswith("```"):
+        t = t.split("\n", 1)[1] if "\n" in t else ""
+        t = t.rsplit("```", 1)[0]
+    return t.strip()
+
+
+def _mock_rewrite(req: ModelRequest) -> str:
+    """Mock mode: a prompt that passes the official-layout check, built from the facts."""
+    facts = json.loads(str((req.messages or [{}])[1].get("content") or "{}"))
+    return h3_format.mock_prompt(h3_format.Facts.from_json(facts))
 
 
 def is_h3(model: str) -> bool:
@@ -361,6 +395,7 @@ class Take:
     deps: list[DependencyDraft]
     voices: list[dict[str, Any]]
     rewritten: str | None
+    rewrite: str | None = None  # the writing model that put the prompt in the official layout
 
 
 class VidComponent(MediaComponent):
@@ -412,7 +447,10 @@ class VidComponent(MediaComponent):
     # ------------------------------------------------------------------ run
 
     def mock_responders(self) -> dict[str, Responder]:
-        return {"context_ir": lambda req: {"prompt": f"[Context-IR] {req.prompt or ''}"}}
+        return {
+            "context_ir": lambda req: {"prompt": f"[Context-IR] {req.prompt or ''}"},
+            "h3_prompt": _mock_rewrite,
+        }
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
         source = await self._source_take(ctx.product, inputs.params)
@@ -439,6 +477,8 @@ class VidComponent(MediaComponent):
         }
         if take.rewritten is not None:
             payload["prompt_ir"] = bool(take.rewritten)
+        if take.rewrite is not None:
+            payload["prompt_rewrite"] = take.rewrite
         stage = "draft" if call.where == "local" else None
         draft = self.media_draft(
             ctx,
@@ -456,8 +496,15 @@ class VidComponent(MediaComponent):
         return draft
 
     async def _take(self, ctx: RunContext, inputs: Inputs, model: str, reason: str | None) -> Take:
-        req, refs, deps, voices = await self._request(inputs, ctx.compiled, model, ctx)
+        req, refs, deps, voices, r2v = await self._request(inputs, ctx.compiled, model, ctx)
         calls: list[MediaCall] = []
+        rewrite: str | None = None
+        if self._rewrites(model):
+            facts = self._facts(inputs, req, refs, voices, r2v, ctx.lang)
+            prompt, rewrite_call = await self._rewrite(ctx, inputs, facts)
+            calls.append(rewrite_call)
+            rewrite = rewrite_call.model_key
+            req = req.model_copy(update={"prompt": prompt})
         rewritten, ir_call = await self._context_ir(ctx, inputs, req, model)
         if ir_call is not None:
             calls.append(ir_call)
@@ -467,7 +514,7 @@ class VidComponent(MediaComponent):
             ctx, req, inputs.episode_id, model=model, fallback=False, fallback_reason=reason
         )
         calls.append(call)
-        return Take(req, calls, refs, deps, voices, rewritten)
+        return Take(req, calls, refs, deps, voices, rewritten, rewrite)
 
     async def _final(self, ctx: RunContext, inputs: Inputs, source: ProductVersion) -> VersionDraft:
         """「用 API 出终版」: the picked local H3 draft regenerated at 2K (Regenerate-2K) from its
@@ -565,11 +612,17 @@ class VidComponent(MediaComponent):
         )
         estimate = self.services.registry.get(model).estimate(req)
         ir = self._ir_model(model)
-        if ir is None:
+        if ir is not None:
+            ask = ModelRequest(kind="llm_aux", prompt=compiled, params=req.params)
+        elif self._rewrites(model) and (ir := self._rewrite_model()) is not None:
+            # Priced as if asked twice (the second try carries the first answer and the fixes).
+            system = self.services.compiler.render("vid/h3_rewrite_system.j2")
+            ask = ModelRequest(
+                kind="llm", prompt=f"{system}\n{compiled}\n{compiled}", max_tokens=6000
+            )
+        else:
             return estimate
-        rewrite = self.services.registry.get(ir).estimate(
-            ModelRequest(kind="llm_aux", prompt=compiled, params=req.params)
-        )
+        rewrite = self.services.registry.get(ir).estimate(ask)
         return Estimate(
             cost_usd=estimate.cost_usd + rewrite.cost_usd,
             seconds=estimate.seconds + rewrite.seconds,
@@ -609,9 +662,136 @@ class VidComponent(MediaComponent):
             return "", None
         return str((call.data or {}).get("prompt") or "").strip(), call
 
+    def _rewrite_model(self) -> str | None:
+        """The ``vprompt`` route's default writing model (for estimates, which cannot read the
+        series' own route)."""
+        try:
+            route = get_config().components.component(VPROMPT).balanced
+        except KeyError:
+            return None
+        key = route.local if route.mode == "local" else route.api
+        known = {s.key for s in self.services.registry.specs()}
+        return key if key in known else None
+
+    def _rewrites(self, model: str) -> bool:
+        """A local H3 take is rewritten into the official layout (the API has Context-IR)."""
+        return is_h3(model) and self.where_of(model) == "local"
+
+    def _facts(
+        self,
+        inputs: Inputs,
+        req: ModelRequest,
+        refs: list[dict[str, Any]],
+        voices: list[dict[str, Any]],
+        r2v: bool,
+        lang: str,
+    ) -> h3_format.Facts:
+        """What the rewriter is told: the take's layout, what is sent and the lines it speaks."""
+        context = inputs.context
+        language = LANGUAGE.get(lang, "Chinese")
+        pictures = [h3_format.Picture("first_frame", description=context.get("first_desc", ""))]
+        if r2v:
+            pictures += [
+                h3_format.Picture("reference", r["name"], r["kind"], r.get("desc", ""))
+                for r in refs
+            ]
+        audios = [h3_format.Audio("voice", f"S{v['sx']}", v["who"]) for v in voices] if r2v else []
+        if r2v and context["dub"]:
+            audios.append(h3_format.Audio("dialogue_track"))
+        audio_of = {v["sx"]: i for i, v in enumerate(voices, 1)} if r2v else {}
+        lines = (
+            []
+            if context["audio_mode"] == "none"
+            else [
+                h3_format.Line(
+                    f"S{d['sx']}", d["who"], d["text"], language, d["vo"], audio_of.get(d["sx"])
+                )
+                for d in context["dialogue"]
+            ]
+        )
+        return h3_format.Facts(
+            mode="ref2va" if r2v else "i2va",
+            duration_s=float(context["seconds"]),
+            aspect=str(context["frame"]["aspect"]),
+            draft=req.prompt or "",
+            pictures=pictures,
+            audios=audios,
+            dialogue=lines,
+            sound="N/A" if context["audio_mode"] == "none" else str(context.get("sound") or ""),
+        )
+
+    def _rewrite_request(self, messages: list[dict[str, Any]]) -> ModelRequest:
+        return ModelRequest(
+            kind="llm",
+            messages=messages,
+            max_tokens=3000,
+            meta={"component": self.id, "task": "h3_prompt"},
+        )
+
+    def _rewrite_messages(self, facts: h3_format.Facts) -> list[dict[str, Any]]:
+        system = self.services.compiler.render("vid/h3_rewrite_system.j2")
+        user = json.dumps(facts.as_json(), ensure_ascii=False, indent=1)
+        return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+    async def _rewrite(
+        self, ctx: RunContext, inputs: Inputs, facts: h3_format.Facts
+    ) -> tuple[str, MediaCall]:
+        """The take's prompt in MiniMax's official layout, from the ``vprompt`` route's writing
+        model: checked, asked again once with what is wrong; cached by request, so the takes of
+        one run (other seeds) share it. Raises ``prompt_not_conformant`` when it never fits."""
+        router = self.services.router
+        settings = await router.settings(VPROMPT, item_of(ctx.product))
+        model = router.primary_model(settings)
+        messages = self._rewrite_messages(facts)
+        key = (
+            "h3_prompt:"
+            + hashlib.sha256(
+                canonical_json({"model": model, "messages": messages}).encode("utf-8")
+            ).hexdigest()
+        )
+        async with self.services.db.session() as session:
+            row = await session.get(LlmCache, key)
+        if row is not None:
+            where = self.services.registry.spec(row.model_key).where
+            return str(row.value_json["prompt"]), MediaCall(
+                [], row.model_key, where, 0.0, cached=True
+            )
+        call_ctx = replace(self._call_ctx(ctx, inputs.episode_id), component_id=VPROMPT)
+        cost = 0.0
+        problems: list[str] = []
+        text = ""
+        for _ in range(REWRITE_TRIES):
+            routed = await router.call(
+                VPROMPT, self._rewrite_request(messages), call_ctx, model=model
+            )
+            cost += routed.cost_usd
+            model = routed.model_key  # asked again on the model that answered
+            text = _strip_fences(routed.text or "")
+            problems = h3_format.check(text, facts)
+            if not problems:
+                async with self.services.db.session() as session:
+                    if await session.get(LlmCache, key) is None:
+                        session.add(LlmCache(key=key, model_key=model, value_json={"prompt": text}))
+                        await session.commit()
+                return text, MediaCall([], model, routed.where, cost)
+            messages = [
+                *messages,
+                {"role": "assistant", "content": text},
+                {
+                    "role": "user",
+                    "content": FIX_PROMPT + "".join(f"\n- {p}" for p in problems),
+                },
+            ]
+        raw = self.services.store.put_bytes(text.encode("utf-8"))
+        raise ComponentError("prompt_not_conformant", raw=raw, errors="; ".join(problems)[:500])
+
     async def _request(
         self, inputs: Inputs, compiled: str, model: str, ctx: RunContext
-    ) -> tuple[ModelRequest, list[dict[str, Any]], list[DependencyDraft], list[dict[str, Any]]]:
+    ) -> tuple[
+        ModelRequest, list[dict[str, Any]], list[DependencyDraft], list[dict[str, Any]], bool
+    ]:
+        """The take's request, the pictures and voices it sends, what they make it depend on,
+        and whether it is H3's reference-to-video layout."""
         context = inputs.context
         spec = self.services.registry.spec(model)
         wf = local_workflow(self.services.registry, model)
@@ -667,7 +847,7 @@ class VidComponent(MediaComponent):
             params=params,
             meta={"component": self.id, "task": "take"},
         )
-        return req, refs, deps, voices
+        return req, refs, deps, voices, r2v
 
     def _h3_prompt(
         self,

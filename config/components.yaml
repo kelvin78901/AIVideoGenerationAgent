@@ -210,6 +210,19 @@ components:
     follows_output_spec: true
     gate: takes
 
+  # 本地 H3 出片前把提示词改写成 MiniMax 官方写法（英文、逐拍、参考图写进 <Subject N>；M5 第 14b 步，
+  # Kelvin 2026-10-27 定）。API 的 H3 用官方的 Context-IR，不走这里。一次出几条候选只改写一次（缓存）。
+  - id: vprompt
+    stage: generate
+    name: { zh: 视频提示词改写, en: Video prompt rewrite }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: api, api: deepseek/v4.1-flash, local: local/qwen3.6-27b, fallback_to: qwen/qwen3.7-plus }
+    per_call_cap_usd: 0.05
+    cheap_api: deepseek/v4.1-flash
+    note: 只给本地 H3 改写；按官方格式校验，不合格带着问题重问一次，还不合格就不出片
+
   - id: ctrl
     stage: generate
     name: { zh: 结构控制, en: Structure control }

@@ -18,6 +18,8 @@ from sqlmodel import col, select
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import Job, ModelCall, Product
+from drama_series_agent.modelhub.adapters.base import ModelRequest
+from drama_series_agent.prompts import h3_format
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -141,9 +143,67 @@ def test_a_native_shot_sends_its_voices_to_the_reference_workflow(client: TestCl
     take = _run(client, _shots(client)["1-04"]["video_product_id"])["versions"][0]
     assert take["model_key"] == "comfy/h3-r2v" and take["payload"]["voices"]
     text = _prompt(client, take)
-    assert text.startswith("subject_definitions:\n<Picture 1> is the first frame of [Shot 1].")
+    assert text.startswith("subject_definitions:\n<Picture 1> is the first frame of [Shot 1]")
+    # The locked pictures are <Subject N>, never a standalone <Picture N> line (M5 step 14b).
+    assert "<Subject 1> is the character whose look comes from <Picture 2>." in text
+    assert "\n<Picture 2>" not in text
     assert "<Audio 1> is the voice-timbre reference for" in text
     assert "using the voice timbre referenced from <Audio 1>: <d>[Chinese]" in text
+
+
+def _rewrites(client: TestClient) -> list[ModelCall]:
+    return _rows(client, ModelCall, ModelCall.component_id == "vprompt")
+
+
+def test_a_local_h3_take_is_rewritten_into_the_official_layout(client: TestClient) -> None:
+    """M5 step 14b: before a local H3 take, the ``vprompt`` route's writing model puts the
+    prompt in MiniMax's official layout; the takes of one run share the rewrite."""
+    _confirm_storyboard(client)
+    shot = _shots(client)["1-01"]
+    takes = _run(client, shot["video_product_id"])["versions"]
+    calls = _rewrites(client)
+    assert len(calls) == 1 and calls[0].model_key == "deepseek/v4.1-flash"
+    assert calls[0].shot_id == "demo-shot-1-01" and calls[0].status == "success"
+    facts = h3_format.Facts(
+        "i2va", shot["duration_s"], "9:16", "", [h3_format.Picture("first_frame")]
+    )
+    for take in takes:
+        assert take["payload"]["prompt_rewrite"] == "deepseek/v4.1-flash"
+        assert h3_format.check(_prompt(client, take), facts) == []
+    # 「再出一条」 with the same inputs: the rewrite is not asked again.
+    _run(client, shot["video_product_id"])
+    assert len(_rewrites(client)) == 1
+    # An API take is not rewritten here (Context-IR is H3's own rewriter).
+    api = _run(client, shot["video_product_id"], model="minimax/h3-api")["versions"][-1]
+    assert "prompt_rewrite" not in api["payload"] and len(_rewrites(client)) == 1
+
+
+def test_a_rewrite_that_never_fits_the_layout_makes_no_take(client: TestClient) -> None:
+    """Asked again once with what is wrong; still wrong, the run fails and nothing is made."""
+    _confirm_storyboard(client)
+    asked: list[ModelRequest] = []
+
+    def wrong(req: ModelRequest) -> str:
+        asked.append(req)
+        return "integrated_multimodal_description: [Shot 1] 林晚走上楼梯。"
+
+    _state(client).registry.add_mock_responder("vid", "h3_prompt", wrong)
+    product_id = _shots(client)["1-01"]["video_product_id"]
+    resp = client.post(f"{V1}/products/{product_id}/run", json={"mode": "run"})
+    deadline = time.monotonic() + 60
+    while (job := client.get(f"{V1}/jobs/{resp.json()['id']}").json())["state"] not in (
+        "succeeded",
+        "failed",
+    ):
+        assert time.monotonic() < deadline
+        time.sleep(0.02)
+    assert job["state"] == "failed" and job["error"]["code"] == "prompt_not_conformant"
+    assert "first line must be exactly" in job["error"]["params"]["errors"]
+    assert len(asked) == 2 and len(_rewrites(client)) == 2
+    fix = (asked[1].messages or [])[-1]["content"]
+    assert fix.startswith("This does not follow the official H3 layout yet.")
+    assert "Write every section in English" in fix
+    assert client.get(f"{V1}/products/{product_id}").json()["versions"] == []
 
 
 def test_an_h3_api_take_goes_through_context_ir(client: TestClient) -> None:

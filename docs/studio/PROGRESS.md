@@ -18,11 +18,13 @@
 - 第 8 步（204dd37，DECISIONS「M5 第 8 步」）：`pipeline/generate.py`（自动规则按剧集存 `app_setting`、默认读配置；运行记录从视频产物和任务推出，新 code `take` / `switch` / `final` / `waiting` / `failed`）、`api/routes/generate.py`、`api/routes/metrics.py`（最小 `/metrics/summary`）；`unadopt`（有物化的槽位 409 `unadopt_unsupported`）、`PATCH /versions/{id}` 打分；单镜头上限 `Budget.before_enqueue(shot=…)`、`reason: shot`（`components.yaml` 加 `shot_cap_usd: 2.0`）；`run_count` 改 async 读 `takes_per_shot`。前端只补契约：`JobConfirmSchema` 加 `shot`、确认弹窗文案、运行记录新 code 的中英文。新测试 `test_generate_api.py` 5 个、`confirmJobs.test.tsx` 1 个；相关 pytest 84 个、Vitest 301 个、lint、typecheck、prettier、ruff、mypy（含 linux）过；全量交给 CI。
 - 第 9a 步（b10a029，DECISIONS「M5 第 9a 步」；Kelvin 定示例分镜改成已确认）：`studio/demo.py` 的 `CONFIRMED_GATES` 加分镜，确认前 `_confirm_shots`（1-04–1-07 锁关键帧选中的那张、1-08 / 1-09 只写决定），`_seed_takes` 照原型种 1-01–1-03（本地草稿 + Regenerate-2K 终版，已采纳）、1-04（两条草稿、超时兜底 H3 API、换 Seedance，待挑）；`vid.clip_files` 抽成模块函数；`lock_pick(pick_id, at)`。前端快照仍从分镜确认前导出（`test_web_fixtures` 的 `client` 去掉分镜闸门，快照没变）；Playwright `m4` 开头先取消确认 1-04–1-09。`test_gates_impact_api` 的示例测试加 take 断言。相关 pytest（闸门、快照、种子、takes、generate 共 45 个）、Vitest、Playwright e2e 过；ruff、mypy 干净。 第 9b 步（447b011，DECISIONS「M5 第 9b 步」）：删 MSW 的生成页规则 / 运行记录 / 取消采纳 / 打分、示例 take（`takes.ts` → `finishing.ts`）、镜头 take 叠加、生成徽标、`takes` 闸门、影响范围视频叠加（`handlers/impact.ts` 删）；`/metrics/summary` 改成「示例 + 后端已花」叠加到 M8；后期示例时间线读后端 take（`demoVideos`）。测试假后端 `test/fakes/generate.ts` + 快照 `generate.json`（`test_web_fixtures` 新测试，`_stable_takes` 抹掉平台差异）；`shots` / 影响范围假后端直接回答。`?shot=`、`item` 用镜头 id；候选卡封面帧、「未检查」；运行记录并列时间倒序。种子 1-04 草稿改走 `comfy/h3-r2v`。`Generate.test.tsx` 重写（13 个）；Vitest 302 个、lint、typecheck、prettier；pytest（快照、闸门、种子 30 个）；ruff、mypy；Playwright e2e 37 个过。
 - 第 9c 步（899e910，DECISIONS「M5 第 9c 步」）：候选卡固定宽度（`TAKE_CARD_WIDTH`）、竖屏画面框 290 px；播放 / 空格在 `MediaLightbox`（新 `video`）里放后端的片子；本地 H3 草稿「用 API 出终版 · 约 $x」，价格来自新字段 `EstimateOut.final_usd`（`RunService._final_api_cost`，快照重导多了 `final_usd`）；队列卡按模型分组、兜底到 API、等确认。`Generate.test.tsx` 16 个（新 3 个）、`test_takes_api` 加一句；Vitest 305 个、lint、typecheck、prettier；pytest（takes、runs、products 28 个）；ruff、mypy；Playwright e2e 37 个过；截图（亮 / 暗 + 2000 px 和大图在 scratchpad）。
-- 第 14a 步（2f90ca6；Kelvin 定提前，计划里插在第 10 步前）：`scripts/smoke/local_video.py`（临时目录、`DRAMA_REAL_LOCAL=1`，`--only ab --home` 复用数据目录做同种子 A/B）；本机 ComfyUI 真跑 1-01（`comfy/h3`）、1-04（`comfy/h3-r2v` + 林晚音色）都本地出片、有声音、768x1344、显存峰值 31.6 GB，热的时候 5 秒片约 57 秒。H3 最短 5 秒（片子比镜头长，后期裁）。1-04 第一条后半段移到别处，同种子 A/B 6 条都没再出现、「一镜到底」那句没作用 → 提示词不改。记录 `reports/m5-local-smoke.txt`。没改产品代码。
+- 第 14a 步（2f90ca6；Kelvin 定提前，计划里插在第 10 步前）：`scripts/smoke/local_video.py`（临时目录、`DRAMA_REAL_LOCAL=1`，`--only ab --home` 复用数据目录做同种子 A/B）；本机 ComfyUI 真跑 1-01、1-04 都本地出片、有声音、768x1344、显存峰值 31.6 GB，5 秒片约 57 秒；记录 `reports/m5-local-smoke.txt`。
+- 本机对比（2026-10-27，Kelvin 要求，没调 API）：`reports/m5-local-smoke/run3-workflows/`（关 Turbo 换三个社区工作流：官方 20 步、SEED HUNTER、SEEDVR2 超分；SEED HUNTER Kelvin 说效果不好，SeedVR2 最清楚）、`run4-1-04-cut/`（1-04 第 2 秒切走的原因：提示词没照官方写法，切到的就是参考图本身）。片子 `*.mp4` 被 `.gitignore` 挡着、拼图 `*.png` 没提交，见「等 Kelvin 的事」。临时对比脚本在 scratchpad（`wf_compare.py`），不进仓库。
+- 第 14b 步（本提交；Kelvin 2026-10-27 定插一步、务必符合官方模板，DECISIONS「M5 第 14b 步」）：`prompts/h3_format.py`（按 MiniMax 官方 h3-prompt-writing 校验：段落和顺序、I2VA 第一行、标签、英文、台词原文、单镜头、字数；`mock_prompt`）；`templates/vid/h3_rewrite_system.j2`（规则 + 1-04 范例）；新路由组件 `vprompt`（视频提示词改写，默认 DeepSeek V4.1 Flash，可选本地 Qwen）；本地 H3 的 take 先改写（缓存，同一次的几条候选只改一次），不合格带着问题重问一次，还不合格 `prompt_not_conformant` 不出片；`h3_r2v.j2` 参考图改成 `<Subject N>`；参考图带 `desc`、首帧带 `first_desc`；估价含改写（本地 H3 一条约 $0.008）。新测试 `test_h3_format.py` 16 个、`test_takes_api` 加 2 个改 1 个；`Models.test.tsx` 组件 23 行；快照 `config.json`、`generate.json` 重导。相关 pytest（h3_format、takes、config、快照 70 个）、Vitest 305 个、lint、typecheck、prettier、ruff、mypy 过；全量交给 CI。
 
 ## 下一步
 
-- **先看 CI**（`gh run list -R kelvin78901/AIVideoGenerationAgent --branch m5-video`）：9b 那次（447b011，run 40608787648）只红了 Playwright smoke「a locked spec changes aspect…」，两次都卡在等影响范围对话框：第一次改 16:9 成功，之后的预览都不回来（失败截图：规格页「已锁定 · 第 1 集已有 0 个镜头」，镜头列表也没加载）。本地完整 e2e 3 次都过，`spec_aspect` 预览单独计时 0.1–0.4 s。失败截图用 `gh run download <run> -n playwright-results`。再红就给这条测试记 `/impact/preview`、`/episodes/*/shots` 的状态码和耗时（`page.on("response")`），并给 e2e 后端开访问日志。
+- **第 14c 步 本机复核改写**（计划 14c）：真 LLM 改写 + 本机 H3，1-01、1-04 用 run4 的两个种子（191503631、22）出片，和 `run4-1-04-cut/1-04-guidefmt-*` 比。先问 Kelvin 改写用本地 Qwen 还是 API（DeepSeek 约 $0.01）；照 `scripts/smoke/local_video.py` 加一步，`DRAMA_REAL_LOCAL=1` 只放开 ComfyUI，改写那一步要单独放开（API 要 `DRAMA_LIVE=1` 和上限）。
 - **第 10 步 工作流库接后端（前端）+ ModelPicker 档位**（计划第 10 条）：删 `mocks/handlers/workflows.ts`（和 `fixtures/demo/workflows.ts`、`db.ts` 的 `workflows` / `comfyWorkflowFiles`），挪成 `test/fakes/workflows.ts`（数据从后端导出，照 `generate.json` 的做法加进 `test_web_fixtures.py`）；试跑进度改走任务事件（`job.updated`，后端第 3 步的 `workflow_trial`）；ModelPicker 显示工作流档位，未验证的单独一组、只能手动选。从 `web/src/pages/models/WorkflowLibrary.tsx` 和 `mocks/handlers/workflows.ts` 开始；e2e `smoke.spec.ts` 的「workflow library」那条要跟着改。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -32,17 +34,15 @@
 
 ## 没提交的改动
 
-- 无。
+- 本机对比的片子和拼图（`reports/m5-local-smoke/run1-*`、`run2-*`、`run3-*`、`run4-*` 下的 `*.mp4` / `*.png`，约 100 MB）；Kelvin 20:41 装的一批技能（`.agents/`、`.claude/skills/` 等约 90 个目录），不是我们的，别提交。
 
 ## 踩过的坑 / 临时绕过
 
 - **Mock 下 H3 API 的视频按 0 元算**（第 8 步发现）：`MockAdapter.estimate/run` 拿 `params.resolution`（API 跑时是 `delivery`，比如 `1080p`）去查 `price_by_res`（只有 `768p` / `2k`），查不到 → 0；真实适配器按宽高选 768P / 2K，没问题。Mock 里只有 Context-IR 记钱。第 13 步 Mock 端到端（表头花费要跟着变）时修，修了要重导快照的估价。
 - **Kelvin 的 ComfyUI 是 Comfy Desktop**（0.41.2，127.0.0.1:8188，源码在 `%LOCALAPPDATA%\Comfy-Desktop\ComfyUI-Installs\ComfyUI\ComfyUI`，不在 `D:\ComfyUI`），H3 节点是自带的、权重和两个 Turbo LoRA 已经在。核对节点用只读的 `GET /object_info/<类名>`、`/models/<文件夹>`；**别往它 `/prompt` 发东西**（会真跑）。**测试里的 `ComfyUIAdapter` 一定传 `websocket=None` 或假的**，默认的会连真 8188。
-
 - **CI**：`/continue` 时先 `gh run list -R kelvin78901/AIVideoGenerationAgent --branch m5-video` 看一眼。连着推送会取消上一轮没跑完的 CI，要等结果就别急着推。
 - **偶发失败的测试**：Playwright `smoke.spec.ts`「a locked spec changes aspect…」2026-10-26 修了（开头用接口把画幅改回 9:16，弹窗关闭等 20 秒；CI 上连着两次挂在它）；pytest `test_web_script_fixture_is_current` 全量里偶尔两个产物 id 顺序对调（单独跑过），再碰到就查导出时的排序键。
 - **临时脚本里 `create_app()` 一定先设 `DRAMA_HOME` 到临时目录**（`core/paths.py`；不是 `DRAMA_STUDIO_HOME`），否则开的是真实的 `~/.drama-studio`：第 3 步就这样把示例关键帧种进了 Kelvin 的库（Mock，没花钱，和重启后端的效果一样）。
-
 - **测试别在「档案写完」后立刻断言任务状态**：任务结束比档案写入晚一点，CI 慢机器上会读到 running（`test_rescan_replaces_a_running_scan`，2026-10-21 修：等任务都结束再比）。
 - **同一次物化建的行 `created_at` 可能相同**（Windows 时钟粗，Linux 细，结果相反）：别拿它排序或当次序；出场矩阵改成按分析里的顺序（`seed_json.order`）再按 id。
 - 有 `upstream` remote（`binwu1/drama-series-agent`）；Kelvin 已把 `gh` 默认仓库设成 `kelvin78901/AIVideoGenerationAgent`，保险起见 `gh pr` 仍带 `-R`。
@@ -75,5 +75,6 @@
 
 ## 等 Kelvin 的事
 
-- 无。已定：K3.1 Pro 思考默认 low（2026-10-26）；「湿了半边」（Kelvin 2026-10-26 定：示例剧本不改，留着考新模型；默认的 Klein 画 1-01 没有污渍。）
+- 第 14c 步改写用本地 Qwen 还是 API；对比的拼图要不要进 git（片子已被 `.gitignore` 挡着）；SeedVR2 要不要做成本地终版的一档；本机 ComfyUI 装的潜空间放大节点包（`custom_nodes/Comfyui_Minimax_h3_latent_Upscaler` + 690 MB 模型，SEED HUNTER 用的）要不要删。
+- 已定：K3.1 Pro 思考默认 low（2026-10-26）；「湿了半边」示例剧本不改（2026-10-26）。
 
