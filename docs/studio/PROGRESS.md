@@ -23,7 +23,7 @@
 - 第 14b 步（e448225；Kelvin 2026-10-27 定插一步、务必符合官方模板，DECISIONS「M5 第 14b 步」）：`prompts/h3_format.py`（按 MiniMax 官方 h3-prompt-writing 校验：段落和顺序、I2VA 第一行、标签、英文、台词原文、单镜头、字数；`mock_prompt`）；`templates/vid/h3_rewrite_system.j2`（规则 + 1-04 范例）；新路由组件 `vprompt`（视频提示词改写，默认 DeepSeek V4.1 Flash，可选本地 Qwen）；本地 H3 的 take 先改写（缓存，同一次的几条候选只改一次），不合格带着问题重问一次，还不合格 `prompt_not_conformant` 不出片；`h3_r2v.j2` 参考图改成 `<Subject N>`；参考图带 `desc`、首帧带 `first_desc`；估价含改写（本地 H3 一条约 $0.008）。新测试 `test_h3_format.py` 16 个、`test_takes_api` 加 2 个改 1 个；`Models.test.tsx` 组件 23 行；快照 `config.json`、`generate.json` 重导。相关 pytest（h3_format、takes、config、快照 70 个）、Vitest 305 个、lint、typecheck、prettier、ruff、mypy 过；全量交给 CI。 对比图压缩进 git、原图进 `originals/`（001a271）；删潜空间放大节点包、7 个工作流体检正常（6f52677，`reports/m5-local-smoke/comfyui-cleanup.md`）。
 - 第 14c 步（62dc9f4；Kelvin 定用 DeepSeek）：`registry.real_models()`（`DRAMA_REAL_MODELS` + `DRAMA_LIVE=1`：只放开点名的模型，其余仍 Mock）；`local_video.py --only rewrite`（真 DeepSeek 改写 + 本机 H3，关兜底、每条前 `POST /free`、失败本地重试一次、清掉旧数据目录遗留的任务）；1-01、1-04 各 2 个种子都不切走、改写一次就合格，DeepSeek 共 $0.0038（`reports/m5-local-smoke/run5-rewrite/`）。`test_providers_api` 加 1 个；ruff、mypy 过。
 - 第 14d 步（bdd8fac；Kelvin 定 M5 做后端 + 工作流、按钮 M6，DECISIONS「M5 第 14d 步」）：`workflows/seedvr2-up`、`workflows/flashvsr-up`；`providers.yaml` 指过去；清单加 `w_flashvsr`（锁版本，6.7 GB，本机已下）；`components.yaml` 的 `up` 注释；本机体检 + 试跑都过；预计耗时 SeedVR2 40 s / FlashVSR 32 s 每秒（实测）。清单数 35 → 36：`test_manifest`、`test_setup_api`、`test_capabilities`、`Setup.test.tsx` 跟着改，快照 `setup.json` 重导；`test_comfyui_adapter` 加 2 个。相关 pytest、Vitest 305 个、lint、prettier、ruff、mypy 过。
-- 第 14e 步（本提交；CI 修复 379c314；DECISIONS「M5 第 14e 步」）：`h3-i2v` / `h3-r2v` 删 Turbo LoRA、20 步、`est_seconds_per_s` 30 / 36；媒体缓存键带工作流文件哈希（`workflow_sha256`，否则改了工作流同种子仍拿回旧片）；库同步仓库工作流时文件变了刷新模型清单、清旧体检。本机第六轮同种子同提示词 A/B（`reports/m5-local-smoke/run6-20steps/`）：光线稳、推镜克制、脸更自然，1-01 158 s、1-04 188 s 一条，DeepSeek 没再花钱。新测试：适配器 2 个、工作流库 1 个、缓存 1 个；相关 pytest、ruff、mypy 过；全量交给 CI。
+- 第 14e 步（6b7914a；CI 修复 379c314，e2e「首次运行」的安装数跟上 FlashVSR 本提交；DECISIONS「M5 第 14e 步」）：`h3-i2v` / `h3-r2v` 删 Turbo LoRA、20 步、`est_seconds_per_s` 30 / 36；媒体缓存键带工作流文件哈希（`workflow_sha256`，否则改了工作流同种子仍拿回旧片）；库同步仓库工作流时文件变了刷新模型清单、清旧体检。本机第六轮同种子同提示词 A/B（`reports/m5-local-smoke/run6-20steps/`）：光线稳、推镜克制、脸更自然，1-01 158 s、1-04 188 s 一条，DeepSeek 没再花钱。新测试：适配器 2 个、工作流库 1 个、缓存 1 个；相关 pytest、ruff、mypy 过；全量交给 CI。
 
 ## 下一步
 
@@ -76,5 +76,5 @@
 
 ## 等 Kelvin 的事
 
-- 安装清单 `w_h3` 还下两个 Turbo LoRA（3.9 GB，现在没工作流用）：删掉，还是留着以后做「快速草稿」档？顺便听一下第六轮 1-04 的台词（`originals/run6-20steps/1-04-s22.mp4`）。已定（2026-10-27）：本地 H3 20 步；原生配音合格。
+- 暂无。已定：`w_h3` 的两个 Turbo LoRA 留着，以后可能做「快速草稿」档（2026-10-28）；本地 H3 20 步、原生配音合格（2026-10-27）。
 
