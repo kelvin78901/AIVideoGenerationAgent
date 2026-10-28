@@ -218,6 +218,9 @@ def test_an_h3_api_take_goes_through_context_ir(client: TestClient) -> None:
     assert _prompt(client, take).startswith("[Context-IR] For the target video, at 0.00 seconds")
     ir = _rows(client, ModelCall, ModelCall.model_key == "minimax/context-ir")
     assert len(ir) == 1 and ir[0].component_id == "vid" and ir[0].cost_usd > 0
+    # Mock bills the tier the real adapter would (step 13: it used to cost 0 at "1080p").
+    videos = _rows(client, ModelCall, ModelCall.model_key == "minimax/h3-api")
+    assert len(videos) == 2 and all(c.cost_usd > ir[0].cost_usd for c in videos)
 
     take = _run(client, shots["1-04"]["video_product_id"], model="minimax/h3-api")["versions"][0]
     assert take["model_key"] == "minimax/h3-api" and take["payload"]["voices"]

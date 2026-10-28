@@ -118,6 +118,17 @@ def seconds_for(duration_s: float, span: tuple[int, int]) -> int:
     return max(span[0], min(span[1], math.ceil(float(duration_s) - 0.05)))
 
 
+def resolution_tier(spec: ModelSpec, params: dict[str, Any]) -> str:
+    """``2K`` when the frame is past 768P (an API run at the delivery tier) and the model
+    has it; ``768P`` otherwise. The Mock adapter bills by it too."""
+    if spec.kind == "upscale":
+        return "2K"
+    offered = spec.caps.resolutions or ["768P"]
+    w, h = params.get("width"), params.get("height")
+    short = min(int(w), int(h)) if w and h else 768
+    return "2K" if short > 768 and "2K" in offered else "768P"
+
+
 class MiniMaxVideoAdapter:
     def __init__(
         self,
@@ -284,14 +295,7 @@ class MiniMaxVideoAdapter:
         return seconds_for(float(req.params.get("duration_s") or lo), (lo, hi))
 
     def _resolution(self, req: ModelRequest) -> str:
-        """``2K`` when the frame is past 768P (an API run at the delivery tier) and the model
-        has it; ``768P`` otherwise."""
-        if self.spec.kind == "upscale":
-            return "2K"
-        offered = self.spec.caps.resolutions or ["768P"]
-        w, h = req.params.get("width"), req.params.get("height")
-        short = min(int(w), int(h)) if w and h else 768
-        return "2K" if short > 768 and "2K" in offered else "768P"
+        return resolution_tier(self.spec, req.params)
 
     # ------------------------------------------------------------------ task
 

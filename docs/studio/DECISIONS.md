@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 13a 步：Mock 照真实适配器记钱、记工作流；生成的端到端测试
+
+- **Mock 按真实适配器的价档记钱**：视频按秒计价的模型（`price_by_res`）由真实适配器按画面挑价档（H3：短边超过 768 用 2K；Seedance：短边够得着的最高档）。Mock 以前拿 `params.resolution` 查表，API 出片时那是交付档（如 `1080p`），表里没有 → 0 元。现在两家适配器把挑档抽成模块函数 `resolution_tier(spec, params)`，Mock 按 `spec.adapter` 调同一个（`mock.billed_tier`），用量里带上 `resolution`，估价和记账都按它。示例种子的花费是写死的，快照没变。
+- **Mock 也记工作流和哈希**：本地 ComfyUI 模型（`runtime: comfyui` 且有 `workflow`）的 Mock 结果带 `raw["comfy"]`（工作流 id、`workflow_sha256`，`comfy_env_hash` 为空），和 `ComfyUIAdapter` 一样，`model_call` 和版本就都有了。验收要求「本地的带工作流哈希」，Mock 下以前是空的。
+- **端到端测试从示例剧开始**（`tests/e2e/test_storyboard_to_takes.py`）：后端在 Mock 下启动时自己种示例剧（分镜已确认、1-01–1-03 已采纳、1-04 四条待挑），所以 M5 的验收不再从导入小说走起（M4 那条已覆盖）。`model_call.version_id` 对视频仍是空的（调用时版本还没建，M4 起就这样），测试按 `job_id` 对上。
+- 第 13 步拆成三小步：13a 这一步、13b 导入社区工作流和装坏节点包回滚的端到端、13c Playwright `m5` 和截图。
+
 ## 2026-10-28 · 估价不再嵌套开会话（CI 的 e2e 卡住的主因）
 
 - **原因**：第 12a 步起，`RunService.describe`（每个产品的 GET 都要算估价）在自己的会话里调 `choose_model`，选工作流又开一个会话读规则表：一个请求同时要两个连接。后期页、看板一次拉几十个产品，连接池（SQLAlchemy 默认 5 + 10）被每个请求的第一个连接占满，大家都在等第二个，等满 30 秒超时。本机并发 36 个视频产品的 GET：修之前 30.5 秒后 `QueuePool limit … reached`，修之后 1.0 秒全 200（`test_workflow_select_api` 新测试）。

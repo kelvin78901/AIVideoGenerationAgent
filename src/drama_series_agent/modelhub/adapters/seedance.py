@@ -73,6 +73,15 @@ def resolution_for(w: int, h: int, offered: list[str]) -> str:
     return offered[-1] if offered else "720p"
 
 
+def resolution_tier(spec: ModelSpec, params: dict[str, Any]) -> str:
+    """The tier a request is made (and billed) at; the Mock adapter bills by it too."""
+    offered = spec.caps.resolutions or [tier for tier, _ in TIERS]
+    w, h = params.get("width"), params.get("height")
+    if not (w and h):
+        return "720p" if "720p" in offered else offered[0]
+    return resolution_for(int(w), int(h), offered)
+
+
 class SeedanceAdapter:
     def __init__(
         self,
@@ -190,11 +199,7 @@ class SeedanceAdapter:
         return seconds_for(float(req.params.get("duration_s") or lo), (lo, hi))
 
     def _resolution(self, req: ModelRequest) -> str:
-        offered = self.spec.caps.resolutions or [tier for tier, _ in TIERS]
-        w, h = req.params.get("width"), req.params.get("height")
-        if not (w and h):
-            return "720p" if "720p" in offered else offered[0]
-        return resolution_for(int(w), int(h), offered)
+        return resolution_tier(self.spec, req.params)
 
     # ------------------------------------------------------------------ task
 

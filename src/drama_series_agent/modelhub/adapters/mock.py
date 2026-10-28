@@ -30,6 +30,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
+from drama_series_agent.modelhub.adapters import minimax_video, seedance
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
     Estimate,
@@ -42,6 +43,7 @@ from drama_series_agent.modelhub.adapters.base import (
     Usage,
 )
 from drama_series_agent.modelhub.pricing import cost_usd
+from drama_series_agent.modelhub.workflows import workflow_sha256
 
 LLM_KINDS = {"llm", "llm_aux", "vlm"}
 IMAGE_KINDS = {"image"}
@@ -214,6 +216,19 @@ async def solid_mp4(
         return out.read_bytes()
 
 
+# The real video adapters bill by a tier they pick from the frame (``price_by_res`` keys).
+TIER_OF: dict[str, Callable[[ModelSpec, dict[str, Any]], str]] = {
+    "minimax_video": minimax_video.resolution_tier,
+    "seedance": seedance.resolution_tier,
+}
+
+
+def billed_tier(spec: ModelSpec, params: dict[str, Any]) -> str | None:
+    """The price tier the model's real adapter would bill at, so Mock costs match it."""
+    tier_of = TIER_OF.get(spec.adapter or "")
+    return tier_of(spec, params).lower() if tier_of else None
+
+
 class MockAdapter:
     def __init__(self, spec: ModelSpec, settings: MockSettings | None = None) -> None:
         self.spec = spec
@@ -226,7 +241,11 @@ class MockAdapter:
     def estimate(self, req: ModelRequest) -> Estimate:
         usage = self._planned_usage(req)
         return Estimate(
-            cost_usd=cost_usd(self.spec.pricing, usage, resolution=req.params.get("resolution")),
+            cost_usd=cost_usd(
+                self.spec.pricing,
+                usage,
+                resolution=usage.resolution or req.params.get("resolution"),
+            ),
             seconds=self._delay(req),
             priced=self.spec.pricing.known,
         )
@@ -242,6 +261,17 @@ class MockAdapter:
         rng = random.Random(_digest(self.key, req.text(), req.seed, s.seed))
         if self.key in s.fail_keys or (s.fail_rate and rng.random() < s.fail_rate):
             raise ModelError("mock_failure", f"mock failure for {self.key}")
+        result = await self._result(req)
+        if self.spec.runtime == "comfyui" and self.spec.workflow:
+            # As ComfyUIAdapter records it (SPEC 6.4.5): the workflow file, its hash, no ComfyUI.
+            result.raw["comfy"] = {
+                "workflow_id": self.spec.workflow,
+                "workflow_sha256": workflow_sha256(self.spec),
+                "comfy_env_hash": None,
+            }
+        return result
+
+    async def _result(self, req: ModelRequest) -> ModelResult:
         kind = self.spec.kind
         if kind in LLM_KINDS or kind == "asr":
             return self._llm(req)
@@ -269,7 +299,8 @@ class MockAdapter:
         if kind in AUDIO_KINDS:
             return Usage(chars=len(req.text()), calls=_design_calls(req))
         if kind in VIDEO_KINDS:
-            return Usage(output_seconds=float(req.params.get("duration_s", 2.0)))
+            seconds = float(req.params.get("duration_s", 2.0))
+            return Usage(output_seconds=seconds, resolution=billed_tier(self.spec, req.params))
         if kind in OCR_KINDS:
             return Usage(images=1)
         return Usage()
@@ -359,6 +390,6 @@ class MockAdapter:
             files=[
                 OutputFile(role="video", mime="video/mp4", data=data, w=w, h=h, duration_s=duration)
             ],
-            usage=Usage(output_seconds=duration),
+            usage=Usage(output_seconds=duration, resolution=billed_tier(self.spec, req.params)),
             raw={"mock": True},
         )
