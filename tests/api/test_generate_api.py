@@ -98,7 +98,8 @@ def test_the_run_log_lists_takes_fallbacks_and_failures(client: TestClient) -> N
     assert ("1-02", "fallback_error", True) in lines
     assert lines[-1] == ("1-03", "failed", True)
     first = log[0]["message"]["params"]
-    assert first["model"] == "comfy/h3" and first["take"] == 1 and first["cost_usd"] == 0
+    assert first["model"] == "comfy/h3" and first["take"] == 1
+    assert 0 < first["cost_usd"] < 0.01  # local: only the prompt rewrite (vprompt) costs
     fallback = next(e for e in log if e["message"]["code"] == "fallback_error")
     take = log[log.index(fallback) + 1]
     assert take["message"]["params"]["model"] == "minimax/h3-api"

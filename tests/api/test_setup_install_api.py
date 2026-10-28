@@ -22,12 +22,12 @@ V1 = "/api/v1"
 PROFILE = f"{V1}/setup/profile"
 INSTALL = f"{V1}/setup/install"
 
-# PC: everything the scan offers (10 missing + 2 old + 3 optional with install steps). The H3,
+# PC: everything the scan offers (10 missing + 2 old + 4 optional with install steps). The H3,
 # ControlNet and SeedVR2 nodes come with ComfyUI itself and our own nodes are not out yet, so
 # the scan finds them missing but offers no install.
 PC_INSTALLABLE = [
     "torch", "ffmpeg", "rt_qwentts", "rt_indextts", "rt_ocr", "comfy", "node_flashvsr", "sage",
-    "w_h3", "w_te", "w_img", "w_img_t2i", "w_flux3", "w_sr", "w_tts", "llmsrv",
+    "w_h3", "w_te", "w_img", "w_img_t2i", "w_flux3", "w_flashvsr", "w_sr", "w_tts", "llmsrv",
 ]  # fmt: skip
 
 
@@ -114,7 +114,7 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
     # (the weights for ComfyUI too: they go into its model folders; IndexTTS does not)
     assert touching == [
         "torch", "comfy", "node_flashvsr", "sage", "w_h3", "w_te", "w_img", "w_img_t2i",
-        "w_flux3", "w_sr",
+        "w_flux3", "w_flashvsr", "w_sr",
     ]  # fmt: skip
     confirm = started["install"]["confirm"]
     changes = [c for c in confirm if c["code"] == "comfy_change"]
@@ -142,7 +142,7 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
 
     done = _wait(client, "done")
     states = _states(done)
-    assert Counter(states.values()) == {"done": 15, "failed": 1}
+    assert Counter(states.values()) == {"done": 16, "failed": 1}
     assert done["download_bps"] == 25e6  # what the weights' downloads measured
     sage = next(x for x in done["items"] if x["id"] == "sage")
     assert sage["install"] == {
@@ -197,7 +197,7 @@ def test_rescan_only_reports_the_difference(client: TestClient) -> None:
     after = _scan(client)
     by_id = {x["id"]: x for x in after["items"]}
     assert Counter(x["status"] for x in after["items"]) == {
-        "ok": 25,
+        "ok": 26,
         "missing": 3,
         "optional": 6,
         "warn": 1,

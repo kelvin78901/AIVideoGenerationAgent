@@ -101,6 +101,7 @@ PC: dict[str, Row] = {
     "w_img": _r("missing", "not_found", "download"),
     "w_img_t2i": _r("missing", "not_found", "download"),
     "w_flux3": _r("optional", "not_found", "download"),
+    "w_flashvsr": _r("optional", "not_found", "download"),
     "w_sr": _r("missing", "not_found", "download"),
     "w_tts": _r("missing", "not_found", "download"),
     "w_llm": _r("optional", "not_found", "llm_optional"),
@@ -140,6 +141,7 @@ MAC: dict[str, Row] = {
     "w_img": _r("optional", "not_found", "mac_image_slow"),
     "w_img_t2i": _r("optional", "not_found", "mac_image_slow"),
     "w_flux3": _r("optional", "not_found", "mac_image_slow"),
+    "w_flashvsr": _r("skip", "needs_cuda", "unsupported_upscale_api"),
     "w_sr": _r("skip", "needs_cuda", "unsupported_upscale_api"),
     "w_tts": _r("optional", "not_found", "mac_voice_slow"),
     "w_llm": _r("missing", "not_found", "weights_pending_p0"),
@@ -157,7 +159,7 @@ MAC: dict[str, Row] = {
 async def test_pc_scan() -> None:
     result = await scan("pc")
     assert rows(result) == PC
-    assert counts(result) == {"ok": 10, "missing": 13, "old": 2, "optional": 9, "warn": 1}
+    assert counts(result) == {"ok": 10, "missing": 13, "old": 2, "optional": 10, "warn": 1}
 
 
 async def test_pc_flags_match_the_prototype() -> None:
@@ -200,7 +202,7 @@ async def test_pc_facts() -> None:
 async def test_mac_scan() -> None:
     result = await scan("mac")
     assert rows(result) == MAC
-    assert counts(result) == {"ok": 6, "warn": 3, "missing": 5, "optional": 10, "skip": 10}
+    assert counts(result) == {"ok": 6, "warn": 3, "missing": 5, "optional": 10, "skip": 11}
     assert "driver" not in result
     assert result["w_llm"][0].name.en == "Qwen3.6-27B (MLX)"
     assert not result["w_llm"][1].installable  # until P0 settles the model

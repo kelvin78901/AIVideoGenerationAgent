@@ -30,7 +30,7 @@ def test_platform_rows() -> None:
     win = [x.id for x in m.for_platform("windows")]
     mac = [x.id for x in m.for_platform("macos")]
     assert len(win) == 36
-    assert len(mac) == 34
+    assert len(mac) == 35
     assert "driver" in win and "driver" not in mac
     assert [x for x in win if x != "driver"] == mac  # manifest order kept
 
