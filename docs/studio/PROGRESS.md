@@ -22,10 +22,11 @@
 - 本机对比（2026-10-27，Kelvin 要求，没调 API）：`reports/m5-local-smoke/run3-workflows/`（关 Turbo 换三个社区工作流：官方 20 步、SEED HUNTER、SEEDVR2 超分；SEED HUNTER Kelvin 说效果不好，SeedVR2 最清楚）、`run4-1-04-cut/`（1-04 第 2 秒切走的原因：提示词没照官方写法，切到的就是参考图本身）。片子 `*.mp4` 被 `.gitignore` 挡着、拼图 `*.png` 没提交，见「等 Kelvin 的事」。临时对比脚本在 scratchpad（`wf_compare.py`），不进仓库。
 - 第 14b 步（e448225；Kelvin 2026-10-27 定插一步、务必符合官方模板，DECISIONS「M5 第 14b 步」）：`prompts/h3_format.py`（按 MiniMax 官方 h3-prompt-writing 校验：段落和顺序、I2VA 第一行、标签、英文、台词原文、单镜头、字数；`mock_prompt`）；`templates/vid/h3_rewrite_system.j2`（规则 + 1-04 范例）；新路由组件 `vprompt`（视频提示词改写，默认 DeepSeek V4.1 Flash，可选本地 Qwen）；本地 H3 的 take 先改写（缓存，同一次的几条候选只改一次），不合格带着问题重问一次，还不合格 `prompt_not_conformant` 不出片；`h3_r2v.j2` 参考图改成 `<Subject N>`；参考图带 `desc`、首帧带 `first_desc`；估价含改写（本地 H3 一条约 $0.008）。新测试 `test_h3_format.py` 16 个、`test_takes_api` 加 2 个改 1 个；`Models.test.tsx` 组件 23 行；快照 `config.json`、`generate.json` 重导。相关 pytest（h3_format、takes、config、快照 70 个）、Vitest 305 个、lint、typecheck、prettier、ruff、mypy 过；全量交给 CI。 对比图压缩进 git、原图进 `originals/`（001a271）；删潜空间放大节点包、7 个工作流体检正常（6f52677，`reports/m5-local-smoke/comfyui-cleanup.md`）。
 - 第 14c 步（62dc9f4；Kelvin 定用 DeepSeek）：`registry.real_models()`（`DRAMA_REAL_MODELS` + `DRAMA_LIVE=1`：只放开点名的模型，其余仍 Mock）；`local_video.py --only rewrite`（真 DeepSeek 改写 + 本机 H3，关兜底、每条前 `POST /free`、失败本地重试一次、清掉旧数据目录遗留的任务）；1-01、1-04 各 2 个种子都不切走、改写一次就合格，DeepSeek 共 $0.0038（`reports/m5-local-smoke/run5-rewrite/`）。`test_providers_api` 加 1 个；ruff、mypy 过。
-- 第 14d 步（本提交；Kelvin 定 M5 做后端 + 工作流、按钮 M6，DECISIONS「M5 第 14d 步」）：`workflows/seedvr2-up`、`workflows/flashvsr-up`；`providers.yaml` 指过去；清单加 `w_flashvsr`（锁版本，6.7 GB，本机已下）；`components.yaml` 的 `up` 注释；本机体检 + 试跑都过；预计耗时 SeedVR2 40 s / FlashVSR 32 s 每秒（实测）。清单数 35 → 36：`test_manifest`、`test_setup_api`、`test_capabilities`、`Setup.test.tsx` 跟着改，快照 `setup.json` 重导；`test_comfyui_adapter` 加 2 个。相关 pytest、Vitest 305 个、lint、prettier、ruff、mypy 过。
+- 第 14d 步（bdd8fac；Kelvin 定 M5 做后端 + 工作流、按钮 M6，DECISIONS「M5 第 14d 步」）：`workflows/seedvr2-up`、`workflows/flashvsr-up`；`providers.yaml` 指过去；清单加 `w_flashvsr`（锁版本，6.7 GB，本机已下）；`components.yaml` 的 `up` 注释；本机体检 + 试跑都过；预计耗时 SeedVR2 40 s / FlashVSR 32 s 每秒（实测）。清单数 35 → 36：`test_manifest`、`test_setup_api`、`test_capabilities`、`Setup.test.tsx` 跟着改，快照 `setup.json` 重导；`test_comfyui_adapter` 加 2 个。相关 pytest、Vitest 305 个、lint、prettier、ruff、mypy 过。
 
 ## 下一步
 
+- **第 14e 步 本地 H3 草稿改成 20 步、不开 Turbo**（Kelvin 2026-10-27 定，计划 14e，DECISIONS 同日「本地 H3 草稿用 20 步」）：从 `workflows/h3-i2v/workflow.api.json`、`h3-r2v` 开始，照第三轮的 `official20` 改（删 `LoraLoaderModelOnly`，把引用它的 `model` 接回 `UNETLoader`；`BasicScheduler.steps` 改 20）；做完再做第 10 步。
 - **第 10 步 工作流库接后端（前端）+ ModelPicker 档位**（计划第 10 条）：删 `mocks/handlers/workflows.ts`（和 `fixtures/demo/workflows.ts`、`db.ts` 的 `workflows` / `comfyWorkflowFiles`），挪成 `test/fakes/workflows.ts`（数据从后端导出，照 `generate.json` 的做法加进 `test_web_fixtures.py`）；试跑进度改走任务事件（`job.updated`，后端第 3 步的 `workflow_trial`）；ModelPicker 显示工作流档位，未验证的单独一组、只能手动选。从 `web/src/pages/models/WorkflowLibrary.tsx` 和 `mocks/handlers/workflows.ts` 开始；e2e `smoke.spec.ts` 的「workflow library」那条要跟着改。
 - **`start.ps1` / `start.sh` 默认真实检测**（`-RealSetup` 默认开，Kelvin 2026-10-21 定；`-RealSetup:$false` / `--no-real-setup` 换回示例机器）。直接 `drama-studio dev` 和测试仍是 Mock 即示例机器。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -76,5 +77,5 @@
 
 ## 等 Kelvin 的事
 
-- 本地 H3 要不要从 Turbo（8 / 4 步）换成 20 步（第三轮画质更好，5 秒片 2.5–6 分钟）：等 Kelvin 看 `run5-rewrite` 和 `run3-workflows` 的片子；台词声音要他听。
+- 无。已定（2026-10-27）：本地 H3 用 20 步不开 Turbo；原生配音的声音合格。
 

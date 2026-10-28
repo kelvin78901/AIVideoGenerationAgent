@@ -2,6 +2,11 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-27 · Kelvin 定：本地 H3 草稿用 20 步、不开 Turbo；原生配音的声音合格
+
+- **本地 H3 草稿（`comfy/h3`、`comfy/h3-r2v`）改成 20 步、不开 Turbo LoRA**（res_multistep + simple，官方关 Turbo 的默认）。原因：Kelvin 看了第三轮（`reports/m5-local-smoke/run3-workflows/`）和第五轮（`run5-rewrite/`），Turbo（8 / 4 步）画质不够；20 步一条 5 秒片约 2.5–6 分钟，换来画质。提示词改写（第 14b 步）解决切走 / 漂移，步数解决画质，两者独立。做法见计划第 14e 步。
+- **原生配音（`native`，H3 参考生视频 + 锁定音色样本）的声音 Kelvin 听过，合格**：第五轮 1-04 的台词没有乱码、音色像林晚。第二轮 ab-22-B 的乱码音频是 Turbo 4 步时声音没收敛（官方说说话和音色要 12 步以上），换 20 步后不再是问题。
+
 ## 2026-10-27 · M5 第 14d 步：2K 精修的本地档（SeedVR2 默认、FlashVSR 兜底）
 
 - **Kelvin 定**：「2K 精修」（`up`）本地默认 SeedVR2，兜底 FlashVSR，按钮上显示预计耗时。范围：M5 做后端和工作流，按钮和 `POST /versions/{id}/upscale` 仍是 M6（计划原样）。`components.yaml` 的 `up` 本来就是 `local: comfy/seedvr2`、`fallback_to: comfy/flashvsr`，只补了注释。
