@@ -70,7 +70,7 @@ from drama_series_agent.pipeline.components.views import (
     ViewsComponent,
     negative_for,
 )
-from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
+from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.invalidation import Invalidation
@@ -198,14 +198,16 @@ CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"), ("storyboar
 # 「不满意换一个」 on Seedance 2.5, still to pick. 1-05–1-07 have not run; 1-08 and 1-09 wait for
 # the shot they continue.
 TAKE_LOCAL = "comfy/h3"
+# 1-04 is 原生同步 with 林晚's locked voice: local takes go to the workflow that takes it.
+TAKE_VOICED = "comfy/h3-r2v"
 TAKE_FINAL = "minimax/h3-regenerate-2k"
 DEMO_TAKES: dict[str, tuple[tuple[str, str, str, str | None], ...]] = {
     "1-01": ((TAKE_LOCAL, "11:02", "run", None), (TAKE_FINAL, "11:06", "final", None)),
     "1-02": ((TAKE_LOCAL, "11:09", "run", None), (TAKE_FINAL, "11:13", "final", None)),
     "1-03": ((TAKE_LOCAL, "11:15", "run", None), (TAKE_FINAL, "11:19", "final", None)),
     "1-04": (
-        (TAKE_LOCAL, "11:31", "run", None),
-        (TAKE_LOCAL, "11:31", "run", None),
+        (TAKE_VOICED, "11:31", "run", None),
+        (TAKE_VOICED, "11:31", "run", None),
         ("minimax/h3-api", "11:41", "fallback", "timeout"),
         ("volc/seedance-2.5", "11:52", "switch", None),
     ),
@@ -1128,7 +1130,7 @@ async def _take_draft(
     cfg = get_config()
     context = inputs.context
     frame = context["frame"]
-    where = "local" if model == TAKE_LOCAL else "api"
+    where = "local" if model.startswith("comfy/") else "api"
     seconds = float(context["seconds"])
     if source is not None:
         raw = next(f for f in source.files_json if f["role"] == "raw")
@@ -1141,6 +1143,8 @@ async def _take_draft(
         model_caps(cfg, model).get("max_refs"), where, local.workflow if local else None
     )
     refs, deps, _ = kf.pick_refs(inputs, None, 0 if source is not None else limit)
+    voices = list(context["voices"]) if model == TAKE_VOICED and source is None else []
+    deps += [DependencyDraft(v["product_id"], v["hash"], "") for v in voices if v.get("hash")]
     color = hashlib.sha256(f"{product.id}:{n}".encode()).hexdigest()[:6]
     hz = 220.0 + n * 40 if context["audio_mode"] != "none" else None
     clip = await solid_mp4(size.w, size.h, seconds, int(frame["fps"]), color, audio_hz=hz)
@@ -1167,6 +1171,8 @@ async def _take_draft(
         }
         if refs:
             request["refs"] = [r["sha256"] for r in refs]
+        if voices:
+            request["ref_audio"] = [v["sha256"] for v in voices]
         if where == "local":
             params["request"] = request
         payload = {
@@ -1176,7 +1182,7 @@ async def _take_draft(
             "aspect": frame["aspect"],
             "audio_mode": context["audio_mode"],
             "refs": [r["name"] for r in refs],
-            "voices": [],
+            "voices": [v["who"] for v in voices],
         }
     files.append(file_entry("prompt", prompt_sha, "text/plain; charset=utf-8"))
     cost = to_usd(TAKE_PRICE_CNY.get(model, 0.0) * seconds, "CNY")

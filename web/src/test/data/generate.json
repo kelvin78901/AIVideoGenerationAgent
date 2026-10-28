@@ -1,0 +1,2210 @@
+{
+  "shots": [
+    {
+      "id": "demo-shot-1-01",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-01",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 1,
+      "summary": "楼道全景，林晚走上六楼",
+      "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+      "seed_changed": false,
+      "shot_type": "scene_change",
+      "framing": "wide",
+      "camera_move": "push",
+      "duration_s": 4.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 4.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b2"
+      ],
+      "dialogue": null,
+      "sound": "雨声、脚步、灯的电流声",
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "hall"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.5,
+          "y": 0.92
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-01",
+      "video_product_id": "demo-p-vid-1-01",
+      "keyframe_pick": 0,
+      "keyframe_sha256": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-02",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-02",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 2,
+      "summary": "门口的红伞和便利贴",
+      "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "medium",
+      "camera_move": "static",
+      "duration_s": 3.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 3.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b3"
+      ],
+      "dialogue": null,
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "hall",
+        "umbrella",
+        "note"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.5,
+          "y": 0.8
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-02",
+      "video_product_id": "demo-p-vid-1-02",
+      "keyframe_pick": 0,
+      "keyframe_sha256": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-03",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-03",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 3,
+      "summary": "便利贴上的字",
+      "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "closeup",
+      "camera_move": "static",
+      "duration_s": 3.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 3.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b4"
+      ],
+      "dialogue": null,
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "note",
+        "txt1"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.55,
+          "y": 0.62
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-03",
+      "video_product_id": "demo-p-vid-1-03",
+      "keyframe_pick": 0,
+      "keyframe_sha256": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-04",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-04",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 4,
+      "summary": "林晚愣住：……周屿？",
+      "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "close",
+      "camera_move": "push",
+      "duration_s": 4.5,
+      "duration_source": "audio",
+      "min_s": 4.5,
+      "planned_s": 4.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b5"
+      ],
+      "dialogue": "林晚（低声，愣住）：……周屿？",
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "hall",
+        "vlinwan"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.38,
+          "y": 0.7
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-04",
+      "video_product_id": "demo-p-vid-1-04",
+      "keyframe_pick": 0,
+      "keyframe_sha256": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-05",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b1",
+      "label": "1-05",
+      "scene_no": 1,
+      "scene_place": "老小区楼道 · 六楼林晚家门口",
+      "idx": 5,
+      "summary": "指尖、旧发圈",
+      "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "closeup",
+      "camera_move": "static",
+      "duration_s": 3.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 3.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b6"
+      ],
+      "dialogue": null,
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "note",
+        "band"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.55,
+          "y": 0.62
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-05",
+      "video_product_id": "demo-p-vid-1-05",
+      "keyframe_pick": 0,
+      "keyframe_sha256": "2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-06",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b7",
+      "label": "1-06",
+      "scene_no": 2,
+      "scene_place": "林晚出租屋",
+      "idx": 6,
+      "summary": "背靠着门，画外音",
+      "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+      "seed_changed": false,
+      "shot_type": "scene_change",
+      "framing": "medium",
+      "camera_move": "static",
+      "duration_s": 5.0,
+      "duration_source": "manual",
+      "min_s": 2.75,
+      "planned_s": 5.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b8",
+        "demo-b10"
+      ],
+      "dialogue": "林晚（OS）：三年了。他凭什么。",
+      "sound": null,
+      "audio_mode": "tts",
+      "asset_ids": [
+        "linwan",
+        "room",
+        "vlinwan"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "门",
+          "x": 0.5,
+          "y": 0.12
+        },
+        {
+          "id": "desk",
+          "kind": "landmark",
+          "label": "桌",
+          "x": 0.82,
+          "y": 0.45
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.5,
+          "y": 0.3
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.5,
+          "y": 0.8
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-06",
+      "video_product_id": "demo-p-vid-1-06",
+      "keyframe_pick": 0,
+      "keyframe_sha256": "41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-07",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b7",
+      "label": "1-07",
+      "scene_no": 2,
+      "scene_place": "林晚出租屋",
+      "idx": 7,
+      "summary": "手机亮屏 23:52",
+      "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
+      "seed_changed": false,
+      "shot_type": "same_scene_cut",
+      "framing": "closeup",
+      "camera_move": "static",
+      "duration_s": 2.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 2.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b9"
+      ],
+      "dialogue": null,
+      "sound": null,
+      "audio_mode": "native",
+      "asset_ids": [
+        "phone",
+        "txt2"
+      ],
+      "tail_from": null,
+      "tail_note": null,
+      "blocking": [
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "门",
+          "x": 0.5,
+          "y": 0.12
+        },
+        {
+          "id": "desk",
+          "kind": "landmark",
+          "label": "桌",
+          "x": 0.82,
+          "y": 0.45
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.5,
+          "y": 0.3
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.55,
+          "y": 0.62
+        }
+      ],
+      "keyframe_product_id": "demo-p-kf-1-07",
+      "video_product_id": "demo-p-vid-1-07",
+      "keyframe_pick": 0,
+      "keyframe_sha256": "c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-08",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b7",
+      "label": "1-08",
+      "scene_no": 2,
+      "scene_place": "林晚出租屋",
+      "idx": 8,
+      "summary": "开门，关门，再开门",
+      "intent": "她拉开门，又关上；停两秒，再拉开。",
+      "seed_changed": false,
+      "shot_type": "continuous",
+      "framing": "medium",
+      "camera_move": "static",
+      "duration_s": 6.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 6.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b11"
+      ],
+      "dialogue": null,
+      "sound": "门轴声、雨声",
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "room"
+      ],
+      "tail_from": "1-06",
+      "tail_note": "中间的 1-07 是插入镜头，所以接的是 1-06，不是上一个镜头。",
+      "blocking": [
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "门",
+          "x": 0.5,
+          "y": 0.12
+        },
+        {
+          "id": "desk",
+          "kind": "landmark",
+          "label": "桌",
+          "x": 0.82,
+          "y": 0.45
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.5,
+          "y": 0.3
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.5,
+          "y": 0.8
+        }
+      ],
+      "keyframe_product_id": null,
+      "video_product_id": "demo-p-vid-1-08",
+      "keyframe_pick": 0,
+      "keyframe_sha256": null,
+      "confirmed": true,
+      "confirm_stale": false
+    },
+    {
+      "id": "demo-shot-1-09",
+      "episode_id": "demo-e1",
+      "scene_id": "demo-b7",
+      "label": "1-09",
+      "scene_no": 2,
+      "scene_place": "林晚出租屋",
+      "idx": 9,
+      "summary": "她拿起了那把伞（卡点）",
+      "intent": "门外，她弯腰拿起那把红伞，最后一帧定格。",
+      "seed_changed": false,
+      "shot_type": "continuous",
+      "framing": "close",
+      "camera_move": "push",
+      "duration_s": 4.0,
+      "duration_source": "manual",
+      "min_s": 0.0,
+      "planned_s": 4.0,
+      "manual_s": null,
+      "longest_s": 15.0,
+      "split_hint": false,
+      "line_ids": [
+        "demo-b12"
+      ],
+      "dialogue": null,
+      "sound": "卡点音效",
+      "audio_mode": "native",
+      "asset_ids": [
+        "linwan",
+        "umbrella",
+        "hall"
+      ],
+      "tail_from": "1-08",
+      "tail_note": "最后一帧定格做卡点，后期加音效。",
+      "blocking": [
+        {
+          "id": "stairs",
+          "kind": "landmark",
+          "label": "楼梯",
+          "x": 0.14,
+          "y": 0.7
+        },
+        {
+          "id": "door",
+          "kind": "landmark",
+          "label": "家门",
+          "x": 0.78,
+          "y": 0.14
+        },
+        {
+          "id": "umbrella",
+          "kind": "prop",
+          "label": "红伞",
+          "x": 0.9,
+          "y": 0.36
+        },
+        {
+          "id": "linwan",
+          "kind": "character",
+          "label": "林晚",
+          "x": 0.62,
+          "y": 0.4
+        },
+        {
+          "id": "camera",
+          "kind": "camera",
+          "label": "",
+          "x": 0.38,
+          "y": 0.7
+        }
+      ],
+      "keyframe_product_id": null,
+      "video_product_id": "demo-p-vid-1-09",
+      "keyframe_pick": 0,
+      "keyframe_sha256": null,
+      "confirmed": true,
+      "confirm_stale": false
+    }
+  ],
+  "videos": [
+    {
+      "id": "demo-p-vid-1-01",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-01",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": "demo-p-vid-1-01-v2",
+      "adopted_version_id": "demo-p-vid-1-01-v2",
+      "locked_hash": null,
+      "status": "adopted",
+      "versions": [
+        {
+          "id": "demo-p-vid-1-01-v1",
+          "product_id": "demo-p-vid-1-01",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "duration_s": 3.7,
+            "asked_s": 4.0,
+            "resolution": "768p",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [],
+            "voices": []
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/9f/9f7aa40f765acd3229196e472c05c5da039bc1c1b69efef7483791f9fdcde9ed",
+              "sha256": "9f7aa40f765acd3229196e472c05c5da039bc1c1b69efef7483791f9fdcde9ed",
+              "mime": "video/mp4",
+              "duration_s": 3.7,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/9e/9e3b1d0c11cc6640323e49c8f99d12f57b714e669e13a8ff6eb9571be9aee68b",
+              "sha256": "9e3b1d0c11cc6640323e49c8f99d12f57b714e669e13a8ff6eb9571be9aee68b",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/db/db69f28d60984c8783963b06e4d4d906b5ba607c38bf47588374127aef4032a9",
+              "sha256": "db69f28d60984c8783963b06e4d4d906b5ba607c38bf47588374127aef4032a9",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "raw",
+              "path": "blobs/sha256/1f/1f414bc69dadc42c0f608f8df44e699f09e2e4405f03ca81515c52157b836735",
+              "sha256": "1f414bc69dadc42c0f608f8df44e699f09e2e4405f03ca81515c52157b836735",
+              "mime": "video/mp4",
+              "duration_s": 4.0,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/c3/c3993c85da77241af6b34c91216d684540e2b47cf610091e3eaf35e1e8944e07",
+              "sha256": "c3993c85da77241af6b34c91216d684540e2b47cf610091e3eaf35e1e8944e07",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-01-v1",
+          "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+          "compiled_overridden": false,
+          "model_key": "comfy/h3",
+          "where": "local",
+          "seed": 2101,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "request": {
+              "aspect": "9:16",
+              "duration_s": 4.0,
+              "fps": 24,
+              "first_frame": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
+              "with_audio": true
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-vid-1-01-v2",
+          "product_id": "demo-p-vid-1-01",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-vid-1-01-v1",
+          "payload": {
+            "duration_s": 3.7,
+            "asked_s": 4.0,
+            "resolution": "2k",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [],
+            "voices": []
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/d7/d75a9d646d52cb6be5935c93d660ca91fb57b415a6420db8906e5fe407a3024c",
+              "sha256": "d75a9d646d52cb6be5935c93d660ca91fb57b415a6420db8906e5fe407a3024c",
+              "mime": "video/mp4",
+              "duration_s": 3.7,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/c8/c8754dac4286d90e6206c648df4a7973164bae05df769aef6a40ab8727b414d3",
+              "sha256": "c8754dac4286d90e6206c648df4a7973164bae05df769aef6a40ab8727b414d3",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/37/3771b4960f4f7333083b43d4f31214fd4045e016628908849526fcc6729d4d85",
+              "sha256": "3771b4960f4f7333083b43d4f31214fd4045e016628908849526fcc6729d4d85",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/c3/c3993c85da77241af6b34c91216d684540e2b47cf610091e3eaf35e1e8944e07",
+              "sha256": "c3993c85da77241af6b34c91216d684540e2b47cf610091e3eaf35e1e8944e07",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-01-v2",
+          "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+          "compiled_overridden": false,
+          "model_key": "minimax/h3-regenerate-2k",
+          "where": "api",
+          "seed": 2102,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-vid-1-01-v1"
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.338028,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3"
+      },
+      "estimate": {
+        "model_key": "comfy/h3",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0,
+        "priced": true
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-vid-1-02",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-02",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": "demo-p-vid-1-02-v2",
+      "adopted_version_id": "demo-p-vid-1-02-v2",
+      "locked_hash": null,
+      "status": "adopted",
+      "versions": [
+        {
+          "id": "demo-p-vid-1-02-v1",
+          "product_id": "demo-p-vid-1-02",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "duration_s": 2.7,
+            "asked_s": 3.0,
+            "resolution": "768p",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [],
+            "voices": []
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/8b/8b3338823c986a38e39325493894dc6a69afbead1a46d5f68827c4ae1332ddf4",
+              "sha256": "8b3338823c986a38e39325493894dc6a69afbead1a46d5f68827c4ae1332ddf4",
+              "mime": "video/mp4",
+              "duration_s": 2.7,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/bf/bffc7b99368bf6ed6805dd4f026111cd46725cc3771d0feb3317160c4bccee0d",
+              "sha256": "bffc7b99368bf6ed6805dd4f026111cd46725cc3771d0feb3317160c4bccee0d",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/ef/ef9e0b44faafb5a466a5429c48bc32fe0b95e12c8afc4738d93756dbfbe2a171",
+              "sha256": "ef9e0b44faafb5a466a5429c48bc32fe0b95e12c8afc4738d93756dbfbe2a171",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "raw",
+              "path": "blobs/sha256/3d/3dfc15760ccb48061563f05cdc01fd1d5b307c93e92be867e11bc54fc89566cb",
+              "sha256": "3dfc15760ccb48061563f05cdc01fd1d5b307c93e92be867e11bc54fc89566cb",
+              "mime": "video/mp4",
+              "duration_s": 3.0,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/3b/3bb2b8fe03f3dc08daa1045561fe1231dbbf91d0713b86bd0c67b2af56376cf8",
+              "sha256": "3bb2b8fe03f3dc08daa1045561fe1231dbbf91d0713b86bd0c67b2af56376cf8",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-02-v1",
+          "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+          "compiled_overridden": false,
+          "model_key": "comfy/h3",
+          "where": "local",
+          "seed": 2101,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "request": {
+              "aspect": "9:16",
+              "duration_s": 3.0,
+              "fps": 24,
+              "first_frame": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
+              "with_audio": true
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-vid-1-02-v2",
+          "product_id": "demo-p-vid-1-02",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-vid-1-02-v1",
+          "payload": {
+            "duration_s": 2.7,
+            "asked_s": 3.0,
+            "resolution": "2k",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [],
+            "voices": []
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/ea/eaa3ea4385701638ba7d8580297dc0514bc55a9e17f4c351e38a765943ec3f5c",
+              "sha256": "eaa3ea4385701638ba7d8580297dc0514bc55a9e17f4c351e38a765943ec3f5c",
+              "mime": "video/mp4",
+              "duration_s": 2.7,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/30/3043686d65f83ba29330cabdbaf47b1d9257390fc3cb5410b10977e2a1a0a6f6",
+              "sha256": "3043686d65f83ba29330cabdbaf47b1d9257390fc3cb5410b10977e2a1a0a6f6",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/f2/f2f70b89d301655ff789c499b50347d85484379684deceacbe2476c42c3388c6",
+              "sha256": "f2f70b89d301655ff789c499b50347d85484379684deceacbe2476c42c3388c6",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/3b/3bb2b8fe03f3dc08daa1045561fe1231dbbf91d0713b86bd0c67b2af56376cf8",
+              "sha256": "3bb2b8fe03f3dc08daa1045561fe1231dbbf91d0713b86bd0c67b2af56376cf8",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-02-v2",
+          "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+          "compiled_overridden": false,
+          "model_key": "minimax/h3-regenerate-2k",
+          "where": "api",
+          "seed": 2102,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-vid-1-02-v1"
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.253521,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3"
+      },
+      "estimate": {
+        "model_key": "comfy/h3",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0,
+        "priced": true
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-vid-1-03",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-03",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": "demo-p-vid-1-03-v2",
+      "adopted_version_id": "demo-p-vid-1-03-v2",
+      "locked_hash": null,
+      "status": "adopted",
+      "versions": [
+        {
+          "id": "demo-p-vid-1-03-v1",
+          "product_id": "demo-p-vid-1-03",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "duration_s": 2.7,
+            "asked_s": 3.0,
+            "resolution": "768p",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [],
+            "voices": []
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/a4/a4a0977419bbae30dd9e518dfd7b669fd4c2231ef942331ba4fe6dd8e25da565",
+              "sha256": "a4a0977419bbae30dd9e518dfd7b669fd4c2231ef942331ba4fe6dd8e25da565",
+              "mime": "video/mp4",
+              "duration_s": 2.7,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/98/98f7387f37d7d81f44902eb1d8577f53805bd8e25ad2eb28ea08ed843fd5aadc",
+              "sha256": "98f7387f37d7d81f44902eb1d8577f53805bd8e25ad2eb28ea08ed843fd5aadc",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/46/462ce1ff7f6ecfab72590daddd7aec503c959bdd85d79caece52dc8bb65811ea",
+              "sha256": "462ce1ff7f6ecfab72590daddd7aec503c959bdd85d79caece52dc8bb65811ea",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "raw",
+              "path": "blobs/sha256/66/667e23280b4733bb2f7252ce8bebadcd57d7b98d9f9079c8cd82049a33b1e55a",
+              "sha256": "667e23280b4733bb2f7252ce8bebadcd57d7b98d9f9079c8cd82049a33b1e55a",
+              "mime": "video/mp4",
+              "duration_s": 3.0,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/90/9050852270a7613d9ecf1a7963cadc0b0645807f432bf2fc21fe1bffa4c9341d",
+              "sha256": "9050852270a7613d9ecf1a7963cadc0b0645807f432bf2fc21fe1bffa4c9341d",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-03-v1",
+          "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+          "compiled_overridden": false,
+          "model_key": "comfy/h3",
+          "where": "local",
+          "seed": 2101,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "request": {
+              "aspect": "9:16",
+              "duration_s": 3.0,
+              "fps": 24,
+              "first_frame": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
+              "with_audio": true
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-vid-1-03-v2",
+          "product_id": "demo-p-vid-1-03",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": "demo-p-vid-1-03-v1",
+          "payload": {
+            "duration_s": 2.7,
+            "asked_s": 3.0,
+            "resolution": "2k",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [],
+            "voices": []
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/60/6081eea3eccd0b755be95dbcff60d6b2be2b393aa53e5f22d23c9ba9c35648eb",
+              "sha256": "6081eea3eccd0b755be95dbcff60d6b2be2b393aa53e5f22d23c9ba9c35648eb",
+              "mime": "video/mp4",
+              "duration_s": 2.7,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/33/33c17c93f3750087773d15ddc63f55170ee54e95c85fdfae6314dbaaed9c9b85",
+              "sha256": "33c17c93f3750087773d15ddc63f55170ee54e95c85fdfae6314dbaaed9c9b85",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/0b/0b3a82a9703e7070918e77bfbc5f98f2b297079b193b8b9c8851d8a444e39d94",
+              "sha256": "0b3a82a9703e7070918e77bfbc5f98f2b297079b193b8b9c8851d8a444e39d94",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1440,
+              "h": 2560,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/90/9050852270a7613d9ecf1a7963cadc0b0645807f432bf2fc21fe1bffa4c9341d",
+              "sha256": "9050852270a7613d9ecf1a7963cadc0b0645807f432bf2fc21fe1bffa4c9341d",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-03-v2",
+          "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+          "compiled_overridden": false,
+          "model_key": "minimax/h3-regenerate-2k",
+          "where": "api",
+          "seed": 2102,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "source": {
+              "version_id": "demo-p-vid-1-03-v1"
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "final",
+          "rating": null,
+          "cost_usd": 0.253521,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "便利贴特写，歪扭的手写字，边角被雨打湿。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 便利贴特写，歪扭的手写字，边角被雨打湿。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3"
+      },
+      "estimate": {
+        "model_key": "comfy/h3",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0,
+        "priced": true
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-vid-1-04",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-04",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": "demo-p-vid-1-04-v4",
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "ready",
+      "versions": [
+        {
+          "id": "demo-p-vid-1-04-v1",
+          "product_id": "demo-p-vid-1-04",
+          "n": 1,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "duration_s": 4.2,
+            "asked_s": 4.5,
+            "resolution": "768p",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ],
+            "voices": [
+              "林晚"
+            ]
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/eb/eb82e879419add06ff23f254dd92bee7953c1d6ba7a673fe5ce49a4741fb2231",
+              "sha256": "eb82e879419add06ff23f254dd92bee7953c1d6ba7a673fe5ce49a4741fb2231",
+              "mime": "video/mp4",
+              "duration_s": 4.2,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/88/882568fdb94a395b28ce65b2a4889b176cdba4c448c87b80550f55549e319a0d",
+              "sha256": "882568fdb94a395b28ce65b2a4889b176cdba4c448c87b80550f55549e319a0d",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/a2/a23795fc20221eeff333e9485a437d37d856d6e32472057c28f5e3d4f4a79ba8",
+              "sha256": "a23795fc20221eeff333e9485a437d37d856d6e32472057c28f5e3d4f4a79ba8",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "raw",
+              "path": "blobs/sha256/48/48c50d2aaa0ba1c5839fea4d0eded2000084ba4fc09a582ceccfd84d6330fc8b",
+              "sha256": "48c50d2aaa0ba1c5839fea4d0eded2000084ba4fc09a582ceccfd84d6330fc8b",
+              "mime": "video/mp4",
+              "duration_s": 4.5,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/e7/e7f33c362b626f56bed26e30d3aab9862688924c1ce6c9ce15d602a2d0c449e0",
+              "sha256": "e7f33c362b626f56bed26e30d3aab9862688924c1ce6c9ce15d602a2d0c449e0",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-04-v1",
+          "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3-r2v",
+          "compiled_overridden": false,
+          "model_key": "comfy/h3-r2v",
+          "where": "local",
+          "seed": 2101,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "request": {
+              "aspect": "9:16",
+              "duration_s": 4.5,
+              "fps": 24,
+              "first_frame": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
+              "with_audio": true,
+              "refs": [
+                "b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
+                "79e8df2bb33fd96879c578f0d29506683af125a542a0e8c48d9741520810a5bd"
+              ],
+              "ref_audio": [
+                "a7c1d3e5f585a7392e859e9bca5706397c5eba71eab602c445c42545d951389f"
+              ]
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-vid-1-04-v2",
+          "product_id": "demo-p-vid-1-04",
+          "n": 2,
+          "origin": "run",
+          "parent_version_id": null,
+          "payload": {
+            "duration_s": 4.2,
+            "asked_s": 4.5,
+            "resolution": "768p",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ],
+            "voices": [
+              "林晚"
+            ]
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/83/830b33f750f4cd5c621a7a9912f9044363898e830b9dd5254b0c5b3e9fbc0dba",
+              "sha256": "830b33f750f4cd5c621a7a9912f9044363898e830b9dd5254b0c5b3e9fbc0dba",
+              "mime": "video/mp4",
+              "duration_s": 4.2,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/1f/1f1bebc35123a8da4ce208f9aa8f507dd0141c2b798cf28e7ba032248e418392",
+              "sha256": "1f1bebc35123a8da4ce208f9aa8f507dd0141c2b798cf28e7ba032248e418392",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/94/9409681b6f9b674d26e8cc6497a97523cbf691a9ccd6bc4ef9ac98ac554a120d",
+              "sha256": "9409681b6f9b674d26e8cc6497a97523cbf691a9ccd6bc4ef9ac98ac554a120d",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "raw",
+              "path": "blobs/sha256/f3/f3d19ece51eaf40d76cab9dd933daa901174223acd170a24f117c75a417bf23d",
+              "sha256": "f3d19ece51eaf40d76cab9dd933daa901174223acd170a24f117c75a417bf23d",
+              "mime": "video/mp4",
+              "duration_s": 4.5,
+              "w": 768,
+              "h": 1366,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/e7/e7f33c362b626f56bed26e30d3aab9862688924c1ce6c9ce15d602a2d0c449e0",
+              "sha256": "e7f33c362b626f56bed26e30d3aab9862688924c1ce6c9ce15d602a2d0c449e0",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-04-v2",
+          "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3-r2v",
+          "compiled_overridden": false,
+          "model_key": "comfy/h3-r2v",
+          "where": "local",
+          "seed": 2102,
+          "params": {
+            "mode": "run",
+            "calls": 1,
+            "request": {
+              "aspect": "9:16",
+              "duration_s": 4.5,
+              "fps": 24,
+              "first_frame": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
+              "with_audio": true,
+              "refs": [
+                "b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
+                "79e8df2bb33fd96879c578f0d29506683af125a542a0e8c48d9741520810a5bd"
+              ],
+              "ref_audio": [
+                "a7c1d3e5f585a7392e859e9bca5706397c5eba71eab602c445c42545d951389f"
+              ]
+            }
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": "draft",
+          "rating": null,
+          "cost_usd": 0.0,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-vid-1-04-v3",
+          "product_id": "demo-p-vid-1-04",
+          "n": 3,
+          "origin": "fallback",
+          "parent_version_id": null,
+          "payload": {
+            "duration_s": 4.2,
+            "asked_s": 4.5,
+            "resolution": "1080p",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [
+              "林晚",
+              "老小区楼道 · 夜"
+            ],
+            "voices": []
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/5e/5ebf3f5bd3f5a13037905f73c5ea0433be667d87463f4556340742bbc5ab5232",
+              "sha256": "5ebf3f5bd3f5a13037905f73c5ea0433be667d87463f4556340742bbc5ab5232",
+              "mime": "video/mp4",
+              "duration_s": 4.2,
+              "w": 1080,
+              "h": 1920,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/32/3255a15250d638a8caba4dd0c94108268fc29cc103f25de5c8d3e78bc056a01a",
+              "sha256": "3255a15250d638a8caba4dd0c94108268fc29cc103f25de5c8d3e78bc056a01a",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/ea/ea564ab4268047be931a1bc0353b81b43b601bc311c47fc36033be9d699095f5",
+              "sha256": "ea564ab4268047be931a1bc0353b81b43b601bc311c47fc36033be9d699095f5",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/5f/5f2f9d84d45fba153877756a2ac0f8d297c4ef97f8aafc5ac5d0938b6c154d99",
+              "sha256": "5f2f9d84d45fba153877756a2ac0f8d297c4ef97f8aafc5ac5d0938b6c154d99",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-04-v3",
+          "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：minimax/h3-api",
+          "compiled_overridden": false,
+          "model_key": "minimax/h3-api",
+          "where": "api",
+          "seed": 2103,
+          "params": {
+            "mode": "fallback",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": "timeout",
+          "stage": null,
+          "rating": null,
+          "cost_usd": 0.507042,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        },
+        {
+          "id": "demo-p-vid-1-04-v4",
+          "product_id": "demo-p-vid-1-04",
+          "n": 4,
+          "origin": "switch",
+          "parent_version_id": null,
+          "payload": {
+            "duration_s": 4.2,
+            "asked_s": 4.5,
+            "resolution": "1080p",
+            "aspect": "9:16",
+            "audio_mode": "native",
+            "refs": [],
+            "voices": []
+          },
+          "files": [
+            {
+              "role": "video",
+              "path": "blobs/sha256/f9/f984d9e621f9083612cb439531556d6c0645ea75b62da0b9ce736f2e3a4997b6",
+              "sha256": "f984d9e621f9083612cb439531556d6c0645ea75b62da0b9ce736f2e3a4997b6",
+              "mime": "video/mp4",
+              "duration_s": 4.2,
+              "w": 1080,
+              "h": 1920,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "poster",
+              "path": "blobs/sha256/98/9855c1741973f9d7c9d117eee8874e908ed863fa80ddb8c5b6b392d5fd7d3550",
+              "sha256": "9855c1741973f9d7c9d117eee8874e908ed863fa80ddb8c5b6b392d5fd7d3550",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "last_frame",
+              "path": "blobs/sha256/9d/9ddb9ad2b1080b41234a0fd5a37e8639674ab62f469dd308d5744797d4b92f79",
+              "sha256": "9ddb9ad2b1080b41234a0fd5a37e8639674ab62f469dd308d5744797d4b92f79",
+              "mime": "image/png",
+              "duration_s": null,
+              "w": 1080,
+              "h": 1920,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            },
+            {
+              "role": "prompt",
+              "path": "blobs/sha256/a8/a864b0dc2b3a6ee10b5a1a587d6b3e2c8e5857d8f606e4cfb6a06f0a3cb28b02",
+              "sha256": "a864b0dc2b3a6ee10b5a1a587d6b3e2c8e5857d8f606e4cfb6a06f0a3cb28b02",
+              "mime": "text/plain; charset=utf-8",
+              "duration_s": null,
+              "w": null,
+              "h": null,
+              "idx": null,
+              "view": null,
+              "line": null,
+              "emotion": null,
+              "waveform": null
+            }
+          ],
+          "content_hash": "sha256:demo-p-vid-1-04-v4",
+          "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+          "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：volc/seedance-2.5",
+          "compiled_overridden": false,
+          "model_key": "volc/seedance-2.5",
+          "where": "api",
+          "seed": 2104,
+          "params": {
+            "mode": "switch",
+            "calls": 1
+          },
+          "qa": null,
+          "qa_pass": null,
+          "fallback_reason": null,
+          "stage": null,
+          "rating": null,
+          "cost_usd": 2.37169,
+          "job_id": null,
+          "created_at": "2026-10-18T09:00:00Z",
+          "note": null
+        }
+      ],
+      "prompt": {
+        "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3-r2v",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3-r2v"
+      },
+      "estimate": {
+        "model_key": "comfy/h3-r2v",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0,
+        "priced": true
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-vid-1-05",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-05",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3"
+      },
+      "estimate": {
+        "model_key": "comfy/h3",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0,
+        "priced": true
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-vid-1-06",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-06",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-vid-1-07",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-07",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "手机亮屏，锁屏时间 23:52，没有新消息。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 手机亮屏，锁屏时间 23:52，没有新消息。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3"
+      },
+      "estimate": {
+        "model_key": "comfy/h3",
+        "where": "local",
+        "cost_usd": 0.0,
+        "seconds": 0.0,
+        "priced": true
+      },
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-vid-1-08",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-08",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "她拉开门，又关上；停两秒，再拉开。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 她拉开门，又关上；停两秒，再拉开。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    },
+    {
+      "id": "demo-p-vid-1-09",
+      "series_id": "demo",
+      "owner_type": "shot",
+      "owner_id": "demo-shot-1-09",
+      "slot": "video",
+      "component_id": "vid",
+      "current_version_id": null,
+      "adopted_version_id": null,
+      "locked_hash": null,
+      "status": "empty",
+      "versions": [],
+      "prompt": {
+        "intent": "门外，她弯腰拿起那把红伞，最后一帧定格。",
+        "compiled": "[任务] 短剧视频：这个镜头从首帧开始的一段连续画面，带声音\n[画面] 门外，她弯腰拿起那把红伞，最后一帧定格。\n[风格] 写实电影感，镜头运动平稳，光线和首帧一致\n[约束] 人物的长相、发型和服装从头到尾和首帧一致；不切镜；画面里不要出现字幕和水印；不要背景音乐（配乐后期加）\n\n# 目标模型：comfy/h3",
+        "compiled_overridden": false,
+        "model_key": "comfy/h3"
+      },
+      "estimate": null,
+      "running": null,
+      "pick": null,
+      "settings": null,
+      "retired": false
+    }
+  ],
+  "rules": {
+    "takes_per_shot": 2,
+    "qa_retry_max": 2,
+    "shot_cap_usd": 2.0,
+    "thresholds": {
+      "face_sim": 0.75,
+      "syncnet_conf": 6.0,
+      "cer_max": 0.1
+    }
+  },
+  "log": [
+    {
+      "id": "v-demo-p-vid-1-01-v1",
+      "at": "2026-10-14T03:02:00Z",
+      "shot_label": "1-01",
+      "message": {
+        "code": "take",
+        "params": {
+          "model": "comfy/h3",
+          "take": 1,
+          "cost_usd": 0.0,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "v-demo-p-vid-1-01-v2",
+      "at": "2026-10-14T03:06:00Z",
+      "shot_label": "1-01",
+      "message": {
+        "code": "final",
+        "params": {
+          "model": "minimax/h3-regenerate-2k",
+          "take": 2,
+          "cost_usd": 0.338,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "v-demo-p-vid-1-02-v1",
+      "at": "2026-10-14T03:09:00Z",
+      "shot_label": "1-02",
+      "message": {
+        "code": "take",
+        "params": {
+          "model": "comfy/h3",
+          "take": 1,
+          "cost_usd": 0.0,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "v-demo-p-vid-1-02-v2",
+      "at": "2026-10-14T03:13:00Z",
+      "shot_label": "1-02",
+      "message": {
+        "code": "final",
+        "params": {
+          "model": "minimax/h3-regenerate-2k",
+          "take": 2,
+          "cost_usd": 0.2535,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "v-demo-p-vid-1-03-v1",
+      "at": "2026-10-14T03:15:00Z",
+      "shot_label": "1-03",
+      "message": {
+        "code": "take",
+        "params": {
+          "model": "comfy/h3",
+          "take": 1,
+          "cost_usd": 0.0,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "v-demo-p-vid-1-03-v2",
+      "at": "2026-10-14T03:19:00Z",
+      "shot_label": "1-03",
+      "message": {
+        "code": "final",
+        "params": {
+          "model": "minimax/h3-regenerate-2k",
+          "take": 2,
+          "cost_usd": 0.2535,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "v-demo-p-vid-1-04-v1",
+      "at": "2026-10-14T03:31:00Z",
+      "shot_label": "1-04",
+      "message": {
+        "code": "take",
+        "params": {
+          "model": "comfy/h3-r2v",
+          "take": 1,
+          "cost_usd": 0.0,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "v-demo-p-vid-1-04-v2",
+      "at": "2026-10-14T03:31:00Z",
+      "shot_label": "1-04",
+      "message": {
+        "code": "take",
+        "params": {
+          "model": "comfy/h3-r2v",
+          "take": 2,
+          "cost_usd": 0.0,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "fb-demo-p-vid-1-04-v3",
+      "at": "2026-10-14T03:41:00Z",
+      "shot_label": "1-04",
+      "message": {
+        "code": "fallback_timeout",
+        "params": {
+          "model": "minimax/h3-api",
+          "minutes": 10
+        }
+      },
+      "warn": true
+    },
+    {
+      "id": "v-demo-p-vid-1-04-v3",
+      "at": "2026-10-14T03:41:00Z",
+      "shot_label": "1-04",
+      "message": {
+        "code": "take",
+        "params": {
+          "model": "minimax/h3-api",
+          "take": 3,
+          "cost_usd": 0.507,
+          "fails": 0
+        }
+      },
+      "warn": false
+    },
+    {
+      "id": "v-demo-p-vid-1-04-v4",
+      "at": "2026-10-14T03:52:00Z",
+      "shot_label": "1-04",
+      "message": {
+        "code": "switch",
+        "params": {
+          "model": "volc/seedance-2.5",
+          "take": 4,
+          "cost_usd": 2.3717,
+          "fails": 0
+        }
+      },
+      "warn": true
+    }
+  ],
+  "summary": {
+    "scope": "episode",
+    "spent_usd": 0.0,
+    "budget_usd": 15.0,
+    "projected_usd": 0.0,
+    "insights": [],
+    "updated_at": "2026-10-18T09:00:00Z"
+  },
+  "progress": {
+    "state": "in_progress",
+    "done": 3,
+    "total": 9,
+    "stale": 0
+  }
+}

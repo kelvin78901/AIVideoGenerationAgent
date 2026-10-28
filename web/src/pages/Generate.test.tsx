@@ -4,13 +4,11 @@ import { Route, Routes } from "react-router";
 
 import { useEventStream } from "@/api/useEventStream";
 import { Toaster } from "@/components/ui/sonner";
-import { getDb } from "@/mocks/db";
-import { demoTiming } from "@/mocks/events";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
-import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import GeneratePage from "@/pages/Generate";
 import { backend } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
+import { confirmFakeStoryboard, fakeGenerate } from "@/test/fakes/generate";
 import { renderAt } from "@/test/render";
 
 function Page() {
@@ -32,7 +30,7 @@ function renderGenerate(path = "/s/demo/e/1/generate") {
   );
 }
 
-const video = (label: string) => getDb().products[`demo-p-vid-${label}`];
+const video = (label: string) => fakeGenerate.videos.find((p) => p.id === `demo-p-vid-${label}`);
 const pills = () => screen.getByRole("region", { name: "镜头" });
 const pill = (label: string) =>
   within(pills()).getByRole("button", { name: new RegExp(`^${label}`) });
@@ -43,56 +41,54 @@ const ready = () => screen.findByRole("heading", { name: "镜头 1-04 的候选"
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   backend();
-  demoTiming.runMs = 20;
+  // The seeded demo (studio/demo.py): 分镜 confirmed, episode 1's takes made.
+  confirmFakeStoryboard();
 });
 afterEach(() => {
   vi.unstubAllGlobals();
-  demoTiming.runMs = 1400;
 });
 
 describe("GeneratePage", () => {
-  it("shows the queues, QA tallies and the 9 shots; opens on 1-04 with 4 takes", async () => {
+  it("shows the queues and the 9 shots; opens on 1-04 with its 4 takes", async () => {
     renderGenerate();
     await ready();
     const cards = screen.getByRole("region", { name: "队列和质检" });
-    expect(within(cards).getByText("通过 6 · 未过 4")).toBeInTheDocument();
-    expect(within(cards).getByText(/已自动重跑 1 次 · 自动兜底 1 次/)).toBeInTheDocument();
+    // QA is M6: the takes are not checked yet.
+    expect(within(cards).getByText("10 条候选还没质检")).toBeInTheDocument();
+    expect(within(cards).getByText(/已自动重跑 0 次 · 自动兜底 1 次/)).toBeInTheDocument();
     expect(await within(cards).findByText("空闲 · 本集已花 $8.94")).toBeInTheDocument();
     expect(await within(cards).findByText("单镜上限 $2，超了会先问你")).toBeInTheDocument();
-    expect(within(cards).getByText("正在跑 1-05 T1（MiniMax H3（本地））")).toBeInTheDocument();
+    expect(within(cards).getByText("没有镜头在生成")).toBeInTheDocument();
     expect(within(pills()).getAllByRole("button")).toHaveLength(9);
     expect(pill("1-01")).toHaveTextContent("已采纳");
     expect(pill("1-04")).toHaveTextContent("待挑选");
-    expect(pill("1-05")).toHaveTextContent("生成中");
-    expect(pill("1-06")).toHaveTextContent("排队");
+    expect(pill("1-05")).toHaveTextContent("未开始");
     expect(pill("1-08")).toHaveTextContent("等待");
     expect(within(wall()).getAllByRole("listitem")).toHaveLength(4);
     expect(await screen.findByText("当前产物 · 镜头 1-04 视频候选")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /再出一条/ })).toBeInTheDocument();
   });
 
-  it("shows each take's QA, the reason it exists, and recommends T3", async () => {
+  it("shows each take's first frame, model, cost and why it exists", async () => {
     renderGenerate();
     await ready();
     const t1 = take(1);
-    expect(t1).toHaveTextContent("未过 2 项");
-    expect(t1).toHaveTextContent("0.71");
-    expect(t1).toHaveTextContent("手指粘连");
-    expect(t1).toHaveTextContent("质检没过，已自动重跑");
-    expect(take(2)).toHaveTextContent("自动重跑");
+    expect(t1).toHaveTextContent("MiniMax H3 参考生视频（本地）");
+    expect(t1).toHaveTextContent("未检查");
+    const poster = within(t1).getByRole("img", { name: "候选 T1 的第一帧" });
+    expect(poster.getAttribute("src")).toMatch(/\/api\/v1\/files\/[0-9a-f]{64}$/);
     expect(take(3)).toHaveTextContent("本地超时，自动兜底到 API");
-    expect(take(3)).toHaveTextContent("$0.32");
+    expect(take(3)).toHaveTextContent("MiniMax H3 API");
+    expect(take(3)).toHaveTextContent("$0.51");
     expect(take(4)).toHaveTextContent("不满意换一个");
-    expect(take(4)).toHaveTextContent("$1.64");
-    expect(take(4)).toHaveTextContent("声控灯没有闪");
-    expect(within(take(3)).getByText("推荐")).toBeInTheDocument();
-    expect(within(take(2)).queryByText("推荐")).toBeNull();
-    // Picks 1-01 to see an adopted take: no recommendation once one is adopted.
+    expect(take(4)).toHaveTextContent("$2.37");
+    // No QA, no recommendation yet (「推荐」 goes by the QA score).
+    expect(screen.queryByText("推荐")).toBeNull();
     const user = userEvent.setup();
     await user.click(pill("1-01"));
     expect(within(take(2)).getByText("已采纳")).toBeInTheDocument();
     expect(take(2)).toHaveTextContent("混合模式出终版");
-    expect(screen.queryByText("推荐")).toBeNull();
+    expect(take(2)).toHaveTextContent("H3 Regenerate-2K");
   });
 
   it("adopts one take per shot, then un-adopts; 生成 goes to 4 / 9", async () => {
@@ -108,7 +104,6 @@ describe("GeneratePage", () => {
     expect(body.steps.generate.done).toBe(4);
 
     await user.click(within(take(4)).getByRole("button", { name: "采纳" }));
-    expect(await screen.findByText(/注意：有 1 项质检没过，你选择了保留/)).toBeInTheDocument();
     await waitFor(() => expect(video("1-04")?.adopted_version_id).toBe("demo-p-vid-1-04-v4"));
     await waitFor(() => expect(within(take(4)).getByText("已采纳")).toBeInTheDocument());
     expect(within(take(3)).queryByText("已采纳")).toBeNull();
@@ -118,22 +113,12 @@ describe("GeneratePage", () => {
     expect(await screen.findByText("已取消采纳 1-04 T4。")).toBeInTheDocument();
   });
 
-  it("explains shots without takes: generating, queued, waiting for a tail frame", async () => {
+  it("explains shots without takes; a shot waiting for a tail frame cannot run yet", async () => {
     const user = userEvent.setup();
     renderGenerate();
     await ready();
     await user.click(pill("1-05"));
-    expect(
-      screen.getByText("MiniMax H3（本地） 正在出第 1 条候选。出来后会自动质检，然后出现在这里。"),
-    ).toBeInTheDocument();
-    await user.click(pill("1-06"));
-    expect(
-      screen.getByText("排在本地队列第 1 位。台词会先用锁定音色配好，再生成画面。"),
-    ).toBeInTheDocument();
-    await user.click(pill("1-07"));
-    expect(
-      await screen.findByText("排在本地队列第 2 位。画面文字后期贴，所以这里只出无字画面。"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("还没有候选。点「再出一条」开始生成。")).toBeInTheDocument();
     await user.click(pill("1-08"));
     expect(
       screen.getByText("等 1-06 采纳：这个镜头的首帧要用 1-06 的最后一帧。"),
@@ -142,36 +127,34 @@ describe("GeneratePage", () => {
     expect(
       await screen.findByText("等 1-06 采纳：这个镜头的首帧要用 1-06 的最后一帧"),
     ).toBeInTheDocument();
+    expect(fakeGenerate.runs).toEqual([]);
   });
 
-  it("adopting the shot a waiting shot continues unblocks it", async () => {
-    // Give 1-06 a finished take so it can be adopted.
-    const p = video("1-06");
-    const src = video("1-04")?.versions[2];
-    if (!p || !src) throw new Error("fixtures");
-    p.versions = [{ ...src, id: "demo-p-vid-1-06-v1", product_id: p.id, n: 1 }];
-    p.current_version_id = "demo-p-vid-1-06-v1";
-    p.status = "ready";
-    p.running = null;
+  it("a first run makes the rule's takes; adopting one unblocks the shot that continues it", async () => {
     const user = userEvent.setup();
     renderGenerate();
     await ready();
     await user.click(pill("1-06"));
+    await user.click(await screen.findByRole("button", { name: /再出一条/ }));
+    // 每个镜头先出 2 条 (the auto rules).
+    await within(wall()).findByRole("listitem", { name: "候选 T2" });
+    expect(within(wall()).getAllByRole("listitem")).toHaveLength(2);
+    expect(take(1)).toHaveTextContent("MiniMax H3（本地）");
     await user.click(within(take(1)).getByRole("button", { name: "采纳" }));
     expect(await screen.findByText("1-06 采纳 T1。1-08 现在可以开始生成了。")).toBeInTheDocument();
     await waitFor(() => expect(pill("1-08")).toHaveTextContent("未开始"));
   });
 
-  it("「再出一条」 adds a take with QA and a run-log line", async () => {
+  it("「再出一条」 adds one take and a run-log line", async () => {
     const user = userEvent.setup();
     renderGenerate();
     await ready();
     await user.click(await screen.findByRole("button", { name: /再出一条/ }));
     const t5 = await within(wall()).findByRole("listitem", { name: "候选 T5" });
     expect(t5).toHaveTextContent("MiniMax H3（本地）");
-    expect(t5).toHaveTextContent("通过");
+    expect(fakeGenerate.runs.map((r) => [r.id, r.mode])).toEqual([["demo-p-vid-1-04", "rerun"]]);
     const log = screen.getByRole("region", { name: "运行记录" });
-    expect(await within(log).findByText("MiniMax H3（本地） 出 T5 · 质检通过")).toBeInTheDocument();
+    expect(await within(log).findByText("MiniMax H3（本地） 出 T5")).toBeInTheDocument();
     expect(within(log).getAllByRole("listitem")[0]).toHaveTextContent("1-04");
   });
 
@@ -179,10 +162,11 @@ describe("GeneratePage", () => {
     const user = userEvent.setup();
     renderGenerate();
     await ready();
-    expect(take(3)).toHaveAttribute("aria-current", "true");
-    await user.keyboard("{ArrowRight}");
+    // Nothing adopted and no QA to recommend by: the newest take.
     expect(take(4)).toHaveAttribute("aria-current", "true");
-    await user.keyboard("{ArrowLeft}{ArrowLeft}");
+    await user.keyboard("{ArrowLeft}");
+    expect(take(3)).toHaveAttribute("aria-current", "true");
+    await user.keyboard("{ArrowLeft}");
     expect(take(2)).toHaveAttribute("aria-current", "true");
     await user.keyboard("4");
     await waitFor(() => expect(video("1-04")?.versions[1]?.rating).toBe(4));
@@ -208,15 +192,15 @@ describe("GeneratePage", () => {
     renderGenerate();
     await ready();
     const takesN = await screen.findByLabelText("每个镜头先出");
-    expect(takesN).toHaveValue(3);
+    expect(takesN).toHaveValue(2);
     await user.clear(takesN);
     await user.type(takesN, "4");
     await user.tab();
-    await waitFor(() => expect(getDb().generateRules[DEMO_SERIES_ID]?.takes_per_shot).toBe(4));
+    await waitFor(() => expect(fakeGenerate.rules.takes_per_shot).toBe(4));
     const cap = screen.getByLabelText("单个镜头花费超过 $");
     await user.clear(cap);
     await user.type(cap, "3{Enter}");
-    await waitFor(() => expect(getDb().generateRules[DEMO_SERIES_ID]?.shot_cap_usd).toBe(3));
+    await waitFor(() => expect(fakeGenerate.rules.shot_cap_usd).toBe(3));
     expect(await screen.findByText("单镜上限 $3，超了会先问你")).toBeInTheDocument();
     expect(screen.getByText(/人脸一致性 ≥ 0.75.*错字率 ≤ 10%/)).toBeInTheDocument();
   });
@@ -226,15 +210,16 @@ describe("GeneratePage", () => {
     await ready();
     const log = screen.getByRole("region", { name: "运行记录" });
     const lines = await within(log).findAllByRole("listitem");
-    expect(lines).toHaveLength(6);
-    expect(lines[0]).toHaveTextContent("1-05开始生成 · MiniMax H3（本地）");
-    expect(lines[2]).toHaveTextContent("MiniMax H3 API 出 T3 · $0.32 · 质检通过");
-    expect(lines[3]).toHaveTextContent("本地任务超过 10 分钟 → 自动兜底到 MiniMax H3 API");
-    expect(lines[5]).toHaveTextContent("未过 2 项（人脸、手指）→ 自动重跑");
+    expect(lines).toHaveLength(11);
+    expect(lines[0]).toHaveTextContent("1-04你点了「不满意换一个」→ Seedance 2.5 出 T4 · $2.37");
+    expect(lines[1]).toHaveTextContent("MiniMax H3 API 出 T3 · $0.51");
+    expect(lines[2]).toHaveTextContent("本地任务超过 10 分钟 → 自动兜底到 MiniMax H3 API");
+    expect(lines[5]).toHaveTextContent("1-03用 API 出终版 → H3 Regenerate-2K 出 T2 · $0.25");
+    expect(lines[10]).toHaveTextContent("1-01MiniMax H3（本地） 出 T1");
   });
 
   it("opens on the shot in ?shot= (后期「换一条候选」)", async () => {
-    renderGenerate("/s/demo/e/1/generate?shot=1-02");
+    renderGenerate("/s/demo/e/1/generate?shot=demo-shot-1-02");
     expect(await screen.findByRole("heading", { name: "镜头 1-02 的候选" })).toBeInTheDocument();
     expect(pill("1-02")).toHaveAttribute("aria-pressed", "true");
   });
@@ -245,5 +230,20 @@ describe("GeneratePage", () => {
     await ready();
     await user.click(screen.getByRole("button", { name: "2K 精修" }));
     expect(await screen.findByText("当前产物 · 2K 精修队列 · 3 条")).toBeInTheDocument();
+  });
+});
+
+describe("GeneratePage before 分镜确认", () => {
+  beforeEach(() => {
+    vi.stubGlobal("EventSource", FakeEventSource);
+    backend();
+  });
+
+  it("a run is refused until the storyboard is confirmed", async () => {
+    const user = userEvent.setup();
+    renderGenerate("/s/demo/e/1/generate?shot=demo-shot-1-05");
+    expect(await screen.findByRole("heading", { name: "镜头 1-05 的候选" })).toBeInTheDocument();
+    await user.click(await screen.findByRole("button", { name: /再出一条/ }));
+    expect(await screen.findByText("分镜还没确认：确认分镜后才能出视频")).toBeInTheDocument();
   });
 });

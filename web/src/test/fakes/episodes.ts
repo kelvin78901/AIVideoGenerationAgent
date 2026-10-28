@@ -21,6 +21,7 @@ import {
 } from "@/api/schemas/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import { fakeAssetsBadge } from "@/test/fakes/assets";
+import { fakeGenerateBadge } from "@/test/fakes/generate";
 import { fakeShotsBadge } from "@/test/fakes/shots";
 import data from "@/test/data/episodes.json";
 
@@ -84,10 +85,11 @@ export function episodesBackendFetch(url: URL): Response | null {
   const id = decodeURIComponent(m?.[1] ?? "");
   const progress = m ? fakeEpisodes.progress[id] : undefined;
   if (!progress) return null;
-  // 素材 and 分镜 count the fake assets and shots as they are now (a test moves them).
+  // 素材, 分镜 and 生成 count the fake assets, shots and takes as they are now (a test moves them).
   const steps = { ...progress.steps };
   steps.assets = fakeAssetsBadge(id) ?? steps.assets;
   steps.storyboard = fakeShotsBadge(id) ?? steps.storyboard;
+  steps.generate = fakeGenerateBadge(id) ?? steps.generate;
   return HttpResponse.json({ ...progress, steps });
 }
 

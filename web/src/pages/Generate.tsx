@@ -51,7 +51,7 @@ export default function GeneratePage() {
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(component);
   const [selectedId, setSelectedId] = useState<string | null>(null);
-  // 后期「换一条候选」 links here with ?shot=1-04.
+  // 后期「换一条候选」 links here with ?shot=<shot id> (the storyboard's too).
   const [search] = useSearchParams();
 
   useEffect(() => {
@@ -66,7 +66,7 @@ export default function GeneratePage() {
   const statusOf = (s: Shot) => takeStatus(s, videoOf(s), byLabel);
   // Opens on the first shot with takes to pick, and stays there after adopting.
   const firstPick =
-    list.find((s) => s.label === search.get("shot")) ??
+    list.find((s) => s.id === search.get("shot")) ??
     list.find((s) => statusOf(s) === "picking") ??
     list[0];
   if (selectedId === null && videos.data && firstPick) setSelectedId(firstPick.id);
@@ -122,7 +122,7 @@ export default function GeneratePage() {
             { id: "lip", productId: byComponent("lip")?.id },
             { id: "qa", productId: byComponent("qa")?.id },
           ]}
-          item={shot && component === "vid" ? `shot:${shot.label}` : null}
+          item={shot && component === "vid" ? `shot:${shot.id}` : null}
         />
       }
     >

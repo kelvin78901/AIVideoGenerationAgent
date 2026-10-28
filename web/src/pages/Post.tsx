@@ -145,7 +145,7 @@ export default function PostPage() {
                   clip={clip}
                   take={take}
                   modelName={modelName}
-                  generatePath={`${paths.step(seriesId, String(episodeIdx), "generate")}?shot=${encodeURIComponent(clip.shot_label)}`}
+                  generatePath={`${paths.step(seriesId, String(episodeIdx), "generate")}?shot=${encodeURIComponent(clip.shot_id)}`}
                   onPatch={onPatch}
                 />
               ) : null}

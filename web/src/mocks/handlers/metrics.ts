@@ -1,12 +1,10 @@
 import { http, HttpResponse } from "msw";
 
-import type { Episode } from "@/api/schemas/episodes";
 import type { CallKind, MetricsScope, MetricsSummary } from "@/api/schemas/metrics";
 import { CALL_KINDS } from "@/api/schemas/metrics";
 import { backendJson } from "@/mocks/backend";
 import { getDb } from "@/mocks/db";
 import { CSV_HEADER } from "@/mocks/fixtures/demo/metricsDetail";
-import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
 import { demoJson, v1 } from "@/mocks/http";
 import { DEMO_HEADER } from "@/stores/demo";
 
@@ -19,28 +17,27 @@ const detail = <K extends keyof ReturnType<typeof getDb>["metrics"]>(path: strin
   http.get(v1(`/metrics/${path}`), () => demoJson(getDb().metrics[key]));
 
 /**
- * 本集 / 全剧预算 are the backend's (the episode budgets the Models page sets); the rest of the
- * summary is the demo's until M8. The series budget is the sum of its episodes'.
+ * The backend's summary (M5: what is spent, the budget, what is left to spend) with the demo's
+ * on top until M8: the dashboard's tables are the demo's, so its 已花 and 预计 start from theirs
+ * and add what the backend has spent since; 本集 / 全剧预算 and the insights stay as they are
+ * (the backend's budget, the demo's insights).
  */
-async function withBudget(request: Request): Promise<MetricsSummary> {
+async function withBackend(request: Request): Promise<MetricsSummary> {
   const scope = scopeOf(request);
   const summary = { ...getDb().summary[scope] };
-  const url = new URL(`/api/v1/series/${DEMO_SERIES_ID}/episodes`, request.url);
-  const episodes = await backendJson<Episode[]>(new Request(url), []);
-  if (!episodes.length) return summary;
-  if (scope === "episode") {
-    const id = new URL(request.url).searchParams.get("episode");
-    const ep = episodes.find((e) => e.id === id);
-    if (ep) summary.budget_usd = ep.budget_usd;
-  } else {
-    const set = episodes.filter((e) => e.budget_usd !== null);
-    summary.budget_usd = set.length ? set.reduce((n, e) => n + (e.budget_usd ?? 0), 0) : null;
-  }
-  return summary;
+  const real = await backendJson<MetricsSummary | null>(request.clone(), null);
+  if (!real) return summary;
+  const add = (a: number, b: number) => Math.round((a + b) * 100) / 100;
+  return {
+    ...summary,
+    spent_usd: add(summary.spent_usd, real.spent_usd),
+    projected_usd: add(summary.projected_usd, real.spent_usd),
+    budget_usd: real.budget_usd,
+  };
 }
 
 export const metricsHandlers = [
-  http.get(v1("/metrics/summary"), async ({ request }) => demoJson(await withBudget(request))),
+  http.get(v1("/metrics/summary"), async ({ request }) => demoJson(await withBackend(request))),
   http.get(v1("/metrics/kpis"), ({ request }) => demoJson(getDb().metrics.kpis[scopeOf(request)])),
   http.get(v1("/metrics/spend-series"), ({ request }) =>
     demoJson(getDb().metrics.spend[scopeOf(request)]),

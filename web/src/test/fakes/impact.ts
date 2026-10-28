@@ -212,10 +212,18 @@ export async function impactBackendFetch(request: Request): Promise<Response | n
   return null;
 }
 
-/** `POST /gates/novel|script|assets|storyboard/confirm|reopen`; 生成 and 后期 fall through to the
- * MSW demo. */
+/** `POST /gates/novel|script|assets|storyboard/confirm|reopen`; 生成 is `test/fakes/generate.ts`,
+ * 后期 falls through to the MSW demo. */
 export function gateHandlers() {
   return [
+    http.post(
+      "*/api/v1/impact/preview",
+      async ({ request }) => (await impactBackendFetch(request)) ?? undefined,
+    ),
+    http.post(
+      "*/api/v1/impact/apply",
+      async ({ request }) => (await impactBackendFetch(request)) ?? undefined,
+    ),
     http.post("*/api/v1/gates/:gate/:action", async ({ params, request }) => {
       const gate = String(params.gate);
       const action = String(params.action);

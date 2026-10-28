@@ -18,7 +18,13 @@ import { bibleBackendFetch, bibleHandlers, resetFakeBible } from "@/test/fakes/b
 import { dubHandlers, resetFakeDub } from "@/test/fakes/dub";
 import { configHandlers, resetFakeConfig } from "@/test/fakes/config";
 import { episodeHandlers, episodesBackendFetch, resetFakeEpisodes } from "@/test/fakes/episodes";
-import { gateHandlers, impactBackendFetch, resetFakeImpact } from "@/test/fakes/impact";
+import {
+  fakeVideoProducts,
+  generateBackendFetch,
+  generateHandlers,
+  resetFakeGenerate,
+} from "@/test/fakes/generate";
+import { gateHandlers, resetFakeImpact } from "@/test/fakes/impact";
 import { novelHandlers, resetFakeNovel } from "@/test/fakes/novel";
 import { fakeScriptProducts, resetFakeScript, scriptHandlers } from "@/test/fakes/script";
 import {
@@ -187,23 +193,28 @@ function seriesHandlers() {
     ...assetHandlers(),
     ...dubHandlers(),
     ...shotHandlers(),
+    ...generateHandlers(),
     ...gateHandlers(),
   ];
 }
 
 /**
  * What the MSW demo merges in from the backend (`mocks/backend.ts`): products, the plan, the
- * shots it lays its takes over, and the impact previews it lays its downstream over.
+ * shots and takes the post demo reads, the summary it lays the dashboard over, and the badges.
  */
-async function fakeBackendFetch(request: Request): Promise<Response> {
+function fakeBackendFetch(request: Request): Response {
   const url = new URL(request.url);
   const owner = url.searchParams.get("owner") ?? "";
   if (url.pathname.endsWith("/api/v1/products") && /^(episode|shot):/.test(owner))
-    return HttpResponse.json([...fakeScriptProducts(owner), ...fakeShotProducts(owner)]);
+    return HttpResponse.json([
+      ...fakeScriptProducts(owner),
+      ...fakeShotProducts(owner),
+      ...fakeVideoProducts(owner),
+    ]);
   return (
-    (await impactBackendFetch(request)) ??
     bibleBackendFetch(url) ??
     episodesBackendFetch(url) ??
+    generateBackendFetch(url) ??
     shotsBackendFetch(url) ??
     HttpResponse.json({ detail: { code: "http_404", params: {} } }, { status: 404 })
   );
@@ -215,7 +226,7 @@ async function fakeBackendFetch(request: Request): Promise<Response> {
  * with its products (`test/fakes/bible.ts`), suggestions (`test/fakes/suggestions.ts`), the
  * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`),
  * episode 1's assets (`test/fakes/assets.ts`), 台词配音 (`test/fakes/dub.ts`) and shots
- * (`test/fakes/shots.ts`), the gates up to 分镜 and impact previews
+ * (`test/fakes/shots.ts`) and takes (`test/fakes/generate.ts`), the gates up to 生成 and impact previews
  * (`test/fakes/impact.ts`), and the PC sample machine
  * before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
@@ -233,8 +244,9 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeAssets();
   resetFakeDub();
   resetFakeShots();
+  resetFakeGenerate();
   resetFakeImpact();
-  setBackendFetch(fakeBackendFetch);
+  setBackendFetch((request) => Promise.resolve(fakeBackendFetch(request)));
   resetFakeSetup();
   resetFakeConfig();
   server.use(

@@ -89,10 +89,10 @@ describe("PostPage", () => {
     await ready();
     await user.click(segment("画面：1-01"));
     expect(screen.getByRole("heading", { name: "片段 1-01" })).toBeInTheDocument();
-    expect(screen.getByText("T2 · MiniMax H3 API · 768p")).toBeInTheDocument();
+    expect(screen.getByText("T2 · H3 Regenerate-2K · 2k")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "换一条候选" })).toHaveAttribute(
       "href",
-      "/s/demo/e/1/generate?shot=1-01",
+      "/s/demo/e/1/generate?shot=demo-shot-1-01",
     );
     await user.click(screen.getByRole("switch", { name: "裁掉开头 0.3 秒" }));
     await user.click(screen.getByRole("radio", { name: "叠化 0.3 秒" }));

@@ -5,7 +5,6 @@ import {
   CompileRequestSchema,
   RunRequestSchema,
   SavePromptRequestSchema,
-  VersionPatchSchema,
   type Product,
   type ProductVersion,
 } from "@/api/schemas/products";
@@ -15,8 +14,6 @@ import { demoTiming, emitDemoEvent } from "@/mocks/events";
 import { llmModels, modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost, demoVersion } from "@/mocks/fixtures/demo/products";
 import { compilePrompt } from "@/mocks/fixtures/demo/prompts";
-import { demoTakeQa, logTake, shotOf, waitingOn } from "@/mocks/handlers/generate";
-import { demoShots } from "@/mocks/handlers/shots";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 import { demoRoute, primaryModel } from "@/mocks/route";
 
@@ -39,15 +36,8 @@ function settle(p: Product): void {
   p.status = p.locked_hash ? "locked" : p.adopted_version_id ? "adopted" : "ready";
 }
 
-/** Cost units of one run: seconds for a video take, candidates for images (demoCost). */
-function costUnits(p: Product): number {
-  return p.slot === "video" ? (shotOf(p)?.duration_s ?? 4) : 4;
-}
-
-/** A video take reads its shot (how long it runs, what it continues): fresh from the backend. */
-async function readShots(request: Request, products: Product[]): Promise<void> {
-  if (products.some((p) => p.slot === "video")) await demoShots(request);
-}
+/** Cost units of one demo run (demoCost): four candidates or seconds. */
+const COST_UNITS = 4;
 
 function demoJob(p: Product, modelKey: string, mode: string): Job {
   const local = modelByKey(modelKey)?.where === "local";
@@ -66,7 +56,7 @@ function demoJob(p: Product, modelKey: string, mode: string): Job {
     result: null,
     error: null,
     depends_on: [],
-    est_cost_usd: demoCost(modelKey, costUnits(p)),
+    est_cost_usd: demoCost(modelKey, COST_UNITS),
     fallback_from_job_id: null,
     created_at: new Date().toISOString(),
     started_at: null,
@@ -97,7 +87,7 @@ async function withEstimate(p: Product): Promise<Product> {
   p.estimate = {
     model_key: model,
     where: modelByKey(model)?.where ?? "api",
-    cost_usd: demoCost(model, costUnits(p)),
+    cost_usd: demoCost(model, COST_UNITS),
     seconds: p.estimate?.seconds ?? null,
   };
   return p;
@@ -126,14 +116,6 @@ function finishRun(
       payload: parent?.payload,
     });
     version.job_id = run.jobId;
-    const shot = p.slot === "video" ? shotOf(p) : undefined;
-    if (shot) {
-      Object.assign(version, demoTakeQa(shot, version.n), {
-        payload: { duration_s: shot.duration_s, resolution: "768p" },
-        cost_usd: demoCost(run.model, shot.duration_s),
-      });
-      logTake(shot, version);
-    }
     p.versions.push(version);
     created.push(version);
   }
@@ -169,12 +151,12 @@ export const productHandlers = [
     const owner = q.get("owner");
     const component = q.get("component");
     // A series or an episode that is not the demo's is the backend's (plan「和 MSW 共存」); so
-    // are a shot's keyframes (M4), next to its demo takes.
+    // are a shot's keyframes (M4) and takes (M5), and assets (M3).
     const [kind, ownerId] = owner?.split(":") ?? [];
     if (kind === "series" && ownerId && !getDb().series[ownerId]) return passthrough();
     if (kind === "episode" && ownerId && !getDb().episodes.some((e) => e.id === ownerId))
       return passthrough();
-    if (kind === "asset") return passthrough(); // assets are the backend's (M3)
+    if (kind === "asset" || kind === "shot") return passthrough();
     const list = Object.values(getDb().products).filter(
       (p) =>
         (!owner || `${p.owner_type}:${p.owner_id}` === owner) &&
@@ -182,18 +164,19 @@ export const productHandlers = [
     );
     // The backend's products of the demo series (the novel, 设定提取 …) and of its episodes
     // (剧本化) come first.
-    const merged = (kind === "series" || kind === "episode" || kind === "shot") && !!ownerId;
+    const merged = (kind === "series" || kind === "episode") && !!ownerId;
+    // Nothing of the demo's otherwise: the backend's alone (the takes, `?component=vid`). An
+    // owner without an id (a page before its episode loads) has nothing.
+    if (!merged && !list.length) return owner ? demoJson([]) : passthrough();
     const real = merged ? await backendJson<Product[]>(request.clone(), []) : [];
-    await readShots(request, list);
     const demo = await Promise.all(list.map(withEstimate));
     return demoJson([...real, ...demo.filter((p) => !real.some((r) => r.id === p.id))]);
   }),
 
   // Ids that are not in the demo data are the backend's.
-  http.get(v1("/products/:id"), async ({ params, request }) => {
+  http.get(v1("/products/:id"), async ({ params }) => {
     const p = getDb().products[String(params.id)];
     if (!p) return passthrough();
-    await readShots(request, [p]);
     return demoJson(await withEstimate(p));
   }),
 
@@ -203,11 +186,6 @@ export const productHandlers = [
     const body = RunRequestSchema.safeParse(await request.json());
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     if (p.running) return demoError(409, "product_busy", { id: p.id });
-    await readShots(request, [p]);
-    // A continuous shot starts from the last frame of a shot that has no adopted take yet.
-    const shot = shotOf(p);
-    const tail = p.slot === "video" && shot ? waitingOn(shot) : undefined;
-    if (tail) return demoError(409, "upstream_not_adopted", { id: tail.label });
 
     const req = body.data;
     // 重跑 uses the configured route; 不满意换一个 moves on from the version on screen.
@@ -263,26 +241,6 @@ export const productHandlers = [
     p.current_version_id = version.id;
     settle(p);
     return demoJson(p);
-  }),
-
-  // 取消采纳 (候选墙): nothing downstream uses this product until another version is adopted.
-  http.post(v1("/products/:id/unadopt"), ({ params }) => {
-    const p = getDb().products[String(params.id)];
-    if (!p) return passthrough();
-    if (p.locked_hash) return demoError(409, "product_locked", { id: p.id });
-    p.adopted_version_id = null;
-    settle(p);
-    return demoJson(p);
-  }),
-
-  // 数字键打分 on the candidate wall.
-  http.patch(v1("/versions/:id"), async ({ params, request }) => {
-    const found = findVersion(String(params.id));
-    if (!found) return passthrough();
-    const body = VersionPatchSchema.safeParse(await request.json());
-    if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
-    Object.assign(found.version, body.data);
-    return demoJson(found.product);
   }),
 
   http.post(v1("/products/:id/lock"), ({ params }) => {

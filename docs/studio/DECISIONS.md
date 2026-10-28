@@ -2,6 +2,17 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-27 · M5 第 9b 步：生成页接后端（数据）
+
+- **删掉的 MSW**：生成页的规则、运行记录、取消采纳、打分（`handlers/generate.ts` 只剩 M6 的 2K 精修）；示例 take 和它们的质检（`fixtures/demo/takes.ts` 改名 `finishing.ts`，只剩 2K 精修 / 口型 / 质检三个本集产物）；镜头上的 `video_product_id` 叠加（`handlers/shots.ts` 只剩给后期示例读镜头和 take 的 `demoShots` / `demoVideos`）；生成徽标叠加（`series.ts`）、`takes` 闸门（`gates.ts`）；影响范围的视频叠加（`handlers/impact.ts`、`fixtures/demo/impacts.ts` 整个删掉：后端的预览从第 5 步起自己列视频行）。MSW 的产品列表：没有 owner、示例里也没有的（`?component=vid`）放行给后端；镜头的产品全是后端的。
+- **`/metrics/summary` 留一层叠加到 M8**：数据看板整页还是示例（各张表对着 $8.94），所以 MSW 的 summary 是「示例的已花 / 预计 + 后端已花」、预算用后端的、洞察用示例的。表头和生成页的花费因此会跟着真实（Mock）花费实时涨。计划说删掉这个 handler，改成叠加，M8 再删。
+- **后期示例的时间线读后端的 take**：`buildTimeline` 用 `demoVideos()`（`GET /products?component=vid`）找每个镜头采纳的版本。
+- **测试假后端** `test/fakes/generate.ts`（数据 `generate.json`，`test_web_fixtures.py` 从「应用启动时那样」的示例导出：分镜已确认、有 take）：视频产物、跑 take（先出 `takes_per_shot` 条、再出一条 1 条、出终版 1 条 2K；没确认分镜 409、上一镜没采纳 409）、采纳 / 取消采纳 / 打分、规则、运行记录、生成闸门和徽标。别的页面测试仍是「分镜进行中」，生成页测试先 `confirmFakeStoryboard()`。FFmpeg 各平台出的字节不同，导出时 take 文件的 sha256 按版本 id 重算、时长取到 0.1 秒、版本哈希按 id 写（`_stable_takes`）。`shots` 和影响范围的假后端改成直接回答（以前经 MSW 转发）。
+- **`?shot=` 和 Inspector 的 `item` 都用镜头 id**（生成页、后期页「换一条候选」，和分镜页一致）。
+- **M5 的 take 没有质检**：候选卡的质检框显示「未检查」，状态卡「10 条候选还没质检」；没有质检分数就没有「推荐」，默认选中最新一条。
+- **运行记录同一分钟的两行**：后端按时间正序（兜底那行在它出的 take 前），页面倒序时并列的也倒过来。
+- **示例种子补一处**：1-04 原生同步、有林晚的锁定音色，本地草稿改走 `comfy/h3-r2v` 并带音色样本（依赖也记上），和真跑一致。
+
 ## 2026-10-27 · M5 第 9a 步：示例的分镜确认、视频 take 种子
 
 - **示例第 1 集的分镜改成已确认**（Kelvin 2026-10-27 定）：原型里分镜页（3/7 确认）和生成页（3/9 采纳）是各自的假数据；后端规定分镜确认后才能出视频，接了后端只能二选一。`CONFIRMED_GATES` 加 `("storyboard", "demo-e1")`；确认它之前，种子把没决定过的镜头确认掉（1-04–1-07 锁定关键帧当前版本上选中的那张，默认 A；1-08、1-09 只写决定；时间 11:24）。用户重开过的闸门照旧不再确认。

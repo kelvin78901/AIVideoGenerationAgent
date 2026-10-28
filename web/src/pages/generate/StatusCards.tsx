@@ -62,6 +62,7 @@ export function StatusCards({
   const versions = products.flatMap((p) => p.versions);
   const pass = versions.filter((v) => v.qa_pass === true).length;
   const fail = versions.filter((v) => v.qa_pass === false).length;
+  const unchecked = versions.filter((v) => v.qa_pass === null).length;
   const reruns = versions.filter((v) => v.origin === "auto_qa_rerun").length;
   const fallbacks = versions.filter((v) => v.origin === "fallback").length;
 
@@ -96,7 +97,11 @@ export function StatusCards({
       />
       <Card
         caption={t("cards.qa")}
-        value={t("cards.qaLine", { pass, fail })}
+        value={
+          pass + fail === 0 && unchecked
+            ? t("cards.qaUnchecked", { count: unchecked })
+            : t("cards.qaLine", { pass, fail })
+        }
         detail={
           <>
             {t("cards.qaMeta", { rerun: reruns, fallback: fallbacks })} ·{" "}

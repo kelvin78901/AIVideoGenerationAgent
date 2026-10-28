@@ -3,8 +3,7 @@
  * (or `resetDb()` in tests) brings back the initial demo state.
  */
 import type { GateDecision } from "@/api/schemas/gates";
-import type { GenerateLogEntry, GenerateRules } from "@/api/schemas/generate";
-import type { Impact } from "@/api/schemas/impact";
+import type { Product } from "@/api/schemas/products";
 import type { Shot } from "@/api/schemas/shots";
 import type { SyncRun } from "@/api/schemas/sync";
 import { assets } from "@/mocks/fixtures/demo/assets";
@@ -22,7 +21,7 @@ import {
 import { series } from "@/mocks/fixtures/demo/series";
 import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtures/demo/post";
 import { syncLog, syncRules, syncTargets } from "@/mocks/fixtures/demo/sync";
-import { generateLog, generateRules, takeProducts } from "@/mocks/fixtures/demo/takes";
+import { finishingProducts } from "@/mocks/fixtures/demo/finishing";
 import { comfyWorkflowFiles, workflows } from "@/mocks/fixtures/demo/workflows";
 
 function createDb() {
@@ -44,12 +43,11 @@ function createDb() {
       qa: qaMetrics,
       episodes: episodeMetrics,
     },
-    products: Object.fromEntries([...takeProducts, ...postProducts].map((p) => [p.id, p])),
+    products: Object.fromEntries([...finishingProducts, ...postProducts].map((p) => [p.id, p])),
     assets,
-    /** Episode 1's shots as the backend last answered them (`handlers/shots.ts:demoShots`). */
+    /** Episode 1's shots and video takes as the backend last answered them (`handlers/shots.ts`). */
     shots: [] as Shot[],
-    generateRules: { [series.id]: generateRules } as Record<string, GenerateRules>,
-    generateLog: { [EP1]: generateLog } as Record<string, GenerateLogEntry[]>,
+    videos: [] as Product[],
     /** Episode 1's post: per-shot clip settings, anchored audio and subtitles. */
     post: {
       episode_id: EP1,
@@ -65,8 +63,6 @@ function createDb() {
       run: null as SyncRun | null,
       runs: 0,
     },
-    /** The demo's downstream (videos) laid over a backend impact: what it marks. */
-    impactOverlays: new Map<string, Impact["stale"]>(),
     gates: [] as GateDecision[],
     /** Workflow library (SPEC 6.4) and ComfyUI's own workflow list. */
     workflows,

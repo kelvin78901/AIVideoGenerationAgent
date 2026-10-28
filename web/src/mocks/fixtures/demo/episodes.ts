@@ -1,7 +1,7 @@
 /**
  * Episodes 1–3 of 《雨停之前》 as the MSW demo still knows them. The plan, the scripts, the
- * assets and the shots are the backend's (`studio/demo.py`); MSW only answers for the steps after
- * 分镜 (生成 M5, 后期 M7) of episode 1, the demo.
+ * assets, the shots and the takes are the backend's (`studio/demo.py`); MSW only answers for 后期
+ * (M7) of episode 1, the demo.
  */
 import type { StepProgress } from "@/api/schemas/episodes";
 import { DEMO_SERIES_ID } from "@/mocks/fixtures/demo/series";
@@ -22,12 +22,11 @@ export const episodes: DemoEpisode[] = [
 ];
 
 /** The steps the demo still answers for, laid over the backend's badges. */
-export type DemoSteps = { generate: StepProgress; post: StepProgress };
+export type DemoSteps = { post: StepProgress };
 
-/** Nav badges of episode 1's later steps: 3/9 · 未开始. */
+/** Nav badge of episode 1's 后期: 未开始. */
 export const progress: Record<string, DemoSteps> = {
   [EP1]: {
-    generate: { state: "in_progress", done: 3, total: 9, stale: 0 },
     post: { state: "not_started", done: null, total: null, stale: 0 },
   },
 };
