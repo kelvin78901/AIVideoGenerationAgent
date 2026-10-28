@@ -37,7 +37,7 @@ async function scan(user: User) {
 /** Ticks everything, installs, approves the ComfyUI changes and waits for the end. */
 async function installAll(user: User) {
   await user.click(screen.getByRole("button", { name: "全选" }));
-  await user.click(screen.getByRole("button", { name: "安装选中的 17 项" }));
+  await user.click(screen.getByRole("button", { name: "安装选中的 18 项" }));
   const dialog = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
   await user.click(within(dialog).getByRole("button", { name: "确认，开始安装" }));
   await screen.findByRole("heading", { name: "准备好了" });
@@ -93,17 +93,16 @@ describe("SetupPage", () => {
     expect(row("ComfyUI")).toHaveTextContent("会改动你的 ComfyUI");
     expect(screen.getByRole("checkbox", { name: "安装 ComfyUI" })).not.toBeChecked();
     expect(row("FFmpeg")).not.toHaveTextContent("会改动你的 ComfyUI");
-    // H3 and SeedVR2 come with ComfyUI, our own nodes are not out yet: nothing to tick.
+    // H3 and SeedVR2 come with ComfyUI: nothing to tick.
     expect(row("MiniMax H3 节点")).toHaveTextContent(
       "ComfyUI 自带：把 ComfyUI 更新到 0.30.0 或更新",
     );
     expect(within(row("MiniMax H3 节点")).queryByRole("checkbox")).toBeNull();
     expect(row("SeedVR2 节点（本地超分）")).toHaveTextContent("更新到 0.28.0 或更新");
     expect(within(row("SeedVR2 节点（本地超分）")).queryByRole("checkbox")).toBeNull();
-    expect(row("DramaStudio 节点包（素材板与存回）")).toHaveTextContent(
-      "还没发布：随 ComfyUI 对接一起提供",
-    );
-    expect(within(row("DramaStudio 节点包（素材板与存回）")).queryByRole("checkbox")).toBeNull();
+    // Our own nodes come from the repo; they go into ComfyUI: offered, not ticked.
+    expect(row("DramaStudio 节点包")).toHaveTextContent("会改动你的 ComfyUI");
+    expect(screen.getByRole("checkbox", { name: "安装 DramaStudio 节点包" })).not.toBeChecked();
     // Weights for ComfyUI go into its model folders: offered, not ticked. IndexTTS is ticked.
     expect(row("MiniMax H3 权重（int8）")).toHaveTextContent("会改动你的 ComfyUI");
     expect(
@@ -119,12 +118,12 @@ describe("SetupPage", () => {
     );
 
     await user.click(screen.getByRole("button", { name: "全选" }));
-    expect(screen.getByRole("button", { name: "安装选中的 17 项" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "安装选中的 18 项" })).toBeInTheDocument();
     expect(screen.getByText("约 176.9 GB，预计 2 小时 34 分钟")).toBeInTheDocument();
     await user.click(
       screen.getByRole("checkbox", { name: "安装（可选） FlashVSR 节点（快速超分）" }),
     );
-    expect(screen.getByRole("button", { name: "安装选中的 16 项" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "安装选中的 17 项" })).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "只选必需的" }));
     expect(screen.getByRole("button", { name: "安装选中的 5 项" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "先跳过，进入工作台" })).toHaveAttribute(
@@ -174,9 +173,9 @@ describe("SetupPage", () => {
     renderSetup();
     await scan(user);
     await user.click(screen.getByRole("button", { name: "全选" }));
-    await user.click(screen.getByRole("button", { name: "安装选中的 17 项" }));
+    await user.click(screen.getByRole("button", { name: "安装选中的 18 项" }));
     const dialog = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
-    expect(within(dialog).getByText("会改动你的 ComfyUI（11 项）")).toBeInTheDocument();
+    expect(within(dialog).getByText("会改动你的 ComfyUI（12 项）")).toBeInTheDocument();
     expect(within(dialog).getByText("D:\\ComfyUI")).toBeInTheDocument();
     const change = (name: string) => within(dialog).getByRole("cell", { name }).closest("tr");
     expect(change("PyTorch")).toHaveTextContent(
@@ -192,7 +191,9 @@ describe("SetupPage", () => {
     expect(change("MiniMax H3 权重（int8）")).toHaveTextContent(
       "安装e5eb578Comfy-Org/MiniMax-H3约 49.3 GB",
     );
-    expect(within(dialog).getAllByRole("row")).toHaveLength(12);
+    // Our own nodes: copied from the studio's repo.
+    expect(change("DramaStudio 节点包")).toHaveTextContent("安装0.1.0");
+    expect(within(dialog).getAllByRole("row")).toHaveLength(13);
     expect(
       within(dialog).getByText("MiniMax H3 权重（int8） 要下载约 49.3 GB"),
     ).toBeInTheDocument();
@@ -204,7 +205,7 @@ describe("SetupPage", () => {
     await phaseIs("检测完成");
     expect(screen.queryByRole("alertdialog")).toBeNull();
     // Back at the scan result, the selection kept.
-    expect(screen.getByRole("button", { name: "安装选中的 17 项" })).toBeEnabled();
+    expect(screen.getByRole("button", { name: "安装选中的 18 项" })).toBeEnabled();
     expect(fakeSetup.profile.items.every((x) => x.install === null)).toBe(true);
     expect(fakeSetup.installed.size).toBe(0);
     expect(fakeSetup.snapshots).toHaveLength(0);
@@ -216,7 +217,7 @@ describe("SetupPage", () => {
     await scan(user);
     await installAll(user);
 
-    expect(screen.getByText("装好 16 项，失败 1 项（都是可选项）。")).toBeInTheDocument();
+    expect(screen.getByText("装好 17 项，失败 1 项（都是可选项）。")).toBeInTheDocument();
     expect(screen.getByText("均衡：草稿和重跑在本地跑，采纳前用 API 出终版")).toBeInTheDocument();
     const lines = within(screen.getByRole("region", { name: "安装日志" })).getAllByRole("listitem");
     const text = lines.map((l) => l.textContent);
@@ -225,7 +226,7 @@ describe("SetupPage", () => {
     expect(snapshotAt).toBeLessThan(text.indexOf("完成：PyTorch"));
     expect(text).toContain("失败（可选项，不影响使用）：SageAttention 加速");
     expect(text.at(-1)).toBe("全部结束。");
-    expect(within(summary()).getByText("已装好 16")).toBeInTheDocument();
+    expect(within(summary()).getByText("已装好 17")).toBeInTheDocument();
     expect(within(summary()).getByText("失败 1")).toBeInTheDocument();
     const sage = row("SageAttention 加速");
     expect(sage).toHaveTextContent("没有适合这台机器的预编译包");

@@ -884,7 +884,8 @@ class SetupService:
     async def install_node_packs(self, packs: list[NodePackSource]) -> PacksInstalled:
         """Node packs a workflow needs (SPEC 6.4.4-2): a ComfyUI-Manager snapshot first, then
         each pack cloned into ``custom_nodes`` and its requirements installed into ComfyUI's
-        Python, as the installer does for its own packs. ComfyUI loads them when it restarts."""
+        Python, as the installer does for its own packs (DramaStudio's: its setup item, copied
+        from the repo). ComfyUI loads them when it restarts."""
         loaded = await self._load(self.profile_id)
         if loaded is None or loaded[1].comfy is None:
             raise NoComfy
@@ -894,7 +895,7 @@ class SetupService:
         changes = [
             Message(
                 code="comfy_change",
-                params={"item": p.name, "action": "install", "source": p.url},
+                params={"item": p.name, "action": "install", "source": p.url or p.item},
             )
             for p in packs
         ]
@@ -915,24 +916,7 @@ class SetupService:
             return None
 
         for pack in packs:
-            folder = pack.url.rstrip("/").rsplit("/", 1)[-1].removesuffix(".git")
-            dest = "{comfy}/custom_nodes/" + folder
-            item = Item.model_validate(
-                {
-                    "id": f"pack:{folder}",
-                    "group": "comfy",
-                    "name": {"zh": pack.name, "en": pack.name},
-                    "detect": {"type": "comfy_node", "dir": folder},
-                    "install": [
-                        {"type": "git_clone", "url": pack.url, "ref": pack.ref, "dest": dest},
-                        {
-                            "type": "uv_pip",
-                            "env": "comfy",
-                            "requirements": "{dest}/requirements.txt",
-                        },
-                    ],
-                }
-            )  # fmt: skip
+            item = self._manifest().item(pack.item) if pack.item else _pack_item(pack)
             try:
                 await runner.install(item, env, log, progress)
                 done.append(pack.name)
@@ -1216,3 +1200,22 @@ class SetupService:
             simulated=row.id == PROFILE_DEMO,
             download_bps=data.download_bps,
         )
+
+
+def _pack_item(pack: NodePackSource) -> Item:
+    """A node pack from its repository: cloned into ``custom_nodes``, its requirements
+    installed into ComfyUI's Python, as the installer does for its own packs."""
+    folder = pack.url.rstrip("/").rsplit("/", 1)[-1].removesuffix(".git")
+    dest = "{comfy}/custom_nodes/" + folder
+    return Item.model_validate(
+        {
+            "id": f"pack:{folder}",
+            "group": "comfy",
+            "name": {"zh": pack.name, "en": pack.name},
+            "detect": {"type": "comfy_node", "dir": folder},
+            "install": [
+                {"type": "git_clone", "url": pack.url, "ref": pack.ref, "dest": dest},
+                {"type": "uv_pip", "env": "comfy", "requirements": "{dest}/requirements.txt"},
+            ],
+        }
+    )

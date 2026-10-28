@@ -237,14 +237,13 @@ items:
         version: "2.2.0"
   - id: node_dramastudio
     group: comfy
-    name: { zh: DramaStudio 节点包（素材板与存回）, en: DramaStudio nodes (boards and save-back) }
+    name: { zh: DramaStudio 节点包, en: DramaStudio nodes }
     required: true
     depends_on: [comfy]
     detect: { type: comfy_node, dir: comfyui-dramastudio }
-    # 源码 integrations/comfyui-dramastudio 还没有（输入 / 输出节点 M5，镜头、素材、存回节点 M9）
-    installable: false
-    fix: { missing: dramastudio_pending, optional: dramastudio_pending }
-    install: [ { type: copy, from: "integrations/comfyui-dramastudio", dest: "{comfy}/custom_nodes/comfyui-dramastudio" }, { type: script, run: "写入本地令牌和后端地址" } ]
+    # 源码 integrations/comfyui-dramastudio：M5 是工作流的输入 / 输出节点；镜头、素材、存回节点和
+    # 「写入本地令牌和后端地址」的 script 步骤在 M9
+    install: [ { type: copy, from: "integrations/comfyui-dramastudio", dest: "{comfy}/custom_nodes/comfyui-dramastudio", version: "0.1.0" } ]
 
   # ---------- 模型权重（Kelvin 2026-10-18 选定版本；Hugging Face 仓库锁 revision，大小和 sha256 取自 HF 接口） ----------
   # ComfyUI 用的权重写 folder，放进 ComfyUI 的模型目录（Desktop 是共享模型目录）；按官方模板（Comfy-Org/workflow_templates）配齐。

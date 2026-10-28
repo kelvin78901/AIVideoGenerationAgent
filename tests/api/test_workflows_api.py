@@ -16,6 +16,7 @@ from fastapi.testclient import TestClient
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import ComfyWorkflowRow
+from drama_series_agent.modelhub.workflows import load_workflow, user_workflows_dir
 from drama_series_agent.wflib.comfy import DEMO_DIR
 
 V1 = "/api/v1"
@@ -327,3 +328,81 @@ def test_a_workflow_broken_after_a_node_install_points_at_the_snapshot(
     assert {"code": "broke_after_install", "params": {"snapshot": res["snapshot"]}} in broken[
         "problems"
     ]
+
+
+def _dramastudio_graph() -> dict[str, Any]:
+    """A video workflow made of DramaStudio's nodes (two reference pictures, same title)."""
+
+    def node(cls: str, title: str, **inputs: Any) -> dict[str, Any]:
+        return {"class_type": cls, "inputs": inputs, "_meta": {"title": title}}
+
+    return {
+        "1": node("DramaStudioFirstFrame", "首帧", image="dramastudio/a.png"),
+        "2": node("DramaStudioRefImage", "参考图", index=1, image="dramastudio/b.png"),
+        "3": node("DramaStudioRefImage", "参考图", index=2, image="dramastudio/c.png"),
+        "4": node("DramaStudioPrompt", "提示词", text=""),
+        "5": node("DramaStudioSize", "尺寸", width=768, height=1344),
+        "6": node("DramaStudioDuration", "时长", fps=24.0, seconds=5.0),
+        "7": node("DramaStudioSeed", "种子", seed=0),
+        "8": node("CreateVideo", "Create Video", images=["1", 0], fps=["6", 0]),
+        "9": node("DramaStudioVideoOut", "视频", video=["8", 0], filename_prefix="x"),
+    }
+
+
+def test_a_dramastudio_workflow_binds_itself_and_installs_our_pack(client: TestClient) -> None:
+    _scan(client)
+    w = _import(client, file_name="ds-video.json", workflow=_dramastudio_graph())
+    assert w["uses_dramastudio_nodes"] and w["components"] == ["vid"]
+    got = {(b["slot"], b["index"]): (b["node_title"], b["field"]) for b in w["bindings"]}
+    assert got == {
+        ("first_frame", None): ("首帧", "image"),
+        ("ref_image", 1): ("参考图 #2", "image"),
+        ("ref_image", 2): ("参考图", "image"),
+        ("prompt", None): ("提示词", "text"),
+        ("width", None): ("尺寸", "width"),
+        ("height", None): ("尺寸", "height"),
+        ("fps", None): ("时长", "fps"),
+        ("seconds", None): ("时长", "seconds"),
+        ("seed", None): ("种子", "seed"),
+        ("video_out", None): ("视频", None),
+    }
+    assert {b["state"] for b in w["bindings"]} == {"dramastudio"}
+    # Nothing to confirm, nothing to edit.
+    res = client.put(f"{V1}/workflows/{w['id']}/bindings", json=w["bindings"])
+    assert res.status_code == 409
+    assert res.json()["detail"]["code"] == "workflow_dramastudio_bindings"
+    # The reference pictures are optional: a shot with one leaves the second node out.
+    wf = load_workflow(w["slug"], user_workflows_dir())
+    graph = wf.fill({"first_frame": "dramastudio/f.png", "seed": 7}, refs=["dramastudio/r.png"])
+    assert "3" not in graph and graph["2"]["inputs"]["image"] == "dramastudio/r.png"
+    assert graph["7"]["inputs"]["seed"] == 7
+    # ComfyUI does not have our nodes yet: the check names our pack, from the repo.
+    check = w["check"]
+    assert check["status"] == "missing" and check["problems"] == []
+    assert check["missing_packs"] == [
+        {
+            "name": "DramaStudio",
+            "classes": [
+                "DramaStudioDuration", "DramaStudioFirstFrame", "DramaStudioPrompt",
+                "DramaStudioRefImage", "DramaStudioSeed", "DramaStudioSize",
+                "DramaStudioVideoOut",
+            ],
+            "source": "studio",
+            "version": "0.1.0",
+            "url": None,
+        }
+    ]  # fmt: skip
+    changes = client.post(f"{V1}/workflows/{w['id']}/deps").json()["changes"]
+    assert [c["params"] for c in changes] == [
+        {"item": "DramaStudio", "action": "install", "to": "0.1.0"}
+    ]
+    # Installed through the setup item (a snapshot first), then the check is clean.
+    res = client.post(f"{V1}/workflows/{w['id']}/deps/install").json()
+    assert res["packs"] == 1 and res["snapshot"] and res["failed"] == []
+    assert res["workflow"]["check"]["status"] == "ok"
+    snaps = client.get(f"{V1}/comfy/snapshots").json()
+    assert snaps[0]["changes"][0]["params"]["item"] == "DramaStudio"
+    started = client.post(f"{V1}/workflows/{w['id']}/trial")
+    assert started.status_code == 202
+    assert _wait_trial(client, w["id"])["trial"]["status"] == "passed"
+    assert client.patch(f"{V1}/workflows/{w['id']}", json={"tier": "mine"}).json()["tier"] == "mine"

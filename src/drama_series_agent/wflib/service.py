@@ -55,6 +55,7 @@ from drama_series_agent.setup.manifest import Message
 from drama_series_agent.setup.schema import NodePackSource
 from drama_series_agent.setup.service import NoComfy, SetupBusy, SnapshotFailed
 from drama_series_agent.spec.dims import ASPECTS, dims
+from drama_series_agent.wflib import dramastudio
 from drama_series_agent.wflib.comfy import ComfyAccess, ComfyUnavailable, DemoComfy
 from drama_series_agent.wflib.convert import ConvertError, is_ui_format, ui_to_api
 from drama_series_agent.wflib.guess import (
@@ -473,7 +474,18 @@ class WorkflowLibrary:
                 graph = {}
         classes = sorted({str(n.get("class_type")) for n in graph.values()})
         missing = [c for c in classes if c not in info]
-        packs, unknown = _packs_for(missing, await _node_map(access))
+        ours = [c for c in missing if dramastudio.is_ours(c)]
+        packs, unknown = _packs_for([c for c in missing if c not in ours], await _node_map(access))
+        if ours:  # our own pack: installed from the repo (the setup item), not a registry
+            packs.insert(
+                0,
+                MissingPack(
+                    name=dramastudio.PACK_NAME,
+                    classes=ours,
+                    source="studio",
+                    version=dramastudio.pack_version(),
+                ),
+            )
         problems += [Message(code="unknown_node", params={"class": c}) for c in unknown]
         models = _missing_models(graph, info, row.deps_json.get("models") or [])
         status = "broken" if problems else "missing" if packs or models else "ok"
@@ -544,9 +556,16 @@ class WorkflowLibrary:
         check = CheckOut.model_validate(row.check_json) if row.check_json else None
         if self.setup is None or check is None or not check.missing_packs:
             raise LibraryError(409, "workflow_nothing_to_install")
-        sources = [NodePackSource(name=p.name, url=p.url or "") for p in check.missing_packs]
+        sources = [
+            NodePackSource(
+                name=p.name,
+                url=p.url or "",
+                item=dramastudio.MANIFEST_ITEM if p.source == "studio" else None,
+            )
+            for p in check.missing_packs
+        ]
         try:
-            result = await self.setup.install_node_packs([s for s in sources if s.url])
+            result = await self.setup.install_node_packs([s for s in sources if s.url or s.item])
         except NoComfy:
             raise LibraryError(409, "comfy_not_found") from None
         except SetupBusy:
@@ -684,7 +703,10 @@ def _write_meta(
     """
     usable: list[Binding] = []
     for b in bindings:
-        candidate = Binding(slot=b.slot, index=b.index, node=b.node_title, field=b.field)
+        optional = b.state == "dramastudio" and b.slot in dramastudio.NUMBERED
+        candidate = Binding(
+            slot=b.slot, index=b.index, node=b.node_title, field=b.field, optional=optional
+        )
         try:
             Workflow(row.slug, graph, _meta(row, [*usable, candidate]), "")
         except WorkflowError:

@@ -116,3 +116,24 @@ def test_unknown_node_classes_cannot_be_converted() -> None:
         ui_to_api(ui, _object_info())
     assert err.value.code == "workflow_unknown_nodes"
     assert err.value.classes == ["SomeCustomLoader"]
+
+
+def test_dramastudio_nodes_bind_by_class_and_nothing_else_is_guessed() -> None:
+    graph = {
+        "1": {"class_type": "LoadImage", "inputs": {"image": "x.png"}},  # not ours: ignored
+        "2": {"class_type": "DramaStudioRefImage", "inputs": {"image": "a.png"}},  # no index
+        "3": {"class_type": "DramaStudioRefImage", "inputs": {"index": 3, "image": "b.png"}},
+        "4": {"class_type": "DramaStudioRefImage", "inputs": {"image": "c.png"}},
+        "5": {"class_type": "DramaStudioAudioOut", "inputs": {"audio": ["1", 0]}},
+        "6": {"class_type": "DramaStudioShot", "inputs": {}},  # a later node (M9): no slot
+    }
+    titled, bindings = guess_bindings(graph)
+    assert [(b.slot, b.index, b.field, b.state) for b in bindings] == [
+        ("ref_image", 1, "image", "dramastudio"),
+        ("ref_image", 3, "image", "dramastudio"),
+        ("ref_image", 4, "image", "dramastudio"),
+        ("audio_out", None, None, "dramastudio"),
+    ]
+    assert len({b.node_title for b in bindings}) == 4  # unique titles for the three refs
+    assert kind_of(bindings) == "audio"
+    assert titled["1"] == graph["1"]

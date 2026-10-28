@@ -14,7 +14,8 @@ The rules read the graph the way a person would:
 
 A binding finds its node by title, so the guessed nodes get unique titles first (an imported
 graph often has two nodes titled ``CLIP Text Encode``). DramaStudio's own input and output
-nodes need no guess: their class says what they are.
+nodes need no guess: their class says what they are (``dramastudio.NODES``), and a workflow that
+uses them is bound by them alone.
 """
 
 from __future__ import annotations
@@ -23,7 +24,9 @@ import copy
 from dataclasses import dataclass
 from typing import Any
 
-DRAMASTUDIO_PREFIX = "DramaStudio"
+from drama_series_agent.wflib import dramastudio
+
+DRAMASTUDIO_PREFIX = dramastudio.PREFIX
 SAMPLER_SEEDS = ("seed", "noise_seed")
 SIZE_FIELDS = ("width", "height")
 FPS_FIELDS = ("fps", "frame_rate")
@@ -131,6 +134,8 @@ def unique_titles(graph: dict[str, Any], ids: list[str]) -> dict[str, Any]:
 
 def guess_bindings(graph: dict[str, Any]) -> tuple[dict[str, Any], list[Guessed]]:
     """The graph with unique titles on the guessed nodes, and the guessed bindings."""
+    if uses_dramastudio(graph):
+        return _dramastudio_bindings(graph)
     picks: list[tuple[str, int | None, str, str | None]] = []  # slot, index, node id, field
     positive: list[str] = []
     negative: list[str] = []
@@ -142,8 +147,6 @@ def guess_bindings(graph: dict[str, Any]) -> tuple[dict[str, Any], list[Guessed]
     for node_id, node in sorted(graph.items(), key=lambda kv: _order(kv[0])):
         cls = str(node["class_type"])
         inputs = node.get("inputs") or {}
-        if cls.startswith(DRAMASTUDIO_PREFIX):
-            continue  # its class says what it is (step 11)
         if cls == "LoadImage":
             if images == 0:
                 picks.append(("first_frame", None, node_id, "image"))
@@ -195,6 +198,38 @@ def guess_bindings(graph: dict[str, Any]) -> tuple[dict[str, Any], list[Guessed]
             state="guessed",
         )
         for slot, index, node_id, field in kept
+    ]
+
+
+def _dramastudio_bindings(graph: dict[str, Any]) -> tuple[dict[str, Any], list[Guessed]]:
+    """Bindings read off DramaStudio's nodes; a numbered one (reference picture) takes its
+    number from the node's ``index``, else the next free one. The first node of a slot wins."""
+    picks: list[tuple[str, int | None, str, str | None]] = []
+    seen: set[tuple[str, int | None]] = set()
+    numbers: dict[str, int] = {}
+    for node_id, node in sorted(graph.items(), key=lambda kv: _order(kv[0])):
+        inputs = node.get("inputs") or {}
+        for ns in dramastudio.NODES.get(str(node["class_type"]), ()):
+            index: int | None = None
+            if ns.slot in dramastudio.NUMBERED:
+                given = inputs.get(dramastudio.INDEX_FIELD)
+                index = given if isinstance(given, int) else numbers.get(ns.slot, 0) + 1
+                numbers[ns.slot] = max(numbers.get(ns.slot, 0), index)
+            if (ns.slot, index) in seen:
+                continue
+            seen.add((ns.slot, index))
+            picks.append((ns.slot, index, node_id, ns.field))
+    titled = unique_titles(graph, list(dict.fromkeys(p[2] for p in picks)))
+    return titled, [
+        Guessed(
+            slot=slot,
+            index=index,
+            node_title=title_of(titled[node_id]),
+            node_class=str(titled[node_id]["class_type"]),
+            field=field,
+            state="dramastudio",
+        )
+        for slot, index, node_id, field in picks
     ]
 
 

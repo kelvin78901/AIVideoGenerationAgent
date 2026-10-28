@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 11 步：DramaStudio 节点包（工作流的输入 / 输出节点）
+
+- **节点包 `integrations/comfyui-dramastudio`**（`nodes.py`，13 个节点，版本 0.1.0）：输入 首帧、参考图（带 `index`）、输入视频、台词音频、音色样本（带 `index`，对应 `ref_audio`）、提示词、反向提示词、尺寸（宽、高）、帧率和时长（一个节点：`fps`、`seconds`，另出 `fps_int` 和 `frames` = 帧率 × 秒数取整；要 4n + 1 帧的模型自己接数学节点）、种子；输出 视频（MP4）、图片（PNG）、音频（FLAC），存进 `output/dramastudio/`，列文件的格式和 ComfyUI 自带的 SaveVideo / SaveImage / SaveAudio 一样，适配器取结果不用改。文件输入像 `LoadImage`：下拉列 `input` 文件夹（含子文件夹，平台上传在 `dramastudio/`）、能上传，`VALIDATE_INPUTS` 只查文件在不在（平台刚上传的文件不在 ComfyUI 启动时的列表里），`IS_CHANGED` 按文件哈希。每个输入都有默认值，在 ComfyUI 里能直接手动跑。
+- **用经典写法（`INPUT_TYPES`），ComfyUI 的模块在用到时才 import**：不用 V3 的 `io.ComfyNode`，这样节点定义在没有 ComfyUI、没有 torch 的测试环境里也能加载。存图片和音频借 `comfy_api.latest.ui` 的 `ImageSaveHelper` / `AudioSaveHelper`，读视频用 `InputImpl.VideoFromFile`，读音频用 `comfy_extras.nodes_audio.load`（和 `LoadAudio` 一样），存视频用 `VIDEO.save_to`。在本机 ComfyUI 0.41.2 自己的 Python 里逐个跑过（读图、参考图、存图、带声音的视频存出再读回、音频存出再读回；临时目录，没装进 ComfyUI、没发 `/prompt`）。
+- **「不用写绑定」= 导入时按节点类自动生成绑定**（`wflib/dramastudio.py:NODES`，状态 `dramastudio`），照样写进 `workflow.yaml`，填值、取结果、可选槽位走同一套代码，没另开一条「按节点类型提交」的路。用了 DramaStudio 节点的工作流只认这些节点，不再猜别的（`LoadImage` 之类不绑定）；同一个槽位有两个节点取第一个；参考图 / 音色样本按节点的 `index` 编号，没有就接着往后排，并且是可选的（镜头的参考图比节点少，多的节点连同读它的输入一起拿掉）；其余文件槽位必需。重名的节点照猜绑定的规则改成唯一标题。认不出的 `DramaStudio*` 节点（M9 的镜头、素材、存回）不绑定。
+- **体检认得我们自己的包**：缺 `DramaStudio*` 节点类时列成缺节点包「DramaStudio」（`source: studio`、版本取包里 `pyproject.toml`，前端契约 `MissingPack.source` 加 `studio`），不是 `unknown_node`。「安装缺的节点包」时它走安装清单的 `node_dramastudio`（`NodePackSource.item`，和其他节点包一起先存快照）。
+- **安装清单 `node_dramastudio` 可装了**：去掉 `installable: false` 和 `dramastudio_pending`（中英文词条删掉），缺少时提示「安装节点」；步骤只剩复制（`copy`，版本 0.1.0，复制时跳过 `__pycache__`）；「写入本地令牌和后端地址」的 `script` 步骤等 M9 的存回节点再加。名字改成「DramaStudio 节点包」。它会改用户的 ComfyUI，所以和其他节点包一样列进改动清单、默认不勾、先存快照。PC 示例机器全选从 17 项变 18 项、改动 ComfyUI 的从 11 项变 12 项，装完后缺的只剩 H3、SeedVR2 两项（要升级 ComfyUI）。
+- **没做的**：包的版本更新检测（检测只看目录在不在；重装会覆盖）留到 M9 加存回节点时一起做；节点的前端扩展（下拉选镜头等）M9。
+
 ## 2026-10-28 · M5 第 10b 步：工作流库前端接后端；试跑走任务事件
 
 - **删 MSW 的工作流库**（`mocks/handlers/workflows.ts`、`fixtures/demo/workflows.ts`、`db.ts` 两项、`demoTiming.workflowTrialMs`）：示例模式下模型页的工作流库直接读 Mock 后端。页面测试改用 `test/fakes/workflows.ts`，数据是 `test_web_fixtures.py` 新导出的 `workflows.json`（仓库的 9 个工作流全部体检后 + 示例 ComfyUI 列表里的两个导入后的样子；体检、试跑的时间 `at` 也固定）。原来 MSW 里的「Wan 2.2（社区）」「Flux Kontext（社区）」「LatentSync（我的）」后端没有，测试改成用雨夜氛围-ltx2（缺节点包和模型）、sdxl_basic（绑定待确认、体检正常）和 FlashVSR（缺节点包）。

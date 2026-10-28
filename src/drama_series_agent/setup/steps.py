@@ -565,5 +565,6 @@ class _StepRun:
         self.names["dest"] = dest
         if not await _exists(src):
             raise InstallError("source_missing", path=str(self.value("from")))
-        await asyncio.to_thread(shutil.copytree, src, dest, dirs_exist_ok=True)
+        ignore = shutil.ignore_patterns("__pycache__")
+        await asyncio.to_thread(shutil.copytree, src, dest, dirs_exist_ok=True, ignore=ignore)
         return [dest]

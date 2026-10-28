@@ -26,7 +26,8 @@ INSTALL = f"{V1}/setup/install"
 # ControlNet and SeedVR2 nodes come with ComfyUI itself and our own nodes are not out yet, so
 # the scan finds them missing but offers no install.
 PC_INSTALLABLE = [
-    "torch", "ffmpeg", "rt_qwentts", "rt_indextts", "rt_ocr", "comfy", "node_flashvsr", "sage",
+    "torch", "ffmpeg", "rt_qwentts", "rt_indextts", "rt_ocr", "comfy", "node_flashvsr",
+    "node_dramastudio", "sage",
     "w_h3", "w_te", "w_img", "w_img_t2i", "w_flux3", "w_flashvsr", "w_sr", "w_tts", "llmsrv",
 ]  # fmt: skip
 
@@ -113,7 +114,8 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
     touching = [x["id"] for x in started["items"] if x["touches_comfy"] and x["install"]]
     # (the weights for ComfyUI too: they go into its model folders; IndexTTS does not)
     assert touching == [
-        "torch", "comfy", "node_flashvsr", "sage", "w_h3", "w_te", "w_img", "w_img_t2i",
+        "torch", "comfy", "node_flashvsr", "sage", "node_dramastudio", "w_h3", "w_te", "w_img",
+        "w_img_t2i",
         "w_flux3", "w_flashvsr", "w_sr",
     ]  # fmt: skip
     confirm = started["install"]["confirm"]
@@ -142,7 +144,7 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
 
     done = _wait(client, "done")
     states = _states(done)
-    assert Counter(states.values()) == {"done": 16, "failed": 1}
+    assert Counter(states.values()) == {"done": 17, "failed": 1}
     assert done["download_bps"] == 25e6  # what the weights' downloads measured
     sage = next(x for x in done["items"] if x["id"] == "sage")
     assert sage["install"] == {
@@ -197,15 +199,15 @@ def test_rescan_only_reports_the_difference(client: TestClient) -> None:
     after = _scan(client)
     by_id = {x["id"]: x for x in after["items"]}
     assert Counter(x["status"] for x in after["items"]) == {
-        "ok": 26,
-        "missing": 3,
+        "ok": 27,
+        "missing": 2,
         "optional": 6,
         "warn": 1,
     }
     # Still missing: only what the installer does not offer (nodes that come with a newer
-    # ComfyUI, our own nodes).
+    # ComfyUI).
     missing = [x for x in after["items"] if x["status"] == "missing"]
-    assert [x["id"] for x in missing] == ["node_h3", "node_seedvr2", "node_dramastudio"]
+    assert [x["id"] for x in missing] == ["node_h3", "node_seedvr2"]
     assert not any(x["installable"] for x in missing)
     assert by_id["ffmpeg"]["found"] == {"code": "installed", "params": {}}
     assert by_id["sage"]["status"] == "optional" and by_id["sage"]["installable"]

@@ -325,6 +325,7 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
   - 输出：视频、图片、音频；
   - 绑定里的槽位名：`first_frame`、`video_in`、`ref_image`（带序号）、`prompt`、`negative`、`dialogue_audio`、`width`、`height`、`fps`、`seconds`、`seed`、`video_out`、`image_out`、`audio_out`（前端契约 `web/src/api/schemas/workflows.ts`）；
   - 平台只认这些节点：提交时按节点类型填值，按节点类型取结果，不用写绑定。节点在画布里有默认值，用户在 ComfyUI 里能直接手动跑。
+  - 实现（M5 第 11 步）：导入时按节点类生成绑定（`wflib/dramastudio.py`，状态 `dramastudio`，用户不用确认也不能改），之后和普通工作流走同一套填值、取结果的代码；音色样本节点对应 `ref_audio`；参考图、音色样本按节点的 `index` 编号，是可选槽位。
 - **兼容：普通工作流**（官方和社区的，没有 DramaStudio 节点）：导入时自动猜绑定，例如 `LoadImage` → 首帧、正向 `CLIPTextEncode` → 提示词、采样器的 `seed` → 种子、`EmptyLatent*` 的宽高 → 尺寸、`SaveVideo` / `VHS_VideoCombine` → 视频输出。猜的结果在绑定页逐项给用户确认，没确认完不能登记。
 - **调用流程**：上传输入（`/upload/image` 等）→ 提交 `/prompt` → 用 WebSocket 收进度 → 从 `/history/{id}` 找输出节点的产物 → `/view` 下载。宽高、帧率、时长一律从成片规格（第 13 节）和镜头读出来填进对应槽位。
 
@@ -635,7 +636,7 @@ M1 加的字段：
 
 - `detect.native_since`：ComfyUI 自带的节点从哪个版本开始有。ComfyUI 在跑时按 `/object_info` 里的节点类判断，没在跑时按 ComfyUI 版本判断。
 - 安装步骤的 `version`：给改动清单看的版本号（tag）；没写时用 commit 的前 7 位。
-- `installable: false`：有安装步骤但暂时不能装（DramaStudio 节点包、本地 LLM）。
+- `installable: false`：有安装步骤但暂时不能装（本地 LLM；DramaStudio 节点包 M5 起能装）。
 - `download` 的 `files`：文件名，或 `{path, folder, sha256}`。写了 `folder`（ComfyUI 的模型类别）就放到 ComfyUI 放这类新文件的目录：`extra_model_paths.yaml` 里 `is_default: true` 的那个（识别结果里 `ModelDir.default`，ComfyUI Desktop 的共享模型目录），没有就 `{comfy}/models/<folder>`；没写的放 `dest` 下。检测 `downloads`：这些文件都在（ComfyUI 的文件在它任一模型目录里都算）。
 - `size_gb`（超过 10 GB 先确认，也用于预计用时）；`pkg` 步骤的 `admin: [winget, apt]`（这些包管理器要管理员权限，先确认）；`uv_pip` 的 `by_torch`（按 ComfyUI 的 Python 里现在的 PyTorch 选包，键 `<major.minor>+<cuda>`，表里没有就报 `torch_unsupported`）；`snapshot_first: false`（只有 ComfyUI-Manager 本身）；`fix` / `if_missing`；按平台覆盖的 `windows` / `macos` / `linux`。
 - 顶层 `mirrors`（官方 / 国内：Hugging Face、PyPI、GitHub 代理前缀）和 `recommend`（按顺序取第一条满足 `when` 的预设）。

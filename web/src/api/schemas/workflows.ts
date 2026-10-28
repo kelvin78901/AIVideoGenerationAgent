@@ -56,7 +56,8 @@ export const MissingPackSchema = z.object({
   name: z.string(),
   /** Node classes the workflow uses that this pack provides. */
   classes: z.array(z.string()),
-  source: z.enum(["registry", "git"]),
+  /** studio: DramaStudio's own nodes, installed from the studio's repo. */
+  source: z.enum(["registry", "git", "studio"]),
   version: z.string().nullable(),
   url: z.string().nullable(),
 });

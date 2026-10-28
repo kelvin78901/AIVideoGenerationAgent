@@ -1,0 +1,11 @@
+[project]
+name = "comfyui-dramastudio"
+version = "0.1.0"
+description = "AI Drama Studio's input and output nodes: workflows built with them run in the studio without bindings."
+license = { text = "Apache-2.0" }
+requires-python = ">=3.10"
+dependencies = []
+
+[tool.comfy]
+PublisherId = "dramastudio"
+DisplayName = "DramaStudio"

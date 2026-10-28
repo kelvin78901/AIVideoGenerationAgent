@@ -119,7 +119,6 @@
     "eagle_later": "Install if you manage assets in Eagle",
     "resolve_later": "Install if you edit in DaVinci Resolve",
     "update_comfy_native": "Comes with ComfyUI: update ComfyUI to {{version}} or later",
-    "dramastudio_pending": "Not released yet: comes with the ComfyUI integration",
     "weights_pending_p0": "Install after the P0 tests settle the version",
     "env_torch_gpu": "The pinned PyTorch cannot use this GPU and reinstalling will not change that; the API is used until the manifest is updated"
   },

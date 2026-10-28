@@ -95,7 +95,7 @@ PC: dict[str, Row] = {
     "node_flashvsr": _r("optional", "not_found", "install_nodes"),
     "node_ctrl": _r("optional", "not_found", "update_comfy_native", x_version="0.35.0"),
     "sage": _r("optional", "not_found", "sage_build"),
-    "node_dramastudio": _r("missing", "not_found", "dramastudio_pending"),
+    "node_dramastudio": _r("missing", "not_found", "install_nodes"),
     "w_h3": _r("missing", "not_found", "download"),
     "w_te": _r("missing", "not_found", "download"),
     "w_img": _r("missing", "not_found", "download"),
@@ -135,7 +135,7 @@ MAC: dict[str, Row] = {
     "node_flashvsr": _r("skip", "needs_cuda", "unsupported_upscale_api"),
     "node_ctrl": _r("skip", "needs_cuda", "unsupported_skip"),
     "sage": _r("skip", "needs_cuda", "unsupported_skip"),
-    "node_dramastudio": _r("optional", "not_found", "dramastudio_pending"),
+    "node_dramastudio": _r("optional", "not_found", "install_nodes"),
     "w_h3": _r("skip", "needs_cuda", "unsupported_skip"),
     "w_te": _r("skip", "needs_cuda", "unsupported_skip"),
     "w_img": _r("optional", "not_found", "mac_image_slow"),
@@ -175,15 +175,16 @@ async def test_pc_flags_match_the_prototype() -> None:
         "w_img_t2i",
         "w_sr",
         "w_tts",
+        "node_dramastudio",  # not in the prototype: our own nodes, from the repo (M5)
     ):
         assert result[item_id][0].required and result[item_id][1].installable, item_id
     for item_id in ("node_flashvsr", "sage", "llmsrv"):
         assert not result[item_id][0].required and result[item_id][1].installable, item_id
-    # H3, its Fun ControlNet and SeedVR2 come with ComfyUI; our own nodes are not out yet;
-    # the local LLM waits for the P0 tests (step 8b).
+    # H3, its Fun ControlNet and SeedVR2 come with ComfyUI; the local LLM waits for the P0
+    # tests (step 8b).
     for item_id in ("hf", "keys", "eagle", "resolve", "os", "git", "node_h3", "node_ctrl"):
         assert item_id not in picked, item_id
-    for item_id in ("node_seedvr2", "node_dramastudio", "w_llm"):
+    for item_id in ("node_seedvr2", "w_llm"):
         assert item_id not in picked, item_id
 
 

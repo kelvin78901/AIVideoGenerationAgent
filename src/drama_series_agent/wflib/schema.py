@@ -47,7 +47,7 @@ class NodeOut(BaseModel):
 class MissingPack(BaseModel):
     name: str
     classes: list[str]
-    source: Literal["registry", "git"]
+    source: Literal["registry", "git", "studio"]  # studio: DramaStudio's own, from the repo
     version: str | None = None
     url: str | None = None
 

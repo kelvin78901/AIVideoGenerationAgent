@@ -160,11 +160,13 @@ class ComfySnapshot(BaseModel):
 
 
 class NodePackSource(BaseModel):
-    """A node pack a workflow needs (M5): its name, repository and the ref to check out."""
+    """A node pack a workflow needs (M5): its name, repository and the ref to check out; or a
+    setup item that installs it (``item``: DramaStudio's own pack, copied from the repo)."""
 
     name: str
     url: str
     ref: str = "HEAD"
+    item: str | None = None
 
 
 class PacksInstalled(BaseModel):
