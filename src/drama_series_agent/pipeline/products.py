@@ -15,6 +15,7 @@ table), then a failed last run, stale (``pipeline/invalidation.py``), locked, ad
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Sequence
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from sqlmodel import col, func, select
@@ -473,6 +474,8 @@ class ProductService:
         idx: int | None,
         *,
         record: LockRecorder | None = None,
+        pick_id: str | None = None,
+        at: datetime | None = None,
     ) -> ProductVersion:
         """「锁定为参考」 (M3), in one transaction: candidate ``idx`` of a version becomes a
         ``pick`` version holding that file alone (``role: ref``, with the source's model, prompt
@@ -492,7 +495,7 @@ class ProductService:
                 raise PipelineError(404, "version_not_found", id=version_id)
             v = source
             if idx is not None:
-                v = await self._pick_version(session, p, source, idx)
+                v = await self._pick_version(session, p, source, idx, pick_id, at)
                 created = True
             await self._adopt(session, p, v)
             p.locked_hash = v.content_hash
@@ -606,7 +609,13 @@ class ProductService:
         return out
 
     async def _pick_version(
-        self, session: AsyncSession, p: Product, source: ProductVersion, idx: int
+        self,
+        session: AsyncSession,
+        p: Product,
+        source: ProductVersion,
+        idx: int,
+        pick_id: str | None = None,
+        at: datetime | None = None,
     ) -> ProductVersion:
         picked = {**_candidate(source, idx), "role": "ref"}
         prompts = [f for f in source.files_json if f.get("role") == "prompt"]
@@ -635,6 +644,10 @@ class ProductService:
             params_json={"from_version": source.id, "idx": idx},
             stage=source.stage,
         )
+        if pick_id is not None:  # the demo seed's fixed ids and times
+            v.id = pick_id
+        if at is not None:
+            v.created_at = at
         session.add(v)
         await session.flush()
         query = select(Dependency).where(Dependency.version_id == source.id)

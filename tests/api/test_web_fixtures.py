@@ -26,6 +26,7 @@ from fastapi.testclient import TestClient
 from drama_series_agent.api.app import create_app
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.setup.installer import FAKE_FAILING_ITEM
+from drama_series_agent.studio import demo
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -41,8 +42,11 @@ def _fast_demo(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def client(demo_gates: None) -> Iterator[TestClient]:
-    """The demo as the app seeds it: 小说 and episode 1's 剧本 confirmed."""
+def client(demo_gates: None, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    """The demo as the app seeds it, but before its 分镜确认: 小说 and episode 1's 剧本
+    confirmed, its storyboard in progress (what the storyboard page tests confirm), no takes."""
+    gates = tuple(g for g in demo.CONFIRMED_GATES if g[0] != "storyboard")
+    monkeypatch.setattr(demo, "CONFIRMED_GATES", gates)
     with TestClient(create_app(), base_url=LOCAL, headers={"X-Drama-Studio": "1"}) as c:
         yield c
 

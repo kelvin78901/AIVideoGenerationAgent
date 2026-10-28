@@ -43,6 +43,7 @@ from drama_series_agent.core.models_db import (
     ScriptLine,
     Shot,
 )
+from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes.service import gate_confirmed, script_product
 from drama_series_agent.media.audio import dialogue_track
 from drama_series_agent.media.video import VideoError, VideoInfo, frame, probe, trim_head
@@ -313,6 +314,45 @@ def _sent(params: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in params.items() if k not in ("n", "task", "width", "height")}
 
 
+async def clip_files(
+    store: BlobStore, sha256: str, *, raw: bool
+) -> tuple[list[dict[str, Any]], VideoInfo]:
+    """A take as stored: the head cut off, its poster and last frame; a local draft keeps the
+    untrimmed clip too (``raw``: what Regenerate-2K takes). The demo seed makes its takes so."""
+    try:
+        original = store.path_for(sha256).read_bytes()
+        clip = await trim_head(original)
+        info = await probe(clip)
+        poster, last = await frame(clip, "first"), await frame(clip, "last")
+        whole = await probe(original) if raw else None
+    except VideoError as exc:
+        raise ComponentError(exc.code) from exc
+    files = [
+        file_entry(
+            "video",
+            store.put_bytes(clip),
+            "video/mp4",
+            w=info.w,
+            h=info.h,
+            duration_s=round(info.duration_s, 3),
+        ),
+        file_entry("poster", store.put_bytes(poster), "image/png", w=info.w, h=info.h),
+        file_entry("last_frame", store.put_bytes(last), "image/png", w=info.w, h=info.h),
+    ]
+    if whole is not None:
+        files.append(
+            file_entry(
+                "raw",
+                sha256,
+                "video/mp4",
+                w=whole.w,
+                h=whole.h,
+                duration_s=round(whole.duration_s, 3),
+            )
+        )
+    return files, info
+
+
 @dataclass
 class Take:
     req: ModelRequest
@@ -478,44 +518,10 @@ class VidComponent(MediaComponent):
     async def _clip_files(
         self, call: MediaCall, *, raw: bool
     ) -> tuple[list[dict[str, Any]], VideoInfo]:
-        """The take as stored: the head cut off, its poster and last frame; a local draft keeps
-        the untrimmed clip too (``raw``: what Regenerate-2K takes)."""
         video = next((f for f in call.files if f.mime.startswith("video/")), None)
         if video is None:
             raise ComponentError("no_video")
-        store = self.services.store
-        try:
-            original = store.path_for(video.sha256).read_bytes()
-            clip = await trim_head(original)
-            info = await probe(clip)
-            poster, last = await frame(clip, "first"), await frame(clip, "last")
-            whole = await probe(original) if raw else None
-        except VideoError as exc:
-            raise ComponentError(exc.code) from exc
-        files = [
-            file_entry(
-                "video",
-                store.put_bytes(clip),
-                "video/mp4",
-                w=info.w,
-                h=info.h,
-                duration_s=round(info.duration_s, 3),
-            ),
-            file_entry("poster", store.put_bytes(poster), "image/png", w=info.w, h=info.h),
-            file_entry("last_frame", store.put_bytes(last), "image/png", w=info.w, h=info.h),
-        ]
-        if whole is not None:
-            files.append(
-                file_entry(
-                    "raw",
-                    video.sha256,
-                    "video/mp4",
-                    w=whole.w,
-                    h=whole.h,
-                    duration_s=round(whole.duration_s, 3),
-                )
-            )
-        return files, info
+        return await clip_files(self.services.store, video.sha256, raw=raw)
 
     async def _source_take(self, product: Product, params: dict[str, Any]) -> ProductVersion | None:
         """The take an API final starts from (``params.source_version_id``)."""

@@ -12,8 +12,10 @@ list (素材分析 v1 on DeepSeek, the prototype's 13 assets with their ids; ``a
 its shot plan (分镜规划 v1 on DeepSeek, the prototype's nine shots ``demo-shot-1-01`` …;
 ``plan.json``) and the keyframes of its seven shots that are not continuous (1-01–1-03 a local
 draft then the Nano Banana Pro final, confirmed; 1-04–1-07 a draft), each assembled exactly as a
-Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``. Then the novel gate and
-episode 1's script gate are confirmed, once: a gate the user reopened stays open.
+Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``. Then the novel gate,
+episode 1's script gate and its storyboard gate (its other shots confirmed first) are
+confirmed, once: a gate the user reopened stays open. Once the storyboard is confirmed, episode
+1's video takes (``DEMO_TAKES``) are made like Mock runs too.
 ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset`` deletes the demo
 series first.
 """
@@ -21,11 +23,12 @@ series first.
 from __future__ import annotations
 
 import asyncio
+import hashlib
 from datetime import UTC, datetime
 from typing import Any
 
 from loguru import logger
-from sqlmodel import select
+from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.assets import ops as asset_ops
@@ -47,13 +50,19 @@ from drama_series_agent.core.models_db import (
 from drama_series_agent.core.paths import REPO_ROOT, database_path
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes import service as episodes
-from drama_series_agent.episodes.service import latest_gate
-from drama_series_agent.modelhub.adapters.mock import MOCK_TEXT_KEY, mock_picture, sine_wav
+from drama_series_agent.episodes.service import gate_confirmed, latest_gate
+from drama_series_agent.modelhub.adapters.mock import (
+    MOCK_TEXT_KEY,
+    mock_picture,
+    sine_wav,
+    solid_mp4,
+)
+from drama_series_agent.modelhub.pricing import to_usd
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
-from drama_series_agent.pipeline.components import assets, enrich, kf, plan, script, split
+from drama_series_agent.pipeline.components import assets, enrich, kf, plan, script, split, vid
 from drama_series_agent.pipeline.components.extract import demo_payload
 from drama_series_agent.pipeline.components.img import asset_aspect
-from drama_series_agent.pipeline.components.media import prompt_text
+from drama_series_agent.pipeline.components.media import frame_size, prompt_text
 from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.components.views import (
     REF_VIEWS_SLOT,
@@ -178,8 +187,36 @@ DEMO_KEYFRAMES: dict[str, tuple[str, bool]] = {  # label → (draft time, confir
     "1-07": ("11:06", False),
 }
 KF_FINAL_AT = "11:02"
-# Confirmed by the seed (the prototype's demo: 小说 and episode 1's 剧本 已确认).
-CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"))
+# The other shots are confirmed with 分镜确认 (Kelvin 2026-10-27: the demo's storyboard is
+# confirmed so that 生成 can run), each on its picked first draft.
+SHOTS_CONFIRMED_AT = "11:24"
+# Confirmed by the seed (the prototype's demo: 小说, episode 1's 剧本 and 分镜 已确认).
+CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"), ("storyboard", "demo-e1"))
+# Episode 1's takes (prototype Generate.dc.html), each (model, time, origin, fallback reason):
+# 1-01–1-03 a local H3 draft, then 「用 API 出终版」 from it (Regenerate-2K), adopted; 1-04 the
+# first run's two drafts, a third that timed out locally and was made on the H3 API, a fourth
+# 「不满意换一个」 on Seedance 2.5, still to pick. 1-05–1-07 have not run; 1-08 and 1-09 wait for
+# the shot they continue.
+TAKE_LOCAL = "comfy/h3"
+TAKE_FINAL = "minimax/h3-regenerate-2k"
+DEMO_TAKES: dict[str, tuple[tuple[str, str, str, str | None], ...]] = {
+    "1-01": ((TAKE_LOCAL, "11:02", "run", None), (TAKE_FINAL, "11:06", "final", None)),
+    "1-02": ((TAKE_LOCAL, "11:09", "run", None), (TAKE_FINAL, "11:13", "final", None)),
+    "1-03": ((TAKE_LOCAL, "11:15", "run", None), (TAKE_FINAL, "11:19", "final", None)),
+    "1-04": (
+        (TAKE_LOCAL, "11:31", "run", None),
+        (TAKE_LOCAL, "11:31", "run", None),
+        ("minimax/h3-api", "11:41", "fallback", "timeout"),
+        ("volc/seedance-2.5", "11:52", "switch", None),
+    ),
+}
+# What a second of each cost (元, the China-site prices in providers.yaml: H3 at the delivery
+# tier, Seedance at 1080p, a final its output and input video).
+TAKE_PRICE_CNY = {
+    TAKE_FINAL: 0.60,
+    "minimax/h3-api": 0.80,
+    "volc/seedance-2.5": 3.742,
+}
 
 
 def script_product_id(episode_id: str) -> str:
@@ -292,7 +329,9 @@ async def seed_demo(
             await _seed_plan(db, products, compiler)
             await _seed_keyframes(db, products, compiler)
         if gates is not None:
-            await _seed_gates(db, gates)
+            await _seed_gates(db, gates, products)
+        if products is not None and compiler is not None:
+            await _seed_takes(db, products, compiler)
     return created
 
 
@@ -971,13 +1010,189 @@ async def _seed_views(
     await products.append(views_id, draft, origin="run")
 
 
-async def _seed_gates(db: Database, gates: GateService) -> None:
-    """Confirm the demo's gates that were never decided (a reopened one stays open)."""
+async def _seed_gates(
+    db: Database, gates: GateService, products: ProductService | None = None
+) -> None:
+    """Confirm the demo's gates that were never decided (a reopened one stays open); 分镜确认
+    first confirms the shots that are not."""
     for gate, scope in CONFIRMED_GATES:
         async with db.session() as session:
             if await latest_gate(session, gate, scope) is not None:
                 continue
+        if gate == shots_service.STORYBOARD_GATE and products is not None:
+            await _confirm_shots(db, products, scope)
         try:
             await gates.confirm(gate, scope)
         except PipelineError as exc:  # nothing adopted yet, or a run still going
             logger.warning("demo gate {} {} not confirmed: {}", gate, scope, exc.code)
+
+
+async def _confirm_shots(db: Database, products: ProductService, episode_id: str) -> None:
+    """「确认这个镜头」 for each shot never decided: the keyframe's current version locked on its
+    picked picture (the first unless one was picked), a continuous shot only the decision."""
+    invalidation = slicers()
+    at = _demo_time(SHOTS_CONFIRMED_AT)
+    async with db.session() as session:
+        plan_row = await session.get(Product, plan_product_id(episode_id))
+        rows = (
+            await session.exec(
+                select(Shot).where(Shot.episode_id == episode_id, col(Shot.retired).is_(False))
+            )
+        ).all()
+        found = await shots_service.keyframe_products(session, [r.id for r in rows])
+        undecided = [
+            r.id for r in rows if await latest_gate(session, shots_service.SHOT_GATE, r.id) is None
+        ]
+    if plan_row is None:
+        return
+    for shot_id in undecided:
+        keyframe = found.get(shot_id)
+        if keyframe is None:  # continuous: it starts from the shot before
+            async with db.session() as session:
+                await shots_service.record_shot_gate(
+                    session, invalidation, DEMO_SERIES_ID, shot_id, plan_row, None, "confirm", at
+                )
+                await session.commit()
+            continue
+        current = keyframe.current_version_id
+        if current is None or keyframe.locked_hash:
+            continue
+        pick = keyframe.pick_json or {}
+        idx = int(pick.get("idx") or 0) if pick.get("version_id") == current else 0
+
+        async def record(
+            session: AsyncSession, p: Product, _: ProductVersion, shot_id: str = shot_id
+        ) -> None:
+            await shots_service.record_shot_gate(
+                session, invalidation, DEMO_SERIES_ID, shot_id, plan_row, p, "confirm", at
+            )
+
+        await products.lock_pick(
+            keyframe.id, current, idx, record=record, pick_id=f"{keyframe.id}-v2", at=at
+        )
+
+
+async def _seed_takes(db: Database, products: ProductService, compiler: PromptCompiler) -> None:
+    """Episode 1's video takes (``DEMO_TAKES``), each made from what a run reads
+    (``vid.gather``) and stored as a Mock run stores it; once 分镜 is confirmed, for a shot with
+    no take yet."""
+    store = BlobStore()
+    invalidation = slicers()
+    async with db.session() as session:
+        if not await gate_confirmed(session, shots_service.STORYBOARD_GATE, "demo-e1"):
+            return
+    for label, seeds in DEMO_TAKES.items():
+        async with db.session() as session:
+            product = await session.get(Product, video_product_id(label))
+            if product is None or product.current_version_id is not None:
+                continue
+            try:
+                inputs = await vid.gather(session, invalidation, product)
+            except PipelineError as exc:
+                logger.warning("demo takes of {} not seeded: {}", label, exc.code)
+                continue
+            shot = await session.get(Shot, product.owner_id)
+        intent = shot.intent if shot is not None else ""
+        first: ProductVersion | None = None
+        last: ProductVersion | None = None
+        for n, (model, at, origin, fallback) in enumerate(seeds, 1):
+            source = first if origin == "final" else None
+            take = await _take_draft(
+                store, compiler, product, inputs, intent, (model, n, at, origin, fallback), source
+            )
+            last = await products.append(
+                product.id,
+                take,
+                origin="run" if origin == "final" else origin,
+                parent_version_id=source.id if source is not None else None,
+                adopt=False,
+            )
+            first = first or last
+        if last is not None and seeds[-1][2] == "final":
+            await products.adopt(last.id)
+
+
+async def _take_draft(
+    store: BlobStore,
+    compiler: PromptCompiler,
+    product: Product,
+    inputs: Any,
+    intent: str,
+    seed_row: tuple[str, int, str, str, str | None],
+    source: ProductVersion | None,
+) -> VersionDraft:
+    """A take as ``VidComponent.run`` stores it (a Mock clip with the head cut off, its poster
+    and last frame; a local draft keeps the raw clip and the request a final resends), or the
+    API final of ``source`` at 2K, made from its raw clip and with its prompt."""
+    model, n, at, origin, fallback = seed_row
+    cfg = get_config()
+    context = inputs.context
+    frame = context["frame"]
+    where = "local" if model == TAKE_LOCAL else "api"
+    seconds = float(context["seconds"])
+    if source is not None:
+        raw = next(f for f in source.files_json if f["role"] == "raw")
+        seconds = float(raw["duration_s"])
+        size = dims(frame["aspect"], "2k")
+    else:
+        size = frame_size(frame, where)
+    local = next((m for m in cfg.providers.local_models if m.key == model), None)
+    limit = kf.ref_limit(
+        model_caps(cfg, model).get("max_refs"), where, local.workflow if local else None
+    )
+    refs, deps, _ = kf.pick_refs(inputs, None, 0 if source is not None else limit)
+    color = hashlib.sha256(f"{product.id}:{n}".encode()).hexdigest()[:6]
+    hz = 220.0 + n * 40 if context["audio_mode"] != "none" else None
+    clip = await solid_mp4(size.w, size.h, seconds, int(frame["fps"]), color, audio_hz=hz)
+    files, info = await vid.clip_files(store, store.put_bytes(clip), raw=where == "local")
+    params: dict[str, Any] = {"mode": "run" if origin == "final" else origin, "calls": 1}
+    if source is not None:
+        prompt_sha = next(f for f in source.files_json if f["role"] == "prompt")["sha256"]
+        compiled = source.compiled or ""
+        params["source"] = {"version_id": source.id}
+        payload = {
+            **source.payload_json,
+            "duration_s": round(info.duration_s, 3),
+            "resolution": "2k",
+        }
+    else:
+        compiled = compiler.compile(vid.VidComponent.id, intent, model)
+        prompt_sha = store.put_bytes(prompt_text(compiled, inputs.blocks).encode("utf-8"))
+        request: dict[str, Any] = {
+            "aspect": frame["aspect"],
+            "duration_s": seconds,
+            "fps": int(frame["fps"]),
+            "first_frame": context["first_frame"],
+            "with_audio": context["audio_mode"] != "none",
+        }
+        if refs:
+            request["refs"] = [r["sha256"] for r in refs]
+        if where == "local":
+            params["request"] = request
+        payload = {
+            "duration_s": round(info.duration_s, 3),
+            "asked_s": context["seconds"],
+            "resolution": "768p" if where == "local" else frame["delivery"],
+            "aspect": frame["aspect"],
+            "audio_mode": context["audio_mode"],
+            "refs": [r["name"] for r in refs],
+            "voices": [],
+        }
+    files.append(file_entry("prompt", prompt_sha, "text/plain; charset=utf-8"))
+    cost = to_usd(TAKE_PRICE_CNY.get(model, 0.0) * seconds, "CNY")
+    return VersionDraft(
+        payload=payload,
+        files=files,
+        intent=intent,
+        compiled=compiled,
+        model_key=model,
+        where=where,
+        seed=2100 + n,
+        params=params,
+        cost_usd=round(cost, 6),
+        fallback_reason=fallback,
+        stage="draft" if where == "local" else ("final" if source is not None else None),
+        dependencies=[*inputs.deps, *deps],
+        id=f"{product.id}-v{n}",
+        created_at=_demo_time(at),
+    )

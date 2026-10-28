@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-27 · M5 第 9a 步：示例的分镜确认、视频 take 种子
+
+- **示例第 1 集的分镜改成已确认**（Kelvin 2026-10-27 定）：原型里分镜页（3/7 确认）和生成页（3/9 采纳）是各自的假数据；后端规定分镜确认后才能出视频，接了后端只能二选一。`CONFIRMED_GATES` 加 `("storyboard", "demo-e1")`；确认它之前，种子把没决定过的镜头确认掉（1-04–1-07 锁定关键帧当前版本上选中的那张，默认 A；1-08、1-09 只写决定；时间 11:24）。用户重开过的闸门照旧不再确认。
+- **视频 take 照原型种**（`DEMO_TAKES`）：1-01–1-03 本地 H3 草稿 + 「用 API 出终版」（Regenerate-2K，父版本是草稿，已采纳）；1-04 首跑两条草稿、一条本地超时后在 H3 API 上出的（`origin=fallback`、`fallback_reason=timeout`）、一条「不满意换一个」的 Seedance 2.5，待挑；1-05–1-07 没跑过；1-08、1-09 等上一镜。每条和 Mock 跑出来的存法一样：输入来自 `vid.gather`（依赖照记，不会一种下去就待更新），片子是 Mock 纯色 mp4（有声音），裁头、封面帧、尾帧走 `vid.clip_files`（从 `VidComponent._clip_files` 抽出的模块函数），本地草稿留 `raw` 和 `params.request`，所以示例草稿也能真的「用 API 出终版」。花费按国内价算进版本的 `cost_usd`，**不写 `model_call`**（和关键帧种子一样），所以表头「本集已花」不含种子的钱。运行中 / 排队的卡片不预置：Mock 任务一启动就会跑完，点「生成」就能看到。
+- **`lock_pick` 加 `pick_id` / `at`**（只有种子用）：锁定候选时新建的 pick 版本用固定 id（`demo-p-kf-1-04-v2`）和示例时间，快照和 MSW 示例对得上。
+- **前端快照仍从「分镜确认之前」导出**：`test_web_fixtures.py` 的 `client` 去掉分镜闸门，`shots.json` 等不变——分镜页测试测的正是「进行中 → 确认镜头」，这个场景照样成立；生成页要的带 take 的数据第 9b 步另导一份。Playwright `m4` 开头先用接口把 1-04–1-09 取消确认（顺带重开分镜），再在界面上走原来的确认流程；1-04 的终版因此是 v3（v2 是种子的 pick）。
+- **原因**：测试默认不种闸门（`conftest._demo_gates_open`），所以视频种子（要跑 ffmpeg）只在应用启动、`demo_gates` 的测试里发生，不拖慢几百个 API 测试。
+
 ## 2026-10-27 · M5 第 8 步：生成页接口（后端）
 
 - **自动规则按剧集存在 `app_setting`**（key `generate.rules.<剧集 id>`，只存改过的字段），没改过的读配置：`takes_per_shot` ← `vid.candidates`（2），`qa_retry_max` ← `fallback_defaults.qa_fail_n`（2），`shot_cap_usd` ← `components.yaml` 新加的顶层 `shot_cap_usd`（$2，原型的值），`thresholds` ← `qa` 组件的阈值（只读，PUT 里带它 422）。没有新表、没有迁移。原因：这三项是「这部剧怎么出片」的设置，不是某个组件的路由；放进组件覆盖层会和模型页的「恢复成预设」搅在一起。`qa_retry_max` 现在只存不用，M6 的质检重跑读它（模型页的 `fallback.qa_fail_n` 仍是兜底配置的默认）。
