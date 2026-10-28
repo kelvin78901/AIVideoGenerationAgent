@@ -6,6 +6,7 @@ from collections.abc import Awaitable
 from typing import Annotated
 
 from fastapi import APIRouter, Depends
+from pydantic import BaseModel
 
 from drama_series_agent.api.errors import ApiError
 from drama_series_agent.api.state import StudioState, get_state
@@ -91,7 +92,12 @@ async def install_deps(workflow_id: str, state: State) -> DepsInstalled:
     return await _call(state.workflows.install_deps(workflow_id))
 
 
+class TrialIn(BaseModel):
+    branch: str | None = None  # with this branch on (SPEC 6.4.8: each is tried on its own)
+
+
 @router.post("/workflows/{workflow_id}/trial", status_code=202)
-async def trial(workflow_id: str, state: State) -> WorkflowOut:
+async def trial(workflow_id: str, state: State, body: TrialIn | None = None) -> WorkflowOut:
     """A trial run on the sample inputs (a GPU-queue job; ``job.updated`` reports it)."""
-    return await _call(state.workflows.trial(workflow_id))
+    branch = body.branch if body is not None else None
+    return await _call(state.workflows.trial(workflow_id, branch))

@@ -339,7 +339,7 @@ class ComfyUIAdapter:
                     values["negative"] = str(req.params["negative"])
                 filled = {k: v for k, v in values.items() if wf.has(k)}
                 try:
-                    graph = wf.fill(filled, refs)
+                    graph = wf.fill(filled, refs, req.params.get("branches"))
                 except WorkflowError as exc:
                     raise ModelError("ref_missing", str(exc)) from exc
                 progress = _take_progress(ctx, i, n)

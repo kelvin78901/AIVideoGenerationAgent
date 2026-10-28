@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 12b 步：工作流里的可开关分支
+
+- **`workflow.yaml` 的 `branches`**（`modelhub/workflows.py:Branch`）：`id`（开关用的名字）、`kind`（`controlnet` / `lora` / `upscale`）、`name`、`nodes`（关掉时拿掉的节点标题）、`bypass`、`default`（没人选时开不开）。关掉的分支在填图时和可选槽位一样拿掉：先把被旁路节点的读者接到它某个输入的来源上，再删节点和读它的输入。分支里不能有被绑定的节点（装载时报 `WorkflowError`）。
+- **旁路按输出接**（`Bypass.output`）：LoRA 加载器两个输出（0 模型、1 CLIP），各自接回 `model` / `clip` 的来源；不写 `output` 时和以前一样所有读者都接过去（H3 的音频引导）。旁路的实现从「接完就删」改成先接线、最后统一删，同一个节点可以有多条旁路。
+- **按镜头开关存成配置覆盖**（`ConfigPatch.branches: {id: bool | null}`，`null` 回到默认），不存 `shot.control_json`（计划原写法）：Inspector 本来就按镜头写 item 覆盖（换模型也是），还白得组件级默认开关；`control_json` 留给控制视频的设置。开关按分支 `id` 认，不分工作流（「这个镜头用 ControlNet」对哪个工作流都是一个意思）。`/config/resolve` 的 `sources` 里加 `branches` 要改前端契约的 `CONFIG_FIELDS`，和界面一起在 12c 做；现在 `values.branches` 已经有。
+- **视频 take 的请求带 `params.branches`**（只有本地工作流有分支时）：按 `branch_states(镜头 / 组件的选择)` 算出每个分支开关，ComfyUI 适配器填图时用；它在请求参数里，所以也进媒体缓存键（换开关不会拿回旧片）。
+- **每个分支单独试跑**：`POST /workflows/{id}/trial {branch}` 在示例输入上只开这个分支跑一次，结果存在 `trial_json.branches.<id>`，和工作流自己的试跑互不覆盖；工作流的试跑通过才更新文件哈希，分支试跑不动。`WorkflowOut.branches`（`id / kind / name / default / trial`），前端契约 `WorkflowBranchSchema`（默认空列表）。不认识的分支 422 `workflow_unknown_branch`。
+- **没做的**：仓库里的推荐工作流现在都没有分支（H3 的 Turbo LoRA 要同时改步数，不是单纯开关，Kelvin 定留着以后做「快速草稿」档），所以开关暂时没有实际可开的对象；换 LoRA（选别的 LoRA 文件）、分支没试跑过时禁止打开，等真有带分支的工作流再做。导入的工作流不能自己定义分支（没有界面），只有仓库工作流在 `workflow.yaml` 里写。
+
 ## 2026-10-28 · M5 第 12a 步：按镜头选工作流（后端：规则表、LLM 建议、记进 model_call）
 
 第 12 步分三小步：12a 规则表和 LLM 建议的后端，12b 可开关分支，12c 界面（规则表放「模型与兜底」、Inspector 显示选了哪个和理由、按镜头开关分支）和截图。

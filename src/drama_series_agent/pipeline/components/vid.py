@@ -860,6 +860,10 @@ class VidComponent(MediaComponent):
             params["refs"] = [r["sha256"] for r in refs]
         if voices:
             params["ref_audio"] = [v["sha256"] for v in voices]
+        if spec.where == "local" and wf is not None and wf.meta.branches:
+            settings = await self.services.router.settings(self.id, item_of(ctx.product))
+            chosen = settings.values.get("branches")
+            params["branches"] = wf.branch_states(chosen if isinstance(chosen, dict) else None)
         if context["dub"]:
             clips = [self.services.store.path_for(d["sha256"]).read_bytes() for d in context["dub"]]
             track = dialogue_track(clips, float(context["seconds"]), PRE_ROLL_S)

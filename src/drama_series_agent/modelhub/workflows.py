@@ -10,7 +10,12 @@
   (for ``ref_image``: fewer pictures than nodes) the bound node is removed together with the
   inputs that read from it (those inputs must be optional on their nodes). ``bypass`` names
   nodes that go too but pass one of their inputs on: whatever read the bypassed node now reads
-  what that input read (H3's audio guide hands its ``positive`` on when there is no audio).
+  what that input read (H3's audio guide hands its ``positive`` on when there is no audio); with
+  ``output``, only the readers of that output (a LoRA loader: ``model`` for output 0, ``clip``
+  for 1).
+- ``branches`` (SPEC 6.4.8): parts a shot can switch off (ControlNet, LoRA, upscale): the nodes
+  that make one, removed like an optional slot's (with its bypasses) when it is off; ``default``
+  says whether it is on when nobody chose. A binding cannot point into a branch.
 - ``models``: the files its loaders name, by ComfyUI model folder (the health check asks the
   running ComfyUI for them).
 - ``caps``: like ``providers.yaml`` caps; ``sizes`` maps an aspect to the width and height the
@@ -24,6 +29,7 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Literal
@@ -82,6 +88,7 @@ class Bypass(BaseModel):
 
     node: str  # the node's title
     input: str  # the input whose link its readers take over
+    output: int | None = None  # only the readers of this output (None: all of them)
 
 
 class Binding(BaseModel):
@@ -93,6 +100,19 @@ class Binding(BaseModel):
     field: str | None = None  # the input; None for an output node
     optional: bool = False
     bypass: list[Bypass] = Field(default_factory=list)  # with an optional slot left empty
+
+
+class Branch(BaseModel):
+    """A part of the graph a shot can switch off (SPEC 6.4.8)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str  # what a shot's toggle names (``branches.<id>`` in the config)
+    kind: Literal["controlnet", "lora", "upscale"]
+    name: dict[str, str] = Field(default_factory=dict)
+    nodes: list[str]  # titles; removed when it is off
+    bypass: list[Bypass] = Field(default_factory=list)
+    default: bool = False
 
 
 class ModelFile(BaseModel):
@@ -109,6 +129,7 @@ class WorkflowMeta(BaseModel):
     kind: str
     tier: Literal["recommended", "mine", "unverified"] = "recommended"
     bindings: list[Binding]
+    branches: list[Branch] = Field(default_factory=list)
     models: list[ModelFile] = Field(default_factory=list)
     caps: dict[str, Any] = Field(default_factory=dict)
 
@@ -138,13 +159,26 @@ class Workflow:
             if b.field is None and b.slot not in OUTPUT_SLOTS:
                 raise WorkflowError(f"{slug}: {b.slot} needs a field")
             self._ids[b.node] = ids[0]
-            for by in b.bypass:
-                found_ids = titles.get(by.node, [])
-                if len(found_ids) != 1:
-                    raise WorkflowError(f"{slug}: bypass {by.node!r} is not one node")
-                if not _is_link((graph[found_ids[0]].get("inputs") or {}).get(by.input)):
-                    raise WorkflowError(f"{slug}: bypass {by.node!r} has no link {by.input!r}")
-                self._ids[by.node] = found_ids[0]
+            self._check_bypass(titles, b.bypass)
+        bound = {b.node for b in meta.bindings}
+        for branch in meta.branches:
+            for title in branch.nodes:
+                ids = titles.get(title, [])
+                if len(ids) != 1:
+                    raise WorkflowError(f"{slug}: branch {branch.id}: {title!r} is not one node")
+                if title in bound:
+                    raise WorkflowError(f"{slug}: branch {branch.id} holds bound node {title!r}")
+                self._ids[title] = ids[0]
+            self._check_bypass(titles, branch.bypass)
+
+    def _check_bypass(self, titles: dict[str, list[str]], bypass: list[Bypass]) -> None:
+        for by in bypass:
+            found_ids = titles.get(by.node, [])
+            if len(found_ids) != 1:
+                raise WorkflowError(f"{self.slug}: bypass {by.node!r} is not one node")
+            if not _is_link((self.graph[found_ids[0]].get("inputs") or {}).get(by.input)):
+                raise WorkflowError(f"{self.slug}: bypass {by.node!r} has no link {by.input!r}")
+            self._ids[by.node] = found_ids[0]
 
     def bindings(self, slot: Slot) -> list[Binding]:
         return sorted((b for b in self.meta.bindings if b.slot == slot), key=lambda b: b.index or 0)
@@ -163,12 +197,31 @@ class Workflow:
     def output_nodes(self, slot: Slot) -> list[str]:
         return [self._ids[b.node] for b in self.bindings(slot)]
 
-    def fill(self, values: dict[Slot, Any], refs: list[str] | None = None) -> dict[str, Any]:
+    def branch_states(self, chosen: Mapping[str, bool | None] | None = None) -> dict[str, bool]:
+        """Each branch on or off: what was chosen, else its default."""
+        chosen = chosen or {}
+        out: dict[str, bool] = {}
+        for b in self.meta.branches:
+            value = chosen.get(b.id)
+            out[b.id] = b.default if value is None else bool(value)
+        return out
+
+    def fill(
+        self,
+        values: dict[Slot, Any],
+        refs: list[str] | None = None,
+        branches: Mapping[str, bool | None] | None = None,
+    ) -> dict[str, Any]:
         """A copy of the graph with the slots filled. ``refs``: the uploaded reference names,
         for ``ref_image`` 1, 2 … (``values["ref_audio"]``: the voice samples', a list too);
         the other file slots take theirs from ``values``. An optional file slot left without
-        one is removed (with its bypasses); a required one is an error."""
+        one is removed (with its bypasses); a required one is an error. ``branches``: which
+        are on (``branch_states``); one that is off is removed the same way."""
         graph = copy.deepcopy(self.graph)
+        states = self.branch_states(branches)
+        for branch in self.meta.branches:
+            if not states[branch.id]:
+                self._cut(graph, branch.bypass, [self._ids[t] for t in branch.nodes])
         for slot, value in values.items():
             if slot in LIST_SLOTS:
                 continue
@@ -194,9 +247,16 @@ class Workflow:
         return graph
 
     def _drop(self, graph: dict[str, Any], b: Binding) -> None:
-        for by in b.bypass:
-            _bypass(graph, self._ids[by.node], by.input)
-        _remove(graph, self._ids[b.node])
+        self._cut(graph, b.bypass, [self._ids[b.node]])
+
+    def _cut(self, graph: dict[str, Any], bypass: list[Bypass], node_ids: list[str]) -> None:
+        """Remove ``node_ids`` and the bypassed nodes; a bypassed node's readers first take
+        over the link of its input."""
+        for by in bypass:
+            _rewire(graph, self._ids[by.node], by.input, by.output)
+        for node_id in [*dict.fromkeys(self._ids[by.node] for by in bypass), *node_ids]:
+            if node_id in graph:
+                _remove(graph, node_id)
 
 
 def _remove(graph: dict[str, Any], node_id: str) -> None:
@@ -208,14 +268,17 @@ def _remove(graph: dict[str, Any], node_id: str) -> None:
             del inputs[name]
 
 
-def _bypass(graph: dict[str, Any], node_id: str, input_name: str) -> None:
-    """Drop a node; whatever read it now reads what its ``input_name`` read."""
+def _rewire(graph: dict[str, Any], node_id: str, input_name: str, output: int | None) -> None:
+    """Whatever reads ``node_id`` (its ``output``, or any) now reads what its ``input_name``
+    reads."""
     source = graph[node_id]["inputs"][input_name]
-    del graph[node_id]
-    for node in graph.values():
+    for other_id, node in graph.items():
+        if other_id == node_id:
+            continue
         inputs = node.get("inputs") or {}
-        for name in [k for k, v in inputs.items() if _links_to(v, node_id)]:
-            inputs[name] = list(source)
+        for name, value in list(inputs.items()):
+            if _links_to(value, node_id) and (output is None or value[1] == output):
+                inputs[name] = list(source)
 
 
 def _is_link(value: Any) -> bool:

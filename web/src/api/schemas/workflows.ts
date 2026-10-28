@@ -99,6 +99,17 @@ export const WorkflowTrialSchema = z.object({
 });
 export type WorkflowTrial = z.infer<typeof WorkflowTrialSchema>;
 
+/** A part of the workflow a shot can switch off (SPEC 6.4.8), tried on its own. */
+export const WorkflowBranchSchema = z.object({
+  id: z.string(),
+  kind: z.enum(["controlnet", "lora", "upscale"]),
+  name: z.string(),
+  /** On when nobody chose (a shot's choice is the config's `branches.<id>`). */
+  default: z.boolean(),
+  trial: WorkflowTrialSchema.nullable(),
+});
+export type WorkflowBranch = z.infer<typeof WorkflowBranchSchema>;
+
 export const WorkflowSchema = z.object({
   id: z.string(),
   slug: z.string(),
@@ -127,6 +138,7 @@ export const WorkflowSchema = z.object({
   nodes: z.array(WorkflowNodeSchema),
   check: WorkflowCheckSchema.nullable(),
   trial: WorkflowTrialSchema.nullable(),
+  branches: z.array(WorkflowBranchSchema).default([]),
   created_at: Timestamp,
   updated_at: Timestamp,
 });

@@ -11,6 +11,7 @@ from collections.abc import Iterator
 from typing import Any
 
 import pytest
+import yaml
 from fastapi.testclient import TestClient
 
 from drama_series_agent.api.app import create_app
@@ -406,3 +407,42 @@ def test_a_dramastudio_workflow_binds_itself_and_installs_our_pack(client: TestC
     assert started.status_code == 202
     assert _wait_trial(client, w["id"])["trial"]["status"] == "passed"
     assert client.patch(f"{V1}/workflows/{w['id']}", json={"tier": "mine"}).json()["tier"] == "mine"
+
+
+def test_each_branch_has_its_own_trial(client: TestClient) -> None:
+    w = _import(client, comfy_path="sdxl_basic.json")
+    url = f"{V1}/workflows/{w['id']}"
+    client.put(f"{url}/bindings", json=w["bindings"]).raise_for_status()
+    folder = user_workflows_dir() / w["slug"]
+    meta = yaml.safe_load((folder / "workflow.yaml").read_text("utf-8"))
+    bound = {b["node_title"] for b in client.get(url).json()["bindings"]}
+    free = next(n["title"] for n in w["nodes"] if n["title"] not in bound)
+    meta["branches"] = [{"id": "detail", "kind": "upscale", "nodes": [free], "default": False}]
+    (folder / "workflow.yaml").write_text(yaml.safe_dump(meta, allow_unicode=True), "utf-8")
+    listed = client.get(url).json()["branches"]
+    assert listed == [
+        {"id": "detail", "kind": "upscale", "name": "detail", "default": False, "trial": None}
+    ]
+    res = client.post(f"{url}/trial", json={"branch": "nope"})
+    assert res.status_code == 422 and res.json()["detail"]["code"] == "workflow_unknown_branch"
+    started = client.post(f"{url}/trial", json={"branch": "detail"})
+    assert started.status_code == 202
+    assert started.json()["trial"] is None  # the workflow's own trial has not run
+    deadline = time.monotonic() + 20
+    while (b := client.get(url).json()["branches"][0])["trial"]["status"] == "running":
+        assert time.monotonic() < deadline, "the branch trial did not finish"
+        time.sleep(0.05)
+    assert b["trial"]["status"] == "passed"
+    # The workflow's own trial keeps the branch's.
+    client.post(f"{url}/trial").raise_for_status()
+    done = _wait_trial(client, w["id"])
+    assert done["trial"]["status"] == "passed"
+    assert done["branches"][0]["trial"]["status"] == "passed"
+
+
+def test_a_shot_switches_a_branch_through_its_config(client: TestClient) -> None:
+    body = {"scope": "item", "scope_id": "shot:demo-shot-1-04", "component_id": "vid"}
+    res = client.put(f"{V1}/config/override", json={**body, "data": {"branches": {"lora": True}}})
+    assert res.status_code == 200, res.text
+    resolved = res.json()
+    assert resolved["values"]["branches"] == {"lora": True}

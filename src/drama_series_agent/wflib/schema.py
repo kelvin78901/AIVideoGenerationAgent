@@ -92,6 +92,16 @@ class CapsOut(BaseModel):
     vram_gb: float | None = None
 
 
+class BranchOut(BaseModel):
+    """A part of the workflow a shot can switch off (SPEC 6.4.8), and its own trial."""
+
+    id: str
+    kind: Literal["controlnet", "lora", "upscale"]
+    name: str
+    default: bool
+    trial: TrialOut | None
+
+
 class WorkflowOut(BaseModel):
     id: str
     slug: str
@@ -109,6 +119,7 @@ class WorkflowOut(BaseModel):
     nodes: list[NodeOut]
     check: CheckOut | None
     trial: TrialOut | None
+    branches: list[BranchOut]
     created_at: datetime
     updated_at: datetime
 

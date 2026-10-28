@@ -69,6 +69,7 @@ from drama_series_agent.wflib.guess import (
 )
 from drama_series_agent.wflib.schema import (
     BindingOut,
+    BranchOut,
     CapsOut,
     CheckOut,
     ClassCount,
@@ -302,7 +303,17 @@ class WorkflowLibrary:
             bindings=[BindingOut.model_validate(b) for b in row.bindings_json],
             nodes=[NodeOut.model_validate(n) for n in nodes_of(graph)],
             check=CheckOut.model_validate(row.check_json) if row.check_json else None,
-            trial=TrialOut.model_validate(row.trial_json) if row.trial_json else None,
+            trial=TrialOut.model_validate(row.trial_json) if _has_trial(row) else None,
+            branches=[
+                BranchOut(
+                    id=b.id,
+                    kind=b.kind,
+                    name=b.name.get("zh") or b.name.get("en") or b.id,
+                    default=b.default,
+                    trial=_branch_trial(row, b.id),
+                )
+                for b in (wf.meta.branches if wf is not None else [])
+            ],
             created_at=row.created_at,
             updated_at=row.updated_at,
         )
@@ -591,10 +602,14 @@ class WorkflowLibrary:
 
     # ------------------------------------------------------------------ trial run
 
-    async def trial(self, workflow_id: str) -> WorkflowOut:
+    async def trial(self, workflow_id: str, branch: str | None = None) -> WorkflowOut:
         """SPEC 6.4.4-3: the sample inputs at the draft size and the shortest duration, on the
-        GPU queue (a job; its progress is ``job.updated``)."""
+        GPU queue (a job; its progress is ``job.updated``). ``branch``: with that branch on
+        (SPEC 6.4.8: each is tried on its own); its result is kept apart."""
         row = await self._row(workflow_id)
+        wf = self.load(row)
+        if branch is not None and (wf is None or branch not in wf.branch_states()):
+            raise LibraryError(422, "workflow_unknown_branch", branch=branch)
         if self.jobs is None:
             raise LibraryError(409, "workflow_trial_unavailable")
         if _pending(row):
@@ -605,16 +620,16 @@ class WorkflowLibrary:
         job = await self.jobs.enqueue(
             WORKFLOW_TRIAL,
             "gpu",
-            {"workflow_id": row.id, "model_key": row.model_key},
+            {"workflow_id": row.id, "model_key": row.model_key, "branch": branch},
             max_attempts=1,
         )
-        row.trial_json = TrialOut(
-            at=utcnow(), status="running", job_id=job.id, w=w, h=h, seconds=seconds
-        ).model_dump(mode="json")
+        running = TrialOut(at=utcnow(), status="running", job_id=job.id, w=w, h=h, seconds=seconds)
+        _set_trial(row, branch, running)
         return await self._save(row)
 
     async def _run_trial(self, ctx: JobContext) -> dict[str, Any]:
         row = await self._row(str(ctx.params["workflow_id"]))
+        branch = ctx.params.get("branch")
         assert self.router is not None
         component = self.out(row).components[0] if self.out(row).components else "kf"
         w, h, seconds = _trial_size(row)
@@ -623,7 +638,14 @@ class WorkflowLibrary:
             kind=kind,
             prompt=TRIAL_PROMPT,
             seed=1,
-            params={"width": w, "height": h, "duration_s": seconds, "n": 1, "trial": True},
+            params={
+                "width": w,
+                "height": h,
+                "duration_s": seconds,
+                "n": 1,
+                "trial": True,
+                **({"branches": {str(branch): True}} if branch else {}),
+            },
         )
         call = CallContext(
             component_id=component,
@@ -637,15 +659,15 @@ class WorkflowLibrary:
             await self.router.call(component, req, call, model=row.model_key, fallback=False)
             trial.duration_s = round(time.monotonic() - started, 1)
             wf = self.load(row)
-            if wf is not None:
+            if wf is not None and branch is None:
                 row.file_sha256 = wf.sha256  # it passed on this file
         except ModelError as exc:
             trial.status = "failed"
             trial.error = Message(code=exc.code)
         row = await self._row(row.id)  # the bindings may have been saved meanwhile
-        row.trial_json = trial.model_dump(mode="json")
+        _set_trial(row, branch, trial)
         await self._save(row)
-        return {"workflow_id": row.id, "status": trial.status}
+        return {"workflow_id": row.id, "status": trial.status, "branch": branch}
 
     def _free_slug(self, base: str, taken: set[str]) -> str:
         taken = taken | {p.name for p in self.repo_dir.iterdir() if p.is_dir()}
@@ -669,6 +691,28 @@ def _repo_key(slug: str) -> str:
 def _title(node: dict[str, Any]) -> str:
     title = (node.get("_meta") or {}).get("title")
     return title if isinstance(title, str) and title else str(node.get("class_type"))
+
+
+def _set_trial(row: ComfyWorkflowRow, branch: str | None, trial: TrialOut) -> None:
+    """The workflow's own trial, or a branch's (kept under ``branches`` beside it)."""
+    data = dict(row.trial_json or {})
+    branches = dict(data.get("branches") or {})
+    if branch is None:
+        data = {**trial.model_dump(mode="json"), **({"branches": branches} if branches else {})}
+    else:
+        branches[branch] = trial.model_dump(mode="json")
+        data["branches"] = branches
+    row.trial_json = data
+
+
+def _has_trial(row: ComfyWorkflowRow) -> bool:
+    """The workflow's own trial ran (``trial_json`` may hold only its branches')."""
+    return bool((row.trial_json or {}).get("status"))
+
+
+def _branch_trial(row: ComfyWorkflowRow, branch: str) -> TrialOut | None:
+    found = ((row.trial_json or {}).get("branches") or {}).get(branch)
+    return TrialOut.model_validate(found) if found else None
 
 
 def _name(row: ComfyWorkflowRow) -> str:
