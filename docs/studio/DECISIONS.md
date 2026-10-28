@@ -2,12 +2,18 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 10a 步：ModelPicker 显示工作流档位，未验证的单独一组
+
+- **`GET /config/components` 的 `models[].tier`**（`modelhub/catalog.py:_tier`）：只有 `runtime: comfyui` 且有 `workflow` 的本地模型有值；在库的「未验证」集合里 → `unverified`（文件变了的仓库工作流也算），库里升过「我的」→ `mine`，其余（`providers.yaml` 带的）→ `recommended`；LLM、API、Python worker 模型是 `null`。没另开接口，选择器本来就读这份目录。
+- **选择器**：本地模型照旧一个单选组，未验证的放在组末一个带标题的小组里（「未验证的工作流 · 只能手动选」+ 一句说明），每个工作流带档位徽标；「兜底到」不列未验证的（后端 `_manual_only` 本来就会去掉）。手动选成本地模型照常写覆盖。
+- 原因：SPEC 6.4.4 / 7「未验证只能手动选」；后端第 2 步已经把它挡在自动路由外，界面要让人看出来为什么它不会被自动用到。
+
 ## 2026-10-28 · M5 第 14e 步：本地 H3 草稿 20 步；媒体缓存认工作流文件；库同步跟着仓库文件走
 
 - **`workflows/h3-i2v`、`h3-r2v`**：删 `LoraLoaderModelOnly`（Turbo LoRA），`BasicGuider` 和 `BasicScheduler` 直接接 `UNETLoader`，`steps` 8 / 4 → 20（res_multistep + simple，官方关 Turbo 的默认）；`models` 去掉两个 LoRA，名字去掉「Turbo」；`est_seconds_per_s` 25 → 30 / 36（第六轮本机实测 158 / 188 秒一条 5.17 秒的片子，`reports/m5-local-smoke/run6-20steps/`）。
 - **媒体调用的结果缓存键加上工作流文件哈希**（`media._media_key` + `modelhub/workflows.py:workflow_sha256`，每次读文件，不走 `shipped_workflow` 的进程内缓存）。原因：这个缓存是为了重试 / 续跑不重复花钱，键只有「模型键 + 提示词 + 参数 + 种子」；工作流改成 20 步后，同种子的 take 1 秒内拿回 Turbo 的旧片子、不写 `model_call`。没有工作流的模型键不变，旧缓存照常命中。
 - **工作流库同步仓库工作流时，文件哈希变了就刷新 `deps_json.models`、清掉旧体检**（`wflib/service.py:sync`）：以前只更新哈希、名字、能力，旧的模型清单（含 LoRA）和旧图的体检结果一直留着。仍是推荐档；体检要再跑一次（工作流库「全部体检」或导入时）。
-- **安装清单的 `w_h3` 仍下载两个 Turbo LoRA（3.9 GB）**，没动：以后要不要做「快速草稿」档是产品问题，留给 Kelvin（PROGRESS「等 Kelvin 的事」）。
+- **安装清单的 `w_h3` 仍下载两个 Turbo LoRA（3.9 GB）**：Kelvin 2026-10-28 定留着，以后可能做「快速草稿」档。
 - 顺带修 CI（379c314，第 14c / 14d 步之后红了三次）：安装 / 扫描测试补 `w_flashvsr`，运行记录测试改成本地 take 只有改写的花费。
 
 ## 2026-10-27 · Kelvin 定：本地 H3 草稿用 20 步、不开 Turbo；原生配音的声音合格

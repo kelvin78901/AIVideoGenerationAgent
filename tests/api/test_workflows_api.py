@@ -67,6 +67,12 @@ def _vid(client: TestClient) -> dict[str, Any]:
     return found
 
 
+def _tier(client: TestClient, key: str) -> str | None:
+    models = client.get(f"{V1}/config/components").json()["models"]
+    tier: str | None = next(m for m in models if m["key"] == key)["tier"]
+    return tier
+
+
 def _route(client: TestClient, component: str) -> dict[str, Any]:
     values: dict[str, Any] = client.get(
         f"{V1}/config/resolve", params={"component": component}
@@ -132,6 +138,10 @@ def test_import_guesses_bindings_and_registers_an_unverified_model(client: TestC
     # A local model of 视频生成 now, but only by hand: not on 「不满意换一个」.
     assert "comfy/ltx2" in _vid(client)["local_models"]
     assert "comfy/ltx2" not in _route(client, "vid")["alt_order"]
+    # The picker lists it apart from the shipped workflows.
+    assert _tier(client, "comfy/ltx2") == "unverified"
+    assert _tier(client, "comfy/h3") == "recommended"
+    assert _tier(client, "local/qwen3.6-27b") is None
     # The same file again: already in the library.
     res = client.post(
         f"{V1}/workflows/import", json={"file_name": "雨夜氛围-ltx2.json", "workflow": _ltx()}
@@ -162,6 +172,7 @@ def test_mine_needs_confirmed_bindings_and_a_passed_trial(client: TestClient) ->
     _pass_trial(client, w["id"])
     assert client.patch(url, json={"tier": "mine"}).json()["tier"] == "mine"
     assert "comfy/ltx2" in _route(client, "vid")["alt_order"]  # 我的工作流 is offered too
+    assert _tier(client, "comfy/ltx2") == "mine"
     # Changing a binding makes it a different workflow.
     again = client.put(f"{url}/bindings", json=w["bindings"][:-1]).json()
     assert again["tier"] == "unverified"

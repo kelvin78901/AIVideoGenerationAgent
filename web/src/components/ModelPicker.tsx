@@ -84,6 +84,35 @@ function RoleBadge({ role }: { role: Role }) {
   );
 }
 
+const TIER_TONE = { recommended: "neutral", mine: "info", unverified: "warn" } as const;
+
+function ModelCard({ m, missingKeys }: { m: ModelOption; missingKeys: ReadonlySet<string> }) {
+  const { t } = useTranslation("components");
+  return (
+    <RadioCard value={m.key}>
+      <span className="flex items-center gap-2">
+        <span className="text-sm">{m.display}</span>
+        {m.tier ? (
+          <StatusBadge tone={TIER_TONE[m.tier]} icon={null}>
+            {t(`picker.tier.${m.tier}`)}
+          </StatusBadge>
+        ) : null}
+        {missingKeys.has(m.key) ? (
+          <StatusBadge tone="warn">{t("picker.keyMissing")}</StatusBadge>
+        ) : null}
+      </span>
+      {m.where === "api" && m.priced === false ? (
+        <StatusBadge tone="warn" icon={null} className="self-start">
+          {t("picker.unpriced")}
+        </StatusBadge>
+      ) : (
+        <CostBadge where={m.where} price={m.price} className="block" />
+      )}
+    </RadioCard>
+  );
+}
+
+/** Unverified workflows sit in a group of their own after the rest: picked by hand only. */
 function ModelRadios({
   label,
   models,
@@ -98,25 +127,31 @@ function ModelRadios({
   missingKeys: ReadonlySet<string>;
 }) {
   const { t } = useTranslation("components");
+  const unverified = models.filter((m) => m.tier === "unverified");
   return (
     <RadioGroup aria-label={label} value={value ?? ""} onValueChange={onChange} className="gap-1.5">
-      {models.map((m) => (
-        <RadioCard key={m.key} value={m.key}>
-          <span className="flex items-center gap-2">
-            <span className="text-sm">{m.display}</span>
-            {missingKeys.has(m.key) ? (
-              <StatusBadge tone="warn">{t("picker.keyMissing")}</StatusBadge>
-            ) : null}
-          </span>
-          {m.where === "api" && m.priced === false ? (
-            <StatusBadge tone="warn" icon={null} className="self-start">
-              {t("picker.unpriced")}
-            </StatusBadge>
-          ) : (
-            <CostBadge where={m.where} price={m.price} className="block" />
-          )}
-        </RadioCard>
-      ))}
+      {models
+        .filter((m) => m.tier !== "unverified")
+        .map((m) => (
+          <ModelCard key={m.key} m={m} missingKeys={missingKeys} />
+        ))}
+      {unverified.length > 0 ? (
+        <div
+          role="group"
+          aria-label={t("picker.unverifiedGroup")}
+          className="mt-1.5 flex flex-col gap-1.5"
+        >
+          <div className="text-xs font-medium text-muted-foreground">
+            {t("picker.unverifiedGroup")}
+          </div>
+          {unverified.map((m) => (
+            <ModelCard key={m.key} m={m} missingKeys={missingKeys} />
+          ))}
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t("picker.unverifiedHint")}
+          </p>
+        </div>
+      ) : null}
     </RadioGroup>
   );
 }
@@ -216,7 +251,8 @@ function PickerForm({
 
   const all = [...localModels, ...apiModels];
   const primary = primaryModelKey(values);
-  const others = all.filter((m) => m.key !== primary);
+  // Never a fallback target: an unverified workflow runs only where it was picked by hand.
+  const others = all.filter((m) => m.key !== primary && m.tier !== "unverified");
   const fb = values.fallback;
   const target = fb.to && fb.to !== primary ? modelName(all, fb.to) : t("picker.fallbackNext");
   const visibleApi = showAll ? apiModels : apiModels.slice(0, API_VISIBLE);

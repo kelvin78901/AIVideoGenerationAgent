@@ -429,7 +429,8 @@
           "out": 3.96,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "deepseek/v4.1-flash",
@@ -441,7 +442,8 @@
           "out": 1.2,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "moonshot/kimi-k3.1-pro",
@@ -453,7 +455,8 @@
           "out": 68.0,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "moonshot/kimi-k2.6",
@@ -465,7 +468,8 @@
           "out": 27.0,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "qwen/qwen3.8-max",
@@ -477,7 +481,8 @@
           "out": 36.0,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "qwen/qwen3.7-plus",
@@ -489,7 +494,8 @@
           "out": 8.0,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "qwen/qwen3.8-flash",
@@ -501,7 +507,8 @@
           "out": 2.7,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "volc/doubao-2.1-pro",
@@ -513,7 +520,8 @@
           "out": 30.0,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "zhipu/glm-5.3",
@@ -525,7 +533,8 @@
           "out": 28.0,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "zhipu/glm-5.3-flash",
@@ -537,7 +546,8 @@
           "out": 2.8,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/m3",
@@ -549,7 +559,8 @@
           "out": 8.4,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/gemini-3.6-flash",
@@ -561,7 +572,8 @@
           "out": 3.75,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/gemini-3.1-flash-lite",
@@ -573,7 +585,8 @@
           "out": 1.5,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "openai/gpt-6-luna",
@@ -585,35 +598,40 @@
           "out": 0.5,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "openrouter/claude-sonnet-5.5",
         "display": "Claude Sonnet 5.5（经 OpenRouter）",
         "where": "api",
         "price": null,
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "openrouter/any",
         "display": "任意模型",
         "where": "api",
         "price": null,
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "local/qwen3.6-27b",
         "display": "Qwen3.6-27B（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/qwen3-30b-a3b",
         "display": "Qwen3-30B-A3B（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/nano-banana-pro",
@@ -624,7 +642,8 @@
           "amount": 0.134,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/nano-banana-2.1",
@@ -635,7 +654,8 @@
           "amount": 0.0504,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "openai/gpt-image-2",
@@ -646,7 +666,8 @@
           "amount": 0.23,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "volc/seedream-5.0",
@@ -657,7 +678,8 @@
           "amount": 0.12,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/h3-api",
@@ -668,7 +690,8 @@
           "amount": 0.5,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/h3-regenerate-2k",
@@ -679,14 +702,16 @@
           "amount": 0.3,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/context-ir",
         "display": "H3 Context-IR",
         "where": "api",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "volc/seedance-2.5",
@@ -697,7 +722,8 @@
           "amount": 0.673,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/gemini-omni-flash-1.1",
@@ -708,7 +734,8 @@
           "amount": 0.152,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "alibaba/wan-3.0",
@@ -719,21 +746,24 @@
           "amount": 0.2,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "kling/kling-3.0",
         "display": "Kling 3.0",
         "where": "api",
         "price": null,
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "google/veo-3.1",
         "display": "Veo 3.1",
         "where": "api",
         "price": null,
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "minimax/speech-2.8-hd",
@@ -744,7 +774,8 @@
           "amount": 350.0,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/speech-2.6-hd",
@@ -755,14 +786,16 @@
           "amount": 350.0,
           "currency": "CNY"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "elevenlabs/v3",
         "display": "ElevenLabs v3",
         "where": "api",
         "price": null,
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "sync/lipsync-2-pro",
@@ -773,7 +806,8 @@
           "amount": 0.067,
           "currency": "USD"
         },
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "topaz/starlight-precise-2.5",
@@ -784,28 +818,32 @@
           "amount": 0.12,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "elevenlabs/music",
         "display": "ElevenLabs Music",
         "where": "api",
         "price": null,
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "elevenlabs/sfx",
         "display": "ElevenLabs Sound Effects",
         "where": "api",
         "price": null,
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "elevenlabs/scribe",
         "display": "ElevenLabs Scribe",
         "where": "api",
         "price": null,
-        "priced": false
+        "priced": false,
+        "tier": null
       },
       {
         "key": "worldlabs/marble",
@@ -816,175 +854,200 @@
           "amount": 1.2,
           "currency": "USD"
         },
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "comfy/h3",
         "display": "MiniMax H3（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/h3-r2v",
         "display": "MiniMax H3 参考生视频（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/h3-fun-controlnet",
         "display": "H3 Fun ControlNet（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/wan-2.2",
         "display": "Wan 2.2（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "comfy/ltx",
         "display": "LTX（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "comfy/qwen-image-edit",
         "display": "Qwen-Image-Edit（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/qwen-image-edit-hq",
         "display": "Qwen-Image-Edit 40 步（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/qwen-image",
         "display": "Qwen-Image（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/flux2-dev",
         "display": "FLUX.2 dev（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "comfy/flux3-klein",
         "display": "FLUX 3 Klein（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/flux3-klein-t2i",
         "display": "FLUX 3 Klein 文生图（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/seedvr2",
         "display": "SeedVR2（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/flashvsr",
         "display": "FlashVSR（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "local/indextts2",
         "display": "IndexTTS2（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/cosyvoice",
         "display": "CosyVoice（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/qwen3-tts",
         "display": "Qwen3-TTS（本地试听）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/latentsync",
         "display": "LatentSync（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/infinitetalk",
         "display": "InfiniteTalk（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/qwen3-vl-32b",
         "display": "Qwen3-VL-32B（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/ace-step",
         "display": "ACE-Step（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/mmaudio",
         "display": "MMAudio（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/whisper-large-v3",
         "display": "Whisper large-v3（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/paraformer",
         "display": "Paraformer（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/rapidocr",
         "display": "RapidOCR（本地）",
         "where": "local",
         "price": null,
-        "priced": true
+        "priced": true,
+        "tier": null
       }
     ],
     "local_runtime_ok": true

@@ -107,6 +107,13 @@
     "noLocal": "This component has no model that runs locally.",
     "runtimeOk": "Local services: ComfyUI / inference server connected",
     "runtimeDown": "Local services unreachable: local runs wait until they are back",
+    "unverifiedGroup": "Unverified workflows · pick by hand only",
+    "unverifiedHint": "Imported but no trial has passed yet (or the file changed): never used as a fallback or in Try another.",
+    "tier": {
+      "recommended": "Recommended",
+      "mine": "My workflow",
+      "unverified": "Unverified"
+    },
     "keyMissing": "No key",
     "fallback": "Automatic fallback",
     "fallbackOn": "If {{primary}} fails, switch to {{target}} automatically and record it in the history.",

@@ -9,6 +9,7 @@ import { useEventStream } from "@/api/useEventStream";
 import { GateButton } from "@/components/GateButton";
 import { ImpactDialog } from "@/components/ImpactDialog";
 import { Inspector } from "@/components/Inspector";
+import { ModelPicker } from "@/components/ModelPicker";
 import { Toaster } from "@/components/ui/sonner";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import { PRODUCT_ENRICH, PRODUCT_EXTRACT } from "@/mocks/fixtures/demo/products";
@@ -142,6 +143,31 @@ describe("ModelPicker", () => {
     expect(await screen.findByText("已关闭：出问题时停下来等你处理。")).toBeInTheDocument();
     expect(override()?.fallback?.enabled).toBe(false);
     expect(screen.queryByRole("radiogroup", { name: "兜底到" })).not.toBeInTheDocument();
+  });
+
+  it("lists workflow tiers; an unverified workflow sits apart and is never a fallback", async () => {
+    const user = userEvent.setup();
+    fakeConfig.catalog.models.push({
+      key: "comfy/ltx2",
+      display: "雨夜氛围-ltx2",
+      where: "local",
+      price: null,
+      tier: "unverified",
+    });
+    fakeConfig.catalog.components.find((c) => c.id === "vid")?.local_models.push("comfy/ltx2");
+    renderAt(<ModelPicker componentId="vid" />);
+    const local = await screen.findByRole("radiogroup", { name: "本地模型" });
+    expect(within(local).getByRole("radio", { name: /MiniMax H3（本地）/ })).toHaveTextContent(
+      "平台推荐",
+    );
+    const manual = within(local).getByRole("group", { name: "未验证的工作流 · 只能手动选" });
+    const ltx2 = within(manual).getByRole("radio", { name: /雨夜氛围-ltx2/ });
+    expect(ltx2).toHaveTextContent("未验证");
+    const targets = screen.getByRole("radiogroup", { name: "兜底到" });
+    expect(within(targets).queryByRole("radio", { name: "雨夜氛围-ltx2" })).toBeNull();
+    expect(within(targets).getByRole("radio", { name: "Wan 2.2（本地）" })).toBeInTheDocument();
+    await user.click(ltx2);
+    await waitFor(() => expect(override("vid")?.local_model).toBe("comfy/ltx2"));
   });
 
   it("saves the per-call cap", async () => {
