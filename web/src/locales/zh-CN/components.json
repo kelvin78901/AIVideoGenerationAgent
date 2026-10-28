@@ -75,7 +75,38 @@
     "rerun": "重跑",
     "switch": "不满意换一个",
     "globalLink": "在「模型与兜底」里改全局默认",
-    "noProduct": "这个组件还没有产物"
+    "noProduct": "这个组件还没有产物",
+    "workflow": {
+      "title": "这个镜头的工作流",
+      "by": {
+        "manual": "手动选的",
+        "rule": "规则 {{n}}",
+        "suggest": "LLM 建议",
+        "default": "默认"
+      },
+      "of": "v{{n}} 用的「{{model}}」",
+      "manual": "在上面「本地模型」里给这个镜头选的。",
+      "rule": "命中规则表第 {{n}} 条：{{when}}。",
+      "suggest": "{{model}} 的理由：{{reason}}",
+      "default": "规则表没有命中，用默认工作流。",
+      "next": "下一条用「{{model}}」（规则表和手动选的都算上了）。",
+      "none": "还没在本机出过片。出片时按规则表选。",
+      "api": "当前这条是 API 出的，不经过工作流选择。",
+      "change": "换工作流：在上面「本地模型」里选，只对这个镜头生效。",
+      "rulesLink": "改规则表",
+      "branches": "分支",
+      "noBranches": "「{{model}}」没有可开关的分支。",
+      "kind": {
+        "controlnet": "ControlNet",
+        "lora": "LoRA",
+        "upscale": "超分"
+      },
+      "default_on": "默认开",
+      "default_off": "默认关",
+      "untested": "没试跑过",
+      "branchOf": "这个镜头的分支「{{name}}」",
+      "branchReset": "恢复默认"
+    }
   },
   "picker": {
     "location": "运行位置",

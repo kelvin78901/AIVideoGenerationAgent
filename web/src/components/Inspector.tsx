@@ -13,6 +13,7 @@ import { ModelPicker } from "@/components/ModelPicker";
 import { ModelSwitchMenu } from "@/components/ModelSwitchMenu";
 import { PromptEditor } from "@/components/PromptEditor";
 import { QueryState } from "@/components/QueryState";
+import { ShotWorkflow } from "@/components/ShotWorkflow";
 import { useRunAction } from "@/components/useRunAction";
 import { VersionHistory } from "@/components/VersionHistory";
 import { Button } from "@/components/ui/button";
@@ -80,6 +81,9 @@ export function Inspector({
             {desc ? <p className="text-sm leading-relaxed text-muted-foreground">{desc}</p> : null}
           </div>
           <ModelPicker key={`${current.id}|${item ?? ""}`} componentId={current.id} item={item} />
+          {current.id === "vid" && item ? (
+            <ShotWorkflow productId={current.productId} item={item} />
+          ) : null}
           {product.data ? (
             <RunButtons productId={product.data.id} componentId={current.id} item={item} />
           ) : null}

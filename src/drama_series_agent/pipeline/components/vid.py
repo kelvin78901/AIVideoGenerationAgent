@@ -360,6 +360,10 @@ def _sent(params: dict[str, Any]) -> dict[str, Any]:
     return {k: v for k, v in params.items() if k not in ("n", "task", "width", "height")}
 
 
+def _select(ctx: RunContext) -> dict[str, Any]:
+    return {"select": ctx.select} if ctx.select is not None else {}
+
+
 async def clip_files(
     store: BlobStore, sha256: str, *, raw: bool
 ) -> tuple[list[dict[str, Any]], VideoInfo]:
@@ -516,8 +520,9 @@ class VidComponent(MediaComponent):
             take.req.prompt or "",
             stage=stage,
             fallback_reason=reason,
-            # What 「用 API 出终版」 resends (Regenerate-2K takes the draft's own inputs).
-            params={"request": _sent(take.req.params)},
+            # What 「用 API 出终版」 resends (Regenerate-2K takes the draft's own inputs), and
+            # why this workflow (按镜头选工作流; the Inspector shows it).
+            params={"request": _sent(take.req.params), **_select(ctx)},
         )
         draft.dependencies = [*draft.dependencies, *take.deps]
         return draft

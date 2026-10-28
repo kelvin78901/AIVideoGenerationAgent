@@ -118,6 +118,8 @@
     "workflow_dramastudio_bindings": "用 DramaStudio 节点的工作流不用绑定",
     "workflow_unknown_node": "工作流里没有标题为「{{title}}」的节点",
     "workflow_check_failed": "体检没通过：先装好缺的节点包和模型",
+    "workflow_rule_model": "规则只能选平台推荐或「我的工作流」里的视频工作流（{{model}} 不行）",
+    "workflow_unknown_branch": "这个工作流没有分支「{{branch}}」",
     "invalid_owner": "产物的归属写法不对（应为 类型:id）",
     "scope_id_required": "单项设置要指明是哪一项",
     "component_not_ready": "这一步的生成功能还没接上",

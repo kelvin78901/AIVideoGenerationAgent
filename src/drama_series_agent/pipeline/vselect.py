@@ -160,7 +160,9 @@ async def choose(
     facts = features(inputs)
     for i, rule in enumerate(table.rules):
         if rule.model in candidates and matches(rule, facts):
-            return Choice(rule.model, {"by": "rule", "rule": i})
+            # The rule itself too: the table may change after the take.
+            when = rule.when.model_dump(exclude_none=True)
+            return Choice(rule.model, {"by": "rule", "rule": i, "when": when})
     if table.suggest and len(candidates) > 1:
         suggested = await _suggest(services, inputs, model, candidates, lang, ask=ask, ctx=ctx)
         if suggested is not None:

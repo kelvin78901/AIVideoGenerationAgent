@@ -11,7 +11,9 @@ import { server } from "@/mocks/node";
 import GeneratePage from "@/pages/Generate";
 import { backend } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
+import { fakeConfig } from "@/test/fakes/config";
 import { confirmFakeStoryboard, fakeGenerate } from "@/test/fakes/generate";
+import { fakeWorkflows } from "@/test/fakes/workflows";
 import { renderAt } from "@/test/render";
 
 function Page() {
@@ -321,6 +323,58 @@ describe("GeneratePage", () => {
     await ready();
     await user.click(screen.getByRole("button", { name: "2K 精修" }));
     expect(await screen.findByText("当前产物 · 2K 精修队列 · 3 条")).toBeInTheDocument();
+  });
+
+  it("the Inspector says which workflow a shot's take went to and why", async () => {
+    const user = userEvent.setup();
+    renderGenerate();
+    await ready();
+    // 1-04: its newest take is Seedance (API); the local drafts went by the 原生同步 rule.
+    const panel = await screen.findByRole("region", { name: "这个镜头的工作流" });
+    expect(
+      await within(panel).findByText("v2 用的「MiniMax H3 参考生视频（本地）」"),
+    ).toBeInTheDocument();
+    expect(within(panel).getByText("规则 1")).toBeInTheDocument();
+    expect(panel).toHaveTextContent("命中规则表第 1 条：原生同步 · 有锁定音色样本。");
+    expect(within(panel).getByRole("link", { name: "改规则表" })).toHaveAttribute(
+      "href",
+      "/models#workflow-rules",
+    );
+    // The estimate (the backend's, in the snapshot) has applied the rule too.
+    expect(panel).toHaveTextContent("下一条用「MiniMax H3 参考生视频（本地）」");
+    expect(panel).toHaveTextContent("「MiniMax H3 参考生视频（本地）」没有可开关的分支。");
+    // 1-01: the adopted take is the API final of a local draft that went to the default.
+    await user.click(pill("1-01"));
+    await screen.findByRole("heading", { name: "镜头 1-01 的候选" });
+    expect(await within(panel).findByText("v1 用的「MiniMax H3（本地）」")).toBeInTheDocument();
+    expect(panel).toHaveTextContent("规则表没有命中，用默认工作流。");
+  });
+
+  it("switches a workflow branch for one shot", async () => {
+    const user = userEvent.setup();
+    const h3 = fakeWorkflows.workflows.find((w) => w.model_key === "comfy/h3-r2v");
+    h3?.branches.push({
+      id: "lora",
+      kind: "lora",
+      name: "细节增强 LoRA",
+      default: false,
+      trial: null,
+    });
+    renderGenerate();
+    await ready();
+    const panel = await screen.findByRole("region", { name: "这个镜头的工作流" });
+    const toggle = await within(panel).findByRole("switch", {
+      name: "这个镜头的分支「细节增强 LoRA」",
+    });
+    expect(toggle).not.toBeChecked();
+    expect(panel).toHaveTextContent("LoRA · 默认关");
+    expect(within(panel).getByText("没试跑过")).toBeInTheDocument();
+    await user.click(toggle);
+    await waitFor(() => expect(toggle).toBeChecked());
+    expect(fakeConfig.item["vid|shot:demo-shot-1-04"]?.branches).toEqual({ lora: true });
+    await user.click(within(panel).getByRole("button", { name: "恢复默认" }));
+    await waitFor(() => expect(toggle).not.toBeChecked());
+    expect(fakeConfig.item["vid|shot:demo-shot-1-04"]?.branches).toEqual({ lora: null });
   });
 });
 

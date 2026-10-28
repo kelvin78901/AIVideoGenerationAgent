@@ -1,13 +1,15 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { api, patch, post, put } from "@/api/client";
+import { api, del, patch, post, put } from "@/api/client";
 import { productKeys } from "@/api/hooks/products";
 import { seriesKeys } from "@/api/hooks/series";
 import {
   GenerateLogEntrySchema,
   GenerateRulesSchema,
+  WorkflowRulesSchema,
   type GenerateRulesPatch,
+  type WorkflowRulesPut,
 } from "@/api/schemas/generate";
 import { JobSchema } from "@/api/schemas/jobs";
 import { ProductSchema, type Product, type VersionPatch } from "@/api/schemas/products";
@@ -16,6 +18,7 @@ const enc = encodeURIComponent;
 
 export const generateKeys = {
   rules: (seriesId: string) => ["series", seriesId, "generate-rules"] as const,
+  workflowRules: (seriesId: string) => ["series", seriesId, "workflow-rules"] as const,
   logs: ["generate-log"] as const,
   log: (episodeId: string) => ["generate-log", episodeId] as const,
 };
@@ -33,6 +36,25 @@ export function useSaveGenerateRules(seriesId: string) {
     mutationFn: (body: GenerateRulesPatch) =>
       put(`/series/${enc(seriesId)}/generate-rules`, GenerateRulesSchema, body),
     onSuccess: (rules) => client.setQueryData(generateKeys.rules(seriesId), rules),
+  });
+}
+
+/** 按镜头选工作流: the series' rules table (models page). */
+export function useWorkflowRules(seriesId: string) {
+  return useQuery({
+    queryKey: generateKeys.workflowRules(seriesId),
+    queryFn: () => api(`/series/${enc(seriesId)}/workflow-rules`, WorkflowRulesSchema),
+  });
+}
+
+/** Replace the table (`body`), or go back to the config's (`null`). */
+export function useSaveWorkflowRules(seriesId: string) {
+  const client = useQueryClient();
+  const url = `/series/${enc(seriesId)}/workflow-rules`;
+  return useMutation({
+    mutationFn: (body: WorkflowRulesPut | null) =>
+      body ? put(url, WorkflowRulesSchema, body) : del(url, WorkflowRulesSchema),
+    onSuccess: (rules) => client.setQueryData(generateKeys.workflowRules(seriesId), rules),
   });
 }
 

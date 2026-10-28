@@ -116,7 +116,8 @@ def test_a_rule_picks_the_workflow_and_the_call_says_which(client: TestClient) -
     _confirm_storyboard(client)
     take, call = _take(client, "1-04")  # 原生同步 with a voice: the default rule
     assert take["model_key"] == "comfy/h3-r2v"
-    assert call.select_json == {"by": "rule", "rule": 0}
+    assert call.select_json == {"by": "rule", "rule": 0, "when": NATIVE_RULE["when"]}
+    assert take["params"]["select"] == call.select_json
     take, call = _take(client, "1-01")
     assert take["model_key"] == "comfy/h3" and call.select_json == {"by": "default"}
     # The rewrite the take asked for is not the video's choice.
@@ -135,7 +136,9 @@ def test_the_series_table_decides_in_order(client: TestClient) -> None:
         ],
     )
     take, call = _take(client, "1-01")
-    assert take["model_key"] == "comfy/h3-r2v" and call.select_json == {"by": "rule", "rule": 1}
+    assert take["model_key"] == "comfy/h3-r2v" and call.select_json == {
+        "by": "rule", "rule": 1, "when": {"framing": framing},
+    }  # fmt: skip
     # The estimate reads the same table.
     product = client.get(f"{V1}/products/{_shots(client)['1-01']['video_product_id']}").json()
     assert product["estimate"]["model_key"] == "comfy/h3-r2v"

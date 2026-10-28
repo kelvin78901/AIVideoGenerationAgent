@@ -75,7 +75,38 @@
     "rerun": "Rerun",
     "switch": "Try another model",
     "globalLink": "Change the global defaults in Models & fallback",
-    "noProduct": "This component has no output yet"
+    "noProduct": "This component has no output yet",
+    "workflow": {
+      "title": "This shot's workflow",
+      "by": {
+        "manual": "Picked by hand",
+        "rule": "Rule {{n}}",
+        "suggest": "LLM suggestion",
+        "default": "Default"
+      },
+      "of": "v{{n}} used \"{{model}}\"",
+      "manual": "Picked for this shot under Local model above.",
+      "rule": "Rule {{n}} of the table matched: {{when}}.",
+      "suggest": "{{model}}'s reason: {{reason}}",
+      "default": "No rule matched; the default workflow.",
+      "next": "The next take uses \"{{model}}\" (rules and hand picks applied).",
+      "none": "Nothing made on this machine yet. The rules table picks when it runs.",
+      "api": "The current take came from an API; no workflow was picked.",
+      "change": "To change it, pick under Local model above; it applies to this shot only.",
+      "rulesLink": "Edit the rules",
+      "branches": "Branches",
+      "noBranches": "\"{{model}}\" has no branches to switch.",
+      "kind": {
+        "controlnet": "ControlNet",
+        "lora": "LoRA",
+        "upscale": "Upscale"
+      },
+      "default_on": "On by default",
+      "default_off": "Off by default",
+      "untested": "Not trialled",
+      "branchOf": "Branch \"{{name}}\" for this shot",
+      "branchReset": "Back to default"
+    }
   },
   "picker": {
     "location": "Run on",

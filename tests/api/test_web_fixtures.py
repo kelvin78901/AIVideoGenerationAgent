@@ -387,8 +387,8 @@ def seeded() -> Iterator[TestClient]:
 
 def test_web_generate_fixture_is_current(demo_gates: None, seeded: TestClient) -> None:
     """生成 of episode 1 once 分镜 is confirmed (``test/fakes/generate.ts``): its shots, the nine
-    video products with the seeded takes, the auto rules, the run log, the header's spend and
-    the 生成 badge."""
+    video products with the seeded takes, the auto rules, the workflow rules, the run log, the
+    header's spend and the 生成 badge."""
     client = seeded
     shots = client.get(f"{V1}/episodes/demo-e1/shots").json()
     videos = [client.get(f"{V1}/products/{s['video_product_id']}").json() for s in shots]
@@ -396,6 +396,7 @@ def test_web_generate_fixture_is_current(demo_gates: None, seeded: TestClient) -
         "shots": shots,
         "videos": _stable_takes(videos),
         "rules": client.get(f"{V1}/series/demo/generate-rules").json(),
+        "workflow_rules": client.get(f"{V1}/series/demo/workflow-rules").json(),
         "log": client.get(f"{V1}/episodes/demo-e1/generate-log").json(),
         "summary": client.get(
             f"{V1}/metrics/summary", params={"scope": "episode", "episode": "demo-e1"}

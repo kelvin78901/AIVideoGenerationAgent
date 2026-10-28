@@ -1,4 +1,4 @@
-/** 模型与兜底 · 全局默认 (prototype Models.dc.html; SPEC 7), plus 工作流库 (SPEC 6.4.6; not in the prototype). */
+/** 模型与兜底 · 全局默认 (prototype Models.dc.html; SPEC 7), plus 按镜头选工作流 (SPEC 6.4.8) and 工作流库 (SPEC 6.4.6), neither in the prototype. */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { ComponentTable } from "@/pages/models/ComponentTable";
 import { KeyDialog } from "@/pages/models/KeyDialog";
 import { WorkflowLibrary } from "@/pages/models/WorkflowLibrary";
+import { WorkflowRules } from "@/pages/models/WorkflowRules";
 
 const PRESETS = PresetIdSchema.options;
 
@@ -54,6 +55,7 @@ export default function ModelsPage() {
           />
         )}
       </QueryState>
+      <WorkflowRules models={catalog.data?.models ?? []} />
       <WorkflowLibrary />
     </div>
   );

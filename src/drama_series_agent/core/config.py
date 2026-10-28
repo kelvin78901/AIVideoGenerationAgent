@@ -29,7 +29,15 @@ LAYERS: tuple[Layer, ...] = ("preset", "project", "component", "item")
 PresetId = Literal["quality", "balanced", "cheap", "local"]
 PRESETS: tuple[PresetId, ...] = ("quality", "balanced", "cheap", "local")
 # The top-level fields of a component's settings; the UI shows one source per field.
-CONFIG_FIELDS = ("mode", "api_model", "local_model", "fallback", "alt_order", "per_call_cap_usd")
+CONFIG_FIELDS = (
+    "mode",
+    "api_model",
+    "local_model",
+    "fallback",
+    "alt_order",
+    "per_call_cap_usd",
+    "branches",
+)
 
 
 class _Loose(BaseModel):

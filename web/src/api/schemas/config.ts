@@ -38,6 +38,8 @@ export const ComponentConfigSchema = z.object({
   /** 「不满意换一个」 order. */
   alt_order: z.array(z.string()),
   per_call_cap_usd: z.number().nullable(),
+  /** Workflow branches switched on / off by id (SPEC 6.4.8); absent = each one's default. */
+  branches: z.record(z.string(), z.boolean().nullable()).optional(),
 });
 export type ComponentConfig = z.infer<typeof ComponentConfigSchema>;
 
@@ -48,6 +50,7 @@ export const CONFIG_FIELDS = [
   "fallback",
   "alt_order",
   "per_call_cap_usd",
+  "branches",
 ] as const;
 export type ConfigField = (typeof CONFIG_FIELDS)[number];
 

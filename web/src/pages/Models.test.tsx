@@ -9,6 +9,7 @@ import ModelsPage from "@/pages/Models";
 import { backend } from "@/test/backend";
 import { fakeConfig } from "@/test/fakes/config";
 import { fakeEpisodes } from "@/test/fakes/episodes";
+import { fakeGenerate } from "@/test/fakes/generate";
 import { renderAt } from "@/test/render";
 
 const renderModels = () =>
@@ -392,5 +393,61 @@ describe("ModelsPage", () => {
       { price: { in: 4, out: 16, currency: "CNY" } },
       { site: "intl" },
     ]);
+  });
+
+  it("edits the series' workflow rules: conditions, order, the LLM switch, back to defaults", async () => {
+    const user = userEvent.setup();
+    renderModels();
+    const section = await screen.findByRole("region", { name: "按镜头选工作流" });
+    const rules = await within(section).findByRole("list", { name: "按镜头选工作流" });
+    expect(within(section).getByText("默认规则")).toBeInTheDocument();
+    expect(section).toHaveTextContent("都没命中用默认的「MiniMax H3（本地）」");
+    expect(section).toHaveTextContent("只对《雨停之前》生效");
+    // The config's rule: 原生同步 with a locked voice sample → the reference-to-video workflow.
+    expect(within(rules).getByRole("combobox", { name: "规则 1 的声音" })).toHaveValue("native");
+    expect(within(rules).getByRole("combobox", { name: "规则 1 的锁定音色样本" })).toHaveValue(
+      "true",
+    );
+    expect(within(rules).getByRole("combobox", { name: "规则 1 的景别" })).toHaveValue("");
+    expect(within(rules).getByRole("combobox", { name: "规则 1 用的工作流" })).toHaveValue(
+      "comfy/h3-r2v",
+    );
+
+    await user.click(within(section).getByRole("button", { name: "添加规则" }));
+    await within(section).findByRole("combobox", { name: "规则 2 的景别" });
+    await user.selectOptions(
+      within(section).getByRole("combobox", { name: "规则 2 的景别" }),
+      "特写",
+    );
+    await user.selectOptions(
+      within(section).getByRole("combobox", { name: "规则 2 的台词" }),
+      "有",
+    );
+    await waitFor(() =>
+      expect(fakeGenerate.workflowRules.rules[1]).toEqual({
+        when: { framing: "closeup", dialogue: true },
+        model: "comfy/h3",
+      }),
+    );
+    expect(await within(section).findByText("本剧已改")).toBeInTheDocument();
+    // First match wins: move the close-up rule to the top.
+    await user.click(within(section).getByRole("button", { name: "上移规则 2" }));
+    await waitFor(() => expect(fakeGenerate.workflowRules.rules[0]?.model).toBe("comfy/h3"));
+    await user.selectOptions(
+      within(section).getByRole("combobox", { name: "规则 1 的景别" }),
+      "不限",
+    );
+    await waitFor(() =>
+      expect(fakeGenerate.workflowRules.rules[0]?.when).toEqual({ dialogue: true }),
+    );
+    await user.click(within(section).getByRole("switch", { name: "规则都没命中时，让 LLM 建议" }));
+    await waitFor(() => expect(fakeGenerate.workflowRules.suggest).toBe(true));
+
+    await user.click(within(section).getByRole("button", { name: "删除规则 1" }));
+    await waitFor(() => expect(fakeGenerate.workflowRules.rules).toHaveLength(1));
+    await user.click(within(section).getByRole("button", { name: "恢复默认" }));
+    expect(await screen.findByText("已恢复成默认规则。")).toBeInTheDocument();
+    expect(within(section).getByText("默认规则")).toBeInTheDocument();
+    expect(fakeGenerate.workflowRules.suggest).toBe(false);
   });
 });

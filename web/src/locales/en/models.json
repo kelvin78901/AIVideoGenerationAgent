@@ -162,5 +162,50 @@
     "reset": "Reset to preset",
     "resetDone": "{{name}} reset to the preset.",
     "gone": "Not picked — open to change"
+  },
+  "wfRules": {
+    "title": "Workflow per shot",
+    "lead": "When video runs on this machine, this table picks each shot's workflow: the first rule a shot meets wins, and a shot no rule meets gets the default, \"{{fallback}}\". A workflow picked for a shot in the Generate page's Inspector comes first. The table applies to \"{{series}}\" only.",
+    "saved": "Changed for this series",
+    "defaults": "Default rules",
+    "reset": "Back to defaults",
+    "resetDone": "Back to the default rules.",
+    "add": "Add rule",
+    "empty": "No rules: every shot gets the default, \"{{fallback}}\".",
+    "rule": "Rule {{n}}",
+    "then": "use",
+    "any": "Any",
+    "yes": "Yes",
+    "no": "No",
+    "anyShot": "Every shot",
+    "cond": {
+      "framing": "Framing",
+      "shot_type": "Shot type",
+      "dialogue": "Lines",
+      "audio_mode": "Sound",
+      "refs": "Locked reference picture",
+      "voices": "Locked voice sample"
+    },
+    "flag": {
+      "dialogue": {
+        "true": "has lines",
+        "false": "no lines"
+      },
+      "refs": {
+        "true": "a locked reference picture",
+        "false": "no locked reference picture"
+      },
+      "voices": {
+        "true": "a locked voice sample",
+        "false": "no locked voice sample"
+      }
+    },
+    "condOf": "Rule {{n}}: {{cond}}",
+    "modelOf": "Rule {{n}}: workflow",
+    "up": "Move rule {{n}} up",
+    "down": "Move rule {{n}} down",
+    "remove": "Delete rule {{n}}",
+    "suggest": "Let an LLM suggest when no rule matches",
+    "suggestHint": "Before a shot's first take, the shot's summary and what each workflow can do go to \"Video workflow suggestion\", which picks one and says why (an API call, cached by the shot's content, so a shot is asked once). The reason shows in the Generate page's Inspector."
   }
 }

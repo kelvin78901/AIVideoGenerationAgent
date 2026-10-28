@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 12c 步：按镜头选工作流的界面
+
+- **规则表放「模型与兜底」**（组件表和工作流库之间，`pages/models/WorkflowRules.tsx`）：一行一条规则，六个条件各一个下拉（「不限」= 不写这个条件），右边选工作流（只列接口给的 `models`，存过但现在不能选的也留在下拉里）、上移 / 下移 / 删除；每改一处整表 `PUT`；改过的剧显示「本剧已改」和「恢复默认」（`DELETE`）。LLM 建议开关在表下面，默认关。模型页没有剧集路由，按「最近打开的剧，否则示例剧」（`useSeriesId`），说明里写明只对哪部剧生效。没有原型，按 M0.5 风格；1440 和 2000 px 都是一行。
+- **「选了哪个、为什么」从视频版本读**：视频 take 的版本 `params.select` 存一份和 `model_call.select_json` 一样的内容（不另开接口，`GET /products/{id}` 本来就带 `params`）；命中规则时 `select` 多存规则本身 `when`（规则表之后可能被改，序号对不上）。示例种子的本地 take 也带上（1-04 的草稿是规则 1，1-01–1-03 是默认），前端快照 `generate.json` 重导，另加 `workflow_rules`。
+- **Inspector**（`components/ShotWorkflow.tsx`，只在视频生成且有镜头时）：显示「最近一条本地候选」的选择——当前版本是本地的就用它，是 API 终版就看它的父版本（本地草稿），否则看最新一条本地 take；没有就说还没在本机出过片。下一条用哪个工作流读产品估价的 `model_key`（后端估价已经过规则表和手动选择），分支按这个工作流列；手动换仍然是上面 ModelPicker 的「本地模型」（item 覆盖），这里只给说明和「改规则表」链接（`/models#workflow-rules`，页面会滚过去）。
+- **分支开关**：`CONFIG_FIELDS` 两边都加 `branches`，`/config/resolve` 的 `sources.branches` 是整张表最具体的那一层；开关写 item 覆盖 `{branches: {id: bool}}`，拨回默认值时写 `null`（回到默认），有手动值时显示「恢复默认」；没试跑过的分支带「没试跑过」标记但仍可开（禁用留到有带分支的仓库工作流时再定，见第 12b 步）。仓库工作流现在都没有分支，界面显示「没有可开关的分支」；页面测试用假工作流验证开关。
+- 新错误码词条：`workflow_rule_model`、`workflow_unknown_branch`。
+
 ## 2026-10-28 · M5 第 12b 步：工作流里的可开关分支
 
 - **`workflow.yaml` 的 `branches`**（`modelhub/workflows.py:Branch`）：`id`（开关用的名字）、`kind`（`controlnet` / `lora` / `upscale`）、`name`、`nodes`（关掉时拿掉的节点标题）、`bypass`、`default`（没人选时开不开）。关掉的分支在填图时和可选槽位一样拿掉：先把被旁路节点的读者接到它某个输入的来源上，再删节点和读它的输入。分支里不能有被绑定的节点（装载时报 `WorkflowError`）。

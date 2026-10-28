@@ -795,6 +795,9 @@
               "fps": 24,
               "first_frame": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
               "with_audio": true
+            },
+            "select": {
+              "by": "default"
             }
           },
           "qa": null,
@@ -1039,6 +1042,9 @@
               "fps": 24,
               "first_frame": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
               "with_audio": true
+            },
+            "select": {
+              "by": "default"
             }
           },
           "qa": null,
@@ -1283,6 +1289,9 @@
               "fps": 24,
               "first_frame": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
               "with_audio": true
+            },
+            "select": {
+              "by": "default"
             }
           },
           "qa": null,
@@ -1539,6 +1548,14 @@
               "ref_audio": [
                 "a7c1d3e5f585a7392e859e9bca5706397c5eba71eab602c445c42545d951389f"
               ]
+            },
+            "select": {
+              "by": "rule",
+              "rule": 0,
+              "when": {
+                "audio_mode": "native",
+                "voices": true
+              }
             }
           },
           "qa": null,
@@ -1666,6 +1683,14 @@
               "ref_audio": [
                 "a7c1d3e5f585a7392e859e9bca5706397c5eba71eab602c445c42545d951389f"
               ]
+            },
+            "select": {
+              "by": "rule",
+              "rule": 0,
+              "when": {
+                "audio_mode": "native",
+                "voices": true
+              }
             }
           },
           "qa": null,
@@ -2033,6 +2058,23 @@
       "syncnet_conf": 6.0,
       "cer_max": 0.1
     }
+  },
+  "workflow_rules": {
+    "rules": [
+      {
+        "when": {
+          "audio_mode": "native",
+          "voices": true
+        },
+        "model": "comfy/h3-r2v"
+      }
+    ],
+    "suggest": false,
+    "saved": false,
+    "models": [
+      "comfy/h3",
+      "comfy/h3-r2v"
+    ]
   },
   "log": [
     {

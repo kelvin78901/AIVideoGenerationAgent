@@ -118,6 +118,8 @@
     "workflow_dramastudio_bindings": "Workflows with DramaStudio nodes need no bindings",
     "workflow_unknown_node": "No node titled “{{title}}” in this workflow",
     "workflow_check_failed": "The health check failed: install the missing node packs and models first",
+    "workflow_rule_model": "A rule can only use a recommended or \"My workflows\" video workflow ({{model}} is neither)",
+    "workflow_unknown_branch": "This workflow has no branch \"{{branch}}\"",
     "invalid_owner": "The product owner must look like type:id",
     "scope_id_required": "An item-level setting needs the item",
     "component_not_ready": "Generation for this step is not wired up yet",

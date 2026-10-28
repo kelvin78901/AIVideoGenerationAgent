@@ -75,6 +75,7 @@ from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
+from drama_series_agent.pipeline.vselect import default_rules
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.qa import ocr
 from drama_series_agent.script import service as script_service
@@ -1114,6 +1115,15 @@ async def _seed_takes(db: Database, products: ProductService, compiler: PromptCo
             await products.adopt(last.id)
 
 
+def _take_select(model: str) -> dict[str, Any]:
+    """Why a seeded local take went to its workflow, as ``vselect.choose`` says it: the
+    config's rule for 原生同步 with a voice, else the route's default."""
+    for i, rule in enumerate(default_rules().rules):
+        if rule.model == model:
+            return {"by": "rule", "rule": i, "when": rule.when.model_dump(exclude_none=True)}
+    return {"by": "default"}
+
+
 async def _take_draft(
     store: BlobStore,
     compiler: PromptCompiler,
@@ -1175,6 +1185,7 @@ async def _take_draft(
             request["ref_audio"] = [v["sha256"] for v in voices]
         if where == "local":
             params["request"] = request
+            params["select"] = _take_select(model)
         payload = {
             "duration_s": round(info.duration_s, 3),
             "asked_s": context["seconds"],

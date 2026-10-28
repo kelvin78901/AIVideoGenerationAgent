@@ -23,6 +23,8 @@ import {
   GenerateLogEntrySchema,
   GenerateRulesPatchSchema,
   GenerateRulesSchema,
+  WorkflowRuleSchema,
+  WorkflowRulesSchema,
   type GenerateLogEntry,
 } from "@/api/schemas/generate";
 import type { Job } from "@/api/schemas/jobs";
@@ -44,6 +46,7 @@ const EPISODE = "demo-e1";
 const demoShots = z.array(ShotSchema).parse(data.shots);
 const demoVideos = data.videos.map((p) => ProductSchema.parse(p));
 const demoRules = GenerateRulesSchema.parse(data.rules);
+const demoWorkflowRules = WorkflowRulesSchema.parse(data.workflow_rules);
 const demoLog = z.array(GenerateLogEntrySchema).parse(data.log);
 const demoSummary = MetricsSummarySchema.parse(data.summary);
 /** What one Mock take costs here: local free, the H3 API $0.11 a second (¥0.80). */
@@ -54,6 +57,8 @@ const FINAL_MODEL = "minimax/h3-regenerate-2k";
 export const fakeGenerate = {
   videos: structuredClone(demoVideos),
   rules: structuredClone(demoRules),
+  /** 按镜头选工作流 of the demo series. */
+  workflowRules: structuredClone(demoWorkflowRules),
   log: structuredClone(demoLog),
   summary: structuredClone(demoSummary),
   /** Episodes whose 生成确认 is confirmed. */
@@ -65,6 +70,7 @@ export const fakeGenerate = {
 export function resetFakeGenerate() {
   fakeGenerate.videos = structuredClone(demoVideos);
   fakeGenerate.rules = structuredClone(demoRules);
+  fakeGenerate.workflowRules = structuredClone(demoWorkflowRules);
   fakeGenerate.log = structuredClone(demoLog);
   fakeGenerate.summary = structuredClone(demoSummary);
   fakeGenerate.confirmed = new Set();
@@ -348,6 +354,32 @@ export function generateHandlers() {
       if (!body.success) return error(422, "invalid_request");
       Object.assign(fakeGenerate.rules, body.data);
       return HttpResponse.json(fakeGenerate.rules);
+    }),
+
+    http.get("*/api/v1/series/:id/workflow-rules", ({ params }) =>
+      params.id === "demo"
+        ? HttpResponse.json(fakeGenerate.workflowRules)
+        : error(404, "series_not_found"),
+    ),
+
+    http.put("*/api/v1/series/:id/workflow-rules", async ({ params, request }) => {
+      if (params.id !== "demo") return error(404, "series_not_found");
+      const body = z
+        .object({ rules: z.array(WorkflowRuleSchema.strict()), suggest: z.boolean() })
+        .strict()
+        .safeParse(await request.json());
+      if (!body.success) return error(422, "invalid_request");
+      const table = fakeGenerate.workflowRules;
+      const bad = body.data.rules.find((r) => !table.models.includes(r.model));
+      if (bad) return error(422, "workflow_rule_model", { model: bad.model });
+      fakeGenerate.workflowRules = { ...table, ...body.data, saved: true };
+      return HttpResponse.json(fakeGenerate.workflowRules);
+    }),
+
+    http.delete("*/api/v1/series/:id/workflow-rules", ({ params }) => {
+      if (params.id !== "demo") return error(404, "series_not_found");
+      fakeGenerate.workflowRules = structuredClone(demoWorkflowRules);
+      return HttpResponse.json(fakeGenerate.workflowRules);
     }),
 
     http.post("*/api/v1/gates/takes/:action", async ({ params, request }) => {

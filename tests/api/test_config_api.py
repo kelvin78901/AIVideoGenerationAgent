@@ -68,8 +68,16 @@ def test_resolve(client: TestClient) -> None:
     assert data["values"]["fallback"]["timeout_s"] == 600
     assert set(data["sources"].values()) == {"preset"}
     assert set(data["sources"]) == {
-        "mode", "api_model", "local_model", "fallback", "alt_order", "per_call_cap_usd"
+        "mode", "api_model", "local_model", "fallback", "alt_order", "per_call_cap_usd",
+        "branches",
     }  # fmt: skip
+    # A shot's branch switch: one source for the whole map (step 12c).
+    body = {"scope": "item", "scope_id": "shot:x", "component_id": "vid"}
+    resp = client.put(f"{V1}/override", json={**body, "data": {"branches": {"lora": True}}})
+    assert resp.status_code == 200, resp.text
+    shot = client.get(f"{V1}/resolve", params={"component": "vid", "item": "shot:x"}).json()
+    assert shot["values"]["branches"] == {"lora": True} and shot["sources"]["branches"] == "item"
+    assert shot["sources"]["mode"] == "preset"
     resp = client.get(f"{V1}/resolve", params={"component": "nope"})
     assert resp.status_code == 404 and _code(resp) == "unknown_component"
 
