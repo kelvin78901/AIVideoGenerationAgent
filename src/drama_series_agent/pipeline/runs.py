@@ -174,6 +174,7 @@ class RunService:
         except ModelError:
             return None, None
         prompt = None
+        intent: str | None = None
         comp = self.components.get(product.component_id)
         async with self.services.db.session() as session:
             lang = await self._lang(session, product.series_id)
@@ -181,23 +182,27 @@ class RunService:
                 inputs = await comp.inputs(session, product) if comp is not None else None
             except (LookupError, PipelineError, ComponentError):
                 inputs = None  # upstream not ready yet: no price to show
-            if comp is not None and inputs is not None:
-                chosen = await comp.choose_model(
-                    product, inputs, model, settings, lang=lang, named=False, ask=False
-                )
-                model = chosen.model
-            if product.prompt_json:
-                compiled = str(product.prompt_json.get("compiled", ""))
-            else:
+            if not product.prompt_json:
                 intent = (
                     await comp.default_intent(session, product, lang)
                     if comp is not None
                     else compiler.default_intent(product.component_id, lang)
                 )
-                compiled = compiler.compile(product.component_id, intent, model)
-                prompt = PromptOut(
-                    intent=intent, compiled=compiled, compiled_overridden=False, model_key=model
-                )
+        # Outside the session: choosing opens its own (the rules table). Nested, every page
+        # that loads many products at once held one connection each while waiting for a
+        # second, and the pool (15) ran dry for its 30 s timeout (CI's e2e hangs, M5).
+        if comp is not None and inputs is not None:
+            chosen = await comp.choose_model(
+                product, inputs, model, settings, lang=lang, named=False, ask=False
+            )
+            model = chosen.model
+        if intent is None:
+            compiled = str((product.prompt_json or {}).get("compiled", ""))
+        else:
+            compiled = compiler.compile(product.component_id, intent, model)
+            prompt = PromptOut(
+                intent=intent, compiled=compiled, compiled_overridden=False, model_key=model
+            )
         if comp is None or inputs is None:
             return prompt, None
         try:

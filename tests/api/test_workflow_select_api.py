@@ -180,3 +180,25 @@ def test_an_answer_that_names_no_candidate_keeps_the_route(client: TestClient) -
     )
     take, call = _take(client, "1-04")
     assert take["model_key"] == "comfy/h3" and call.select_json == {"by": "default"}
+
+
+async def test_many_products_at_once_do_not_run_the_pool_dry() -> None:
+    """Choosing a workflow reads the rules in a session of its own; inside the estimate's
+    session that held two connections per request, and a page loading dozens of products at
+    once waited out the pool's 30 s timeout (CI's e2e hangs, M5 step 12c)."""
+    import asyncio
+
+    import httpx
+
+    app = create_app()
+    async with app.router.lifespan_context(app):
+        transport = httpx.ASGITransport(app=app)
+        async with httpx.AsyncClient(
+            transport=transport, base_url=LOCAL, headers={"X-Drama-Studio": "1"}, timeout=60
+        ) as c:
+            shots = (await c.get(f"{V1}/episodes/{EP1}/shots")).json()
+            ids = [s["video_product_id"] for s in shots] * 4  # > 15 connections' worth
+            start = time.monotonic()
+            responses = await asyncio.gather(*(c.get(f"{V1}/products/{i}") for i in ids))
+    assert [r.status_code for r in responses] == [200] * len(ids)
+    assert time.monotonic() - start < 20

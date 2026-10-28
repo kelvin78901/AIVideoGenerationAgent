@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · 估价不再嵌套开会话（CI 的 e2e 卡住的主因）
+
+- **原因**：第 12a 步起，`RunService.describe`（每个产品的 GET 都要算估价）在自己的会话里调 `choose_model`，选工作流又开一个会话读规则表：一个请求同时要两个连接。后期页、看板一次拉几十个产品，连接池（SQLAlchemy 默认 5 + 10）被每个请求的第一个连接占满，大家都在等第二个，等满 30 秒超时。本机并发 36 个视频产品的 GET：修之前 30.5 秒后 `QueuePool limit … reached`，修之后 1.0 秒全 200（`test_workflow_select_api` 新测试）。
+- **做法**：`describe` 先在会话里读输入和默认意图，关掉会话再选工作流、编译提示词（入队那条路径本来就是这样）。约定：**持有会话时不要调用会自己开会话的函数**（`choose_model`、`vselect.*`、组件里查缓存的那些）。
+- 下面那条「会话屏蔽 anyio 取消」照样保留：它管的是「写到一半被取消、连接带着写锁留下」，CI 日志里那条报错还会不会出现，看这一轮。
+
 ## 2026-10-28 · 数据库会话不让 Starlette 中途取消（修 CI 的 e2e 卡住）
 
 - **现象**：第 11 步起 CI 的 Playwright smoke 一轮比一轮红（后期页一直「正在加载」、检测一直「正在检测…」、SSE 没有任务更新），本机全过。e49a128 那轮后端日志在 smoke 页面测试期间报了 6 次「Exception terminating connection … CancelledError: Cancelled via cancel scope … by RequestResponseCycle.run_asgi」，之后读照常、写全卡住。
