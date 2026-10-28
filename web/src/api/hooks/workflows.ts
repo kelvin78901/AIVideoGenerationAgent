@@ -20,13 +20,11 @@ export const workflowKeys = {
   comfyFiles: ["comfy", "workflows"] as const,
 };
 
-/** Polls while a trial runs (M5 moves this to job events). */
+/** A trial's end arrives as `job.updated` (`workflow_trial`), which refetches this list. */
 export function useWorkflows() {
   return useQuery({
     queryKey: workflowKeys.all,
     queryFn: () => api("/workflows", z.array(WorkflowSchema)),
-    refetchInterval: (q) =>
-      q.state.data?.some((w) => w.trial?.status === "running") ? 1000 : false,
   });
 }
 
@@ -78,6 +76,10 @@ const DepsInstalledSchema = z.object({
   models: z.number(),
   /** The ComfyUI-Manager snapshot taken first. */
   snapshot: z.string(),
+  /** A real ComfyUI loads new node packs when it restarts; the check shows them missing till then. */
+  restart_required: z.boolean(),
+  /** Packs that did not install: their name and why (a setup error code). */
+  failed: z.array(z.object({ name: z.string(), code: z.string() })),
 });
 
 export const useInstallDeps = (id: string) =>

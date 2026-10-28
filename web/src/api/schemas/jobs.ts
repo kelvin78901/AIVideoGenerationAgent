@@ -37,6 +37,8 @@ export const JobSchema = z.object({
   created_at: Timestamp,
   started_at: Timestamp.nullable(),
   finished_at: Timestamp.nullable(),
+  /** Only on `job.updated` while it runs, e.g. ComfyUI's sampler steps (`step`, `steps`, `pct`). */
+  progress: z.record(z.string(), z.unknown()).optional(),
 });
 export type Job = z.infer<typeof JobSchema>;
 

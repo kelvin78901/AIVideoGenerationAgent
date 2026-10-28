@@ -109,11 +109,6 @@
     "runtimeDown": "本地服务没连上：本地运行会排队等它恢复",
     "unverifiedGroup": "未验证的工作流 · 只能手动选",
     "unverifiedHint": "导入后还没试跑通过（或文件变了）：不会自动兜底，也不进「不满意换一个」。",
-    "tier": {
-      "recommended": "平台推荐",
-      "mine": "我的工作流",
-      "unverified": "未验证"
-    },
     "keyMissing": "未填密钥",
     "fallback": "自动兜底",
     "fallbackOn": "主用的 {{primary}} 出问题时，自动改用 {{target}}，并记进历史。",

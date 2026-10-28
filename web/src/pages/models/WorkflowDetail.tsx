@@ -19,7 +19,8 @@ import {
   useTrialWorkflow,
 } from "@/api/hooks/workflows";
 import type { Message } from "@/api/schemas/common";
-import type { Binding, Workflow } from "@/api/schemas/workflows";
+import { useJobs } from "@/api/hooks/useJobs";
+import type { Binding, Workflow, WorkflowCheck } from "@/api/schemas/workflows";
 import { MediaThumb } from "@/components/MediaThumb";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -126,7 +127,11 @@ function Bindings({ w }: { w: Workflow }) {
   return (
     <div className="flex flex-col gap-2.5">
       <p className="text-[13px] leading-relaxed text-muted-foreground">
-        {w.uses_dramastudio_nodes ? t("bindings.dramastudio") : t("bindings.lead")}
+        {w.uses_dramastudio_nodes
+          ? t("bindings.dramastudio")
+          : w.source === "repo"
+            ? t("bindings.repo")
+            : t("bindings.lead")}
       </p>
       {pending ? (
         <p className="rounded-md bg-tone-warn-bg px-3 py-2 text-[13px] text-tone-warn-fg">
@@ -146,7 +151,8 @@ function Bindings({ w }: { w: Workflow }) {
           </thead>
           <tbody>
             {rows.map((b, i) => {
-              const fixed = b.state === "dramastudio";
+              // Shipped workflows keep the bindings their workflow.yaml names.
+              const fixed = b.state === "dramastudio" || w.source === "repo";
               const node = nodes.find((n) => n.title === b.node_title);
               const slot = slotName(b);
               return (
@@ -211,7 +217,7 @@ function Bindings({ w }: { w: Workflow }) {
           </tbody>
         </table>
       </div>
-      {!w.uses_dramastudio_nodes && (pending || draft) ? (
+      {!w.uses_dramastudio_nodes && w.source === "user" && (pending || draft) ? (
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -332,17 +338,24 @@ function Check({ w }: { w: Workflow }) {
           </table>
         </div>
       ) : null}
-      {packs || models ? (
+      {models ? (
+        <p className="text-xs leading-relaxed text-muted-foreground">{t("check.modelsNote")}</p>
+      ) : null}
+      {packs ? (
         <div className="flex flex-col gap-1.5">
           <div>
             <Button
               size="sm"
               disabled={plan.isPending || install.isPending}
               onClick={() =>
-                plan.mutate(undefined, { onSuccess: (p) => setChanges(p.changes), onError })
+                plan.mutate(undefined, {
+                  // Only node packs install from here; model files are put in place by hand.
+                  onSuccess: (p) => setChanges(p.changes.filter((m) => isPack(m, c))),
+                  onError,
+                })
               }
             >
-              {t("check.install", { packs, models })}
+              {t("check.install", { count: packs })}
             </Button>
           </div>
           <p className="text-xs leading-relaxed text-muted-foreground">{t("check.installNote")}</p>
@@ -360,9 +373,16 @@ function Check({ w }: { w: Workflow }) {
             install.mutate(undefined, {
               onSuccess: (r) => {
                 setChanges(null);
-                toast.success(
-                  t("check.installed", { snapshot: r.snapshot, packs: r.packs, models: r.models }),
-                );
+                const done = t("check.installed", { snapshot: r.snapshot, count: r.packs });
+                if (r.failed.length)
+                  toast.warning(
+                    t("check.installFailed", {
+                      done,
+                      names: r.failed.map((f) => f.name).join("、"),
+                    }),
+                  );
+                else
+                  toast.success(r.restart_required ? t("check.installedRestart", { done }) : done);
               },
               onError,
             })
@@ -370,6 +390,25 @@ function Check({ w }: { w: Workflow }) {
         />
       ) : null}
     </div>
+  );
+}
+
+/** A change-list line for one of the check's missing node packs. */
+const isPack = (m: Message, c: WorkflowCheck) =>
+  c.missing_packs.some((p) => p.name === m.params?.item);
+
+/** The running trial's sampler steps, from its job's `job.updated` events. */
+function TrialRunning({ jobId }: { jobId: string | null }) {
+  const { t } = useTranslation("workflows");
+  const jobs = useJobs();
+  const progress = jobs.data?.find((j) => j.id === jobId)?.progress;
+  const step = Number(progress?.step);
+  const steps = Number(progress?.steps);
+  return (
+    <p className="flex items-center gap-2 text-[13px] text-tone-info-fg">
+      <Loader2 className="size-4 animate-spin" aria-hidden />
+      {steps > 0 ? t("trial.runningStep", { step, steps }) : t("trial.running")}
+    </p>
   );
 }
 
@@ -425,10 +464,7 @@ function Trial({ w }: { w: Workflow }) {
           {!trial ? (
             <p className="text-[13px] text-muted-foreground">{t("trial.none")}</p>
           ) : running ? (
-            <p className="flex items-center gap-2 text-[13px] text-tone-info-fg">
-              <Loader2 className="size-4 animate-spin" aria-hidden />
-              {t("trial.running")}
-            </p>
+            <TrialRunning jobId={trial.job_id} />
           ) : (
             <div className="flex gap-3">
               <MediaThumb

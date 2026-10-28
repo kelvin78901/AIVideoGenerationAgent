@@ -74,6 +74,7 @@
     "trial": "试跑"
   },
   "bindings": {
+    "repo": "随平台提供：绑定写在它的 workflow.yaml 里，这里只看不改。",
     "dramastudio": "用的是 DramaStudio 输入 / 输出节点：平台按节点类型填值、取结果，不用绑定。",
     "lead": "平台按节点标题找节点（不是节点编号），在 ComfyUI 里重排、增删别的节点不影响；被绑定的节点标题在工作流里必须唯一。",
     "pendingNote": "还有 {{count}} 项是导入时自动猜的，确认后才能试跑和登记。",
@@ -129,10 +130,13 @@
       "file": "文件",
       "size": "大小"
     },
-    "install": "安装缺的 {{packs}} 个节点包和 {{models}} 个模型",
+    "install": "安装缺的 {{count}} 个节点包",
+    "modelsNote": "缺的模型文件要自己放进 ComfyUI 的 models 下对应的目录，放好后点「重新体检」。",
     "installNote": "装之前会列出改动清单让你确认，并先用 ComfyUI-Manager 存一份快照；快照和回滚在「环境与安装」。",
     "snapshotNote": "动手前先用 ComfyUI-Manager 存一份快照；装坏了可以在「环境与安装」里一键回滚。",
-    "installed": "已存快照 {{snapshot}}，装好了 {{packs}} 个节点包、{{models}} 个模型",
+    "installed": "已存快照 {{snapshot}}，装好了 {{count}} 个节点包",
+    "installedRestart": "{{done}}；重启 ComfyUI 后点「重新体检」",
+    "installFailed": "{{done}}；没装上：{{names}}",
     "never": "导入后会自动体检。"
   },
   "trial": {
@@ -144,6 +148,7 @@
     "rerun": "再试跑一次",
     "started": "已开始试跑：{{name}}",
     "running": "试跑中…（本地 GPU 队列）",
+    "runningStep": "试跑中… 第 {{step}} / {{steps}} 步",
     "blockedPending": "先确认绑定",
     "blockedCheck": "先装好缺的节点包和模型",
     "result": "结果",

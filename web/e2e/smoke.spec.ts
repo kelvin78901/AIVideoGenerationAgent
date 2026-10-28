@@ -139,21 +139,27 @@ test("环境与安装 is in the left nav on every page", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("先看看这台电脑能跑什么");
 });
 
-test("workflow library: confirm guessed bindings, pass a trial, make it my workflow", async ({
+test("workflow library: import from ComfyUI, confirm the guessed bindings, pass a trial, make it mine", async ({
   page,
 }) => {
   const errors = trackConsoleErrors(page);
   await setUi(page, {});
   await openPage(page, "/models");
   const lib = page.getByRole("region", { name: "工作流库" });
-  const wan = lib.getByRole("rowgroup", { name: "Wan 2.2 图生视频（社区）" });
-  await lib.getByRole("button", { name: "展开 Wan 2.2 图生视频（社区）" }).click();
-  await expect(wan.getByText("还有 3 项是导入时自动猜的，确认后才能试跑和登记。")).toBeVisible();
-  await wan.getByRole("button", { name: "确认全部绑定" }).click();
-  await expect(wan.getByText(/还有 \d+ 项是导入时自动猜的/)).toHaveCount(0);
-  await wan.getByRole("tab", { name: "试跑" }).click();
-  await wan.getByRole("button", { name: "试跑", exact: true }).click();
-  await wan.getByRole("button", { name: "通过了，升为我的工作流" }).click({ timeout: 15_000 });
-  await expect(wan.getByRole("row").first()).toContainText("我的工作流");
+  await lib.getByRole("button", { name: "导入工作流" }).click();
+  const dialog = page.getByRole("dialog", { name: "导入工作流" });
+  await dialog
+    .getByRole("listitem", { name: "sdxl_basic.json" })
+    .getByRole("button", { name: "导入" })
+    .click();
+  const sdxl = lib.getByRole("rowgroup", { name: "sdxl_basic" });
+  await expect(sdxl.getByText("还有 6 项是导入时自动猜的，确认后才能试跑和登记。")).toBeVisible();
+  await sdxl.getByRole("button", { name: "确认全部绑定" }).click();
+  await expect(sdxl.getByText(/还有 \d+ 项是导入时自动猜的/)).toHaveCount(0);
+  await sdxl.getByRole("tab", { name: "试跑" }).click();
+  await sdxl.getByRole("button", { name: "试跑", exact: true }).click();
+  // The trial runs on the backend's GPU queue; its end arrives as job.updated.
+  await sdxl.getByRole("button", { name: "通过了，升为我的工作流" }).click({ timeout: 15_000 });
+  await expect(sdxl.getByRole("row").first()).toContainText("我的工作流");
   expect(errors).toEqual([]);
 });

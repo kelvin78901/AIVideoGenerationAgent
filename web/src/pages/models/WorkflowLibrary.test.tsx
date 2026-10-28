@@ -1,20 +1,31 @@
 import { act, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 
+import { useEventStream } from "@/api/useEventStream";
 import { Toaster } from "@/components/ui/sonner";
-import { getDb } from "@/mocks/db";
-import { demoTiming } from "@/mocks/events";
 import { WorkflowLibrary } from "@/pages/models/WorkflowLibrary";
 import { useUiStore } from "@/stores/ui";
 import { backend } from "@/test/backend";
+import { FakeEventSource } from "@/test/fakeEventSource";
+import {
+  fakeImport,
+  fakeTrialProgress,
+  fakeWorkflows,
+  finishFakeTrial,
+} from "@/test/fakes/workflows";
 import { renderAt } from "@/test/render";
 
 type User = ReturnType<typeof userEvent.setup>;
 
+function Library() {
+  useEventStream();
+  return <WorkflowLibrary />;
+}
+
 const renderLibrary = () =>
   renderAt(
     <>
-      <WorkflowLibrary />
+      <Library />
       <Toaster />
     </>,
     "/models",
@@ -30,28 +41,28 @@ async function open(user: User, name: string) {
   return row(name);
 }
 
-const WAN = "Wan 2.2 图生视频（社区）";
-const KONTEXT = "Flux Kontext 关键帧（社区）";
-const timing = { ...demoTiming };
+const H3 = "MiniMax H3 图生视频（草稿）";
+const FLASHVSR = "FlashVSR 超分（本地 2K 精修兜底）";
+const LTX = "雨夜氛围-ltx2";
+const SDXL = "sdxl_basic";
 
 beforeEach(() => {
+  vi.stubGlobal("EventSource", FakeEventSource);
   backend();
-  demoTiming.workflowTrialMs = 20;
 });
-afterEach(() => Object.assign(demoTiming, timing));
+afterEach(() => vi.unstubAllGlobals());
 
 describe("WorkflowLibrary", () => {
   it("lists workflows by tier with their health check, last trial and file state", async () => {
     const user = userEvent.setup();
+    fakeImport("我的/雨夜氛围-ltx2.json");
+    fakeImport("sdxl_basic.json");
     renderLibrary();
-    await screen.findByRole("rowgroup", { name: WAN });
-    expect(within(library()).getAllByRole("rowgroup")).toHaveLength(5);
-    expect(header("MiniMax H3 · 视频草稿")).toHaveTextContent(
-      "comfy/h3-draft视频生成平台推荐正常10-17 21:40 通过 · 52 秒没变",
-    );
-    expect(header("LatentSync 口型")).toHaveTextContent("口型修复我的工作流正常");
-    expect(header(WAN)).toHaveTextContent("未验证绑定待确认 3 项没试跑过");
-    expect(header(KONTEXT)).toHaveTextContent("缺 2 个节点包、1 个模型");
+    await screen.findByRole("rowgroup", { name: LTX });
+    expect(within(library()).getAllByRole("rowgroup")).toHaveLength(11);
+    expect(header(H3)).toHaveTextContent("comfy/h3视频生成平台推荐正常没试跑过没变");
+    expect(header(FLASHVSR)).toHaveTextContent("平台推荐缺 1 个节点包");
+    expect(header(LTX)).toHaveTextContent("comfy/ltx2视频生成未验证绑定待确认 8 项没试跑过");
 
     const tiers = within(library()).getByRole("radiogroup", { name: "按档位筛选" });
     await user.click(within(tiers).getByRole("radio", { name: "未验证 2" }));
@@ -59,118 +70,126 @@ describe("WorkflowLibrary", () => {
       within(library())
         .getAllByRole("rowgroup")
         .map((r) => r.getAttribute("aria-label")),
-    ).toEqual([WAN, KONTEXT]);
-    await user.click(within(tiers).getByRole("radio", { name: "平台推荐 2" }));
-    expect(within(library()).getAllByRole("rowgroup")).toHaveLength(2);
+    ).toEqual([LTX, SDXL]);
+    await user.click(within(tiers).getByRole("radio", { name: "平台推荐 9" }));
+    expect(within(library()).getAllByRole("rowgroup")).toHaveLength(9);
   });
 
-  it("recommended workflows use DramaStudio nodes: nothing to bind, no tier to change", async () => {
+  it("shipped workflows keep the bindings their workflow.yaml names and their tier", async () => {
     const user = userEvent.setup();
     renderLibrary();
-    const h3 = await open(user, "MiniMax H3 · 视频草稿");
-    expect(h3).toHaveTextContent("随平台提供 · workflows/h3-draft/");
-    expect(h3).toHaveTextContent("能力：画幅 9:16 16:9 3:4 1:1 21:9 · 最长 10 秒 · 参考图 1 张");
+    const h3 = await open(user, H3);
+    expect(h3).toHaveTextContent("随平台提供 · workflows/h3-i2v/");
     expect(within(h3).getByRole("tab", { name: "试跑", selected: true })).toBeInTheDocument();
-    expect(h3).toHaveTextContent("通过 · 2026-10-17 21:40 · 用时 52 秒 · 显存 22.4 GB");
     expect(within(h3).queryByRole("button", { name: "升为我的工作流" })).toBeNull();
+    expect(within(h3).queryByRole("button", { name: "降为未验证" })).toBeNull();
     await user.click(within(h3).getByRole("tab", { name: "绑定" }));
-    expect(h3).toHaveTextContent("用的是 DramaStudio 输入 / 输出节点");
+    expect(h3).toHaveTextContent("随平台提供：绑定写在它的 workflow.yaml 里，这里只看不改。");
     expect(within(h3).queryByRole("combobox")).toBeNull();
-    expect(within(h3).getAllByText("DramaStudio 节点")).toHaveLength(10);
+    expect(within(h3).queryByRole("button", { name: "确认全部绑定" })).toBeNull();
+    expect(within(h3).getAllByText("已确认")).toHaveLength(9);
   });
 
-  it("guessed bindings block the trial and the tier until confirmed", async () => {
+  it("guessed bindings block the trial and the tier; the trial reports over job events", async () => {
     const user = userEvent.setup();
+    fakeImport("sdxl_basic.json");
     renderLibrary();
-    const wan = await open(user, WAN);
-    expect(within(wan).getByRole("tab", { name: "绑定", selected: true })).toBeInTheDocument();
-    expect(wan).toHaveTextContent("还有 3 项是导入时自动猜的，确认后才能试跑和登记。");
-    expect(within(wan).getByRole("button", { name: "升为我的工作流" })).toBeDisabled();
-    expect(wan).toHaveTextContent("先确认绑定");
+    const sdxl = await open(user, SDXL);
+    expect(within(sdxl).getByRole("tab", { name: "绑定", selected: true })).toBeInTheDocument();
+    expect(sdxl).toHaveTextContent("还有 6 项是导入时自动猜的，确认后才能试跑和登记。");
+    expect(within(sdxl).getByRole("button", { name: "升为我的工作流" })).toBeDisabled();
+    expect(sdxl).toHaveTextContent("先确认绑定");
 
-    // Point the seed at the other sampler, then confirm everything.
-    const seedNode = within(wan).getByRole("combobox", { name: "种子 的节点" });
-    await user.selectOptions(seedNode, "KSampler (low noise)");
-    expect(within(wan).getByRole("combobox", { name: "种子 的字段" })).toHaveValue("noise_seed");
-    await user.click(within(wan).getByRole("button", { name: "确认全部绑定" }));
+    // Point the negative prompt at the other text node, then confirm everything.
+    await user.selectOptions(
+      within(sdxl).getByRole("combobox", { name: "提示词（反向） 的节点" }),
+      "Positive",
+    );
+    await user.click(within(sdxl).getByRole("button", { name: "确认全部绑定" }));
     expect(await screen.findByText("绑定已确认")).toBeInTheDocument();
-    await waitFor(() => expect(header(WAN)).toHaveTextContent("正常"));
-    const saved = getDb().workflows.find((w) => w.id === "wf_wan");
+    await waitFor(() => expect(header(SDXL)).toHaveTextContent("正常"));
+    const saved = fakeWorkflows.workflows.find((w) => w.id === "wf_sdxl-basic");
     expect(saved?.bindings.every((b) => b.state === "confirmed")).toBe(true);
-    expect(saved?.bindings.find((b) => b.slot === "seed")?.node_title).toBe("KSampler (low noise)");
+    expect(saved?.bindings.find((b) => b.slot === "negative")?.node_title).toBe("Positive");
 
-    // Now the trial can run; once it passes, the workflow can become 我的工作流.
-    expect(row(WAN)).toHaveTextContent("先试跑通过");
-    await user.click(within(row(WAN)).getByRole("tab", { name: "试跑" }));
-    await user.click(within(row(WAN)).getByRole("button", { name: "试跑" }));
-    expect(await screen.findByText("已开始试跑：Wan 2.2 图生视频（社区）")).toBeInTheDocument();
-    expect(await within(row(WAN)).findByText("试跑中…（本地 GPU 队列）")).toBeInTheDocument();
-    const promote = await within(row(WAN)).findByRole(
-      "button",
-      { name: "通过了，升为我的工作流" },
-      { timeout: 3000 },
-    );
+    // The trial runs on the GPU queue; its steps and its end come as job.updated.
+    expect(row(SDXL)).toHaveTextContent("先试跑通过");
+    await user.click(within(row(SDXL)).getByRole("tab", { name: "试跑" }));
+    await user.click(within(row(SDXL)).getByRole("button", { name: "试跑" }));
+    expect(await screen.findByText("已开始试跑：sdxl_basic")).toBeInTheDocument();
+    expect(await within(row(SDXL)).findByText("试跑中…（本地 GPU 队列）")).toBeInTheDocument();
+    expect(header(SDXL)).toHaveTextContent("试跑中…");
+    act(() => fakeTrialProgress("wf_sdxl-basic", 7, 20));
+    expect(await within(row(SDXL)).findByText("试跑中… 第 7 / 20 步")).toBeInTheDocument();
+    act(() => finishFakeTrial("wf_sdxl-basic"));
+    const promote = await within(row(SDXL)).findByRole("button", {
+      name: "通过了，升为我的工作流",
+    });
     await user.click(promote);
-    expect(await screen.findByText("已升为「我的工作流」：Wan 2.2 图生视频（社区）")).toBeVisible();
-    await waitFor(() => expect(header(WAN)).toHaveTextContent("我的工作流"));
+    expect(await screen.findByText("已升为「我的工作流」：sdxl_basic")).toBeVisible();
+    await waitFor(() => expect(header(SDXL)).toHaveTextContent("我的工作流"));
   });
 
-  it("missing node packs and models install after the ComfyUI change list", async () => {
+  it("missing node packs install after the ComfyUI change list; model files are by hand", async () => {
     const user = userEvent.setup();
+    fakeImport("我的/雨夜氛围-ltx2.json");
     renderLibrary();
-    const kontext = await open(user, KONTEXT);
-    expect(within(kontext).getByRole("tab", { name: "体检", selected: true })).toBeVisible();
-    expect(kontext).toHaveTextContent("上次体检 2026-10-18 09:25 · 节点类 17/19 在");
-    const packs = within(kontext).getByRole("table", { name: "缺的节点包" });
-    expect(within(packs).getByRole("row", { name: /ComfyUI-GGUF/ })).toHaveTextContent(
-      "UnetLoaderGGUFregistry1.1.4",
+    const vsr = await open(user, FLASHVSR);
+    expect(within(vsr).getByRole("tab", { name: "体检", selected: true })).toBeVisible();
+    expect(vsr).toHaveTextContent("节点类 5/6 在");
+    const packs = within(vsr).getByRole("table", { name: "缺的节点包" });
+    expect(within(packs).getByRole("row", { name: /ComfyUI-FlashVSR/ })).toHaveTextContent(
+      "AILab_FlashVSRgit",
     );
-    const models = within(kontext).getByRole("table", { name: "缺的模型" });
-    expect(within(models).getByRole("row", { name: /flux1-kontext/ })).toHaveTextContent("11.8 GB");
-    await user.click(within(row(KONTEXT)).getByRole("tab", { name: "试跑" }));
-    expect(within(row(KONTEXT)).getByRole("button", { name: "试跑" })).toBeDisabled();
-    expect(row(KONTEXT)).toHaveTextContent("先装好缺的节点包和模型");
-    await user.click(within(row(KONTEXT)).getByRole("tab", { name: "体检" }));
+    await user.click(within(row(FLASHVSR)).getByRole("tab", { name: "试跑" }));
+    expect(within(row(FLASHVSR)).getByRole("button", { name: "试跑" })).toBeDisabled();
+    expect(row(FLASHVSR)).toHaveTextContent("先装好缺的节点包和模型");
+    await user.click(within(row(FLASHVSR)).getByRole("tab", { name: "体检" }));
 
-    await user.click(
-      within(row(KONTEXT)).getByRole("button", { name: "安装缺的 2 个节点包和 1 个模型" }),
-    );
+    await user.click(within(row(FLASHVSR)).getByRole("button", { name: "安装缺的 1 个节点包" }));
     const dialog = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
-    expect(within(dialog).getByText("会改动你的 ComfyUI（3 项）")).toBeInTheDocument();
-    expect(within(dialog).getByRole("row", { name: /^ComfyUI-GGUF/ })).toHaveTextContent(
-      "安装1.1.4https://github.com/city96/ComfyUI-GGUF",
-    );
-    expect(within(dialog).getByRole("row", { name: /flux1-kontext/ })).toHaveTextContent(
-      "约 11.8 GB",
+    expect(within(dialog).getByText("会改动你的 ComfyUI（1 项）")).toBeInTheDocument();
+    expect(within(dialog).getByRole("row", { name: /^ComfyUI-FlashVSR/ })).toHaveTextContent(
+      "安装最新版https://github.com/1038lab/ComfyUI-FlashVSR",
     );
     expect(dialog).toHaveTextContent("装坏了可以在「环境与安装」里一键回滚");
     await user.click(within(dialog).getByRole("button", { name: "确认，开始安装" }));
     expect(
-      await screen.findByText(/^已存快照 .*，装好了 2 个节点包、1 个模型$/),
+      await screen.findByText("已存快照 2026-10-18_10-05-00_snapshot，装好了 1 个节点包"),
     ).toBeInTheDocument();
-    await waitFor(() => expect(header(KONTEXT)).toHaveTextContent("正常"));
-    expect(row(KONTEXT)).toHaveTextContent("都在：节点类、被绑定的节点标题和字段、模型文件。");
+    await waitFor(() => expect(header(FLASHVSR)).toHaveTextContent("正常"));
+    expect(row(FLASHVSR)).toHaveTextContent("都在：节点类、被绑定的节点标题和字段、模型文件。");
+
+    // A missing checkpoint is listed, but only the node pack goes into the change list.
+    await user.click(screen.getByRole("button", { name: `展开 ${LTX}` }));
+    await user.click(within(row(LTX)).getByRole("tab", { name: "体检" }));
+    expect(row(LTX)).toHaveTextContent("缺的模型文件要自己放进 ComfyUI 的 models 下对应的目录");
+    await user.click(within(row(LTX)).getByRole("button", { name: "安装缺的 1 个节点包" }));
+    const ltx = await screen.findByRole("alertdialog", { name: "开始安装前请确认" });
+    expect(within(ltx).getByText("会改动你的 ComfyUI（1 项）")).toBeInTheDocument();
+    expect(within(ltx).getByRole("row", { name: /^ComfyUI-LTXVideo/ })).toBeInTheDocument();
   });
 
   it("imports from ComfyUI's list; the asset board and imported ones cannot be picked", async () => {
     const user = userEvent.setup();
+    fakeImport("sdxl_basic.json");
     renderLibrary();
-    await screen.findByRole("rowgroup", { name: WAN });
+    await screen.findByRole("rowgroup", { name: SDXL });
     await user.click(screen.getByRole("button", { name: "导入工作流" }));
     const dialog = await screen.findByRole("dialog", { name: "导入工作流" });
     const file = (path: string) => within(dialog).getByRole("listitem", { name: path });
     expect(
-      await within(dialog).findByRole("listitem", { name: "短剧/雨停之前/第1集-素材板.json" }),
+      await within(dialog).findByRole("listitem", { name: "DramaStudio 素材板 · 雨停之前.json" }),
     ).toHaveTextContent("素材板，不能登记");
-    expect(file("video_wan2_2_14B_i2v.json")).toHaveTextContent("已导入");
-    expect(within(file("video_wan2_2_14B_i2v.json")).queryByRole("button")).toBeNull();
+    expect(file("sdxl_basic.json")).toHaveTextContent("已导入");
+    expect(within(file("sdxl_basic.json")).queryByRole("button")).toBeNull();
     await user.click(within(file("我的/雨夜氛围-ltx2.json")).getByRole("button", { name: "导入" }));
     expect(await screen.findByText("已导入「雨夜氛围-ltx2」：先确认绑定，再试跑")).toBeVisible();
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    const added = await screen.findByRole("rowgroup", { name: "雨夜氛围-ltx2" });
+    const added = await screen.findByRole("rowgroup", { name: LTX });
     expect(added).toHaveTextContent("导入自 我的/雨夜氛围-ltx2.json");
     expect(added).toHaveTextContent("还有 8 项是导入时自动猜的");
-    expect(within(added).getByRole("button", { name: "展开 雨夜氛围-ltx2" })).toHaveAttribute(
+    expect(within(added).getByRole("button", { name: `展开 ${LTX}` })).toHaveAttribute(
       "aria-expanded",
       "true",
     );
@@ -179,7 +198,7 @@ describe("WorkflowLibrary", () => {
   it("imports a dropped API-format JSON and refuses other files", async () => {
     const user = userEvent.setup();
     renderLibrary();
-    await screen.findByRole("rowgroup", { name: WAN });
+    await screen.findByRole("rowgroup", { name: H3 });
     await user.click(screen.getByRole("button", { name: "导入工作流" }));
     const input = await screen.findByTestId("workflow-file");
     await user.upload(input, new File(['{"nodes": []}'], "ui-format.json"));
@@ -193,21 +212,25 @@ describe("WorkflowLibrary", () => {
 
   it("my workflows can go back to unverified", async () => {
     const user = userEvent.setup();
+    const w = fakeImport("sdxl_basic.json");
+    w.tier = "mine";
+    w.bindings = w.bindings.map((b) => ({ ...b, state: "confirmed" }));
     renderLibrary();
-    const lip = await open(user, "LatentSync 口型");
-    await user.click(within(lip).getByRole("button", { name: "降为未验证" }));
-    expect(await screen.findByText("已降为未验证：LatentSync 口型")).toBeVisible();
-    await waitFor(() => expect(header("LatentSync 口型")).toHaveTextContent("未验证"));
+    const sdxl = await open(user, SDXL);
+    await user.click(within(sdxl).getByRole("button", { name: "降为未验证" }));
+    expect(await screen.findByText("已降为未验证：sdxl_basic")).toBeVisible();
+    await waitFor(() => expect(header(SDXL)).toHaveTextContent("未验证"));
   });
 
   it("switches to English", async () => {
+    fakeImport("我的/雨夜氛围-ltx2.json");
     act(() => useUiStore.getState().toggleLang());
     try {
       renderLibrary();
       expect(await screen.findByRole("region", { name: "Workflow library" })).toBeInTheDocument();
-      const wan = await screen.findByRole("rowgroup", { name: WAN });
-      expect(screen.getByRole("radio", { name: "Unverified 2" })).toBeInTheDocument();
-      expect(wan).toHaveTextContent("Unverified3 bindings to confirmNever run");
+      const ltx = await screen.findByRole("rowgroup", { name: LTX });
+      expect(screen.getByRole("radio", { name: "Unverified 1" })).toBeInTheDocument();
+      expect(ltx).toHaveTextContent("Unverified8 bindings to confirmNever run");
     } finally {
       act(() => useUiStore.getState().toggleLang());
     }

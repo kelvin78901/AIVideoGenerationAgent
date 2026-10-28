@@ -274,5 +274,233 @@
     ]
    }
   }
+ },
+ "BasicGuider": {
+  "display_name": "BasicGuider",
+  "input": {
+   "required": {}
+  }
+ },
+ "BasicScheduler": {
+  "display_name": "BasicScheduler",
+  "input": {
+   "required": {}
+  }
+ },
+ "BatchImagesNode": {
+  "display_name": "BatchImagesNode",
+  "input": {
+   "required": {}
+  }
+ },
+ "CFGNorm": {
+  "display_name": "CFGNorm",
+  "input": {
+   "required": {}
+  }
+ },
+ "CLIPLoader": {
+  "display_name": "CLIPLoader",
+  "input": {
+   "required": {}
+  }
+ },
+ "ComfyMathExpression": {
+  "display_name": "ComfyMathExpression",
+  "input": {
+   "required": {}
+  }
+ },
+ "EmptyFlux2LatentImage": {
+  "display_name": "EmptyFlux2LatentImage",
+  "input": {
+   "required": {}
+  }
+ },
+ "EmptySD3LatentImage": {
+  "display_name": "EmptySD3LatentImage",
+  "input": {
+   "required": {}
+  }
+ },
+ "FluxKontextImageScale": {
+  "display_name": "FluxKontextImageScale",
+  "input": {
+   "required": {}
+  }
+ },
+ "FluxKontextMultiReferenceLatentMethod": {
+  "display_name": "FluxKontextMultiReferenceLatentMethod",
+  "input": {
+   "required": {}
+  }
+ },
+ "GetVideoComponents": {
+  "display_name": "GetVideoComponents",
+  "input": {
+   "required": {}
+  }
+ },
+ "KSamplerSelect": {
+  "display_name": "KSamplerSelect",
+  "input": {
+   "required": {}
+  }
+ },
+ "LoadVideo": {
+  "display_name": "LoadVideo",
+  "input": {
+   "required": {}
+  }
+ },
+ "LoraLoaderModelOnly": {
+  "display_name": "LoraLoaderModelOnly",
+  "input": {
+   "required": {}
+  }
+ },
+ "MiniMaxH3AddGuide": {
+  "display_name": "MiniMaxH3AddGuide",
+  "input": {
+   "required": {}
+  }
+ },
+ "MiniMaxH3ImageToVideo": {
+  "display_name": "MiniMaxH3ImageToVideo",
+  "input": {
+   "required": {}
+  }
+ },
+ "MiniMaxH3ReferenceToVideo": {
+  "display_name": "MiniMaxH3ReferenceToVideo",
+  "input": {
+   "required": {}
+  }
+ },
+ "ModelSamplingAuraFlow": {
+  "display_name": "ModelSamplingAuraFlow",
+  "input": {
+   "required": {}
+  }
+ },
+ "ModelSamplingFlux": {
+  "display_name": "ModelSamplingFlux",
+  "input": {
+   "required": {}
+  }
+ },
+ "PreviewAny": {
+  "display_name": "PreviewAny",
+  "input": {
+   "required": {}
+  }
+ },
+ "PreviewImage": {
+  "display_name": "PreviewImage",
+  "input": {
+   "required": {}
+  }
+ },
+ "PrimitiveFloat": {
+  "display_name": "PrimitiveFloat",
+  "input": {
+   "required": {}
+  }
+ },
+ "PrimitiveStringMultiline": {
+  "display_name": "PrimitiveStringMultiline",
+  "input": {
+   "required": {}
+  }
+ },
+ "ReferenceMultiLatent": {
+  "display_name": "ReferenceMultiLatent",
+  "input": {
+   "required": {}
+  }
+ },
+ "ResizeImageMaskNode": {
+  "display_name": "ResizeImageMaskNode",
+  "input": {
+   "required": {}
+  }
+ },
+ "SeedVR2Conditioning": {
+  "display_name": "SeedVR2Conditioning",
+  "input": {
+   "required": {}
+  }
+ },
+ "SeedVR2PostProcessing": {
+  "display_name": "SeedVR2PostProcessing",
+  "input": {
+   "required": {}
+  }
+ },
+ "SeedVR2Preprocess": {
+  "display_name": "SeedVR2Preprocess",
+  "input": {
+   "required": {}
+  }
+ },
+ "SeedVR2TemporalChunk": {
+  "display_name": "SeedVR2TemporalChunk",
+  "input": {
+   "required": {}
+  }
+ },
+ "SeedVR2TemporalMerge": {
+  "display_name": "SeedVR2TemporalMerge",
+  "input": {
+   "required": {}
+  }
+ },
+ "StringFormat": {
+  "display_name": "StringFormat",
+  "input": {
+   "required": {}
+  }
+ },
+ "TextEncodeQwenImageEditPlus": {
+  "display_name": "TextEncodeQwenImageEditPlus",
+  "input": {
+   "required": {}
+  }
+ },
+ "TextGenerate": {
+  "display_name": "TextGenerate",
+  "input": {
+   "required": {}
+  }
+ },
+ "UNETLoader": {
+  "display_name": "UNETLoader",
+  "input": {
+   "required": {}
+  }
+ },
+ "VAEDecodeAudio": {
+  "display_name": "VAEDecodeAudio",
+  "input": {
+   "required": {}
+  }
+ },
+ "VAEDecodeTiled": {
+  "display_name": "VAEDecodeTiled",
+  "input": {
+   "required": {}
+  }
+ },
+ "VAEEncodeTiled": {
+  "display_name": "VAEEncodeTiled",
+  "input": {
+   "required": {}
+  }
+ },
+ "VAELoader": {
+  "display_name": "VAELoader",
+  "input": {
+   "required": {}
+  }
  }
 }

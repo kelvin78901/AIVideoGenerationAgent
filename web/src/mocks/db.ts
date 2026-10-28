@@ -22,7 +22,6 @@ import { series } from "@/mocks/fixtures/demo/series";
 import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtures/demo/post";
 import { syncLog, syncRules, syncTargets } from "@/mocks/fixtures/demo/sync";
 import { finishingProducts } from "@/mocks/fixtures/demo/finishing";
-import { comfyWorkflowFiles, workflows } from "@/mocks/fixtures/demo/workflows";
 
 function createDb() {
   return structuredClone({
@@ -64,9 +63,6 @@ function createDb() {
       runs: 0,
     },
     gates: [] as GateDecision[],
-    /** Workflow library (SPEC 6.4) and ComfyUI's own workflow list. */
-    workflows,
-    comfyWorkflowFiles,
   });
 }
 

@@ -48,10 +48,6 @@
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
  * | GET, PUT /sync/targets, POST /sync/targets/{id}/detect | M9 |
  * | POST /sync/run, GET /sync/log, GET /sync/board | M9 |
- * | GET /workflows, GET / PATCH /workflows/{id}, POST /workflows/import | M5 |
- * | PUT /workflows/{id}/bindings, POST /workflows/{id}/check, /trial | M5 |
- * | POST /workflows/check-all, /workflows/{id}/deps, /deps/install | M5 |
- * | GET /comfy/workflows (ComfyUI's own workflow list) | M5 |
  */
 import { gateHandlers } from "@/mocks/handlers/gates";
 import { generateHandlers } from "@/mocks/handlers/generate";
@@ -59,7 +55,6 @@ import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
 import { syncHandlers } from "@/mocks/handlers/sync";
-import { workflowHandlers } from "@/mocks/handlers/workflows";
 import { seriesHandlers } from "@/mocks/handlers/series";
 
 export const handlers = [
@@ -70,5 +65,4 @@ export const handlers = [
   ...generateHandlers,
   ...postHandlers,
   ...syncHandlers,
-  ...workflowHandlers,
 ];

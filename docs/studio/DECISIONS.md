@@ -2,10 +2,19 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-28 · M5 第 10b 步：工作流库前端接后端；试跑走任务事件
+
+- **删 MSW 的工作流库**（`mocks/handlers/workflows.ts`、`fixtures/demo/workflows.ts`、`db.ts` 两项、`demoTiming.workflowTrialMs`）：示例模式下模型页的工作流库直接读 Mock 后端。页面测试改用 `test/fakes/workflows.ts`，数据是 `test_web_fixtures.py` 新导出的 `workflows.json`（仓库的 9 个工作流全部体检后 + 示例 ComfyUI 列表里的两个导入后的样子；体检、试跑的时间 `at` 也固定）。原来 MSW 里的「Wan 2.2（社区）」「Flux Kontext（社区）」「LatentSync（我的）」后端没有，测试改成用雨夜氛围-ltx2（缺节点包和模型）、sdxl_basic（绑定待确认、体检正常）和 FlashVSR（缺节点包）。
+- **示例 ComfyUI 补节点类**（`wflib/demo/object_info.json` 加 38 个，只有名字、没有输入；`node_map.json` 加 1038lab 的 ComfyUI-FlashVSR）：以前仓库工作流在 Mock 下全是「坏了」（`unknown_node`：UNETLoader、CLIPLoader 都没有），接上后端后模型页会一片红。现在除 FlashVSR（缺节点包、可装）外都正常；H3 和 SeedVR2 节点按 ComfyUI 0.41 自带算。
+- **试跑进度走 `job.updated`**：`useWorkflows` 不再每秒轮询；`api/events.ts` 收到 `workflow_trial` 的状态变化（不带 `progress` 的那种）就刷新工作流库；试跑中显示采样步数（`JobSchema.progress`，ComfyUI 的 `step` / `steps`，从任务列表缓存里读）。
+- **装依赖只算节点包**：后端 `install_deps` 本来就只装节点包、模型文件留给用户放（第 3 步）。按钮改成「安装缺的 N 个节点包」，改动清单只列节点包，缺模型时提示自己放进 models 目录后重新体检；提示里带 `restart_required`（真 ComfyUI 要重启）和 `failed`。
+- **仓库工作流的绑定只看不改**（写在 `workflow.yaml`，后端本来就 409 `workflow_tier_repo`），说明一句。
+- ModelPicker 的档位徽标改用工作流库的颜色和词（`workflows:tier.*`），不另起一套。
+
 ## 2026-10-28 · M5 第 10a 步：ModelPicker 显示工作流档位，未验证的单独一组
 
 - **`GET /config/components` 的 `models[].tier`**（`modelhub/catalog.py:_tier`）：只有 `runtime: comfyui` 且有 `workflow` 的本地模型有值；在库的「未验证」集合里 → `unverified`（文件变了的仓库工作流也算），库里升过「我的」→ `mine`，其余（`providers.yaml` 带的）→ `recommended`；LLM、API、Python worker 模型是 `null`。没另开接口，选择器本来就读这份目录。
-- **选择器**：本地模型照旧一个单选组，未验证的放在组末一个带标题的小组里（「未验证的工作流 · 只能手动选」+ 一句说明），每个工作流带档位徽标；「兜底到」不列未验证的（后端 `_manual_only` 本来就会去掉）。手动选成本地模型照常写覆盖。
+- **选择器**：本地模型照旧一个单选组，未验证的放在组末一个带标题的小组里（「未验证的工作流 · 只能手动选」+ 一句说明），每个工作流带档位徽标（颜色和词跟工作流库一样，第 10b 步）；「兜底到」不列未验证的（后端 `_manual_only` 本来就会去掉）。手动选成本地模型照常写覆盖。
 - 原因：SPEC 6.4.4 / 7「未验证只能手动选」；后端第 2 步已经把它挡在自动路由外，界面要让人看出来为什么它不会被自动用到。
 
 ## 2026-10-28 · M5 第 14e 步：本地 H3 草稿 20 步；媒体缓存认工作流文件；库同步跟着仓库文件走

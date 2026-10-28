@@ -18,5 +18,13 @@
   {
    "title_aux": "ComfyUI-VideoHelperSuite"
   }
+ ],
+ "https://github.com/1038lab/ComfyUI-FlashVSR": [
+  [
+   "AILab_FlashVSR"
+  ],
+  {
+   "title_aux": "ComfyUI-FlashVSR"
+  }
  ]
 }

@@ -1,4 +1,5 @@
-"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script,assets,dub,shots,generate}.json``:
+"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script,assets,dub,shots,generate,
+workflows}.json``:
 what the Mock backend answers.
 
 The front end's page tests serve these through their fake backend
@@ -407,3 +408,42 @@ def test_web_generate_fixture_is_current(demo_gates: None, seeded: TestClient) -
             f.write(text)
     current = GENERATE_FIXTURE.read_text(encoding="utf-8") if GENERATE_FIXTURE.exists() else ""
     assert current == text, f"{GENERATE_FIXTURE.name} is out of date: see this module's docstring"
+
+
+WORKFLOWS_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "workflows.json"
+IMPORTED = ("我的/雨夜氛围-ltx2.json", "sdxl_basic.json")
+
+
+def _checked_at(value: Any) -> Any:
+    """A health check's and a trial's time is ``at``."""
+    if isinstance(value, dict):
+        return {k: FIXED_TIME if k == "at" else _checked_at(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_checked_at(v) for v in value]
+    return value
+
+
+def test_web_workflows_fixture_is_current(client: TestClient) -> None:
+    """工作流库 (``test/fakes/workflows.ts``): the repo's workflows and two imported from the
+    sample ComfyUI's list, after 全部体检; that list; and, for each with something missing,
+    the change list installing it would make."""
+    for path in IMPORTED:
+        res = client.post(f"{V1}/workflows/import", json={"comfy_path": path})
+        assert res.status_code == 201, res.text
+    workflows = client.post(f"{V1}/workflows/check-all").json()
+    deps = {
+        w["id"]: client.post(f"{V1}/workflows/{w['id']}/deps").json()["changes"]
+        for w in workflows
+        if w["check"] and w["check"]["status"] != "ok"
+    }
+    export = {
+        "workflows": workflows,
+        "comfy_files": client.get(f"{V1}/comfy/workflows").json(),
+        "deps": deps,
+    }
+    text = json.dumps(_fixed(_checked_at(export)), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(WORKFLOWS_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = WORKFLOWS_FIXTURE.read_text(encoding="utf-8") if WORKFLOWS_FIXTURE.exists() else ""
+    assert current == text, f"{WORKFLOWS_FIXTURE.name} is out of date: see this module's docstring"

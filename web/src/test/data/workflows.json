@@ -1,0 +1,2485 @@
+{
+  "workflows": [
+    {
+      "id": "wf_flashvsr-up",
+      "slug": "flashvsr-up",
+      "model_key": "comfy/flashvsr",
+      "name": "FlashVSR 超分（本地 2K 精修兜底）",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "up"
+      ],
+      "caps": {
+        "aspects": [],
+        "max_seconds": 15.0,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "540dd594053d05b8905e0cf3619827ecdc016dc9b671a8efd0ee397d139c0c72",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "video_in",
+          "index": null,
+          "node_title": "Video in",
+          "node_class": "LoadVideo",
+          "field": "file",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "ResizeImageMaskNode",
+          "field": "resize_type.width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "ResizeImageMaskNode",
+          "field": "resize_type.height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "FlashVSR",
+          "node_class": "AILab_FlashVSR",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "video_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "SaveVideo",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Video in",
+          "class_type": "LoadVideo",
+          "fields": [
+            "file"
+          ]
+        },
+        {
+          "title": "Frames and sound",
+          "class_type": "GetVideoComponents",
+          "fields": []
+        },
+        {
+          "title": "FlashVSR",
+          "class_type": "AILab_FlashVSR",
+          "fields": [
+            "preset",
+            "scale",
+            "unload_model",
+            "seed"
+          ]
+        },
+        {
+          "title": "Size",
+          "class_type": "ResizeImageMaskNode",
+          "fields": [
+            "resize_type",
+            "resize_type.width",
+            "resize_type.height",
+            "resize_type.crop",
+            "scale_method"
+          ]
+        },
+        {
+          "title": "Video",
+          "class_type": "CreateVideo",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "SaveVideo",
+          "fields": [
+            "filename_prefix",
+            "format",
+            "format.codec"
+          ]
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "missing",
+        "node_classes": {
+          "found": 5,
+          "total": 6
+        },
+        "missing_packs": [
+          {
+            "name": "ComfyUI-FlashVSR",
+            "classes": [
+              "AILab_FlashVSR"
+            ],
+            "source": "git",
+            "version": null,
+            "url": "https://github.com/1038lab/ComfyUI-FlashVSR"
+          }
+        ],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_flux3-klein",
+      "slug": "flux3-klein",
+      "model_key": "comfy/flux3-klein",
+      "name": "FLUX 3 Klein 按参考图编辑",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "kf"
+      ],
+      "caps": {
+        "aspects": [
+          "16:9",
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "9:16"
+        ],
+        "max_seconds": null,
+        "refs": 4,
+        "vram_gb": null
+      },
+      "file_sha256": "19d6707f98d7d96cc429df59a3edb81fec01323c09bb94041a4f39dab140d5e1",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Prompt",
+          "node_class": "StringFormat",
+          "field": "values.a",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptyFlux2LatentImage",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptyFlux2LatentImage",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Sampler",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 1,
+          "node_title": "Reference 1",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 2,
+          "node_title": "Reference 2",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 3,
+          "node_title": "Reference 3",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 4,
+          "node_title": "Reference 4",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "image_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "PreviewImage",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Load diffusion model",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Load text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Load VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Load prompt upsampler",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Reference 1",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 2",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 3",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 4",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference batch",
+          "class_type": "BatchImagesNode",
+          "fields": []
+        },
+        {
+          "title": "Prompt",
+          "class_type": "StringFormat",
+          "fields": [
+            "f_string",
+            "values.a"
+          ]
+        },
+        {
+          "title": "Upsampler system prompt",
+          "class_type": "PrimitiveStringMultiline",
+          "fields": [
+            "value"
+          ]
+        },
+        {
+          "title": "Prompt upsampler",
+          "class_type": "TextGenerate",
+          "fields": [
+            "max_length",
+            "sampling_mode",
+            "sampling_mode.temperature",
+            "sampling_mode.top_k",
+            "sampling_mode.top_p",
+            "sampling_mode.min_p",
+            "sampling_mode.repetition_penalty",
+            "sampling_mode.seed",
+            "sampling_mode.presence_penalty",
+            "thinking",
+            "use_default_template",
+            "mtp"
+          ]
+        },
+        {
+          "title": "Caption",
+          "class_type": "CLIPTextEncode",
+          "fields": []
+        },
+        {
+          "title": "Empty negative",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "Reference latents",
+          "class_type": "ReferenceMultiLatent",
+          "fields": [
+            "resolution",
+            "resolution.megapixels"
+          ]
+        },
+        {
+          "title": "Model sampling",
+          "class_type": "ModelSamplingFlux",
+          "fields": [
+            "max_shift",
+            "base_shift",
+            "width",
+            "height"
+          ]
+        },
+        {
+          "title": "Size",
+          "class_type": "EmptyFlux2LatentImage",
+          "fields": [
+            "width",
+            "height",
+            "batch_size"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "PreviewImage",
+          "fields": []
+        },
+        {
+          "title": "Upsampled prompt",
+          "class_type": "PreviewAny",
+          "fields": []
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 16,
+          "total": 16
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_flux3-klein-t2i",
+      "slug": "flux3-klein-t2i",
+      "model_key": "comfy/flux3-klein-t2i",
+      "name": "FLUX 3 Klein 文生图",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "kf"
+      ],
+      "caps": {
+        "aspects": [
+          "16:9",
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "9:16"
+        ],
+        "max_seconds": null,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "9e090956da850b52c4e8e4f5536c1f5f57d5363acc7f3bfa4e5e289f395c47c6",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Prompt upsampler",
+          "node_class": "TextGenerate",
+          "field": "prompt",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptyFlux2LatentImage",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptyFlux2LatentImage",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Sampler",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "image_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "PreviewImage",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Load diffusion model",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Load text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Load VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Load prompt upsampler",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Upsampler system prompt",
+          "class_type": "PrimitiveStringMultiline",
+          "fields": [
+            "value"
+          ]
+        },
+        {
+          "title": "Prompt upsampler",
+          "class_type": "TextGenerate",
+          "fields": [
+            "prompt",
+            "max_length",
+            "sampling_mode",
+            "sampling_mode.temperature",
+            "sampling_mode.top_k",
+            "sampling_mode.top_p",
+            "sampling_mode.min_p",
+            "sampling_mode.repetition_penalty",
+            "sampling_mode.seed",
+            "sampling_mode.presence_penalty",
+            "thinking",
+            "use_default_template",
+            "mtp"
+          ]
+        },
+        {
+          "title": "Caption",
+          "class_type": "CLIPTextEncode",
+          "fields": []
+        },
+        {
+          "title": "Empty negative",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "Model sampling",
+          "class_type": "ModelSamplingFlux",
+          "fields": [
+            "max_shift",
+            "base_shift",
+            "width",
+            "height"
+          ]
+        },
+        {
+          "title": "Size",
+          "class_type": "EmptyFlux2LatentImage",
+          "fields": [
+            "width",
+            "height",
+            "batch_size"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "PreviewImage",
+          "fields": []
+        },
+        {
+          "title": "Upsampled prompt",
+          "class_type": "PreviewAny",
+          "fields": []
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 12,
+          "total": 12
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_h3-i2v",
+      "slug": "h3-i2v",
+      "model_key": "comfy/h3",
+      "name": "MiniMax H3 图生视频（草稿）",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "vid"
+      ],
+      "caps": {
+        "aspects": [
+          "16:9",
+          "1:1",
+          "21:9",
+          "3:4",
+          "4:3",
+          "9:16"
+        ],
+        "max_seconds": 15.0,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "c2e08cf6cf1ecf3e3a0f59228dd4cc45e00a6917486c2cd3392c62b86d58a4ec",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Image to video",
+          "node_class": "MiniMaxH3ImageToVideo",
+          "field": "prompt",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Image to video",
+          "node_class": "MiniMaxH3ImageToVideo",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Image to video",
+          "node_class": "MiniMaxH3ImageToVideo",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "first_frame",
+          "index": null,
+          "node_title": "First frame",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seconds",
+          "index": null,
+          "node_title": "Duration",
+          "node_class": "PrimitiveFloat",
+          "field": "value",
+          "state": "confirmed"
+        },
+        {
+          "slot": "fps",
+          "index": null,
+          "node_title": "Video",
+          "node_class": "CreateVideo",
+          "field": "fps",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Noise",
+          "node_class": "RandomNoise",
+          "field": "noise_seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "dialogue_audio",
+          "index": null,
+          "node_title": "Dialogue audio",
+          "node_class": "LoadAudio",
+          "field": "audio",
+          "state": "confirmed"
+        },
+        {
+          "slot": "video_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "SaveVideo",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "H3 model",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Video VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Audio VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "First frame",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Duration",
+          "class_type": "PrimitiveFloat",
+          "fields": [
+            "value"
+          ]
+        },
+        {
+          "title": "Frames",
+          "class_type": "ComfyMathExpression",
+          "fields": [
+            "expression"
+          ]
+        },
+        {
+          "title": "Image to video",
+          "class_type": "MiniMaxH3ImageToVideo",
+          "fields": [
+            "prompt",
+            "width",
+            "height"
+          ]
+        },
+        {
+          "title": "Dialogue audio",
+          "class_type": "LoadAudio",
+          "fields": [
+            "audio"
+          ]
+        },
+        {
+          "title": "Dialogue guide",
+          "class_type": "MiniMaxH3AddGuide",
+          "fields": [
+            "frame_idx"
+          ]
+        },
+        {
+          "title": "Guider",
+          "class_type": "BasicGuider",
+          "fields": []
+        },
+        {
+          "title": "Noise",
+          "class_type": "RandomNoise",
+          "fields": [
+            "noise_seed"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSamplerSelect",
+          "fields": [
+            "sampler_name"
+          ]
+        },
+        {
+          "title": "Scheduler",
+          "class_type": "BasicScheduler",
+          "fields": [
+            "scheduler",
+            "steps",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Sample",
+          "class_type": "SamplerCustomAdvanced",
+          "fields": []
+        },
+        {
+          "title": "Decode video",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Decode audio",
+          "class_type": "VAEDecodeAudio",
+          "fields": []
+        },
+        {
+          "title": "Video",
+          "class_type": "CreateVideo",
+          "fields": [
+            "fps",
+            "bit_depth"
+          ]
+        },
+        {
+          "title": "Output",
+          "class_type": "SaveVideo",
+          "fields": [
+            "filename_prefix",
+            "format",
+            "format.codec"
+          ]
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 18,
+          "total": 18
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_h3-r2v",
+      "slug": "h3-r2v",
+      "model_key": "comfy/h3-r2v",
+      "name": "MiniMax H3 参考生视频（草稿，原生配音）",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "vid"
+      ],
+      "caps": {
+        "aspects": [
+          "16:9",
+          "1:1",
+          "21:9",
+          "3:4",
+          "4:3",
+          "9:16"
+        ],
+        "max_seconds": 15.0,
+        "refs": 4,
+        "vram_gb": null
+      },
+      "file_sha256": "7c2f9e4506b1dc7beccc0d9333c981cc9c61ca8477b695179069649ed27d64e0",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Reference to video",
+          "node_class": "MiniMaxH3ReferenceToVideo",
+          "field": "prompt",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Reference to video",
+          "node_class": "MiniMaxH3ReferenceToVideo",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Reference to video",
+          "node_class": "MiniMaxH3ReferenceToVideo",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "first_frame",
+          "index": null,
+          "node_title": "First frame",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 1,
+          "node_title": "Reference 1",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 2,
+          "node_title": "Reference 2",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 3,
+          "node_title": "Reference 3",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 4,
+          "node_title": "Reference 4",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_audio",
+          "index": 1,
+          "node_title": "Voice 1",
+          "node_class": "LoadAudio",
+          "field": "audio",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_audio",
+          "index": 2,
+          "node_title": "Voice 2",
+          "node_class": "LoadAudio",
+          "field": "audio",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_audio",
+          "index": 3,
+          "node_title": "Voice 3",
+          "node_class": "LoadAudio",
+          "field": "audio",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seconds",
+          "index": null,
+          "node_title": "Duration",
+          "node_class": "PrimitiveFloat",
+          "field": "value",
+          "state": "confirmed"
+        },
+        {
+          "slot": "fps",
+          "index": null,
+          "node_title": "Video",
+          "node_class": "CreateVideo",
+          "field": "fps",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Noise",
+          "node_class": "RandomNoise",
+          "field": "noise_seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "video_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "SaveVideo",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "H3 model",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Video VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Audio VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "First frame",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Duration",
+          "class_type": "PrimitiveFloat",
+          "fields": [
+            "value"
+          ]
+        },
+        {
+          "title": "Frames",
+          "class_type": "ComfyMathExpression",
+          "fields": [
+            "expression"
+          ]
+        },
+        {
+          "title": "Reference 1",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 2",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 3",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 4",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Voice 1",
+          "class_type": "LoadAudio",
+          "fields": [
+            "audio"
+          ]
+        },
+        {
+          "title": "Voice 2",
+          "class_type": "LoadAudio",
+          "fields": [
+            "audio"
+          ]
+        },
+        {
+          "title": "Voice 3",
+          "class_type": "LoadAudio",
+          "fields": [
+            "audio"
+          ]
+        },
+        {
+          "title": "Reference to video",
+          "class_type": "MiniMaxH3ReferenceToVideo",
+          "fields": [
+            "prompt",
+            "width",
+            "height",
+            "ref_image_size"
+          ]
+        },
+        {
+          "title": "Guider",
+          "class_type": "BasicGuider",
+          "fields": []
+        },
+        {
+          "title": "Noise",
+          "class_type": "RandomNoise",
+          "fields": [
+            "noise_seed"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSamplerSelect",
+          "fields": [
+            "sampler_name"
+          ]
+        },
+        {
+          "title": "Scheduler",
+          "class_type": "BasicScheduler",
+          "fields": [
+            "scheduler",
+            "steps",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Sample",
+          "class_type": "SamplerCustomAdvanced",
+          "fields": []
+        },
+        {
+          "title": "Decode video",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Decode audio",
+          "class_type": "VAEDecodeAudio",
+          "fields": []
+        },
+        {
+          "title": "Video",
+          "class_type": "CreateVideo",
+          "fields": [
+            "fps",
+            "bit_depth"
+          ]
+        },
+        {
+          "title": "Output",
+          "class_type": "SaveVideo",
+          "fields": [
+            "filename_prefix",
+            "format",
+            "format.codec"
+          ]
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 17,
+          "total": 17
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_qwen-image",
+      "slug": "qwen-image",
+      "model_key": "comfy/qwen-image",
+      "name": "Qwen-Image-2512 文生图",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "img",
+        "text",
+        "kf"
+      ],
+      "caps": {
+        "aspects": [
+          "16:9",
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "9:16"
+        ],
+        "max_seconds": null,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "66b56428a9170a13013e01a8c43b251542521bec3f65989173f80b65d4839327",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Prompt",
+          "node_class": "CLIPTextEncode",
+          "field": "text",
+          "state": "confirmed"
+        },
+        {
+          "slot": "negative",
+          "index": null,
+          "node_title": "Negative prompt",
+          "node_class": "CLIPTextEncode",
+          "field": "text",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptySD3LatentImage",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptySD3LatentImage",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Sampler",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "image_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "PreviewImage",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Load diffusion model",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Load text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Load VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Lightning LoRA",
+          "class_type": "LoraLoaderModelOnly",
+          "fields": [
+            "lora_name",
+            "strength_model"
+          ]
+        },
+        {
+          "title": "Model sampling",
+          "class_type": "ModelSamplingAuraFlow",
+          "fields": [
+            "shift"
+          ]
+        },
+        {
+          "title": "Prompt",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "Negative prompt",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "Size",
+          "class_type": "EmptySD3LatentImage",
+          "fields": [
+            "width",
+            "height",
+            "batch_size"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "PreviewImage",
+          "fields": []
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 10,
+          "total": 10
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_qwen-image-edit",
+      "slug": "qwen-image-edit",
+      "model_key": "comfy/qwen-image-edit",
+      "name": "Qwen-Image-Edit-2511 按参考图编辑",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "img",
+        "views",
+        "kf"
+      ],
+      "caps": {
+        "aspects": [
+          "16:9",
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "9:16"
+        ],
+        "max_seconds": null,
+        "refs": 3,
+        "vram_gb": null
+      },
+      "file_sha256": "aec165fe7a82a8b7570af9190529bbf0b0612b56beca4c8982079720070f7dab",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Prompt",
+          "node_class": "TextEncodeQwenImageEditPlus",
+          "field": "prompt",
+          "state": "confirmed"
+        },
+        {
+          "slot": "negative",
+          "index": null,
+          "node_title": "Negative prompt",
+          "node_class": "TextEncodeQwenImageEditPlus",
+          "field": "prompt",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptySD3LatentImage",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptySD3LatentImage",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Sampler",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 1,
+          "node_title": "Reference 1",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 2,
+          "node_title": "Reference 2",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 3,
+          "node_title": "Reference 3",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "image_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "PreviewImage",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Load diffusion model",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Load text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Load VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Model sampling",
+          "class_type": "ModelSamplingAuraFlow",
+          "fields": [
+            "shift"
+          ]
+        },
+        {
+          "title": "CFG norm",
+          "class_type": "CFGNorm",
+          "fields": [
+            "strength",
+            "pre_cfg"
+          ]
+        },
+        {
+          "title": "Lightning LoRA",
+          "class_type": "LoraLoaderModelOnly",
+          "fields": [
+            "lora_name",
+            "strength_model"
+          ]
+        },
+        {
+          "title": "Reference 1",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Scale reference 1",
+          "class_type": "FluxKontextImageScale",
+          "fields": []
+        },
+        {
+          "title": "Reference 2",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 3",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Prompt",
+          "class_type": "TextEncodeQwenImageEditPlus",
+          "fields": [
+            "prompt"
+          ]
+        },
+        {
+          "title": "Negative prompt",
+          "class_type": "TextEncodeQwenImageEditPlus",
+          "fields": [
+            "prompt"
+          ]
+        },
+        {
+          "title": "Reference latents",
+          "class_type": "FluxKontextMultiReferenceLatentMethod",
+          "fields": [
+            "reference_latents_method"
+          ]
+        },
+        {
+          "title": "Negative reference latents",
+          "class_type": "FluxKontextMultiReferenceLatentMethod",
+          "fields": [
+            "reference_latents_method"
+          ]
+        },
+        {
+          "title": "Size",
+          "class_type": "EmptySD3LatentImage",
+          "fields": [
+            "width",
+            "height",
+            "batch_size"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "PreviewImage",
+          "fields": []
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 14,
+          "total": 14
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_qwen-image-edit-hq",
+      "slug": "qwen-image-edit-hq",
+      "model_key": "comfy/qwen-image-edit-hq",
+      "name": "Qwen-Image-Edit-2511 按参考图编辑（40 步）",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "views"
+      ],
+      "caps": {
+        "aspects": [
+          "16:9",
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "9:16"
+        ],
+        "max_seconds": null,
+        "refs": 3,
+        "vram_gb": null
+      },
+      "file_sha256": "ed07ace940ec45f72acc1019c1effe4a666c00a1dda85c412673c5be89113d46",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Prompt",
+          "node_class": "TextEncodeQwenImageEditPlus",
+          "field": "prompt",
+          "state": "confirmed"
+        },
+        {
+          "slot": "negative",
+          "index": null,
+          "node_title": "Negative prompt",
+          "node_class": "TextEncodeQwenImageEditPlus",
+          "field": "prompt",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptySD3LatentImage",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "EmptySD3LatentImage",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Sampler",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 1,
+          "node_title": "Reference 1",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 2,
+          "node_title": "Reference 2",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 3,
+          "node_title": "Reference 3",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "image_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "PreviewImage",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Load diffusion model",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Load text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Load VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Model sampling",
+          "class_type": "ModelSamplingAuraFlow",
+          "fields": [
+            "shift"
+          ]
+        },
+        {
+          "title": "CFG norm",
+          "class_type": "CFGNorm",
+          "fields": [
+            "strength",
+            "pre_cfg"
+          ]
+        },
+        {
+          "title": "Reference 1",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Scale reference 1",
+          "class_type": "FluxKontextImageScale",
+          "fields": []
+        },
+        {
+          "title": "Reference 2",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 3",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Prompt",
+          "class_type": "TextEncodeQwenImageEditPlus",
+          "fields": [
+            "prompt"
+          ]
+        },
+        {
+          "title": "Negative prompt",
+          "class_type": "TextEncodeQwenImageEditPlus",
+          "fields": [
+            "prompt"
+          ]
+        },
+        {
+          "title": "Reference latents",
+          "class_type": "FluxKontextMultiReferenceLatentMethod",
+          "fields": [
+            "reference_latents_method"
+          ]
+        },
+        {
+          "title": "Negative reference latents",
+          "class_type": "FluxKontextMultiReferenceLatentMethod",
+          "fields": [
+            "reference_latents_method"
+          ]
+        },
+        {
+          "title": "Size",
+          "class_type": "EmptySD3LatentImage",
+          "fields": [
+            "width",
+            "height",
+            "batch_size"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "PreviewImage",
+          "fields": []
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 13,
+          "total": 13
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_seedvr2-up",
+      "slug": "seedvr2-up",
+      "model_key": "comfy/seedvr2",
+      "name": "SeedVR2 7B 超分（本地 2K 精修）",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "up"
+      ],
+      "caps": {
+        "aspects": [],
+        "max_seconds": 15.0,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "5df4b7b32f3ec4822cc3748b583afc94849eb12bd6420f6d3cd7f6f27037904e",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "video_in",
+          "index": null,
+          "node_title": "Video in",
+          "node_class": "LoadVideo",
+          "field": "file",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "ResizeImageMaskNode",
+          "field": "resize_type.width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "ResizeImageMaskNode",
+          "field": "resize_type.height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Restore",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "video_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "SaveVideo",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Video in",
+          "class_type": "LoadVideo",
+          "fields": [
+            "file"
+          ]
+        },
+        {
+          "title": "Frames and sound",
+          "class_type": "GetVideoComponents",
+          "fields": []
+        },
+        {
+          "title": "Size",
+          "class_type": "ResizeImageMaskNode",
+          "fields": [
+            "resize_type",
+            "resize_type.width",
+            "resize_type.height",
+            "resize_type.crop",
+            "scale_method"
+          ]
+        },
+        {
+          "title": "Preprocess",
+          "class_type": "SeedVR2Preprocess",
+          "fields": []
+        },
+        {
+          "title": "SeedVR2 VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "SeedVR2 7B",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Encode",
+          "class_type": "VAEEncodeTiled",
+          "fields": [
+            "tile_size",
+            "overlap",
+            "temporal_size",
+            "temporal_overlap"
+          ]
+        },
+        {
+          "title": "Chunks",
+          "class_type": "SeedVR2TemporalChunk",
+          "fields": [
+            "temporal_overlap",
+            "chunking_mode"
+          ]
+        },
+        {
+          "title": "Conditioning",
+          "class_type": "SeedVR2Conditioning",
+          "fields": []
+        },
+        {
+          "title": "Restore",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Merge",
+          "class_type": "SeedVR2TemporalMerge",
+          "fields": []
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecodeTiled",
+          "fields": [
+            "tile_size",
+            "overlap",
+            "temporal_size",
+            "temporal_overlap"
+          ]
+        },
+        {
+          "title": "Colour fix",
+          "class_type": "SeedVR2PostProcessing",
+          "fields": [
+            "color_correction_method"
+          ]
+        },
+        {
+          "title": "Video",
+          "class_type": "CreateVideo",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "SaveVideo",
+          "fields": [
+            "filename_prefix",
+            "format",
+            "format.codec"
+          ]
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 15,
+          "total": 15
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_ltx2",
+      "slug": "ltx2",
+      "model_key": "comfy/ltx2",
+      "name": "雨夜氛围-ltx2",
+      "tier": "unverified",
+      "source": "user",
+      "origin": "我的/雨夜氛围-ltx2.json",
+      "components": [
+        "vid"
+      ],
+      "caps": {
+        "aspects": [],
+        "max_seconds": null,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "ee0a69d59eed11f9b2efd64560042c488cdad230e4113ba062a6e9e3990470bc",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "first_frame",
+          "index": null,
+          "node_title": "Load Image",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "guessed"
+        },
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "CLIP Text Encode #3",
+          "node_class": "CLIPTextEncode",
+          "field": "text",
+          "state": "guessed"
+        },
+        {
+          "slot": "negative",
+          "index": null,
+          "node_title": "CLIP Text Encode",
+          "node_class": "CLIPTextEncode",
+          "field": "text",
+          "state": "guessed"
+        },
+        {
+          "slot": "fps",
+          "index": null,
+          "node_title": "LTXVConditioning",
+          "node_class": "LTXVConditioning",
+          "field": "frame_rate",
+          "state": "guessed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "EmptyLTXVLatentVideo",
+          "node_class": "EmptyLTXVLatentVideo",
+          "field": "width",
+          "state": "guessed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "EmptyLTXVLatentVideo",
+          "node_class": "EmptyLTXVLatentVideo",
+          "field": "height",
+          "state": "guessed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "RandomNoise",
+          "node_class": "RandomNoise",
+          "field": "noise_seed",
+          "state": "guessed"
+        },
+        {
+          "slot": "video_out",
+          "index": null,
+          "node_title": "Save Video",
+          "node_class": "SaveVideo",
+          "field": null,
+          "state": "guessed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Load Checkpoint",
+          "class_type": "CheckpointLoaderSimple",
+          "fields": [
+            "ckpt_name"
+          ]
+        },
+        {
+          "title": "Load Image",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "CLIP Text Encode #3",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "CLIP Text Encode",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "LTXVConditioning",
+          "class_type": "LTXVConditioning",
+          "fields": [
+            "frame_rate"
+          ]
+        },
+        {
+          "title": "EmptyLTXVLatentVideo",
+          "class_type": "EmptyLTXVLatentVideo",
+          "fields": [
+            "width",
+            "height",
+            "length",
+            "batch_size"
+          ]
+        },
+        {
+          "title": "RandomNoise",
+          "class_type": "RandomNoise",
+          "fields": [
+            "noise_seed"
+          ]
+        },
+        {
+          "title": "CFGGuider",
+          "class_type": "CFGGuider",
+          "fields": [
+            "cfg"
+          ]
+        },
+        {
+          "title": "SamplerCustomAdvanced",
+          "class_type": "SamplerCustomAdvanced",
+          "fields": []
+        },
+        {
+          "title": "VAE Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Create Video",
+          "class_type": "CreateVideo",
+          "fields": [
+            "fps"
+          ]
+        },
+        {
+          "title": "Save Video",
+          "class_type": "SaveVideo",
+          "fields": [
+            "filename_prefix",
+            "format",
+            "codec"
+          ]
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "missing",
+        "node_classes": {
+          "found": 9,
+          "total": 11
+        },
+        "missing_packs": [
+          {
+            "name": "ComfyUI-LTXVideo",
+            "classes": [
+              "EmptyLTXVLatentVideo",
+              "LTXVConditioning"
+            ],
+            "source": "git",
+            "version": null,
+            "url": "https://github.com/Lightricks/ComfyUI-LTXVideo"
+          }
+        ],
+        "missing_models": [
+          {
+            "folder": "checkpoints",
+            "name": "ltx-2-19b-distilled-fp8.safetensors",
+            "size_bytes": null,
+            "url": null
+          }
+        ],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
+      "id": "wf_sdxl-basic",
+      "slug": "sdxl-basic",
+      "model_key": "comfy/sdxl-basic",
+      "name": "sdxl_basic",
+      "tier": "unverified",
+      "source": "user",
+      "origin": "sdxl_basic.json",
+      "components": [
+        "img",
+        "kf"
+      ],
+      "caps": {
+        "aspects": [],
+        "max_seconds": null,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "aa0c9df2c00bcedcf2249797a585d6a75d084f65ab8eb13ed239cf8c29ccd48b",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "KSampler",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "guessed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Empty Latent Image",
+          "node_class": "EmptyLatentImage",
+          "field": "width",
+          "state": "guessed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Empty Latent Image",
+          "node_class": "EmptyLatentImage",
+          "field": "height",
+          "state": "guessed"
+        },
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Positive",
+          "node_class": "CLIPTextEncode",
+          "field": "text",
+          "state": "guessed"
+        },
+        {
+          "slot": "negative",
+          "index": null,
+          "node_title": "Negative",
+          "node_class": "CLIPTextEncode",
+          "field": "text",
+          "state": "guessed"
+        },
+        {
+          "slot": "image_out",
+          "index": null,
+          "node_title": "Save Image",
+          "node_class": "SaveImage",
+          "field": null,
+          "state": "guessed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "KSampler",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Load Checkpoint",
+          "class_type": "CheckpointLoaderSimple",
+          "fields": [
+            "ckpt_name"
+          ]
+        },
+        {
+          "title": "Empty Latent Image",
+          "class_type": "EmptyLatentImage",
+          "fields": [
+            "width",
+            "height",
+            "batch_size"
+          ]
+        },
+        {
+          "title": "Positive",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "Negative",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "VAE Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Save Image",
+          "class_type": "SaveImage",
+          "fields": [
+            "filename_prefix"
+          ]
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 6,
+          "total": 6
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    }
+  ],
+  "comfy_files": [
+    {
+      "path": "我的/雨夜氛围-ltx2.json",
+      "modified_at": "2026-10-18T09:00:00Z",
+      "imported_as": "wf_ltx2",
+      "board": false
+    },
+    {
+      "path": "sdxl_basic.json",
+      "modified_at": "2026-10-18T09:00:00Z",
+      "imported_as": "wf_sdxl-basic",
+      "board": false
+    },
+    {
+      "path": "DramaStudio 素材板 · 雨停之前.json",
+      "modified_at": "2026-10-18T09:00:00Z",
+      "imported_as": null,
+      "board": true
+    }
+  ],
+  "deps": {
+    "wf_flashvsr-up": [
+      {
+        "code": "comfy_change",
+        "params": {
+          "item": "ComfyUI-FlashVSR",
+          "action": "install",
+          "source": "https://github.com/1038lab/ComfyUI-FlashVSR"
+        }
+      }
+    ],
+    "wf_ltx2": [
+      {
+        "code": "comfy_change",
+        "params": {
+          "item": "ComfyUI-LTXVideo",
+          "action": "install",
+          "source": "https://github.com/Lightricks/ComfyUI-LTXVideo"
+        }
+      },
+      {
+        "code": "comfy_change",
+        "params": {
+          "item": "checkpoints/ltx-2-19b-distilled-fp8.safetensors",
+          "action": "install"
+        }
+      }
+    ]
+  }
+}

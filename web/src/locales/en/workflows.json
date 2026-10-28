@@ -74,6 +74,7 @@
     "trial": "Trial"
   },
   "bindings": {
+    "repo": "Ships with the studio: its workflow.yaml names the bindings; shown here, not edited.",
     "dramastudio": "Uses DramaStudio input / output nodes: the studio fills in and reads back by node type, no bindings needed.",
     "lead": "Nodes are found by title (not id), so reordering or adding other nodes in ComfyUI does not matter; a bound title must be unique in the workflow.",
     "pendingNote": "{{count}} bindings were guessed on import. Confirm them before a trial or registering.",
@@ -129,10 +130,13 @@
       "file": "File",
       "size": "Size"
     },
-    "install": "Install {{packs}} node packs and {{models}} models",
+    "install": "Install the {{count}} missing node packs",
+    "modelsNote": "Put the missing model files in the matching folder under ComfyUI's models, then click Check again.",
     "installNote": "You approve the list of changes first, and a ComfyUI-Manager snapshot is taken before anything installs; snapshots and rollback are under Environment.",
     "snapshotNote": "A ComfyUI-Manager snapshot is taken first. If something breaks, roll back with one click under Environment.",
-    "installed": "Snapshot {{snapshot}} saved; installed {{packs}} node packs, {{models}} models",
+    "installed": "Snapshot {{snapshot}} saved; installed {{count}} node packs",
+    "installedRestart": "{{done}}; restart ComfyUI, then click Check again",
+    "installFailed": "{{done}}; not installed: {{names}}",
     "never": "Imported workflows are checked automatically."
   },
   "trial": {
@@ -144,6 +148,7 @@
     "rerun": "Run it again",
     "started": "Trial started: {{name}}",
     "running": "Running… (local GPU queue)",
+    "runningStep": "Running… step {{step}} / {{steps}}",
     "blockedPending": "Confirm the bindings first",
     "blockedCheck": "Install the missing node packs and models first",
     "result": "Result",

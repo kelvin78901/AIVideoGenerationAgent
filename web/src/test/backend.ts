@@ -34,6 +34,7 @@ import {
   shotsBackendFetch,
 } from "@/test/fakes/shots";
 import { resetFakeSuggestions, suggestionHandlers } from "@/test/fakes/suggestions";
+import { resetFakeWorkflows, workflowHandlers } from "@/test/fakes/workflows";
 import { resetFakeSetup, setupHandlers } from "@/test/setupBackend";
 
 type Dims = { w: number; h: number };
@@ -227,7 +228,7 @@ function fakeBackendFetch(request: Request): Response {
  * episode plan (`test/fakes/episodes.ts`), each episode's script (`test/fakes/script.ts`),
  * episode 1's assets (`test/fakes/assets.ts`), 台词配音 (`test/fakes/dub.ts`) and shots
  * (`test/fakes/shots.ts`) and takes (`test/fakes/generate.ts`), the gates up to 生成 and impact previews
- * (`test/fakes/impact.ts`), and the PC sample machine
+ * (`test/fakes/impact.ts`), the workflow library (`test/fakes/workflows.ts`), and the PC sample machine
  * before its first scan
  * (`test/setupBackend.ts`, `fakeSetup`).
  */
@@ -246,6 +247,7 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeShots();
   resetFakeGenerate();
   resetFakeImpact();
+  resetFakeWorkflows();
   setBackendFetch((request) => Promise.resolve(fakeBackendFetch(request)));
   resetFakeSetup();
   resetFakeConfig();
@@ -255,6 +257,7 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
     ...seriesHandlers(),
     ...setupHandlers(),
     ...configHandlers(),
+    ...workflowHandlers(),
     http.get("*/api/v1/providers", () =>
       HttpResponse.json({
         providers: [

@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { modelName } from "@/lib/versions";
 import { primaryModelKey } from "@/lib/config";
 import { cn } from "@/lib/utils";
+import { tierTone } from "@/pages/models/workflowStatus";
 
 /** API services shown before 「更多供应商」 (prototype: the first 6). */
 const API_VISIBLE = 6;
@@ -84,17 +85,16 @@ function RoleBadge({ role }: { role: Role }) {
   );
 }
 
-const TIER_TONE = { recommended: "neutral", mine: "info", unverified: "warn" } as const;
-
 function ModelCard({ m, missingKeys }: { m: ModelOption; missingKeys: ReadonlySet<string> }) {
   const { t } = useTranslation("components");
+  const { t: tw } = useTranslation("workflows");
   return (
     <RadioCard value={m.key}>
       <span className="flex items-center gap-2">
         <span className="text-sm">{m.display}</span>
         {m.tier ? (
-          <StatusBadge tone={TIER_TONE[m.tier]} icon={null}>
-            {t(`picker.tier.${m.tier}`)}
+          <StatusBadge tone={tierTone[m.tier]} icon={null}>
+            {tw(`tier.${m.tier}`)}
           </StatusBadge>
         ) : null}
         {missingKeys.has(m.key) ? (

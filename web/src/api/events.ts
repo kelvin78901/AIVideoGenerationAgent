@@ -13,6 +13,7 @@ import { productKeys } from "@/api/hooks/products";
 import { applySetupProgress } from "@/api/hooks/setup";
 import { applySyncUpdate } from "@/api/hooks/sync";
 import { callKeys, upsertJob } from "@/api/hooks/useJobs";
+import { workflowKeys } from "@/api/hooks/workflows";
 import { JobSchema } from "@/api/schemas/jobs";
 import { SetupProgressSchema } from "@/api/schemas/setup";
 import { SyncRunSchema } from "@/api/schemas/sync";
@@ -62,8 +63,12 @@ const invalidates: Partial<Record<EventType, readonly (readonly unknown[])[]>> =
 export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType, data: unknown) {
   if (type === "job.updated") {
     const job = JobSchema.safeParse(data);
-    if (job.success) upsertJob(client, job.data);
-    else console.error("[events] bad job.updated payload", job.error);
+    if (job.success) {
+      upsertJob(client, job.data);
+      // A workflow's trial started or ended (its steps alone change nothing in the library).
+      if (job.data.kind === "workflow_trial" && !job.data.progress)
+        void client.invalidateQueries({ queryKey: workflowKeys.all });
+    } else console.error("[events] bad job.updated payload", job.error);
   } else if (type === "setup.progress") {
     const ev = SetupProgressSchema.safeParse(data);
     if (ev.success) applySetupProgress(client, ev.data);
