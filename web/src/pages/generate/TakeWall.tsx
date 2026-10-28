@@ -1,18 +1,21 @@
 import type { TFunction } from "i18next";
-import { Loader2, Play, Star } from "lucide-react";
+import { Loader2, Play, Sparkles, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { errorMessage, fileUrl } from "@/api/client";
 import { useAdoptTake, usePatchVersion, useUnadopt, useUpscale } from "@/api/hooks/generate";
+import { useRunProduct } from "@/api/hooks/products";
 import type { Where } from "@/api/schemas/common";
 import type { Product, ProductVersion, QaCheck } from "@/api/schemas/products";
 import type { Shot } from "@/api/schemas/shots";
 import type { Aspect } from "@/api/schemas/spec";
 import { CostBadge } from "@/components/CostBadge";
+import { MediaLightbox, type LightboxItem } from "@/components/MediaLightbox";
 import { MediaThumb } from "@/components/MediaThumb";
 import { Button } from "@/components/ui/button";
+import { TAKE_CARD_WIDTH, TAKE_MEDIA_HEIGHT } from "@/lib/cards";
 import { formatPercent, formatTime, formatUsd } from "@/lib/format";
 import { qaFails, recommendedTake, takeNote, type TakeStatus } from "@/lib/takes";
 import { cn } from "@/lib/utils";
@@ -30,9 +33,20 @@ const editable = (el: EventTarget | null) =>
     ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) ||
     !!el.closest("[role=menu],[role=dialog],[role=listbox]"));
 
+/** A take's file of a role (`video`, `poster`) as a URL. */
+const fileOf = (v: ProductVersion, role: string) => {
+  const f = v.files.find((x) => x.role === role);
+  return f ? fileUrl(f.sha256) : null;
+};
+
+/** A local H3 draft: 「用 API 出终版」 regenerates it at 2K (Regenerate-2K takes H3's own drafts). */
+const regenerable = (v: ProductVersion) =>
+  v.stage === "draft" && v.where === "local" && !!v.model_key?.includes("h3");
+
 /**
  * 候选墙 for one shot: each take with its QA, the recommended pick, adopt (one per shot),
- * region fix and 2K finishing. Keys: ← → move, Space play, 1–5 rate, A adopt.
+ * 「用 API 出终版」 of a local draft, region fix and 2K finishing; a take plays in the lightbox.
+ * Keys: ← → move, Space play, 1–5 rate, A adopt.
  */
 export function TakeWall({
   shot,
@@ -65,7 +79,14 @@ export function TakeWall({
   const unadopt = useUnadopt(episodeId);
   const rate = usePatchVersion();
   const up = useUpscale();
+  const run = useRunProduct(product?.id ?? "");
   const takes = product?.versions ?? [];
+  const [playing, setPlaying] = useState<number | null>(null);
+  const clips: LightboxItem[] = takes.map((v) => ({
+    src: fileOf(v, "poster") ?? "",
+    video: fileOf(v, "video") ?? undefined,
+    label: t("wall.clip", { id: shot.label, n: v.n, model: modelName(v.model_key) }),
+  }));
   const rec = product ? recommendedTake(product) : undefined;
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const selected =
@@ -98,7 +119,16 @@ export function TakeWall({
         onError,
       });
     },
-    play: (v: ProductVersion) => toast.info(t("toast.play", name(v))),
+    play: (v: ProductVersion) => {
+      const i = takes.findIndex((x) => x.id === v.id);
+      if (i >= 0 && clips[i]?.video) setPlaying(i);
+    },
+    final(v: ProductVersion) {
+      run.mutate(
+        { mode: "run", where: "api", params: { source_version_id: v.id } },
+        { onSuccess: () => toast.info(t("toast.final", name(v))), onError },
+      );
+    },
     fix: () => toast.info(t("toast.fix")),
     upscale(v: ProductVersion) {
       if (!upscale) return;
@@ -168,15 +198,7 @@ export function TakeWall({
         ) : null}
       </div>
       {product && takes.length ? (
-        <ul
-          aria-label={t("wall.label")}
-          className={cn(
-            "grid gap-3.5",
-            aspect === "16:9" || aspect === "21:9"
-              ? "grid-cols-[repeat(auto-fill,minmax(300px,1fr))]"
-              : "grid-cols-[repeat(auto-fill,minmax(230px,1fr))]",
-          )}
-        >
+        <ul aria-label={t("wall.label")} className="flex flex-wrap items-start gap-3.5">
           {takes.map((v) => (
             <TakeCard
               key={v.id}
@@ -188,16 +210,22 @@ export function TakeWall({
               selected={v.id === selected?.id}
               modelName={modelName}
               upscale={upscale}
+              finalUsd={product.estimate?.final_usd ?? null}
               busy={adopt.isPending || unadopt.isPending}
+              finalBusy={run.isPending || running}
               onSelect={() => setSelectedId(v.id)}
               onPlay={() => actions.play(v)}
+              onFinal={() => actions.final(v)}
               onAdopt={() => actions.adopt(v)}
               onFix={actions.fix}
               onUpscale={() => actions.upscale(v)}
             />
           ))}
           {running ? (
-            <li className="flex min-h-72 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4 text-center text-primary">
+            <li
+              style={{ width: TAKE_CARD_WIDTH[aspect] }}
+              className="flex min-h-72 flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed border-primary/40 bg-primary/5 p-4 text-center text-primary"
+            >
               <Loader2 className="size-5 animate-spin" aria-hidden />
               <span className="text-sm font-medium">{t("wall.generating")}</span>
               <span className="text-xs">{modelName(product?.running?.model_key)}</span>
@@ -216,6 +244,7 @@ export function TakeWall({
           />
         </div>
       )}
+      <MediaLightbox items={clips} index={playing} onIndex={setPlaying} />
     </section>
   );
 }
@@ -275,9 +304,12 @@ function TakeCard({
   selected,
   modelName,
   upscale,
+  finalUsd,
   busy,
+  finalBusy,
   onSelect,
   onPlay,
+  onFinal,
   onAdopt,
   onFix,
   onUpscale,
@@ -290,9 +322,13 @@ function TakeCard({
   selected: boolean;
   modelName: (key: string | null | undefined) => string;
   upscale: UpscaleRoute | undefined;
+  /** What 「用 API 出终版」 of a take costs (the backend's estimate); null: none. */
+  finalUsd: number | null;
   busy: boolean;
+  finalBusy: boolean;
   onSelect: () => void;
   onPlay: () => void;
+  onFinal: () => void;
   onAdopt: () => void;
   onFix: () => void;
   onUpscale: () => void;
@@ -304,7 +340,10 @@ function TakeCard({
   const note = takeNote(product, v);
   const take = t("wall.take", { n: v.n });
   const res = typeof v.payload.resolution === "string" ? v.payload.resolution : "768p";
-  const poster = v.files.find((f) => f.role === "poster");
+  const poster = fileOf(v, "poster");
+  const playable = !!fileOf(v, "video");
+  const portrait = aspect === "9:16" || aspect === "3:4";
+  const [rw = 9, rh = 16] = aspect.split(":").map(Number);
   const seconds = typeof v.payload.duration_s === "number" ? v.payload.duration_s : shot.duration_s;
 
   return (
@@ -313,55 +352,63 @@ function TakeCard({
       aria-label={t("wall.takeLabel", { n: v.n })}
       aria-current={selected || undefined}
       onClick={onSelect}
+      style={{ width: TAKE_CARD_WIDTH[aspect] }}
       className={cn(
         "flex flex-col gap-2.5 rounded-xl border-2 bg-card p-2.5",
         adopted ? "border-foreground" : recommended ? "border-primary" : "border-border",
         selected && "ring-2 ring-ring ring-offset-2 ring-offset-background",
       )}
     >
-      <MediaThumb
-        aspect={aspect}
-        seed={`${shot.label}-${v.n}`}
-        src={poster ? fileUrl(poster.sha256) : null}
-        alt={t("wall.posterAlt", { n: v.n })}
-        className="max-h-72"
-        overlay={
-          <>
-            <span className="absolute top-2 left-2 rounded bg-white px-1.5 py-0.5 font-mono text-xs text-neutral-900">
-              {take}
-            </span>
-            {adopted ? (
-              <span className="absolute top-2 right-2 rounded bg-neutral-900 px-1.5 py-0.5 text-[11px] text-white">
-                {t("wall.adopted")}
-              </span>
-            ) : recommended ? (
-              <span className="absolute top-2 right-2 rounded bg-primary px-1.5 py-0.5 text-[11px] text-primary-foreground">
-                {t("wall.recommended")}
-              </span>
-            ) : null}
-            <span className="absolute bottom-2 left-2 rounded bg-white px-1.5 py-0.5 font-mono text-[11px] text-neutral-900">
-              {t("wall.meta", { seconds: Math.round(seconds * 10) / 10, res })}
-            </span>
-            {v.rating ? (
-              <span
-                className="absolute right-2 bottom-2 flex items-center gap-0.5 rounded bg-white px-1.5 py-0.5 text-[11px] text-neutral-900"
-                title={t("wall.rating", { n: v.rating })}
-              >
-                <Star className="size-3 fill-current" aria-hidden />
-                {t("wall.rating", { n: v.rating })}
-              </span>
-            ) : null}
-            <button
-              type="button"
-              onClick={onPlay}
-              aria-label={t("wall.play", { n: v.n })}
-              className="absolute top-1/2 left-1/2 flex size-13 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-ring"
-            >
-              <Play className="size-4.5 fill-current" aria-hidden />
-            </button>
-          </>
-        }
-      />
+      <div
+        className="flex justify-center rounded-md bg-media"
+        style={portrait ? { height: TAKE_MEDIA_HEIGHT } : undefined}
+      >
+        <div style={{ width: portrait ? Math.round((TAKE_MEDIA_HEIGHT * rw) / rh) : "100%" }}>
+          <MediaThumb
+            aspect={aspect}
+            seed={`${shot.label}-${v.n}`}
+            src={poster}
+            alt={t("wall.posterAlt", { n: v.n })}
+            overlay={
+              <>
+                <span className="absolute top-2 left-2 rounded bg-white px-1.5 py-0.5 font-mono text-xs text-neutral-900">
+                  {take}
+                </span>
+                {adopted ? (
+                  <span className="absolute top-2 right-2 rounded bg-neutral-900 px-1.5 py-0.5 text-[11px] text-white">
+                    {t("wall.adopted")}
+                  </span>
+                ) : recommended ? (
+                  <span className="absolute top-2 right-2 rounded bg-primary px-1.5 py-0.5 text-[11px] text-primary-foreground">
+                    {t("wall.recommended")}
+                  </span>
+                ) : null}
+                <span className="absolute bottom-2 left-2 rounded bg-white px-1.5 py-0.5 font-mono text-[11px] text-neutral-900">
+                  {t("wall.meta", { seconds: Math.round(seconds * 10) / 10, res })}
+                </span>
+                {v.rating ? (
+                  <span
+                    className="absolute right-2 bottom-2 flex items-center gap-0.5 rounded bg-white px-1.5 py-0.5 text-[11px] text-neutral-900"
+                    title={t("wall.rating", { n: v.rating })}
+                  >
+                    <Star className="size-3 fill-current" aria-hidden />
+                    {t("wall.rating", { n: v.rating })}
+                  </span>
+                ) : null}
+                <button
+                  type="button"
+                  onClick={onPlay}
+                  disabled={!playable}
+                  aria-label={t("wall.play", { n: v.n })}
+                  className="absolute top-1/2 left-1/2 flex size-13 -translate-x-1/2 -translate-y-1/2 items-center justify-center rounded-full bg-white text-neutral-900 outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                >
+                  <Play className="size-4.5 fill-current" aria-hidden />
+                </button>
+              </>
+            }
+          />
+        </div>
+      </div>
       <div className="flex flex-col gap-0.5">
         <div className="text-sm font-medium">{modelName(v.model_key)}</div>
         <div className="text-xs text-muted-foreground">
@@ -405,6 +452,12 @@ function TakeCard({
         </div>
       )}
       <div className="flex flex-wrap gap-1.5">
+        {regenerable(v) && finalUsd !== null && !product.locked_hash ? (
+          <Button size="sm" variant="outline" disabled={finalBusy} onClick={onFinal}>
+            <Sparkles aria-hidden />
+            {t("wall.final", { cost: formatUsd(finalUsd, { cents: true }) })}
+          </Button>
+        ) : null}
         <Button
           size="sm"
           variant={adopted ? "outline" : "default"}

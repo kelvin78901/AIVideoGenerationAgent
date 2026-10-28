@@ -1261,7 +1261,8 @@
       "where": "api",
       "cost_usd": 0.0254,
       "seconds": 0.0,
-      "priced": true
+      "priced": true,
+      "final_usd": null
     },
     "running": null,
     "pick": null,
@@ -1461,7 +1462,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": {
@@ -1665,7 +1667,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": {
@@ -1865,7 +1868,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": {
@@ -1996,7 +2000,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,
@@ -2124,7 +2129,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,
@@ -2251,7 +2257,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,
@@ -2379,7 +2386,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,

@@ -986,7 +986,8 @@
         "where": "api",
         "cost_usd": 0.0251,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,
@@ -1286,7 +1287,8 @@
         "where": "api",
         "cost_usd": 0.0052,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,
@@ -1875,7 +1877,8 @@
         "where": "api",
         "cost_usd": 0.0254,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,
@@ -1905,7 +1908,8 @@
         "where": "api",
         "cost_usd": 0.0266,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,
@@ -1983,7 +1987,8 @@
         "where": "api",
         "cost_usd": 0.0271,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": null
       },
       "running": null,
       "pick": null,

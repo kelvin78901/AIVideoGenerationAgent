@@ -27,9 +27,24 @@ function Card({
   );
 }
 
+/** Active jobs of a queue by model, in the order they first appear (the GPU runs one model's
+ * jobs back to back, SPEC 6.4.6). */
+function byModel(jobs: Job[]): { model: string; running: number; queued: number }[] {
+  const groups = new Map<string, { model: string; running: number; queued: number }>();
+  for (const j of jobs) {
+    const model = typeof j.params.model_key === "string" ? j.params.model_key : "";
+    const g = groups.get(model) ?? { model, running: 0, queued: 0 };
+    if (j.state === "running") g.running++;
+    else g.queued++;
+    groups.set(model, g);
+  }
+  return [...groups.values()];
+}
+
 /**
- * 本地队列 / API 队列 / 自动质检. Queue counts come from the real `/jobs`; the take being made
- * and the QA tallies come from the shots' video products.
+ * 本地队列 / API 队列 / 自动质检. Queue counts come from the real `/jobs`, grouped by model, with
+ * the jobs a fallback moved to the API and those waiting for a yes; the take being made and the
+ * QA tallies come from the shots' video products.
  */
 export function StatusCards({
   jobs,
@@ -52,7 +67,18 @@ export function StatusCards({
 }) {
   const { t } = useTranslation("generate");
   const gpu = gpuStatus(jobs);
-  const apiBusy = (jobs ?? []).filter((j) => j.queue.startsWith("api:") && j.state === "running");
+  const active = (jobs ?? []).filter((j) => j.state === "running" || j.state === "queued");
+  const apiBusy = active.filter((j) => j.queue.startsWith("api:") && j.state === "running");
+  const gpuModels = byModel(active.filter((j) => j.queue === "gpu"));
+  const apiModels = byModel(active.filter((j) => j.queue.startsWith("api:")));
+  const fallbacks = active.filter((j) => j.fallback_from_job_id !== null).length;
+  const waiting = (jobs ?? []).filter((j) => j.state === "waiting_confirm").length;
+  const modelLines = (groups: typeof gpuModels) =>
+    groups.map((g) => (
+      <span key={g.model} className="block">
+        {t("cards.modelLine", { model: modelName(g.model), running: g.running, queued: g.queued })}
+      </span>
+    ));
   const gpuName = profile?.machine.gpu;
 
   const running = shots
@@ -64,7 +90,7 @@ export function StatusCards({
   const fail = versions.filter((v) => v.qa_pass === false).length;
   const unchecked = versions.filter((v) => v.qa_pass === null).length;
   const reruns = versions.filter((v) => v.origin === "auto_qa_rerun").length;
-  const fallbacks = versions.filter((v) => v.origin === "fallback").length;
+  const fellBack = versions.filter((v) => v.origin === "fallback").length;
 
   return (
     <section aria-label={t("cards.label")} className="grid gap-3 sm:grid-cols-3">
@@ -76,13 +102,18 @@ export function StatusCards({
         }
         value={gpu.running || gpu.queued ? t("cards.busy", { ...gpu }) : t("cards.idle")}
         detail={
-          running
-            ? t("cards.runningTake", {
-                id: running.s.label,
-                n: (running.p?.versions.length ?? 0) + 1,
-                model: modelName(running.p?.running?.model_key),
-              })
-            : t("cards.nothingRunning")
+          <>
+            <span className="block">
+              {running
+                ? t("cards.runningTake", {
+                    id: running.s.label,
+                    n: (running.p?.versions.length ?? 0) + 1,
+                    model: modelName(running.p?.running?.model_key),
+                  })
+                : t("cards.nothingRunning")}
+            </span>
+            {modelLines(gpuModels)}
+          </>
         }
       />
       <Card
@@ -92,7 +123,22 @@ export function StatusCards({
           spent: spentUsd === undefined ? "—" : formatUsd(spentUsd, { cents: true }),
         })}
         detail={
-          shotCapUsd === undefined ? null : t("cards.shotCap", { cap: formatUsd(shotCapUsd) })
+          <>
+            {shotCapUsd === undefined ? null : (
+              <span className="block">{t("cards.shotCap", { cap: formatUsd(shotCapUsd) })}</span>
+            )}
+            {modelLines(apiModels)}
+            {fallbacks ? (
+              <span className="block text-tone-warn-fg">
+                {t("cards.fallbacks", { count: fallbacks })}
+              </span>
+            ) : null}
+            {waiting ? (
+              <span className="block text-tone-warn-fg">
+                {t("cards.waiting", { count: waiting })}
+              </span>
+            ) : null}
+          </>
         }
       />
       <Card
@@ -104,7 +150,7 @@ export function StatusCards({
         }
         detail={
           <>
-            {t("cards.qaMeta", { rerun: reruns, fallback: fallbacks })} ·{" "}
+            {t("cards.qaMeta", { rerun: reruns, fallback: fellBack })} ·{" "}
             <Link to={dashboardPath} className="text-primary underline-offset-4 hover:underline">
               {t("cards.dashboard")}
             </Link>

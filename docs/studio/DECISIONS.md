@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-10-27 · M5 第 9c 步：候选卡、视频播放、出终版按钮、队列卡
+
+- **候选卡固定宽度**（`lib/cards.ts:TAKE_CARD_WIDTH`，竖屏 236 px、横屏 320 px，换行排列），竖屏的画面框按原型固定 290 px 高、封面帧按真实比例居中；原来按面板宽度伸缩的网格在约 2000 px 的屏上会把画面拉大、`max-h` 截高后比例也不对。
+- **播放走大图**：`MediaLightbox` 的条目可以带 `video`，在对话框里放后端的片子（封面帧当 poster、自带控件、自动播放，← → 换条）；卡片上的播放按钮和空格都打开它。原来的「示例数据里没有视频文件」提示删掉。
+- **「用 API 出终版 · 约 $x」只给本地 H3 草稿**（`stage=draft`、本地、H3 系；Regenerate-2K 只收 H3 自己的草稿，后端对别的返回 `draft_not_regenerable`）。价格是后端的：`EstimateOut` 新加 `final_usd`，组件配了 `final_api`（目前只有 `vid`）时由 `RunService.describe` 按镜头时长估 Regenerate-2K；前端不自己算（按秒计价还带输入视频，只有后端知道）。其他快照里的估价多了 `"final_usd": null`，重导。
+- **队列卡**：本地、API 两张卡各列活动任务按模型分组的「运行 n · 排队 n」（按出现顺序，GPU 同模型连着跑），API 卡另列「n 个本地任务已兜底到 API」（`fallback_from_job_id`）和「n 个任务等你确认花费」（`waiting_confirm`）。质检卡里「自动兜底 n 次」仍按版本数。
+
 ## 2026-10-27 · M5 第 9b 步：生成页接后端（数据）
 
 - **删掉的 MSW**：生成页的规则、运行记录、取消采纳、打分（`handlers/generate.ts` 只剩 M6 的 2K 精修）；示例 take 和它们的质检（`fixtures/demo/takes.ts` 改名 `finishing.ts`，只剩 2K 精修 / 口型 / 质检三个本集产物）；镜头上的 `video_product_id` 叠加（`handlers/shots.ts` 只剩给后期示例读镜头和 take 的 `demoShots` / `demoVideos`）；生成徽标叠加（`series.ts`）、`takes` 闸门（`gates.ts`）；影响范围的视频叠加（`handlers/impact.ts`、`fixtures/demo/impacts.ts` 整个删掉：后端的预览从第 5 步起自己列视频行）。MSW 的产品列表：没有 owner、示例里也没有的（`?component=vid`）放行给后端；镜头的产品全是后端的。

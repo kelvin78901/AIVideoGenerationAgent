@@ -203,6 +203,9 @@ def test_an_api_final_regenerates_the_local_draft_at_2k(client: TestClient) -> N
     estimate = client.portal.call(cost, product_row)  # type: ignore[union-attr]
     seconds = _shots(client)["1-01"]["duration_s"]
     assert estimate == pytest.approx(seconds * 0.30 / 7.1, abs=0.001)
+    # The take cards price the button the same way (the product's estimate).
+    shown = client.get(f"{V1}/products/{pid}").json()["estimate"]["final_usd"]
+    assert shown == pytest.approx(estimate, abs=0.001)
 
     job = _final(client, pid, draft["id"])
     assert job["state"] == "succeeded", job

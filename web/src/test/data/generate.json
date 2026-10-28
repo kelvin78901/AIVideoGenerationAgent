@@ -916,7 +916,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": 0.169
       },
       "running": null,
       "pick": null,
@@ -1159,7 +1160,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": 0.1268
       },
       "running": null,
       "pick": null,
@@ -1402,7 +1404,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": 0.1268
       },
       "running": null,
       "pick": null,
@@ -1878,7 +1881,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": 0.1901
       },
       "running": null,
       "pick": null,
@@ -1908,7 +1912,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": 0.1268
       },
       "running": null,
       "pick": null,
@@ -1962,7 +1967,8 @@
         "where": "local",
         "cost_usd": 0.0,
         "seconds": 0.0,
-        "priced": true
+        "priced": true,
+        "final_usd": 0.0845
       },
       "running": null,
       "pick": null,

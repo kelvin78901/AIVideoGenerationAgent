@@ -19,7 +19,7 @@ from typing import Any, Literal
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from drama_series_agent.core.config import Resolved
+from drama_series_agent.core.config import Resolved, get_config
 from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.jobs import (
     TERMINAL,
@@ -36,6 +36,7 @@ from drama_series_agent.pipeline.component import (
     Component,
     ComponentError,
     ComponentRegistry,
+    Inputs,
     RunContext,
 )
 from drama_series_agent.pipeline.errors import PipelineError
@@ -207,7 +208,24 @@ class RunService:
             cost_usd=round(est.cost_usd, 4),
             seconds=est.seconds,
             priced=est.priced,
+            final_usd=self._final_api_cost(comp, inputs, compiled, model),
         )
+
+    def _final_api_cost(
+        self, comp: Component, inputs: Inputs, compiled: str, model: str
+    ) -> float | None:
+        """What 「用 API 出终版」 of one take costs where the component has a ``final_api``."""
+        try:
+            final = get_config().components.component(comp.id).final_api
+        except KeyError:
+            return None
+        if not final:
+            return None
+        inputs.params = {**inputs.params, "source_version_id": "-"}
+        try:
+            return round(comp.estimate(inputs, compiled, model).cost_usd, 4)
+        except (LookupError, PipelineError, ComponentError, ModelError):
+            return None
 
     async def final_cost(self, product: Product) -> float | None:
         """What 「用 API 出终版」 of a candidate product costs on its route's API model (M4: the

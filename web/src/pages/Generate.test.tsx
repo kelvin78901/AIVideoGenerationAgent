@@ -1,10 +1,13 @@
 import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
+import { http, HttpResponse } from "msw";
 import { Route, Routes } from "react-router";
 
+import type { Job } from "@/api/schemas/jobs";
 import { useEventStream } from "@/api/useEventStream";
 import { Toaster } from "@/components/ui/sonner";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
+import { server } from "@/mocks/node";
 import GeneratePage from "@/pages/Generate";
 import { backend } from "@/test/backend";
 import { FakeEventSource } from "@/test/fakeEventSource";
@@ -38,6 +41,31 @@ const wall = () => screen.getByRole("list", { name: "候选" });
 const take = (n: number) => within(wall()).getByRole("listitem", { name: `候选 T${n}` });
 const ready = () => screen.findByRole("heading", { name: "镜头 1-04 的候选" });
 
+/** A job of the queue page's list (`GET /jobs`). */
+function job(id: string, state: Job["state"], queue: string, model: string, fallback = false): Job {
+  return {
+    id,
+    series_id: "demo",
+    product_id: `demo-p-vid-${id}`,
+    component_id: "vid",
+    kind: "product.run",
+    queue,
+    state,
+    priority: 0,
+    attempt: 0,
+    max_attempts: 3,
+    params: { mode: "run", model_key: model },
+    result: null,
+    error: null,
+    depends_on: [],
+    est_cost_usd: 0,
+    fallback_from_job_id: fallback ? `local-${id}` : null,
+    created_at: "2026-10-22T10:00:00Z",
+    started_at: null,
+    finished_at: null,
+  };
+}
+
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
   backend();
@@ -67,6 +95,31 @@ describe("GeneratePage", () => {
     expect(within(wall()).getAllByRole("listitem")).toHaveLength(4);
     expect(await screen.findByText("当前产物 · 镜头 1-04 视频候选")).toBeInTheDocument();
     expect(screen.getByRole("button", { name: /再出一条/ })).toBeInTheDocument();
+  });
+
+  it("groups the queues by model, with what fell back to the API and what waits for a yes", async () => {
+    server.use(
+      http.get("*/api/v1/jobs", () =>
+        HttpResponse.json([
+          job("1-05", "running", "gpu", "comfy/h3"),
+          job("1-06", "queued", "gpu", "comfy/h3"),
+          job("1-07", "queued", "gpu", "comfy/h3-r2v"),
+          job("1-02", "running", "api:minimax", "minimax/h3-api", true),
+          job("1-03", "waiting_confirm", "api:volc", "volc/seedance-2.5"),
+        ]),
+      ),
+    );
+    renderGenerate();
+    await ready();
+    const cards = screen.getByRole("region", { name: "队列和质检" });
+    expect(await within(cards).findByText("运行中 1 · 排队 2")).toBeInTheDocument();
+    expect(within(cards).getByText("MiniMax H3（本地）：运行 1 · 排队 1")).toBeInTheDocument();
+    expect(
+      within(cards).getByText("MiniMax H3 参考生视频（本地）：运行 0 · 排队 1"),
+    ).toBeInTheDocument();
+    expect(within(cards).getByText("MiniMax H3 API：运行 1 · 排队 0")).toBeInTheDocument();
+    expect(within(cards).getByText("1 个本地任务已兜底到 API")).toBeInTheDocument();
+    expect(within(cards).getByText("1 个任务等你确认花费")).toBeInTheDocument();
   });
 
   it("shows each take's first frame, model, cost and why it exists", async () => {
@@ -173,8 +226,46 @@ describe("GeneratePage", () => {
     expect(await within(take(2)).findByText("4 分")).toBeInTheDocument();
     await user.keyboard("a");
     await waitFor(() => expect(video("1-04")?.adopted_version_id).toBe("demo-p-vid-1-04-v2"));
+    // Space plays the take in the lightbox: the backend's clip, with its first frame.
     await user.keyboard(" ");
-    expect(await screen.findByText(/播放 1-04 T2/)).toBeInTheDocument();
+    const player = await screen.findByRole("dialog", { name: /^1-04 T2 · / });
+    const clip = within(player).getByLabelText(/^1-04 T2 · /);
+    expect(clip.tagName).toBe("VIDEO");
+    expect(clip.getAttribute("src")).toMatch(/\/api\/v1\/files\/[0-9a-f]{64}$/);
+    expect(clip.getAttribute("poster")).toMatch(/\/api\/v1\/files\/[0-9a-f]{64}$/);
+  });
+
+  it("「用 API 出终版」 regenerates a local H3 draft at 2K", async () => {
+    const user = userEvent.setup();
+    renderGenerate();
+    await ready();
+    // Only the local drafts can be regenerated (T3 is the H3 API's, T4 Seedance's).
+    expect(within(take(3)).queryByRole("button", { name: /用 API 出终版/ })).toBeNull();
+    expect(within(take(4)).queryByRole("button", { name: /用 API 出终版/ })).toBeNull();
+    await user.click(within(take(1)).getByRole("button", { name: "用 API 出终版 · 约 $0.19" }));
+    expect(await screen.findByText("已开始出 1-04 T1 的 2K 终版（API）。")).toBeInTheDocument();
+    expect(fakeGenerate.runs).toEqual([
+      {
+        id: "demo-p-vid-1-04",
+        mode: "run",
+        where: "api",
+        params: { source_version_id: "demo-p-vid-1-04-v1" },
+      },
+    ]);
+    const t5 = await within(wall()).findByRole("listitem", { name: "候选 T5" });
+    expect(t5).toHaveTextContent("H3 Regenerate-2K");
+    expect(t5).toHaveTextContent("混合模式出终版");
+    expect(t5).toHaveTextContent("2k");
+  });
+
+  it("the play button opens the take in the lightbox", async () => {
+    const user = userEvent.setup();
+    renderGenerate();
+    await ready();
+    await user.click(within(take(3)).getByRole("button", { name: "播放 T3" }));
+    expect(
+      await screen.findByRole("dialog", { name: "1-04 T3 · MiniMax H3 API" }),
+    ).toBeInTheDocument();
   });
 
   it("sends a take to 2K finishing on the configured route", async () => {
