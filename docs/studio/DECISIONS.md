@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-08 · M5 第 14g 步：本机先配音、尾帧衔接；1-04 两种声音对比
+
+- 示例剧里 `tts` 的镜头是 1-06（林晚的旁白），1-08 接它的尾帧；计划写的「1-04（`tts`）」按 Kelvin 要求另做同种子对比（`local_video.py --only tts104`：影响范围改 `audio_mode`，声音不在关键帧的依赖里，首帧不变）。
+- 结果（`reports/m5-local-smoke/run7-chain/`）：尾帧衔接好（PSNR 35 dB）；本地 `tts`（H3 图生视频 + 音轨）明显不如原生同步：画面几乎不动、H3 把台词画成字幕、不收参考图。**先不改**：记下来，M6（质检、口型）时再定是提示词禁字幕、还是 `tts` 也走 R2V；默认仍是原生同步。
+- 「NOT LOCAL」：本地 H3 的改写在这个脚本里走 Mock（API 模型），`Smoke.step` 把它算成兜底，报告的结果是「SOME STEPS FAILED」；视频本身都是本地，不影响结论，脚本没改。
+
 ## 2026-11-08 · M5 第 14f 步：本机导入社区工作流；Manager 4 的节点表
 
 - **缺的节点包按 Manager 4 的节点表找**（`wflib/service.py:_packs_for`）：ComfyUI-Manager V4.2.2 的 `/v2/customnode/getmappings` 把收录进 Comfy Registry 的包换成 Registry id 当键（本机 5725 条里 3296 条），类名也不一定是真实的（rgthree 列的是 `RgthreeSeed`，真实的是 `Seed (rgthree)`），它只给已经装上的包套 `nodename_pattern`。所以体检自己套名字规则（`re.search`，坏的正则跳过）；键不是 git 地址的记 `source: registry`，git 地址去 Comfy Registry 查（`ComfyAccess.repository`：`GET https://api.comfy.org/nodes/<id>` 的 `repository`，Manager 自己的数据也从这来；只查缺的那几个包，查不到就列出来但不能装）。原因：本机第一次导入用了 rgthree 节点的工作流时，体检认不出缺的包、也拿不到克隆地址。Manager 4 没有旧的 `getlist` 接口（只在 legacy 里），所以不从它那里取。安装仍是我们自己克隆 GitHub 主分支（没有锁版本；Registry 把 rgthree 最新版标了 flagged，Kelvin 知道后仍同意装）。

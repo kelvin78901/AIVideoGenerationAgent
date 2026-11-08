@@ -22,6 +22,19 @@ Steps, in this order:
   of each take is written to look at (FFmpeg's scene score misses a camera that drifts to
   another place, 2026-10-27, so nothing is counted). ``--home`` reuses a data
   directory a ``--keep`` run left (its keyframes), so ``--only ab --home …`` skips ``frames``.
+- ``chain`` (M5 step 14g, not run by default): 1-06 is the demo's 先配音再对口型 shot (林晚's
+  voice-over) and 1-08 continues its last frame. 林晚's voice is made local first (the demo's is
+  a Mock tone; as in ``local_assets.py``: unlocked, auditioned on Qwen3-TTS VoiceDesign, its
+  local final on IndexTTS-2.5, locked) and every line dubbed with it (IndexTTS-2.5); then one
+  take of 1-06 (``tts``: the dubbed line as H3's audio), adopted, and one of 1-08 (native, from
+  1-06's last frame), adopted. Checked: the take sent the dub / started from 1-06's last frame;
+  1-06's last frame and 1-08's poster are written side by side with their PSNR.
+  Needs ``frames`` in the same data directory (``--home``) or in the same run.
+- ``tts104`` (M5 step 14g, not run by default; Kelvin 2026-11-08): 1-04 on one seed and one
+  keyframe twice, 原生同步 (林晚's voice sample as H3's timbre reference) and then, its
+  ``audio_mode`` changed to ``tts`` through the impact preview (a sound never redraws a
+  keyframe) and the shot confirmed again, 先配音再对口型 (her dubbed line as H3's audio). Needs
+  ``chain`` (her local voice and dub) in the same data directory.
 - ``rewrite`` (M5 step 14c, not run by default; **spends money**, needs ``DRAMA_LIVE=1``): the
   prompt rewrite (``vprompt``) on its real writing model, DeepSeek V4.1 Flash, and nothing else
   real but ComfyUI (``DRAMA_REAL_MODELS``); 1-01 and 1-04 on the seeds of the 2026-10-27
@@ -47,11 +60,14 @@ from pathlib import Path
 from typing import Any
 
 import httpx
-from local_assets import V1, Smoke, VramMeter, gpu_query, studio_facts
+from local_assets import REAL_HOME, V1, Smoke, VramMeter, gpu_query, studio_facts
 from local_storyboard import DRAWN, LEFT_UNLOCKED, cancel_views, shots, unconfirm, unlock
 
 REPORT = Path(__file__).resolve().parents[2] / "docs" / "studio" / "reports" / "m5-local-smoke.txt"
-STEPS = ["frames", "vid", "ab", "rewrite"]
+STEPS = ["frames", "vid", "chain", "tts104", "ab", "rewrite"]
+TTS104_SEED = 191503631  # 1-04's first seed of 14c
+CHAIN = ("1-06", "1-08")  # 1-06 is tts; 1-08 continues its last frame
+VOICE = "demo-p-asset-vlinwan"
 REWRITE_SEEDS = {"1-01": (325085565, 22), "1-04": (191503631, 22)}
 REWRITE_MODEL = "deepseek/v4.1-flash"  # the vprompt route's writing model (components.yaml)
 DEFAULT_STEPS = ["frames", "vid"]
@@ -97,6 +113,27 @@ def keep_take(smoke: Smoke, label: str, version: dict[str, Any]) -> None:
         smoke.say("   SHORTER than the shot")
 
 
+def side_by_side(a: Path, b: Path, dest: Path) -> str:
+    """The two pictures (the same size: both frames of the draft) next to each other; FFmpeg's
+    PSNR of the pair (higher: closer)."""
+    import subprocess
+
+    from drama_series_agent.media.audio import ffmpeg_exe
+
+    ff = [ffmpeg_exe(), "-hide_banner", "-nostdin", "-y", "-i", str(a), "-i", str(b)]
+    subprocess.run(
+        [*ff, "-loglevel", "error", "-filter_complex",
+         "[0][1]hstack", "-frames:v", "1", "-update", "1", str(dest)],
+        check=True,
+    )  # fmt: skip
+    done = subprocess.run(
+        [*ff, "-filter_complex", "[0][1]psnr", "-f", "null", "-"],
+        capture_output=True, text=True, check=True,
+    )  # fmt: skip
+    found = [x for x in done.stderr.splitlines() if "average:" in x]
+    return found[-1].split("average:", 1)[1].split()[0] + " dB" if found else "?"
+
+
 def sheet(src: Path, dest: Path) -> None:
     """Two frames a second, side by side."""
     import subprocess
@@ -108,6 +145,117 @@ def sheet(src: Path, dest: Path) -> None:
          "-vf", "fps=2,scale=192:-1,tile=6x2", "-frames:v", "1", str(dest)],
         check=True,
     )  # fmt: skip
+
+
+def chain(smoke: Smoke) -> None:
+    """``chain``: 林晚's local voice and dub, then 1-06 (tts) → 1-08 (its last frame)."""
+    store = smoke.state.store
+
+    def audition() -> list[str]:
+        unlock(smoke, "vlinwan")
+        return [smoke.run(VOICE)["id"]]
+
+    if not smoke.step("voice", "林晚换本地音色（先解锁）· Qwen3-TTS VoiceDesign 试听", audition):
+        return
+    draft = smoke.latest(VOICE)
+    if draft["where"] != "local":
+        smoke.ok = False
+        smoke.say(f"   the audition was not local: {draft['model_key']}")
+        return
+    params = {"source_version_id": draft["id"], "source_idx": 0}
+
+    def final() -> list[str]:
+        return [smoke.run(VOICE, model="local/indextts2", params=params)["id"]]
+
+    if not smoke.step("voice-final", "林晚本地终版 · IndexTTS-2.5，锁定", final):
+        return
+    smoke.say(f"   lock: {smoke.post('/assets/vlinwan/lock', {}).get('status')}")
+
+    def dub_all() -> list[str]:
+        return list(smoke.post("/episodes/demo-e1/dub").get("jobs") or [])
+
+    if not smoke.step("dub", "全部配音 · 林晚的本地音色走 IndexTTS-2.5", dub_all):
+        return
+    by_label = shots(smoke)
+    for label in CHAIN:
+        shot = by_label[label]
+        product_id = shot["video_product_id"]
+
+        def take(product_id: str = product_id) -> list[str]:
+            return [smoke.run(product_id, count=1)["id"]]
+
+        mode, kind = shot.get("audio_mode"), shot.get("shot_type")
+        title = f"{label} 视频草稿（{kind}，声音 {mode}）"
+        if not smoke.step(f"vid-{label}", title, take):
+            return
+        v = smoke.latest(product_id)
+        keep_take(smoke, label, v)
+        if v["where"] != "local":
+            smoke.ok = False
+            smoke.say(f"   not local: {v['model_key']}")
+        sent = v["params"].get("request") or {}
+        if mode == "tts":
+            smoke.say(f"   dubbed track sent: {'yes' if sent.get('dialogue_audio') else 'NO'}")
+            if not sent.get("dialogue_audio"):
+                smoke.ok = False
+        smoke.post(f"/versions/{v['id']}/adopt")
+    first = smoke.latest(by_label[CHAIN[0]]["video_product_id"])
+    second = smoke.latest(by_label[CHAIN[1]]["video_product_id"])
+    last = next(f for f in first["files"] if f["role"] == "last_frame")
+    poster = next(f for f in second["files"] if f["role"] == "poster")
+    started = (second["params"].get("request") or {}).get("first_frame")
+    smoke.say(
+        f"   {CHAIN[1]} started from {CHAIN[0]}'s last frame: "
+        f"{'yes' if started == last['sha256'] else f'NO ({started})'}"
+    )
+    if started != last["sha256"]:
+        smoke.ok = False
+    psnr = side_by_side(
+        store.path_for(last["sha256"]),
+        store.path_for(poster["sha256"]),
+        smoke.out / f"tail-{CHAIN[0]}-{CHAIN[1]}.png",
+    )
+    smoke.say(
+        f"   {CHAIN[0]} last frame | {CHAIN[1]} poster (after the 0.3 s cut): PSNR {psnr} "
+        f"→ tail-{CHAIN[0]}-{CHAIN[1]}.png"
+    )
+
+
+def tts104(smoke: Smoke) -> None:
+    """``tts104``: 1-04 native, then tts, on one seed and keyframe."""
+    from drama_series_agent.pipeline import runs
+
+    runs.random.randrange = lambda *_: TTS104_SEED  # type: ignore[assignment]
+    shot = shots(smoke)["1-04"]
+    product_id = shot["video_product_id"]
+    for mode in ("native", "tts"):
+        if shot["audio_mode"] != mode:
+            target = {"kind": "shot_edit", "target_id": shot["id"], "patch": {"audio_mode": mode}}
+            impact = smoke.post("/impact/preview", target)
+            smoke.post("/impact/apply", {"impact_id": impact["id"], "action": "mark"})
+            resp = smoke.client.patch(f"{V1}/shots/{shot['id']}", json={"confirmed": True})
+            resp.raise_for_status()
+            smoke.post("/gates/storyboard/confirm", {"scope_id": "demo-e1"})
+            shot = shots(smoke)["1-04"]
+            smoke.say(f"   1-04 audio_mode → {shot['audio_mode']}, confirmed {shot['confirmed']}")
+
+        def take() -> list[str]:
+            return [smoke.run(product_id, count=1)["id"]]
+
+        what = "原生同步（音色参考）" if mode == "native" else "先配音再对口型（配好的台词）"
+        if not smoke.step(f"tts104-{mode}", f"1-04 种子 {TTS104_SEED} · {what}", take):
+            return
+        v = smoke.latest(product_id)
+        keep_take(smoke, f"1-04-{mode}", v)
+        sent = v["params"].get("request") or {}
+        dub = "yes" if sent.get("dialogue_audio") else "no"
+        smoke.say(
+            f"   seed {v['seed']}, model {v['model_key']}, first frame "
+            f"{str(sent.get('first_frame'))[:12]}, dub {dub}, voice samples "
+            f"{len(sent.get('ref_audio') or [])}"
+        )
+        raw = next(f for f in v["files"] if f["role"] == "raw")
+        sheet(smoke.state.store.path_for(raw["sha256"]), smoke.out / f"tts104-{mode}.png")
 
 
 def main() -> int:
@@ -138,9 +286,13 @@ def main() -> int:
 
     from drama_series_agent.api.app import create_app
     from drama_series_agent.modelhub.adapters.comfyui import ComfyTarget
+    from drama_series_agent.modelhub.adapters.local_python import RuntimePaths
 
     async def comfy_target() -> ComfyTarget:
         return ComfyTarget(url=facts["comfy_url"], env_hash=facts["env_hash"])
+
+    async def runtime_paths() -> RuntimePaths:  # the TTS models of ``chain``
+        return RuntimePaths(envs=REAL_HOME / "envs", models=facts["models"])
 
     meter = VramMeter()
     meter.start()
@@ -148,6 +300,7 @@ def main() -> int:
     with TestClient(create_app(), base_url="http://127.0.0.1", headers=headers) as client:
         state = client.app.state.studio  # type: ignore[attr-defined]
         state.setup.comfy_target = comfy_target
+        state.setup.runtime_paths = runtime_paths
         state.registry._adapters.clear()
         smoke = Smoke(client, state, out, meter)
         name, total = " ".join(gpu_query("name")), " ".join(gpu_query("memory.total"))
@@ -224,6 +377,10 @@ def main() -> int:
                     if v["model_key"] != model:
                         smoke.ok = False
                         smoke.say(f"   expected {model}, ran on {v['model_key']}")
+        if "chain" in only:
+            chain(smoke)
+        if "tts104" in only:
+            tts104(smoke)
         if "ab" in only:
             from drama_series_agent.pipeline import runs
 
