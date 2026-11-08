@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-08 · M5 第 15b 步：音色样本不够长时拼同一个声音的几段话
+
+- 起因：H3 API 要 2–15 秒的音频（2013），林晚本地音色的锚点只有 0.87 秒。
+- **Kelvin 定**：不重复、不补静音，把同一个人的几段话拼在一起交上去，不浪费额度。
+- 做法：`providers.yaml` 的 `minimax/h3-api`、`minimax/h3-regenerate-2k` 加 `caps.audio_s: [2, 15]`；`vid.py` 收集音色时带上这个声音锁定版本里的全部片段（先 `anchor`、再各情绪 `variant`，都是同一个声音）；`_voice_samples`：锚点在范围内就原样送，否则 `media/audio.py:joined_sample` 按顺序拼（每段之间停 0.25 秒，只拼到够长为止，超过上限截掉），存成新文件作为 `ref_audio`，请求记录里就是实际送出去的那段。全部拼完还不够就报 `voice_sample_short`，在调用前停下，不花钱。本地 `comfy/h3-r2v` 没有 `audio_s`，仍送锚点。「用 API 出终版」（Regenerate-2K）重发草稿的音色时同样处理。
+- 先配音（`dialogue_audio`）不处理：配音轨按镜头时长生成，本来就够长。
+
 ## 2026-11-08 · M5 第 15a 步：慢上行：任务 API 的输入压小、建任务不重发
 
 - 起因：真实冒烟第一轮（Kelvin 在海外）往 api.minimax.cn 上传约 20 KB/s、火山方舟约 40 KB/s；H3 的请求体是 PNG / WAV 的 data URI（几 MB），POST 120 秒写超时；`send()` 把超时当可重试，**每次重发 MiniMax 都又建了一个任务**（列表里 3 个 Context-IR + 1 个生成；这次都因音频太短失败、没扣钱，成功的话就是重复收费）。

@@ -52,7 +52,7 @@ from drama_series_agent.core.models_db import (
 )
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes.service import gate_confirmed, script_product
-from drama_series_agent.media.audio import dialogue_track
+from drama_series_agent.media.audio import dialogue_track, joined_sample
 from drama_series_agent.media.video import VideoError, VideoInfo, frame, probe, trim_head
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
@@ -243,8 +243,12 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
                 else None
             )
             anchor = _file(v, "anchor")
-            if anchor is None:
+            if anchor is None or v is None:
                 continue
+            # The voice's other clips (all in the same voice), for an API that wants a longer
+            # sample than the anchor (``_voice_samples``).
+            clips = [f for f in v.files_json if f.get("role") == "anchor"]
+            clips += [f for f in v.files_json if f.get("role") == "variant"]
             seen.add(key)
             h = await invalidation.current_hash(session, voice.id)
             voices.append(
@@ -252,6 +256,9 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
                     "sx": speakers[key],
                     "who": x.character_name or asset.name,
                     "sha256": anchor["sha256"],
+                    "clips": [
+                        {"sha256": f["sha256"], "duration_s": f.get("duration_s")} for f in clips
+                    ],
                     "product_id": voice.id,
                     "hash": h,
                 }
@@ -567,17 +574,25 @@ class VidComponent(MediaComponent):
         prompt = store.path_for(prompt_file["sha256"]).read_text(encoding="utf-8")
         frame_ = inputs.context["frame"]
         size = dims(frame_["aspect"], "2k")
+        params = {
+            **sent,
+            "width": size.w,
+            "height": size.h,
+            "duration_s": raw.get("duration_s") or sent.get("duration_s"),
+            "video_in": raw["sha256"],
+        }
+        model = ctx.model_key or self._final_model()
+        if sent.get("ref_audio") and model:
+            # The draft's voice samples, joined when the API wants them longer.
+            by_anchor = {v["sha256"]: v for v in inputs.context["voices"]}
+            voices = [by_anchor.get(sha, {"sha256": sha, "who": ""}) for sha in sent["ref_audio"]]
+            caps = self.services.registry.spec(model).caps.model_extra or {}
+            params["ref_audio"] = self._voice_samples(voices, caps)
         req = ModelRequest(
             kind="upscale",
             prompt=prompt,
             seed=source.seed,
-            params={
-                **sent,
-                "width": size.w,
-                "height": size.h,
-                "duration_s": raw.get("duration_s") or sent.get("duration_s"),
-                "video_in": raw["sha256"],
-            },
+            params=params,
             meta={"component": self.id, "task": "final"},
         )
         call = await self.media_call(
@@ -864,7 +879,7 @@ class VidComponent(MediaComponent):
         if refs:
             params["refs"] = [r["sha256"] for r in refs]
         if voices:
-            params["ref_audio"] = [v["sha256"] for v in voices]
+            params["ref_audio"] = self._voice_samples(voices, extra)
         if spec.where == "local" and wf is not None and wf.meta.branches:
             settings = await self.services.router.settings(self.id, item_of(ctx.product))
             chosen = settings.values.get("branches")
@@ -886,6 +901,33 @@ class VidComponent(MediaComponent):
             meta={"component": self.id, "task": "take"},
         )
         return req, refs, deps, voices, r2v
+
+    def _voice_samples(self, voices: list[dict[str, Any]], caps: dict[str, Any]) -> list[str]:
+        """The voice samples sent: each voice's anchor, or, when the model wants longer audio
+        (``caps.audio_s``, the H3 API's 2–15 s) than the anchor lasts, the voice's clips joined
+        until long enough (``joined_sample``). Too short even then: stopped here, before
+        anything is paid for."""
+        span = caps.get("audio_s")
+        if not span:
+            return [str(v["sha256"]) for v in voices]
+        floor, ceiling = float(span[0]), float(span[1])
+        store = self.services.store
+        out: list[str] = []
+        for v in voices:
+            clips = list(v.get("clips") or [{"sha256": v["sha256"], "duration_s": None}])
+            first = clips[0].get("duration_s")
+            if first is not None and floor <= float(first) <= ceiling:
+                out.append(str(clips[0]["sha256"]))
+                continue
+            datas = [store.path_for(str(c["sha256"])).read_bytes() for c in clips]
+            joined = joined_sample(datas, floor, ceiling)
+            if joined is None:
+                total = sum(float(c.get("duration_s") or 0) for c in clips)
+                raise ComponentError(
+                    "voice_sample_short", name=v["who"], seconds=round(total, 1), min_s=floor
+                )
+            out.append(store.put_bytes(joined))
+        return out
 
     def _h3_prompt(
         self,

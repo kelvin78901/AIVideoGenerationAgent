@@ -270,6 +270,43 @@ def dialogue_track(clips: list[bytes], total_s: float, lead_s: float) -> bytes:
     return buf.getvalue()
 
 
+SAMPLE_GAP_S = 0.25
+
+
+def joined_sample(clips: list[bytes], floor_s: float, ceiling_s: float) -> bytes | None:
+    """One speaker's clips joined into a voice sample at least ``floor_s`` long (M5 step 15b,
+    Kelvin 2026-11-08: the H3 API wants 2–15 s; a local voice's anchor can be under a second).
+    The clips, all in the same voice, follow one another with a short pause until the sample is
+    long enough, nothing repeated and no silence added to reach it; cut at ``ceiling_s``.
+    ``None`` when all of them together are still too short. 48 kHz mono 16-bit WAV."""
+    gap = array.array("h", bytes(2 * round(SAMPLE_GAP_S * TRACK_RATE)))
+    track = array.array("h")
+    for clip in clips:
+        try:
+            samples, rate = _samples(clip)
+        except (wave.Error, EOFError, AudioError):
+            rate = 0  # not 16-bit mono WAV: ffmpeg makes it one
+        if rate != TRACK_RATE:
+            samples, rate = _samples(_resampled(clip))
+        if track:
+            track.extend(gap)
+        track.extend(samples)
+        if len(track) >= floor_s * TRACK_RATE:
+            break
+    else:
+        return None
+    del track[round(ceiling_s * TRACK_RATE) :]
+    if sys.byteorder == "big":
+        track.byteswap()
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(TRACK_RATE)
+        w.writeframes(track.tobytes())
+    return buf.getvalue()
+
+
 def _resampled(clip: bytes) -> bytes:
     with TemporaryDirectory(prefix="drama-audio-") as tmp:
         src, out = Path(tmp, "in.wav"), Path(tmp, "out.wav")

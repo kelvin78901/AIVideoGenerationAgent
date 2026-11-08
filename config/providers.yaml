@@ -286,7 +286,7 @@ media_models:
     extras: { extra_image: 0.20 }
     currency: CNY
     by_site: { intl: { price_by_res: { "768p": 0.08, "2k": 0.13 }, input_price_per_second: 0.13, extras: { extra_image: 0.04 }, currency: USD } }
-    caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [4, 15], resolutions: ["768P", "2K"], max_short_edge: 1440, max_images: 9, max_videos: 3, max_audios: 3, max_files: 12, audio_needs_visual: true, prompt_ir: minimax/context-ir, timeout_s: 1800 }
+    caps: { aspects: ["21:9", "16:9", "4:3", "1:1", "3:4", "9:16"], fps: 24, duration_s: [4, 15], resolutions: ["768P", "2K"], max_short_edge: 1440, max_images: 9, max_videos: 3, max_audios: 3, max_files: 12, audio_s: [2, 15], audio_needs_visual: true, prompt_ir: minimax/context-ir, timeout_s: 1800 }
     docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-create
   # 768P 草稿重生成到 2K：输出 0.30 元 / 秒，输入视频 0.30 元 / 秒（官方示例里 base_video 记 0 秒，估价按收算），
   # 原任务的输入素材再收一次（图片超 5 张 0.15 元 / 张）。
@@ -302,7 +302,7 @@ media_models:
     extras: { extra_image: 0.15 }
     currency: CNY
     by_site: { intl: { price: 0.05, input_price_per_second: 0.05, extras: { extra_image: 0.025 }, currency: USD } }
-    caps: { duration_s: [4, 15], timeout_s: 1800 }
+    caps: { duration_s: [4, 15], audio_s: [2, 15], timeout_s: 1800 }
     docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-regeneration
   # H3 官方提示词改写（多模态，异步任务，只出提示词）：5.80 / 23.00 元每百万 token。
   - key: minimax/context-ir

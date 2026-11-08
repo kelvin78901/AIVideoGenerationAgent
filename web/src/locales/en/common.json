@@ -128,6 +128,7 @@
     "voice_clone_not_supported": "Voice cloning comes later",
     "voice_design_failed": "The voice design returned no voice id",
     "voice_no_anchor": "The chosen audition has no audio",
+    "voice_sample_short": "{{name}}'s voice clips are too short: {{seconds}} s joined, this model needs at least {{min_s}} s",
     "no_audio": "The model returned no audio",
     "ocr_mismatch": "OCR mismatch: it reads “{{read}}”, it should say “{{exact}}”",
     "no_model_configured": "No model is selected for this step yet",

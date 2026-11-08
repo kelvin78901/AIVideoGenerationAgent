@@ -7,7 +7,9 @@ its lines not dubbed), 1-08 continues 1-06 and 1-09 continues 1-08.
 
 from __future__ import annotations
 
+import io
 import time
+import wave
 from collections.abc import Iterator
 from typing import Any
 
@@ -234,6 +236,46 @@ def test_an_h3_api_take_goes_through_context_ir(client: TestClient) -> None:
     text = _prompt(client, take)
     assert "<Audio 1>: fully_copy - <Audio 1> is reused 1:1" in text
     assert "overall_soundscape: <Audio 1> as it is, with no other sound." in text
+
+
+def _seconds(client: TestClient, sha: str) -> float:
+    data = _state(client).store.path_for(sha).read_bytes()
+    with wave.open(io.BytesIO(data)) as w:
+        return w.getnframes() / w.getframerate()
+
+
+def test_the_h3_api_gets_a_voice_sample_long_enough(client: TestClient) -> None:
+    """M5 step 15b (Kelvin 2026-11-08): the H3 API wants 2–15 s of voice; a shorter anchor is
+    joined with the voice's other clips (never repeated or padded), and when even all of them
+    are too short the take stops before anything is paid for."""
+    _confirm_storyboard(client)
+    pid = _shots(client)["1-04"]["video_product_id"]
+    spec = _state(client).registry.spec("minimax/h3-api")
+    extra = spec.caps.model_extra
+    assert extra is not None and extra["audio_s"] == [2, 15]
+    try:
+        extra["audio_s"] = [6, 15]  # above any one Mock clip: the anchor gets joined
+        take = _run(client, pid, model="minimax/h3-api")["versions"][0]
+        (sample,) = take["params"]["request"]["ref_audio"]
+        local = _run(client, pid, model="comfy/h3-r2v")["versions"][-1]
+        (anchor,) = local["params"]["request"]["ref_audio"]  # locally: the anchor as it is
+        assert sample != anchor and 6 <= _seconds(client, sample) <= 15
+        assert _seconds(client, anchor) < 6
+
+        extra["audio_s"] = [600, 900]  # longer than the voice has
+        before = len(_rows(client, ModelCall, ModelCall.model_key == "minimax/h3-api"))
+        body = {"mode": "run", "model": "minimax/h3-api"}
+        job = client.post(f"{V1}/products/{pid}/run", json=body).json()
+        deadline = time.monotonic() + 60
+        while job["state"] not in ("succeeded", "failed", "canceled"):
+            assert time.monotonic() < deadline, "the job did not finish"
+            time.sleep(0.02)
+            job = client.get(f"{V1}/jobs/{job['id']}").json()
+        assert job["state"] == "failed" and job["error"]["code"] == "voice_sample_short"
+        after = len(_rows(client, ModelCall, ModelCall.model_key == "minimax/h3-api"))
+        assert after == before
+    finally:
+        extra["audio_s"] = [2, 15]
 
 
 def _final(client: TestClient, product_id: str, version_id: str) -> dict[str, Any]:
