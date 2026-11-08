@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { act, render, renderHook, screen } from "@testing-library/react";
 import type { ReactNode } from "react";
 
+import { REFETCH_WINDOW_MS } from "@/api/events";
 import { callKeys, jobKeys } from "@/api/hooks/useJobs";
 import { makeQueryClient } from "@/api/queryClient";
 import type { Job } from "@/api/schemas/jobs";
@@ -47,15 +48,40 @@ describe("useEventStream", () => {
     ]);
   });
 
-  it("refetches calls on cost.updated and everything on (re)connect", () => {
+  it("refetches calls and the spend on cost.updated and everything on (re)connect", () => {
     const { client, source } = setup();
     const spy = vi.spyOn(client, "invalidateQueries");
     act(() => source.emit("cost.updated", { cost_usd: 0.1 }, 3));
     expect(spy).toHaveBeenCalledWith({ queryKey: callKeys.all });
+    expect(spy).toHaveBeenCalledWith({ queryKey: ["metrics"] });
     spy.mockClear();
     act(() => source.emit("open"));
     expect(spy).toHaveBeenCalledWith({ queryKey: jobKeys.all });
     expect(spy).toHaveBeenCalledWith({ queryKey: callKeys.all });
+  });
+
+  it("a burst of events refetches each query at its start and once more at its end", () => {
+    vi.useFakeTimers();
+    try {
+      const { client, source } = setup();
+      const spy = vi.spyOn(client, "invalidateQueries");
+      const products = () =>
+        spy.mock.calls.filter(([f]) => JSON.stringify(f?.queryKey) === '["products"]').length;
+      // 生成确认 locks nine products, each announced on its own.
+      for (let i = 1; i <= 9; i++) {
+        act(() => source.emit("product.updated", { product_id: `p${i}`, slot: "video" }, i));
+      }
+      expect(products()).toBe(1);
+      act(() => vi.advanceTimersByTime(REFETCH_WINDOW_MS));
+      expect(products()).toBe(2);
+      act(() => vi.advanceTimersByTime(REFETCH_WINDOW_MS * 4));
+      expect(products()).toBe(2);
+      // Quiet again: the next event refetches at once.
+      act(() => source.emit("product.updated", { product_id: "p1", slot: "video" }, 10));
+      expect(products()).toBe(3);
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("refetches products, the script status and the badges on gate.updated", () => {
