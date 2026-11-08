@@ -315,7 +315,8 @@ media_models:
     price: { in: 5.80, out: 23.00 }
     currency: CNY
     by_site: { intl: { price: { in: 0.90, out: 3.60 }, currency: USD } }
-    caps: { duration_s: [4, 15], timeout_s: 600 }
+    # 2026-11-08（M5 第 15 步）：600 → 180 秒。超时就用我们自己的提示词，不让整条片子干等。
+    caps: { duration_s: [4, 15], timeout_s: 180 }
     docs: https://platform.minimaxi.com/docs/api-reference/video-generation-v2-h3-context-ir
   # Seedance 2.5（2026-10-26 按火山方舟文档核对）：按 token 计费，token = 宽 × 高 × 24 × 秒 / 1024，
   # 480p / 720p 70 元、1080p 77 元每百万 token（没有输入视频时）；失败不收费。

@@ -57,18 +57,29 @@ async def send(
     max_retries: int,
     backoff_s: float,
     errors: ErrorMapper = error_for,
+    create: bool = False,
     **kwargs: Any,
 ) -> httpx.Response:
-    """A 2xx response, or the ``ModelError`` of the last attempt."""
+    """A 2xx response, or the ``ModelError`` of the last attempt.
+
+    ``create``: the request makes something billed (a video task). It is sent again only when
+    it never reached the provider (no connection); a timeout or a dropped connection after it
+    went out may have made the task, so that is reported, not retried (M5 step 15: a slow
+    upload timed out and each retry made one more task)."""
     attempt = 0
     while True:
         resp: httpx.Response | None = None
         try:
             resp = await client.request(method, url, **kwargs)
-        except httpx.TimeoutException:
-            error = ModelError("timeout", "provider request timed out", retryable=True)
-        except httpx.HTTPError as exc:
+        except (httpx.ConnectError, httpx.ConnectTimeout) as exc:
             error = ModelError("network_error", type(exc).__name__, retryable=True)
+        except httpx.TimeoutException:
+            detail = "provider request timed out"
+            if create:
+                detail += " after it was sent: the task may exist, see the provider's task list"
+            error = ModelError("timeout", detail, retryable=not create)
+        except httpx.HTTPError as exc:
+            error = ModelError("network_error", type(exc).__name__, retryable=not create)
         else:
             if resp.is_success:
                 return resp
@@ -77,6 +88,6 @@ async def send(
             if resp.status_code not in RETRY_STATUSES or not error.retryable:
                 raise error
         attempt += 1
-        if attempt > max_retries:
+        if attempt > max_retries or not error.retryable:
             raise error
         await asyncio.sleep(retry_delay(attempt, resp, backoff_s))

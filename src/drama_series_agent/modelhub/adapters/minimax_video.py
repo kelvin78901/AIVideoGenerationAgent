@@ -58,6 +58,11 @@ from drama_series_agent.modelhub.adapters.http import KeyGetter, error_for, send
 from drama_series_agent.modelhub.adapters.images import data_uri
 from drama_series_agent.modelhub.adapters.minimax import _mime as audio_mime
 from drama_series_agent.modelhub.adapters.tasks import download, poll, video_file
+from drama_series_agent.modelhub.adapters.upload import (
+    compact_audio,
+    compact_picture,
+    upload_timeout,
+)
 from drama_series_agent.modelhub.pricing import cost_usd
 
 MAX_BODY = 64 * 1024 * 1024
@@ -181,9 +186,17 @@ class MiniMaxVideoAdapter:
     async def run(self, req: ModelRequest, ctx: CallContext) -> ModelResult:
         if self.spec.kind not in PATHS:
             raise ModelError("bad_request", f"{self.key}: kind {self.spec.kind}")
-        body = self._body(req)
+        body = await asyncio.to_thread(self._body, req)  # pictures and audio made small (FFmpeg)
+        size = len(json.dumps(body))
         async with self._client() as client:
-            created = await self._send(client, "POST", PATHS[self.spec.kind], json=body)
+            created = await self._send(
+                client,
+                "POST",
+                PATHS[self.spec.kind],
+                json=body,
+                create=True,
+                timeout=upload_timeout(size, self.request_timeout_s),
+            )
             task_id = str(created.json().get("task_id") or "")
             if not task_id:
                 raise ModelError("invalid_response", created.text[:300])
@@ -241,7 +254,7 @@ class MiniMaxVideoAdapter:
             for sha in pictures[:MAX_IMAGES]:
                 items.append(self._picture(str(sha), "reference_image"))
             for data in audios:
-                url = data_uri(data, audio_mime(data))
+                url = data_uri(*compact_audio(data, audio_mime(data)))
                 items.append(
                     {"type": "audio_url", "audio_url": {"url": url}, "role": "reference_audio"}
                 )
@@ -269,7 +282,8 @@ class MiniMaxVideoAdapter:
             mime = image_info(data).mime
         except ValueError as exc:
             raise ModelError("ref_unreadable", f"{sha[:12]}: {exc}") from exc
-        return {"type": "image_url", "image_url": {"url": data_uri(data, mime)}, "role": role}
+        url = data_uri(*compact_picture(data, mime))
+        return {"type": "image_url", "image_url": {"url": url}, "role": role}
 
     def _blob(self, sha: str) -> bytes:
         try:

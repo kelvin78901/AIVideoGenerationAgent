@@ -197,7 +197,10 @@ async def test_dubbed_lines_go_as_the_one_reference_audio(store: BlobStore) -> N
     content = _sent(create)["content"]
     assert [c.get("role") for c in content] == [None, "reference_image", "reference_audio"]
     url = content[2]["audio_url"]["url"]
-    assert base64.b64decode(url.split(",", 1)[1]) == store.path_for(track).read_bytes()
+    # 6.4 s of WAV is over 512 KB: it goes as an MP3 (M5 step 15, slow uplinks).
+    assert url.startswith("data:audio/mpeg;base64,")
+    sent = base64.b64decode(url.split(",", 1)[1])
+    assert len(sent) < len(store.path_for(track).read_bytes())
 
 
 @respx.mock
@@ -436,3 +439,74 @@ async def test_seedance_errors(store: BlobStore) -> None:
     with pytest.raises(ModelError) as exc:
         await _ark(store).run(_video_req(store), CallContext())
     assert exc.value.code == "content_blocked"
+
+
+async def _big_png() -> bytes:
+    """A 1080x1920 test pattern as a PNG (well over the 256 KB a picture goes inline as)."""
+    import subprocess
+
+    from drama_series_agent.media.audio import ffmpeg_exe
+
+    cmd = [ffmpeg_exe(), "-hide_banner", "-loglevel", "error", "-f", "lavfi", "-i",
+           "testsrc2=size=1080x1920:rate=1", "-vf", "noise=alls=40:allf=t",
+           "-frames:v", "1", "-f", "image2pipe",
+           "-c:v", "png", "pipe:1"]  # fmt: skip
+    return (await asyncio.to_thread(subprocess.run, cmd, capture_output=True, check=True)).stdout
+
+
+@respx.mock
+async def test_a_task_post_that_times_out_is_not_sent_again(store: BlobStore) -> None:
+    """M5 step 15: from a slow uplink the POST timed out after MiniMax had made the task, and
+    each retry made one more. A create is resent only when it never got through."""
+    route = respx.post(f"{MM}/v2/video_generation").mock(side_effect=httpx.ReadTimeout("slow"))
+    with pytest.raises(ModelError) as exc:
+        await _mm(store).run(_video_req(store), CallContext())
+    assert exc.value.code == "timeout" and not exc.value.retryable
+    assert "task list" in str(exc.value) and route.call_count == 1
+
+    ark = respx.post(f"{ARK}/contents/generations/tasks").mock(
+        side_effect=httpx.WriteTimeout("slow")
+    )
+    with pytest.raises(ModelError) as exc:
+        await _ark(store).run(_video_req(store), CallContext())
+    assert exc.value.code == "timeout" and ark.call_count == 1
+
+    # No connection at all: nothing was made, so it is tried again.
+    route.mock(side_effect=[httpx.ConnectError("down"), httpx.Response(200, json={})])
+    with pytest.raises(ModelError) as exc:
+        await _mm(store).run(_video_req(store), CallContext())
+    assert exc.value.code == "invalid_response" and route.call_count == 3  # 1 + 2
+
+
+@respx.mock
+async def test_big_pictures_and_audio_go_small(store: BlobStore) -> None:
+    from drama_series_agent.modelhub.adapters.upload import (
+        PICTURE_OVER,
+        compact_audio,
+        compact_picture,
+        upload_timeout,
+    )
+
+    png = await _big_png()
+    assert len(png) > PICTURE_OVER
+    jpeg, mime = compact_picture(png, "image/png")
+    assert mime == "image/jpeg" and jpeg[:2] == b"\xff\xd8" and len(jpeg) < len(png)
+    small = mock_picture(108, 192, "ref", 0)
+    assert compact_picture(small, "image/png") == (small, "image/png")
+    wav = sine_wav(6.0, 440)
+    mp3, amime = compact_audio(wav, "audio/wav")
+    assert (amime, len(mp3) < len(wav)) == ("audio/mpeg", True)
+    assert upload_timeout(16 * 1024 * 600, 120).write == 630  # 600 s at the slow rate + 30
+    assert upload_timeout(1000, 120).write == 120
+
+    route = respx.post(f"{MM}/v2/video_generation").mock(
+        return_value=httpx.Response(200, json={"task_id": "t-1"})
+    )
+    respx.get(f"{MM}/v2/query/video_generation/t-1").mock(
+        return_value=httpx.Response(200, json=_task("failed", error={"code": "2013"}))
+    )
+    req = _video_req(store, first_frame=store.put_bytes(png))
+    with pytest.raises(ModelError):
+        await _mm(store).run(req, CallContext())
+    first = next(i for i in _sent(route)["content"] if i["type"] == "image_url")
+    assert first["image_url"]["url"].startswith("data:image/jpeg;base64,")

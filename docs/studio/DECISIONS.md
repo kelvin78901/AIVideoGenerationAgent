@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-08 · M5 第 15a 步：慢上行：任务 API 的输入压小、建任务不重发
+
+- 起因：真实冒烟第一轮（Kelvin 在海外）往 api.minimax.cn 上传约 20 KB/s、火山方舟约 40 KB/s；H3 的请求体是 PNG / WAV 的 data URI（几 MB），POST 120 秒写超时；`send()` 把超时当可重试，**每次重发 MiniMax 都又建了一个任务**（列表里 3 个 Context-IR + 1 个生成；这次都因音频太短失败、没扣钱，成功的话就是重复收费）。
+- **`send(create=True)`**（`modelhub/adapters/http.py`）：建任务（收钱）的请求只在根本没连上（`ConnectError` / `ConnectTimeout`）时重发；发出去之后的超时或断线报 `timeout` / `network_error`，`retryable=False`（路由也不再重试同一模型），信息里提示去供应商的任务列表看。MiniMax H3（生成、Context-IR、Regenerate-2K）和 Seedance 的建任务都用它；查询、下载照旧重试。
+- **输入压小**（`modelhub/adapters/upload.py`）：图片超过 256 KB 转 JPEG（ffmpeg `-q:v 3`，约质量 90），音频超过 512 KB 转 192 kbps MP3，变小才换；请求体在线程里组装（ffmpeg 不卡事件循环）。H3 首帧 / 参考图 / 音频、Seedance 首帧都走它。Regenerate-2K 的 `base_video`（草稿 MP4）不动。
+- **写超时按请求体放宽**：`upload_timeout`：写 = max(120 s, 字节 / 16 KB/s + 30 s)，其余照旧。
+- **Context-IR 超时 600 → 180 秒**（`providers.yaml`）：超时就用我们自己的提示词。
+- 没做（Kelvin 暂不开）：MiniMax 国际站。还没修：本地音色样本不够 H3 API 要的 2 秒（下一步）。
+
 ## 2026-11-08 · 新里程碑 M5.5「图片来源与编辑」、M7.5「角色微调与 3D 建模」（Kelvin 定）
 
 - Kelvin：只靠文生图保证不了图片质量，要支持用户自己上传图片和参考、图生图、超分、微调、建模。定了：M5 照原计划收尾；**M6 前插 M5.5**（上传关键帧 / 素材多参考 / 六视图单张 / 手动新建素材 / 镜头参考图带用途 / 风格板、图生图、局部修复、图片超分、上传图也能出终版）；**上传关键帧画幅不对就自动裁切、可拖动选位置**；「微调」= 角色 LoRA 训练，「建模」= 图生 3D，单列 M7.5（建议排 M7 之后，开始前再定）。ROADMAP M5「局部修复入口」挪到 M5.5。

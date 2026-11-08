@@ -44,6 +44,7 @@ from drama_series_agent.modelhub.adapters.http import KeyGetter, send
 from drama_series_agent.modelhub.adapters.images import data_uri, load_refs
 from drama_series_agent.modelhub.adapters.minimax_video import seconds_for
 from drama_series_agent.modelhub.adapters.tasks import download, poll, video_file
+from drama_series_agent.modelhub.adapters.upload import compact_picture, upload_timeout
 from drama_series_agent.modelhub.adapters.volcengine import _code
 from drama_series_agent.modelhub.adapters.volcengine import _error as _ark_error
 from drama_series_agent.modelhub.pricing import cost_usd
@@ -122,9 +123,17 @@ class SeedanceAdapter:
         )
 
     async def run(self, req: ModelRequest, ctx: CallContext) -> ModelResult:
-        body = self._body(req)
+        body = await asyncio.to_thread(self._body, req)  # the first frame made small (FFmpeg)
+        size = len(json.dumps(body))
         async with self._client() as client:
-            created = await self._send(client, "POST", TASKS, json=body)
+            created = await self._send(
+                client,
+                "POST",
+                TASKS,
+                json=body,
+                create=True,
+                timeout=upload_timeout(size, self.request_timeout_s),
+            )
             task_id = str(created.json().get("id") or "")
             if not task_id:
                 raise ModelError("invalid_response", created.text[:300])
@@ -177,7 +186,7 @@ class SeedanceAdapter:
         first = p.get("first_frame")
         if first:
             data, mime = load_refs(self._store, [str(first)], 1)[0]
-            url = data_uri(data, mime)
+            url = data_uri(*compact_picture(data, mime))
             content.append({"type": "image_url", "image_url": {"url": url}, "role": "first_frame"})
         body: dict[str, Any] = {
             **dict((self.spec.caps.model_extra or {}).get("request") or {}),
