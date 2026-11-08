@@ -20,4 +20,4 @@ DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/live_video.py --home <数据�
 - 建任务没有重发：MiniMax 这轮每步只建了一个任务。
 - 片子在临时目录（没进仓库）：`C:\Users\kelvin\AppData\Local\Temp\drama-local-video-z2icdq70\live-out\`。
 
-待办：Kelvin 在火山方舟控制台开通 Seedance 2.5 后，再跑 `--only seedance`。
+Seedance：开通要交保证金，Kelvin 2026-11-08 定先不管；以后开通了再跑 `--only seedance`。
