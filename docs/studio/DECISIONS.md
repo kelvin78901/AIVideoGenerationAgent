@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-08 · M5 第 14f 步：本机导入社区工作流；Manager 4 的节点表
+
+- **缺的节点包按 Manager 4 的节点表找**（`wflib/service.py:_packs_for`）：ComfyUI-Manager V4.2.2 的 `/v2/customnode/getmappings` 把收录进 Comfy Registry 的包换成 Registry id 当键（本机 5725 条里 3296 条），类名也不一定是真实的（rgthree 列的是 `RgthreeSeed`，真实的是 `Seed (rgthree)`），它只给已经装上的包套 `nodename_pattern`。所以体检自己套名字规则（`re.search`，坏的正则跳过）；键不是 git 地址的记 `source: registry`，git 地址去 Comfy Registry 查（`ComfyAccess.repository`：`GET https://api.comfy.org/nodes/<id>` 的 `repository`，Manager 自己的数据也从这来；只查缺的那几个包，查不到就列出来但不能装）。原因：本机第一次导入用了 rgthree 节点的工作流时，体检认不出缺的包、也拿不到克隆地址。Manager 4 没有旧的 `getlist` 接口（只在 legacy 里），所以不从它那里取。安装仍是我们自己克隆 GitHub 主分支（没有锁版本；Registry 把 rgthree 最新版标了 flagged，Kelvin 知道后仍同意装）。
+- **ComfyUI 工作流列表的 `modified` 两种单位都认**：0.41 给的是毫秒，旧版是秒；大于 1e11 就当毫秒。
+- **本机脚本 `scripts/smoke/local_workflow.py`**：临时数据目录、`DRAMA_SETUP=real` 自己扫描本机（只读），不动开着的工作台；不带 `--install` 只看体检和改动清单；`--install` 先存快照再装，等用户重启 ComfyUI（轮询 `/object_info/<类名>`），再体检、试跑、升「我的工作流」。数据目录留着（快照记录在里面）。社区工作流用的是 API 格式：没装的节点类 ComfyUI 不认识，UI 格式转不了（`ConvertError`），社区里分享的「Export (API)」正是这种。
+
 ## 2026-11-08 · M5 第 13d 步：Playwright `m5`；表头花费实时更新；事件风暴节流
 
 - **Playwright 新项目 `m5`**（`web/e2e/m5.spec.ts`，`VITE_DEMO_DATA=0`）：排在 `m4` 之后、`real` 之前（`seeded` → `m4` → `m5` → `real` → `smoke`）。生成页走界面：1-05 首次出两条本地候选、采纳 / 取消 / 再采纳、「用 API 出终版」出 2K 终版、表头花费变多、运行记录、生成确认被拒（还有 5 个镜头）；其余镜头用接口各出一条并采纳（1-04 也重出：`m4` 给它换过首帧，种子的候选已经过期，徽标是「待更新」）；再点「去后期」进后期、步骤「已确认」，「重新打开」。模型页走界面：扫描示例 PC（装节点包要有 ComfyUI），导入 `社区/图生视频-wan22.json` → 确认绑定 → 装 VHS（先存快照）→ 试跑 → 我的工作流；导入 `社区/胶片颗粒-filmgrain.json` 装上坏包 → wan22「有问题 2 处」、问题列表 → 回滚 → 正常。结尾 `POST /dev/setup/machine` 换回没扫描的示例 PC（清掉快照），后面 `smoke` 的「首次运行」照旧从「开始检测」开始；生成闸门也重新打开了，后面的项目看到的是没锁的视频。

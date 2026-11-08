@@ -19,6 +19,7 @@ binding confirmed, a passed trial and an unchanged file; editing the bindings de
 
 from __future__ import annotations
 
+import contextlib
 import json
 import re
 import time
@@ -486,7 +487,9 @@ class WorkflowLibrary:
         classes = sorted({str(n.get("class_type")) for n in graph.values()})
         missing = [c for c in classes if c not in info]
         ours = [c for c in missing if dramastudio.is_ours(c)]
-        packs, unknown = _packs_for([c for c in missing if c not in ours], await _node_map(access))
+        found, unknown = _packs_for([c for c in missing if c not in ours], await _node_map(access))
+        await _with_repositories(found, access)
+        packs = list(found.values())
         if ours:  # our own pack: installed from the repo (the setup item), not a registry
             packs.insert(
                 0,
@@ -816,28 +819,59 @@ async def _node_map(access: ComfyAccess) -> dict[str, Any]:
         return {}
 
 
-def _packs_for(missing: list[str], node_map: dict[str, Any]) -> tuple[list[MissingPack], list[str]]:
-    """Group missing node classes by the pack that provides them; classes no pack lists."""
-    by_class: dict[str, tuple[str, str]] = {}
-    for url, entry in node_map.items():
+def _packs_for(
+    missing: list[str], node_map: dict[str, Any]
+) -> tuple[dict[str, MissingPack], list[str]]:
+    """Group missing node classes by the pack that provides them; classes no pack lists.
+
+    A pack's classes are its list, or match its ``nodename_pattern`` (rgthree's
+    ``Seed (rgthree)``: Manager fills those in only for packs already installed). Manager 4
+    names a registry pack by its registry id: ``source="registry"`` with no ``url`` yet
+    (``_with_repositories`` looks it up). Keyed by the node map's key."""
+    by_class: dict[str, str] = {}
+    patterns: list[tuple[re.Pattern[str], str]] = []
+    info_of: dict[str, dict[str, Any]] = {}
+    for key, entry in node_map.items():
         if not isinstance(entry, list) or not entry or not isinstance(entry[0], list):
             continue
         info = entry[1] if len(entry) > 1 and isinstance(entry[1], dict) else {}
-        name = str(info.get("title_aux") or url.rstrip("/").rsplit("/", 1)[-1])
+        info_of[key] = info
         for cls in entry[0]:
-            by_class.setdefault(str(cls), (name, url))
+            by_class.setdefault(str(cls), key)
+        pattern = info.get("nodename_pattern")
+        if isinstance(pattern, str) and pattern:
+            with contextlib.suppress(re.error):
+                patterns.append((re.compile(pattern), key))
     packs: dict[str, MissingPack] = {}
     unknown: list[str] = []
     for cls in missing:
-        if cls not in by_class:
+        found = by_class.get(cls) or next((k for pat, k in patterns if pat.search(cls)), None)
+        if found is None:
             unknown.append(cls)
             continue
-        name, url = by_class[cls]
+        key = found
+        git = "://" in key
+        name = str(info_of[key].get("title_aux") or key.rstrip("/").rsplit("/", 1)[-1])
         pack = packs.setdefault(
-            url, MissingPack(name=name, classes=[], source="git", version=None, url=url)
+            key,
+            MissingPack(
+                name=name,
+                classes=[],
+                source="git" if git else "registry",
+                version=None,
+                url=key if git else None,
+            ),
         )
         pack.classes.append(cls)
-    return list(packs.values()), unknown
+    return packs, unknown
+
+
+async def _with_repositories(packs: dict[str, MissingPack], access: ComfyAccess) -> None:
+    """A registry pack's git address (where the installer clones it from); one the registry
+    does not answer for stays without (listed, not installable)."""
+    for key, pack in packs.items():
+        if pack.source == "registry" and pack.url is None:
+            pack.url = await access.repository(key)
 
 
 def _missing_models(

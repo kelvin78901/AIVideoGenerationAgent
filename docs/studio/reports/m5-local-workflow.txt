@@ -1,0 +1,32 @@
+M5 local workflow smoke · 2026-11-08 05:00
+GPU NVIDIA GeForce RTX 5090; data directory C:\Users\kelvin\AppData\Local\Temp\drama-local-wf-iy63f94x
+== scan (read-only)
+   phase scanned; ComfyUI at http://127.0.0.1:8188
+   ComfyUI 0.41.2
+== import 社区/文生图-qwen-rgthree.json
+   already imported as 文生图-qwen-rgthree (wf_qwen-rgthree)
+   components ['img', 'kf'], 12 nodes
+   binding prompt → CLIP Text Encode (Positive Prompt) (CLIPTextEncode).text [confirmed]
+   binding negative → CLIP Text Encode (Negative Prompt) (CLIPTextEncode).text [confirmed]
+   binding width → EmptySD3LatentImage (EmptySD3LatentImage).width [confirmed]
+   binding height → EmptySD3LatentImage (EmptySD3LatentImage).height [confirmed]
+   binding seed → Seed (rgthree) (Seed (rgthree)).seed [confirmed]
+   binding image_out → Save Image (SaveImage). [confirmed]
+   check: missing
+   missing pack rgthree's ComfyUI Nodes [registry] https://github.com/rgthree/rgthree-comfy: Seed (rgthree)
+== the change list (the 6.4.1 dialog)
+   comfy_change {'item': "rgthree's ComfyUI Nodes", 'action': 'install', 'source': 'https://github.com/rgthree/rgthree-comfy'}
+== install (snapshot first)
+   snapshot 2026-11-08_05-00-58_snapshot
+   packs 1, restart True, failed [] (this run printed the wrong fields; rgthree-comfy cloned at bc48c6a, no requirements.txt)
+== restart ComfyUI now: waiting for Seed (rgthree)
+   loaded
+== check again
+   check: ok
+== trial: 试跑（示例输入，真跑 ComfyUI）
+   1 job(s) in 41.3 s, GPU memory peak 30120 MiB
+   call comfy/qwen-rgthree [local] success 40.8 s images=1
+   trial passed 768x1366, 40.8 s, VRAM None GB, error None
+   tier → mine
+
+result: ok; data directory kept: C:\Users\kelvin\AppData\Local\Temp\drama-local-wf-iy63f94x

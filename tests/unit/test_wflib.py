@@ -137,3 +137,81 @@ def test_dramastudio_nodes_bind_by_class_and_nothing_else_is_guessed() -> None:
     assert len({b.node_title for b in bindings}) == 4  # unique titles for the three refs
     assert kind_of(bindings) == "audio"
     assert titled["1"] == graph["1"]
+
+
+def test_manager_4_names_registry_packs_and_patterns_find_their_classes() -> None:
+    """Manager 4 keys its map by registry id and lists rgthree as ``RgthreeSeed`` …: the real
+    class ``Seed (rgthree)`` only matches its ``nodename_pattern`` (2026-11-08, ComfyUI
+    0.41.2, Manager V4.2.2)."""
+    from drama_series_agent.wflib.service import _packs_for
+
+    node_map = {
+        "rgthree-comfy": [
+            ["RgthreeSeed", "RgthreePowerLoraLoader"],
+            {"title_aux": "rgthree's ComfyUI Nodes", "nodename_pattern": r" \(rgthree\)$"},
+        ],
+        "https://github.com/x/old-pack": [["OldNode"], {"title_aux": "Old pack"}],
+        "broken": [["Nope"], {"nodename_pattern": "("}],
+    }
+    missing = ["Seed (rgthree)", "Power Lora Loader (rgthree)", "OldNode", "Mystery"]
+    packs, unknown = _packs_for(missing, node_map)
+    assert unknown == ["Mystery"]
+    rg = packs["rgthree-comfy"]
+    assert (rg.name, rg.source, rg.url) == ("rgthree's ComfyUI Nodes", "registry", None)
+    assert rg.classes == ["Seed (rgthree)", "Power Lora Loader (rgthree)"]
+    old = packs["https://github.com/x/old-pack"]
+    assert (old.source, old.url, old.classes) == (
+        "git",
+        "https://github.com/x/old-pack",
+        ["OldNode"],
+    )
+
+
+async def test_a_registry_pack_gets_its_git_address_from_the_registry() -> None:
+    import httpx
+
+    from drama_series_agent.wflib.comfy import HttpComfy
+
+    asked: list[str] = []
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        asked.append(str(request.url))
+        if request.url.path == "/nodes/rgthree-comfy":
+            body = {
+                "id": "rgthree-comfy",
+                "repository": "https://github.com/rgthree/rgthree-comfy/",
+            }
+            return httpx.Response(200, json=body)
+        if request.url.path == "/nodes/no-repo":
+            return httpx.Response(200, json={"id": "no-repo", "repository": ""})
+        return httpx.Response(404, json={"message": "not found"})
+
+    async def url() -> str:
+        return "http://127.0.0.1:8188"
+
+    comfy = HttpComfy(url, transport=httpx.MockTransport(answer))
+    assert await comfy.repository("rgthree-comfy") == "https://github.com/rgthree/rgthree-comfy"
+    assert await comfy.repository("no-repo") is None
+    assert await comfy.repository("gone") is None
+    assert asked[0] == "https://api.comfy.org/nodes/rgthree-comfy"
+
+
+async def test_comfy_lists_its_workflows_in_milliseconds_or_seconds() -> None:
+    import httpx
+
+    from drama_series_agent.wflib.comfy import HttpComfy
+
+    def answer(request: httpx.Request) -> httpx.Response:
+        rows = [
+            {"path": "社区/new.json", "modified": 1794141033453},  # ComfyUI 0.41: milliseconds
+            {"path": "old.json", "modified": 1794100000.5},
+            {"path": "notes.txt", "modified": 1},
+        ]
+        return httpx.Response(200, json=rows)
+
+    async def url() -> str:
+        return "http://127.0.0.1:8188"
+
+    files = await HttpComfy(url, transport=httpx.MockTransport(answer)).files()
+    assert [f.path for f in files] == ["社区/new.json", "old.json"]
+    assert files[0].modified_at.year == files[1].modified_at.year == 2026

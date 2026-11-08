@@ -1,6 +1,10 @@
 """What the library asks the user's ComfyUI: its workflow list, a workflow file, ``/object_info``
 and ComfyUI-Manager's node map (which node pack provides which node class).
 
+Manager 4 keys its node map by Comfy Registry id where a pack is in the registry (most are;
+the git address only for the rest), so a missing pack's git address comes from the registry
+(``repository``: ``api.comfy.org/nodes/<id>``, the source Manager itself reads; M5 step 14).
+
 ``HttpComfy`` talks to the running ComfyUI (the address of the last scan): the list and the
 files come from its user-data API (``/api/userdata?dir=workflows``), which works for every kind
 of install (folder, portable, Desktop). ``DemoComfy`` is Mock's sample machine: a few files
@@ -20,6 +24,7 @@ from urllib.parse import quote
 import httpx
 
 DEMO_DIR = Path(__file__).parent / "demo"
+REGISTRY_URL = "https://api.comfy.org"
 
 
 class ComfyUnavailable(Exception):
@@ -40,6 +45,11 @@ class ComfyAccess(Protocol):
     async def object_info(self) -> dict[str, Any]: ...
 
     async def node_map(self) -> dict[str, Any]: ...
+
+    async def repository(self, pack_id: str) -> str | None:
+        """The git address of a pack the node map names by its registry id; None when the
+        registry does not answer or has none."""
+        ...
 
     @property
     def needs_restart(self) -> bool:
@@ -75,6 +85,8 @@ class HttpComfy:
         for row in rows if isinstance(rows, list) else []:
             if isinstance(row, dict) and str(row.get("path", "")).endswith(".json"):
                 modified = float(row.get("modified") or 0)
+                if modified > 1e11:  # ComfyUI 0.41 gives milliseconds (2026-11-08), older seconds
+                    modified /= 1000
                 out.append(
                     ComfyFile(
                         path=str(row["path"]).replace("\\", "/"),
@@ -104,6 +116,16 @@ class HttpComfy:
             if isinstance(data, dict):
                 return data
         return {}
+
+    async def repository(self, pack_id: str) -> str | None:
+        url = f"{REGISTRY_URL}/nodes/{quote(pack_id, safe='')}"
+        try:
+            async with httpx.AsyncClient(transport=self._transport, timeout=15) as client:
+                res = await client.get(url)
+            repo = res.json().get("repository") if res.status_code == 200 else None
+        except (httpx.HTTPError, ValueError, AttributeError):
+            return None
+        return repo.rstrip("/") if isinstance(repo, str) and repo.startswith("https://") else None
 
 
 class DemoComfy:
@@ -165,3 +187,6 @@ class DemoComfy:
         data = json.loads((self._root / "node_map.json").read_text(encoding="utf-8"))
         assert isinstance(data, dict)
         return data
+
+    async def repository(self, pack_id: str) -> str | None:
+        return None  # the sample machine's map names every pack by its git address
