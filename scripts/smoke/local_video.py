@@ -64,7 +64,14 @@ from local_assets import REAL_HOME, V1, Smoke, VramMeter, gpu_query, studio_fact
 from local_storyboard import DRAWN, LEFT_UNLOCKED, cancel_views, shots, unconfirm, unlock
 
 REPORT = Path(__file__).resolve().parents[2] / "docs" / "studio" / "reports" / "m5-local-smoke.txt"
-STEPS = ["frames", "vid", "chain", "tts104", "ab", "rewrite"]
+SMOKE_DIR = REPORT.with_suffix("")  # docs/studio/reports/m5-local-smoke
+EP_OUT = SMOKE_DIR / "originals" / "run8-episode"  # git-ignored: the clips and the cuts
+EP_SHEETS = SMOKE_DIR / "run8-episode"  # in git: small JPEG contact sheets
+EP_PICTURES = ("linwan", "hall", "room", "umbrella", "note", "band", "phone")
+EP_TEXTS = ("txt1", "txt2")  # on-screen text pictures: locked on a candidate OCR read right
+EP_TAKES = 2
+EP_RECORD = "episode-takes.json"  # in the data directory: each shot's takes, for ``cut``
+STEPS = ["frames", "vid", "chain", "tts104", "ab", "rewrite", "episode", "cut"]
 TTS104_SEED = 191503631  # 1-04's first seed of 14c
 CHAIN = ("1-06", "1-08")  # 1-06 is tts; 1-08 continues its last frame
 VOICE = "demo-p-asset-vlinwan"
@@ -147,34 +154,40 @@ def sheet(src: Path, dest: Path) -> None:
     )  # fmt: skip
 
 
-def chain(smoke: Smoke) -> None:
-    """``chain``: 林晚's local voice and dub, then 1-06 (tts) → 1-08 (its last frame)."""
-    store = smoke.state.store
+def local_voice(smoke: Smoke) -> bool:
+    """林晚's voice made local (Qwen3-TTS audition → IndexTTS-2.5 final, locked) and every line
+    of episode 1 dubbed with it."""
 
     def audition() -> list[str]:
         unlock(smoke, "vlinwan")
         return [smoke.run(VOICE)["id"]]
 
     if not smoke.step("voice", "林晚换本地音色（先解锁）· Qwen3-TTS VoiceDesign 试听", audition):
-        return
+        return False
     draft = smoke.latest(VOICE)
     if draft["where"] != "local":
         smoke.ok = False
         smoke.say(f"   the audition was not local: {draft['model_key']}")
-        return
+        return False
     params = {"source_version_id": draft["id"], "source_idx": 0}
 
     def final() -> list[str]:
         return [smoke.run(VOICE, model="local/indextts2", params=params)["id"]]
 
     if not smoke.step("voice-final", "林晚本地终版 · IndexTTS-2.5，锁定", final):
-        return
+        return False
     smoke.say(f"   lock: {smoke.post('/assets/vlinwan/lock', {}).get('status')}")
 
     def dub_all() -> list[str]:
         return list(smoke.post("/episodes/demo-e1/dub").get("jobs") or [])
 
-    if not smoke.step("dub", "全部配音 · 林晚的本地音色走 IndexTTS-2.5", dub_all):
+    return smoke.step("dub", "全部配音 · 林晚的本地音色走 IndexTTS-2.5", dub_all) is not None
+
+
+def chain(smoke: Smoke) -> None:
+    """``chain``: 林晚's local voice and dub, then 1-06 (tts) → 1-08 (its last frame)."""
+    store = smoke.state.store
+    if not local_voice(smoke):
         return
     by_label = shots(smoke)
     for label in CHAIN:
@@ -258,6 +271,247 @@ def tts104(smoke: Smoke) -> None:
         sheet(smoke.state.store.path_for(raw["sha256"]), smoke.out / f"tts104-{mode}.png")
 
 
+def free_comfy(comfy_url: str) -> None:
+    """Let ComfyUI drop its models and caches (no job runs): loading H3 with RAM short fails
+    (``hostbuf_file_reader_read failed``, 2026-10-27)."""
+    body = {"unload_models": True, "free_memory": True}
+    httpx.post(f"{comfy_url}/free", json=body, timeout=30)
+
+
+def no_video_fallback(smoke: Smoke) -> None:
+    """A local take that fails is made again locally, never on the (Mock) API."""
+    off = {"enabled": False, "on": [], "qa_fail_n": 2, "timeout_s": 600, "to": None}
+    off["notify"] = "after"
+    override = {"scope": "component", "scope_id": None, "component_id": "vid"}
+    put = smoke.client.put(f"{V1}/config/override", json={**override, "data": {"fallback": off}})
+    put.raise_for_status()
+
+
+def lock_picture(smoke: Smoke, asset: str, text: bool) -> None:
+    """Lock the first candidate (an on-screen text picture: the first one OCR read right, else
+    the first one, forced)."""
+    version = smoke.latest(f"demo-p-asset-{asset}")
+    cands = version["payload"].get("candidates") or []
+    idx = next((i for i, c in enumerate(cands) if c.get("ocr_ok")), 0) if text else 0
+    smoke.client.patch(f"{V1}/assets/{asset}", json={"pick": idx}).raise_for_status()
+    smoke.post(f"/assets/{asset}/lock", {"force": True} if text else {})
+    if text:
+        smoke.say(
+            f"   {asset}: locked candidate {idx} (OCR {cands[idx].get('ocr') if cands else '?'!r})"
+        )
+
+
+def episode(smoke: Smoke, comfy_url: str, home: Path, start: str | None = None) -> None:
+    """``episode`` (M5 step 15c-1, Kelvin 2026-11-08): episode 1 end to end on this machine.
+    ``start`` (``--from 1-04``, with ``--home``): a stopped run goes on from that shot; the
+    voice, pictures, keyframes and the takes before it are what the data directory has."""
+    EP_OUT.mkdir(parents=True, exist_ok=True)
+    EP_SHEETS.mkdir(parents=True, exist_ok=True)
+    if start is None and not prepare(smoke):
+        return
+    takes(smoke, comfy_url, home, start)
+
+
+def prepare(smoke: Smoke) -> bool:
+    """Voice and dub, every picture, the keyframes, 分镜 confirmed."""
+    if not local_voice(smoke):
+        return False
+
+    def draw() -> list[str]:
+        for a in (*EP_PICTURES, *EP_TEXTS):
+            try:
+                unlock(smoke, a)
+            except RuntimeError as exc:  # the demo leaves some unlocked (出租屋)
+                if "not_locked" not in str(exc):
+                    raise
+        return [smoke.run(f"demo-p-asset-{a}")["id"] for a in (*EP_PICTURES, *EP_TEXTS)]
+
+    names = "、".join((*EP_PICTURES, *EP_TEXTS))
+    if not smoke.step("pictures", f"第 1 集用到的素材全部本机重画（{names}），锁定", draw):
+        return False
+    for a in (*EP_PICTURES, *EP_TEXTS):
+        smoke.keep_files(a, smoke.latest(f"demo-p-asset-{a}"))
+        lock_picture(smoke, a, a in EP_TEXTS)
+    cancel_views(smoke)
+
+    by_label = shots(smoke)
+    labels = list(by_label)
+    drawn = [by_label[x] for x in labels if by_label[x]["keyframe_product_id"]]
+
+    def keyframes() -> list[str]:
+        for label in labels:
+            unconfirm(smoke, label)
+        return [smoke.run(s["keyframe_product_id"])["id"] for s in drawn]
+
+    which = "、".join(s["label"] for s in drawn)
+    if not smoke.step("kf", f"关键帧草稿（本地）{which}，各确认第 1 张", keyframes):
+        return False
+    for s in drawn:
+        kf = smoke.latest(s["keyframe_product_id"])
+        smoke.keep_files(f"kf-{s['label']}", kf)
+        refs = kf["payload"].get("refs") or []
+        smoke.say(f"   {s['label']}: refs sent {refs or 'none'}")
+    for label in labels:
+        resp = smoke.client.patch(f"{V1}/shots/{by_label[label]['id']}", json={"confirmed": True})
+        if resp.status_code >= 400:
+            smoke.say(f"   {label} not confirmed: {resp.text[:200]}")
+    smoke.post("/gates/storyboard/confirm", {"scope_id": "demo-e1"})
+    board = smoke.get("/episodes/demo-e1/progress")["steps"]["storyboard"]
+    smoke.say(f"   分镜 {board['state']} {board['done']}/{board['total']}")
+    return True
+
+
+def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None) -> None:
+    """Each shot in order, ``EP_TAKES`` takes, the first adopted; the record is written after
+    every shot (``cut`` reads it)."""
+    import json
+
+    path = home / EP_RECORD
+    record: dict[str, Any] = json.loads(path.read_text("utf-8")) if path.exists() else {}
+    labels = list(shots(smoke))
+    if start is not None:
+        # A job the stopped run left resumes when the app starts: cancel it (made again below).
+        for j in smoke.get("/jobs", limit=200):
+            if j["state"] in ("queued", "running", "waiting_confirm"):
+                smoke.post(f"/jobs/{j['id']}/cancel")
+                smoke.wait(j["id"])
+                smoke.say(f"   canceled a job the stopped run left: {j['id']}")
+        for label in labels[: labels.index(start)]:  # what the stopped run had adopted
+            shot = shots(smoke)[label]
+            product = smoke.get(f"/products/{shot['video_product_id']}")
+            adopted = next(
+                v for v in product["versions"] if v["id"] == product["adopted_version_id"]
+            )
+            made = [v["id"] for v in product["versions"] if v["job_id"] == adopted["job_id"]]
+            record[label] = {"takes": made, "seconds": shot["duration_s"]}
+        smoke.say(f"== from {start}: {', '.join(record)} already made")
+        labels = labels[labels.index(start) :]
+    no_video_fallback(smoke)
+    for label in labels:
+        shot = shots(smoke)[label]
+        product_id = shot["video_product_id"]
+
+        def take(product_id: str = product_id) -> list[str]:
+            ids: list[str] = []
+            for _ in range(2):  # a take that failed in ComfyUI: once more, memory freed
+                free_comfy(comfy_url)
+                job = smoke.run(product_id, count=EP_TAKES)
+                ids.append(job["id"])
+                if smoke.wait(job["id"])["state"] == "succeeded":
+                    break
+            return ids
+
+        kind, mode = shot.get("shot_type"), shot.get("audio_mode")
+        tail = f"，接 {shot['tail_from']} 的尾帧" if shot.get("tail_from") else ""
+        title = f"{label} {EP_TAKES} 条（{kind}，{shot.get('framing')}，声音 {mode}{tail}）"
+        job = smoke.step(f"take-{label}", title, take)
+        if job is None or job["state"] != "succeeded":
+            smoke.say(f"   {label}: no takes; the shots after it that continue it fail too")
+            continue
+        made = [
+            v for v in smoke.get(f"/products/{product_id}")["versions"] if v["job_id"] == job["id"]
+        ]
+        for n, v in enumerate(made, 1):
+            keep_take(smoke, f"{label}-{n}", v)
+            raw = next(f for f in v["files"] if f["role"] == "raw")
+            sheet(smoke.state.store.path_for(raw["sha256"]), smoke.out / f"sheet-{label}-{n}.png")
+        prompt = next(f for f in made[0]["files"] if f["role"] == "prompt")
+        text = smoke.state.store.path_for(prompt["sha256"]).read_text("utf-8")
+        (smoke.out / f"prompt-{label}.txt").write_text(text, encoding="utf-8", newline="\n")
+        smoke.post(f"/versions/{made[0]['id']}/adopt")
+        record[label] = {"takes": [v["id"] for v in made], "seconds": shot["duration_s"]}
+        smoke.say(
+            f"   adopted {label}-1; model {made[0]['model_key']}, "
+            f"select {(made[0]['params'].get('select') or {}).get('by')}, "
+            f"rewritten by {made[0]['payload'].get('prompt_rewrite')}"
+        )
+        path.write_text(json.dumps(record, ensure_ascii=False, indent=1), "utf-8")
+
+
+def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
+    """``cut``: episode 1's takes one after another, each cut to its shot's length (the
+    adopted take, or the n-th of ``--picks 1-04=2``), and once more uncut."""
+    import json
+    import subprocess
+
+    from drama_series_agent.media.audio import ffmpeg_exe
+    from drama_series_agent.media.video import probe
+
+    path = home / EP_RECORD
+    if not path.exists():
+        smoke.ok = False
+        smoke.say(f"== cut: no {EP_RECORD} in {home}: run ``episode`` first")
+        return
+    record = json.loads(path.read_text("utf-8"))
+    store = smoke.state.store
+    clips: list[tuple[str, Path, float, float, bool]] = []
+    for label in shots(smoke):
+        if label not in record:
+            smoke.say(f"   {label}: no take, left out")
+            continue
+        takes = record[label]["takes"]
+        version_id = takes[picks.get(label, 1) - 1]
+        product = smoke.get(f"/products/{shots(smoke)[label]['video_product_id']}")
+        version = next(v for v in product["versions"] if v["id"] == version_id)
+        video = next(f for f in version["files"] if f["role"] == "video")
+        src = store.path_for(video["sha256"])
+        info = asyncio.run(probe(src.read_bytes()))
+        shot_s = float(record[label]["seconds"])
+        clips.append((label, src, shot_s, info.duration_s, info.has_audio))
+        n = takes.index(version_id) + 1
+        smoke.say(f"   {label}: take {n}, {info.duration_s:.2f}s, shot {record[label]['seconds']}s")
+    if not clips:
+        return
+    w, h = 768, 1344
+    for name, trimmed in (("ep1-cut", True), ("ep1-uncut", False)):
+        args: list[str] = []
+        parts = []
+        idx = 0
+        for i, (_, src, shot_s, clip_s, has_audio) in enumerate(clips):
+            # A clip shorter than its shot is used whole (nothing is stretched).
+            length = min(shot_s, clip_s) if trimmed else clip_s
+            args += ["-i", str(src)]
+            v = a = idx
+            idx += 1
+            if not has_audio:
+                args += ["-f", "lavfi", "-i", "anullsrc=r=48000:cl=stereo"]
+                a = idx
+                idx += 1
+            parts.append(
+                f"[{v}:v]trim=0:{length:.3f},setpts=PTS-STARTPTS,"
+                f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
+                f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=24[v{i}];"
+                f"[{a}:a]atrim=0:{length:.3f},asetpts=PTS-STARTPTS,aresample=48000,"
+                f"aformat=channel_layouts=stereo,apad=whole_dur={length:.3f}[a{i}];"
+            )
+        joined = "".join(f"[v{i}][a{i}]" for i in range(len(clips)))
+        graph = "".join(parts) + f"{joined}concat=n={len(clips)}:v=1:a=1[v][a]"
+        dest = EP_OUT / f"{name}.mp4"
+        subprocess.run(
+            [ffmpeg_exe(), "-hide_banner", "-nostdin", "-loglevel", "error", "-y", *args,
+             "-filter_complex", graph, "-map", "[v]", "-map", "[a]",
+             "-c:v", "libx264", "-crf", "18", "-pix_fmt", "yuv420p", "-c:a", "aac",
+             "-b:a", "192k", str(dest)],
+            check=True,
+        )  # fmt: skip
+        info = asyncio.run(probe(dest.read_bytes()))
+        smoke.say(f"   {name}.mp4: {info.duration_s:.2f}s → {dest}")
+
+
+def jpeg_sheets(src: Path, dest: Path) -> None:
+    """The contact sheets as small JPEGs (the PNGs are git-ignored)."""
+    import subprocess
+
+    from drama_series_agent.media.audio import ffmpeg_exe
+
+    for png in sorted(src.glob("sheet-*.png")):
+        subprocess.run(
+            [ffmpeg_exe(), "-hide_banner", "-nostdin", "-loglevel", "error", "-y", "-i",
+             str(png), "-q:v", "4", str(dest / f"{png.stem}.jpg")],
+            check=True,
+        )  # fmt: skip
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--studio", default="http://127.0.0.1:8000", help="the studio you have open")
@@ -265,20 +519,23 @@ def main() -> int:
     ap.add_argument("--keep", action="store_true", help="keep the temporary data directory")
     ap.add_argument("--home", help="a data directory a --keep run left (reused, kept)")
     ap.add_argument("--cap", type=float, default=0.10, help="rewrite: DeepSeek spend cap, USD")
+    ap.add_argument("--from", dest="start", help="episode: go on from this shot (with --home)")
+    ap.add_argument("--picks", default="", help="cut: takes other than the first, e.g. 1-04=2")
     args = ap.parse_args()
     only = [s for s in args.only.split(",") if s]
     unknown = set(only) - set(STEPS)
     if unknown:
         raise SystemExit(f"unknown steps: {', '.join(sorted(unknown))}")
-    if "rewrite" in only:
+    if "rewrite" in only or "episode" in only:
         if os.environ.get("DRAMA_LIVE") != "1":
-            raise SystemExit("rewrite calls DeepSeek for real (money): set DRAMA_LIVE=1")
+            raise SystemExit("rewrite / episode call DeepSeek for real (money): set DRAMA_LIVE=1")
         os.environ["DRAMA_REAL_MODELS"] = REWRITE_MODEL
+    picks = {k: int(v) for k, v in (p.split("=") for p in args.picks.split(",") if p)}
 
     facts = studio_facts(args.studio.rstrip("/"))
     tmp = Path(tempfile.mkdtemp(prefix="drama-local-video-"))
-    out = tmp / "out"
-    out.mkdir()
+    out = EP_OUT if {"episode", "cut"} & set(only) else tmp / "out"
+    out.mkdir(parents=True, exist_ok=True)
     home = Path(args.home) if args.home else tmp / "home"
     os.environ.update({"DRAMA_HOME": str(home), "DRAMA_MOCK": "1", "DRAMA_REAL_LOCAL": "1"})
 
@@ -484,12 +741,30 @@ def main() -> int:
                             f"{name}.mp4 / .png / .txt"
                         )
             smoke.say(f"   DeepSeek spent ${spent():.4f} (cap ${args.cap})")
+        if "episode" in only:
+            smoke.expected_api = {REWRITE_MODEL}
+            episode(smoke, facts["comfy_url"], home, args.start)
+            calls = smoke.get("/dev/model-calls", limit=500)
+            paid = sum(
+                float(c.get("cost_usd") or 0) for c in calls if c.get("model_key") == REWRITE_MODEL
+            )
+            smoke.say(f"   DeepSeek spend (the prompt rewrite, the only real API): ${paid:.4f}")
+        if "cut" in only or "episode" in only:
+            smoke.say("== cut: 粗剪（每镜按镜头时长裁 / 不裁）")
+            cut(smoke, home, picks)
+            EP_SHEETS.mkdir(parents=True, exist_ok=True)
+            jpeg_sheets(out, EP_SHEETS)
+            for txt in out.glob("prompt-*.txt"):
+                shutil.copyfile(txt, EP_SHEETS / txt.name)
         smoke.say()
         smoke.say(f"result: {'all local steps ran' if smoke.ok else 'SOME STEPS FAILED'}")
         smoke.say(f"files: {out}")
+        smoke.say(f"data: {home}")
     meter.stop()
     # Only a run of every step replaces the report; a partial run writes next to its files.
     report = REPORT if set(only) == set(DEFAULT_STEPS) else out / "report.txt"
+    if {"episode", "cut"} & set(only):
+        report = EP_SHEETS / ("report.txt" if "episode" in only else "report-cut.txt")
     report.write_text("\n".join(smoke.lines) + "\n", encoding="utf-8", newline="\n")
     print(f"report: {report}")
     if not args.keep and not args.home:
