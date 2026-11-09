@@ -1,0 +1,33 @@
+M5 local smoke · 2026-11-08 18:23
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 2416 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+   canceled a job the stopped run left: ea740c25f25f402d9609748e67324db9
+== from 1-04: 1-01, 1-02, 1-03 already made
+== take-1-04: 1-04 2 条（same_scene_cut，close，声音 native）
+   1 job(s) in 361.1 s, GPU memory peak 31801 MiB
+   call comfy/h3-r2v [local] success 184.2 s audio=5.17s
+   call comfy/h3-r2v [local] success 175.2 s audio=5.17s
+   model comfy/h3-r2v [local], files: take-1-04-1-video.mp4 (768x1344 4.88s), take-1-04-1-poster.png (768x1344), take-1-04-1-last_frame.png (768x1344), take-1-04-1-raw.mp4 (768x1344 5.17s)
+   clip 768x1344 4.88s @ 24.0 fps, sound yes; asked 1.46s (minus the 0.3s cut: 1.16s; a model's shortest clip can be longer); voices ['林晚'], refs ['林晚', '老小区楼道 · 夜']
+   model comfy/h3-r2v [local], files: take-1-04-2-video.mp4 (768x1344 4.88s), take-1-04-2-poster.png (768x1344), take-1-04-2-last_frame.png (768x1344), take-1-04-2-raw.mp4 (768x1344 5.17s)
+   clip 768x1344 4.88s @ 24.0 fps, sound yes; asked 1.46s (minus the 0.3s cut: 1.16s; a model's shortest clip can be longer); voices ['林晚'], refs ['林晚', '老小区楼道 · 夜']
+   adopted 1-04-1; model comfy/h3-r2v, select rule, rewritten by deepseek/v4.1-flash
+   DeepSeek spend (the prompt rewrite, the only real API): $0.0092
+== cut: 粗剪（每镜按镜头时长裁 / 不裁）
+   1-01: take 1, 4.88s, shot 4.0s
+   1-02: take 1, 4.88s, shot 3.0s
+   1-03: take 1, 4.88s, shot 3.0s
+   1-04: take 1, 4.88s, shot 1.463s
+   1-05: no take, left out
+   1-06: no take, left out
+   1-07: no take, left out
+   1-08: no take, left out
+   1-09: no take, left out
+   ep1-cut.mp4: 11.46s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run8-episode\ep1-cut.mp4
+   ep1-uncut.mp4: 19.52s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run8-episode\ep1-uncut.mp4
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run8-episode
+data: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-urjf_x64\home

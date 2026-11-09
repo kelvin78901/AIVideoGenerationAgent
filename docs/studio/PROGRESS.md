@@ -14,9 +14,9 @@
 
 ## 下一步
 
-- **第 15c-1 步：整集出片（进行中）**：`local_video.py --only episode`（本提交写好）。第一次跑 2026-11-08 17:43 做完了本地音色和配音、9 张素材重画锁定、7 张关键帧、1-01–1-03 各 2 条（每条约 150 秒，提示词都经 DeepSeek 改写），**做 1-04 时被 Claude Code 因系统内存不足停掉**（31 GB 内存只剩约 9 GB：H3 + TTS worker）。数据目录 `C:\Users\kelvin\AppData\Local\Temp\drama-local-video-urjf_x64\home`，原片在 `reports/m5-local-smoke/originals/run8-episode/`。接着跑（会先取消上次留下的任务）：`$env:DRAMA_LIVE="1"; uv run --no-sync python scripts/smoke/local_video.py --only episode --home <上面的目录> --from 1-04`。**别自己在后台重启**，等 Kelvin 定（在他自己的终端跑，或用 `CLAUDE_CODE_DISABLE_BG_SHELL_PRESSURE_REAP=1` 重开 Claude Code）。
-- **第 15c-2 步：衔接 A / B / C 对比**：`scripts/smoke/continuity_abc.py --home <同一个目录>`（本提交写好、还没跑；在数据目录的副本上做；B 给 `ComfyUIAdapter._one` 打补丁加 `LoadVideo → GetVideoComponents → MiniMaxH3AddGuide`、去掉首帧锚；清媒体缓存，不然拿回 A 的片子）。官方模板在 Comfy Desktop 的 `comfyui_workflow_templates_json\templates\`。
-- **待记进报告的发现**：H3 把长度向上取到 17k+5 帧（6 秒镜头出约 6.3 秒），下一镜接的是片子的最后一帧，粗剪却裁到镜头时长，所以每个连续镜头的切点有约 0.3 秒的跳变；节点说明里 H3 训练长度是 124–362 帧（5–15 秒），2–4 秒的镜头也出 5 秒。
+- **第 15c 步做完（本提交）**：整集 9 镜各 2 条（`reports/m5-local-smoke/run8-episode/README.md`）、衔接 A / B / C（`run9-continuity/README.md`），报告「整集实测」一节已补。数据目录（`%TEMP%\drama-local-video-urjf_x64\home`、`%TEMP%\drama-cont-hp7wfvvm\home`）留着。
+- **等 Kelvin 定**：整集暴露的问题怎么处理、放哪个里程碑（衔接改 B、无台词镜头带参考图、分镜参考素材补道具、改写看首帧、关键帧画动作起点、对白镜头时长、切点跳变、本地超时按片长），C 要不要重测（13 分钟以上一条，要在他的终端跑或关掉 Claude Code 的内存回收）。然后第 16 步改 ROADMAP 的 P1 验收那条、开 PR。
+- **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - 之后：第 16 步改完报告开 PR；合并后 `/milestone` 出 M5.5。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

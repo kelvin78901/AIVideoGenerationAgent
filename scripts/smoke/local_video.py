@@ -301,7 +301,9 @@ def lock_picture(smoke: Smoke, asset: str, text: bool) -> None:
         )
 
 
-def episode(smoke: Smoke, comfy_url: str, home: Path, start: str | None = None) -> None:
+def episode(
+    smoke: Smoke, comfy_url: str, home: Path, start: str | None = None, stop: str | None = None
+) -> None:
     """``episode`` (M5 step 15c-1, Kelvin 2026-11-08): episode 1 end to end on this machine.
     ``start`` (``--from 1-04``, with ``--home``): a stopped run goes on from that shot; the
     voice, pictures, keyframes and the takes before it are what the data directory has."""
@@ -309,7 +311,7 @@ def episode(smoke: Smoke, comfy_url: str, home: Path, start: str | None = None) 
     EP_SHEETS.mkdir(parents=True, exist_ok=True)
     if start is None and not prepare(smoke):
         return
-    takes(smoke, comfy_url, home, start)
+    takes(smoke, comfy_url, home, start, stop)
 
 
 def prepare(smoke: Smoke) -> bool:
@@ -361,7 +363,7 @@ def prepare(smoke: Smoke) -> bool:
     return True
 
 
-def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None) -> None:
+def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None, stop: str | None) -> None:
     """Each shot in order, ``EP_TAKES`` takes, the first adopted; the record is written after
     every shot (``cut`` reads it)."""
     import json
@@ -386,6 +388,8 @@ def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None) -> None:
             record[label] = {"takes": made, "seconds": shot["duration_s"]}
         smoke.say(f"== from {start}: {', '.join(record)} already made")
         labels = labels[labels.index(start) :]
+    if stop is not None:  # ``--to``: this shot is the last one of this run
+        labels = labels[: labels.index(stop) + 1]
     no_video_fallback(smoke)
     for label in labels:
         shot = shots(smoke)[label]
@@ -520,6 +524,7 @@ def main() -> int:
     ap.add_argument("--home", help="a data directory a --keep run left (reused, kept)")
     ap.add_argument("--cap", type=float, default=0.10, help="rewrite: DeepSeek spend cap, USD")
     ap.add_argument("--from", dest="start", help="episode: go on from this shot (with --home)")
+    ap.add_argument("--to", dest="stop", help="episode: stop after this shot")
     ap.add_argument("--picks", default="", help="cut: takes other than the first, e.g. 1-04=2")
     args = ap.parse_args()
     only = [s for s in args.only.split(",") if s]
@@ -743,7 +748,7 @@ def main() -> int:
             smoke.say(f"   DeepSeek spent ${spent():.4f} (cap ${args.cap})")
         if "episode" in only:
             smoke.expected_api = {REWRITE_MODEL}
-            episode(smoke, facts["comfy_url"], home, args.start)
+            episode(smoke, facts["comfy_url"], home, args.start, args.stop)
             calls = smoke.get("/dev/model-calls", limit=500)
             paid = sum(
                 float(c.get("cost_usd") or 0) for c in calls if c.get("model_key") == REWRITE_MODEL
@@ -764,7 +769,8 @@ def main() -> int:
     # Only a run of every step replaces the report; a partial run writes next to its files.
     report = REPORT if set(only) == set(DEFAULT_STEPS) else out / "report.txt"
     if {"episode", "cut"} & set(only):
-        report = EP_SHEETS / ("report.txt" if "episode" in only else "report-cut.txt")
+        name = f"report-from-{args.start}.txt" if args.start else "report.txt"
+        report = EP_SHEETS / (name if "episode" in only else "report-cut.txt")
     report.write_text("\n".join(smoke.lines) + "\n", encoding="utf-8", newline="\n")
     print(f"report: {report}")
     if not args.keep and not args.home:

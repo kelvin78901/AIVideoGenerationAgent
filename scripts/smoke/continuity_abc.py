@@ -121,6 +121,7 @@ def main() -> int:
     ap.add_argument("--home", required=True, help="the episode run's data directory")
     ap.add_argument("--work", help="a copy made by an earlier run (reused)")
     ap.add_argument("--only", default="b,c,cut")
+    ap.add_argument("--c-file", help="cut: C's long take fetched from ComfyUI by hand (uncut)")
     args = ap.parse_args()
     only = set(args.only.split(","))
     if os.environ.get("DRAMA_LIVE") != "1":
@@ -136,7 +137,7 @@ def main() -> int:
                        "DRAMA_REAL_MODELS": REWRITE_MODEL})  # fmt: skip
 
     from fastapi.testclient import TestClient
-    from local_assets import Smoke, VramMeter, studio_facts
+    from local_assets import V1, Smoke, VramMeter, studio_facts
     from local_storyboard import shots
     from local_video import EP_RECORD, free_comfy, no_video_fallback, sheet
 
@@ -207,10 +208,17 @@ def main() -> int:
             sheet(raw, OUT / f"sheet-{PATCH['label']}.png")
             return v
 
-        a = {x: adopted(x) for x in ("1-06", "1-07", "1-08", "1-09")}
+        # A = the episode run's adopted takes (its first ones); B adopts its own in this copy.
+        a = {x: version(x, record[x]["takes"][0]) for x in ("1-06", "1-07", "1-08", "1-09")}
         for x, v in a.items():
             smoke.say(f"   A {x}: {v['id']} seed {v['seed']} {v['model_key']}")
         no_video_fallback(smoke)
+        # A 15 s take at 20 steps runs past the 10-minute local timeout (2026-11-08): give it 30.
+        off = {"enabled": False, "on": [], "qa_fail_n": 2, "timeout_s": 1800, "to": None}
+        off["notify"] = "after"
+        put = client.put(f"{V1}/config/override", json={"scope": "component", "scope_id": None,
+                         "component_id": "vid", "data": {"fallback": off}})  # fmt: skip
+        put.raise_for_status()
         results: dict[str, Any] = {}
         res_file = work / "cont-results.json"
         if res_file.exists():
@@ -274,8 +282,14 @@ def main() -> int:
                 skip = TAIL_FRAMES / FPS  # those frames are the previous clip's tail
                 segs["B"] = [(vid["1-06"], 0.0, None), (vid["1-07"], 0.0, lens["1-07"]),
                              (b8, skip, None), (b9, skip, None)]  # fmt: skip
-            if "C-long" in results:
+            c_file = Path(args.c_file) if args.c_file else None
+            if c_file is not None:  # the raw clip: cut its first 0.3 s like a take
+                c = OUT / "C-long-trimmed.mp4"
+                ff("-ss", "0.3", "-i", str(c_file), "-c:v", "libx264", "-crf", "12",
+                   "-pix_fmt", "yuv420p", "-c:a", "aac", "-b:a", "192k", str(c))  # fmt: skip
+            elif "C-long" in results:
                 c = path(version("1-06", results["C-long"]), "video")
+            if c_file is not None or "C-long" in results:
                 segs["C"] = [(c, 0.0, 5.0), (vid["1-07"], 0.0, lens["1-07"]),
                              (c, 5.0, None)]  # fmt: skip
             made = []
