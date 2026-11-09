@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-08 · 插入第 15c 步：整集本机实测（Kelvin 定）
+
+- 起因：Kelvin 看了本机和冒烟的几个片段，觉得太短、不连贯，要先跑一整集看一致性、镜头调度，并实测 PLAN 的长视频方案（「连续动作镜头用上一段末尾片段续写」；现在实现的只是上一镜最后一帧当首帧）。
+- **Kelvin 定**：示例第 1 集（9 个镜头、约 35 秒）；每镜 2 条、全本地，不出 2K 终版；衔接方案 A（尾帧当首帧）、B（末尾片段续写）、C（合成一条长镜头）三种都比。第 16 步收尾的 SPEC / ROADMAP / 报告草稿先提交，PR 等整集跑完、按结果改完再开。
+- 本机 ComfyUI 0.41.2 自带的官方模板里有 `video_minimax_h3_i2v_continuation`、`video_minimax_h3_multiframe_reference`（`MiniMaxH3AddGuide` 按秒数钉多张图），`MiniMaxH3ImageToVideo` 还有可选的 `last_frame`、`MiniMaxH3ReferenceToVideo` 有 `ref_videos`：B、C 先用这些在 scratchpad 里做实验工作流。
+
 ## 2026-11-08 · M5 第 15b 步：音色样本不够长时拼同一个声音的几段话
 
 - 起因：H3 API 要 2–15 秒的音频（2013），林晚本地音色的锚点只有 0.87 秒。
