@@ -5,9 +5,11 @@
 - A scene is its lines one after another.
 - A shot covers some lines: their audio, plus a breath before and after. Over what one
   video take can hold, it suggests splitting.
-- How long a shot runs (M4, Kelvin 2026-10-21): with dialogue, as long as its audio (the user
-  may make it longer, never shorter); without, the plan's seconds or the user's. A voice-over
-  laid over an action shot does not set its length (no lips to follow), it only must fit.
+- How long a shot runs (M4, Kelvin 2026-10-21; M5 step 15d, 2026-11-08): the user's seconds,
+  else the plan's; never shorter than its spoken lines' audio. A dialogue shot used to run
+  exactly as long as its audio, which left no time to act (1-04 lost its 4.5 s pause). A
+  voice-over laid over an action shot does not set its length (no lips to follow), it only
+  must fit.
 """
 
 from __future__ import annotations
@@ -65,19 +67,19 @@ def shot_duration(
     longest_s: float | None = None,
 ) -> ShotDuration:
     """How long a shot runs: ``dialogue_s`` are its on-screen lines' seconds, ``voiceover_s``
-    the voice-over laid over it. Every spoken line fits; with dialogue, the audio sets the
-    length unless the user made it longer; without, the user's seconds, else the plan's."""
+    the voice-over laid over it. Every spoken line fits: the longer of the audio (a breath each
+    side) and the user's seconds, else the plan's; a dialogue shot the plan gave no seconds
+    runs as long as its audio, a silent one 3 s."""
     spoken = [*dialogue_s, *voiceover_s]
     floor = shot_seconds(spoken).seconds if spoken else 0.0
+    by_audio = manual_s is None and planned_s is None and bool(dialogue_s)
     if manual_s is not None:
         base = manual_s
-    elif dialogue_s:
-        base = floor
+    elif planned_s is not None:
+        base = planned_s
     else:
-        base = planned_s if planned_s is not None else DEFAULT_SHOT_S
-    source: Literal["audio", "manual"] = "manual"
-    if (dialogue_s and manual_s is None) or floor > base:
-        source = "audio"
+        base = floor if dialogue_s else DEFAULT_SHOT_S
+    source: Literal["audio", "manual"] = "audio" if by_audio or floor > base else "manual"
     seconds = round(max(base, floor), 3)
     return ShotDuration(seconds, source, floor, longest_s is not None and seconds > longest_s)
 

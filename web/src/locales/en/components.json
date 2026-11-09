@@ -148,7 +148,7 @@
     "when": "Fall back when",
     "trigger": {
       "error": "Error or out of VRAM",
-      "timeout": "No result after {{minutes}} min",
+      "timeout": "No result after {{minutes}} min (longer clips get their estimated time)",
       "qa_fail": "Auto QA fails {{n}} times in a row"
     },
     "target": "Fall back to",

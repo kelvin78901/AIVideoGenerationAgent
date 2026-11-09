@@ -133,8 +133,8 @@ function DurationNote({ shot, onPatch }: { shot: Shot; onPatch: (patch: ShotPatc
   const text =
     source === "audio"
       ? t("shot.durationSource.audio", { min: shot.min_s })
-      : source === "manual" && shot.min_s > 0
-        ? t("shot.durationSource.manualMin", { min: shot.min_s })
+      : shot.min_s > 0
+        ? t(`shot.durationSource.${source}Min`, { min: shot.min_s })
         : t(`shot.durationSource.${source}`);
   return (
     <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -147,9 +147,9 @@ function DurationNote({ shot, onPatch }: { shot: Shot; onPatch: (patch: ShotPatc
           onClick={() => onPatch({ duration_s: null })}
         >
           <RotateCcw aria-hidden />
-          {shot.min_s > 0 || shot.planned_s === null
-            ? t("shot.durationReset")
-            : t("shot.durationResetPlan", { s: shot.planned_s })}
+          {shot.planned_s !== null && shot.planned_s > shot.min_s
+            ? t("shot.durationResetPlan", { s: shot.planned_s })
+            : t("shot.durationReset")}
         </Button>
       ) : null}
       {shot.split_hint && shot.longest_s !== null ? (

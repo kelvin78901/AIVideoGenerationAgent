@@ -123,8 +123,9 @@ def test_from_the_script_to_a_confirmed_storyboard(backend: Backend) -> None:
         assert all(h.startswith("sha256:") for h in by_shot[s["id"]].values())
     assert ("storyboard", e1, "confirm") in {(g, sc, a) for g, sc, a, _ in decisions}
 
-    # 全部配音: a dialogue shot runs as long as its audio with a breath each side; a voice-over
-    # only has to fit. Nothing confirmed goes stale: the length is worked out when read.
+    # 全部配音: a dialogue shot keeps the plan's seconds (time to act) but never runs shorter
+    # than its audio with a breath each side; a voice-over only has to fit. Nothing confirmed
+    # goes stale: the length is worked out when read.
     started = api.send("POST", f"/episodes/{e1}/dub", json={})
     for job_id in started["jobs"]:
         assert api.until(job_id, "succeeded", "failed")["state"] == "succeeded"
@@ -133,8 +134,11 @@ def test_from_the_script_to_a_confirmed_storyboard(backend: Backend) -> None:
     }
     after = _shots(api, e1)
     spoken = audio[after["1-04"]["line_ids"][0]]
-    assert after["1-04"]["duration_s"] == pytest.approx(PRE_ROLL_S + spoken + POST_ROLL_S)
-    assert after["1-04"]["duration_source"] == "audio"
+    floor = PRE_ROLL_S + spoken + POST_ROLL_S
+    planned = after["1-04"]["planned_s"]
+    assert after["1-04"]["min_s"] == pytest.approx(floor)
+    assert after["1-04"]["duration_s"] == pytest.approx(max(planned, floor))
+    assert after["1-04"]["duration_source"] == ("audio" if floor > planned else "manual")
     over = audio[after["1-06"]["line_ids"][1]]
     assert after["1-06"]["duration_s"] == pytest.approx(max(5.0, PRE_ROLL_S + over + POST_ROLL_S))
     assert all(s["confirmed"] and not s["confirm_stale"] for s in after.values())

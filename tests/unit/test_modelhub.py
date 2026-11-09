@@ -33,7 +33,7 @@ from drama_series_agent.modelhub.adapters.mock import (
 )
 from drama_series_agent.modelhub.pricing import cost_usd
 from drama_series_agent.modelhub.registry import Registry, UnavailableAdapter, is_mock_mode
-from drama_series_agent.modelhub.router import BudgetExceeded, Router
+from drama_series_agent.modelhub.router import BudgetExceeded, Router, local_timeout_s
 
 
 def _llm_req(text: str = "林晚撑着红伞走进楼道。", **params: object) -> ModelRequest:
@@ -341,6 +341,32 @@ async def test_timeout_falls_back_and_logs_timeout(hub: tuple[Router, Registry, 
     assert routed.fallback_reason == "timeout"
     first = sorted(await calllog.recent(router.db), key=lambda r: r.id or 0)[0]
     assert first.status == "timeout" and first.error_code == "timeout"
+
+
+def test_a_long_local_run_gets_half_again_its_estimate() -> None:
+    """M5 step 15d: a 15 s H3 clip runs about 13 minutes here; a fixed 10 minutes cut it off."""
+    assert local_timeout_s(600, Estimate(cost_usd=0.0, seconds=100)) == 600
+    assert local_timeout_s(600, Estimate(cost_usd=0.0, seconds=804)) == pytest.approx(1206)
+    assert local_timeout_s(None, Estimate(cost_usd=0.0, seconds=1)) == 600
+
+
+async def test_the_local_timeout_follows_the_estimate(
+    hub: tuple[Router, Registry, EventBus],
+) -> None:
+    router, reg, _ = hub
+    async with router.db.session() as s:
+        await put_override(
+            s, scope="component", component_id="vid", data={"fallback": {"timeout_s": 1}}
+        )
+    reg.mock_settings.hang_keys.add("comfy/h3")
+    # The Mock estimates its delay: 1 s, so the local run gets 1.5 s, past the configured 1 s.
+    req = ModelRequest(kind="video", params={"mock_delay_s": 1.0, "duration_s": 5.0})
+    routed = await router.call("vid", req)
+    assert routed.fallback_reason == "timeout"
+    first = sorted(await calllog.recent(router.db), key=lambda r: r.id or 0)[0]
+    assert first.model_key == "comfy/h3" and first.status == "timeout"
+    assert first.started_at and first.finished_at
+    assert (first.finished_at - first.started_at).total_seconds() >= 1.4
 
 
 async def test_all_models_fail(hub: tuple[Router, Registry, EventBus]) -> None:

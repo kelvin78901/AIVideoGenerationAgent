@@ -36,8 +36,10 @@ caps:
   fps: 24
   duration_s: [5, 15]
   audio: true
-  # 每秒成片大约要跑多久（本机 5090 实测：5.17 秒的 1-01 跑 153 秒，含加载模型）
-  est_seconds_per_s: 30
+  # 跑多久 ≈ per_s × 秒数 + per_s2 × 秒数²（越长每秒越慢）。本机 5090 实测（20 步，含加载模型）：
+  # 5.17 秒的 1-01 153 秒、7.29 秒的 1-08 255 秒、15 秒的长镜头 804 秒（第九轮）
+  est_seconds_per_s: 17
+  est_seconds_per_s2: 2.4
   verify: true
   multiple: 32
   sizes:

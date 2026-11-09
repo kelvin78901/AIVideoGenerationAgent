@@ -40,6 +40,15 @@ from drama_series_agent.modelhub.pricing import cost_usd
 from drama_series_agent.modelhub.registry import Registry
 
 DEFAULT_API_TIMEOUT_S = 600.0
+DEFAULT_LOCAL_TIMEOUT_S = 600.0
+LOCAL_TIMEOUT_MARGIN = 1.5  # over the estimate: a local run gets half again as long
+
+
+def local_timeout_s(configured: Any, estimate: Estimate) -> float:
+    """A local model's time limit: the fallback's ``timeout_s``, or longer when the estimate
+    says the run takes longer (M5 step 15d: a 15 s H3 clip runs about 13 minutes here)."""
+    base = float(configured) if isinstance(configured, int | float) and configured > 0 else 0.0
+    return max(base or DEFAULT_LOCAL_TIMEOUT_S, LOCAL_TIMEOUT_MARGIN * estimate.seconds)
 
 
 class BudgetGuard(Protocol):
@@ -216,7 +225,7 @@ class Router:
         await self.budget.check(spec, estimate, settings, ctx)
 
         timeout_s = (
-            float(settings.values["fallback"].get("timeout_s") or 600)
+            local_timeout_s(settings.values["fallback"].get("timeout_s"), estimate)
             if spec.where == "local"
             else float((spec.caps.model_extra or {}).get("timeout_s") or self.api_timeout_s)
         )

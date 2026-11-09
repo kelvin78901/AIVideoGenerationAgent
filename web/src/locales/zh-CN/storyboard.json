@@ -128,7 +128,8 @@
       "audio": "按台词音频算（含前后留白），最短 {{min}} 秒",
       "manual": "手动设定",
       "manualMin": "手动设定 · 不能短于台词音频 {{min}} 秒",
-      "plan": "按分镜规划"
+      "plan": "按分镜规划",
+      "planMin": "按分镜规划 · 不短于台词音频 {{min}} 秒"
     },
     "durationReset": "恢复按音频",
     "durationResetPlan": "恢复规划的 {{s}} 秒",

@@ -109,6 +109,50 @@ def test_the_run_log_lists_takes_fallbacks_and_failures(client: TestClient) -> N
     assert client.get(f"{V1}/episodes/nope/generate-log").status_code == 404
 
 
+def test_a_timeout_line_names_how_long_its_own_call_ran(client: TestClient) -> None:
+    """M5 step 15d: the local limit grows with the clip, so the line reads the timed-out call
+    (here 1 s, then stretched to 13 minutes in the database), not the configured 10 minutes."""
+    from datetime import timedelta
+
+    from sqlmodel import select
+
+    from drama_series_agent.core.models_db import ModelCall
+
+    _confirm_storyboard(client)
+    state = client.app.state.studio  # type: ignore[attr-defined]
+    fallback = {
+        "enabled": True,
+        "on": ["error", "timeout"],
+        "qa_fail_n": 2,
+        "timeout_s": 1,
+        "to": "minimax/h3-api",
+        "notify": "after",
+    }
+    body = {"scope": "component", "scope_id": None, "component_id": "vid"}
+    client.put(
+        f"{V1}/config/override", json={**body, "data": {"fallback": fallback}}
+    ).raise_for_status()
+    state.registry.mock_settings.hang_keys.add("comfy/h3")
+    pid = _shots(client)["1-02"]["video_product_id"]
+    assert _run(client, pid, count=1)["state"] == "succeeded"
+
+    async def stretch() -> None:
+        async with state.db.session() as session:
+            calls = (
+                await session.exec(select(ModelCall).where(ModelCall.status == "timeout"))
+            ).all()
+            assert calls
+            for c in calls:
+                c.finished_at = c.started_at + timedelta(minutes=13)
+                session.add(c)
+            await session.commit()
+
+    client.portal.call(stretch)  # type: ignore[union-attr]
+    log = client.get(f"{V1}/episodes/{EP1}/generate-log").json()
+    line = next(e for e in log if e["message"]["code"] == "fallback_timeout")
+    assert line["shot_label"] == "1-02" and line["message"]["params"]["minutes"] == 13
+
+
 def test_unadopt_and_rate_a_take(client: TestClient) -> None:
     _confirm_storyboard(client)
     pid = _shots(client)["1-01"]["video_product_id"]

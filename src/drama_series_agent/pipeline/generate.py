@@ -27,6 +27,7 @@ from drama_series_agent.core.models_db import (
     AppSetting,
     Episode,
     Job,
+    ModelCall,
     Product,
     ProductVersion,
     Shot,
@@ -122,7 +123,8 @@ async def generate_log(
     session: AsyncSession, episode_id: str, *, timeout_minutes: int
 ) -> list[GenerateLogEntry]:
     """The episode's run log, oldest first. ``timeout_minutes``: the local time limit a
-    timeout fallback line names."""
+    timeout fallback line names when its timed-out call is not found (the limit grows with
+    the clip, M5 step 15d, so each line names how long its own call ran)."""
     episode = await session.get(Episode, episode_id)
     shots = (
         await session.exec(
@@ -157,6 +159,21 @@ async def generate_log(
         )
     ).all()
 
+    timed_out = [v.job_id for v in versions if v.fallback_reason == "timeout" and v.job_id]
+    ran_s: dict[str, float] = {}
+    if timed_out:
+        calls = (
+            await session.exec(
+                select(ModelCall).where(
+                    col(ModelCall.job_id).in_(timed_out), ModelCall.status == "timeout"
+                )
+            )
+        ).all()
+        for c in calls:
+            if c.job_id and c.started_at and c.finished_at:
+                s = (c.finished_at - c.started_at).total_seconds()
+                ran_s[c.job_id] = max(ran_s.get(c.job_id, 0.0), s)
+
     out: list[GenerateLogEntry] = []
     for v in versions:
         label = label_of[v.product_id]
@@ -164,7 +181,8 @@ async def generate_log(
         if v.fallback_reason in ("timeout", "error"):
             params: dict[str, str | int | float] = {"model": model}
             if v.fallback_reason == "timeout":
-                params["minutes"] = timeout_minutes
+                ran = ran_s.get(v.job_id or "")
+                params["minutes"] = round(ran / 60) if ran else timeout_minutes
             out.append(
                 _entry(
                     f"fb-{v.id}",

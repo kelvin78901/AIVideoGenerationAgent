@@ -148,7 +148,7 @@
     "when": "什么时候兜底",
     "trigger": {
       "error": "报错或显存不足",
-      "timeout": "超过 {{minutes}} 分钟没结果",
+      "timeout": "超过 {{minutes}} 分钟没结果（长片按预计耗时放宽）",
       "qa_fail": "自动质检连续 {{n}} 次不过"
     },
     "target": "兜底到",

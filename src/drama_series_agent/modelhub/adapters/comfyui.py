@@ -282,7 +282,12 @@ class ComfyUIAdapter:
         n = max(1, int(req.params.get("n") or 1))
         caps = self._caps()
         if caps.get("est_seconds_per_s"):
-            per = float(caps["est_seconds_per_s"]) * seconds_for(caps, req)
+            # Longer clips run slower per second (H3: 5 s in 150 s, 15 s in 804 s on the 5090).
+            s = seconds_for(caps, req)
+            per = (
+                float(caps["est_seconds_per_s"]) * s
+                + float(caps.get("est_seconds_per_s2") or 0) * s * s
+            )
         else:
             per = float(caps.get("est_seconds") or 30)
         return Estimate(cost_usd=0.0, seconds=n * per)

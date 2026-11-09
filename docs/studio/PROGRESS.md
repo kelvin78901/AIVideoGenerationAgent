@@ -14,8 +14,9 @@
 
 ## 下一步
 
-- **第 15c 步做完（本提交）**：整集 9 镜各 2 条（`reports/m5-local-smoke/run8-episode/README.md`）、衔接 A / B / C（`run9-continuity/README.md`），报告「整集实测」一节已补。数据目录（`%TEMP%\drama-local-video-urjf_x64\home`、`%TEMP%\drama-cont-hp7wfvvm\home`）留着。
-- **下一步：第 15d 步（时长和超时）**，然后 15e（衔接改 B）、15f（无台词镜头带参考图 + 分镜补道具）、15g（改写看首帧）、15h（整集重跑核对），最后第 16 步改 ROADMAP P1 那条、开 PR。Kelvin 2026-11-08 定这四项在 M5 里做（DECISIONS 同日「整集实测之后在 M5 里补四项」）。每步的做法写在 `plans/M5.md` 第 15d–15h 步。
+- **第 15c 步做完（3cb7884）**：整集 9 镜各 2 条（`reports/m5-local-smoke/run8-episode/README.md`）、衔接 A / B / C（`run9-continuity/README.md`），报告「整集实测」一节已补。数据目录（`%TEMP%\drama-local-video-urjf_x64\home`、`%TEMP%\drama-cont-hp7wfvvm\home`）留着。
+- **第 15d 步做完（本提交）**：对白镜头留分镜规划的秒数（不短于配音）、本地 H3 估价加平方项、本地超时 = max(配置, 1.5 × 估价)、运行记录读实际超时分钟（DECISIONS 同日条目）。测试：timing、shots / generate API、storyboard e2e、modelhub、comfy 适配器、前端全部过。**Kelvin 开着 `start.ps1` 的话要重启后端**（时长规则和运行记录在后端）。
+- **下一步：第 15e 步（衔接改 B）**，然后 15f（无台词镜头带参考图 + 分镜补道具）、15g（改写看首帧）、15h（整集重跑核对），最后第 16 步改 ROADMAP P1 那条、开 PR。Kelvin 2026-11-08 定这四项在 M5 里做（DECISIONS 同日「整集实测之后在 M5 里补四项」）。每步的做法写在 `plans/M5.md` 第 15d–15h 步。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - 之后：第 16 步改完报告开 PR；合并后 `/milestone` 出 M5.5。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。

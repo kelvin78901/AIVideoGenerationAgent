@@ -474,7 +474,9 @@ async def test_a_video_take_with_its_inputs_and_progress(h3_root: Path, store: B
     assert result.raw["comfy"]["workflow_id"] == "h3-i2v"
     assert seen[0] == {"take": 1, "takes": 1, "step": 0, "steps": 0, "pct": 0.0}
     assert seen[-1] == {"take": 1, "takes": 1, "step": 2, "steps": 2, "pct": 1.0}
-    assert adapter.estimate(_video_req(store, n=2)).seconds == 2 * 30 * 5.0
+    assert adapter.estimate(_video_req(store, n=2)).seconds == pytest.approx(
+        2 * (17 * 5 + 2.4 * 25)
+    )
 
 
 async def test_without_a_socket_it_polls(h3_root: Path, store: BlobStore) -> None:
@@ -552,3 +554,22 @@ def test_the_2k_finishing_workflows_say_how_long_they_take(
     req = ModelRequest(kind="upscale", params={"duration_s": 5.0, "width": 1080, "height": 1920})
     assert adapter.estimate(req).seconds == per_s * 5.0
     assert adapter.estimate(req).cost_usd == 0.0
+
+
+def test_a_longer_h3_clip_runs_slower_per_second(store: BlobStore) -> None:
+    """M5 step 15d: on the 5090 a 5 s H3 clip took about 150 s, a 15 s one 804 s; the estimate
+    (and the local timeout, half again as long) has a squared term."""
+    from drama_series_agent.core.config import get_config
+    from drama_series_agent.modelhub.registry import Registry
+
+    spec = Registry.from_config(get_config(), mock=False).spec("comfy/h3")
+    adapter = _adapter(FakeComfy(), WORKFLOWS_DIR, store, spec=spec)
+
+    def secs(duration_s: float) -> float:
+        req = ModelRequest(kind="video", params={"duration_s": duration_s})
+        return adapter.estimate(req).seconds
+
+    assert secs(5.0) == pytest.approx(145, abs=10)
+    assert secs(7.29) == pytest.approx(255, abs=15)
+    assert secs(15.0) == pytest.approx(804, abs=20)
+    assert secs(2.0) == secs(5.0)  # H3 makes 5 s at the least
