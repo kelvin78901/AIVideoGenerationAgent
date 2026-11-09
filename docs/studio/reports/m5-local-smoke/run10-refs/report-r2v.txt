@@ -1,0 +1,8 @@
+1-09 with or without references · work dir C:\Users\kelvin\AppData\Local\Temp\drama-refs-z4dvawzo\home
+   1-08 adopted: 18904c8a80d6417cbc611efc70dee824 (run9's B), comfy/h3
+== r2v: 1-09 on comfy/h3-r2v, seed 702585574, tail of 1-08
+   1 job(s) in 224.1 s, GPU memory peak 31704 MiB
+   call deepseek/v4.1-flash [api] success 7.3 s audio=Nones
+   call comfy/h3-r2v [local] success 215.6 s audio=5.17s
+   seed 702585574, raw 768x1344 5.17s, take 4.27s, sound True, tail_frames 22, refs ['林晚', '老小区楼道 · 夜', '红色长柄伞'], rewritten by deepseek/v4.1-flash
+   DeepSeek in this work dir (incl. earlier runs): $0.0255

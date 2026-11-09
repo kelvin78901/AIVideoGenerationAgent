@@ -1,0 +1,6 @@
+1-09 with or without references · work dir C:\Users\kelvin\AppData\Local\Temp\drama-refs-z4dvawzo\home
+   1-08 adopted: 18904c8a80d6417cbc611efc70dee824 (run9's B), comfy/h3
+   chain-i2v.mp4 17.52s
+   chain-r2v.mp4 17.52s
+   chain-r2v-noscene.mp4 17.52s
+   DeepSeek in this work dir (incl. earlier runs): $0.0298
