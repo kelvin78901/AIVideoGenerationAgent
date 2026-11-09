@@ -359,6 +359,19 @@
         "unavailable": {}
       },
       {
+        "id": "vlook",
+        "stage": "generate",
+        "kind": "vlm",
+        "api_models": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "local_models": [
+          "local/qwen3-vl-32b"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "ctrl",
         "stage": "generate",
         "kind": "video",
@@ -1584,6 +1597,28 @@
         ],
         "per_call_cap_usd": 0.05
       },
+      "vlook": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3-vl-32b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
       "ctrl": {
         "mode": "local",
         "api_model": null,
@@ -2218,6 +2253,28 @@
           "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.05
+      },
+      "vlook": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
       },
       "ctrl": {
         "mode": "local",
@@ -2873,6 +2930,28 @@
         ],
         "per_call_cap_usd": 0.05
       },
+      "vlook": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/gemini-3.1-flash-lite",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
       "ctrl": {
         "mode": "local",
         "api_model": null,
@@ -3372,6 +3451,25 @@
           "local/qwen3-30b-a3b"
         ],
         "per_call_cap_usd": 0.05
+      },
+      "vlook": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.02
       },
       "ctrl": {
         "mode": "local",

@@ -293,7 +293,7 @@ class MockAdapter:
     def _planned_usage(self, req: ModelRequest) -> Usage:
         kind = self.spec.kind
         if kind in LLM_KINDS:
-            return Usage(tokens_in=estimate_tokens(req.text()), tokens_out=req.max_tokens or 800)
+            return Usage(tokens_in=req.prompt_tokens(), tokens_out=req.max_tokens or 800)
         if kind in IMAGE_KINDS:
             return Usage(images=int(req.params.get("n", 1)))
         if kind in AUDIO_KINDS:

@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-09 · M5 第 15g 步：改写前看真实首帧（新路由 vlook，默认 Gemini 3.1 Flash-Lite）
+
+- 起因：第八轮原因 5，改写只拿到分镜意图（连续镜头什么都没有），1-09 被写成「楼道里、门关着、红伞」，真实首帧是屋里、门开着、黑伞，H3 先关门再拿黑伞。
+- **新路由 `vlook`**（`config/components.yaml`，kind `vlm`，`pipeline/vlook.py`）：本地 H3 改写前描述 `first_frame`（普通镜头是锁定关键帧，连续镜头是上一条的尾帧），代替 `_facts` 里 `<Picture 1>` 的描述（原来是关键帧的意图，空的话现在用镜头的规划意图）。提示词 `templates/vid/first_frame_look.j2`（英文，只写看得到的：地方、机位、人的位置朝向衣服颜色、每个道具和颜色、门窗开关、光）。经 `router.call()`，`model_call` 记在 `vlook` 下、带镜头 id；版本的调用列表里也有一条。
+- **选型**：Kelvin 有 Google、OpenAI、Moonshot、火山、MiniMax、DeepSeek 的密钥；带看图的里 Gemini 3.1 Flash-Lite 最便宜（$0.25 / $1.50 每百万 token，一张图默认 1120 token，一次约 $0.0005），正式版 ID `gemini-3.1-flash-lite` 按 ai.google.dev 模型页、价格页核对后填进 `providers.yaml`（预览版 ID 5 月已下线）；`gemini-3.6-flash` 的 ID 还没核对，留在可选列表。本地 Qwen3-VL-32B 列为本地选项但不默认：出片时 H3 占满 32 GB 显存、内存也紧，每个镜头前换一次大模型不划算。
+- **图怎么发**：OpenAI 兼容的 `image_url` 消息块（data URI；适配器原样转发 `messages`），先过 `upload.compact_picture`（慢上行，第 15a 步）。估价：`ModelRequest.text()` 读消息块里的文字，`prompt_tokens()` 每张图加 `IMAGE_TOKENS = 1120`（Gemini 3 默认图片分辨率），OpenAI 兼容和 Mock 适配器都用它；视频组件估价把一次看图加进本地 H3 的改写估价。
+- **缓存和失败**：`LlmCache` 键 = 模型 + 图的 sha256 + 提示词，同一首帧的几条候选、「再出一条」、重跑都只看一次；看图失败或路由关掉不挡出片（改写照旧用分镜意图），预算和确认照常拦。改写的缓存键含描述，所以首帧换了就重新改写。
+
 ## 2026-11-09 · M5 第 15f 步：无台词的连续镜头照旧走 h3-i2v（Kelvin 定）；分镜规划补上画面里提到的道具、角色
 
 - **第十轮**（`reports/m5-local-smoke/run10-refs/README.md`）：1-09 同种子、都带 1-08 的尾段。`h3-i2v` 切点接得上、伞是黑的；`h3-r2v` 带林晚、伞、楼道三张图时尾段一过就硬切到楼道（把场景图当成要拍的地方）；`h3-r2v` 不送场景图时接得上、伞变红，但从尾段带来的黑伞在她拿起时当场变红。黑伞来自上游 1-05、1-06 的关键帧（分镜规划漏了道具）。

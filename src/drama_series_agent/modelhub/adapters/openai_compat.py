@@ -20,7 +20,6 @@ from drama_series_agent.modelhub.adapters.base import (
     Usage,
 )
 from drama_series_agent.modelhub.adapters.http import KeyGetter, error_for, send
-from drama_series_agent.modelhub.adapters.mock import estimate_tokens
 from drama_series_agent.modelhub.pricing import cost_usd
 from drama_series_agent.utils.llm_client import normalize_base_url
 
@@ -52,7 +51,7 @@ class OpenAICompatAdapter:
     # ------------------------------------------------------------------ protocol
 
     def estimate(self, req: ModelRequest) -> Estimate:
-        usage = Usage(tokens_in=estimate_tokens(req.text()), tokens_out=req.max_tokens or 800)
+        usage = Usage(tokens_in=req.prompt_tokens(), tokens_out=req.max_tokens or 800)
         return Estimate(
             cost_usd=cost_usd(self.spec.pricing, usage),
             seconds=10.0,

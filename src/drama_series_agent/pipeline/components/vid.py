@@ -76,7 +76,7 @@ from drama_series_agent.modelhub.adapters.base import (
 )
 from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm
-from drama_series_agent.pipeline import vselect
+from drama_series_agent.pipeline import vlook, vselect
 from drama_series_agent.pipeline.component import (
     ComponentError,
     Inputs,
@@ -208,7 +208,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             raise PipelineError(409, "keyframe_not_locked", id=shot_label(episode, shots, row.id))
         deps.append(await invalidation.dependency(session, keyframe.id))
         first = str(ref["sha256"])
-        first_desc = str((keyframe.prompt_json or {}).get("intent") or "")
+        # What the keyframe was asked to show; a look at the picture replaces it (``vlook``).
+        first_desc = str((keyframe.prompt_json or {}).get("intent") or shot.get("intent") or "")
 
     # The lines it films, in script order.
     script = await script_product(session, episode_id)
@@ -515,6 +516,7 @@ class VidComponent(MediaComponent):
             "context_ir": lambda req: {"prompt": f"[Context-IR] {req.prompt or ''}"},
             "h3_prompt": _mock_rewrite,
             "select": vselect.mock_suggest,
+            vlook.TASK: vlook.mock_look,
         }
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
@@ -567,7 +569,21 @@ class VidComponent(MediaComponent):
         calls: list[MediaCall] = []
         rewrite: str | None = None
         if self._rewrites(model):
-            facts = self._facts(inputs, req, refs, voices, r2v, ctx.lang)
+            # The rewrite is told what the first frame really shows (M5 step 15g).
+            look = await vlook.describe(
+                self.services,
+                str(inputs.context["first_frame"]),
+                item_of(ctx.product),
+                replace(
+                    self._call_ctx(ctx, inputs.episode_id), component_id=vlook.VLOOK, select=None
+                ),
+            )
+            if look is not None:
+                calls.append(
+                    MediaCall([], look.model_key, look.where, look.cost_usd, cached=look.cached)
+                )
+            seen = look.text if look is not None else None
+            facts = self._facts(inputs, req, refs, voices, r2v, ctx.lang, seen)
             prompt, rewrite_call = await self._rewrite(ctx, inputs, facts)
             calls.append(rewrite_call)
             rewrite = rewrite_call.model_key
@@ -718,7 +734,7 @@ class VidComponent(MediaComponent):
         ir = self._ir_model(model)
         if ir is not None:
             ask = ModelRequest(kind="llm_aux", prompt=compiled, params=req.params)
-        elif self._rewrites(model) and (ir := self._rewrite_model()) is not None:
+        elif self._rewrites(model) and (ir := self._route_model(VPROMPT)) is not None:
             # Priced as if asked twice (the second try carries the first answer and the fixes).
             system = self.services.compiler.render("vid/h3_rewrite_system.j2")
             ask = ModelRequest(
@@ -726,11 +742,14 @@ class VidComponent(MediaComponent):
             )
         else:
             return estimate
-        rewrite = self.services.registry.get(ir).estimate(ask)
+        parts = [estimate, self.services.registry.get(ir).estimate(ask)]
+        if self._rewrites(model):  # the first frame looked at once (cached afterwards)
+            look = vlook.estimate(self.services, self._route_model(vlook.VLOOK))
+            parts += [look] if look is not None else []
         return Estimate(
-            cost_usd=estimate.cost_usd + rewrite.cost_usd,
-            seconds=estimate.seconds + rewrite.seconds,
-            priced=estimate.priced and rewrite.priced,
+            cost_usd=sum(e.cost_usd for e in parts),
+            seconds=sum(e.seconds for e in parts),
+            priced=all(e.priced for e in parts),
         )
 
     # ------------------------------------------------------------------ internals
@@ -766,11 +785,11 @@ class VidComponent(MediaComponent):
             return "", None
         return str((call.data or {}).get("prompt") or "").strip(), call
 
-    def _rewrite_model(self) -> str | None:
-        """The ``vprompt`` route's default writing model (for estimates, which cannot read the
-        series' own route)."""
+    def _route_model(self, route_id: str) -> str | None:
+        """A route's default model (``vprompt``'s writer, ``vlook``'s eyes), for estimates,
+        which cannot read the series' own route."""
         try:
-            route = get_config().components.component(VPROMPT).balanced
+            route = get_config().components.component(route_id).balanced
         except KeyError:
             return None
         key = route.local if route.mode == "local" else route.api
@@ -789,11 +808,14 @@ class VidComponent(MediaComponent):
         voices: list[dict[str, Any]],
         r2v: bool,
         lang: str,
+        seen: str | None = None,
     ) -> h3_format.Facts:
-        """What the rewriter is told: the take's layout, what is sent and the lines it speaks."""
+        """What the rewriter is told: the take's layout, what is sent and the lines it speaks;
+        the first frame as a vision model saw it (``seen``), else the plan's intent."""
         context = inputs.context
         language = LANGUAGE.get(lang, "Chinese")
-        pictures = [h3_format.Picture("first_frame", description=context.get("first_desc", ""))]
+        first = seen if seen is not None else str(context.get("first_desc", ""))
+        pictures = [h3_format.Picture("first_frame", description=first)]
         if r2v:
             pictures += [
                 h3_format.Picture("reference", r["name"], r["kind"], r.get("desc", ""))

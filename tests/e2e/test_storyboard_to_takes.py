@@ -93,10 +93,10 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
         assert c["workflow_id"] and c["workflow_sha256"], c
         assert c["select_json"]["by"] in ("rule", "default"), c
     assert takes[0]["params"]["select"] == clips[0]["select_json"]
-    # The rewrite into H3's official layout is one call for both takes.
-    assert [c["component_id"] for c in calls if c["model_key"] != takes[0]["model_key"]] == [
-        "vprompt"
-    ]
+    # The first frame is looked at and the prompt rewritten into H3's official layout once for
+    # both takes (M5 steps 14b, 15g).
+    others = [c["component_id"] for c in calls if c["model_key"] != takes[0]["model_key"]]
+    assert sorted(others) == ["vlook", "vprompt"]
     assert _spent(api) == pytest.approx(spent + sum(c["cost_usd"] for c in calls), abs=1e-4)
 
     # Adopt A, drop it, adopt B.

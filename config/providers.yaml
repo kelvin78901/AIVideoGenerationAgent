@@ -149,7 +149,8 @@ llm_providers:
         price_change: { from: "2027-01-01", factor: 2.0, note: "官方公告 2027-01-01 起翻倍" }
         vision: true
         json_mode: true
-      - { key: google/gemini-3.1-flash-lite, display: Gemini 3.1 Flash-Lite, model_id: null, price: { in: 0.25, out: 1.50, currency: USD }, vision: true, json_mode: true }
+      # gemini-3.1-flash-lite：正式版 ID，核对 ai.google.dev 模型页和价格页 2026-11-09（预览版 ID 5 月已下线）
+      - { key: google/gemini-3.1-flash-lite, display: Gemini 3.1 Flash-Lite, model_id: gemini-3.1-flash-lite, price: { in: 0.25, out: 1.50, currency: USD }, vision: true, json_mode: true }
 
   - id: openai_llm
     name: OpenAI

@@ -64,6 +64,11 @@ class Pricing(BaseModel):
         return self.model_dump(exclude_none=True)
 
 
+# What a picture in a chat request counts as, for estimates (Gemini 3's default image
+# resolution is 1120 tokens; ai.google.dev media resolution, checked 2026-11-09).
+IMAGE_TOKENS = 1120
+
+
 class ModelRequest(BaseModel):
     kind: str
     messages: list[dict[str, Any]] | None = None
@@ -79,13 +84,32 @@ class ModelRequest(BaseModel):
     meta: dict[str, Any] = Field(default_factory=dict)
 
     def text(self) -> str:
-        """All prompt text, for estimates and mocks."""
+        """All prompt text, for estimates and mocks (the text parts of a message with
+        pictures too)."""
         parts = [self.prompt or ""]
         for msg in self.messages or []:
             content = msg.get("content")
             if isinstance(content, str):
                 parts.append(content)
+            elif isinstance(content, list):
+                parts += [str(c.get("text") or "") for c in content if c.get("type") == "text"]
         return "\n".join(p for p in parts if p)
+
+    def image_parts(self) -> int:
+        """Pictures sent as OpenAI-style ``image_url`` parts of the messages."""
+        return sum(
+            1
+            for msg in self.messages or []
+            if isinstance(msg.get("content"), list)
+            for c in msg["content"]
+            if c.get("type") == "image_url"
+        )
+
+    def prompt_tokens(self) -> int:
+        """The input an estimate counts: the text, and ``IMAGE_TOKENS`` a picture."""
+        from drama_series_agent.modelhub.adapters.mock import estimate_tokens
+
+        return estimate_tokens(self.text()) + IMAGE_TOKENS * self.image_parts()
 
 
 class Usage(BaseModel):

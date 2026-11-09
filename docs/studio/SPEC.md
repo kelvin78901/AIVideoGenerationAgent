@@ -229,9 +229,10 @@ class Component(Protocol):
 | sub | 字幕对齐 | asr | 成片音频 + 剧本台词 → 时间轴 | — |
 
 | vprompt⁺ | 视频提示词改写 | llm | H3 格式的草稿提示词 + 参考图描述 → 按 MiniMax 官方写法的英文提示词（M5，只给本地 H3） | — |
+| vlook⁺ | 首帧描述 | vlm | 真实首帧（锁定关键帧 / 上一条的尾帧）→ 一段英文画面描述，给 `vprompt` 当 `<Picture 1>` 的描述（M5 第 15g 步，只给本地 H3） | — |
 | vselect⁺ | 视频工作流建议 | llm | 镜头摘要 + 能选的工作流 → 选哪个 + 理由（M5，开关默认关） | — |
 
-`assets` 和 `dub` 在原型里没有单独一行（分别在 03 素材页顶部和「音色」组件里），实现时作为独立组件，界面放在同一页。标 ⁺ 的 `views`、`ocr` 是 M3 加的，`vprompt`、`vselect` 是 M5 加的，原型都没有；「模型与兜底」页因此多「补视图」「台词配音」「文字核对（OCR）」「视频提示词改写」「视频工作流建议」五行。
+`assets` 和 `dub` 在原型里没有单独一行（分别在 03 素材页顶部和「音色」组件里），实现时作为独立组件，界面放在同一页。标 ⁺ 的 `views`、`ocr` 是 M3 加的，`vprompt`、`vselect`、`vlook` 是 M5 加的，原型都没有；「模型与兜底」页因此多「补视图」「台词配音」「文字核对（OCR）」「视频提示词改写」「视频工作流建议」「首帧描述」六行。
 
 ### 5.1 关键行为
 
@@ -255,7 +256,7 @@ class Component(Protocol):
   - **首帧**：普通镜头用锁定的关键帧（没锁 409 `keyframe_not_locked`）；连续镜头用它接的镜头**已采纳 take 的尾帧**（没采纳 409 `upstream_not_adopted`）。**本地 H3 的连续镜头改成末尾片段续写**（M5 第 15e 步）：再送那条 take 最后 22 帧画面和声音（`tail_clip`，工作流里官方 `MiniMaxH3AddGuide` 钉在第 0 帧；`h3-i2v` 去掉首帧锚、台词引导挪到第 22 帧），多要 22 帧；兜底到 API（不收片段）仍用尾帧当首帧。锁定参考图按模型能收的张数，带分析里的长相描述（`refs[].desc`）。
   - **声音按 `audio_mode`**：`tts` = PLAN 模式 A，这个镜头说话的行的已采纳配音从 0.3 秒起拼成一条（`media/audio.py:dialogue_track`），当 `dialogue_audio`（缺一句 409 `line_audio_missing`）；`native` = 模式 B，说话人锁定音色的样本按说话顺序（S1、S2…）当 `ref_audio`，H3 自己出声；`none` 不出声。H3 API 要 2–15 秒的音色样本（`caps.audio_s`）：锚点不够长就按顺序拼同一个声音的几段（`media/audio.py:joined_sample`），全拼完还不够 `voice_sample_short`，调用前停下。模式 C（后期对口型）是 M6。
   - **选模型**：`Component.choose_model`（异步，估价只读缓存、入队时才问 LLM）：调用方点名 / Inspector 手动选的 → 剧集规则表第一条命中的 → LLM 建议（`vselect`）→ 路由的本地模型。默认规则表一条「原生同步 + 有锁定音色样本 → `comfy/h3-r2v`」。见 6.4.8。
-  - **提示词**：编译层 `templates/vid/default.j2`（中文，用户能改）；发给 H3 时套官方格式（`h3_i2v.j2` 首帧那一行 + 三个字段，`h3_r2v.j2` 参考模式六段，台词 `(S1) says: <d>…</d>`、配乐一律 `N/A`、参考图写进 `<Subject N>`）。本地 H3 再经 `vprompt` 按 MiniMax 官方 `h3-prompt-writing` 改写成英文（`prompts/h3_format.py:check` 校验段落、标签、台词原文、单镜头、字数；不合格带着问题重问一次，还不合格 `prompt_not_conformant`、不出片）；API 的 H3 走官方 Context-IR（`caps.prompt_ir`，失败就用我们自己的提示词）。改写和 Context-IR 都按输入缓存，几条候选共用一段提示词、只差种子。
+  - **提示词**：编译层 `templates/vid/default.j2`（中文，用户能改）；发给 H3 时套官方格式（`h3_i2v.j2` 首帧那一行 + 三个字段，`h3_r2v.j2` 参考模式六段，台词 `(S1) says: <d>…</d>`、配乐一律 `N/A`、参考图写进 `<Subject N>`）。本地 H3 再经 `vprompt` 按 MiniMax 官方 `h3-prompt-writing` 改写成英文（`prompts/h3_format.py:check` 校验段落、标签、台词原文、单镜头、字数；不合格带着问题重问一次，还不合格 `prompt_not_conformant`、不出片）；API 的 H3 走官方 Context-IR（`caps.prompt_ir`，失败就用我们自己的提示词）。改写和 Context-IR 都按输入缓存，几条候选共用一段提示词、只差种子。改写前先经 `vlook`（`pipeline/vlook.py`，默认 Gemini 3.1 Flash-Lite）看真实首帧，描述代替分镜意图写进 `<Picture 1>`；按图缓存，失败照旧用分镜意图。
   - **每条 take**：裁掉开头 0.3 秒（`media/video.py:trim_head`，重新编码按帧切），带尾段出的裁掉开头那 22 帧（就是上一镜的尾段），文件 `video`（时长、宽高）、`poster`（第一帧）、`last_frame`（最后一帧，给下一镜当首帧）、`prompt`（实际发出的）；本地草稿另存 `raw`（没裁头的原片）和 `params.request`（实际请求），供 Regenerate-2K 原样重发。本地出的 `stage=draft`。质检是 M6：`qa` 为空，界面「未检查」，没有「推荐」，默认选中最新一条。
   - **依赖和失效**：关键帧（或上一镜的视频）、台词音频、锁定参考图和音色、镜头结构字段变了 → 待更新；影响范围加视频行（`stale_video`；改画幅另有 `videos_redo`：已有几条、已采纳几条、已采纳的出 API 终版要多少钱）。「确认并同步」不自动重出视频。
   - **生成闸门 `takes`**：每个镜头有采纳的 take 才能确认（409 `takes_not_adopted {count, labels}`），确认时锁定、重新打开时解锁；导航徽标「生成 n/m」。

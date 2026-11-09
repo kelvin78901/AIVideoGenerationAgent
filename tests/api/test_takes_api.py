@@ -8,6 +8,7 @@ its lines not dubbed), 1-08 continues 1-06 and 1-09 continues 1-08.
 from __future__ import annotations
 
 import io
+import json
 import time
 import wave
 from collections.abc import Iterator
@@ -22,6 +23,7 @@ from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import Job, ModelCall, Product
 from drama_series_agent.media.video import probe
 from drama_series_agent.modelhub.adapters.base import ModelRequest
+from drama_series_agent.pipeline import vlook
 from drama_series_agent.prompts import h3_format
 
 LOCAL = "http://127.0.0.1"
@@ -179,6 +181,51 @@ def test_a_local_h3_take_is_rewritten_into_the_official_layout(client: TestClien
     # An API take is not rewritten here (Context-IR is H3's own rewriter).
     api = _run(client, shot["video_product_id"], model="minimax/h3-api")["versions"][-1]
     assert "prompt_rewrite" not in api["payload"] and len(_rewrites(client)) == 1
+
+
+def test_the_rewrite_is_told_what_the_first_frame_shows(client: TestClient) -> None:
+    """M5 step 15g: before a local H3 take is rewritten, the vlook route describes the first
+    frame (the locked keyframe; a continuous shot's, the last frame of the take it follows),
+    once per picture; a look that fails leaves the plan's words."""
+    _confirm_storyboard(client)
+    mock = _state(client).registry.mock_settings
+    told: list[dict[str, Any]] = []
+    looked: list[ModelRequest] = []
+    rewrite, look = mock.responders[("vid", "h3_prompt")], mock.responders[("vid", vlook.TASK)]
+
+    def spy_rewrite(req: ModelRequest) -> Any:
+        told.append(json.loads(str((req.messages or [])[1]["content"])))
+        return rewrite(req)
+
+    def spy_look(req: ModelRequest) -> Any:
+        looked.append(req)
+        return look(req)
+
+    mock.responders[("vid", "h3_prompt")] = spy_rewrite
+    mock.responders[("vid", vlook.TASK)] = spy_look
+    shots = _shots(client)
+    _run(client, shots["1-01"]["video_product_id"])  # two takes, one look
+    _run(client, shots["1-01"]["video_product_id"])  # 「再出一条」: the cache
+    (asked,) = looked
+    text, picture = (asked.messages or [])[0]["content"]
+    assert "first frame of a video shot" in text["text"]
+    assert picture["image_url"]["url"].startswith("data:image/png;base64,")
+    assert told and told[0]["pictures"][0]["description"] == vlook.MOCK_TEXT
+    (call,) = _rows(client, ModelCall, ModelCall.component_id == vlook.VLOOK)
+    assert (call.model_key, call.shot_id, call.status) == (
+        "google/gemini-3.1-flash-lite",
+        "demo-shot-1-01",
+        "success",
+    )
+    assert call.cost_usd > 0
+
+    # A look that fails: the plan's words, and the take is made.
+    mock.fail_keys.add("google/gemini-3.1-flash-lite")
+    told.clear()
+    keyframe = client.get(f"{V1}/products/{shots['1-02']['keyframe_product_id']}").json()
+    take = _run(client, shots["1-02"]["video_product_id"], count=1)["versions"][-1]
+    assert take["where"] == "local"
+    assert told[0]["pictures"][0]["description"] == keyframe["prompt"]["intent"]  # the plan's
 
 
 def test_a_rewrite_that_never_fits_the_layout_makes_no_take(client: TestClient) -> None:
@@ -420,6 +467,11 @@ def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
     sent = take["params"]["request"]
     seconds = shots["1-08"]["duration_s"]
     assert (sent["tail_frames"], sent["first_frame"]) == (22, last["sha256"])
+    looks = _rows(client, ModelCall, ModelCall.component_id == vlook.VLOOK)
+    assert {c.shot_id for c in looks} == {
+        "demo-shot-1-06",
+        "demo-shot-1-08",
+    }  # 1-08: its last frame
     assert sent["duration_s"] == pytest.approx(seconds + 22 / 24, abs=0.01)
     tail = client.portal.call(probe, client.get(f"{V1}/files/{sent['tail_clip']}").content)  # type: ignore[union-attr]
     assert tail.duration_s == pytest.approx(22 / 24, abs=0.05) and tail.has_audio

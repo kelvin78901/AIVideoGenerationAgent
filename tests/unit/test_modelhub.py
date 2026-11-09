@@ -410,3 +410,18 @@ async def test_component_switched_off(hub: tuple[Router, Registry, EventBus]) ->
         await router.call("world", _llm_req())
     assert err.value.code == "component_off"
     assert await calllog.recent(router.db) == []
+
+
+def test_a_picture_in_a_chat_request_is_counted_in_the_estimate() -> None:
+    """M5 step 15g: a vision request's text parts are its text; each image part counts as
+    IMAGE_TOKENS more input."""
+    from drama_series_agent.modelhub.adapters.base import IMAGE_TOKENS, ModelRequest
+
+    content = [
+        {"type": "text", "text": "describe this"},
+        {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}},
+    ]
+    req = ModelRequest(kind="vlm", messages=[{"role": "user", "content": content}])
+    plain = ModelRequest(kind="llm", prompt="describe this")
+    assert req.text() == "describe this" and req.image_parts() == 1
+    assert req.prompt_tokens() == plain.prompt_tokens() + IMAGE_TOKENS
