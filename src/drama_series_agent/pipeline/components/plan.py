@@ -32,7 +32,14 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.assets import ops as asset_ops
-from drama_series_agent.core.models_db import Asset, AssetUse, Episode, Product, ProductVersion
+from drama_series_agent.core.models_db import (
+    Asset,
+    AssetUse,
+    BibleEntity,
+    Episode,
+    Product,
+    ProductVersion,
+)
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.episodes.service import script_product
 from drama_series_agent.modelhub.adapters.base import ModelRequest
@@ -140,11 +147,25 @@ async def episode_assets(
     return {a.id: a for a in rows.all()}, uses
 
 
+async def asset_aliases(session: AsyncSession, assets: dict[str, Asset]) -> dict[str, list[str]]:
+    """Each asset's other names: the name and aliases of the bible entry it was drawn from."""
+    ids = {a.bible_id for a in assets.values() if a.bible_id}
+    rows = (await session.exec(select(BibleEntity).where(col(BibleEntity.id).in_(ids)))).all()
+    entries = {e.id: [e.name, *e.aliases_json] for e in rows}
+    out: dict[str, list[str]] = {}
+    for a in assets.values():
+        names = [n for n in entries.get(a.bible_id or "", []) if n and n != a.name]
+        if names:
+            out[a.id] = names
+    return out
+
+
 def plan_context(
     episode_id: str,
     script: dict[str, Any],
     assets: dict[str, Asset],
     uses: list[AssetUse],
+    aliases: dict[str, list[str]] | None = None,
 ) -> ops.PlanContext:
     lines = [
         ops.PlanLine(n=x.n, scene_id=x.scene_id, line_id=x.line_id, type=x.type, text=x.text)
@@ -168,6 +189,7 @@ def plan_context(
         asset_names={a.id: a.name for a in assets.values()},
         line_assets=line_assets,
         scene_assets=scene_assets,
+        asset_aliases=aliases or {},
     )
 
 
@@ -224,7 +246,9 @@ async def gather(
     if listed is not None and listed.adopted_version_id:
         deps.append(await invalidation.dependency(session, listed.id, ASSET_IDS_SLICE))
     assets, uses = await episode_assets(session, episode_id)
-    ctx = plan_context(episode_id, adopted.payload_json, assets, uses)
+    ctx = plan_context(
+        episode_id, adopted.payload_json, assets, uses, await asset_aliases(session, assets)
+    )
     mine = await plan_product(session, episode_id)
     base = (
         await session.get(ProductVersion, mine.adopted_version_id)
