@@ -7,6 +7,9 @@
 #   音频时这个节点被旁路，I2V 的 positive 直接进引导器；
 # - 尺寸按成片画幅取 768P 档（短边 768，和 H3 API 的 768P、Regenerate-2K 的输入对上），帧数照官方表达式落到 17k+5；
 # - 帧率固定 24（H3 原生），25 / 30 在导出时转（PLAN「成片规格」）。
+# 连续镜头的尾段引导（M5 第 15e 步，衔接方案 B，第九轮实测）：上一镜已采纳 take 的最后 22 帧连声音
+# （LoadVideo → GetVideoComponents → 官方 MiniMaxH3AddGuide，钉在第 0 帧）；没给尾段时这三个节点被旁路。
+#   给了尾段就去掉 I2V 的首帧锚（replaces），台词音频挪到尾段之后（dialogue_frame = 尾段帧数）。
 # 锁定音色参考（配音方式 native 的音色样本）I2V 节点收不了，要 MiniMaxH3ReferenceToVideo，见 DECISIONS「M5 第 4 步」。
 # 许可：H3 本地权重商用要 MiniMax 授权（PLAN 风险），终版走 API。
 name: { zh: MiniMax H3 图生视频（草稿）, en: MiniMax H3 image to video (draft) }
@@ -25,6 +28,13 @@ bindings:
     field: audio
     optional: true
     bypass: [{ node: Dialogue guide, input: positive }]
+  - { slot: dialogue_frame, node: Dialogue guide, field: frame_idx }
+  - slot: tail_clip
+    node: Tail clip
+    field: file
+    optional: true
+    bypass: [{ node: Tail guide, input: positive }, { node: Tail parts, input: video }]
+    replaces: [{ node: Image to video, input: first_frame }]
   - { slot: video_out, node: Output }
 models:
   - { folder: diffusion_models, name: minimax_h3_fl2va_pruned_int8_convrot.safetensors }

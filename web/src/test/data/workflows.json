@@ -651,7 +651,7 @@
         "refs": null,
         "vram_gb": null
       },
-      "file_sha256": "c2e08cf6cf1ecf3e3a0f59228dd4cc45e00a6917486c2cd3392c62b86d58a4ec",
+      "file_sha256": "857406cf66076482ddd1c55a6eb5dffde44932409b206401bf61000adeced8db",
       "file_changed": false,
       "uses_dramastudio_nodes": false,
       "bindings": [
@@ -717,6 +717,22 @@
           "node_title": "Dialogue audio",
           "node_class": "LoadAudio",
           "field": "audio",
+          "state": "confirmed"
+        },
+        {
+          "slot": "dialogue_frame",
+          "index": null,
+          "node_title": "Dialogue guide",
+          "node_class": "MiniMaxH3AddGuide",
+          "field": "frame_idx",
+          "state": "confirmed"
+        },
+        {
+          "slot": "tail_clip",
+          "index": null,
+          "node_title": "Tail clip",
+          "node_class": "LoadVideo",
+          "field": "file",
           "state": "confirmed"
         },
         {
@@ -788,6 +804,25 @@
             "prompt",
             "width",
             "height"
+          ]
+        },
+        {
+          "title": "Tail clip",
+          "class_type": "LoadVideo",
+          "fields": [
+            "file"
+          ]
+        },
+        {
+          "title": "Tail parts",
+          "class_type": "GetVideoComponents",
+          "fields": []
+        },
+        {
+          "title": "Tail guide",
+          "class_type": "MiniMaxH3AddGuide",
+          "fields": [
+            "frame_idx"
           ]
         },
         {
@@ -869,8 +904,8 @@
         "at": "2026-10-18T09:00:00Z",
         "status": "ok",
         "node_classes": {
-          "found": 18,
-          "total": 18
+          "found": 20,
+          "total": 20
         },
         "missing_packs": [],
         "missing_models": [],
@@ -905,7 +940,7 @@
         "refs": 4,
         "vram_gb": null
       },
-      "file_sha256": "7c2f9e4506b1dc7beccc0d9333c981cc9c61ca8477b695179069649ed27d64e0",
+      "file_sha256": "491ae54519828d9a7a97e0e64c2ac8ef9f20250fe7ce38e91f9f50c5a96934f4",
       "file_changed": false,
       "uses_dramastudio_nodes": false,
       "bindings": [
@@ -1019,6 +1054,14 @@
           "node_title": "Noise",
           "node_class": "RandomNoise",
           "field": "noise_seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "tail_clip",
+          "index": null,
+          "node_title": "Tail clip",
+          "node_class": "LoadVideo",
+          "field": "file",
           "state": "confirmed"
         },
         {
@@ -1143,6 +1186,25 @@
           ]
         },
         {
+          "title": "Tail clip",
+          "class_type": "LoadVideo",
+          "fields": [
+            "file"
+          ]
+        },
+        {
+          "title": "Tail parts",
+          "class_type": "GetVideoComponents",
+          "fields": []
+        },
+        {
+          "title": "Tail guide",
+          "class_type": "MiniMaxH3AddGuide",
+          "fields": [
+            "frame_idx"
+          ]
+        },
+        {
           "title": "Guider",
           "class_type": "BasicGuider",
           "fields": []
@@ -1207,8 +1269,8 @@
         "at": "2026-10-18T09:00:00Z",
         "status": "ok",
         "node_classes": {
-          "found": 17,
-          "total": 17
+          "found": 20,
+          "total": 20
         },
         "missing_packs": [],
         "missing_models": [],

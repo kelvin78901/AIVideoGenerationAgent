@@ -12,7 +12,8 @@
   nodes that go too but pass one of their inputs on: whatever read the bypassed node now reads
   what that input read (H3's audio guide hands its ``positive`` on when there is no audio); with
   ``output``, only the readers of that output (a LoRA loader: ``model`` for output 0, ``clip``
-  for 1).
+  for 1). ``replaces`` (a file slot): inputs removed when the slot *is* filled (H3's tail clip
+  takes over from the first-frame anchor, M5 step 15e).
 - ``branches`` (SPEC 6.4.8): parts a shot can switch off (ControlNet, LoRA, upscale): the nodes
   that make one, removed like an optional slot's (with its bypasses) when it is off; ``default``
   says whether it is on when nobody chose. A binding cannot point into a branch.
@@ -63,6 +64,8 @@ Slot = Literal[
     "prompt",
     "negative",
     "dialogue_audio",
+    "tail_clip",
+    "dialogue_frame",
     "width",
     "height",
     "fps",
@@ -74,7 +77,9 @@ Slot = Literal[
 ]
 OUTPUT_SLOTS = frozenset({"video_out", "image_out", "audio_out"})
 # Slots filled with an uploaded file's name (``input/dramastudio/…``).
-FILE_SLOTS = frozenset({"first_frame", "video_in", "ref_image", "ref_audio", "dialogue_audio"})
+FILE_SLOTS = frozenset(
+    {"first_frame", "video_in", "ref_image", "ref_audio", "dialogue_audio", "tail_clip"}
+)
 # Numbered file slots (1, 2 …): a list of names, filled in order.
 LIST_SLOTS: tuple[Slot, ...] = ("ref_image", "ref_audio")
 
@@ -91,6 +96,13 @@ class Bypass(BaseModel):
     output: int | None = None  # only the readers of this output (None: all of them)
 
 
+class Input(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    node: str  # the node's title
+    input: str
+
+
 class Binding(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
@@ -100,6 +112,7 @@ class Binding(BaseModel):
     field: str | None = None  # the input; None for an output node
     optional: bool = False
     bypass: list[Bypass] = Field(default_factory=list)  # with an optional slot left empty
+    replaces: list[Input] = Field(default_factory=list)  # removed when the slot is filled
 
 
 class Branch(BaseModel):
@@ -160,6 +173,11 @@ class Workflow:
                 raise WorkflowError(f"{slug}: {b.slot} needs a field")
             self._ids[b.node] = ids[0]
             self._check_bypass(titles, b.bypass)
+            for r in b.replaces:
+                hits = titles.get(r.node, [])
+                if len(hits) != 1 or r.input not in (graph[hits[0]].get("inputs") or {}):
+                    raise WorkflowError(f"{slug}: replaces {r.node!r}.{r.input} is not one input")
+                self._ids[r.node] = hits[0]
         bound = {b.node for b in meta.bindings}
         for branch in meta.branches:
             for title in branch.nodes:
@@ -244,7 +262,26 @@ class Workflow:
                 if not b.optional:
                     raise WorkflowError(f"{self.slug}: needs {b.slot}")
                 self._drop(graph, b)
+            elif values.get(b.slot) is not None:
+                for r in b.replaces:
+                    self._unlink(graph, self._ids[r.node], r.input)
         return graph
+
+    def _unlink(self, graph: dict[str, Any], node_id: str, input_name: str) -> None:
+        """Remove one input; the node it read from goes too when nothing else reads it (the
+        first frame's loader once the tail clip replaces the anchor)."""
+        inputs = (graph.get(node_id) or {}).get("inputs") or {}
+        source = inputs.pop(input_name, None)
+        if not _is_link(source):
+            return
+        source_id = str(source[0])
+        read = any(
+            _links_to(v, source_id)
+            for n in graph.values()
+            for v in (n.get("inputs") or {}).values()
+        )
+        if not read and source_id in graph:
+            _remove(graph, source_id)
 
     def _drop(self, graph: dict[str, Any], b: Binding) -> None:
         self._cut(graph, b.bypass, [self._ids[b.node]])

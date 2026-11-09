@@ -96,6 +96,60 @@
    "title": "Image to video"
   }
  },
+ "140": {
+  "class_type": "LoadVideo",
+  "inputs": {
+   "file": "dramastudio/tail.mp4"
+  },
+  "_meta": {
+   "title": "Tail clip"
+  }
+ },
+ "141": {
+  "class_type": "GetVideoComponents",
+  "inputs": {
+   "video": [
+    "140",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Tail parts"
+  }
+ },
+ "142": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "104",
+    0
+   ],
+   "latent": [
+    "104",
+    1
+   ],
+   "frame_idx": 0,
+   "vae": [
+    "11",
+    0
+   ],
+   "audio_vae": [
+    "24",
+    0
+   ],
+   "image": [
+    "141",
+    0
+   ],
+   "audio": [
+    "141",
+    1
+   ]
+  },
+  "_meta": {
+   "title": "Tail guide"
+  }
+ },
  "130": {
   "class_type": "LoadAudio",
   "inputs": {
@@ -109,7 +163,7 @@
   "class_type": "MiniMaxH3AddGuide",
   "inputs": {
    "positive": [
-    "104",
+    "142",
     0
    ],
    "latent": [

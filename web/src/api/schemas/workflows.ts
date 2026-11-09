@@ -19,6 +19,8 @@ export const SlotSchema = z.enum([
   "prompt",
   "negative",
   "dialogue_audio",
+  "tail_clip",
+  "dialogue_frame",
   "width",
   "height",
   "fps",

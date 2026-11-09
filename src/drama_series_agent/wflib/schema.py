@@ -7,26 +7,11 @@ from typing import Any, Literal
 
 from pydantic import BaseModel, Field
 
+from drama_series_agent.modelhub.workflows import Slot
 from drama_series_agent.setup.manifest import Message
 
 Tier = Literal["recommended", "mine", "unverified"]
-SlotName = Literal[
-    "first_frame",
-    "video_in",
-    "ref_image",
-    "ref_audio",
-    "prompt",
-    "negative",
-    "dialogue_audio",
-    "width",
-    "height",
-    "fps",
-    "seconds",
-    "seed",
-    "video_out",
-    "image_out",
-    "audio_out",
-]
+SlotName = Slot  # one list of slots (``modelhub/workflows.py``)
 
 
 class BindingOut(BaseModel):

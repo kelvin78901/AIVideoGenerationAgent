@@ -104,6 +104,8 @@
     "prompt": "Prompt (positive)",
     "negative": "Prompt (negative)",
     "dialogue_audio": "Dialogue audio",
+    "tail_clip": "Previous shot's tail",
+    "dialogue_frame": "Dialogue start frame",
     "ref_audio": "Voice sample",
     "width": "Width",
     "height": "Height",

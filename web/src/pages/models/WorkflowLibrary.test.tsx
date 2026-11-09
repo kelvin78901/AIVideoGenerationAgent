@@ -89,7 +89,7 @@ describe("WorkflowLibrary", () => {
     expect(h3).toHaveTextContent("随平台提供：绑定写在它的 workflow.yaml 里，这里只看不改。");
     expect(within(h3).queryByRole("combobox")).toBeNull();
     expect(within(h3).queryByRole("button", { name: "确认全部绑定" })).toBeNull();
-    expect(within(h3).getAllByText("已确认")).toHaveLength(9);
+    expect(within(h3).getAllByText("已确认")).toHaveLength(11);
   });
 
   it("guessed bindings block the trial and the tier; the trial reports over job events", async () => {

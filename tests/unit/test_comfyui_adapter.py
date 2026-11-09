@@ -445,6 +445,53 @@ def test_the_h3_workflow_bypasses_its_audio_guide_without_audio() -> None:
         wf.fill({})
 
 
+def test_a_tail_clip_replaces_the_first_frame_anchor() -> None:
+    """M5 step 15e (continuity B): the previous take's last frames with their sound are guided
+    at frame 0; the I2V first-frame anchor goes, the dubbed lines start after the tail."""
+    wf = shipped_workflow("h3-i2v")
+    plain = wf.fill({"first_frame": "dramastudio/f.png", "dialogue_audio": "dramastudio/a.wav"})
+    assert {"140", "141", "142"}.isdisjoint(plain)
+    assert plain["131"]["inputs"]["positive"] == ["104", 0]
+    assert plain["104"]["inputs"]["first_frame"] == ["114", 0]
+    values = {"first_frame": "dramastudio/f.png", "dialogue_audio": "dramastudio/a.wav"}
+    tailed = wf.fill({**values, "tail_clip": "dramastudio/t.mp4", "dialogue_frame": 22})
+    assert tailed["140"]["inputs"]["file"] == "dramastudio/t.mp4"
+    guide = tailed["142"]["inputs"]
+    assert (guide["image"], guide["audio"], guide["frame_idx"]) == (["141", 0], ["141", 1], 0)
+    assert guide["positive"] == ["104", 0] and guide["latent"] == ["104", 1]
+    assert tailed["131"]["inputs"]["positive"] == ["142", 0]
+    assert tailed["131"]["inputs"]["frame_idx"] == 22
+    assert "first_frame" not in tailed["104"]["inputs"] and "114" not in tailed
+    silent = wf.fill({"first_frame": "dramastudio/f.png", "tail_clip": "dramastudio/t.mp4"})
+    assert silent["16"]["inputs"]["conditioning"] == ["142", 0] and "131" not in silent
+
+    # Reference to video: the first frame is a reference there, not an anchor; it stays.
+    r2v = shipped_workflow("h3-r2v")
+    base = {"first_frame": "dramastudio/f.png"}
+    assert r2v.fill(base)["126"]["inputs"]["conditioning"] == ["136", 0]
+    tailed = r2v.fill({**base, "tail_clip": "dramastudio/t.mp4"})
+    assert tailed["126"]["inputs"]["conditioning"] == ["142", 0]
+    assert tailed["136"]["inputs"]["ref_images.ref_image_0"] == ["200", 0]
+
+
+async def test_a_tail_clip_is_uploaded_and_the_lines_follow_it(
+    h3_root: Path, store: BlobStore
+) -> None:
+    fake = FakeComfy()
+    fake.video = await solid_mp4(72, 128, 6.0, 24, "336699", audio_hz=440)
+    adapter = _adapter(fake, h3_root, store, websocket=None, spec=H3)
+    req = _video_req(store, seconds=6.0)
+    tail = await solid_mp4(72, 128, 22 / 24, 24, "112233", audio_hz=220)
+    req.params.update(tail_clip=store.put_bytes(tail), tail_frames=22)
+    await adapter.run(req, CallContext())
+    graph = fake.prompts[0]
+    sha = req.params["tail_clip"]
+    assert ("dramastudio", f"{sha}.mp4") in fake.uploads
+    assert graph["140"]["inputs"]["file"] == f"dramastudio/{sha}.mp4"
+    assert graph["131"]["inputs"]["frame_idx"] == 22
+    assert "first_frame" not in graph["104"]["inputs"]
+
+
 async def test_a_video_take_with_its_inputs_and_progress(h3_root: Path, store: BlobStore) -> None:
     fake = FakeComfy()
     fake.video = await solid_mp4(72, 128, 5.0, 24, "336699", audio_hz=440)

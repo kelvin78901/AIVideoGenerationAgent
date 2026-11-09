@@ -87,6 +87,7 @@ INPUT_FILES: tuple[tuple[Slot, str], ...] = (
     ("first_frame", "image"),
     ("video_in", "video"),
     ("dialogue_audio", "audio"),
+    ("tail_clip", "video"),  # a continuous shot's lead-in: the last frames before it (15e)
 )
 FILE_EXTS = {
     "image": EXTS,
@@ -342,6 +343,9 @@ class ComfyUIAdapter:
                 }
                 if req.params.get("negative"):
                     values["negative"] = str(req.params["negative"])
+                # The dubbed lines start after the tail clip's frames (M5 step 15e).
+                tail = int(req.params.get("tail_frames") or 0) if "tail_clip" in inputs else 0
+                values["dialogue_frame"] = tail
                 filled = {k: v for k, v in values.items() if wf.has(k)}
                 try:
                     graph = wf.fill(filled, refs, req.params.get("branches"))
@@ -460,8 +464,8 @@ class ComfyUIAdapter:
         size: tuple[int, int],
         seconds: float,
     ) -> dict[Slot, Any]:
-        """The first frame, input video, dialogue audio and voice samples (``ref_audio``, a
-        list) the workflow takes, uploaded."""
+        """The first frame, input video, dialogue audio, tail clip and voice samples
+        (``ref_audio``, a list) the workflow takes, uploaded."""
         names: dict[Slot, Any] = {}
         for slot, kind in INPUT_FILES:
             bound = wf.bindings(slot)
