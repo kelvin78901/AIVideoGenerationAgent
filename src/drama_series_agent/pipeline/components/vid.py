@@ -5,7 +5,11 @@ in one job, seeds ``seed``, ``seed + 1`` …), nothing is adopted until the user
 - **Only after 分镜确认** (409 ``storyboard_not_confirmed``).
 - **The first frame**: the shot's locked keyframe (409 ``keyframe_not_locked``); a continuous
   shot starts from the last frame of the take adopted for the shot it continues (409
-  ``upstream_not_adopted``).
+  ``upstream_not_adopted``). **A local H3 take of a continuous shot is guided instead** with
+  the end of that take's clip, ``TAIL_FRAMES`` frames and their sound at frame 0 (the
+  workflow's ``tail_clip``, M5 step 15e: 末尾片段续写, steadier than the last frame alone in
+  run9), asked that many frames longer and cut back by them; the API fallback, which takes no
+  clip, starts from the last frame as before.
 - **References**: the shot's locked pictures as 关键帧 sends them, as many as the model takes.
 - **Sound by ``audio_mode``** (Kelvin 2026-10-26): ``tts`` (先配音再对口型) sends the shot's dubbed
   lines as one track (``dialogue_audio``; every spoken line needs its adopted audio, 409
@@ -21,8 +25,9 @@ in one job, seeds ``seed``, ``seed + 1`` …), nothing is adopted until the user
   ``vprompt`` route, checked, asked again once with what is wrong, and not made when it still
   does not conform (``prompt_not_conformant``; M5 step 14b). The H3 API rewrites with its own
   Context-IR instead.
-- **Every take loses its first 0.3 s** (H3's garbled opening sound, SPEC 5.1) and keeps a poster
-  (its first frame) and its last frame (the next continuous shot starts there).
+- **Every take loses its first 0.3 s** (H3's garbled opening sound, SPEC 5.1), or the tail
+  frames it was guided with, and keeps a poster (its first frame) and its last frame (the next
+  continuous shot starts there).
 
 The version depends on the shot's settings (the plan's ``shot:<id>`` slice), the lines it films,
 the first frame (the keyframe, or the continued shot's take), the dubbed lines it sends and the
@@ -53,7 +58,16 @@ from drama_series_agent.core.models_db import (
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes.service import gate_confirmed, script_product
 from drama_series_agent.media.audio import dialogue_track, joined_sample
-from drama_series_agent.media.video import VideoError, VideoInfo, frame, probe, trim_head
+from drama_series_agent.media.video import (
+    TAIL_FRAMES,
+    TRIM_HEAD_S,
+    VideoError,
+    VideoInfo,
+    frame,
+    probe,
+    tail_clip,
+    trim_head,
+)
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
     Estimate,
@@ -183,7 +197,11 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         deps.append(await invalidation.dependency(session, upstream.id))
         first = str(last["sha256"])
         first_desc = ""
+        # A local H3 take is guided with the end of that take's clip (``_request``).
+        clip = _file(take, "video")
+        tail = str(clip["sha256"]) if clip is not None else None
     else:
+        tail = None
         keyframe = await _shot_product(session, row.id, KEYFRAME_SLOT)
         ref = await locked_ref(session, keyframe) if keyframe is not None else None
         if keyframe is None or ref is None:
@@ -316,6 +334,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "frame": frame_,
             "first_frame": first,
             "first_desc": first_desc,
+            "tail_clip": tail,
             "refs": refs,
             "unlocked": unlocked,
             "texts": texts,
@@ -371,14 +390,22 @@ def _select(ctx: RunContext) -> dict[str, Any]:
     return {"select": ctx.select} if ctx.select is not None else {}
 
 
+def head_s(params: dict[str, Any], fps: float) -> float:
+    """What a take loses at its start: the tail frames it was guided with (``tail_frames``),
+    else ``TRIM_HEAD_S``."""
+    frames = int(params.get("tail_frames") or 0)
+    return round(frames / fps, 4) if frames else TRIM_HEAD_S
+
+
 async def clip_files(
-    store: BlobStore, sha256: str, *, raw: bool
+    store: BlobStore, sha256: str, *, raw: bool, head: float = TRIM_HEAD_S
 ) -> tuple[list[dict[str, Any]], VideoInfo]:
-    """A take as stored: the head cut off, its poster and last frame; a local draft keeps the
-    untrimmed clip too (``raw``: what Regenerate-2K takes). The demo seed makes its takes so."""
+    """A take as stored: the head cut off (``head`` seconds), its poster and last frame; a local
+    draft keeps the untrimmed clip too (``raw``: what Regenerate-2K takes). The demo seed makes
+    its takes so."""
     try:
         original = store.path_for(sha256).read_bytes()
-        clip = await trim_head(original)
+        clip = await trim_head(original, head)
         info = await probe(clip)
         poster, last = await frame(clip, "first"), await frame(clip, "last")
         whole = await probe(original) if raw else None
@@ -502,8 +529,9 @@ class VidComponent(MediaComponent):
         # request built for that model (SPEC 7.3).
         take, reason = await self.run_flow(ctx, flow)
         call = take.calls[-1]
-        files, info = await self._clip_files(call, raw=call.where == "local")
         frame_ = inputs.context["frame"]
+        head = head_s(take.req.params, float(frame_["fps"]))
+        files, info = await self._clip_files(call, raw=call.where == "local", head=head)
         payload: dict[str, Any] = {
             "duration_s": round(info.duration_s, 3),
             "asked_s": inputs.context["seconds"],
@@ -581,6 +609,11 @@ class VidComponent(MediaComponent):
             "duration_s": raw.get("duration_s") or sent.get("duration_s"),
             "video_in": raw["sha256"],
         }
+        # A draft guided with the shot before's tail: the untrimmed clip starts with those
+        # frames, so the final is cut back by them too; the API takes no clip guide.
+        head = head_s(sent, float(frame_["fps"]))
+        params.pop("tail_clip", None)
+        params.pop("tail_frames", None)
         model = ctx.model_key or self._final_model()
         if sent.get("ref_audio") and model:
             # The draft's voice samples, joined when the API wants them longer.
@@ -598,7 +631,7 @@ class VidComponent(MediaComponent):
         call = await self.media_call(
             ctx, req, inputs.episode_id, model=ctx.model_key, fallback=False
         )
-        files, info = await self._clip_files(call, raw=False)
+        files, info = await self._clip_files(call, raw=False, head=head)
         payload = {
             **source.payload_json,
             "duration_s": round(info.duration_s, 3),
@@ -610,12 +643,33 @@ class VidComponent(MediaComponent):
         return draft
 
     async def _clip_files(
-        self, call: MediaCall, *, raw: bool
+        self, call: MediaCall, *, raw: bool, head: float
     ) -> tuple[list[dict[str, Any]], VideoInfo]:
         video = next((f for f in call.files if f.mime.startswith("video/")), None)
         if video is None:
             raise ComponentError("no_video")
-        return await clip_files(self.services.store, video.sha256, raw=raw)
+        return await clip_files(self.services.store, video.sha256, raw=raw, head=head)
+
+    def _guided(self, context: dict[str, Any], model: str) -> bool:
+        """A continuous shot's take on a local workflow that takes the shot before's tail."""
+        wf = local_workflow(self.services.registry, model) if context.get("tail_clip") else None
+        return wf is not None and wf.has("tail_clip")
+
+    async def _tail_params(self, context: dict[str, Any]) -> dict[str, Any]:
+        """The shot before's last ``TAIL_FRAMES`` frames with their sound (``tail_clip``), and
+        the take asked that many frames longer (they are cut off again when it is stored)."""
+        store = self.services.store
+        fps = float(context["frame"]["fps"])
+        try:
+            data = store.path_for(str(context["tail_clip"])).read_bytes()
+            tail = await tail_clip(data, TAIL_FRAMES, fps)
+        except VideoError as exc:
+            raise ComponentError(exc.code) from exc
+        return {
+            "tail_clip": store.put_bytes(tail),
+            "tail_frames": TAIL_FRAMES,
+            "duration_s": round(float(context["seconds"]) + TAIL_FRAMES / fps, 3),
+        }
 
     async def _source_take(self, product: Product, params: dict[str, Any]) -> ProductVersion | None:
         """The take an API final starts from (``params.source_version_id``)."""
@@ -645,6 +699,9 @@ class VidComponent(MediaComponent):
             )
             return self.services.registry.get(final).estimate(req)
         size = frame_size(frame_, self.where_of(model))
+        seconds = float(inputs.context["seconds"])
+        if self._guided(inputs.context, model):  # the tail frames are made again
+            seconds += TAIL_FRAMES / float(frame_["fps"])
         req = ModelRequest(
             kind="video",
             prompt=compiled,
@@ -653,7 +710,7 @@ class VidComponent(MediaComponent):
                 "width": size.w,
                 "height": size.h,
                 "aspect": frame_["aspect"],
-                "duration_s": inputs.context["seconds"],
+                "duration_s": seconds,
                 "fps": int(frame_["fps"]),
             },
         )
@@ -880,6 +937,10 @@ class VidComponent(MediaComponent):
             params["refs"] = [r["sha256"] for r in refs]
         if voices:
             params["ref_audio"] = self._voice_samples(voices, extra)
+        if self._guided(context, model):
+            # 末尾片段续写 (M5 step 15e): the first frame stays for the API fallback and as
+            # h3-r2v's <Picture 1>; h3-i2v drops its anchor when the tail is there.
+            params.update(await self._tail_params(context))
         if spec.where == "local" and wf is not None and wf.meta.branches:
             settings = await self.services.router.settings(self.id, item_of(ctx.product))
             chosen = settings.values.get("branches")

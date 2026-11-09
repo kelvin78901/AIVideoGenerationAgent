@@ -6,6 +6,9 @@
   SPEC 5.1). It is re-encoded so the cut is frame-exact rather than at the nearest keyframe.
 - ``frame``: a PNG of the first frame (the card's poster) or the last one (the next shot's
   first frame when it continues this one, SPEC 7.4).
+- ``tail_clip``: a take's last ``TAIL_FRAMES`` frames with their sound, which a local H3 take
+  of the shot continuing it is guided with at frame 0 (M5 step 15e); that take then loses
+  those frames instead of ``TRIM_HEAD_S``.
 
 All of it runs FFmpeg in a worker thread; the async functions are what components call.
 """
@@ -23,6 +26,7 @@ from typing import Literal
 from drama_series_agent.media.audio import ffmpeg_exe
 
 TRIM_HEAD_S = 0.3
+TAIL_FRAMES = 22  # H3's clip guides take 17k + 5 frames; 22 is a little under a second
 _DURATION = re.compile(r"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)")
 _VIDEO = re.compile(r"Stream #\S+.*?: Video: .*?(\d{2,5})x(\d{2,5})")
 _FPS = re.compile(r"(\d+(?:\.\d+)?) fps")
@@ -111,6 +115,24 @@ def _frame(data: bytes, which: Literal["first", "last"]) -> bytes:
         return out.read_bytes()
 
 
+def _tail(data: bytes, frames: int, fps: float) -> bytes:
+    with TemporaryDirectory() as tmp:
+        src, out = Path(tmp) / "in.mp4", Path(tmp) / "tail.mp4"
+        src.write_bytes(data)
+        info = _probe_file(src)
+        rate = info.fps or fps
+        total = round(info.duration_s * rate)
+        if total < frames:
+            raise VideoError("video_too_short", f"{info.duration_s}s")
+        start = (total - frames) / rate
+        args = ["-ss", f"{start:.4f}", "-i", str(src), "-map", "0:v:0"]
+        args += ["-map", "0:a:0", "-c:a", "aac", "-b:a", "192k"] if info.has_audio else []
+        args += ["-frames:v", str(frames), "-t", f"{frames / rate:.4f}"]
+        args += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "10", "-pix_fmt", "yuv420p"]
+        _run(*args, "-movflags", "+faststart", "-y", str(out))
+        return out.read_bytes()
+
+
 async def probe(data: bytes) -> VideoInfo:
     return await asyncio.to_thread(_probe, data)
 
@@ -123,3 +145,9 @@ async def trim_head(data: bytes, seconds: float = TRIM_HEAD_S) -> bytes:
 async def frame(data: bytes, which: Literal["first", "last"]) -> bytes:
     """The first or last frame of a clip as a PNG."""
     return await asyncio.to_thread(_frame, data, which)
+
+
+async def tail_clip(data: bytes, frames: int = TAIL_FRAMES, fps: float = 24.0) -> bytes:
+    """The last ``frames`` frames of a clip with their sound, re-encoded (``fps`` when FFmpeg
+    does not say the clip's own)."""
+    return await asyncio.to_thread(_tail, data, frames, fps)

@@ -20,6 +20,7 @@ from sqlmodel import col, select
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import Job, ModelCall, Product
+from drama_series_agent.media.video import probe
 from drama_series_agent.modelhub.adapters.base import ModelRequest
 from drama_series_agent.prompts import h3_format
 
@@ -398,6 +399,49 @@ def test_continuing_shots_wait_for_the_take_they_continue(client: TestClient) ->
     )
     code, error, params = _refused(client, shots["1-06"]["video_product_id"])
     assert (code, error) == (409, "line_audio_missing") and params["count"] >= 1
+
+
+def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
+    client: TestClient,
+) -> None:
+    """M5 step 15e (末尾片段续写): 1-08's local H3 take gets 1-06's adopted take's last 22 frames
+    with their sound, asks 22 frames more and loses them again (not 0.3 s); its final is cut
+    the same way; the API fallback, which takes no clip, starts from the last frame."""
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    _dub_shot(client, shots["1-06"])
+    before = _run(client, shots["1-06"]["video_product_id"], count=1)["versions"][-1]
+    _adopt(client, before)
+    last = next(f for f in before["files"] if f["role"] == "last_frame")
+
+    pid = shots["1-08"]["video_product_id"]
+    take = _run(client, pid, count=1)["versions"][-1]
+    assert (take["model_key"], take["where"]) == ("comfy/h3", "local")
+    sent = take["params"]["request"]
+    seconds = shots["1-08"]["duration_s"]
+    assert (sent["tail_frames"], sent["first_frame"]) == (22, last["sha256"])
+    assert sent["duration_s"] == pytest.approx(seconds + 22 / 24, abs=0.01)
+    tail = client.portal.call(probe, client.get(f"{V1}/files/{sent['tail_clip']}").content)  # type: ignore[union-attr]
+    assert tail.duration_s == pytest.approx(22 / 24, abs=0.05) and tail.has_audio
+    video = take["files"][0]
+    raw = next(f for f in take["files"] if f["role"] == "raw")
+    assert video["duration_s"] == pytest.approx(seconds, abs=0.1)
+    assert raw["duration_s"] == pytest.approx(seconds + 22 / 24, abs=0.1)
+
+    _adopt(client, take)
+    job = _final(client, pid, take["id"])
+    assert job["state"] == "succeeded", job
+    final = next(
+        v for v in client.get(f"{V1}/products/{pid}").json()["versions"] if v["stage"] == "final"
+    )
+    assert final["files"][0]["duration_s"] == pytest.approx(seconds, abs=0.1)
+
+    _state(client).registry.mock_settings.fail_keys.add("comfy/h3")
+    api = _run(client, pid)["versions"][-1]
+    assert (api["model_key"], api["origin"]) == ("minimax/h3-api", "fallback")
+    sent = api["params"]["request"]
+    assert "tail_clip" not in sent and sent["first_frame"] == last["sha256"]
+    assert api["files"][0]["duration_s"] == pytest.approx(seconds - 0.3, abs=0.1)
 
 
 def _dub_shot(client: TestClient, shot: dict[str, Any]) -> None:

@@ -252,11 +252,11 @@ class Component(Protocol):
   - **组件可以按输入换模型**（`Component.model_for`，`RunService` 先读输入再定模型、编译和估价）：Klein 和 Qwen-Image-Edit 2511 都只能按参考图编辑，一个镜头没有锁定的参考图时本地草稿改用 `kf.local` 里排在当前模型后面、这台机器能跑的第一个文生图模型（本家的：Klein 文生图 / Qwen-Image）。
 - **视频（M5，`pipeline/components/vid.py`）**：
   - **产物**：物化镜头时每个镜头（连续镜头也有）建一个视频产物（owner `shot`，slot `video`），跟着镜头退役、回来；出视频要分镜已确认（409 `storyboard_not_confirmed`）。一条 take = 一个版本：第一次出 `takes_per_shot` 条（生成页自动规则，默认 `vid.candidates` = 2，组件钩子 `run_count`），「再出一条」1 条，出终版 1 条；估价、预算按条数乘。
-  - **首帧**：普通镜头用锁定的关键帧（没锁 409 `keyframe_not_locked`）；连续镜头用它接的镜头**已采纳 take 的尾帧**（没采纳 409 `upstream_not_adopted`）。锁定参考图按模型能收的张数，带分析里的长相描述（`refs[].desc`）。
+  - **首帧**：普通镜头用锁定的关键帧（没锁 409 `keyframe_not_locked`）；连续镜头用它接的镜头**已采纳 take 的尾帧**（没采纳 409 `upstream_not_adopted`）。**本地 H3 的连续镜头改成末尾片段续写**（M5 第 15e 步）：再送那条 take 最后 22 帧画面和声音（`tail_clip`，工作流里官方 `MiniMaxH3AddGuide` 钉在第 0 帧；`h3-i2v` 去掉首帧锚、台词引导挪到第 22 帧），多要 22 帧；兜底到 API（不收片段）仍用尾帧当首帧。锁定参考图按模型能收的张数，带分析里的长相描述（`refs[].desc`）。
   - **声音按 `audio_mode`**：`tts` = PLAN 模式 A，这个镜头说话的行的已采纳配音从 0.3 秒起拼成一条（`media/audio.py:dialogue_track`），当 `dialogue_audio`（缺一句 409 `line_audio_missing`）；`native` = 模式 B，说话人锁定音色的样本按说话顺序（S1、S2…）当 `ref_audio`，H3 自己出声；`none` 不出声。H3 API 要 2–15 秒的音色样本（`caps.audio_s`）：锚点不够长就按顺序拼同一个声音的几段（`media/audio.py:joined_sample`），全拼完还不够 `voice_sample_short`，调用前停下。模式 C（后期对口型）是 M6。
   - **选模型**：`Component.choose_model`（异步，估价只读缓存、入队时才问 LLM）：调用方点名 / Inspector 手动选的 → 剧集规则表第一条命中的 → LLM 建议（`vselect`）→ 路由的本地模型。默认规则表一条「原生同步 + 有锁定音色样本 → `comfy/h3-r2v`」。见 6.4.8。
   - **提示词**：编译层 `templates/vid/default.j2`（中文，用户能改）；发给 H3 时套官方格式（`h3_i2v.j2` 首帧那一行 + 三个字段，`h3_r2v.j2` 参考模式六段，台词 `(S1) says: <d>…</d>`、配乐一律 `N/A`、参考图写进 `<Subject N>`）。本地 H3 再经 `vprompt` 按 MiniMax 官方 `h3-prompt-writing` 改写成英文（`prompts/h3_format.py:check` 校验段落、标签、台词原文、单镜头、字数；不合格带着问题重问一次，还不合格 `prompt_not_conformant`、不出片）；API 的 H3 走官方 Context-IR（`caps.prompt_ir`，失败就用我们自己的提示词）。改写和 Context-IR 都按输入缓存，几条候选共用一段提示词、只差种子。
-  - **每条 take**：裁掉开头 0.3 秒（`media/video.py:trim_head`，重新编码按帧切），文件 `video`（时长、宽高）、`poster`（第一帧）、`last_frame`（最后一帧，给下一镜当首帧）、`prompt`（实际发出的）；本地草稿另存 `raw`（没裁头的原片）和 `params.request`（实际请求），供 Regenerate-2K 原样重发。本地出的 `stage=draft`。质检是 M6：`qa` 为空，界面「未检查」，没有「推荐」，默认选中最新一条。
+  - **每条 take**：裁掉开头 0.3 秒（`media/video.py:trim_head`，重新编码按帧切），带尾段出的裁掉开头那 22 帧（就是上一镜的尾段），文件 `video`（时长、宽高）、`poster`（第一帧）、`last_frame`（最后一帧，给下一镜当首帧）、`prompt`（实际发出的）；本地草稿另存 `raw`（没裁头的原片）和 `params.request`（实际请求），供 Regenerate-2K 原样重发。本地出的 `stage=draft`。质检是 M6：`qa` 为空，界面「未检查」，没有「推荐」，默认选中最新一条。
   - **依赖和失效**：关键帧（或上一镜的视频）、台词音频、锁定参考图和音色、镜头结构字段变了 → 待更新；影响范围加视频行（`stale_video`；改画幅另有 `videos_redo`：已有几条、已采纳几条、已采纳的出 API 终版要多少钱）。「确认并同步」不自动重出视频。
   - **生成闸门 `takes`**：每个镜头有采纳的 take 才能确认（409 `takes_not_adopted {count, labels}`），确认时锁定、重新打开时解锁；导航徽标「生成 n/m」。
 - **画面文字**：分镜表里记录每个镜头的预期文字；质检用 OCR 逐字比对。
@@ -551,7 +551,7 @@ per_call_cap_usd: 0.50
 **M5 的实际做法**（视频；DECISIONS「M5 第 7 步」「第 9c 步」）：
 
 - 「用 API 出终版 · 约 $x」只出现在本地 H3 草稿的候选卡上（`stage=draft`、本地、H3 系）。`POST /products/{id}/run {where: api, params: {source_version_id}}` 走组件的 `final_api`（`components.yaml` 的 `vid.final_api: minimax/h3-regenerate-2k`），不是路由的 API 模型（H3 API 是重新出一条，不是把草稿出成 2K）。只出 1 条。
-- 终版原样重发草稿的 `raw`（没裁头的原片，帧数 17k+5）、`params.request` 和实际发出的提示词，出来的 2K 同样裁头、取封面和尾帧，`stage=final`，父版本是草稿。不是本地 H3 出的草稿 → 任务失败 `draft_not_regenerable`；终版失败不兜底，草稿不动。
+- 终版原样重发草稿的 `raw`（没裁头的原片，帧数 17k+5）、`params.request` 和实际发出的提示词，出来的 2K 同样裁头（带尾段的草稿裁 22 帧，尾段不发给 API）、取封面和尾帧，`stage=final`，父版本是草稿。不是本地 H3 出的草稿 → 任务失败 `draft_not_regenerable`；终版失败不兜底，草稿不动。
 - 价格由后端算：`EstimateOut.final_usd`（`RunService._final_api_cost`，按镜头时长估 Regenerate-2K 的输出 + 输入视频），前端不自己算。
 - 没有预先检查 Regenerate-2K 的输入规格（24 fps、带音轨、宽高 32 的倍数、面积 ≤ 768×1344）：不合格 MiniMax 拒绝任务、不收费。已知 1:1、21:9 的本地草稿面积超了。
 
