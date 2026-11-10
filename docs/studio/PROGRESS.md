@@ -64,7 +64,7 @@
 
 ## 等 Kelvin 的事
 
-- **M5.5 草图**（`docs/studio/prototype/m5.5/`）：看布局和文案；另要定：① 剧的风格板放「成片规格」页还是素材页（草图放成片规格）；② 画面文字 OCR 不一致现在挡锁定（要点「仍然锁定」），要不要也改成只提示；③ 原型 take 卡上的「局部修复」（视频）不在 M5.5，先拿掉、M6 和口型修复一起做？
+- **M5.5 草图**（`docs/studio/prototype/m5.5/`）：看布局和文案。三件事 Kelvin 2026-11-10 已定（风格板在成片规格页、画面文字 OCR 也只提示、take 卡局部修复按钮留着功能 M6），记在 DECISIONS「M5.5 计划」和计划第 5、12、16 步。
 
 - 以后：火山方舟开通 Seedance 2.5（要交保证金，Kelvin 先不管）后补跑 `live_video.py --only seedance`。 可选：想在本机 ComfyUI 里用 DramaStudio 节点，在 Setup 页勾「DramaStudio 节点包」安装（先存快照，没替你装），再重启 ComfyUI。已定：`w_h3` 的两个 Turbo LoRA 留着，以后可能做「快速草稿」档（2026-10-28）；本地 H3 20 步、原生配音合格（2026-10-27）。
 
