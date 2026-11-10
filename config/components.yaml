@@ -295,6 +295,19 @@ components:
     cheap_api: google/gemini-3.1-flash-lite
     note: 只给本地 H3 改写用；一张图描述一次，同一首帧的几条候选、重跑都走缓存
 
+  # take 检查（M5.5 第 7 步）：每条 take 抽 6 帧拼一张图，看图模型对着镜头契约查重复动作、凭空的物理事件、字变了、
+  # 内心独白嘴在动、结尾状态；加上 take 自己量的镜头内切点和开头定格。只提示（自动重跑是 M6）。按拼图缓存。
+  - id: takecheck
+    stage: generate
+    name: { zh: take 检查, en: Take check }
+    kind: vlm
+    api: [google/gemini-3.1-flash-lite, google/gemini-3.6-flash]
+    local: [local/qwen3-vl-32b]
+    balanced: { mode: api, api: google/gemini-3.1-flash-lite, local: local/qwen3-vl-32b }
+    per_call_cap_usd: 0.02
+    cheap_api: google/gemini-3.1-flash-lite
+    note: 每条 take 看一次拼图（约 $0.001）；失败只是不检查
+
   - id: ctrl
     stage: generate
     name: { zh: 结构控制, en: Structure control }

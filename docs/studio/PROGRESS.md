@@ -22,9 +22,9 @@
 
 ## 下一步
 
-- **第 1 步草图等 Kelvin 看**；看过才做前端（第 8、16 步）；后端第 2–7 步同时做（Kelvin 2026-11-10）。
-- **6**（本提交）关键帧检查：`pipeline/kfcheck.py` + 路由 `kfcheck`（Gemini Flash-Lite），`kf._check` 每张候选看一次 + OCR（`ocr.contains`），写 `payload.candidates[i].check`；估价含看图；模板 `templates/kf/check.j2`；Models 页 28 行；前端 zod 候选加 `check`。测试：keyframes / config / capabilities API、ocr 单元、web fixtures 重导、前端 Models / Storyboard / Script vitest、tsc；ruff、mypy 干净。
-- **下一步：第 7 步 take 检查** `takecheck`（VLM 看抽帧拼图，照 `kfcheck` 的写法；`media/video.py` 加抽 6 帧拼一张图；问：重复动作、凭空的物理事件、字变了、内心独白嘴在动；加上已有的 `payload.window`、`cuts`）→ take 的 `payload.check`；`vid.py` 出完 take 后跑；路由一行（Models 页 29 行）。
+- **6**（29382a4）关键帧检查：`pipeline/kfcheck.py` + 路由 `kfcheck`（Gemini Flash-Lite），`kf._check` 每张候选看一次 + OCR（`ocr.contains`），写 `payload.candidates[i].check`；估价含看图；模板 `templates/kf/check.j2`；Models 页 28 行；前端 zod 候选加 `check`。测试：keyframes / config / capabilities API、ocr 单元、web fixtures 重导、前端 Models / Storyboard / Script vitest、tsc；ruff、mypy 干净。
+- **7**（本提交）take 检查：`media/video.py:contact_sheet`（6 帧 3 × 2）、`pipeline/takecheck.py` + 路由 `takecheck`，`vid._check_take` 草稿和终版都跑，写 `payload.check`、`sheet` 文件；加 `cut` / `hold` 两条量出来的；Models 页 29 行。测试：video 单元、takes / generate / config API、web fixtures 重导、前端 Models / Generate / Script vitest、tsc；ruff、mypy 干净。
+- **下一步：第 8 步前端（契约和检查）**——**要等 Kelvin 看过草图**（`prototype/m5.5/`）。没看过就先做第 9 步的准备（本机第十九轮的脚本），或问 Kelvin。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

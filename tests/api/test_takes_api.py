@@ -129,7 +129,7 @@ def test_a_first_run_makes_two_takes_from_the_keyframe(client: TestClient) -> No
     for take in takes:
         # A local draft keeps its untrimmed clip (``raw``) for Regenerate-2K.
         roles = [f["role"] for f in take["files"]]
-        assert roles == ["video", "poster", "last_frame", "raw", "prompt"]
+        assert roles == ["video", "poster", "last_frame", "raw", "sheet", "prompt"]
         assert (take["model_key"], take["where"], take["stage"]) == ("comfy/h3", "local", "draft")
         video = take["files"][0]
         # The shot's length less the 0.3 s cut off the head.
@@ -381,7 +381,13 @@ def test_an_api_final_regenerates_the_local_draft_at_2k(client: TestClient) -> N
     assert final["model_key"] == "minimax/h3-regenerate-2k" and final["where"] == "api"
     assert final["parent_version_id"] == draft["id"]
     assert final["payload"]["resolution"] == "2k"
-    assert [f["role"] for f in final["files"]] == ["video", "poster", "last_frame", "prompt"]
+    assert [f["role"] for f in final["files"]] == [
+        "video",
+        "poster",
+        "last_frame",
+        "sheet",
+        "prompt",
+    ]
     assert (final["files"][0]["w"], final["files"][0]["h"]) == (1440, 2560)
     assert _prompt(client, final) == _prompt(client, draft)  # resent as it was
     (call,) = _rows(client, ModelCall, ModelCall.model_key == "minimax/h3-regenerate-2k")
@@ -634,3 +640,19 @@ def test_a_changed_shot_or_aspect_lists_its_takes(client: TestClient) -> None:
     assert resp.status_code == 200, resp.text
     codes = {x["code"]: x for x in resp.json()["lines"]}
     assert codes["videos_redo"]["params"] == {"count": 2, "adopted": 1}
+
+
+def test_each_take_is_checked(client: TestClient) -> None:
+    """take 检查 (M5.5 step 7): the take's six frames on a sheet (kept as its ``sheet`` file),
+    looked at against the contract; a cut and a still opening measured; only a warning."""
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    take = _run(client, shots["1-03"]["video_product_id"], count=1)["versions"][-1]
+    check = take["payload"]["check"]
+    found = {x["check"]: x["ok"] for x in check["items"]}
+    assert set(found) == {"repeat", "event", "text", "cut", "hold"}  # 1-03: the note's words
+    assert found["cut"] is True and check["model"] == "google/gemini-3.1-flash-lite"
+    assert len(take["payload"]["sheet_times"]) == 6
+    assert "sheet" in {f["role"] for f in take["files"]}
+    calls = [c for c in _rows(client, ModelCall) if c.component_id == "takecheck"]
+    assert len(calls) == 1

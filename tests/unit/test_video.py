@@ -177,3 +177,14 @@ async def test_not_a_video() -> None:
     with pytest.raises(VideoError) as err:
         await probe(b"not a video at all")
     assert err.value.code in {"video_unreadable", "video_ffmpeg_failed"}
+
+
+async def test_a_contact_sheet_has_six_frames_in_rows_of_three() -> None:
+    """take 检查 (M5.5): six frames evenly through the clip on one picture, and when."""
+    from drama_series_agent.media.video import SHEET_W, contact_sheet
+
+    clip = await solid_mp4(160, 288, 2.0, 24, "336699")
+    png, times = await contact_sheet(clip)
+    assert png[:8] == b"\x89PNG\r\n\x1a\n"
+    assert int.from_bytes(png[16:20], "big") == 3 * SHEET_W
+    assert len(times) == 6 and times[0] < times[-1] < 2.0

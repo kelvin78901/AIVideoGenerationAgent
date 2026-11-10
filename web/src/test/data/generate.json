@@ -1126,7 +1126,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0092,
+        "cost_usd": 0.0106,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.169
@@ -1373,7 +1373,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0092,
+        "cost_usd": 0.0106,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -1620,7 +1620,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0092,
+        "cost_usd": 0.0106,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -2118,7 +2118,7 @@
       "estimate": {
         "model_key": "comfy/h3-r2v",
         "where": "local",
-        "cost_usd": 0.0092,
+        "cost_usd": 0.0106,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1901
@@ -2149,7 +2149,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0092,
+        "cost_usd": 0.0106,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -2180,7 +2180,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0092,
+        "cost_usd": 0.0106,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.2113
@@ -2211,7 +2211,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0092,
+        "cost_usd": 0.0106,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.0845
@@ -2466,7 +2466,7 @@
     "scope": "episode",
     "spent_usd": 0.0,
     "budget_usd": 15.0,
-    "projected_usd": 0.0552,
+    "projected_usd": 0.0636,
     "insights": [],
     "updated_at": "2026-10-18T09:00:00Z"
   },

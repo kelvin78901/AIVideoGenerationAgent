@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-10 · M5.5 第 7 步：take 检查
+
+- **拼图**：每条 take（草稿和 API 终版都算）抽 6 帧（均匀，取每段中间）拼成 3 × 2 一张 PNG（`media/video.py:contact_sheet`，每帧宽 360），存成 take 的 `sheet` 文件给 take 卡显示，时间记 `payload.sheet_times`。只送一张拼图给看图模型（一次调用，约 $0.001），不送 6 张。
+- **路由 `takecheck`**（kind `vlm`，默认 Gemini 3.1 Flash-Lite），写法照 `kfcheck`（`pipeline/takecheck.py`，模板 `templates/vid/take_check.j2`）：`repeat`（改变状态的动作只做一次）、`event`（东西不会自己动：倒水、爆开、凭空出现）、`text`（要出的字每帧一样）、`mouth`（内心独白嘴闭着）、`end`（最后一帧是契约的结束状态）；失败的条目带第几帧。再加两条不用模型的：`cut`（`payload.cuts` 有镜头内切点）、`hold`（开头定格超过 1 秒，`payload.window.in_s`）。
+- 结果写 `payload.check = {items, ok, model}`，只提示；看图失败时只剩两条量出来的。视频估价加一次看图。不达标自动重跑是 M6。
+
 ## 2026-11-10 · M5.5 第 6 步：关键帧检查
 
 - **路由 `kfcheck`**（kind `vlm`，默认 Gemini 3.1 Flash-Lite，本地 Qwen3-VL 可选），写法照 `vlook`（`pipeline/kfcheck.py`）：每张关键帧候选出完后看一次，问的东西从镜头来（`kf.gather` 的 `context.checks`）：`start`（契约的开始状态）、`scale`（有尺寸的道具）、`text`（要模型出的字，手写的要像手写）、`mouth`（内心独白的人嘴闭着）、`people`（插入镜头没人）。没东西可问就不看。回 JSON 条目；按图 + 模型 + 问题缓存；失败只是不检查（预算和确认照常拦）。

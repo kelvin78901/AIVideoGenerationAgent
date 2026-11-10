@@ -67,6 +67,7 @@ from drama_series_agent.media.video import (
     TRIM_HEAD_S,
     VideoError,
     VideoInfo,
+    contact_sheet,
     frame,
     probe,
     scene_cuts,
@@ -82,7 +83,7 @@ from drama_series_agent.modelhub.adapters.base import (
 )
 from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm
-from drama_series_agent.pipeline import vlook, vselect
+from drama_series_agent.pipeline import takecheck, vlook, vselect
 from drama_series_agent.pipeline.component import (
     ComponentError,
     Inputs,
@@ -138,6 +139,23 @@ FIX_PROMPT = (
     "This does not follow the official H3 layout yet. Fix every point and answer with the "
     "whole prompt again, nothing else:"
 )
+
+
+def take_asks(context: dict[str, Any]) -> dict[str, Any]:
+    """What a take is checked for (``templates/vid/take_check.j2``), from its shot."""
+    return {
+        "kind": context.get("kind") or "performance",
+        "beats": int(context.get("beats", 2)),
+        "end": list(context.get("end") or []),
+        "texts": [t for t in context.get("texts") or [] if t.get("method") == "model"],
+        "inner": list(
+            dict.fromkeys(
+                str(o["who"])
+                for o in context.get("overlay") or []
+                if o.get("how") == "inner" and o.get("who")
+            )
+        ),
+    }
 
 
 def shot_label(episode: Episode | None, shots: list[dict[str, Any]], shot_id: str) -> str:
@@ -587,6 +605,7 @@ class VidComponent(MediaComponent):
             "h3_prompt": _mock_rewrite,
             "select": vselect.mock_suggest,
             vlook.TASK: vlook.mock_look,
+            takecheck.TASK: takecheck.mock_check,
         }
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
@@ -615,6 +634,7 @@ class VidComponent(MediaComponent):
             "refs": [r["name"] for r in take.refs],
             "voices": [v["who"] for v in take.voices],
         }
+        files = await self._check_take(ctx, inputs, files, payload)
         if take.rewritten is not None:
             payload["prompt_ir"] = bool(take.rewritten)
         if take.rewrite is not None:
@@ -729,6 +749,7 @@ class VidComponent(MediaComponent):
             "cuts": await self._cuts(files),
         }
         payload.pop("prompt_ir", None)
+        files = await self._check_take(ctx, inputs, files, payload)
         draft = self.media_draft(ctx, inputs, payload, files, [call], prompt, stage="final")
         draft.params["source"] = {"version_id": source.id}
         return draft
@@ -740,6 +761,36 @@ class VidComponent(MediaComponent):
         if video is None:
             raise ComponentError("no_video")
         return await clip_files(self.services.store, video.sha256, raw=raw, head=head)
+
+    async def _check_take(
+        self,
+        ctx: RunContext,
+        inputs: Inputs,
+        files: list[dict[str, Any]],
+        payload: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """take 检查 (M5.5): the take's contact sheet looked at against its contract, and what
+        its own measures say, into ``payload.check`` (only a warning); the sheet joins the take's
+        files (``role: sheet``)."""
+        items = takecheck.measured(payload)
+        model = None
+        video = next(f for f in files if f["role"] == "video")
+        data = self.services.store.path_for(video["sha256"]).read_bytes()
+        try:
+            png, times = await contact_sheet(data)
+        except VideoError as exc:
+            logger.warning("no contact sheet for the take ({})", exc.code)
+        else:
+            sha = self.services.store.put_bytes(png)
+            files = [*files, file_entry("sheet", sha, "image/png")]
+            asks = {**take_asks(inputs.context), "times": times}
+            call_ctx = self._call_ctx(ctx, inputs.episode_id)
+            seen = await takecheck.look(self.services, sha, asks, item_of(ctx.product), call_ctx)
+            if seen is not None:
+                items, model = [*seen[0], *items], seen[1]
+            payload["sheet_times"] = times
+        payload["check"] = {"items": items, "ok": all(x["ok"] for x in items), "model": model}
+        return files
 
     async def _cuts(self, files: list[dict[str, Any]]) -> list[float]:
         """Where the take seems to cut inside the clip (M5 step 15j; a take of one continuous
@@ -856,6 +907,9 @@ class VidComponent(MediaComponent):
         if self._rewrites(model):  # the first frame looked at once (cached afterwards)
             look = vlook.estimate(self.services, self._route_model(vlook.VLOOK))
             parts += [look] if look is not None else []
+        asks = {**take_asks(inputs.context), "times": []}  # take 检查: the take looked at once
+        check = takecheck.estimate(self.services, self._route_model(takecheck.TAKECHECK), asks)
+        parts += [check] if check is not None else []
         return Estimate(
             cost_usd=sum(e.cost_usd for e in parts),
             seconds=sum(e.seconds for e in parts),
