@@ -254,7 +254,7 @@
     0
    ],
    "conditioning": [
-    "142",
+    "143",
     0
    ]
   },
@@ -386,6 +386,31 @@
   },
   "_meta": {
    "title": "Output"
+  }
+ },
+ "143": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "142",
+    0
+   ],
+   "latent": [
+    "136",
+    1
+   ],
+   "frame_idx": 21,
+   "vae": [
+    "119",
+    0
+   ],
+   "image": [
+    "200",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Tail end"
   }
  }
 }

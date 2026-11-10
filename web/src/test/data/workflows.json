@@ -651,7 +651,7 @@
         "refs": null,
         "vram_gb": null
       },
-      "file_sha256": "857406cf66076482ddd1c55a6eb5dffde44932409b206401bf61000adeced8db",
+      "file_sha256": "25a237f77f4b494f0db801575d15b07f6cb49a1d0065ceea5d52a16ba36a5b22",
       "file_changed": false,
       "uses_dramastudio_nodes": false,
       "bindings": [
@@ -898,6 +898,13 @@
             "format",
             "format.codec"
           ]
+        },
+        {
+          "title": "Tail end",
+          "class_type": "MiniMaxH3AddGuide",
+          "fields": [
+            "frame_idx"
+          ]
         }
       ],
       "check": {
@@ -940,7 +947,7 @@
         "refs": 4,
         "vram_gb": null
       },
-      "file_sha256": "491ae54519828d9a7a97e0e64c2ac8ef9f20250fe7ce38e91f9f50c5a96934f4",
+      "file_sha256": "136d0bfe5d393cbf23f0d9b3700a201d8332301abd8b4c37cc6a93178c693265",
       "file_changed": false,
       "uses_dramastudio_nodes": false,
       "bindings": [
@@ -1262,6 +1269,13 @@
             "filename_prefix",
             "format",
             "format.codec"
+          ]
+        },
+        {
+          "title": "Tail end",
+          "class_type": "MiniMaxH3AddGuide",
+          "fields": [
+            "frame_idx"
           ]
         }
       ],

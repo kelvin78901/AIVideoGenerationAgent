@@ -10,6 +10,9 @@
 # 连续镜头的尾段引导（M5 第 15e 步，衔接方案 B，第九轮实测）：上一镜已采纳 take 的最后 22 帧连声音
 # （LoadVideo → GetVideoComponents → 官方 MiniMaxH3AddGuide，钉在第 0 帧）；没给尾段时这三个节点被旁路。
 #   给了尾段就去掉 I2V 的首帧锚（replaces），台词音频挪到尾段之后（dialogue_frame = 尾段帧数）。
+# 尾段末帧锚（第 15h 步，第十二轮实测）：尾段只在第 0 帧贴得紧，往后会漂（第 21 帧约 20 dB），切点就跳；
+#   再用一个 MiniMaxH3AddGuide 把首帧那张图（连续镜头的首帧就是上一镜最后一帧）钉在第 21 帧（= 尾段帧数 - 1，
+#   media/video.py 的 TAIL_FRAMES 改了这里要跟着改），切点 20 → 36 dB。和尾段一起旁路。
 # 锁定音色参考（配音方式 native 的音色样本）I2V 节点收不了，要 MiniMaxH3ReferenceToVideo，见 DECISIONS「M5 第 4 步」。
 # 许可：H3 本地权重商用要 MiniMax 授权（PLAN 风险），终版走 API。
 name: { zh: MiniMax H3 图生视频（草稿）, en: MiniMax H3 image to video (draft) }
@@ -33,7 +36,7 @@ bindings:
     node: Tail clip
     field: file
     optional: true
-    bypass: [{ node: Tail guide, input: positive }, { node: Tail parts, input: video }]
+    bypass: [{ node: Tail end, input: positive }, { node: Tail guide, input: positive }, { node: Tail parts, input: video }]
     replaces: [{ node: Image to video, input: first_frame }]
   - { slot: video_out, node: Output }
 models:

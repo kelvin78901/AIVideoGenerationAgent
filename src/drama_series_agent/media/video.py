@@ -94,8 +94,20 @@ def _trim_head(data: bytes, seconds: float) -> bytes:
         info = _probe_file(src)
         if info.duration_s <= seconds + 0.1:
             raise VideoError("video_too_short", f"{info.duration_s}s")
-        args = ["-ss", f"{seconds:.3f}", "-i", str(src), "-map", "0:v:0"]
-        args += ["-map", "0:a:0", "-c:a", "aac", "-b:a", "192k"] if info.has_audio else []
+        # The trim filters cut by timestamp, so the first frame kept is the one at ``seconds``
+        # (input seeking re-encoded showed it twice, 2026-11-09); a millisecond early, as
+        # ``seconds`` is rounded (22 frames at 24 fps).
+        start = max(0.0, seconds - 0.001)
+        graph = f"[0:v]trim=start={start:.4f},setpts=PTS-STARTPTS[v]"
+        args = ["-i", str(src)]
+        if info.has_audio:
+            graph += f";[0:a]atrim=start={start:.4f},asetpts=PTS-STARTPTS[a]"
+            args += ["-filter_complex", graph, "-map", "[v]", "-map", "[a]"]
+            args += ["-c:a", "aac", "-b:a", "192k"]
+        else:
+            args += ["-filter_complex", graph, "-map", "[v]"]
+        # The source's frame rate, said outright (from filtered timestamps FFmpeg may guess 25.14).
+        args += ["-r", f"{info.fps or 24:g}"]
         args += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "16", "-pix_fmt", "yuv420p"]
         _run(*args, "-movflags", "+faststart", "-y", str(out))
         return out.read_bytes()
@@ -115,19 +127,36 @@ def _frame(data: bytes, which: Literal["first", "last"]) -> bytes:
         return out.read_bytes()
 
 
+def _frame_count(src: Path) -> int:
+    """The video stream's frames, decoded and counted (the container's duration also covers a
+    sound track a little longer than the picture)."""
+    text = _run("-i", str(src), "-map", "0:v:0", "-f", "null", "-")
+    found = re.findall(r"frame=\s*(\d+)", text)
+    if not found:
+        raise VideoError("video_unreadable", text[-400:])
+    return int(found[-1])
+
+
 def _tail(data: bytes, frames: int, fps: float) -> bytes:
     with TemporaryDirectory() as tmp:
         src, out = Path(tmp) / "in.mp4", Path(tmp) / "tail.mp4"
         src.write_bytes(data)
         info = _probe_file(src)
         rate = info.fps or fps
-        total = round(info.duration_s * rate)
+        total = _frame_count(src)
         if total < frames:
             raise VideoError("video_too_short", f"{info.duration_s}s")
-        start = (total - frames) / rate
-        args = ["-ss", f"{start:.4f}", "-i", str(src), "-map", "0:v:0"]
-        args += ["-map", "0:a:0", "-c:a", "aac", "-b:a", "192k"] if info.has_audio else []
-        args += ["-frames:v", str(frames), "-t", f"{frames / rate:.4f}"]
+        first = total - frames
+        graph = f"[0:v]trim=start_frame={first},setpts=PTS-STARTPTS[v]"
+        args = ["-i", str(src)]
+        if info.has_audio:
+            graph += f";[0:a]atrim=start={first / rate:.4f}:duration={frames / rate:.4f}"
+            graph += ",asetpts=PTS-STARTPTS[a]"
+            args += ["-filter_complex", graph, "-map", "[v]", "-map", "[a]"]
+            args += ["-c:a", "aac", "-b:a", "192k"]
+        else:
+            args += ["-filter_complex", graph, "-map", "[v]"]
+        args += ["-r", f"{rate:g}"]
         args += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "10", "-pix_fmt", "yuv420p"]
         _run(*args, "-movflags", "+faststart", "-y", str(out))
         return out.read_bytes()

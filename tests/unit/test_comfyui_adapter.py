@@ -17,6 +17,7 @@ import httpx
 import pytest
 
 from drama_series_agent.core.storage import BlobStore
+from drama_series_agent.media.video import TAIL_FRAMES
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
     ModelError,
@@ -450,7 +451,7 @@ def test_a_tail_clip_replaces_the_first_frame_anchor() -> None:
     at frame 0; the I2V first-frame anchor goes, the dubbed lines start after the tail."""
     wf = shipped_workflow("h3-i2v")
     plain = wf.fill({"first_frame": "dramastudio/f.png", "dialogue_audio": "dramastudio/a.wav"})
-    assert {"140", "141", "142"}.isdisjoint(plain)
+    assert {"140", "141", "142", "143"}.isdisjoint(plain)
     assert plain["131"]["inputs"]["positive"] == ["104", 0]
     assert plain["104"]["inputs"]["first_frame"] == ["114", 0]
     values = {"first_frame": "dramastudio/f.png", "dialogue_audio": "dramastudio/a.wav"}
@@ -459,18 +460,24 @@ def test_a_tail_clip_replaces_the_first_frame_anchor() -> None:
     guide = tailed["142"]["inputs"]
     assert (guide["image"], guide["audio"], guide["frame_idx"]) == (["141", 0], ["141", 1], 0)
     assert guide["positive"] == ["104", 0] and guide["latent"] == ["104", 1]
-    assert tailed["131"]["inputs"]["positive"] == ["142", 0]
+    assert tailed["131"]["inputs"]["positive"] == ["143", 0]
+    # Step 15h: the shot before's last frame (the first frame's picture) pinned at the tail's
+    # last frame, so the take starts where that shot ended.
+    end = tailed["143"]["inputs"]
+    assert (end["positive"], end["image"], end["frame_idx"]) == (["142", 0], ["114", 0], 21)
+    assert end["frame_idx"] == TAIL_FRAMES - 1
     assert tailed["131"]["inputs"]["frame_idx"] == 22
-    assert "first_frame" not in tailed["104"]["inputs"] and "114" not in tailed
+    assert "first_frame" not in tailed["104"]["inputs"] and "114" in tailed  # read by the end
     silent = wf.fill({"first_frame": "dramastudio/f.png", "tail_clip": "dramastudio/t.mp4"})
-    assert silent["16"]["inputs"]["conditioning"] == ["142", 0] and "131" not in silent
+    assert silent["16"]["inputs"]["conditioning"] == ["143", 0] and "131" not in silent
 
     # Reference to video: the first frame is a reference there, not an anchor; it stays.
     r2v = shipped_workflow("h3-r2v")
     base = {"first_frame": "dramastudio/f.png"}
     assert r2v.fill(base)["126"]["inputs"]["conditioning"] == ["136", 0]
     tailed = r2v.fill({**base, "tail_clip": "dramastudio/t.mp4"})
-    assert tailed["126"]["inputs"]["conditioning"] == ["142", 0]
+    assert tailed["126"]["inputs"]["conditioning"] == ["143", 0]
+    assert tailed["143"]["inputs"]["image"] == ["200", 0] and "143" not in r2v.fill(base)
     assert tailed["136"]["inputs"]["ref_images.ref_image_0"] == ["200", 0]
 
 

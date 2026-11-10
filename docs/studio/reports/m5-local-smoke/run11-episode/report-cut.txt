@@ -1,0 +1,21 @@
+M5 local smoke · 2026-11-09 09:16
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 26758 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== cut: 粗剪（每镜按镜头时长裁 / 不裁）
+   1-01: take 1, 4.88s, shot 4.0s
+   1-02: no take, left out
+   1-03: no take, left out
+   1-04: no take, left out
+   1-05: no take, left out
+   1-06: no take, left out
+   1-07: no take, left out
+   1-08: no take, left out
+   1-09: no take, left out
+   ep1-cut.mp4: 4.00s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run11-episode\ep1-cut.mp4
+   ep1-uncut.mp4: 4.88s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run11-episode\ep1-uncut.mp4
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run11-episode
+data: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-oe54cqmf\home

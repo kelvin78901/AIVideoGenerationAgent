@@ -8,6 +8,7 @@
 # - 首帧在这个节点里是软约束（提示词里写明它是 [Shot 1] 的第一帧），所以连续镜头的尾帧接得不如 h3-i2v 严；
 # - 尺寸、帧率、时长和 h3-i2v 一样（768P 档、24 fps、5–15 秒）。
 # - 连续镜头的尾段引导和 h3-i2v 一样（M5 第 15e 步）：钉在第 0 帧，没给时旁路；首帧这里是参考图不是锚，所以留着。
+# - 尾段末帧锚也和 h3-i2v 一样（第 15h 步）：首帧那张图钉在第 21 帧，和尾段一起旁路。
 name: { zh: "MiniMax H3 参考生视频（草稿，原生配音）", en: "MiniMax H3 reference to video (draft, native voice)" }
 kind: video
 tier: recommended
@@ -30,7 +31,7 @@ bindings:
     node: Tail clip
     field: file
     optional: true
-    bypass: [{ node: Tail guide, input: positive }, { node: Tail parts, input: video }]
+    bypass: [{ node: Tail end, input: positive }, { node: Tail guide, input: positive }, { node: Tail parts, input: video }]
   - { slot: video_out, node: Output }
 models:
   - { folder: diffusion_models, name: minimax_h3_ref2va_pruned_int8_convrot.safetensors }

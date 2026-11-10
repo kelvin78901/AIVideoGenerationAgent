@@ -163,7 +163,7 @@
   "class_type": "MiniMaxH3AddGuide",
   "inputs": {
    "positive": [
-    "142",
+    "143",
     0
    ],
    "latent": [
@@ -324,6 +324,31 @@
   },
   "_meta": {
    "title": "Output"
+  }
+ },
+ "143": {
+  "class_type": "MiniMaxH3AddGuide",
+  "inputs": {
+   "positive": [
+    "142",
+    0
+   ],
+   "latent": [
+    "104",
+    1
+   ],
+   "frame_idx": 21,
+   "vae": [
+    "11",
+    0
+   ],
+   "image": [
+    "114",
+    0
+   ]
+  },
+  "_meta": {
+   "title": "Tail end"
   }
  }
 }

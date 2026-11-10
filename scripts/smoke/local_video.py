@@ -65,8 +65,10 @@ from local_storyboard import DRAWN, LEFT_UNLOCKED, cancel_views, shots, unconfir
 
 REPORT = Path(__file__).resolve().parents[2] / "docs" / "studio" / "reports" / "m5-local-smoke.txt"
 SMOKE_DIR = REPORT.with_suffix("")  # docs/studio/reports/m5-local-smoke
-EP_OUT = SMOKE_DIR / "originals" / "run8-episode"  # git-ignored: the clips and the cuts
-EP_SHEETS = SMOKE_DIR / "run8-episode"  # in git: small JPEG contact sheets
+# ``--run``: run8-episode (step 15c-1), run11-episode (the rerun after 15d-15g, step 15h).
+EP_RUN = "run11-episode"
+EP_OUT = SMOKE_DIR / "originals" / EP_RUN  # git-ignored: the clips and the cuts
+EP_SHEETS = SMOKE_DIR / EP_RUN  # in git: small JPEG contact sheets
 EP_PICTURES = ("linwan", "hall", "room", "umbrella", "note", "band", "phone")
 EP_TEXTS = ("txt1", "txt2")  # on-screen text pictures: locked on a candidate OCR read right
 EP_TAKES = 2
@@ -77,6 +79,7 @@ CHAIN = ("1-06", "1-08")  # 1-06 is tts; 1-08 continues its last frame
 VOICE = "demo-p-asset-vlinwan"
 REWRITE_SEEDS = {"1-01": (325085565, 22), "1-04": (191503631, 22)}
 REWRITE_MODEL = "deepseek/v4.1-flash"  # the vprompt route's writing model (components.yaml)
+LOOK_MODEL = "google/gemini-3.1-flash-lite"  # the vlook route's (step 15g): episode only
 DEFAULT_STEPS = ["frames", "vid"]
 AB_SEEDS = (11, 22, 33)
 AB_SHOT = "1-04"
@@ -311,6 +314,8 @@ def episode(
     EP_SHEETS.mkdir(parents=True, exist_ok=True)
     if start is None and not prepare(smoke):
         return
+    if stop == "prepare":  # ``--to prepare``: the voice, pictures and keyframes only
+        return
     takes(smoke, comfy_url, home, start, stop)
 
 
@@ -417,8 +422,8 @@ def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None, stop: str
         ]
         for n, v in enumerate(made, 1):
             keep_take(smoke, f"{label}-{n}", v)
-            raw = next(f for f in v["files"] if f["role"] == "raw")
-            sheet(smoke.state.store.path_for(raw["sha256"]), smoke.out / f"sheet-{label}-{n}.png")
+            clip = next(f for f in v["files"] if f["role"] == "video")
+            sheet(smoke.state.store.path_for(clip["sha256"]), smoke.out / f"sheet-{label}-{n}.png")
         prompt = next(f for f in made[0]["files"] if f["role"] == "prompt")
         text = smoke.state.store.path_for(prompt["sha256"]).read_text("utf-8")
         (smoke.out / f"prompt-{label}.txt").write_text(text, encoding="utf-8", newline="\n")
@@ -434,7 +439,9 @@ def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None, stop: str
 
 def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
     """``cut``: episode 1's takes one after another, each cut to its shot's length (the
-    adopted take, or the n-th of ``--picks 1-04=2``), and once more uncut."""
+    adopted take, or the n-th of ``--picks 1-04=2``), and once more uncut. A continuous shot
+    and the shot it continues are used whole (M7's rule, DECISIONS 2026-11-09 第 15e 步: the
+    next one starts where the clip ends)."""
     import json
     import subprocess
 
@@ -448,7 +455,10 @@ def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
         return
     record = json.loads(path.read_text("utf-8"))
     store = smoke.state.store
-    clips: list[tuple[str, Path, float, float, bool]] = []
+    by_label = shots(smoke)
+    chained = {x for x, s in by_label.items() if s.get("tail_from")}  # the API's tail_from
+    chained |= {str(s["tail_from"]) for s in by_label.values() if s.get("tail_from")}  # a label
+    clips: list[tuple[str, Path, float, float, bool, bool]] = []
     for label in shots(smoke):
         if label not in record:
             smoke.say(f"   {label}: no take, left out")
@@ -461,7 +471,7 @@ def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
         src = store.path_for(video["sha256"])
         info = asyncio.run(probe(src.read_bytes()))
         shot_s = float(record[label]["seconds"])
-        clips.append((label, src, shot_s, info.duration_s, info.has_audio))
+        clips.append((label, src, shot_s, info.duration_s, info.has_audio, label in chained))
         n = takes.index(version_id) + 1
         smoke.say(f"   {label}: take {n}, {info.duration_s:.2f}s, shot {record[label]['seconds']}s")
     if not clips:
@@ -471,9 +481,9 @@ def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
         args: list[str] = []
         parts = []
         idx = 0
-        for i, (_, src, shot_s, clip_s, has_audio) in enumerate(clips):
+        for i, (_, src, shot_s, clip_s, has_audio, whole) in enumerate(clips):
             # A clip shorter than its shot is used whole (nothing is stretched).
-            length = min(shot_s, clip_s) if trimmed else clip_s
+            length = min(shot_s, clip_s) if trimmed and not whole else clip_s
             args += ["-i", str(src)]
             v = a = idx
             idx += 1
@@ -526,7 +536,10 @@ def main() -> int:
     ap.add_argument("--from", dest="start", help="episode: go on from this shot (with --home)")
     ap.add_argument("--to", dest="stop", help="episode: stop after this shot")
     ap.add_argument("--picks", default="", help="cut: takes other than the first, e.g. 1-04=2")
+    ap.add_argument("--run", default=EP_RUN, help="episode / cut: the report folder's name")
     args = ap.parse_args()
+    global EP_OUT, EP_SHEETS
+    EP_OUT, EP_SHEETS = SMOKE_DIR / "originals" / args.run, SMOKE_DIR / args.run
     only = [s for s in args.only.split(",") if s]
     unknown = set(only) - set(STEPS)
     if unknown:
@@ -534,7 +547,8 @@ def main() -> int:
     if "rewrite" in only or "episode" in only:
         if os.environ.get("DRAMA_LIVE") != "1":
             raise SystemExit("rewrite / episode call DeepSeek for real (money): set DRAMA_LIVE=1")
-        os.environ["DRAMA_REAL_MODELS"] = REWRITE_MODEL
+        real = [REWRITE_MODEL, LOOK_MODEL] if "episode" in only else [REWRITE_MODEL]
+        os.environ["DRAMA_REAL_MODELS"] = ",".join(real)
     picks = {k: int(v) for k, v in (p.split("=") for p in args.picks.split(",") if p)}
 
     facts = studio_facts(args.studio.rstrip("/"))
@@ -747,14 +761,16 @@ def main() -> int:
                         )
             smoke.say(f"   DeepSeek spent ${spent():.4f} (cap ${args.cap})")
         if "episode" in only:
-            smoke.expected_api = {REWRITE_MODEL}
+            smoke.expected_api = {REWRITE_MODEL, LOOK_MODEL}
             episode(smoke, facts["comfy_url"], home, args.start, args.stop)
             calls = smoke.get("/dev/model-calls", limit=500)
-            paid = sum(
-                float(c.get("cost_usd") or 0) for c in calls if c.get("model_key") == REWRITE_MODEL
-            )
-            smoke.say(f"   DeepSeek spend (the prompt rewrite, the only real API): ${paid:.4f}")
-        if "cut" in only or "episode" in only:
+            for key in (REWRITE_MODEL, LOOK_MODEL):
+                paid = sum(
+                    float(c.get("cost_usd") or 0) for c in calls if c.get("model_key") == key
+                )
+                n = sum(1 for c in calls if c.get("model_key") == key)
+                smoke.say(f"   {key} in this data dir: {n} call(s), ${paid:.4f}")
+        if "cut" in only or ("episode" in only and args.stop != "prepare"):
             smoke.say("== cut: 粗剪（每镜按镜头时长裁 / 不裁）")
             cut(smoke, home, picks)
             EP_SHEETS.mkdir(parents=True, exist_ok=True)
@@ -770,6 +786,7 @@ def main() -> int:
     report = REPORT if set(only) == set(DEFAULT_STEPS) else out / "report.txt"
     if {"episode", "cut"} & set(only):
         name = f"report-from-{args.start}.txt" if args.start else "report.txt"
+        name = "report-prepare.txt" if args.stop == "prepare" else name
         report = EP_SHEETS / (name if "episode" in only else "report-cut.txt")
     report.write_text("\n".join(smoke.lines) + "\n", encoding="utf-8", newline="\n")
     print(f"report: {report}")
