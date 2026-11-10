@@ -62,6 +62,7 @@ from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.episodes.service import gate_confirmed, script_product
 from drama_series_agent.media.audio import dialogue_track, joined_sample
 from drama_series_agent.media.video import (
+    TAIL_AUDIO_FRAMES,
     TAIL_FRAMES,
     TRIM_HEAD_S,
     VideoError,
@@ -202,8 +203,9 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         deps.append(await invalidation.dependency(session, upstream.id))
         first = str(last["sha256"])
         first_desc = ""
-        # A local H3 take is guided with the end of that take's clip (``_request``).
-        clip = _file(take, "video")
+        # A local H3 take is guided with the end of that take's clip (``_request``): the clip
+        # as H3 made it when there is one (step 15m: one lossy pass fewer; the end is the same).
+        clip = _file(take, "raw") or _file(take, "video")
         tail = str(clip["sha256"]) if clip is not None else None
     else:
         tail = None
@@ -723,7 +725,7 @@ class VidComponent(MediaComponent):
         fps = float(context["frame"]["fps"])
         try:
             data = store.path_for(str(context["tail_clip"])).read_bytes()
-            tail = await tail_clip(data, TAIL_FRAMES, fps)
+            tail = await tail_clip(data, TAIL_FRAMES, fps, audio_frames=TAIL_AUDIO_FRAMES)
         except VideoError as exc:
             raise ComponentError(exc.code) from exc
         return {

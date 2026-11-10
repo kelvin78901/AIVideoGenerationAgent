@@ -8,7 +8,8 @@
   first frame when it continues this one, SPEC 7.4).
 - ``tail_clip``: a take's last ``TAIL_FRAMES`` frames with their sound, which a local H3 take
   of the shot continuing it is guided with at frame 0 (M5 step 15e); that take then loses
-  those frames instead of ``TRIM_HEAD_S``.
+  those frames instead of ``TRIM_HEAD_S``. Encoded losslessly (step 15m: no second lossy pass
+  before H3's VAE encodes it again); the sound may stop sooner (``audio_frames``).
 - ``scene_cuts``: where a take seems to cut to another picture inside the clip (FFmpeg's scene
   score), which a take of one continuous shot should never do (M5 step 15j; M6 checks it).
 - ``usable_window``: where a take is worth cutting from and to (M5 step 15i): H3 holds its
@@ -34,6 +35,7 @@ from drama_series_agent.media.audio import ffmpeg_exe
 
 TRIM_HEAD_S = 0.3
 TAIL_FRAMES = 22  # H3's clip guides take 17k + 5 frames; 22 is a little under a second
+TAIL_AUDIO_FRAMES = 22  # how much of the tail's sound goes with it (step 15m)
 STILL_DB = 45.0  # two frames this alike (PSNR): nothing moved between them
 SPEECH_SHARE = 0.25  # of the loudest 50 ms: what counts as the line being spoken
 SPEECH_PAD_S = 0.25  # kept before and after the line
@@ -148,7 +150,7 @@ def _frame_count(src: Path) -> int:
     return int(found[-1])
 
 
-def _tail(data: bytes, frames: int, fps: float) -> bytes:
+def _tail(data: bytes, frames: int, fps: float, audio_frames: int, lossless: bool) -> bytes:
     with TemporaryDirectory() as tmp:
         src, out = Path(tmp) / "in.mp4", Path(tmp) / "tail.mp4"
         src.write_bytes(data)
@@ -161,14 +163,16 @@ def _tail(data: bytes, frames: int, fps: float) -> bytes:
         graph = f"[0:v]trim=start_frame={first},setpts=PTS-STARTPTS[v]"
         args = ["-i", str(src)]
         if info.has_audio:
-            graph += f";[0:a]atrim=start={first / rate:.4f}:duration={frames / rate:.4f}"
+            heard = min(audio_frames, frames) / rate
+            graph += f";[0:a]atrim=start={first / rate:.4f}:duration={heard:.4f}"
             graph += ",asetpts=PTS-STARTPTS[a]"
             args += ["-filter_complex", graph, "-map", "[v]", "-map", "[a]"]
-            args += ["-c:a", "aac", "-b:a", "192k"]
+            args += ["-c:a", "alac"] if lossless else ["-c:a", "aac", "-b:a", "192k"]
         else:
             args += ["-filter_complex", graph, "-map", "[v]"]
         args += ["-r", f"{rate:g}"]
-        args += ["-c:v", "libx264", "-preset", "veryfast", "-crf", "10", "-pix_fmt", "yuv420p"]
+        quality = ["-qp", "0"] if lossless else ["-crf", "10"]
+        args += ["-c:v", "libx264", "-preset", "veryfast", *quality, "-pix_fmt", "yuv420p"]
         _run(*args, "-movflags", "+faststart", "-y", str(out))
         return out.read_bytes()
 
@@ -264,10 +268,18 @@ async def frame(data: bytes, which: Literal["first", "last"]) -> bytes:
     return await asyncio.to_thread(_frame, data, which)
 
 
-async def tail_clip(data: bytes, frames: int = TAIL_FRAMES, fps: float = 24.0) -> bytes:
-    """The last ``frames`` frames of a clip with their sound, re-encoded (``fps`` when FFmpeg
-    does not say the clip's own)."""
-    return await asyncio.to_thread(_tail, data, frames, fps)
+async def tail_clip(
+    data: bytes,
+    frames: int = TAIL_FRAMES,
+    fps: float = 24.0,
+    *,
+    audio_frames: int = TAIL_AUDIO_FRAMES,
+    lossless: bool = True,
+) -> bytes:
+    """The last ``frames`` frames of a clip with the sound of the first ``audio_frames`` of
+    them, re-encoded losslessly unless told not to (``fps`` when FFmpeg does not say the
+    clip's own)."""
+    return await asyncio.to_thread(_tail, data, frames, fps, audio_frames, lossless)
 
 
 async def usable_window(data: bytes, shot_s: float, *, spoken: bool) -> Window:

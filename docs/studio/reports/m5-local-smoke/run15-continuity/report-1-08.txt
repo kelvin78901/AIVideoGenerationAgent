@@ -1,0 +1,15 @@
+1-08 after 1-06 (adopted b1a2079ba1b0452b997247313927e4b9); seeds so far {'1-06': [1016548851, 1016548852], '1-08': [1267956551, 1267956552, 1744039017, 1744039018], '1-09': [2119246916, 2119246917, 2113537969, 2113537970, 2113537969, 2113537969, 2113537969, 2113537969]}
+== old: 1-08 · old · comfy/h3 · seed 1744039017
+   1 job(s) in 306.5 s, GPU memory peak 31819 MiB
+   call deepseek/v4.1-flash [api] success 4.7 s audio=Nones
+   call comfy/h3 [local] success 300.1 s audio=7.29s
+== lossless: 1-08 · lossless · comfy/h3 · seed 1744039017
+   1 job(s) in 305.7 s, GPU memory peak 31730 MiB
+   call comfy/h3 [local] success 304.0 s audio=7.29s
+== audio18: 1-08 · audio18 · comfy/h3 · seed 1744039017
+   1 job(s) in 304.6 s, GPU memory peak 31718 MiB
+   call comfy/h3 [local] success 303.0 s audio=7.29s
+   1-06 last 0.5 s: -95.4 dBFS, above 3 kHz 0.075
+   old: guided 0/10/21 37.2 / 37.0 / 37.6 dB, cut 37.0 dB; first 0.5 s -50.6 dBFS / 0.023, whole -26.2 dBFS / 0.067; refs [], window {'in_s': 0.25, 'out_s': 6.25}, cuts []
+   lossless: guided 0/10/21 37.2 / 37.1 / 37.7 dB, cut 37.0 dB; first 0.5 s -27.0 dBFS / 0.012, whole -29.0 dBFS / 0.065; refs [], window {'in_s': 0.083, 'out_s': 6.083}, cuts []
+   audio18: guided 0/10/21 37.2 / 37.1 / 37.7 dB, cut 37.0 dB; first 0.5 s -49.9 dBFS / 0.05, whole -25.5 dBFS / 0.061; refs [], window {'in_s': 0.083, 'out_s': 6.083}, cuts []

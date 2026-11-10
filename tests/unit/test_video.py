@@ -81,6 +81,38 @@ async def test_the_tail_clip_is_the_last_22_frames_with_their_sound() -> None:
     assert err.value.code == "video_too_short"
 
 
+def test_the_tail_clip_keeps_the_frames_as_they_were_and_less_of_the_sound() -> None:
+    """M5 step 15m: lossless, so the tail's last frame is the source's last frame exactly; its
+    sound may stop after ``audio_frames``."""
+    import asyncio
+    import subprocess
+    from tempfile import TemporaryDirectory
+
+    from drama_series_agent.media.audio import ffmpeg_exe
+
+    def ff(*args: str) -> bytes:
+        return subprocess.run([ffmpeg_exe(), "-hide_banner", "-nostdin", *args],
+                              capture_output=True, check=True).stdout  # fmt: skip
+
+    def last_frame(path: Path) -> bytes:
+        return ff("-loglevel", "error", "-sseof", "-0.2", "-i", str(path), "-update", "1",
+                  "-f", "rawvideo", "-pix_fmt", "yuv420p", "-")[-160 * 288 * 3 // 2 :]  # fmt: skip
+
+    with TemporaryDirectory() as tmp:
+        src, out = Path(tmp) / "src.mp4", Path(tmp) / "tail.mp4"
+        ff("-loglevel", "error", "-f", "lavfi", "-i", "testsrc2=size=160x288:rate=24:duration=2",
+           "-f", "lavfi", "-i", "sine=f=440:d=2", "-pix_fmt", "yuv420p", "-c:a", "aac",
+           "-shortest", str(src))  # fmt: skip
+        out.write_bytes(asyncio.run(tail_clip(src.read_bytes(), 22, 24.0, audio_frames=18)))
+        assert last_frame(out) == last_frame(src)
+        probe_text = subprocess.run([ffmpeg_exe(), "-hide_banner", "-i", str(out)],
+                                    capture_output=True, text=True).stderr  # fmt: skip
+        assert "alac" in probe_text
+        pcm = ff("-loglevel", "error", "-i", str(out), "-map", "0:a", "-ac", "1", "-ar", "16000",
+                 "-f", "s16le", "-")  # fmt: skip
+        assert len(pcm) / 2 / 16000 == pytest.approx(18 / 24, abs=0.03)
+
+
 def test_the_usable_window_skips_the_still_opening_and_keeps_the_line() -> None:
     """M5 step 15i: one still second, then motion; a tone at 2.0-2.5 s stands for the line."""
     import asyncio

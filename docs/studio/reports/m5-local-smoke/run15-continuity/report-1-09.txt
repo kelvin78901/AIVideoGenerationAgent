@@ -1,0 +1,22 @@
+1-09 after 1-08 (adopted 4fcea371f6fe49abacaefea07c92c0da); seeds so far {'1-06': [1016548851, 1016548852], '1-08': [1267956551, 1267956552, 1744039017, 1744039018], '1-09': [2119246916, 2119246917, 2113537969, 2113537970]}
+== old: 1-09 · old · comfy/h3 · seed 2113537969
+   1 job(s) in 206.9 s, GPU memory peak 31745 MiB
+   call deepseek/v4.1-flash [api] success 5.8 s audio=Nones
+   call deepseek/v4.1-flash [api] success 3.7 s audio=Nones
+   call comfy/h3 [local] success 195.7 s audio=5.17s
+== lossless: 1-09 · lossless · comfy/h3 · seed 2113537969
+   1 job(s) in 196.8 s, GPU memory peak 31729 MiB
+   call comfy/h3 [local] success 195.3 s audio=5.17s
+== audio18: 1-09 · audio18 · comfy/h3 · seed 2113537969
+   1 job(s) in 197.8 s, GPU memory peak 31697 MiB
+   call comfy/h3 [local] success 196.1 s audio=5.17s
+== r2v: 1-09 · r2v · comfy/h3-r2v · seed 2113537969
+   1 job(s) in 255.2 s, GPU memory peak 31649 MiB
+   call deepseek/v4.1-flash [api] success 7.7 s audio=Nones
+   call deepseek/v4.1-flash [api] success 5.2 s audio=Nones
+   call comfy/h3-r2v [local] success 240.9 s audio=5.17s
+   1-08 last 0.5 s: -40.4 dBFS, above 3 kHz 0.28
+   old: guided 0/10/21 36.4 / 36.2 / 36.5 dB, cut 30.9 dB; first 0.5 s -36.0 dBFS / 0.021, whole -33.4 dBFS / 0.095; refs [], window {'in_s': 0.0, 'out_s': 4.0}, cuts []
+   lossless: guided 0/10/21 36.4 / 36.1 / 36.5 dB, cut 30.9 dB; first 0.5 s -52.0 dBFS / 0.023, whole -34.9 dBFS / 0.045; refs [], window {'in_s': 0.0, 'out_s': 4.0}, cuts []
+   audio18: guided 0/10/21 36.4 / 36.1 / 36.5 dB, cut 31.2 dB; first 0.5 s -50.8 dBFS / 0.022, whole -35.2 dBFS / 0.036; refs [], window {'in_s': 0.0, 'out_s': 4.0}, cuts []
+   r2v: guided 0/10/21 35.4 / 29.0 / 35.8 dB, cut 30.9 dB; first 0.5 s -22.0 dBFS / 0.024, whole -31.0 dBFS / 0.073; refs ['林晚', '红色长柄伞'], window {'in_s': 0.0, 'out_s': 4.0}, cuts []

@@ -1,4 +1,4 @@
-# 第十四轮：先配音的台词挂引导 vs 锁进音轨（第 15k 步，2026-11-10）
+# 第十四轮：先配音的台词挂引导 vs 锁进音轨（第 15k 步，2026-11-09）
 
 调研报告说现在的做法（配音挂在 `MiniMaxH3AddGuide` 上）只是条件，模型会自己生成一条音轨，嘴型跟着它走；社区做法是把配音编码后锁进音频潜变量（`VAEEncodeAudio` → `SetLatentNoiseMask` 0 → `LTXVConcatAVLatent` 换掉 AV 潜变量的音频流）。在第十一轮副本上把 1-04 改成先配音，同种子各出一条（`scripts/smoke/audio_lock.py`，B 在本进程里改图）。
 
