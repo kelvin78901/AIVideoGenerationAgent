@@ -4,7 +4,7 @@ left out, the user's edits checked, a continuous shot starting where the one it 
 from __future__ import annotations
 
 import pytest
-from tests.unit.test_shot_ops import KINDS, _ctx, _demo_answer
+from test_shot_ops import KINDS, _ctx, _demo_answer
 
 from drama_series_agent.shots import contract, ops
 
