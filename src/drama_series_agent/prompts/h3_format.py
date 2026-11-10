@@ -88,7 +88,13 @@ class Facts:
     audios: list[Audio] = field(default_factory=list)
     dialogue: list[Line] = field(default_factory=list)
     sound: str = ""
-    shot_kind: str = "performance"  # or "insert": an object or a place, no one in it (15o)
+    # 镜头契约 (M5.5): performance / action / dialogue / insert (an object or a place, no one in
+    # it, 15o); at most ``beats`` actions; how things are at the start and the end; prop states.
+    shot_kind: str = "performance"
+    beats: int = 2
+    start: list[str] = field(default_factory=list)
+    end: list[str] = field(default_factory=list)
+    props: list[str] = field(default_factory=list)
 
     def as_json(self) -> dict[str, Any]:
         out = asdict(self)
@@ -132,6 +138,10 @@ class Facts:
             ],
             sound=str(data.get("sound") or ""),
             shot_kind=str(data.get("shot_kind") or "performance"),
+            beats=int(data.get("beats", 2)),
+            start=[str(x) for x in data.get("start") or []],
+            end=[str(x) for x in data.get("end") or []],
+            props=[str(x) for x in data.get("props") or []],
         )
 
 
@@ -157,6 +167,15 @@ def words(text: str) -> int:
 INSERT_EVENTS = re.compile(
     r"\b(pour\w*|gush\w*|splash\w*|burst\w*|spray\w*|spill\w*|drench\w*|flood\w*|cascad\w*"
     r"|stream(?:s|ing)? of water|falls? (?:off|away|down)|tears? (?:off|away)|blows? away)\b",
+    re.IGNORECASE,
+)
+
+
+# An action that changes something done, undone and done again (M5.5: run17 1-08 opened the
+# door, shut it and opened it again): 「reopens」, 「opens it again」, 「closes … again」.
+UNDONE = re.compile(
+    r"\b(?:re-?opens?|re-?closes?|re-?shuts?"
+    r"|(?:opens?|closes?|shuts?|picks? up|puts? (?:it )?down)\b[^.;]{0,40}?\bagain)\b",
     re.IGNORECASE,
 )
 
@@ -294,6 +313,14 @@ def _shots(main: str, facts: Facts) -> list[str]:
         )
     # M5 step 15o: an insert shot (an object, a place) only moves a little; asked to keep busy,
     # the rewrite made rain on a note into water poured over it (run17 1-03).
+    # M5.5: an action that changes something happens once (the contract); hesitation is acted.
+    undone = UNDONE.findall(main)
+    if undone:
+        problems.append(
+            "An action that changes something happens once and is never undone and redone in the "
+            "same shot; act hesitation instead (a hand resting on the handle, a held breath). "
+            f"Found: {undone[0]!r}"
+        )
     if facts.shot_kind == "insert":
         events = sorted({m.lower() for m in INSERT_EVENTS.findall(main)})
         if events:

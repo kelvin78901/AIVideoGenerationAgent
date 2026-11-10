@@ -232,3 +232,13 @@ def test_a_keyframe_for_the_old_aspect_is_stale(client: TestClient) -> None:
     shots = client.get(f"{V1}/episodes/{EP1}/shots").json()
     assert [s["confirm_stale"] for s in shots][:3] == [True] * 3
     assert _kf(client, "1-04")["status"] == "stale"
+
+
+def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
+    """镜头契约 (M5.5): the first moment of the shot, the props as set, an inner voice with the
+    mouth shut (1-06: 林晚's OS)."""
+    door = _prompt(client, _run(client, "1-06")["versions"][-1])
+    assert "首帧画的是镜头开始的这一刻" in door and "家门：开着" in door
+    assert "林晚在心里说话（内心独白），嘴闭着" in door
+    note = _prompt(client, _run(client, "1-02")["versions"][-1])
+    assert "道具的状态是摆好的：红色长柄伞：斜靠在门边墙上，伞面湿" in note

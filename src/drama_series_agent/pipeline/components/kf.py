@@ -57,6 +57,7 @@ from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.script import ops as script_ops
+from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
 from drama_series_agent.shots.service import KEYFRAME_SLOT
 
@@ -74,6 +75,10 @@ REAL_WORLD = (
     "材质真实、有使用痕迹，不是产品图或 CG 渲染；光线来自画面里的光源；手写的字是手写笔迹，"
     "被雨打湿的地方颜色变深、墨迹微晕；人体自然（每只手五根手指），物体不互相穿插、不悬空。"
 )
+# 镜头契约 (M5.5): the keyframe is the shot's first moment, not a summary of it.
+START_NOTE = "首帧画的是镜头开始的这一刻（不是整个镜头的概括）："
+PROPS_NOTE = "道具的状态是摆好的："
+INNER_NOTE = "{who}在心里说话（内心独白），嘴闭着，不是在开口说话。"
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
 
@@ -195,6 +200,9 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             blocks.append(Block("画面文字，必须逐字一致", f"「{t['exact']}」（{t['name']}）"))
         else:
             blocks.append(Block("画面文字", f"{t['name']}：留出位置，不要画字（后期贴字）"))
+    if shot.get("contract"):
+        filmed_lines = [x for x in (scene or {}).get("lines") or [] if x.get("id") in filmed]
+        blocks += await contract_blocks(session, shot, filmed_lines)
     if not await _has_character(session, shot.get("asset_ids") or []):
         blocks.append(Block("人物", NO_PEOPLE))
     blocks.append(Block("真实感", REAL_WORLD))
@@ -204,6 +212,49 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         episode_id=episode_id,
         context={"frame": frame, "refs": refs, "unlocked": unlocked, "texts": texts},
     )
+
+
+async def asset_rows(session: AsyncSession, ids: list[str]) -> dict[str, Asset]:
+    rows = await session.exec(
+        select(Asset).where(col(Asset.id).in_(ids), col(Asset.retired).is_(False))
+    )
+    return {a.id: a for a in rows.all()}
+
+
+def states_text(items: list[dict[str, str]]) -> str:
+    return "；".join(f"{i['subject']}：{i['state']}" for i in items)
+
+
+def props_text(props: list[dict[str, str]], assets: dict[str, Asset]) -> str:
+    return "；".join(
+        f"{assets[p['asset_id']].name}：{p['state']}" for p in props if p["asset_id"] in assets
+    )
+
+
+async def contract_blocks(
+    session: AsyncSession, shot: dict[str, Any], lines: list[dict[str, Any]]
+) -> list[Block]:
+    """The keyframe's part of the shot's contract (M5.5): the start, the props' states, who
+    speaks only in their head. ``lines``: the script lines it films (payload dicts)."""
+    assets = await asset_rows(session, list(shot.get("asset_ids") or []))
+    spoken = [
+        contracts.SpokenLine(str(x["id"]), n, str(x.get("type") or ""), str(x.get("tone") or ""))
+        for n, x in enumerate(lines, 1)
+    ]
+    c = contracts.effective(shot, spoken, {a.id: a.kind for a in assets.values()})
+    out: list[Block] = []
+    if c["start"]:
+        out.append(Block("开始时", START_NOTE + states_text(c["start"])))
+    if c["props"] and props_text(c["props"], assets):
+        out.append(Block("道具", PROPS_NOTE + props_text(c["props"], assets)))
+    inner = [
+        str(x.get("character_name") or "")
+        for x in lines
+        if c["delivery"].get(str(x.get("id"))) == "inner"
+    ]
+    for who in dict.fromkeys(w for w in inner if w):
+        out.append(Block("嘴", INNER_NOTE.format(who=who)))
+    return out
 
 
 async def _references(

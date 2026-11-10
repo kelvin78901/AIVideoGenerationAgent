@@ -20,7 +20,13 @@ from sqlmodel import col, select
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
-from drama_series_agent.core.models_db import Job, ModelCall, Product, ScriptLine
+from drama_series_agent.core.models_db import (
+    Job,
+    ModelCall,
+    Product,
+    ProductVersion,
+    ScriptLine,
+)
 from drama_series_agent.media.video import probe
 from drama_series_agent.modelhub.adapters.base import ModelRequest
 from drama_series_agent.pipeline import vlook
@@ -507,7 +513,8 @@ def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
 
 def _on_screen(client: TestClient, shot: dict[str, Any]) -> None:
     """Make the shot's spoken lines said on screen: 1-06's only line is 林晚's inner voice,
-    which is laid in the edit, not made in the take (M5 step 15p)."""
+    which is laid in the edit, not made in the take (M5 step 15p). The script says dialogue and
+    the shot's contract (M5.5) says it is delivered on screen, as a new plan would."""
 
     async def write() -> None:
         async with _state(client).db.session() as s:
@@ -516,6 +523,22 @@ def _on_screen(client: TestClient, shot: dict[str, Any]) -> None:
                 if row.type == "vo":
                     row.type = "dialogue"
                     s.add(row)
+            plan = (
+                await s.exec(
+                    select(Product).where(
+                        Product.owner_id == shot["episode_id"], Product.slot == "shot_plan"
+                    )
+                )
+            ).one()
+            version = await s.get(ProductVersion, plan.adopted_version_id)
+            assert version is not None
+            payload = json.loads(json.dumps(version.payload_json))
+            for x in payload["shots"]:
+                if x["id"] == shot["id"] and x.get("contract"):
+                    x["contract"]["delivery"] = {i: "dialogue" for i in x["contract"]["delivery"]}
+                    x["contract"]["kind"] = "dialogue"
+            version.payload_json = payload
+            s.add(version)
             await s.commit()
 
     client.portal.call(write)  # type: ignore[union-attr]
@@ -545,8 +568,13 @@ def test_an_inner_voice_is_left_out_of_the_take_and_an_insert_moves_little(
     assert told[-1]["dialogue"] == [] and told[-1]["shot_kind"] == "performance"
     assert "剪辑时另铺" in told[-1]["draft"] and "三年了。他凭什么。" in told[-1]["draft"]
     assert "<d>" not in _prompt(client, take)
+    assert "（内心独白）" in told[-1]["draft"] and told[-1]["end"] == [
+        "林晚：背靠着门",
+        "家门：关着",
+    ]
     _run(client, shots["1-03"]["video_product_id"], count=1)
-    assert told[-1]["shot_kind"] == "insert"
+    assert told[-1]["shot_kind"] == "insert" and told[-1]["beats"] == 0
+    assert "插入镜头：只许微动" in told[-1]["draft"]
 
 
 def _dub_shot(client: TestClient, shot: dict[str, Any]) -> None:

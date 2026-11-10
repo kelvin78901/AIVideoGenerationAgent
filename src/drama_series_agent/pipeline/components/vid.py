@@ -93,12 +93,14 @@ from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, voice_of
 from drama_series_agent.pipeline.components.kf import (
     FRAMING,
     MOVE,
-    _has_character,
     _references,
+    asset_rows,
     blocking_text,
     local_workflow,
     pick_refs,
+    props_text,
     ref_limit,
+    states_text,
 )
 from drama_series_agent.pipeline.components.media import (
     MediaCall,
@@ -119,11 +121,16 @@ from drama_series_agent.pipeline.timing import PRE_ROLL_S, line_seconds, shot_du
 from drama_series_agent.prompts import h3_format
 from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.script import ops as script_ops
+from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
 from drama_series_agent.shots.service import KEYFRAME_SLOT, STORYBOARD_GATE, VIDEO_SLOT
 from drama_series_agent.spec.dims import dims
 
 LANGUAGE = {"zh-CN": "Chinese", "en": "English"}
+# 镜头契约 (M5.5): the action budget and how an overlaid line is said, in the draft.
+BEATS = "最多 {n} 个动作；改变状态的动作（开门、放下东西）只做一次，不撤销再重做，犹豫要演出来"
+INSERT_BEATS = "插入镜头：只许微动（光线变化、一滴水、镜头极轻的漂移），东西本身不发生任何事"
+OVERLAY_HOW = {"inner": "内心独白", "offscreen": "画外音"}
 DEFAULT_SOUND = "Natural ambient sound of the scene, matching what is on screen."
 VPROMPT = "vprompt"  # the route of the H3 prompt rewrite (config/components.yaml)
 REWRITE_TRIES = 2
@@ -238,11 +245,23 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             deps.append(await invalidation.dependency(session, script.id, f"line:{x.id}"))
     spoken = [x for x in lines if x.type in ops.SPEAKING]
     action = [x for x in lines if x.type not in ops.SPEAKING]
-    # An inner voice or off-screen line (``vo``) is laid over the shot in the edit, not made in
-    # the take (M5 step 15p): a voice the take makes sounds said in the room, and with the
-    # lips closed it reads as lips out of sync. The take is made silent-lipped.
-    voiced = [x for x in spoken if x.type != "vo"]
-    overlaid = [x for x in spoken if x.type == "vo"]
+    # 镜头契约 (M5.5): a continuous shot without a start of its own starts where the shot it
+    # follows ends, so that shot's plan settings are read too.
+    assets = await asset_rows(session, list(shot.get("asset_ids") or []))
+    contract = contracts.effective(
+        shot,
+        [contracts.SpokenLine(x.id, n, x.type, x.tone or "") for n, x in enumerate(lines, 1)],
+        {a.id: a.kind for a in assets.values()},
+        {s["id"]: s for s in shots},
+    )
+    if contract["start_inherited"] and shot.get("tail_from"):
+        tail_slice = shot_slice(str(shot["tail_from"]))
+        deps.append(await invalidation.dependency(session, plan.id, tail_slice))
+    # Only a line said on screen is made in the take. An inner voice or an off-screen line is
+    # laid over the shot in the edit (M5 step 15p): a voice the take makes sounds said in the
+    # room, and with the lips closed it reads as lips out of sync. The take is silent-lipped.
+    voiced = [x for x in spoken if contracts.speaks_on_screen(contract, x.id)]
+    overlaid = [x for x in spoken if not contracts.speaks_on_screen(contract, x.id)]
 
     # Who speaks: S1, S2 … in speaking order.
     speakers: dict[str, int] = {}
@@ -301,7 +320,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "sx": speakers[x.character_id or x.character_name or x.id],
             "who": x.character_name or "",
             "text": x.text,
-            "vo": x.type == "vo",
+            "vo": False,  # said on screen (an inner or off-screen line is not in the take)
         }
         for x in voiced
     ]
@@ -310,6 +329,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "line_id": x.id,
             "who": x.character_name or "",
             "text": x.text,
+            "how": contract["delivery"].get(x.id, "offscreen"),
             "sha256": audio[x.id][1]["sha256"] if x.id in audio else None,
         }
         for x in overlaid
@@ -351,14 +371,24 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             Block(
                 "画外",
                 "内心独白 / 画外音，剪辑时另铺，这条片子里没有人说话、嘴闭着：\n"
-                + "\n".join(f"{o['who']}：{o['text']}" for o in overlay),
+                + "\n".join(
+                    f"{o['who']}（{OVERLAY_HOW.get(o['how'], '画外音')}）：{o['text']}"
+                    for o in overlay
+                ),
             )
         )
+    kind = str(contract["kind"])
+    beats = int(contract["beats"])
+    blocks.append(Block("动作", INSERT_BEATS if kind == "insert" else BEATS.format(n=beats)))
+    if contract["start"]:
+        blocks.append(Block("开始时", states_text(contract["start"])))
+    if contract["end"]:
+        blocks.append(Block("结束时", states_text(contract["end"])))
+    if contract["props"] and props_text(contract["props"], assets):
+        blocks.append(Block("道具", "状态是摆好的：" + props_text(contract["props"], assets)))
     sound = shot.get("sound")
     if sound:
         blocks.append(Block("声音", str(sound)))
-    # 插入镜头 (M5 step 15o): no one in it and nothing said: the rewrite keeps its motion small.
-    person = bool(voiced) or await _has_character(session, list(shot.get("asset_ids") or []))
     return Inputs(
         blocks=blocks,
         deps=deps,
@@ -368,7 +398,12 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "first_frame": first,
             "first_desc": first_desc,
             "tail_clip": tail,
-            "kind": "performance" if person else "insert",
+            # 镜头契约 (M5.5; before it, 15o's 插入镜头: nobody in it and nothing said)
+            "kind": kind,
+            "beats": beats,
+            "start": [f"{i['subject']}：{i['state']}" for i in contract["start"]],
+            "end": [f"{i['subject']}：{i['state']}" for i in contract["end"]],
+            "props": [x for x in props_text(contract["props"], assets).split("；") if x],
             "overlay": overlay,
             "refs": refs,
             "unlocked": unlocked,
@@ -919,6 +954,10 @@ class VidComponent(MediaComponent):
             dialogue=lines,
             sound="N/A" if context["audio_mode"] == "none" else str(context.get("sound") or ""),
             shot_kind=str(context.get("kind") or "performance"),
+            beats=int(context.get("beats", 2)),
+            start=list(context.get("start") or []),
+            end=list(context.get("end") or []),
+            props=list(context.get("props") or []),
         )
 
     def _rewrite_request(self, messages: list[dict[str, Any]]) -> ModelRequest:
@@ -1100,10 +1139,21 @@ class VidComponent(MediaComponent):
         sections when voice samples go along)."""
         said = [ln.strip() for ln in compiled.splitlines() if ln.strip() and not ln.startswith("#")]
         description = " ".join([*said, *context["look"]])
+        # 镜头契约 (M5.5): the action budget, how it starts and ends, the props as set.
+        kind, beats = context.get("kind"), int(context.get("beats", 2))
+        description += " " + (INSERT_BEATS if kind == "insert" else BEATS.format(n=beats)) + "。"
+        for label, key in (
+            ("开始时", "start"),
+            ("结束时", "end"),
+            ("道具（状态是摆好的）", "props"),
+        ):
+            if context.get(key):
+                description += f" {label}：" + "；".join(context[key]) + "。"
         overlay = context.get("overlay") or []
         if overlay:  # said in the edit (M5 step 15p): the take shows the mood, lips closed
             description += " 画外（剪辑时另铺，这条片子里没有人说话、嘴闭着）：" + "；".join(
-                f"{o['who']}：{o['text']}" for o in overlay
+                f"{o['who']}（{OVERLAY_HOW.get(str(o.get('how')), '画外音')}）：{o['text']}"
+                for o in overlay
             )
         audio_of = {v["sx"]: i for i, v in enumerate(voices, 1)}
         dialogue = [{**d, "audio": audio_of.get(d["sx"])} for d in context["dialogue"]]

@@ -159,3 +159,34 @@ def test_an_insert_shot_may_not_pour_water_on_its_object() -> None:
     assert found and "bursts" in found[0] and "stream of water" in found[0]
     acted = Facts("i2va", 5, "9:16", "", [Picture("first_frame")])
     assert not [p for p in check(text, acted) if "insert shot" in p]
+
+
+def test_a_change_is_never_undone_and_redone() -> None:
+    """M5.5: run17's 1-08 opened the door, shut it and opened it again; the contract says a
+    change happens once and hesitation is acted."""
+
+    def text(action: str) -> str:
+        return (
+            f"{I2VA_INSTRUCTION}\n\nintegrated_multimodal_description: [Shot 1] Live-action, "
+            f"cinematic, <Picture 1>, a woman at her door. {action}\n\n"
+            "overall_soundscape: Rain.\n\nnon_diegetic_music: N/A"
+        )
+
+    facts = Facts("i2va", 5, "9:16", "", [Picture("first_frame")])
+    for undone in (
+        "At about two seconds she opens the door, shuts it and opens it again.",
+        "At about three seconds she reopens the door.",
+        "She puts it down and at four seconds picks it up again.",
+    ):
+        assert any("never undone" in p for p in check(text(undone), facts)), undone
+    for fine in (
+        "She glances at the handle again and holds her breath.",
+        "At about two seconds she opens the door once and looks out.",
+    ):
+        assert not any("never undone" in p for p in check(text(fine), facts)), fine
+
+
+def test_the_contract_round_trips() -> None:
+    facts = Facts("i2va", 5, "9:16", "", [Picture("first_frame")], beats=1, start=["家门：关着"])
+    back = Facts.from_json(facts.as_json())
+    assert (back.beats, back.start, back.end, back.props) == (1, ["家门：关着"], [], [])
