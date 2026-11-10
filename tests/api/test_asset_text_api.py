@@ -133,29 +133,14 @@ def _prompt(client: TestClient, version: dict[str, Any]) -> str:
     return client.get(f"{V1}/files/{f['sha256']}").content.decode("utf-8")
 
 
-def test_a_mismatch_locks_only_with_force(client: TestClient) -> None:
-    # The demo: B reads 占 for 点.
-    resp = client.post(f"{V1}/assets/txt1/lock", json={"idx": 1})
-    assert resp.status_code == 409
-    assert _detail(resp) == {
-        "code": "ocr_mismatch",
-        "params": {
-            "id": "txt1",
-            "idx": 1,
-            "read": NOTE.replace("点", "占"),
-            "exact": NOTE,
-            "issue": "wrong",
-        },
-    }
-    assert _product(client, "txt1")["locked_hash"] is None
-
+def test_a_mismatch_is_flagged_but_locks(client: TestClient) -> None:
+    """M5.5 (Kelvin 2026-11-10): checks warn, never block; the candidate says what OCR read."""
     # Every candidate of a run misses the 点.
     _state(client).registry.mock_settings.ocr_mismatch = True
     _run(client, "txt1")
     draft = _latest(client, "txt1")
     assert draft["payload"]["candidates"] == [_ok(SHORT, False, "missing")] * 4
-    assert _detail(client.post(f"{V1}/assets/txt1/lock"))["code"] == "ocr_mismatch"
-    resp = client.post(f"{V1}/assets/txt1/lock", json={"force": True})
+    resp = client.post(f"{V1}/assets/txt1/lock")
     assert resp.status_code == 200, resp.text
     assert resp.json()["status"] == "locked"
     gates = [g for g in _rows(client, GateDecision) if g.gate == "assets" and g.scope_id == "txt1"]
@@ -206,4 +191,4 @@ def test_an_uploaded_picture_is_read(client: TestClient) -> None:
     }
     blank = upload(gradient_png(8, 8, (240, 230, 160)))
     assert blank["payload"]["candidates"] == [_ok("", False, "missing")]
-    assert _detail(client.post(f"{V1}/assets/txt1/lock"))["code"] == "ocr_mismatch"
+    assert client.post(f"{V1}/assets/txt1/lock").status_code == 200  # flagged, not refused

@@ -26,6 +26,14 @@ class TextOut(BaseModel):
     style: TextStyle
 
 
+class PhysicalOut(BaseModel):
+    """A prop's real size, material and wear (M5.5; content, any may be empty)."""
+
+    size: str = ""
+    material: str = ""
+    wear: str = ""
+
+
 class VoiceLineOut(BaseModel):
     text: str
     tone: str
@@ -62,6 +70,7 @@ class AssetOut(BaseModel):
     note: str | None
     # The analysis now describes it differently from what its product was made from.
     seed_changed: bool
+    physical: PhysicalOut | None = None  # a prop's (M5.5); None for other kinds
 
 
 class TextPatch(BaseModel):

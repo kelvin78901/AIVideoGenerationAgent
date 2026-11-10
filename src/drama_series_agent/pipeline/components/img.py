@@ -25,6 +25,7 @@ from typing import Any
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.assets.ops import physical_from, physical_text
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.models_db import Asset, Product, ProductVersion
 from drama_series_agent.modelhub.adapters.base import Estimate
@@ -55,6 +56,13 @@ KIND_GUIDE = {
     ),
 }
 FINAL_NOTE = "以参考图里的草稿为准，画得更精细：构图、样子和颜色都不要改。"
+
+
+def prop_physical(asset: Asset, product: Product | None) -> dict[str, str] | None:
+    """A prop's size, material and wear: what the user set on its picture (``settings``),
+    else what the analysis found (M5.5)."""
+    given = physical_from(((product.settings_json if product else None) or {}).get("physical"))
+    return given or physical_from((asset.seed_json or {}).get("physical"))
 
 
 def asset_aspect(kind: str, spec_aspect: str) -> str:
@@ -107,11 +115,11 @@ class ImgComponent(MediaComponent):
                     session, c["product_id"], ""
                 )
                 characters.append(c)
+        blocks = [Block("类别", KIND_GUIDE.get(asset.kind, "")), Block("画幅", frame["aspect"])]
+        if asset.kind == "prop" and (size := physical_text(prop_physical(asset, product))):
+            blocks.append(Block("真实尺寸和材质", size))
         return Inputs(
-            blocks=[
-                Block("类别", KIND_GUIDE.get(asset.kind, "")),
-                Block("画幅", frame["aspect"]),
-            ],
+            blocks=blocks,
             context={"kind": asset.kind, "frame": frame, "characters": characters},
         )
 

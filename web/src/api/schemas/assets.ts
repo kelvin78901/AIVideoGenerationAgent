@@ -47,6 +47,14 @@ export const AssetSceneSchema = z.object({
 });
 export type AssetScene = z.infer<typeof AssetSceneSchema>;
 
+/** 真实尺寸 / 材质 / 新旧 of a prop (M5.5): the keyframe draws it to scale. */
+export const PhysicalSchema = z.object({
+  size: z.string(),
+  material: z.string(),
+  wear: z.string(),
+});
+export type Physical = z.infer<typeof PhysicalSchema>;
+
 export const AssetSchema = z.object({
   id: z.string(),
   series_id: z.string(),
@@ -76,6 +84,8 @@ export const AssetSchema = z.object({
   note: z.string().nullable(),
   /** The script now describes it differently from what its candidates were made from. */
   seed_changed: z.boolean(),
+  /** A prop's real size, material and wear (M5.5); null for other kinds. Content. */
+  physical: PhysicalSchema.nullable().optional(),
 });
 export type Asset = z.infer<typeof AssetSchema>;
 

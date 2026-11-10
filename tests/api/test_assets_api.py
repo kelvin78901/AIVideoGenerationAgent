@@ -198,3 +198,27 @@ def test_a_later_episode_only_adds(client: TestClient) -> None:
 def test_analyze_before_the_script(client: TestClient) -> None:
     assert _code(client.post(f"{V1}/episodes/demo-e3/assets/analyze")) == "upstream_not_ready"
     assert client.post(f"{V1}/episodes/nope/assets/analyze").status_code == 404
+
+
+def test_a_prop_is_drawn_at_its_real_size(client: TestClient) -> None:
+    """M5.5 step 5: the bible's size, material and wear reach the prop's seed and its prompt."""
+    listed = client.get(f"{V1}/series/demo/assets").json()
+    umbrella = next(a for a in listed if a["id"] == "umbrella")
+    assert next(a for a in listed if a["id"] == "linwan")["physical"] is None
+    assert umbrella["physical"]["size"].startswith("全长约 90 cm")
+    assert umbrella["physical"]["material"].startswith("尼龙伞面")
+    pid = umbrella["product_id"]
+
+    async def blocks() -> dict[str, str]:
+        state = _state(client)
+        component = state.components.get("img")
+        assert component is not None
+        async with state.db.session() as session:
+            product = await session.get(Product, pid)
+            assert product is not None
+            inputs = await component.inputs(session, product)
+        return {b.title: b.text for b in inputs.blocks}
+
+    got = client.portal.call(blocks)  # type: ignore[union-attr]
+    assert got["真实尺寸和材质"].startswith("全长约 90 cm")
+    assert "尼龙伞面" in got["真实尺寸和材质"]

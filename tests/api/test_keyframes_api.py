@@ -242,3 +242,5 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert "林晚在心里说话（内心独白），嘴闭着" in door
     note = _prompt(client, _run(client, "1-02")["versions"][-1])
     assert "道具的状态是摆好的：红色长柄伞：斜靠在门边墙上，伞面湿" in note
+    # 道具的真实尺寸 (M5.5 step 5): drawn to scale against the people.
+    assert "道具按真实尺寸画，和人物的比例要对：红色长柄伞：全长约 90 cm" in note

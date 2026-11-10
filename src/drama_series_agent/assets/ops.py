@@ -68,6 +68,9 @@ class Found:
     description: str = ""
     text: dict[str, Any] | None = None
     note: str | None = None
+    # A prop's real size, material and wear (M5.5): from its bible entry's details, or the
+    # answer's ``physical``; the keyframe draws it to scale.
+    physical: dict[str, str] | None = None
     # scene id → line ids ([] = the whole scene)
     uses: dict[str, list[str]] = field(default_factory=dict)
 
@@ -110,6 +113,27 @@ def describe(entity: Mapping[str, Any] | None) -> str:
     return "，".join(parts)
 
 
+PHYSICAL_KEYS = ("size", "material", "wear")  # 真实尺寸 / 材质 / 新旧 (M5.5)
+
+
+def physical_of(entity: Mapping[str, Any] | None) -> dict[str, str] | None:
+    """A prop's real size, material and wear from its bible entry's details, else None."""
+    return physical_from((entity or {}).get("data") or {})
+
+
+def physical_from(data: Any) -> dict[str, str] | None:
+    if not isinstance(data, Mapping):
+        return None
+    out = {k: str(data[k]).strip() for k in PHYSICAL_KEYS if str(data.get(k) or "").strip()}
+    return out or None
+
+
+def physical_text(physical: Mapping[str, str] | None) -> str:
+    """「全长约 90 cm；尼龙伞面、木柄；用了几年」."""
+    given = physical or {}
+    return "；".join(str(given[k]) for k in PHYSICAL_KEYS if given.get(k))
+
+
 def scene_key(location_id: str | None, location_name: str, time: str | None) -> str:
     return f"scene:{location_id or location_name}:{time or ''}"
 
@@ -132,6 +156,7 @@ def collect(script: Mapping[str, Any], bible: Mapping[str, Any]) -> list[Found]:
                 name=name,
                 bible_id=bible_id,
                 description="" if kind == "voice" else describe(entities.get(bible_id or "")),
+                physical=physical_of(entities.get(bible_id or "")) if kind == "prop" else None,
             )
         return found[key]
 
@@ -216,6 +241,8 @@ def merge(
             target.name = name
         if item.get("note"):
             target.note = str(item["note"])
+        if target.kind == "prop" and (given := physical_from(item.get("physical"))):
+            target.physical = {**(target.physical or {}), **given}
         text = item.get("text")
         if target.kind == "text" and isinstance(text, Mapping) and text.get("exact"):
             target.text = {
@@ -270,6 +297,7 @@ def reconcile(found: Sequence[Found], known: Iterable[Mapping[str, Any]]) -> lis
                 "description": f.description,
                 "text": f.text,
                 "note": f.note,
+                "physical": f.physical,
                 "uses": [{"scene_id": s, "line_ids": ids} for s, ids in f.uses.items()],
             }
         )

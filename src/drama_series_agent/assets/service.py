@@ -25,8 +25,9 @@ the locked picture straight from the dependency graph. **Uploading** a picture a
 with that one candidate (``origin: upload``), to lock or to start an API final from.
 
 **On-screen text** is checked by OCR (``pipeline/components/text.py``): a candidate OCR read
-differently from what it must say locks only with ``force`` (409 ``ocr_mismatch``); one not
-checked (no OCR on this machine) locks as usual. An uploaded picture is read too.
+differently from what it must say is only flagged on its card: it locks like any other
+(M5.5, Kelvin 2026-11-10: checks warn, never block; ``force`` is still accepted). An uploaded
+picture is read too.
 """
 
 from __future__ import annotations
@@ -50,6 +51,7 @@ from drama_series_agent.assets.schema import (
     MatrixOut,
     MatrixSceneOut,
     MessageOut,
+    PhysicalOut,
     TextOut,
     VoiceLineOut,
     VoiceOut,
@@ -80,6 +82,7 @@ from drama_series_agent.episodes.service import (
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_info
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
+from drama_series_agent.pipeline.components.img import prop_physical
 from drama_series_agent.pipeline.components.text import (
     TEXT_IMAGE_SLOT,
     TextComponent,
@@ -132,6 +135,7 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
             "description": item.get("description") or "",
             "text": item.get("text"),
             "note": item.get("note"),
+            "physical": item.get("physical"),
             "order": old.get("order", order) if row.id in rows else order,
         }
         # Already made from another description: say so, never overwrite what the user has.
@@ -468,8 +472,8 @@ class AssetService:
                 raise PipelineError(409, "voice_needs_final", id=asset_id)
             if v is not None and v.product_id == product.id and not has_candidates:
                 idx = None
-            if product.slot == TEXT_IMAGE_SLOT and not body.force and idx is not None:
-                await _refuse_ocr_mismatch(session, product, version_id, idx)
+            # An OCR mismatch only warns (Kelvin 2026-11-10, M5.5): the candidate card shows it;
+            # ``force`` is still accepted and means nothing now.
 
         async def record(session: AsyncSession, p: Product, v: ProductVersion) -> None:
             await record_asset_gate(session, self._invalidation, p, "confirm")
@@ -797,33 +801,14 @@ class AssetService:
                         voice=_voice(a, settings, here or mine, lines),
                         note=seed.get("note"),
                         seed_changed=bool(seed.get("changed")),
+                        physical=(
+                            PhysicalOut(**(prop_physical(a, p) or {})) if a.kind == "prop" else None
+                        ),
                     ),
                 )
             )
         ranked.sort(key=lambda r: r[0])
         return [o for _, o in ranked]
-
-
-async def _refuse_ocr_mismatch(
-    session: AsyncSession, product: Product, version_id: str, idx: int
-) -> None:
-    """409 ``ocr_mismatch`` when OCR read the candidate differently from what it must say."""
-    v = await session.get(ProductVersion, version_id)
-    if v is None or v.product_id != product.id:
-        return  # lock_pick says what is wrong
-    candidates = (v.payload_json or {}).get("candidates") or []
-    entry = candidates[idx] if 0 <= idx < len(candidates) else {}
-    if isinstance(entry, dict) and entry.get("ocr_ok") is False:
-        exact = str(((v.payload_json or {}).get("text") or {}).get("exact") or "")
-        raise PipelineError(
-            409,
-            "ocr_mismatch",
-            id=product.owner_id,
-            idx=idx,
-            read=entry.get("ocr") or "",
-            exact=exact,
-            issue=entry.get("ocr_issue") or "",
-        )
 
 
 def _source(

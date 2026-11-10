@@ -41,6 +41,7 @@ from drama_series_agent.modelhub.workflows import (
     spec_workflows_dir,
 )
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
+from drama_series_agent.pipeline.components.img import prop_physical
 from drama_series_agent.pipeline.components.media import (
     MediaComponent,
     candidate_files,
@@ -78,6 +79,7 @@ REAL_WORLD = (
 # 镜头契约 (M5.5): the keyframe is the shot's first moment, not a summary of it.
 START_NOTE = "首帧画的是镜头开始的这一刻（不是整个镜头的概括）："
 PROPS_NOTE = "道具的状态是摆好的："
+SIZE_NOTE = "道具按真实尺寸画，和人物的比例要对："
 INNER_NOTE = "{who}在心里说话（内心独白），嘴闭着，不是在开口说话。"
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
@@ -203,6 +205,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     if shot.get("contract"):
         filmed_lines = [x for x in (scene or {}).get("lines") or [] if x.get("id") in filmed]
         blocks += await contract_blocks(session, shot, filmed_lines)
+    if sizes := await prop_sizes(session, list(shot.get("asset_ids") or [])):
+        blocks.append(Block("尺寸", SIZE_NOTE + sizes))
     if not await _has_character(session, shot.get("asset_ids") or []):
         blocks.append(Block("人物", NO_PEOPLE))
     blocks.append(Block("真实感", REAL_WORLD))
@@ -229,6 +233,30 @@ def props_text(props: list[dict[str, str]], assets: dict[str, Asset]) -> str:
     return "；".join(
         f"{assets[p['asset_id']].name}：{p['state']}" for p in props if p["asset_id"] in assets
     )
+
+
+async def prop_sizes(session: AsyncSession, ids: list[str]) -> str:
+    """「红色长柄伞：全长约 90 cm；黄色便利贴：7.6 cm 见方」 for the shot's props that say."""
+    assets = await asset_rows(session, ids)
+    products = {
+        p.owner_id: p
+        for p in (
+            await session.exec(
+                select(Product).where(
+                    Product.owner_type == "asset",
+                    col(Product.owner_id).in_(ids),
+                    Product.slot == "ref_image",
+                )
+            )
+        ).all()
+    }
+    rows = []
+    for i in ids:
+        a = assets.get(i)
+        size = (prop_physical(a, products.get(i)) or {}).get("size") if a else None
+        if a is not None and a.kind == "prop" and size:
+            rows.append(f"{a.name}：{size}")
+    return "；".join(rows)
 
 
 async def contract_blocks(
