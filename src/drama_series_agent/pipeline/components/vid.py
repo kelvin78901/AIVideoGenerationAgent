@@ -25,6 +25,8 @@ in one job, seeds ``seed``, ``seed + 1`` …), nothing is adopted until the user
   ``vprompt`` route, checked, asked again once with what is wrong, and not made when it still
   does not conform (``prompt_not_conformant``; M5 step 14b). The H3 API rewrites with its own
   Context-IR instead.
+- **A take's window** (``payload.window``, M5 step 15i): where the edit should cut it, past
+  H3's still opening and keeping a spoken line whole; the take itself is kept whole.
 - **Every take loses its first 0.3 s** (H3's garbled opening sound, SPEC 5.1), or the tail
   frames it was guided with, and keeps a poster (its first frame) and its last frame (the next
   continuous shot starts there).
@@ -67,6 +69,7 @@ from drama_series_agent.media.video import (
     probe,
     tail_clip,
     trim_head,
+    usable_window,
 )
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
@@ -537,6 +540,7 @@ class VidComponent(MediaComponent):
         payload: dict[str, Any] = {
             "duration_s": round(info.duration_s, 3),
             "asked_s": inputs.context["seconds"],
+            "window": await self._window(files, inputs),
             "resolution": "768p" if call.where == "local" else frame_["delivery"],
             "aspect": frame_["aspect"],
             "audio_mode": inputs.context["audio_mode"],
@@ -652,6 +656,7 @@ class VidComponent(MediaComponent):
             **source.payload_json,
             "duration_s": round(info.duration_s, 3),
             "resolution": "2k",
+            "window": await self._window(files, inputs),
         }
         payload.pop("prompt_ir", None)
         draft = self.media_draft(ctx, inputs, payload, files, [call], prompt, stage="final")
@@ -665,6 +670,19 @@ class VidComponent(MediaComponent):
         if video is None:
             raise ComponentError("no_video")
         return await clip_files(self.services.store, video.sha256, raw=raw, head=head)
+
+    async def _window(self, files: list[dict[str, Any]], inputs: Inputs) -> dict[str, float]:
+        """Where the edit should take the take from and to (M5 step 15i): past the still
+        opening, the spoken line whole (``media/video.py:usable_window``)."""
+        video = next(f for f in files if f["role"] == "video")
+        context = inputs.context
+        spoken = bool(context["dialogue"]) and context["audio_mode"] != "none"
+        data = self.services.store.path_for(video["sha256"]).read_bytes()
+        try:
+            w = await usable_window(data, float(context["seconds"]), spoken=spoken)
+        except VideoError as exc:
+            raise ComponentError(exc.code) from exc
+        return {"in_s": w.in_s, "out_s": w.out_s}
 
     def _guided(self, context: dict[str, Any], model: str) -> bool:
         """A continuous shot's take on a local workflow that takes the shot before's tail."""

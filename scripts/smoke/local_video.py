@@ -438,10 +438,11 @@ def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None, stop: str
 
 
 def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
-    """``cut``: episode 1's takes one after another, each cut to its shot's length (the
-    adopted take, or the n-th of ``--picks 1-04=2``), and once more uncut. A continuous shot
-    and the shot it continues are used whole (M7's rule, DECISIONS 2026-11-09 第 15e 步: the
-    next one starts where the clip ends)."""
+    """``cut``: episode 1's takes one after another (the adopted take, or the n-th of
+    ``--picks 1-04=2``), each from its window (``payload.window``, step 15i: past the still
+    opening, the line whole; a take without one, the shot's length from the start), and once
+    more uncut. A continuous shot starts at 0 and the shot it continues runs to its end
+    (M7's rule, DECISIONS 2026-11-09 第 15e 步: the next one starts where the clip ends)."""
     import json
     import subprocess
 
@@ -456,9 +457,9 @@ def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
     record = json.loads(path.read_text("utf-8"))
     store = smoke.state.store
     by_label = shots(smoke)
-    chained = {x for x, s in by_label.items() if s.get("tail_from")}  # the API's tail_from
-    chained |= {str(s["tail_from"]) for s in by_label.values() if s.get("tail_from")}  # a label
-    clips: list[tuple[str, Path, float, float, bool, bool]] = []
+    follows = {x for x, s in by_label.items() if s.get("tail_from")}  # starts where one ends
+    followed = {str(s["tail_from"]) for s in by_label.values() if s.get("tail_from")}  # a label
+    clips: list[tuple[str, Path, float, float, bool, float, float]] = []
     for label in shots(smoke):
         if label not in record:
             smoke.say(f"   {label}: no take, left out")
@@ -471,9 +472,26 @@ def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
         src = store.path_for(video["sha256"])
         info = asyncio.run(probe(src.read_bytes()))
         shot_s = float(record[label]["seconds"])
-        clips.append((label, src, shot_s, info.duration_s, info.has_audio, label in chained))
+        # The take's window (step 15i): past the still opening, the line whole; a shot that
+        # continues another starts at 0, one that is continued runs to its end.
+        window = version["payload"].get("window") or {}
+        if not window:  # a take made before step 15i: measured now
+            from drama_series_agent.media.video import usable_window
+
+            spoken = (
+                bool(by_label[label].get("dialogue")) and by_label[label]["audio_mode"] != "none"
+            )
+            w = asyncio.run(usable_window(src.read_bytes(), shot_s, spoken=spoken))
+            window = {"in_s": w.in_s, "out_s": w.out_s}
+        start = 0.0 if label in follows else float(window.get("in_s", 0.0))
+        end = float(window.get("out_s", min(shot_s, info.duration_s)))
+        end = info.duration_s if label in followed else end
+        clips.append((label, src, shot_s, info.duration_s, info.has_audio, start, end))
         n = takes.index(version_id) + 1
-        smoke.say(f"   {label}: take {n}, {info.duration_s:.2f}s, shot {record[label]['seconds']}s")
+        smoke.say(
+            f"   {label}: take {n}, {info.duration_s:.2f}s, shot {record[label]['seconds']}s, "
+            f"cut {start:.2f}-{end:.2f}s"
+        )
     if not clips:
         return
     w, h = 768, 1344
@@ -481,9 +499,10 @@ def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
         args: list[str] = []
         parts = []
         idx = 0
-        for i, (_, src, shot_s, clip_s, has_audio, whole) in enumerate(clips):
-            # A clip shorter than its shot is used whole (nothing is stretched).
-            length = min(shot_s, clip_s) if trimmed and not whole else clip_s
+        for i, (_, src, _shot_s, clip_s, has_audio, start, end) in enumerate(clips):
+            # ep1-cut: each take's window; ep1-uncut: every take whole.
+            begin = start if trimmed else 0.0
+            length = (end - start) if trimmed else clip_s
             args += ["-i", str(src)]
             v = a = idx
             idx += 1
@@ -492,10 +511,11 @@ def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
                 a = idx
                 idx += 1
             parts.append(
-                f"[{v}:v]trim=0:{length:.3f},setpts=PTS-STARTPTS,"
+                f"[{v}:v]trim={begin:.3f}:{begin + length:.3f},setpts=PTS-STARTPTS,"
                 f"scale={w}:{h}:force_original_aspect_ratio=decrease,"
                 f"pad={w}:{h}:(ow-iw)/2:(oh-ih)/2,setsar=1,fps=24[v{i}];"
-                f"[{a}:a]atrim=0:{length:.3f},asetpts=PTS-STARTPTS,aresample=48000,"
+                f"[{a}:a]atrim={begin:.3f}:{begin + length:.3f},asetpts=PTS-STARTPTS,"
+                "aresample=48000,"
                 f"aformat=channel_layouts=stereo,apad=whole_dur={length:.3f}[a{i}];"
             )
         joined = "".join(f"[v{i}][a{i}]" for i in range(len(clips)))

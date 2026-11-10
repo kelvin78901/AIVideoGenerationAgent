@@ -9,6 +9,11 @@
 - ``tail_clip``: a take's last ``TAIL_FRAMES`` frames with their sound, which a local H3 take
   of the shot continuing it is guided with at frame 0 (M5 step 15e); that take then loses
   those frames instead of ``TRIM_HEAD_S``.
+- ``usable_window``: where a take is worth cutting from and to (M5 step 15i): H3 holds its
+  first frame for up to a second before anything moves, and acts and speaks across its whole
+  clip (at least 5.17 s) whatever the shot's length, so an edit that takes the shot's seconds
+  from the start keeps the stillness and loses the line. The take is kept whole; the window is
+  recorded for the edit.
 
 All of it runs FFmpeg in a worker thread; the async functions are what components call.
 """
@@ -27,6 +32,9 @@ from drama_series_agent.media.audio import ffmpeg_exe
 
 TRIM_HEAD_S = 0.3
 TAIL_FRAMES = 22  # H3's clip guides take 17k + 5 frames; 22 is a little under a second
+STILL_DB = 45.0  # two frames this alike (PSNR): nothing moved between them
+SPEECH_SHARE = 0.25  # of the loudest 50 ms: what counts as the line being spoken
+SPEECH_PAD_S = 0.25  # kept before and after the line
 _DURATION = re.compile(r"Duration: (\d+):(\d+):(\d+(?:\.\d+)?)")
 _VIDEO = re.compile(r"Stream #\S+.*?: Video: .*?(\d{2,5})x(\d{2,5})")
 _FPS = re.compile(r"(\d+(?:\.\d+)?) fps")
@@ -162,6 +170,72 @@ def _tail(data: bytes, frames: int, fps: float) -> bytes:
         return out.read_bytes()
 
 
+@dataclass(frozen=True)
+class Window:
+    in_s: float
+    out_s: float
+
+
+def _still_head(src: Path, fps: float) -> float:
+    """Seconds before the first frame that differs from the one before (``STILL_DB``)."""
+    graph = (
+        "[0:v]split[a][b];[b]trim=start_frame=1,setpts=PTS-STARTPTS[c];[a][c]psnr=stats_file=p.log"
+    )
+    with TemporaryDirectory() as tmp:
+        proc = subprocess.run(
+            [ffmpeg_exe(), "-hide_banner", "-nostdin", "-i", str(src.resolve()),
+             "-filter_complex", graph, "-f", "null", "-"],
+            stdout=subprocess.DEVNULL, stderr=subprocess.PIPE, cwd=tmp, check=False,
+        )  # fmt: skip
+        log = Path(tmp) / "p.log"
+        if proc.returncode != 0 or not log.exists():
+            raise VideoError("video_ffmpeg_failed", proc.stderr.decode("utf-8", "replace")[-400:])
+        values = [
+            99.0 if m.group(1) == "inf" else float(m.group(1))
+            for m in re.finditer(r"psnr_avg:(\S+)", log.read_text())
+        ][:-1]  # the last frame is compared with itself again
+    moved = next((i for i, v in enumerate(values) if v < STILL_DB), 0)
+    return moved / fps
+
+
+def _speech(src: Path) -> tuple[float, float] | None:
+    """Where the sound is loudest (``SPEECH_SHARE`` of its peak), in 50 ms steps."""
+    proc = subprocess.run(
+        [ffmpeg_exe(), "-hide_banner", "-nostdin", "-loglevel", "error", "-i", str(src),
+         "-map", "0:a:0", "-ac", "1", "-ar", "16000", "-f", "s16le", "-"],
+        capture_output=True, check=False,
+    )  # fmt: skip
+    pcm = proc.stdout
+    step = 800  # 50 ms of 16 kHz
+    if proc.returncode != 0 or len(pcm) < step * 2:
+        return None
+    samples = memoryview(pcm).cast("h")
+    levels = []
+    for i in range(0, len(samples) - step + 1, step):
+        chunk = samples[i : i + step]
+        levels.append((sum(x * x for x in chunk) / step) ** 0.5)
+    peak = max(levels)
+    if peak < 300:  # silence
+        return None
+    loud = [i for i, v in enumerate(levels) if v >= SPEECH_SHARE * peak]
+    return loud[0] * 0.05, (loud[-1] + 1) * 0.05
+
+
+def _window(data: bytes, shot_s: float, spoken: bool) -> Window:
+    with TemporaryDirectory() as tmp:
+        src = Path(tmp) / "in.mp4"
+        src.write_bytes(data)
+        info = _probe_file(src)
+        duration = info.duration_s
+        start = min(_still_head(src, info.fps or 24.0), max(0.0, duration - shot_s))
+        end = min(duration, start + shot_s)
+        span = _speech(src) if spoken and info.has_audio else None
+        if span is not None:
+            start = min(start, max(0.0, span[0] - SPEECH_PAD_S))
+            end = min(duration, max(end, span[1] + SPEECH_PAD_S))
+        return Window(round(start, 3), round(end, 3))
+
+
 async def probe(data: bytes) -> VideoInfo:
     return await asyncio.to_thread(_probe, data)
 
@@ -180,3 +254,10 @@ async def tail_clip(data: bytes, frames: int = TAIL_FRAMES, fps: float = 24.0) -
     """The last ``frames`` frames of a clip with their sound, re-encoded (``fps`` when FFmpeg
     does not say the clip's own)."""
     return await asyncio.to_thread(_tail, data, frames, fps)
+
+
+async def usable_window(data: bytes, shot_s: float, *, spoken: bool) -> Window:
+    """Where to cut a take: from where something first moves (not before ``shot_s`` would fit),
+    for at least ``shot_s``; with a spoken line (``spoken``), the line whole with a little air.
+    """
+    return await asyncio.to_thread(_window, data, shot_s, spoken)

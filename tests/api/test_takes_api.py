@@ -129,6 +129,9 @@ def test_a_first_run_makes_two_takes_from_the_keyframe(client: TestClient) -> No
         # The shot's length less the 0.3 s cut off the head.
         assert video["duration_s"] == pytest.approx(shot["duration_s"] - 0.3, abs=0.1)
         assert take["payload"]["audio_mode"] == "native"
+        # Where the edit takes it from (step 15i): a Mock clip never moves, the shot outlasts
+        # it, so all of it.
+        assert take["payload"]["window"] == {"in_s": 0.0, "out_s": video["duration_s"]}
     assert takes[1]["seed"] == takes[0]["seed"] + 1
     text = _prompt(client, takes[0])
     assert text.startswith(

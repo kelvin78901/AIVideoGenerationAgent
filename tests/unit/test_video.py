@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import pytest
 
 from drama_series_agent.media.image import image_info
@@ -77,6 +79,38 @@ async def test_the_tail_clip_is_the_last_22_frames_with_their_sound() -> None:
     with pytest.raises(VideoError) as err:
         await tail_clip(await solid_mp4(160, 288, 0.5, 24, "336699"), 22, 24.0)
     assert err.value.code == "video_too_short"
+
+
+def test_the_usable_window_skips_the_still_opening_and_keeps_the_line() -> None:
+    """M5 step 15i: one still second, then motion; a tone at 2.0-2.5 s stands for the line."""
+    import asyncio
+    import subprocess
+    from tempfile import TemporaryDirectory
+
+    from drama_series_agent.media.audio import ffmpeg_exe
+    from drama_series_agent.media.video import usable_window
+
+    graph = (
+        "color=c=gray:s=160x288:r=24:d=1[still];testsrc2=s=160x288:r=24:d=2[moving];"
+        "[still][moving]concat=n=2:v=1:a=0,format=yuv420p[v];"
+        "sine=f=440:d=3,volume=enable='between(t,2,2.5)':volume=1,"
+        "volume=enable='not(between(t,2,2.5))':volume=0.01[a]"
+    )
+    with TemporaryDirectory() as tmp:
+        src = Path(tmp) / "src.mp4"
+        subprocess.run(
+            [ffmpeg_exe(), "-hide_banner", "-loglevel", "error", "-filter_complex", graph,
+             "-map", "[v]", "-map", "[a]", "-c:a", "aac", "-t", "3", str(src)],
+            check=True,
+        )  # fmt: skip
+        data = src.read_bytes()
+    plain = asyncio.run(usable_window(data, 1.0, spoken=False))
+    assert plain.in_s == pytest.approx(1.0, abs=0.1) and plain.out_s == pytest.approx(2.0, abs=0.1)
+    line = asyncio.run(usable_window(data, 0.5, spoken=True))
+    assert line.in_s == pytest.approx(1.0, abs=0.1)
+    assert line.out_s == pytest.approx(2.75, abs=0.1)  # the line and a quarter second after
+    # A shot as long as the clip starts at 0, still opening or not.
+    assert asyncio.run(usable_window(data, 3.0, spoken=False)).in_s == 0.0
 
 
 async def test_not_a_video() -> None:
