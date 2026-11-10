@@ -46,7 +46,13 @@ REF_IMAGE_SLOT = "ref_image"
 KIND_GUIDE = {
     "character": "人物全身，正面站姿，双臂自然下垂；五官、发型和整套衣着都看得清。",
     "scene": "只画空景，不要出现人物；一个视角、一张完整的照片，看得清空间、光线和天气。",
-    "prop": "道具单独放在干净的浅色背景上，居中，看得清材质和细节。",
+    # Not a studio product shot (M5 step 15o): run17's umbrella came out CG-clean and, with
+    # nothing to measure it by, twice its size in the keyframes.
+    "prop": (
+        "道具单独一件、居中，实拍照片质感：真实材质、有使用痕迹，自然光，放在它平时会在的简单真实"
+        "表面上（木桌、地面、墙边），不是棚拍产品图或 CG 渲染；旁边带一个大家熟悉大小的东西"
+        "（手、门框、桌面）看得出它的真实尺寸；看得清材质和细节。"
+    ),
 }
 FINAL_NOTE = "以参考图里的草稿为准，画得更精细：构图、样子和颜色都不要改。"
 

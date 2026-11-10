@@ -919,7 +919,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.009,
+        "cost_usd": 0.0092,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.169
@@ -1166,7 +1166,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.009,
+        "cost_usd": 0.0092,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -1413,7 +1413,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.009,
+        "cost_usd": 0.0092,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -1911,7 +1911,7 @@
       "estimate": {
         "model_key": "comfy/h3-r2v",
         "where": "local",
-        "cost_usd": 0.009,
+        "cost_usd": 0.0092,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1901
@@ -1942,7 +1942,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.009,
+        "cost_usd": 0.0092,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -1970,7 +1970,14 @@
         "compiled_overridden": false,
         "model_key": "comfy/h3"
       },
-      "estimate": null,
+      "estimate": {
+        "model_key": "comfy/h3",
+        "where": "local",
+        "cost_usd": 0.0092,
+        "seconds": 0.0,
+        "priced": true,
+        "final_usd": 0.2113
+      },
       "running": null,
       "pick": null,
       "settings": null,
@@ -1997,7 +2004,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.009,
+        "cost_usd": 0.0092,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.0845
@@ -2252,7 +2259,7 @@
     "scope": "episode",
     "spent_usd": 0.0,
     "budget_usd": 15.0,
-    "projected_usd": 0.036,
+    "projected_usd": 0.0552,
     "insights": [],
     "updated_at": "2026-10-18T09:00:00Z"
   },

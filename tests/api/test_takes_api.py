@@ -20,7 +20,7 @@ from sqlmodel import col, select
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
-from drama_series_agent.core.models_db import Job, ModelCall, Product
+from drama_series_agent.core.models_db import Job, ModelCall, Product, ScriptLine
 from drama_series_agent.media.video import probe
 from drama_series_agent.modelhub.adapters.base import ModelRequest
 from drama_series_agent.pipeline import vlook
@@ -285,6 +285,7 @@ def test_an_h3_api_take_goes_through_context_ir(client: TestClient) -> None:
     assert "<Audio 1> is the voice-timbre reference for" in text
 
     # 先配音: the dubbed lines are <Audio 1>, copied as the whole sound track.
+    _on_screen(client, shots["1-06"])
     _dub_shot(client, shots["1-06"])
     take = _run(client, shots["1-06"]["video_product_id"], model="minimax/h3-api")["versions"][0]
     text = _prompt(client, take)
@@ -450,6 +451,7 @@ def test_continuing_shots_wait_for_the_take_they_continue(client: TestClient) ->
         "upstream_not_adopted",
         {"id": "1-06"},
     )
+    _on_screen(client, shots["1-06"])  # an inner voice needs no dub before the take (15p)
     code, error, params = _refused(client, shots["1-06"]["video_product_id"])
     assert (code, error) == (409, "line_audio_missing") and params["count"] >= 1
 
@@ -462,6 +464,7 @@ def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
     the same way; the API fallback, which takes no clip, starts from the last frame."""
     _confirm_storyboard(client)
     shots = _shots(client)
+    _on_screen(client, shots["1-06"])
     _dub_shot(client, shots["1-06"])
     before = _run(client, shots["1-06"]["video_product_id"], count=1)["versions"][-1]
     _adopt(client, before)
@@ -502,6 +505,50 @@ def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
     assert api["files"][0]["duration_s"] == pytest.approx(seconds - 0.3, abs=0.1)
 
 
+def _on_screen(client: TestClient, shot: dict[str, Any]) -> None:
+    """Make the shot's spoken lines said on screen: 1-06's only line is 林晚's inner voice,
+    which is laid in the edit, not made in the take (M5 step 15p)."""
+
+    async def write() -> None:
+        async with _state(client).db.session() as s:
+            ids = [str(x) for x in shot["line_ids"]]
+            for row in (await s.exec(select(ScriptLine).where(col(ScriptLine.id).in_(ids)))).all():
+                if row.type == "vo":
+                    row.type = "dialogue"
+                    s.add(row)
+            await s.commit()
+
+    client.portal.call(write)  # type: ignore[union-attr]
+
+
+def test_an_inner_voice_is_left_out_of_the_take_and_an_insert_moves_little(
+    client: TestClient,
+) -> None:
+    """M5 steps 15o, 15p: 1-06's only line is 林晚's inner voice (vo): the take gets no dubbed
+    track and no line to say, the draft says it is laid in the edit; 1-03 (the note, no one in
+    it) is rewritten as an insert, 1-06 as a performance."""
+    _confirm_storyboard(client)
+    mock = _state(client).registry.mock_settings
+    told: list[dict[str, Any]] = []
+    rewrite = mock.responders[("vid", "h3_prompt")]
+
+    def spy(req: ModelRequest) -> Any:
+        told.append(json.loads(str((req.messages or [])[1]["content"])))
+        return rewrite(req)
+
+    mock.responders[("vid", "h3_prompt")] = spy
+    shots = _shots(client)
+    _dub_shot(client, shots["1-06"])  # dubbed for the edit; the take does not use it
+    take = _run(client, shots["1-06"]["video_product_id"], count=1)["versions"][-1]
+    sent = take["params"]["request"]
+    assert "dialogue_audio" not in sent and take["payload"]["voices"] == []
+    assert told[-1]["dialogue"] == [] and told[-1]["shot_kind"] == "performance"
+    assert "剪辑时另铺" in told[-1]["draft"] and "三年了。他凭什么。" in told[-1]["draft"]
+    assert "<d>" not in _prompt(client, take)
+    _run(client, shots["1-03"]["video_product_id"], count=1)
+    assert told[-1]["shot_kind"] == "insert"
+
+
 def _dub_shot(client: TestClient, shot: dict[str, Any]) -> None:
     """Dub the shot's spoken lines (「配音」 on the episode's dubbing list)."""
     spoken = {x["line_id"] for x in client.get(f"{V1}/episodes/{EP1}/dub").json()["lines"]}
@@ -515,6 +562,7 @@ def _dub_shot(client: TestClient, shot: dict[str, Any]) -> None:
 def test_the_takes_gate_locks_one_adopted_take_per_shot(client: TestClient) -> None:
     _confirm_storyboard(client)
     shots = _shots(client)
+    _on_screen(client, shots["1-06"])
     _dub_shot(client, shots["1-06"])
     for label in ("1-01", "1-02", "1-03", "1-04", "1-05", "1-06", "1-07", "1-08", "1-09"):
         product = _run(client, shots[label]["video_product_id"], count=1)

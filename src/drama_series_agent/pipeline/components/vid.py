@@ -93,6 +93,7 @@ from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, voice_of
 from drama_series_agent.pipeline.components.kf import (
     FRAMING,
     MOVE,
+    _has_character,
     _references,
     blocking_text,
     local_workflow,
@@ -237,27 +238,32 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             deps.append(await invalidation.dependency(session, script.id, f"line:{x.id}"))
     spoken = [x for x in lines if x.type in ops.SPEAKING]
     action = [x for x in lines if x.type not in ops.SPEAKING]
+    # An inner voice or off-screen line (``vo``) is laid over the shot in the edit, not made in
+    # the take (M5 step 15p): a voice the take makes sounds said in the room, and with the
+    # lips closed it reads as lips out of sync. The take is made silent-lipped.
+    voiced = [x for x in spoken if x.type != "vo"]
+    overlaid = [x for x in spoken if x.type == "vo"]
 
     # Who speaks: S1, S2 … in speaking order.
     speakers: dict[str, int] = {}
-    for x in spoken:
+    for x in voiced:
         speakers.setdefault(x.character_id or x.character_name or x.id, len(speakers) + 1)
 
     audio = await _line_audio(session, [x.id for x in spoken])
     mode = str(shot.get("audio_mode") or "native")
     dub: list[dict[str, Any]] = []
-    if mode == "tts" and spoken:
-        missing = [x for x in spoken if x.id not in audio]
+    if mode == "tts" and voiced:
+        missing = [x for x in voiced if x.id not in audio]
         if missing:
             raise PipelineError(409, "line_audio_missing", count=len(missing))
-        for x in spoken:
+        for x in voiced:
             p, f = audio[x.id]
             deps.append(await invalidation.dependency(session, p.id))
             dub.append({"sha256": f["sha256"]})
     voices: list[dict[str, Any]] = []
     if mode == "native":
         seen: set[str] = set()
-        for x in spoken:
+        for x in voiced:
             key = x.character_id or x.character_name or x.id
             found = await voice_of(session, x)
             if key in seen or found is None:
@@ -297,7 +303,16 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "text": x.text,
             "vo": x.type == "vo",
         }
-        for x in spoken
+        for x in voiced
+    ]
+    overlay = [
+        {
+            "line_id": x.id,
+            "who": x.character_name or "",
+            "text": x.text,
+            "sha256": audio[x.id][1]["sha256"] if x.id in audio else None,
+        }
+        for x in overlaid
     ]
 
     def secs(kind: str) -> list[float]:
@@ -331,9 +346,19 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         blocks.append(
             Block("台词", "\n".join(f"S{d['sx']} {d['who']}：{d['text']}" for d in dialogue))
         )
+    if overlay:
+        blocks.append(
+            Block(
+                "画外",
+                "内心独白 / 画外音，剪辑时另铺，这条片子里没有人说话、嘴闭着：\n"
+                + "\n".join(f"{o['who']}：{o['text']}" for o in overlay),
+            )
+        )
     sound = shot.get("sound")
     if sound:
         blocks.append(Block("声音", str(sound)))
+    # 插入镜头 (M5 step 15o): no one in it and nothing said: the rewrite keeps its motion small.
+    person = bool(voiced) or await _has_character(session, list(shot.get("asset_ids") or []))
     return Inputs(
         blocks=blocks,
         deps=deps,
@@ -343,6 +368,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "first_frame": first,
             "first_desc": first_desc,
             "tail_clip": tail,
+            "kind": "performance" if person else "insert",
+            "overlay": overlay,
             "refs": refs,
             "unlocked": unlocked,
             "texts": texts,
@@ -891,6 +918,7 @@ class VidComponent(MediaComponent):
             audios=audios,
             dialogue=lines,
             sound="N/A" if context["audio_mode"] == "none" else str(context.get("sound") or ""),
+            shot_kind=str(context.get("kind") or "performance"),
         )
 
     def _rewrite_request(self, messages: list[dict[str, Any]]) -> ModelRequest:
@@ -1072,6 +1100,11 @@ class VidComponent(MediaComponent):
         sections when voice samples go along)."""
         said = [ln.strip() for ln in compiled.splitlines() if ln.strip() and not ln.startswith("#")]
         description = " ".join([*said, *context["look"]])
+        overlay = context.get("overlay") or []
+        if overlay:  # said in the edit (M5 step 15p): the take shows the mood, lips closed
+            description += " 画外（剪辑时另铺，这条片子里没有人说话、嘴闭着）：" + "；".join(
+                f"{o['who']}：{o['text']}" for o in overlay
+            )
         audio_of = {v["sx"]: i for i, v in enumerate(voices, 1)}
         dialogue = [{**d, "audio": audio_of.get(d["sx"])} for d in context["dialogue"]]
         none = context["audio_mode"] == "none"

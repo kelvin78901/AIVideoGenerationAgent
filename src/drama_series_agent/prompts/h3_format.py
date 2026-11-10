@@ -88,6 +88,7 @@ class Facts:
     audios: list[Audio] = field(default_factory=list)
     dialogue: list[Line] = field(default_factory=list)
     sound: str = ""
+    shot_kind: str = "performance"  # or "insert": an object or a place, no one in it (15o)
 
     def as_json(self) -> dict[str, Any]:
         out = asdict(self)
@@ -130,6 +131,7 @@ class Facts:
                 for d in data.get("dialogue") or []
             ],
             sound=str(data.get("sound") or ""),
+            shot_kind=str(data.get("shot_kind") or "performance"),
         )
 
 
@@ -149,6 +151,14 @@ def sections(prompt: str) -> list[tuple[str, str]]:
 
 def words(text: str) -> int:
     return len(re.findall(r"[A-Za-z][A-Za-z'’-]*", _DIALOGUE.sub(" ", text)))
+
+
+# What an insert shot must not show happening (15o): water poured or bursting, things falling.
+INSERT_EVENTS = re.compile(
+    r"\b(pour\w*|gush\w*|splash\w*|burst\w*|spray\w*|spill\w*|drench\w*|flood\w*|cascad\w*"
+    r"|stream(?:s|ing)? of water|falls? (?:off|away|down)|tears? (?:off|away)|blows? away)\b",
+    re.IGNORECASE,
+)
 
 
 def check(prompt: str, facts: Facts) -> list[str]:
@@ -282,6 +292,15 @@ def _shots(main: str, facts: Facts) -> list[str]:
             f'each beat its time instead ("at about two seconds", "as", "while"). Found: '
             f"{chained[0].strip()[:100]!r}"
         )
+    # M5 step 15o: an insert shot (an object, a place) only moves a little; asked to keep busy,
+    # the rewrite made rain on a note into water poured over it (run17 1-03).
+    if facts.shot_kind == "insert":
+        events = sorted({m.lower() for m in INSERT_EVENTS.findall(main)})
+        if events:
+            problems.append(
+                "This is an insert shot (no one in it): keep its motion small and add no events; "
+                "the state of things stays as in the first frame. Remove: " + ", ".join(events)
+            )
     return problems
 
 

@@ -143,3 +143,19 @@ def test_too_short_a_description_is_refused() -> None:
         "non_diegetic_music: N/A"
     )
     assert any("English words" in p for p in check(short, facts))
+
+
+def test_an_insert_shot_may_not_pour_water_on_its_object() -> None:
+    """M5 step 15o: run17's 1-03 (a note, no one in it) was rewritten with water bursting and
+    streaming over the note; an insert shot keeps its object as the first frame shows it."""
+    text = (
+        f"{I2VA_INSTRUCTION}\n\nintegrated_multimodal_description: [Shot 1] Live-action, "
+        "cinematic, a yellow note on wet glass. A larger drop bursts above it and a thin "
+        "stream of water runs behind the note.\n\noverall_soundscape: Rain.\n\n"
+        "non_diegetic_music: N/A"
+    )
+    insert = Facts("i2va", 5, "9:16", "", [Picture("first_frame")], shot_kind="insert")
+    found = [p for p in check(text, insert) if "insert shot" in p]
+    assert found and "bursts" in found[0] and "stream of water" in found[0]
+    acted = Facts("i2va", 5, "9:16", "", [Picture("first_frame")])
+    assert not [p for p in check(text, acted) if "insert shot" in p]

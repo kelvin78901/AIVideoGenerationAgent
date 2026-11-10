@@ -68,6 +68,12 @@ MOVE = {"static": "固定机位", "push": "缓推", "follow": "跟拍", "pan": "
 # A shot whose references have no character: said outright, or the model adds a stranger
 # (1-02, the umbrella at the door: 5 of 6 drafts had a woman in them; 1 of 6 with this).
 NO_PEOPLE = "这个镜头里没有人物，不要画人。"
+# The physical world (M5 step 15o, Kelvin 2026-11-10): what a real camera in a real place sees.
+REAL_WORLD = (
+    "按真实世界实拍：人物和道具按真实尺寸和比例（长柄伞立着到人的胯部，便利贴手掌大小）；"
+    "材质真实、有使用痕迹，不是产品图或 CG 渲染；光线来自画面里的光源；手写的字是手写笔迹，"
+    "被雨打湿的地方颜色变深、墨迹微晕；人体自然（每只手五根手指），物体不互相穿插、不悬空。"
+)
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
 
@@ -191,6 +197,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             blocks.append(Block("画面文字", f"{t['name']}：留出位置，不要画字（后期贴字）"))
     if not await _has_character(session, shot.get("asset_ids") or []):
         blocks.append(Block("人物", NO_PEOPLE))
+    blocks.append(Block("真实感", REAL_WORLD))
     return Inputs(
         blocks=blocks,
         deps=deps,
