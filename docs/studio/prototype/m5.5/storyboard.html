@@ -1,0 +1,194 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M5.5 草图 · 分镜</title>
+<link rel="stylesheet" href="sketch.css">
+<script>if (location.search.includes("dark")) document.documentElement.classList.add("dark");</script>
+</head>
+<body>
+<div class="page">
+  <h1>M5.5 草图 · 分镜页</h1>
+  <p class="sub">线框级，只定位置、文案和交互；视觉照现在的分镜页。黄色便签是给 Kelvin 的说明，不是界面。镜头用示例剧 1-08（开门、关门、再开门）。</p>
+
+  <!-- S1 -->
+  <div class="frame"><span class="tag">S1 · 镜头列表上方：分镜检查</span>
+    <div class="banner">
+      <b>分镜检查 · 3 处提示</b>（只是提示，确认镜头照常）　<a class="btn sm">重新检查 · DeepSeek 约 $0.002</a>
+      <ul>
+        <li><b>1-08</b> 同一个变化出现两次：开门 → 关门 → 再开门。犹豫可以演成手搭门把、停住、吸气。<span class="badge">规则</span></li>
+        <li><b>1-06 → 1-08</b> 同一场、同机位、同景别（中景 · 固定），接起来像回放。<span class="badge">规则</span></li>
+        <li><b>1-03</b> 插入镜头写了「雨水把字一点点泡开」，状态变化应该摆好，不要在镜头里发生。<span class="badge">DeepSeek</span></li>
+      </ul>
+    </div>
+    <div class="row" style="margin-top:12px">
+      <div class="cand"><div class="thumb g1"><span class="corner">1-06</span><span class="cap">背靠着门，画外音</span></div><span class="mono">1-06</span><span class="badge warn">1 处提示</span></div>
+      <div class="cand"><div class="thumb g2"><span class="corner">1-07</span><span class="cap">手机亮屏 23:52</span></div><span class="mono">1-07</span></div>
+      <div class="cand sel"><div class="thumb g1"><span class="corner">1-08</span><span class="cap">开门，关门，再开门</span></div><span class="mono">1-08</span><span class="badge warn">2 处提示</span></div>
+    </div>
+    <div class="note"><b>说明：</b>规则检查读的时候现算、不花钱；DeepSeek 那部分在分镜规划出完后自动跑一次，改了分镜显示「检查结果过时 · 重新检查」。镜头卡只加一个提示数徽标，点开看镜头设置里的详情。</div>
+  </div>
+
+  <!-- S2 -->
+  <div class="frame"><span class="tag">S2 · 镜头设置：镜头契约（在「镜头类型」之后、「画面描述」之前）</span>
+    <div class="card" style="max-width:1100px">
+      <div class="banner" style="margin-bottom:10px">这个镜头 2 处提示：同一个变化出现两次（开门）；和 1-06 接起来像回放。</div>
+      <div class="label">镜头契约 <span class="sub">分镜规划给的，关键帧画「开始时」，视频照它演；改了关键帧和视频会标待更新</span></div>
+      <div class="label" style="margin-top:6px">表演方式</div>
+      <span class="seg"><span class="on">表演</span><span>动作</span><span>对白</span><span>插入（空镜、静物）</span></span>
+      <div class="sub" style="margin-top:4px">表演：1–2 个动作，改变状态的动作只做一次。插入镜头只许微动（光、一滴水、镜头轻漂），不发生事件。</div>
+      <div class="row" style="margin-top:10px">
+        <div class="grow">
+          <div class="label">开始时</div>
+          <table class="kv"><tr><th style="width:90px">谁 / 什么</th><th>状态</th><th></th></tr>
+            <tr><td>林晚</td><td><input class="input" style="width:100%" value="站在门内，右手搭在门把上，没穿外套"></td><td>×</td></tr>
+            <tr><td>家门</td><td><input class="input" style="width:100%" value="关着"></td><td>×</td></tr>
+            <tr><td colspan="3"><a class="btn sm">＋ 加一行</a></td></tr></table>
+        </div>
+        <div class="grow">
+          <div class="label">结束时</div>
+          <table class="kv"><tr><th style="width:90px">谁 / 什么</th><th>状态</th><th></th></tr>
+            <tr><td>林晚</td><td><input class="input" style="width:100%" value="站在门口，望向门外地上"></td><td>×</td></tr>
+            <tr><td>家门</td><td><input class="input" style="width:100%" value="开着"></td><td>×</td></tr>
+            <tr><td colspan="3"><a class="btn sm">＋ 加一行</a>　<span class="sub">1-09 从这里接</span></td></tr></table>
+        </div>
+      </div>
+      <div class="label">道具在这个镜头里 <span class="sub">状态是摆好的，不在镜头里发生</span></div>
+      <table class="kv"><tr><th style="width:120px">道具</th><th>状态</th></tr>
+        <tr><td><span class="chip">红色长柄伞</span></td><td><input class="input" style="width:100%" value="靠在门外墙边，伞面还滴着水"></td></tr>
+        <tr><td><span class="chip">黄色便利贴</span></td><td><input class="input" style="width:100%" value="贴在伞柄上，有字，边角湿"></td></tr></table>
+      <div class="label">台词说法</div>
+      <table class="kv"><tr><th>行</th><th style="width:330px">怎么说</th></tr>
+        <tr><td>林晚（OS）：三年了。他凭什么。</td><td><span class="seg"><span>对白（嘴动）</span><span>画外</span><span class="on">内心独白（嘴闭着）</span></span></td></tr></table>
+      <div class="sub" style="margin-top:4px">内心独白和画外音不进视频，剪辑时另铺一轨。</div>
+    </div>
+    <div class="note"><b>说明：</b>契约在分镜规划里一起生成；已确认的镜头改契约走影响范围弹窗（和改景别一样）。连续镜头的「开始时」默认就是上一镜的「结束时」，显示成灰字「接 1-08 结束时」，可以改。</div>
+  </div>
+
+  <!-- S3 -->
+  <div class="frame"><span class="tag">S3 · 镜头设置：首帧 —— 检查结果、来源菜单</span>
+    <div class="row">
+      <div class="card">
+        <div class="label" style="margin-top:0">首帧 <span class="sub">本镜关键帧 · 画的是「开始时」</span></div>
+        <div class="row">
+          <div class="cand sel"><div class="thumb g1"><span class="corner">A</span><span class="tr badge info">已选</span></div>
+            <span>v2 · A</span><span class="sub">本地草稿</span>
+            <div class="checks"><div class="ok">✓ 起始状态对</div><div class="ok">✓ 伞的比例对</div><div class="bad">✗ 便利贴上没有字</div></div></div>
+          <div class="cand"><div class="thumb g4"><span class="corner">B</span></div>
+            <span>v2 · B</span><span class="sub">本地草稿</span>
+            <div class="checks"><div class="bad">✗ 门是开着的（应为关着）</div><div class="ok">✓ 伞的比例对</div></div></div>
+          <div class="cand"><div class="thumb g2"><span class="corner">上传</span><span class="tr badge warn">分辨率偏低</span></div>
+            <span>v3 · 上传</span><span class="sub">IMG_2231.jpg · 640×1138</span>
+            <div class="checks"><div class="sub">· 还没检查 <a class="btn sm ghost">检查</a></div></div></div>
+        </div>
+        <div class="row" style="margin-top:10px; gap:8px">
+          <a class="btn">用 API 出终版 · 约 $0.13</a>
+          <a class="btn">换来源 ▾</a>
+          <span class="sub">检查：Gemini 3.1 Flash-Lite，每张约 $0.0005，出完自动跑</span>
+        </div>
+      </div>
+      <div class="col">
+        <div class="sub">「换来源 ▾」展开（对选中的那张操作）：</div>
+        <div class="menu">
+          <div>重新生成 3 张 <small>本地 · 免费</small></div>
+          <div class="hl">上传图片… <small>按 9:16 裁</small></div>
+          <div class="sep"></div>
+          <div>以这张为底重画… <small>A</small></div>
+          <div>局部修复… <small>A</small></div>
+          <div>放大到 1080×1920 <small>本地约 40 秒</small></div>
+          <div class="sep"></div>
+          <div>用 API 出终版 <small>约 $0.13</small></div>
+        </div>
+        <div class="sub" style="max-width:250px">没装图片超分时：「放大」灰掉，悬停写「要先在环境与安装里装 SeedVR2 图片节点」。</div>
+      </div>
+    </div>
+    <div class="note"><b>说明：</b>每个操作都出一个新版本的候选（历史里能换回），选中、确认镜头照旧。检查只提示：带 ✗ 的照样能选、能确认。悬停 ✗ 显示模型原话。上传、重画、修复、放大出来的候选也会自动检查。</div>
+  </div>
+
+  <!-- S4 -->
+  <div class="frame"><span class="tag">S4 · 镜头设置：参考（素材 + 这个镜头的参考图 + 风格板）</span>
+    <div class="card" style="max-width:900px">
+      <div class="label" style="margin-top:0">参考素材 <span class="sub">已锁定的才会传给模型</span></div>
+      <div class="row" style="gap:6px"><span class="chip">角色 · 林晚（+2 张：服装、发型）</span><span class="chip">场景 · 老小区楼道 · 夜</span><span class="chip">道具 · 红色长柄伞（+比例参考）</span><span class="chip">道具 · 黄色便利贴</span><a class="btn sm">＋ 添加参考</a></div>
+      <div class="label">这个镜头的参考图 <span class="sub">只给这个镜头用，标明参考什么</span></div>
+      <div class="row">
+        <div class="col"><div class="thumb small g4"></div><select class="input"><option>构图</option></select></div>
+        <div class="col"><div class="thumb small g5"></div><select class="input"><option>光线</option></select></div>
+        <div class="col" style="justify-content:center; height:150px"><a class="btn">上传参考图</a><span class="sub">构图 / 姿势 / 光线 / 风格</span></div>
+      </div>
+      <div class="label">剧的风格板 <span class="sub">整部剧共用，在「成片规格」页管理；排在最后</span></div>
+      <div class="row"><div class="thumb sq g3"></div><div class="thumb sq g6"></div><div class="thumb sq g4"></div><span class="sub" style="align-self:center">3 张 · <a class="btn sm ghost">去管理</a></span></div>
+      <div class="banner info" style="margin-top:12px">发给 Nano Banana 2.1（最多 14 张）：① 林晚 ② 林晚·服装 ③ 林晚·发型 ④ 楼道 ⑤ 红伞 ⑥ 红伞·比例 ⑦ 便利贴 ⑧ 构图参考 ⑨ 光线参考 ⑩–⑫ 风格板。<br>本地 Klein（3 张）：① 林晚 ② 楼道 ③ 红伞，其余在提示词里点名。</div>
+    </div>
+    <div class="note"><b>说明：</b>顺序固定是 素材 → 镜头参考 → 风格板，超出模型张数的从后往前去掉（风格板先去）。提示词里写「图 8 只参考构图」。<b>要 Kelvin 定</b>：风格板放在「成片规格」页（整部剧的设置都在那）还是素材页？草图先放成片规格。</div>
+  </div>
+
+  <!-- S5 -->
+  <div class="frame"><span class="tag">S5 · 弹窗：上传并裁切</span>
+    <div class="dialog" style="width:760px">
+      <h2>上传首帧 · 镜头 1-08</h2>
+      <div class="row">
+        <div style="width:420px; height:315px; background:var(--media); border-radius:6px; position:relative; overflow:hidden">
+          <div style="position:absolute; inset:0; background:linear-gradient(120deg,#6fae9c,#c9b28c); opacity:.55"></div>
+          <div style="position:absolute; top:0; bottom:0; left:150px; width:177px; border:2px solid #fff; box-shadow:0 0 0 999px rgba(0,0,0,.5)"></div>
+          <span style="position:absolute; left:206px; top:140px; color:#fff; font-size:12px">⇆ 拖动</span>
+        </div>
+        <div class="col grow">
+          <div>IMG_2231.jpg</div>
+          <div class="sub">原图 4032×3024（4:3）<br>成片 9:16 → 裁出 1701×3024 → 缩到 1080×1920</div>
+          <div class="label">裁切框 <span class="sub">固定 9:16，拖动选位置，滚轮缩放</span></div>
+          <span class="seg"><span class="on">居中</span><span>靠左</span><span>靠右</span></span>
+          <div class="banner" style="margin-top:8px">分辨率不够时：「裁出来 640×1138，小于草稿尺寸 768×1365，放大后会发糊。可以先用，之后点『放大』。」</div>
+        </div>
+      </div>
+      <div class="foot"><span class="sub" style="margin-right:auto">上传后是一张新候选，可以直接选它确认镜头，也可以拿去重画、放大、出终版。</span><a class="btn">取消</a><a class="btn primary">上传为候选</a></div>
+    </div>
+  </div>
+
+  <!-- S6 -->
+  <div class="frame"><span class="tag">S6 · 弹窗：以这张为底重画</span>
+    <div class="dialog">
+      <h2>以这张为底重画 · 1-08 v2 · A</h2>
+      <div class="row">
+        <div class="thumb g1"></div>
+        <div class="col grow">
+          <div class="label" style="margin-top:0">想改什么</div>
+          <textarea class="textarea">门再旧一点，门框上有掉漆；她的手放在门把上，还没拧。</textarea>
+          <div class="label">改动幅度</div>
+          <div class="slider"><i style="width:40%"></i><b style="left:38%"></b></div>
+          <div class="ticks"><span>小：构图人物不动</span><span>中</span><span>大：只留大致构图</span></div>
+          <div class="label">用哪个模型</div>
+          <span class="seg"><span class="on">FLUX.3 Klein（本地）· 免费</span><span>Nano Banana 2.1 · $0.07 / 张</span></span>
+          <div class="sub">API 模型没有数值强度，幅度写进提示词。</div>
+        </div>
+      </div>
+      <div class="foot"><span class="sub" style="margin-right:auto">出 2 张候选 · 参考素材照常一起传</span><a class="btn">取消</a><a class="btn primary">重画 2 张</a></div>
+    </div>
+  </div>
+
+  <!-- S7 -->
+  <div class="frame"><span class="tag">S7 · 弹窗：局部修复</span>
+    <div class="dialog" style="width:760px">
+      <h2>局部修复 · 1-02 v2 · A</h2>
+      <div class="row">
+        <div style="width:236px; height:420px; border-radius:6px; position:relative; overflow:hidden" class="g2">
+          <div style="position:absolute; left:92px; top:250px; width:70px; height:56px; border-radius:40% 50% 45% 55%; background:rgba(230,40,40,.45); border:1px dashed #fff"></div>
+        </div>
+        <div class="col grow">
+          <div class="row" style="gap:6px"><span class="seg"><span class="on">画笔</span><span>橡皮</span></span><span class="sub">大小</span><input class="input" style="width:60px" value="32"><a class="btn sm">清除</a><a class="btn sm">撤销</a></div>
+          <div class="label">涂出来的地方画成</div>
+          <textarea class="textarea">伞柄上贴一张黄色便利贴，圆珠笔手写「周屿，伞我拿走了。——晚」，字有点歪，边角被雨打湿。</textarea>
+          <div class="label">用哪个模型</div>
+          <span class="seg"><span class="on">FLUX.3 Klein 遮罩（本地）· 免费</span><span>GPT Image 2 · $0.23 / 张</span></span>
+          <div class="sub">涂抹以外的像素保持不变。</div>
+        </div>
+      </div>
+      <div class="foot"><span class="sub" style="margin-right:auto">出 2 张候选</span><a class="btn">取消</a><a class="btn primary">修复 2 张</a></div>
+    </div>
+  </div>
+
+  <div class="note"><b>没画的：</b>「模型与兜底」页多六行（分镜检查、关键帧检查、take 检查、重画、局部修复、图片放大），样子和现有行一样。</div>
+</div>
+</body>
+</html>

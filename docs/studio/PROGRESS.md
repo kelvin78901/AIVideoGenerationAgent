@@ -10,12 +10,12 @@
 
 ## 已完成的小步
 
-- **第 0 步**（本提交）：开分支、存计划、DECISIONS「M5.5 计划」、ROADMAP M5.5 加契约和检查几项。不改代码，没跑测试。
+- **第 0 步**（3f94986）：开分支、存计划、DECISIONS「M5.5 计划」、ROADMAP M5.5 加契约和检查几项。不改代码，没跑测试。
 
 ## 下一步
 
-- **第 1 步：界面草图**（计划第 E 节）：静态 HTML 放 `docs/studio/prototype/m5.5/`，照 M0.5 的风格（看 `web/src` 现有的分镜页 `pages/storyboard/ShotSettings.tsx`、素材页 `pages/assets/AssetDetail.tsx`、take 墙 `pages/generate/TakeWall.tsx` 的样子），截亮 / 暗、宽屏（Kelvin 用约 2000 px）。做完**停下等 Kelvin 看**，看过才做前端（第 8、16 步）；后端第 2–7 步不等草图也可以先做，但先问 Kelvin。
-- 之后第 2 步从 `pipeline/components/plan.py:PlannedShot`、`shots/ops.py:normalize`、`shots/schema.py:ShotOut` 开始。
+- **第 1 步草图已提交（本提交），等 Kelvin 看**：`docs/studio/prototype/m5.5/`（README 列了三页、亮 / 暗截图）。看过才做前端（第 8、16 步）；**Kelvin 2026-11-10 定后端第 2–7 步同时做**。草图里要 Kelvin 定的三件事见「等 Kelvin 的事」。
+- **下一步：第 2 步契约数据**，从 `pipeline/components/plan.py:PlannedShot`、`shots/ops.py:normalize`、`shots/schema.py:ShotOut` 开始。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -62,6 +62,8 @@
 - **改代码前先看 ruff 有没有已经改过行**：`ruff format` 会把长行拆开，之后用 sed 按原行号替换会留下碎片（第 4 步踩过）。
 
 ## 等 Kelvin 的事
+
+- **M5.5 草图**（`docs/studio/prototype/m5.5/`）：看布局和文案；另要定：① 剧的风格板放「成片规格」页还是素材页（草图放成片规格）；② 画面文字 OCR 不一致现在挡锁定（要点「仍然锁定」），要不要也改成只提示；③ 原型 take 卡上的「局部修复」（视频）不在 M5.5，先拿掉、M6 和口型修复一起做？
 
 - 以后：火山方舟开通 Seedance 2.5（要交保证金，Kelvin 先不管）后补跑 `live_video.py --only seedance`。 可选：想在本机 ComfyUI 里用 DramaStudio 节点，在 Setup 页勾「DramaStudio 节点包」安装（先存快照，没替你装），再重启 ComfyUI。已定：`w_h3` 的两个 Turbo LoRA 留着，以后可能做「快速草稿」档（2026-10-28）；本地 H3 20 步、原生配音合格（2026-10-27）。
 
