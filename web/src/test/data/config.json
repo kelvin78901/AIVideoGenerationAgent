@@ -270,6 +270,19 @@
         "unavailable": {}
       },
       {
+        "id": "kfcheck",
+        "stage": "storyboard",
+        "kind": "vlm",
+        "api_models": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "local_models": [
+          "local/qwen3-vl-32b"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "plancheck",
         "stage": "storyboard",
         "kind": "llm",
@@ -1518,6 +1531,28 @@
         ],
         "per_call_cap_usd": 0.8
       },
+      "kfcheck": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3-vl-32b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
       "plancheck": {
         "mode": "api",
         "api_model": "deepseek/v4-pro",
@@ -2241,6 +2276,28 @@
           "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.8
+      },
+      "kfcheck": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
       },
       "plancheck": {
         "mode": "api",
@@ -2973,6 +3030,28 @@
         ],
         "per_call_cap_usd": 0.8
       },
+      "kfcheck": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/gemini-3.1-flash-lite",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
       "plancheck": {
         "mode": "local",
         "api_model": "deepseek/v4.1-flash",
@@ -3593,6 +3672,25 @@
         },
         "alt_order": [],
         "per_call_cap_usd": 0.8
+      },
+      "kfcheck": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.02
       },
       "plancheck": {
         "mode": "local",

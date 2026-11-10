@@ -33,6 +33,7 @@ from drama_series_agent.core.config import Resolved, get_config
 from drama_series_agent.core.models_db import Asset, OutputSpecRow, Product, ProductVersion, Shot
 from drama_series_agent.episodes.service import script_product
 from drama_series_agent.modelhub.adapters.base import Estimate, ModelError
+from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.workflows import (
     Workflow,
@@ -40,6 +41,7 @@ from drama_series_agent.modelhub.workflows import (
     load_workflow,
     spec_workflows_dir,
 )
+from drama_series_agent.pipeline import kfcheck
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.img import prop_physical, prop_text
 from drama_series_agent.pipeline.components.media import (
@@ -57,7 +59,9 @@ from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
+from drama_series_agent.pipeline.runs import item_of
 from drama_series_agent.prompts.compiler import Block
+from drama_series_agent.qa import ocr
 from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
@@ -203,19 +207,38 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             blocks.append(Block("画面文字，必须逐字一致", f"「{t['exact']}」（{t['name']}）"))
         else:
             blocks.append(Block("画面文字", f"{t['name']}：留出位置，不要画字（后期贴字）"))
+    # 关键帧检查 (M5.5 step 6): what each candidate is checked for.
+    asks: dict[str, Any] = {
+        "start": [],
+        "scale": [],
+        "texts": [t for t in texts if t["method"] == "model"],
+        "inner": [],
+        "no_people": False,
+    }
     if shot.get("contract"):
         filmed_lines = [x for x in (scene or {}).get("lines") or [] if x.get("id") in filmed]
-        blocks += await contract_blocks(session, shot, filmed_lines)
+        more, c = await contract_blocks(session, shot, filmed_lines)
+        blocks += more
+        asks["start"] = [f"{x['subject']}：{x['state']}" for x in c["start"]]
+        asks["inner"] = inner_speakers(c, filmed_lines)
     if sizes := await prop_sizes(session, list(shot.get("asset_ids") or [])):
         blocks.append(Block("尺寸", SIZE_NOTE + sizes))
+        asks["scale"] = sizes.split("；")
     if not await _has_character(session, shot.get("asset_ids") or []):
         blocks.append(Block("人物", NO_PEOPLE))
+        asks["no_people"] = True
     blocks.append(Block("真实感", REAL_WORLD))
     return Inputs(
         blocks=blocks,
         deps=deps,
         episode_id=episode_id,
-        context={"frame": frame, "refs": refs, "unlocked": unlocked, "texts": texts},
+        context={
+            "frame": frame,
+            "refs": refs,
+            "unlocked": unlocked,
+            "texts": texts,
+            "checks": asks,
+        },
     )
 
 
@@ -260,9 +283,19 @@ async def prop_sizes(session: AsyncSession, ids: list[str]) -> str:
     return "；".join(rows)
 
 
+def inner_speakers(c: dict[str, Any], lines: list[dict[str, Any]]) -> list[str]:
+    """Who speaks only in their head in the lines a shot films (its contract's delivery)."""
+    names = [
+        str(x.get("character_name") or "")
+        for x in lines
+        if c["delivery"].get(str(x.get("id"))) == "inner"
+    ]
+    return list(dict.fromkeys(n for n in names if n))
+
+
 async def contract_blocks(
     session: AsyncSession, shot: dict[str, Any], lines: list[dict[str, Any]]
-) -> list[Block]:
+) -> tuple[list[Block], dict[str, Any]]:
     """The keyframe's part of the shot's contract (M5.5): the start, the props' states, who
     speaks only in their head. ``lines``: the script lines it films (payload dicts)."""
     assets = await asset_rows(session, list(shot.get("asset_ids") or []))
@@ -276,14 +309,9 @@ async def contract_blocks(
         out.append(Block("开始时", START_NOTE + states_text(c["start"])))
     if c["props"] and props_text(c["props"], assets):
         out.append(Block("道具", PROPS_NOTE + props_text(c["props"], assets)))
-    inner = [
-        str(x.get("character_name") or "")
-        for x in lines
-        if c["delivery"].get(str(x.get("id"))) == "inner"
-    ]
-    for who in dict.fromkeys(w for w in inner if w):
+    for who in inner_speakers(c, lines):
         out.append(Block("嘴", INNER_NOTE.format(who=who)))
-    return out
+    return out, c
 
 
 async def _references(
@@ -322,9 +350,18 @@ async def _references(
         p = products.get(a.id)
         if a.kind == "text":
             t = text_settings(a, p.settings_json if p else None)
-            texts.append({"name": a.name, "exact": t["exact"], "method": t["method"]})
+            texts.append(
+                {"name": a.name, "exact": t["exact"], "method": t["method"], "style": t["style"]}
+            )
         elif (written := prop_text(a, p)) is not None:
-            texts.append({"name": a.name, "exact": written["exact"], "method": "model"})
+            texts.append(
+                {
+                    "name": a.name,
+                    "exact": written["exact"],
+                    "method": "model",
+                    "style": written["style"],
+                }
+            )
         ref = await locked_ref(session, p) if p is not None else None
         if ref is None or p is None:
             unlocked.append(a.name)
@@ -512,21 +549,73 @@ class KfComponent(MediaComponent):
         draft.dependencies = [*draft.dependencies, *deps]
         if source:
             draft.params["source"] = {"version_id": source[0].id, "idx": source[1]}
+        await self._check(ctx, inputs, draft)
         return draft
 
     def estimate(self, inputs: Inputs, compiled: str, model: str) -> Estimate:
         source = bool(inputs.params.get("source_version_id"))
         frame = inputs.context["frame"]
+        n = 1 if source else self.candidates()
         req = self.image_request(
             compiled,
-            n=1 if source else self.candidates(),
+            n=n,
             size=frame_size(frame, self.where_of(model)),
             aspect=frame["aspect"],
             seed=None,
             task="final" if source else "keyframe",
             extra=self._text_params(inputs),
         )
-        return self.services.registry.get(model).estimate(req)
+        parts = [self.services.registry.get(model).estimate(req)]
+        asks: dict[str, Any] = inputs.context.get("checks") or {}
+        look = kfcheck.estimate(self.services, route_model(self.services, kfcheck.KFCHECK), asks)
+        if kfcheck.has_asks(asks) and look is not None:  # 关键帧检查: one look a candidate
+            parts += [look] * n
+        return Estimate(
+            cost_usd=sum(e.cost_usd for e in parts),
+            seconds=sum(e.seconds for e in parts),
+            priced=all(e.priced for e in parts),
+        )
+
+    def mock_responders(self) -> dict[str, Responder]:
+        return {kfcheck.TASK: kfcheck.mock_check}
+
+    async def _check(self, ctx: RunContext, inputs: Inputs, draft: VersionDraft) -> None:
+        """关键帧检查 (M5.5): each candidate looked at against its shot and its drawn words
+        read back by OCR, into ``payload.candidates[i].check`` (only a warning)."""
+        asks = inputs.context.get("checks") or {}
+        if not kfcheck.has_asks(asks):
+            return
+        call_ctx = self._call_ctx(ctx, inputs.episode_id)
+        item = item_of(ctx.product)
+        candidates = list(draft.payload.get("candidates") or [])
+        for f in draft.files:
+            i = int(f.get("idx") or 0)
+            if f.get("role") != "candidate" or i >= len(candidates):
+                continue
+            items: list[dict[str, Any]] = []
+            model = None
+            seen = await kfcheck.look(self.services, f["sha256"], asks, item, call_ctx)
+            if seen is not None:
+                items, model = seen
+            if asks.get("texts"):
+                read = await ocr.read(
+                    self.services.router, self.services.store, f["sha256"], call_ctx
+                )
+                for t in asks["texts"]:
+                    if read is not None:
+                        items.append(
+                            {
+                                "check": "ocr",
+                                "ok": ocr.contains(read, t["exact"]),
+                                "note": read[:60],
+                            }
+                        )
+            if items or model:
+                candidates[i] = {
+                    **candidates[i],
+                    "check": {"items": items, "ok": all(x["ok"] for x in items), "model": model},
+                }
+        draft.payload = {**draft.payload, "candidates": candidates}
 
     # ------------------------------------------------------------------ internals
 
@@ -535,6 +624,17 @@ class KfComponent(MediaComponent):
         """The characters to draw (Mock writes them into the picture for OCR)."""
         drawn = [t["exact"] for t in inputs.context.get("texts") or [] if t["method"] == "model"]
         return {"text": "".join(drawn)} if drawn else {}
+
+
+def route_model(services: Any, route_id: str) -> str | None:
+    """A route's default model, for estimates (which cannot read the series' own route)."""
+    try:
+        route = get_config().components.component(route_id).balanced
+    except KeyError:
+        return None
+    key = route.local if route.mode == "local" else route.api
+    known = {s.key for s in services.registry.specs()}
+    return key if key in known else None
 
 
 def _vertical(aspect: str) -> bool:

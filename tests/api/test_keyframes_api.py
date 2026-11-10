@@ -269,3 +269,27 @@ def test_a_locked_prop_gets_its_scale_reference(client: TestClient) -> None:
     named = prompt.split("参考图 ", 1)[1]
     assert "旧黑发圈（道具）；参考图" in named
     assert named.index("旧黑发圈（道具）") < named.index("旧黑发圈（和人物同框，看大小）")
+
+
+def test_each_keyframe_candidate_is_checked(client: TestClient) -> None:
+    """关键帧检查 (M5.5 step 6): a vision model against the shot's promises, the note's words read
+    back by OCR, per candidate; only a warning. 1-02 (the umbrella and the note at the door,
+    nobody there): its start, the props' sizes, the words, nobody in it."""
+    version = _run(client, "1-02")["versions"][-1]
+    cands = version["payload"]["candidates"]
+    assert len(cands) == 3
+    for c in cands:
+        checks = {x["check"]: x["ok"] for x in c["check"]["items"]}
+        assert checks == {"start": True, "scale": True, "text": True, "people": True, "ocr": True}
+        assert c["check"]["ok"] is True and c["check"]["model"] == "google/gemini-3.1-flash-lite"
+    calls = _rows(client, ModelCall, ModelCall.component_id == "kfcheck")
+    assert len(calls) == 3 and {c.product_id for c in calls} == {_kf(client, "1-02")["id"]}
+    # 1-06: 林晚's inner voice, lips closed.
+    door = _run(client, "1-06")["versions"][-1]["payload"]["candidates"][0]["check"]["items"]
+    assert {x["check"] for x in door} >= {"start", "mouth"}
+    # A failed look leaves the vision part unchecked; OCR still reads the note's words (1-04).
+    _state(client).registry.mock_settings.fail_keys.add("google/gemini-3.1-flash-lite")
+    unchecked = _run(client, "1-04")["versions"][-1]["payload"]["candidates"]
+    for c in unchecked:
+        assert c["check"]["model"] is None
+        assert {x["check"] for x in c["check"]["items"]} == {"ocr"}

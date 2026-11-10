@@ -1,0 +1,12 @@
+{#- 关键帧检查 (M5.5 step 6, ``pipeline/kfcheck.py``): what the shot promised, one check per block.
+    The tags in square brackets ([start] …) are read back by the Mock. -#}
+You check one keyframe of a short drama against what its shot asks for. Look only at the picture. For each check below, say whether the picture follows it.
+
+{% if start %}[start] The moment the shot begins (Chinese): {{ start | join("; ") }}. Do the people and things look like this?
+{% endif %}{% if scale %}[scale] Real sizes of the props (Chinese): {{ scale | join("; ") }}. Are the props drawn at a believable size next to the people and the room (a long umbrella reaches about a person's hip, a sticky note fits in a palm)?
+{% endif %}{% if texts %}[text] Words that must be visible (Chinese, exact): {% for t in texts %}"{{ t.exact }}" on {{ t.name }}{% if t.style == "handwritten" %} (handwritten: uneven pen strokes, not a printed font){% endif %}{% if not loop.last %}; {% endif %}{% endfor %}. Are the words there, readable and in the right lettering?
+{% endif %}{% if inner %}[mouth] {{ inner | join(", ") }} only speak in their head here: are their lips closed?
+{% endif %}{% if no_people %}[people] Nobody should be in this picture: is it empty of people?
+{% endif %}
+Answer with JSON only, one item per check above, a short note in Chinese when it fails:
+{"items": [{"check": "start", "ok": true, "note": ""}, {"check": "scale", "ok": false, "note": "伞立起来到门把手高，太大了"}]}

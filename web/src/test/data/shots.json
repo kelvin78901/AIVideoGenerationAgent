@@ -1851,7 +1851,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0036,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2056,7 +2056,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0037,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2257,7 +2257,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0037,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2390,7 +2390,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0037,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2519,7 +2519,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0037,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2648,7 +2648,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0037,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2777,7 +2777,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0037,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null

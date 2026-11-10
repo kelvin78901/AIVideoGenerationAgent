@@ -114,6 +114,15 @@ export const CandidatesPayloadSchema = z.object({
       /** …the voice described in words, and its id when it is already an API voice. */
       design: z.string().nullable().optional(),
       voice_id: z.string().nullable().optional(),
+      /** Keyframes (M5.5 关键帧检查): what a vision model and OCR found; only a warning.
+       * `check` start / scale / text / mouth / people / ocr; `note` is content. */
+      check: z
+        .object({
+          items: z.array(z.object({ check: z.string(), ok: z.boolean(), note: z.string() })),
+          ok: z.boolean(),
+          model: z.string().nullable(),
+        })
+        .optional(),
     }),
   ),
   /** On-screen text: the settings the candidates were made with. */

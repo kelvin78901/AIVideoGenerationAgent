@@ -18,12 +18,13 @@
 - **4**（60e16f9）分镜检查：规则 `shots/check.py` + 组件 `plancheck`，`GET/POST /episodes/{id}/shot-checks`。
 - **5a**（4f0ff04）道具 `physical`（尺寸材质新旧）进道具图和关键帧；OCR 不一致只提示。
 - **5b**（45e867f）有字的道具（素材分析 `on`）、道具图画字 + OCR；示例剧删 txt1（素材 7/9）。
-- **5c**（本提交）比例参考：新组件 `scale`（`pipeline/components/scale.py`，槽位 `ref_scale`，编辑模型，自动采纳）：道具锁定后和一个锁定角色同框出一张（描述里提到的角色，否则同场最多的）；关键帧在道具图后面紧跟它，视频不用；模板 `templates/scale/`；Models 页 27 行；前端 `ProductSlotSchema` 加 `ref_scale`。测试：keyframes / assets / asset refs / asset sync / config / capabilities / takes API、web fixtures 重导、前端 Models / Script vitest、tsc、eslint；ruff、mypy 干净。第 5 步勾掉。**Kelvin 开着 `start.ps1` 要重启后端。**
+- **5c**（8b198bb）比例参考：新组件 `scale`（`pipeline/components/scale.py`，槽位 `ref_scale`，编辑模型，自动采纳）：道具锁定后和一个锁定角色同框出一张（描述里提到的角色，否则同场最多的）；关键帧在道具图后面紧跟它，视频不用；模板 `templates/scale/`；Models 页 27 行；前端 `ProductSlotSchema` 加 `ref_scale`。测试：keyframes / assets / asset refs / asset sync / config / capabilities / takes API、web fixtures 重导、前端 Models / Script vitest、tsc、eslint；ruff、mypy 干净。第 5 步勾掉。**Kelvin 开着 `start.ps1` 要重启后端。**
 
 ## 下一步
 
 - **第 1 步草图等 Kelvin 看**；看过才做前端（第 8、16 步）；后端第 2–7 步同时做（Kelvin 2026-11-10）。
-- **下一步：第 6 步关键帧检查** `kfcheck`（VLM，默认 Gemini 3.1 Flash-Lite，照 `pipeline/vlook.py` 走 `router.call()`、Mock 回固定结果）：每张关键帧候选出完后查道具比例、带字道具的字在不在 / 是不是手写（再跑 OCR 对逐字内容，`qa/ocr.py`）、开始状态对不对、内心独白嘴闭着；结果写版本 `qa_json`（按候选），估价并进关键帧估价（`kf.estimate`）；只提示。新路由一行（Models 页 28 行、config fixture）。
+- **6**（本提交）关键帧检查：`pipeline/kfcheck.py` + 路由 `kfcheck`（Gemini Flash-Lite），`kf._check` 每张候选看一次 + OCR（`ocr.contains`），写 `payload.candidates[i].check`；估价含看图；模板 `templates/kf/check.j2`；Models 页 28 行；前端 zod 候选加 `check`。测试：keyframes / config / capabilities API、ocr 单元、web fixtures 重导、前端 Models / Storyboard / Script vitest、tsc；ruff、mypy 干净。
+- **下一步：第 7 步 take 检查** `takecheck`（VLM 看抽帧拼图，照 `kfcheck` 的写法；`media/video.py` 加抽 6 帧拼一张图；问：重复动作、凭空的物理事件、字变了、内心独白嘴在动；加上已有的 `payload.window`、`cuts`）→ take 的 `payload.check`；`vid.py` 出完 take 后跑；路由一行（Models 页 29 行）。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

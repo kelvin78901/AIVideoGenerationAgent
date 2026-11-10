@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-10 · M5.5 第 6 步：关键帧检查
+
+- **路由 `kfcheck`**（kind `vlm`，默认 Gemini 3.1 Flash-Lite，本地 Qwen3-VL 可选），写法照 `vlook`（`pipeline/kfcheck.py`）：每张关键帧候选出完后看一次，问的东西从镜头来（`kf.gather` 的 `context.checks`）：`start`（契约的开始状态）、`scale`（有尺寸的道具）、`text`（要模型出的字，手写的要像手写）、`mouth`（内心独白的人嘴闭着）、`people`（插入镜头没人）。没东西可问就不看。回 JSON 条目；按图 + 模型 + 问题缓存；失败只是不检查（预算和确认照常拦）。
+- **字另用 OCR 逐字对**（`ocr.contains`：关键帧里还有别的东西，只要求这句字在里面，末尾标点可缺），条目 `check: ocr`，`note` 是读到的前 60 个字。OCR 是本地、不花钱，看图失败时也照跑。
+- 结果写在关键帧版本的 `payload.candidates[i].check = {items, ok, model}`，不另建表；只提示，确认镜头照常（Kelvin 2026-11-10）。估价按候选数加看图的钱（`route_model` 取路由默认模型，和视频估价看首帧一样的做法）。
+- 文字参考带 `style`（模板要用）。前端 zod 的候选加 `check`（第 8 步显示）。
+
 ## 2026-11-10 · M5.5 第 5c 步：比例参考是一个单独的组件
 
 - 计划写「组件 `img` 的编辑模型」，实际做成新路由组件 `scale`（槽位 `ref_scale`）：一个组件一个槽位是现有约定，而且它要像补视图那样自动采纳、依赖两张锁定图，和候选类的 `img` 不同。默认本地 `comfy/qwen-image-edit-hq`（和补视图一样），兜底 Nano Banana Pro。
