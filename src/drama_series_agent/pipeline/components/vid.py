@@ -40,6 +40,7 @@ from __future__ import annotations
 
 import hashlib
 import json
+import math
 from dataclasses import dataclass, replace
 from typing import Any
 
@@ -67,6 +68,7 @@ from drama_series_agent.media.video import (
     VideoInfo,
     frame,
     probe,
+    scene_cuts,
     tail_clip,
     trim_head,
     usable_window,
@@ -541,6 +543,7 @@ class VidComponent(MediaComponent):
             "duration_s": round(info.duration_s, 3),
             "asked_s": inputs.context["seconds"],
             "window": await self._window(files, inputs),
+            "cuts": await self._cuts(files),
             "resolution": "768p" if call.where == "local" else frame_["delivery"],
             "aspect": frame_["aspect"],
             "audio_mode": inputs.context["audio_mode"],
@@ -588,6 +591,7 @@ class VidComponent(MediaComponent):
                 )
             seen = look.text if look is not None else None
             facts = self._facts(inputs, req, refs, voices, r2v, ctx.lang, seen)
+            facts.duration_s = self._rendered_s(req, model)
             prompt, rewrite_call = await self._rewrite(ctx, inputs, facts)
             calls.append(rewrite_call)
             rewrite = rewrite_call.model_key
@@ -657,6 +661,7 @@ class VidComponent(MediaComponent):
             "duration_s": round(info.duration_s, 3),
             "resolution": "2k",
             "window": await self._window(files, inputs),
+            "cuts": await self._cuts(files),
         }
         payload.pop("prompt_ir", None)
         draft = self.media_draft(ctx, inputs, payload, files, [call], prompt, stage="final")
@@ -671,6 +676,16 @@ class VidComponent(MediaComponent):
             raise ComponentError("no_video")
         return await clip_files(self.services.store, video.sha256, raw=raw, head=head)
 
+    async def _cuts(self, files: list[dict[str, Any]]) -> list[float]:
+        """Where the take seems to cut inside the clip (M5 step 15j; a take of one continuous
+        shot should have none; M6 checks it)."""
+        video = next(f for f in files if f["role"] == "video")
+        data = self.services.store.path_for(video["sha256"]).read_bytes()
+        try:
+            return await scene_cuts(data)
+        except VideoError as exc:
+            raise ComponentError(exc.code) from exc
+
     async def _window(self, files: list[dict[str, Any]], inputs: Inputs) -> dict[str, float]:
         """Where the edit should take the take from and to (M5 step 15i): past the still
         opening, the spoken line whole (``media/video.py:usable_window``)."""
@@ -683,6 +698,18 @@ class VidComponent(MediaComponent):
         except VideoError as exc:
             raise ComponentError(exc.code) from exc
         return {"in_s": w.in_s, "out_s": w.out_s}
+
+    def _rendered_s(self, req: ModelRequest, model: str) -> float:
+        """How long the video H3 renders really is (M5 step 15j): the seconds asked, held to
+        the model's range (``caps.duration_s``, at least 5), rounded up to 17k + 5 frames
+        (a 4 s shot is 124 frames, 5.17 s). The rewrite paces the action over this, not over
+        the shot's seconds, or the action and the line land late and the edit cuts them."""
+        caps = self.services.registry.spec(model).caps.model_extra or {}
+        lo, hi = caps.get("duration_s") or (0, 1e9)
+        fps = float(req.params.get("fps") or 24)
+        seconds = min(max(float(req.params["duration_s"]), float(lo)), float(hi))
+        frames = math.ceil(max(0.0, seconds * fps - 5) / 17) * 17 + 5
+        return round(frames / fps, 2)
 
     def _guided(self, context: dict[str, Any], model: str) -> bool:
         """A continuous shot's take on a local workflow that takes the shot before's tail."""

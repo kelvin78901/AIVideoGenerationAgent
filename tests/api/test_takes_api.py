@@ -132,6 +132,7 @@ def test_a_first_run_makes_two_takes_from_the_keyframe(client: TestClient) -> No
         # Where the edit takes it from (step 15i): a Mock clip never moves, the shot outlasts
         # it, so all of it.
         assert take["payload"]["window"] == {"in_s": 0.0, "out_s": video["duration_s"]}
+        assert take["payload"]["cuts"] == []  # one continuous shot (step 15j)
     assert takes[1]["seed"] == takes[0]["seed"] + 1
     text = _prompt(client, takes[0])
     assert text.startswith(
@@ -214,6 +215,8 @@ def test_the_rewrite_is_told_what_the_first_frame_shows(client: TestClient) -> N
     assert "first frame of a video shot" in text["text"]
     assert picture["image_url"]["url"].startswith("data:image/png;base64,")
     assert told and told[0]["pictures"][0]["description"] == vlook.MOCK_TEXT
+    # Step 15j: paced over what H3 renders (a 4 s shot is 124 frames), not the shot's seconds.
+    assert shots["1-01"]["duration_s"] == 4 and told[0]["duration_s"] == 5.17
     (call,) = _rows(client, ModelCall, ModelCall.component_id == vlook.VLOOK)
     assert (call.model_key, call.shot_id, call.status) == (
         "google/gemini-3.1-flash-lite",

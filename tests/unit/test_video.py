@@ -113,6 +113,34 @@ def test_the_usable_window_skips_the_still_opening_and_keeps_the_line() -> None:
     assert asyncio.run(usable_window(data, 3.0, spoken=False)).in_s == 0.0
 
 
+def test_scene_cuts_find_a_change_of_picture() -> None:
+    """M5 step 15j: two different pictures one after the other is a cut at 1 s; a still clip
+    has none."""
+    import asyncio
+    import subprocess
+    from tempfile import TemporaryDirectory
+
+    from drama_series_agent.media.audio import ffmpeg_exe
+    from drama_series_agent.media.video import scene_cuts
+
+    graph = (
+        "testsrc2=s=160x288:r=24:d=1[a];color=c=red:s=160x288:r=24:d=1[b];"
+        "[a][b]concat=n=2:v=1:a=0,format=yuv420p[v]"
+    )
+    with TemporaryDirectory() as tmp:
+        src = Path(tmp) / "src.mp4"
+        subprocess.run(
+            [ffmpeg_exe(), "-hide_banner", "-loglevel", "error", "-filter_complex", graph,
+             "-map", "[v]", str(src)],
+            check=True,
+        )  # fmt: skip
+        data = src.read_bytes()
+    (cut,) = asyncio.run(scene_cuts(data))
+    assert cut == pytest.approx(1.0, abs=0.05)
+    still = asyncio.run(solid_mp4(160, 288, 1.0, 24, "336699"))
+    assert asyncio.run(scene_cuts(still)) == []
+
+
 async def test_not_a_video() -> None:
     with pytest.raises(VideoError) as err:
         await probe(b"not a video at all")

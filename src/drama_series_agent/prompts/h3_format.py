@@ -274,6 +274,14 @@ def _shots(main: str, facts: Facts) -> list[str]:
             "This take is one continuous shot: only [Shot 1], no cut, no change of place; use "
             "camera movement for any change of framing."
         )
+    # M5 step 15j: H3 cuts the shot where actions or camera moves are chained with "then".
+    chained = re.findall(r"[^.]*\bthen\b[^.]*", main, flags=re.IGNORECASE)
+    if chained:
+        problems.append(
+            'Do not chain actions or camera movements with "then" (the model cuts there); give '
+            f'each beat its time instead ("at about two seconds", "as", "while"). Found: '
+            f"{chained[0].strip()[:100]!r}"
+        )
     return problems
 
 

@@ -123,6 +123,8 @@ def test_the_first_line_of_an_i2va_prompt_is_the_official_instruction() -> None:
         (("[keyframe completion + reference generation + audio reference]",
           "[keyframe completion + reference generation]"), "must include"),
         (("<Audio 1>: reference -", "<Audio 1>: kept -"), "Use one of"),
+        # M5 step 15j: a beat chained with "then" is where H3 cuts.
+        (("Right after it she lowers", "Then she lowers"), 'with "then"'),
     ],
 )  # fmt: skip
 def test_what_breaks_the_layout_is_named(change: tuple[str, str], expect: str) -> None:
