@@ -15,7 +15,13 @@ from sqlmodel import select
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
-from drama_series_agent.core.models_db import Dependency, Product, ProductVersion, Shot
+from drama_series_agent.core.models_db import (
+    Dependency,
+    ModelCall,
+    Product,
+    ProductVersion,
+    Shot,
+)
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -139,6 +145,33 @@ def test_a_contract_edit_is_checked_and_kept(client: TestClient) -> None:
         assert r.status_code == 422, (bad, r.text)
     r = client.patch(f"{V1}/shots/demo-shot-1-05", json={"contract": {"mood": "x"}})
     assert r.status_code == 422  # not a field (the request schema)
+
+
+def test_the_storyboard_check(client: TestClient) -> None:
+    """分镜检查 (M5.5): the rules at once (1-08 opens the door twice and looks like a replay of
+    1-06), the model's check when asked (Mock: 1-03), stale once the plan changes."""
+    url = f"{V1}/episodes/{EP1}/shot-checks"
+    first = client.get(url).json()
+    assert [(i["label"], i["code"], i["source"]) for i in first["issues"]] == [
+        ("1-08", "undone", "rule"),
+        ("1-08", "replay", "rule"),
+    ]
+    assert first["issues"][0]["params"]["steps"].startswith("拉开 → 关上")
+    assert first["issues"][1]["params"]["other"] == "1-06"
+    assert first["llm_state"] == "none"  # its product is made with the episode
+    resp = client.post(url)
+    assert resp.status_code == 200, resp.text
+    _wait(client, resp.json()["id"])
+    checked = client.get(url).json()
+    assert checked["llm_state"] == "ready"
+    llm = [i for i in checked["issues"] if i["source"] == "llm"]
+    assert [(i["label"], i["code"]) for i in llm] == [("1-03", "insert_event")]
+    assert "泡开" in llm[0]["text"]
+    calls = _rows(client, ModelCall, ModelCall.component_id == "plancheck")
+    assert len(calls) == 1
+    client.patch(f"{V1}/shots/demo-shot-1-05", json={"framing": "wide"})
+    assert client.get(url).json()["llm_state"] == "stale"
+    assert client.get(f"{V1}/episodes/nope/shot-checks").status_code == 404
 
 
 def test_a_dialogue_shot_is_never_shorter_than_its_audio(client: TestClient) -> None:

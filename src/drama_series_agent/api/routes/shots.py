@@ -4,12 +4,13 @@ and adopt it (``shots/service.py``)."""
 
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends
 
 from drama_series_agent.api.state import StudioState, get_state
-from drama_series_agent.shots.schema import ShotOut, ShotPatch, ShotSplitIn
+from drama_series_agent.core.jobs import job_public
+from drama_series_agent.shots.schema import ShotChecksOut, ShotOut, ShotPatch, ShotSplitIn
 
 router = APIRouter(tags=["shots"])
 
@@ -20,6 +21,18 @@ State = Annotated[StudioState, Depends(get_state)]
 async def list_shots(episode_id: str, state: State) -> list[ShotOut]:
     """The plan's version on screen; empty before the first run."""
     return await state.shots.of_episode(episode_id)
+
+
+@router.get("/episodes/{episode_id}/shot-checks")
+async def shot_checks(episode_id: str, state: State) -> ShotChecksOut:
+    """分镜检查 (M5.5): the rules' findings now, and the model's last check (only warnings)."""
+    return await state.shots.checks(episode_id)
+
+
+@router.post("/episodes/{episode_id}/shot-checks")
+async def run_shot_checks(episode_id: str, state: State) -> dict[str, Any]:
+    """「检查」 → the queued model check of the episode's plan."""
+    return job_public(await state.shots.run_checks(episode_id))
 
 
 @router.patch("/shots/{shot_id}")

@@ -71,6 +71,10 @@ from drama_series_agent.pipeline.components.plan import (
     plan_product,
     shot_slice,
 )
+from drama_series_agent.pipeline.components.plancheck import (
+    SHOT_CHECK_SLOT,
+    PlanCheckComponent,
+)
 from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
@@ -79,11 +83,14 @@ from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.pipeline.timing import ShotDuration, line_seconds, shot_duration
+from drama_series_agent.shots import check as shot_check
 from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
 from drama_series_agent.shots.schema import (
+    ShotChecksOut,
     ShotContractOut,
     ShotEditIn,
+    ShotIssueOut,
     ShotOut,
     ShotPatch,
     ShotSplitIn,
@@ -554,6 +561,70 @@ class ShotService:
                 )
             )
         return out
+
+    async def checks(self, episode_id: str) -> ShotChecksOut:
+        """分镜检查 (M5.5): the rules over the plan on screen, worked out now, and the model's
+        last check of the episode (``plancheck``), with whether the plan changed since."""
+        async with self._db.session() as session:
+            episode = await session.get(Episode, episode_id)
+            if episode is None or episode.retired:
+                raise PipelineError(404, "episode_not_found", id=episode_id)
+            v = await _current(session, await plan_product(session, episode_id))
+            shots = ops.shots_of(v.payload_json) if v is not None else []
+            rows = await _lines(session, episode_id)
+            assets, _ = await episode_assets(session, episode_id)
+            mine = await check_product(session, episode_id)
+            last = (
+                await session.get(ProductVersion, mine.adopted_version_id)
+                if mine is not None and mine.adopted_version_id
+                else None
+            )
+            stale = mine is not None and mine.id in await self._invalidation.stale_ids(
+                session, [mine]
+            )
+        lines = {x.id: shot_check.LineInfo(x.type, x.text, x.tone or "") for x in rows.values()}
+        labels = shot_check.labels(episode.idx, shots)
+        contracts = shot_check.contracts_of(shots, lines, {a.id: a.kind for a in assets.values()})
+        found = [i.as_json() for i in shot_check.check(shots, labels, lines, contracts)]
+        if last is not None:
+            found += [i for i in last.payload_json.get("issues") or [] if i["shot_id"] in labels]
+        order = {sid: n for n, sid in enumerate(labels)}
+        found.sort(key=lambda i: (order[i["shot_id"]], i["source"] != "rule"))
+        state = (
+            "none"
+            if mine is None
+            else "running"
+            if mine.status in ("queued", "running")
+            else "failed"
+            if mine.status == "failed" and last is None
+            else "none"
+            if last is None
+            else "stale"
+            if stale
+            else "ready"
+        )
+        return ShotChecksOut(
+            issues=[ShotIssueOut(label=labels[i["shot_id"]], **i) for i in found],
+            llm_product_id=mine.id if mine is not None else None,
+            llm_state=state,
+        )
+
+    async def run_checks(self, episode_id: str) -> Job:
+        """「检查」: the model's 分镜检查 of the episode's adopted plan (made the first time)."""
+        async with self._db.session() as session:
+            episode = await session.get(Episode, episode_id)
+            if episode is None or episode.retired:
+                raise PipelineError(404, "episode_not_found", id=episode_id)
+            product = await check_product(session, episode_id)
+        if product is None:
+            product = await self._products.ensure(
+                series_id=episode.series_id,
+                owner_type="episode",
+                owner_id=episode_id,
+                slot=SHOT_CHECK_SLOT,
+                component_id=PlanCheckComponent.id,
+            )
+        return await self._runs.start(product.id, "run")
 
     async def get(self, shot_id: str) -> ShotOut:
         episode_id = await self._episode_of_shot(shot_id)
@@ -1082,6 +1153,18 @@ async def _scene_refs_drawn_for(session: AsyncSession, series_id: str, aspect: s
         if v is not None and (v.payload_json or {}).get("aspect") == aspect:
             n += 1
     return n
+
+
+async def check_product(session: AsyncSession, episode_id: str) -> Product | None:
+    """The episode's 分镜检查 product (``plancheck``), once a check was asked for."""
+    rows = await session.exec(
+        select(Product).where(
+            Product.owner_type == "episode",
+            Product.owner_id == episode_id,
+            Product.slot == SHOT_CHECK_SLOT,
+        )
+    )
+    return rows.first()
 
 
 async def _current(session: AsyncSession, p: Product | None) -> ProductVersion | None:

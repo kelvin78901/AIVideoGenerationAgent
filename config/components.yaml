@@ -171,6 +171,19 @@ components:
     per_call_cap_usd: 0.8
     cheap_api: deepseek/v4.1-flash
 
+  # 分镜检查（M5.5 第 4 步）：规则查不出的（犹豫写成重复动作、超出动作预算、起止状态接不上、
+  # 状态是演出来的而不是摆好的）。整集一次，点「检查」才跑；只提示，不挡确认（Kelvin 2026-11-10）。
+  - id: plancheck
+    stage: storyboard
+    name: { zh: 分镜检查, en: Storyboard check }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: api, api: deepseek/v4.1-flash, local: local/qwen3.6-27b, fallback_to: qwen/qwen3.7-plus }
+    per_call_cap_usd: 0.05
+    cheap_api: deepseek/v4.1-flash
+    note: 只提示，不挡确认；规则那部分不花钱、读的时候现算
+
   - id: kf
     stage: storyboard
     name: { zh: 关键帧, en: Keyframes }

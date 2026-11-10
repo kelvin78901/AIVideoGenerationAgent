@@ -129,6 +129,27 @@ class ShotPatch(BaseModel):
     confirmed: bool | None = None
 
 
+class ShotIssueOut(BaseModel):
+    """One 分镜检查 finding (M5.5): a rule's (``shots/check.py``; the front end words it by
+    ``code`` and ``params``) or the model's (``text`` is its own words). Only a warning."""
+
+    shot_id: str
+    label: str
+    code: str
+    params: dict[str, str]
+    source: Literal["rule", "llm"]
+    text: str
+
+
+class ShotChecksOut(BaseModel):
+    """``GET /episodes/{id}/shot-checks``. ``llm_state``: none (never asked), running, ready,
+    stale (the plan changed since), failed."""
+
+    issues: list[ShotIssueOut]
+    llm_product_id: str | None
+    llm_state: Literal["none", "running", "ready", "stale", "failed"]
+
+
 class ShotSplitIn(BaseModel):
     """``POST /shots/{id}/split``: cut after this line (default: the middle)."""
 

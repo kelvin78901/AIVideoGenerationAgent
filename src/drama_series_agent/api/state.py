@@ -62,6 +62,7 @@ from drama_series_agent.pipeline.components.plan import (
     asset_list_slicer,
     shot_plan_slicer,
 )
+from drama_series_agent.pipeline.components.plancheck import PlanCheckComponent
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.components.text import TextComponent
@@ -187,6 +188,7 @@ class StudioState:
         dub = DubComponent(components.services)
         components.add(dub)
         components.add(PlanComponent(components.services))
+        components.add(PlanCheckComponent(components.services))
         components.add(KfComponent(components.services))
         components.add(VidComponent(components.services))
         # A line's audio is one of dozens: lists of them skip the per-product estimate.

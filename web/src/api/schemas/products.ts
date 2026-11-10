@@ -24,6 +24,8 @@ export const ProductSlotSchema = z.enum([
   "voice",
   "line_audio",
   "shot_plan",
+  // 分镜检查 by a model, one per episode (M5.5; `GET /episodes/{id}/shot-checks`).
+  "shot_check",
   "keyframe",
   "video",
   "upscale",
