@@ -4,31 +4,19 @@
 
 ## 当前
 
-- 里程碑：**M5 视频生成**，计划 [`plans/M5.md`](plans/M5.md)。Kelvin 2026-11-08 在收尾前插了**第 15c 步：整集本机实测**（DECISIONS 同日条目）。M4 已合并（PR #6，9667069）。
-- 分支：`m5-video`（从 main 9667069 开出）。
+- 里程碑：**M5.5 镜头契约 + 图片来源与编辑**，计划 [`plans/M5.5.md`](plans/M5.5.md)（Kelvin 2026-11-10 批准；DECISIONS「M5.5 计划」）。M5 已合并（PR #7，e6044d4），M5 的各步记录在 [`reports/M5.md`](reports/M5.md)。
+- 分支：`m5.5-images`（从 main e6044d4 开出）。
+- Kelvin 定：契约和检查先做（第 2–9 步），图片来源与编辑后做（第 10–18 步）；检查**只提示、不挡**；声音克隆最后一步。
 
 ## 已完成的小步
 
-- 第 0–15b 步：每步做了什么、提交 hash、测试结果都挪进了 [`reports/M5.md`](reports/M5.md)（「做了什么」「附：各步的提交」）和 DECISIONS 里 M5 各步的条目。
+- **第 0 步**（本提交）：开分支、存计划、DECISIONS「M5.5 计划」、ROADMAP M5.5 加契约和检查几项。不改代码，没跑测试。
 
 ## 下一步
 
-- **第 15c 步做完（3cb7884）**：整集 9 镜各 2 条（`reports/m5-local-smoke/run8-episode/README.md`）、衔接 A / B / C（`run9-continuity/README.md`），报告「整集实测」一节已补。数据目录（`%TEMP%\drama-local-video-urjf_x64\home`、`%TEMP%\drama-cont-hp7wfvvm\home`）留着。
-- **第 15d 步做完（d4c0039）**：对白镜头留分镜规划的秒数（不短于配音）、本地 H3 估价加平方项、本地超时 = max(配置, 1.5 × 估价)、运行记录读实际超时分钟（DECISIONS 同日条目）。测试：timing、shots / generate API、storyboard e2e、modelhub、comfy 适配器、前端全部过。**Kelvin 开着 `start.ps1` 的话要重启后端**（时长规则和运行记录在后端）。
-- **第 15e 步做完**：0da1db7 工作流和适配器（`tail_clip`、`replaces`、`dialogue_frame`）；faf18ca 视频组件：连续镜头的本地 H3 take 送上一镜已采纳 take 最后 22 帧带声音（`media/video.py:tail_clip`），多要 22 帧、存 take 时裁掉这 22 帧代替 0.3 秒（`vid.py:head_s`），终版同样裁；API 兜底不带尾段、仍用尾帧当首帧。DECISIONS 2026-11-09 条目（含 M7 剪辑规则），SPEC 5.x 首帧 / 每条 take / 终版三处跟着改。测试：`test_video.py`、`test_takes_api.py`（新增 1-08 续写 1-06）、generate / gates / web fixtures / workflow select / demo seed / comfy 适配器 / storyboard e2e 过，ruff、mypy（含 linux）干净。示例种子不用改（没有连续镜头的 take）。**Kelvin 开着 `start.ps1` 的话要重启后端。**
-- **第 15f 步做完**：9f53fb5 第十轮（`reports/m5-local-smoke/run10-refs/README.md`、`scripts/smoke/refs_compare.py`）：1-09 带尾段，`h3-r2v` 带场景图会硬切到场景图、不带场景图伞在镜头中间变色，`h3-i2v` 接得最稳；**Kelvin 定连续镜头照旧走 `h3-i2v`**，规则表不改。ad4341b 分镜规划把画面描述 / 动作行里提到的角色、道具补进参考素材（`shots/ops.py:mentioned_assets`，名字 / 设定别名 / 道具名后缀，单字要跟在量词或这 / 那后面；`plan.py:asset_aliases`）。示例剧 1-04 加便利贴、1-06 加红伞，web 测试数据重导，`Assets.test.tsx` 红伞影响 3 个镜头。测试：shot ops、shots / storyboard / keyframes / asset refs / takes API、web fixtures、demo seed、前端全部过；ruff、mypy（含 linux）、eslint、tsc、prettier 干净。DECISIONS 同日条目。**Kelvin 开着 `start.ps1` 要重启后端**；已有剧集的分镜要重跑规划才会补上道具。
-- **第 15g 步做完（2c5a036）**：新路由 `vlook`（`pipeline/vlook.py`，默认 `google/gemini-3.1-flash-lite`，ID 按官方文档核对后填进 `providers.yaml`）：本地 H3 改写前描述真实首帧（关键帧 / 上一条尾帧），代替 `<Picture 1>` 的分镜意图；按图缓存，失败照旧用意图（关键帧没意图时用镜头的规划意图）。估价算图片（`ModelRequest.prompt_tokens`，一张 1120 token）。web 测试数据（config、generate）重导，Models 页 25 行。测试：takes / generate / workflow select / config / capabilities API、storyboard e2e、modelhub、web fixtures、前端全部过；ruff、mypy（含 linux）、eslint、prettier 干净。DECISIONS、SPEC 同日。**Kelvin 开着 `start.ps1` 要重启后端**；真跑要 Google 密钥（已有），15h 的脚本要把 `google/gemini-3.1-flash-lite` 加进 `DRAMA_REAL_MODELS`。
-- **第 15h 步做完（d03a169、7797e72 产品原样 1-08 切点 37 dB）**：第十一轮整集重跑（`reports/m5-local-smoke/run11-episode/README.md`，数据 `%TEMP%\drama-local-video-oe54cqmf\home`）：1-04 表演完整、红伞 1-06→1-09 一致、1-09 门开着拿红伞；但连续镜头切点跳（20 / 16 dB）。Kelvin 定试末帧锚点：第十二轮（`run12-tail-anchor/`，`scripts/smoke/tail_anchor.py`）切点 20 → 36.5 dB。产品：两个 H3 工作流加 `Tail end`（第 21 帧钉首帧那张图，跟尾段一起旁路）；`_trim_head` 改 `trim` 滤镜（原来第一帧重复）、`_tail` 按实际帧数截，都显式给帧率。DECISIONS、SPEC 同日。测试：video、comfy 适配器、demo seed、takes / generate / workflows API、web fixtures、community / storyboard e2e。**加了锚点之后整集没再全跑**：只有 1-08 一条实测。
-- **Kelvin 2026-11-09 看了第十一轮：口型、流畅度、乱跳都不行**。排查（6555c08，`reports/m5-h3-research.md` 是调研代理写的，社区说法大多没本机验证）后定 15i–15n 五项在 M5 做完（DECISIONS 同日）。
-- **第 15i–15k 步做完**（371f971、c38d400、a1bb79b）：take 记 window（按内容剪）、按真实片长改写、先配音不锁音轨；细节在 `reports/M5.md` 和第十三、十四轮 README。
-- **第 15m 步做完（本提交，比 15l 先做，因为编码器还在下）**：第十五轮（`run15-continuity/`，`scripts/smoke/cont_compare.py`，数据 `%TEMP%\drama-cont15-09uy9lez\home`）：尾段无损 / 声音 18 帧量不出差别（引导段、切点都在 0.1 dB 内），r2v 带参考更差（伞直接到手里、引导段漂、声音跳）。产品：尾段从上一镜 `raw` 切、无损（`tail_clip(lossless=True)`，`TAIL_AUDIO_FRAMES` 22）；连续镜头照旧 i2v。测试：video 单元、takes API。
-- **第 15l 步做完（本提交，不改产品）**：第十六轮（`run16-encoder/`，`scripts/smoke/encoder_ab.py`）：int8 和 nvfp4 同种子同提示词，1-04 几乎一样（29 dB，声音 r 0.991），1-08 没有哪条更好；默认照旧 nvfp4（int8 多 11 GB、多占内存）。int8 文件留在本机。
-- **第 15n 步做完（本提交）**：第十七轮整集（`run17-episode/README.md`，数据 `%TEMP%\drama-ep17-Pi3CKts4\home`，`local_video.py` 加 `--takes`）：开头定格全集 2.67 → 1.41 秒，两句台词都在剪辑范围里，无镜头内切点，连续切点 36.1 / 28.2 dB（28.2 = 1-09 自身运动）。
-- **第 16 步做完（本提交）**：`reports/M5.md` 补第 15c–15n 步和第十到十七轮、ROADMAP P1 那条；本机全量 pytest 847 个过；`pnpm -C web e2e` 本机 37/39（`smoke` 全量时的老超时，单独跑过，CI 39 个全过）。PR #7 已开：https://github.com/kelvin78901/AIVideoGenerationAgent/pull/7。
-- **第 15o、15p 步做完（本提交，PR #7 跟着更新）**：Kelvin 看第十七轮的硬瑕疵（`reports/m5-quality-defects.md`）；插入镜头只许微动 + 改写 / 关键帧写进物理约束 + 道具图不再白底；`vo` 不进 take。第十八轮（`run18-physical/`）。根治方案（镜头契约）Kelvin 定并进 M5.5。
-- **下一步**：等 Kelvin 看 PR #7、合并；合并后 `/milestone` 出 M5.5，计划要包含 `reports/m5-quality-defects.md` 的方案（镜头契约、道具尺寸和带字的道具、分镜 / 关键帧 / take 检查），先给 Kelvin 看。
+- **第 1 步：界面草图**（计划第 E 节）：静态 HTML 放 `docs/studio/prototype/m5.5/`，照 M0.5 的风格（看 `web/src` 现有的分镜页 `pages/storyboard/ShotSettings.tsx`、素材页 `pages/assets/AssetDetail.tsx`、take 墙 `pages/generate/TakeWall.tsx` 的样子），截亮 / 暗、宽屏（Kelvin 用约 2000 px）。做完**停下等 Kelvin 看**，看过才做前端（第 8、16 步）；后端第 2–7 步不等草图也可以先做，但先问 Kelvin。
+- 之后第 2 步从 `pipeline/components/plan.py:PlannedShot`、`shots/ops.py:normalize`、`shots/schema.py:ShotOut` 开始。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
-- 之后：第 16 步改完报告开 PR；合并后 `/milestone` 出 M5.5。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
 - **Bash 工具的坑**：heredoc 里同时有中文引号、反引号和单引号时，Bash 工具会报「unexpected EOF」而整条命令不执行——改用 Write 写脚本文件再 `uv run python <文件>`。heredoc 里 Python 字符串的 `\n` 会被写成真换行：要写进代码的 `\n` 用 Edit 工具。Python 写文件要 `open(..., "w", newline="\n")`（`Path.write_text` 在 Windows 上会写成 CRLF）。
