@@ -152,7 +152,7 @@ M0–M4 不依赖这些结论，可以同时进行；M5 开始前要有结论。
 - [x] 本地队列 / API 队列状态条：按模型分组、兜底到 API、等确认（第 9c 步）
 
 **验收（P1 闸门）**
-- [x] 一集 3 分钟的戏全程走平台，人只在闸门处介入（Mock 下分段走通：M4 的「小说 → 分镜」端到端 + M5 的 `tests/e2e/test_storyboard_to_takes.py`、Playwright `m5`：分镜确认 → 候选 → 采纳 → 出终版 → 生成闸门。真模型只跑了几个镜头：本机 1-01、1-04、1-06、1-08，API 1-04；真模型整集没跑，见 `reports/M5.md`）
+- [x] 一集 3 分钟的戏全程走平台，人只在闸门处介入（Mock 下分段走通：M4 的「小说 → 分镜」端到端 + M5 的 `tests/e2e/test_storyboard_to_takes.py`、Playwright `m5`：分镜确认 → 候选 → 采纳 → 出终版 → 生成闸门。真模型：示例第 1 集 9 个镜头本机整集跑了几轮（第八、十一、十七轮，`reports/m5-local-smoke/`），API 只跑了 1-04 和 Regenerate-2K；成片质量在第 15c–15n 步修过，见 `reports/M5.md`）
 - [x] 每次调用都在 `model_call` 里，表头花费实时更新（第 13a、13d 步）
 - [x] 本地任务超时后按兜底规则自动换到 API，并在历史里记一笔（第 7 步；运行记录 `fallback_timeout`，示例 1-04 有一条）
 - [x] 导入一个不带 DramaStudio 节点的社区工作流：缺的节点和模型列清单确认后装好，确认绑定、试跑通过后出现在 ModelPicker；生成的 version 和 `model_call` 记了工作流哈希和节点包版本（Mock：`tests/e2e/test_community_workflow.py`、Playwright `m5`；本机：rgthree 工作流，`reports/m5-local-workflow.txt`）
