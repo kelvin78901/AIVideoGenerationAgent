@@ -52,6 +52,7 @@ from drama_series_agent.pipeline.components.media import (
     ref_file,
 )
 from drama_series_agent.pipeline.components.plan import plan_product, shot_slice
+from drama_series_agent.pipeline.components.scale import REF_SCALE_SLOT
 from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
@@ -329,6 +330,7 @@ async def _references(
             unlocked.append(a.name)
             continue
         h = await invalidation.current_hash(session, p.id, "")
+        scale = await scale_ref(session, a.id) if a.kind == "prop" else None
         refs.append(
             {
                 "name": a.name,
@@ -343,7 +345,40 @@ async def _references(
                 ),
             }
         )
+        if scale is not None:  # 比例参考 (M5.5): right after the prop's own picture
+            sp, sha = scale
+            refs.append(
+                {
+                    "name": f"{a.name}（和人物同框，看大小）",
+                    "kind": "prop",
+                    "product_id": sp.id,
+                    "sha256": sha,
+                    "hash": await invalidation.current_hash(session, sp.id, ""),
+                    "desc": "",
+                    "scale": True,  # the keyframe's alone: a take does not get it (vid)
+                }
+            )
     return refs, unlocked, texts
+
+
+async def scale_ref(session: AsyncSession, asset_id: str) -> tuple[Product, str] | None:
+    """A prop's adopted 比例参考 (``scale``): its product and picture."""
+    p = (
+        await session.exec(
+            select(Product).where(
+                Product.owner_type == "asset",
+                Product.owner_id == asset_id,
+                Product.slot == REF_SCALE_SLOT,
+            )
+        )
+    ).first()
+    v = (
+        await session.get(ProductVersion, p.adopted_version_id)
+        if p and p.adopted_version_id
+        else None
+    )
+    f = next((x for x in (v.files_json if v else []) if x.get("role") == "scale"), None)
+    return (p, str(f["sha256"])) if p is not None and f is not None else None
 
 
 async def _has_character(session: AsyncSession, ids: list[str]) -> bool:

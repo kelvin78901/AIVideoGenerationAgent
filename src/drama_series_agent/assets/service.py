@@ -83,6 +83,7 @@ from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_i
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
 from drama_series_agent.pipeline.components.img import prop_physical, prop_text
+from drama_series_agent.pipeline.components.scale import REF_SCALE_SLOT, ScaleComponent
 from drama_series_agent.pipeline.components.text import (
     TEXT_IMAGE_SLOT,
     TextComponent,
@@ -486,6 +487,8 @@ class AssetService:
         await self._gate_updated(product, "confirm")
         if kind == "character":
             await self.draw_views(asset_id)
+        elif kind == "prop":
+            await self.draw_scale(asset_id)
         return await self.get(asset_id)
 
     async def upload(self, asset_id: str, filename: str, data: bytes) -> AssetOut:
@@ -521,6 +524,28 @@ class AssetService:
         v = await self._products.append(product.id, draft, origin="upload", adopt=False)
         await self._products.set_pick(product.id, v.id, 0)
         return await self.get(asset_id)
+
+    async def draw_scale(self, asset_id: str) -> Job | None:
+        """比例参考 of a locked prop (M5.5), unless it already follows the locked pictures; none
+        when no character is locked yet."""
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+        p = await self._products.ensure(
+            series_id=asset.series_id,
+            owner_type="asset",
+            owner_id=asset.id,
+            slot=REF_SCALE_SLOT,
+            component_id=ScaleComponent.id,
+        )
+        async with self._db.session() as session:
+            stale = await self._invalidation.stale_ids(session, [p])
+        if p.adopted_version_id and p.id not in stale:
+            return None
+        try:
+            return await self._runs.start(p.id, "run")
+        except PipelineError as exc:  # no locked character, already drawing, or no model here
+            logger.info("scale reference of {} not started: {}", asset_id, exc.code)
+            return None
 
     async def draw_views(self, asset_id: str) -> Job | None:
         """补视图 of a locked character, unless the views already follow this picture."""

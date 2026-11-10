@@ -244,3 +244,28 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert "道具的状态是摆好的：红色长柄伞：斜靠在门边墙上，伞面湿" in note
     # 道具的真实尺寸 (M5.5 step 5): drawn to scale against the people.
     assert "道具按真实尺寸画，和人物的比例要对：红色长柄伞：全长约 90 cm" in note
+
+
+def test_a_locked_prop_gets_its_scale_reference(client: TestClient) -> None:
+    """比例参考 (M5.5 step 5c): locking 旧黑发圈 draws it with 林晚 (its description names her),
+    adopted by itself; 1-05's keyframe sends it right after the prop's own picture."""
+    resp = client.post(f"{V1}/assets/band/lock", json={"idx": 0})
+    assert resp.status_code == 200, resp.text
+    products = client.get(f"{V1}/products", params={"owner": "asset:band"}).json()
+    scale = next(p for p in products if p["slot"] == "ref_scale")
+    deadline = time.monotonic() + 30
+    while not scale["adopted_version_id"]:
+        assert time.monotonic() < deadline, "the scale reference was not drawn"
+        time.sleep(0.05)
+        scale = client.get(f"{V1}/products/{scale['id']}").json()
+    version = scale["versions"][-1]
+    assert version["payload"]["character"] == "林晚"
+    assert [f["role"] for f in version["files"]] == ["scale", "prompt"]
+    assert len(version["payload"]["from"]) == 2  # 林晚's locked picture, then the band's
+    calls = _rows(client, ModelCall, ModelCall.component_id == "scale")
+    assert len(calls) == 1
+
+    prompt = _prompt(client, _run(client, "1-05", model="google/nano-banana-pro")["versions"][-1])
+    named = prompt.split("参考图 ", 1)[1]
+    assert "旧黑发圈（道具）；参考图" in named
+    assert named.index("旧黑发圈（道具）") < named.index("旧黑发圈（和人物同框，看大小）")

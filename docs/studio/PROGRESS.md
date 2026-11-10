@@ -10,21 +10,20 @@
 
 ## 已完成的小步
 
-- **第 0 步**（3f94986）：开分支、存计划、DECISIONS「M5.5 计划」、ROADMAP M5.5 加契约和检查几项。不改代码，没跑测试。
+细节在各步的 DECISIONS 条目（2026-11-10「M5.5 第 n 步」）里；里程碑报告收尾时写。
+
+- **0**（3f94986）计划、分支。**1**（e789654）界面草图 `prototype/m5.5/`，等 Kelvin 看；Kelvin 已定的三件事（6e0a67c）。
+- **2**（b1bc8f4）镜头契约数据：`shots/contract.py`、迁移 `0024`、`ShotOut.contract` / `PATCH {contract}`、示例 `plan.json`。CI 修复 ccc5535。
+- **3**（1891ab0）关键帧画开始状态，视频按契约（只有 `delivery == dialogue` 进 take、动作预算、`h3_format.UNDONE`）。
+- **4**（60e16f9）分镜检查：规则 `shots/check.py` + 组件 `plancheck`，`GET/POST /episodes/{id}/shot-checks`。
+- **5a**（4f0ff04）道具 `physical`（尺寸材质新旧）进道具图和关键帧；OCR 不一致只提示。
+- **5b**（45e867f）有字的道具（素材分析 `on`）、道具图画字 + OCR；示例剧删 txt1（素材 7/9）。
+- **5c**（本提交）比例参考：新组件 `scale`（`pipeline/components/scale.py`，槽位 `ref_scale`，编辑模型，自动采纳）：道具锁定后和一个锁定角色同框出一张（描述里提到的角色，否则同场最多的）；关键帧在道具图后面紧跟它，视频不用；模板 `templates/scale/`；Models 页 27 行；前端 `ProductSlotSchema` 加 `ref_scale`。测试：keyframes / assets / asset refs / asset sync / config / capabilities / takes API、web fixtures 重导、前端 Models / Script vitest、tsc、eslint；ruff、mypy 干净。第 5 步勾掉。**Kelvin 开着 `start.ps1` 要重启后端。**
 
 ## 下一步
 
-- **第 1 步草图已提交（e789654），等 Kelvin 看**：`docs/studio/prototype/m5.5/`（README 列了三页、亮 / 暗截图）。看过才做前端（第 8、16 步）；**Kelvin 2026-11-10 定后端第 2–7 步同时做**。草图里要 Kelvin 定的三件事见「等 Kelvin 的事」。
-- **第 2 步做完（本提交）**：`shots/contract.py`（build / patch / effective）、迁移 `0024`（`shot.contract_json`、`asset.manual`）、规划模板和 `PlannedShot` 加契约字段、`script_text` 把 OS 写成「内心独白」、`shot:<id>` 切片带契约（老分镜不带、哈希不变）、`ShotOut.contract` / `PATCH {contract}`、前端 zod `ShotContractSchema` 和乐观更新；示例 `plan.json` 9 个镜头补契约（1-08 仍写开两次，留给第 4 步检查报出来）；web 测试数据重导。测试：shot contract / ops 单元、shots / storyboard / keyframes / takes / generate / gates / asset refs API、两个 e2e、unit 全部过（576）；前端 storyboard / generate / api vitest、tsc、eslint、prettier；ruff、mypy（含 linux）干净。SPEC 4.1 加一段。**Kelvin 开着 `start.ps1` 要重启后端**（新迁移；前端要 `contract` 字段，不重启会报数据和约定不符）。
-- **CI 修复（ccc5535）**：测试借 helper 改成 `from test_shot_ops import`（见踩坑）。
-- **第 3 步做完（本提交）**：关键帧（有契约的分镜）加「开始时 / 道具 / 嘴闭着」段（`kf.contract_blocks`）；`vid.gather` 读 `contracts.effective`：只有 `delivery == dialogue` 的行进 take，`kind` / `beats` / `start` / `end` / `props` 进草稿和改写 JSON（`h3_format.Facts` 加字段）；改写系统提示词按 `beats`；`h3_format.UNDONE` 拒撤销重做。DECISIONS、SPEC 5.1 同日。测试：h3_format、keyframes / takes / generate API、storyboard e2e、unit 全部、web fixtures 重导、前端 storyboard / generate vitest；ruff、mypy（含 linux）干净。**Kelvin 开着 `start.ps1` 要重启后端。**
-- **第 3 步做完（1891ab0）**。
-- **第 4 步做完（本提交）**：`shots/check.py` 规则（undone / insert_event / replay / inner_mouth / state_jump，读时现算）；路由组件 `plancheck`（`pipeline/components/plancheck.py`，默认 DeepSeek v4.1 Flash，每集一个 `shot_check` 产物，点「检查」才跑，依赖整个分镜规划）；`GET/POST /episodes/{id}/shot-checks`；示例剧规则报 1-08 undone、replay，Mock 模型报 1-03 insert_event；前端 `ProductSlotSchema` 加 `shot_check`、Models 页 26 行；config / script 测试数据重导。DECISIONS、SPEC（组件表、9.1）同日。测试（只跑改动相关的，Kelvin 2026-11-10 再次强调；全量留到合并前）：shot check / contract 单元、shots / config / capabilities API、web fixtures、前端 Models / Script vitest、tsc；ruff、mypy 干净。**Kelvin 开着 `start.ps1` 要重启后端。**
-- **第 4 步做完（60e16f9）**。
-- **第 5a 步做完（本提交，第 5 步分两个提交）**：道具 `physical`（size / material / wear：设定抽取 details → 素材清单 → `seed_json`，`settings.physical` 优先，`AssetOut.physical`、前端 zod `PhysicalSchema`）；道具图「真实尺寸和材质」段、关键帧「尺寸」段；画面文字 OCR 不一致不再挡锁定；示例设定补四个道具的尺寸。DECISIONS 同日。测试：asset text / assets / keyframes / bible API、asset ops、demo seed、web fixtures 重导、前端 Assets / Novel / Storyboard / Script vitest、tsc；ruff、mypy 干净。
-- **第 5a 步做完（4f0ff04）**。
-- **第 5b 步做完（本提交）**：有字的道具（素材分析 `on` → `_onto_prop`、答案 schema 加 `on` / `physical`、道具图画字 + OCR 挪进 `ImgComponent`、关键帧把道具的字逐字写、`AssetOut.text` 对道具也给）；示例剧删 txt1、便利贴带字（Kelvin 定，素材 7/9，后端示例少 $1.12）；测试改用便利贴 / txt2；Playwright `real` 的 OCR 那条改成看便利贴。DECISIONS、SPEC、ROADMAP M8 注。测试：asset text / assets / asset refs / asset sync / gates impact / voice / keyframes API、asset ops、demo seed、web fixtures 重导、前端素材页 / AppShell / Inspector vitest、`real.spec.ts` 那一条、tsc、eslint；ruff、mypy 干净。**Kelvin 开着 `start.ps1` 要重启后端、示例数据要 `drama-studio demo --reset` 才看得到便利贴带字。**
-- **下一步：第 5c 步 `ref_scale` 比例参考**：道具锁定后出一张和人物同框的（新组件，照 `pipeline/components/views.py` 的写法，图生图模型，参考 = 锁定的道具图 + 一个锁定的角色图：道具描述里提到的、否则和它同场最多的角色）；`assets/service.py:lock` 里像 `draw_views` 那样排；`kf._references` 在道具图后面紧跟比例图；`components.yaml` 一行、web fixtures（config、Models 页行数）。做完勾第 5 步。
+- **第 1 步草图等 Kelvin 看**；看过才做前端（第 8、16 步）；后端第 2–7 步同时做（Kelvin 2026-11-10）。
+- **下一步：第 6 步关键帧检查** `kfcheck`（VLM，默认 Gemini 3.1 Flash-Lite，照 `pipeline/vlook.py` 走 `router.call()`、Mock 回固定结果）：每张关键帧候选出完后查道具比例、带字道具的字在不在 / 是不是手写（再跑 OCR 对逐字内容，`qa/ocr.py`）、开始状态对不对、内心独白嘴闭着；结果写版本 `qa_json`（按候选），估价并进关键帧估价（`kf.estimate`）；只提示。新路由一行（Models 页 28 行、config fixture）。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

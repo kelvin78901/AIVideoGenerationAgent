@@ -348,6 +348,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     ).seconds
 
     refs, unlocked, texts = await _references(session, invalidation, shot.get("asset_ids") or [])
+    refs = [r for r in refs if not r.get("scale")]  # 比例参考 is for the keyframe (M5.5)
     frame_ = await output_frame(session, product.series_id)
     spec = await session.get(OutputSpecRow, product.series_id)
     frame_["fps"] = str(spec.fps if spec is not None else get_config().spec.defaults.get("fps", 24))

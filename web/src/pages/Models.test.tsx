@@ -42,7 +42,7 @@ describe("ModelsPage", () => {
     expect(preset(/^均衡/)).toHaveAttribute("aria-pressed", "true");
     expect(preset(/^均衡/)).toHaveTextContent("当前");
     const components = screen.getByRole("table", { name: "组件设置" });
-    expect(within(components).getAllByRole("rowgroup")).toHaveLength(26);
+    expect(within(components).getAllByRole("rowgroup")).toHaveLength(27);
     expect(row("视频提示词改写")).toHaveTextContent("DeepSeek");
     expect(row("视频工作流建议")).toHaveTextContent("DeepSeek");
     expect(row("首帧描述")).toHaveTextContent("Gemini 3.1 Flash-Lite");

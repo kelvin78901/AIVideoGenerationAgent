@@ -20,6 +20,8 @@ export const ProductSlotSchema = z.enum([
   "ref_image",
   // A character's side / back / expression views, made from the locked reference (M3).
   "ref_views",
+  // A locked prop with a locked character, to show its real size (M5.5 `scale`).
+  "ref_scale",
   "text_image",
   "voice",
   "line_audio",

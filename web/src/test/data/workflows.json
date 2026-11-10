@@ -1488,6 +1488,7 @@
       "components": [
         "img",
         "views",
+        "scale",
         "kf"
       ],
       "caps": {
@@ -1740,7 +1741,8 @@
       "source": "repo",
       "origin": null,
       "components": [
-        "views"
+        "views",
+        "scale"
       ],
       "caps": {
         "aspects": [

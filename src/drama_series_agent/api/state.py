@@ -63,6 +63,7 @@ from drama_series_agent.pipeline.components.plan import (
     shot_plan_slicer,
 )
 from drama_series_agent.pipeline.components.plancheck import PlanCheckComponent
+from drama_series_agent.pipeline.components.scale import ScaleComponent
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.components.text import TextComponent
@@ -182,6 +183,7 @@ class StudioState:
         components.add(AssetsComponent(components.services))
         components.add(ImgComponent(components.services))
         components.add(ViewsComponent(components.services))
+        components.add(ScaleComponent(components.services))
         text = TextComponent(components.services)
         components.add(text)
         components.add(VoiceComponent(components.services))
