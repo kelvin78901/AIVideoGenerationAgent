@@ -56,6 +56,7 @@ class Line:
     type: str
     character_id: str | None
     text: str
+    tone: str = ""
 
 
 @dataclass
@@ -88,6 +89,7 @@ def numbered_lines(script: Mapping[str, Any]) -> list[Line]:
                     type=str(line.get("type") or "action"),
                     character_id=line.get("character_id"),
                     text=str(line.get("text") or ""),
+                    tone=str(line.get("tone") or ""),
                 )
             )
     return out

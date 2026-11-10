@@ -56,7 +56,27 @@
           }
         ],
         "difficulty": 1,
-        "sound": "雨声、脚步、灯的电流声"
+        "sound": "雨声、脚步、灯的电流声",
+        "start": [
+          {
+            "subject": "林晚",
+            "state": "在楼梯上往上走，抱着画板袋"
+          },
+          {
+            "subject": "声控灯",
+            "state": "忽明忽暗"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "走到六楼楼道口"
+          }
+        ],
+        "props": [],
+        "delivery": {},
+        "kind": "performance",
+        "beats": 1
       },
       {
         "scene": 1,
@@ -112,7 +132,27 @@
             "y": 0.8
           }
         ],
-        "difficulty": 1
+        "difficulty": 1,
+        "start": [
+          {
+            "subject": "家门",
+            "state": "关着"
+          }
+        ],
+        "end": [],
+        "props": [
+          {
+            "asset_id": "umbrella",
+            "state": "斜靠在门边墙上，伞面湿"
+          },
+          {
+            "asset_id": "note",
+            "state": "贴在伞柄上，有字，边角湿"
+          }
+        ],
+        "delivery": {},
+        "kind": "insert",
+        "beats": 0
       },
       {
         "scene": 1,
@@ -167,7 +207,18 @@
             "y": 0.62
           }
         ],
-        "difficulty": 1
+        "difficulty": 1,
+        "start": [],
+        "end": [],
+        "props": [
+          {
+            "asset_id": "note",
+            "state": "手写的字歪歪扭扭，边角被雨打湿，墨迹微晕"
+          }
+        ],
+        "delivery": {},
+        "kind": "insert",
+        "beats": 0
       },
       {
         "scene": 1,
@@ -223,7 +274,30 @@
             "y": 0.7
           }
         ],
-        "difficulty": 1
+        "difficulty": 1,
+        "start": [
+          {
+            "subject": "林晚",
+            "state": "站在门口，低头看着便利贴"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "愣住，抬起头"
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "note",
+            "state": "贴在伞柄上，有字"
+          }
+        ],
+        "delivery": {
+          "L4": "dialogue"
+        },
+        "kind": "dialogue",
+        "beats": 1
       },
       {
         "scene": 1,
@@ -279,7 +353,28 @@
             "y": 0.62
           }
         ],
-        "difficulty": 1
+        "difficulty": 1,
+        "start": [
+          {
+            "subject": "林晚的手",
+            "state": "手指停在便利贴上方，手腕戴着旧黑发圈"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚的手",
+            "state": "手指停住，没有碰到便利贴"
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "note",
+            "state": "贴在伞柄上，有字"
+          }
+        ],
+        "delivery": {},
+        "kind": "performance",
+        "beats": 1
       },
       {
         "scene": 2,
@@ -329,7 +424,33 @@
             "y": 0.8
           }
         ],
-        "difficulty": 1
+        "difficulty": 1,
+        "start": [
+          {
+            "subject": "林晚",
+            "state": "站在门内，手里拿着红伞"
+          },
+          {
+            "subject": "家门",
+            "state": "开着"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "背靠着门"
+          },
+          {
+            "subject": "家门",
+            "state": "关着"
+          }
+        ],
+        "props": [],
+        "delivery": {
+          "L8": "inner"
+        },
+        "kind": "performance",
+        "beats": 2
       },
       {
         "scene": 2,
@@ -377,7 +498,18 @@
             "y": 0.62
           }
         ],
-        "difficulty": 1
+        "difficulty": 1,
+        "start": [],
+        "end": [],
+        "props": [
+          {
+            "asset_id": "phone",
+            "state": "亮屏，锁屏时间 23:52，没有新消息"
+          }
+        ],
+        "delivery": {},
+        "kind": "insert",
+        "beats": 0
       },
       {
         "scene": 2,
@@ -428,7 +560,22 @@
         "difficulty": 1,
         "sound": "门轴声、雨声",
         "continues": 6,
-        "note": "中间的 1-07 是插入镜头，所以接的是 1-06，不是上一个镜头。"
+        "note": "中间的 1-07 是插入镜头，所以接的是 1-06，不是上一个镜头。",
+        "start": [],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "站在门口，望向门外地上"
+          },
+          {
+            "subject": "家门",
+            "state": "开着"
+          }
+        ],
+        "props": [],
+        "delivery": {},
+        "kind": "performance",
+        "beats": 2
       },
       {
         "scene": 2,
@@ -487,7 +634,23 @@
         "difficulty": 1,
         "sound": "卡点音效",
         "continues": 8,
-        "note": "最后一帧定格做卡点，后期加音效。"
+        "note": "最后一帧定格做卡点，后期加音效。",
+        "start": [],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "弯腰拿起红伞"
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "umbrella",
+            "state": "靠在门外墙边"
+          }
+        ],
+        "delivery": {},
+        "kind": "performance",
+        "beats": 2
       }
     ]
   }

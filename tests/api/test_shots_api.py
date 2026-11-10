@@ -107,6 +107,40 @@ def test_an_edit_is_an_adopted_edit_version(client: TestClient) -> None:
     assert client.patch(f"{V1}/shots/nope", json={"framing": "wide"}).status_code == 404
 
 
+def test_each_shot_has_its_contract(client: TestClient) -> None:
+    """镜头契约 (M5.5): from the plan; 1-08 (continuous) starts where 1-06 ends."""
+    by = {s["label"]: s for s in _shots(client)}
+    assert by["1-03"]["contract"]["kind"] == "insert" and by["1-03"]["contract"]["beats"] == 0
+    assert by["1-06"]["contract"]["delivery"] == {"demo-b10": "inner"}
+    assert by["1-08"]["contract"]["start_inherited"] is True
+    assert by["1-08"]["contract"]["start"] == by["1-06"]["contract"]["end"]
+    (row,) = _rows(client, Shot, Shot.id == "demo-shot-1-03")
+    assert row.contract_json["kind"] == "insert"
+
+
+def test_a_contract_edit_is_checked_and_kept(client: TestClient) -> None:
+    start = [{"subject": "林晚的手", "state": "悬在便利贴上方"}]
+    r = client.patch(
+        f"{V1}/shots/demo-shot-1-05",
+        json={"contract": {"kind": "insert", "start": start}},
+    )
+    assert r.status_code == 200, r.text
+    got = r.json()["contract"]
+    assert (got["kind"], got["beats"], got["start"]) == ("insert", 0, start)
+    assert got["props"] == [{"asset_id": "note", "state": "贴在伞柄上，有字"}]  # untouched
+    (row,) = _rows(client, Shot, Shot.id == "demo-shot-1-05")
+    assert row.contract_json["kind"] == "insert"
+    for bad in (
+        {"beats": 3},  # an insert's budget is 0
+        {"delivery": {"demo-b2": "inner"}},  # not a line it films
+        {"props": [{"asset_id": "linwan", "state": "站着"}]},  # not a prop
+    ):
+        r = client.patch(f"{V1}/shots/demo-shot-1-05", json={"contract": bad})
+        assert r.status_code == 422, (bad, r.text)
+    r = client.patch(f"{V1}/shots/demo-shot-1-05", json={"contract": {"mood": "x"}})
+    assert r.status_code == 422  # not a field (the request schema)
+
+
 def test_a_dialogue_shot_is_never_shorter_than_its_audio(client: TestClient) -> None:
     r = client.patch(f"{V1}/shots/demo-shot-1-04", json={"duration_s": 2})
     assert r.status_code == 422

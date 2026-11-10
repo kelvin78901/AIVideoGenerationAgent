@@ -10,9 +10,14 @@
 - refs 写用到的素材 id，只能从 [素材] 里选：出镜的角色、场景、道具、画面文字，说话角色的音色。
 - audio：native（视频模型直接出声音和口型）、tts（先配音再对口型，画外音、长台词用这个）、none（不出人声）。sound 写环境声和音效。
 - blocking 是俯视站位图，镜头朝图的上方看：人物、道具、地标各一项（label、kind：character / prop / landmark，x、y 在 0 到 1 之间），机位一项（kind：camera）。
+- 镜头契约（下游每一步都照它画、照它演、照它检查）：
+  - kind：performance 表演、action 动作、dialogue 对白（有人在画面里开口说话）、insert 插入（画面里没有人：静物、空镜）。beats 写这个镜头最多几个动作：insert 写 0（只许微动：光、一滴水、镜头极轻的漂移，不发生任何事）；performance、dialogue 1–2；action 2–4。
+  - start / end：镜头开始时、结束时人和东西的状态，[{"subject": "家门", "state": "关着"}]。picture 画的就是 start。一个镜头里同一个状态变化只发生一次，不许撤销再重做（开门 → 关门 → 再开门）；犹豫要演出来（手搭门把、停住、吸气），不是重复动作。continuous 的 start 可以不写（接它接的那个镜头的 end）。
+  - props：这个镜头里每个道具的状态，[{"asset_id": "note", "state": "贴在伞柄上，有字，边角湿"}]。状态是摆好的，不在镜头里发生，除非这个镜头的动作就是这个变化。
+  - delivery：每句台词怎么说，{"L3": "dialogue"}：dialogue 对白（嘴动、对口型）、offscreen 画外（说话的人不在画面里）、inner 内心独白（嘴闭着；剧本里标「内心独白」的都是 inner）。
 - difficulty：1 普通对话、2 同一空间多机位、3 复杂运镜、4 身体动作和接触、5 物体碰撞和破坏、6 特效。每个镜头只安排一个主要动作，写清至少两个空间关系，遵守 180 度轴线。
 
 [输出 JSON]
-{"shots": [{"scene": 1, "lines": [1], "type": "scene_change", "framing": "wide", "move": "push", "seconds": 4, "picture": "……", "summary": "……", "refs": ["linwan", "hall"], "audio": "native", "sound": "雨声、脚步", "blocking": [{"label": "林晚", "kind": "character", "x": 0.6, "y": 0.4}, {"label": "", "kind": "camera", "x": 0.5, "y": 0.9}], "difficulty": 1}, {"scene": 2, "lines": [9], "type": "continuous", "continues": 6, "note": "中间的第 7 个是插入镜头，所以接第 6 个", "framing": "medium", "move": "static", "seconds": 6, "picture": "……", "summary": "……", "refs": ["linwan", "room"], "audio": "native", "blocking": [], "difficulty": 1}]}
+{"shots": [{"scene": 1, "lines": [1], "type": "scene_change", "framing": "wide", "move": "push", "seconds": 4, "picture": "……", "summary": "……", "refs": ["linwan", "hall"], "audio": "native", "sound": "雨声、脚步", "blocking": [{"label": "林晚", "kind": "character", "x": 0.6, "y": 0.4}, {"label": "", "kind": "camera", "x": 0.5, "y": 0.9}], "difficulty": 1, "kind": "performance", "beats": 1, "start": [{"subject": "林晚", "state": "在楼梯口，抱着画板袋"}], "end": [{"subject": "林晚", "state": "走到六楼门口"}], "props": [], "delivery": {}}, {"scene": 2, "lines": [9], "type": "continuous", "continues": 6, "note": "中间的第 7 个是插入镜头，所以接第 6 个", "framing": "medium", "move": "static", "seconds": 6, "picture": "……", "summary": "……", "refs": ["linwan", "room"], "audio": "native", "blocking": [], "difficulty": 1, "kind": "performance", "beats": 2, "end": [{"subject": "家门", "state": "开着"}], "props": [], "delivery": {"L9": "inner"}}]}
 
 # 目标模型：{{ model_key }}

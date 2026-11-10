@@ -40,11 +40,23 @@ export function usePatchShot(episodeId: string | undefined) {
     mutationFn: (p: { id: string; patch: ShotPatch }) =>
       patch(`/shots/${enc(p.id)}`, ShotSchema, p.patch),
     onMutate: ({ id, patch: change }) => {
-      const { duration_s: seconds, ...rest } = change;
+      const { duration_s: seconds, contract, ...rest } = change;
       const shown =
         seconds === null || seconds === undefined ? rest : { ...rest, duration_s: seconds };
       client.setQueryData<Shot[]>(key, (old) =>
-        old?.map((s) => (s.id === id ? { ...s, ...shown } : s)),
+        old?.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                ...shown,
+                contract: {
+                  ...s.contract,
+                  ...contract,
+                  delivery: { ...s.contract.delivery, ...contract?.delivery },
+                },
+              }
+            : s,
+        ),
       );
     },
     onSuccess: (shot) => {

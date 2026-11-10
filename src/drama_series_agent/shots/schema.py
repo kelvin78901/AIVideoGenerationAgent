@@ -11,6 +11,8 @@ Framing = Literal["wide", "medium", "close", "closeup"]
 CameraMove = Literal["static", "push", "follow", "pan"]
 AudioMode = Literal["native", "tts", "none"]
 BlockingKind = Literal["character", "camera", "prop", "landmark"]
+ContractKind = Literal["performance", "action", "dialogue", "insert"]
+Delivery = Literal["dialogue", "offscreen", "inner"]
 
 
 class BlockingItem(BaseModel):
@@ -61,6 +63,52 @@ class ShotOut(BaseModel):
     confirmed: bool  # its last 「确认这个镜头」 decision (gate ``shot``) is a confirm
     # Confirmed, but its settings (the plan's ``shot:<id>`` slice) or its keyframe changed since.
     confirm_stale: bool
+    contract: ShotContractOut  # M5.5
+
+
+class StateItem(BaseModel):
+    """A person or thing and what it looks like (「家门」: 「关着」)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    subject: str
+    state: str
+
+
+class PropState(BaseModel):
+    """The state a prop reference is in during the shot (set, not acted)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    asset_id: str
+    state: str
+
+
+class ShotContractOut(BaseModel):
+    """镜头契约 (M5.5, ``shots/contract.py``). ``delivery``: line id → how it is said.
+    ``start_inherited``: a continuous shot without a start of its own begins where the shot it
+    follows ends."""
+
+    kind: ContractKind
+    beats: int
+    start: list[StateItem]
+    end: list[StateItem]
+    props: list[PropState]
+    delivery: dict[str, Delivery]
+    start_inherited: bool = False
+
+
+class ContractPatch(BaseModel):
+    """Any of the contract's fields; ``delivery`` only the lines it changes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: ContractKind | None = None
+    beats: int | None = Field(default=None, ge=0, le=4)
+    start: list[StateItem] | None = None
+    end: list[StateItem] | None = None
+    props: list[PropState] | None = None
+    delivery: dict[str, Delivery] | None = None
 
 
 class ShotPatch(BaseModel):
@@ -76,6 +124,7 @@ class ShotPatch(BaseModel):
     audio_mode: AudioMode | None = None
     asset_ids: list[str] | None = None
     blocking: list[BlockingItem] | None = None
+    contract: ContractPatch | None = None
     keyframe_pick: int | None = Field(default=None, ge=0)
     confirmed: bool | None = None
 

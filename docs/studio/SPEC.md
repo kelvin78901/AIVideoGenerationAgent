@@ -111,6 +111,7 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 **M4 的实际做法**（细节和理由见 `plans/M4.md` 和 DECISIONS 里 M4 各步的条目）：
 
 - `shot`（迁移 `0018`）是分镜规划已采纳版本的物化表，和 `script_line` 一样按 id upsert、版本里没有了的标 `retired`。实际列：id, episode_id, scene_id, idx, shot_type, framing（不叫 `size`）, camera_move, duration_s（分镜规划给的秒数）, manual_s（用户手填的）, intent（规划给的画面描述，只是关键帧提示词的种子）, summary, line_ids, asset_ids（角色、场景、道具、画面文字、音色都在一个列表里，不分 `character_ids` / `prop_ids`）, tail_from（连续动作接哪个镜头的尾帧）, blocking_json, audio_mode, difficulty, control_json（M5 用）, retired, version_id。显示的时长不存，读的时候现算（5.1），所以重配音不产生新版本；镜头号「1-04」也是现算（集序号 + 本集第几个）。
+- **镜头契约**（M5.5，`shots/contract.py`，迁移 `0024` 的 `shot.contract_json`）：分镜规划每个镜头多一个 `contract`：`kind`（performance / action / dialogue / insert）、`beats`（动作预算，insert 0、performance / dialogue ≤ 2、action ≤ 4）、`start` / `end`（`[{subject, state}]`，关键帧画 `start`）、`props`（`[{asset_id, state}]`，只限这个镜头的道具和画面文字参考，状态是摆好的）、`delivery`（说话行 id → dialogue / offscreen / inner）。模型没给的按规则补（有人在画面里说话 → dialogue；没有角色也没人说话 → insert；`vo` 的语气含 OS / 内心 → inner，其余 `vo` → offscreen）。读的时候（`ShotOut.contract`）：老分镜没有契约给默认的；连续镜头没写 `start` 就接它接的那个镜头的 `end`（`start_inherited`）。`PATCH /shots/{id} {contract: {...}}` 只传改的字段，值不合规 422（不替你修）。契约在 `shot:<id>` 切片里（没有契约的老分镜不进，哈希不变），改了关键帧和视频待更新。
 - 分镜规划是每集一个 `shot_plan` 产物（组件 `plan`），一集的剧本被采纳时建；物化时给每个非连续镜头建一个关键帧产物（owner `shot`，slot `keyframe`，组件 `kf`），镜头退场或改成连续动作时它的关键帧产物标 `retired`。重跑时按「同一场 + 拍的行有重叠」、再按顺序沿用已采纳版本的镜头 id。
 - `continuity_state` 没建（连续性账本在 M6）。
 

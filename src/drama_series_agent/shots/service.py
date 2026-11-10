@@ -79,8 +79,15 @@ from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.pipeline.timing import ShotDuration, line_seconds, shot_duration
+from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
-from drama_series_agent.shots.schema import ShotEditIn, ShotOut, ShotPatch, ShotSplitIn
+from drama_series_agent.shots.schema import (
+    ShotContractOut,
+    ShotEditIn,
+    ShotOut,
+    ShotPatch,
+    ShotSplitIn,
+)
 from drama_series_agent.spec.schema import SpecPatch, apply_patch
 
 KEYFRAME_SLOT = "keyframe"
@@ -155,6 +162,7 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
         row.blocking_json = list(s.get("blocking") or [])
         row.audio_mode = s["audio_mode"]
         row.difficulty = int(s.get("difficulty") or 1)
+        row.contract_json = s.get("contract")
         row.retired = False
         row.updated_at = now
         session.add(row)
@@ -458,6 +466,7 @@ class ShotService:
                 session, [x.id for x in lines.values() if x.type in ops.SPEAKING]
             )
             numbers = await scene_numbers(session, episode.series_id)
+            kinds = {a.id: a.kind for a in (await episode_assets(session, episode_id))[0].values()}
             scenes = {
                 s.id: s
                 for s in (
@@ -477,6 +486,7 @@ class ShotService:
             }
         longest = await self._longest() if self._longest is not None else None
         labels = _labels(episode.idx, shots)
+        by_id = {s["id"]: s for s in shots}
         out = []
         for i, s in enumerate(shots, 1):
             mine = [lines[x] for x in s.get("line_ids") or [] if x in lines]
@@ -538,6 +548,9 @@ class ShotService:
                     keyframe_sha256=picture,
                     confirmed=state.confirmed,
                     confirm_stale=state.stale,
+                    contract=ShotContractOut.model_validate(
+                        contracts.effective(s, _spoken(s, lines), kinds, by_id)
+                    ),
                 )
             )
         return out
@@ -938,6 +951,18 @@ class ShotService:
             if manual < floor:
                 raise PipelineError(422, "duration_below_audio", min_s=floor)
         characters = [a.id for a in assets.values() if a.kind == "character"]
+        if "contract" in changes:
+            kinds = {a.id: a.kind for a in assets.values()}
+            spoken = _spoken(shot, lines)
+            now = contracts.effective(shot, spoken, kinds)
+            now.pop("start_inherited", None)
+            refs = list(changes.get("asset_ids") or shot.get("asset_ids") or [])
+            try:
+                changes["contract"] = contracts.patch(
+                    now, changes["contract"], [x.line_id for x in spoken], refs, kinds
+                )
+            except contracts.ContractError as e:
+                raise PipelineError(422, e.code, **e.params) from e
         payload: dict[str, Any] = _apply(
             lambda: ops.patch(v.payload_json, shot_id, changes, characters)
         )
@@ -1001,7 +1026,19 @@ def _changes(body: ShotPatch) -> dict[str, Any]:
         changes["asset_ids"] = list(dict.fromkeys(body.asset_ids))
     if "duration_s" in fields:
         changes["manual_s"] = body.duration_s
+    if "contract" in fields and body.contract is not None:
+        # turned into the whole contract in ``_edited`` (it needs the shot's lines and assets)
+        changes["contract"] = body.contract.model_dump(mode="json", exclude_unset=True)
     return changes
+
+
+def _spoken(shot: dict[str, Any], lines: dict[str, ScriptLine]) -> list[contracts.SpokenLine]:
+    """The lines a shot films, as its contract sees them."""
+    return [
+        contracts.SpokenLine(x, n, lines[x].type, lines[x].tone or "")
+        for n, x in enumerate(shot.get("line_ids") or [], 1)
+        if x in lines
+    ]
 
 
 def _next_in_scene(payload: dict[str, Any], shot_id: str) -> str | None:

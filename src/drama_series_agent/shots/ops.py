@@ -9,7 +9,7 @@ A payload is ``{"episode_id": …, "shots": [shot, …]}`` in episode order. A s
 - ``intent`` (the seed of the keyframe prompt), ``summary``, ``sound``;
 - ``asset_ids`` (its references), ``tail_from`` (a continuous shot: the shot whose last frame it
   starts from), ``tail_note``, ``audio_mode``, ``blocking`` ([{id, kind, label, x, y}], 0–1),
-  ``difficulty`` (1–6).
+  ``difficulty`` (1–6), ``contract`` (镜头契约, M5.5: ``shots/contract.py``).
 
 The rules (M4 plan):
 
@@ -33,6 +33,8 @@ import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
 from typing import Any
+
+from drama_series_agent.shots import contract
 
 SHOT_TYPES = ("continuous", "same_scene_cut", "scene_change")
 FRAMINGS = ("wide", "medium", "close", "closeup")
@@ -60,6 +62,7 @@ PATCHABLE = (
     "asset_ids",
     "audio_mode",
     "blocking",
+    "contract",  # the whole contract, checked by ``contract.patch`` before it gets here
 )
 
 
@@ -85,6 +88,7 @@ class PlanLine:
     line_id: str
     type: str
     text: str
+    tone: str = ""
 
 
 @dataclass
@@ -242,6 +246,9 @@ def _shot(d: Mapping[str, Any], ctx: PlanContext) -> dict[str, Any]:
     if not refs:
         refs = _rule_refs(d["scene_id"], d["line_ids"], ctx)
     refs += [a for a in mentioned_assets([intent, *texts], ctx) if a not in refs]
+    spoken = [
+        contract.SpokenLine(x, lines[x].n, lines[x].type, lines[x].tone) for x in d["line_ids"]
+    ]
     has_vo = any(lines[x].type == "vo" for x in d["line_ids"])
     has_dialogue = any(lines[x].type == "dialogue" for x in d["line_ids"])
     audio_default = "tts" if has_vo and not has_dialogue else "native"
@@ -265,6 +272,7 @@ def _shot(d: Mapping[str, Any], ctx: PlanContext) -> dict[str, Any]:
             raw.get("blocking"), refs, ctx.asset_kinds, framing, ctx.asset_names
         ),
         "difficulty": min(6, max(1, _int(raw.get("difficulty")) or 1)),
+        "contract": contract.build(raw, spoken, refs, ctx.asset_kinds, ctx.asset_names),
     }
 
 
@@ -451,6 +459,10 @@ def patch(
             shot[key] = _must(value, AUDIO_MODES, key)
         else:
             shot[key] = value
+    if "asset_ids" in changes and isinstance(shot.get("contract"), Mapping):
+        refs = set(shot["asset_ids"] or [])
+        props = [p for p in shot["contract"].get("props") or [] if p.get("asset_id") in refs]
+        shot["contract"] = {**shot["contract"], "props": props}
     if shot["shot_type"] == "continuous" and changes.get("shot_type") == "continuous":
         earlier = [s for s in shots[: shots.index(shot)] if s["scene_id"] == shot["scene_id"]]
         if not earlier:

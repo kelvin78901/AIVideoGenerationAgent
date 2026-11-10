@@ -20,6 +20,33 @@ export type CameraMove = z.infer<typeof CameraMoveSchema>;
 export const AudioModeSchema = z.enum(["native", "tts", "none"]);
 export type AudioMode = z.infer<typeof AudioModeSchema>;
 
+/** 镜头契约 (M5.5): 表演 / 动作 / 对白 / 插入（没有人：静物、空镜）. */
+export const ContractKindSchema = z.enum(["performance", "action", "dialogue", "insert"]);
+export type ContractKind = z.infer<typeof ContractKindSchema>;
+
+/** How a spoken line is said: 对白（嘴动）/ 画外 / 内心独白（嘴闭着）. */
+export const DeliverySchema = z.enum(["dialogue", "offscreen", "inner"]);
+export type Delivery = z.infer<typeof DeliverySchema>;
+
+/** A person or thing and its state (「家门」: 「关着」). Content. */
+export const StateItemSchema = z.object({ subject: z.string(), state: z.string() });
+export type StateItem = z.infer<typeof StateItemSchema>;
+
+/** 镜头契约 (M5.5, backend `shots/contract.py`): the keyframe draws `start`; the video keeps
+ * to `beats` actions (an insert: 0, only small motion) and never undoes a change; props are in
+ * their `state`; `delivery` maps each spoken line id to how it is said. */
+export const ShotContractSchema = z.object({
+  kind: ContractKindSchema,
+  beats: z.number().int().min(0).max(4),
+  start: z.array(StateItemSchema),
+  end: z.array(StateItemSchema),
+  props: z.array(z.object({ asset_id: z.string(), state: z.string() })),
+  delivery: z.record(z.string(), DeliverySchema),
+  /** A continuous shot without a start of its own: it begins where the shot it follows ends. */
+  start_inherited: z.boolean(),
+});
+export type ShotContract = z.infer<typeof ShotContractSchema>;
+
 export const BlockingItemSchema = z.object({
   id: z.string(),
   kind: z.enum(["character", "camera", "prop", "landmark"]),
@@ -85,6 +112,7 @@ export const ShotSchema = z.object({
   confirmed: z.boolean(),
   /** Confirmed, but the shot's settings or its keyframe changed since (「待更新」). */
   confirm_stale: z.boolean(),
+  contract: ShotContractSchema,
 });
 export type Shot = z.infer<typeof ShotSchema>;
 
@@ -100,7 +128,11 @@ export const ShotPatchSchema = ShotSchema.pick({
   keyframe_pick: true,
   confirmed: true,
 })
-  .extend({ duration_s: z.number().positive().nullable() })
+  .extend({
+    duration_s: z.number().positive().nullable(),
+    /** Only the contract fields that change (`delivery`: only the lines that change). */
+    contract: ShotContractSchema.omit({ start_inherited: true }).partial(),
+  })
   .partial();
 export type ShotPatch = z.infer<typeof ShotPatchSchema>;
 

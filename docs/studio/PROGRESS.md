@@ -14,8 +14,9 @@
 
 ## 下一步
 
-- **第 1 步草图已提交（本提交），等 Kelvin 看**：`docs/studio/prototype/m5.5/`（README 列了三页、亮 / 暗截图）。看过才做前端（第 8、16 步）；**Kelvin 2026-11-10 定后端第 2–7 步同时做**。草图里要 Kelvin 定的三件事见「等 Kelvin 的事」。
-- **下一步：第 2 步契约数据**，从 `pipeline/components/plan.py:PlannedShot`、`shots/ops.py:normalize`、`shots/schema.py:ShotOut` 开始。
+- **第 1 步草图已提交（e789654），等 Kelvin 看**：`docs/studio/prototype/m5.5/`（README 列了三页、亮 / 暗截图）。看过才做前端（第 8、16 步）；**Kelvin 2026-11-10 定后端第 2–7 步同时做**。草图里要 Kelvin 定的三件事见「等 Kelvin 的事」。
+- **第 2 步做完（本提交）**：`shots/contract.py`（build / patch / effective）、迁移 `0024`（`shot.contract_json`、`asset.manual`）、规划模板和 `PlannedShot` 加契约字段、`script_text` 把 OS 写成「内心独白」、`shot:<id>` 切片带契约（老分镜不带、哈希不变）、`ShotOut.contract` / `PATCH {contract}`、前端 zod `ShotContractSchema` 和乐观更新；示例 `plan.json` 9 个镜头补契约（1-08 仍写开两次，留给第 4 步检查报出来）；web 测试数据重导。测试：shot contract / ops 单元、shots / storyboard / keyframes / takes / generate / gates / asset refs API、两个 e2e、unit 全部过（576）；前端 storyboard / generate / api vitest、tsc、eslint、prettier；ruff、mypy（含 linux）干净。SPEC 4.1 加一段。**Kelvin 开着 `start.ps1` 要重启后端**（新迁移；前端要 `contract` 字段，不重启会报数据和约定不符）。
+- **下一步：第 3 步契约用起来**：`pipeline/components/kf.py`（编译层写 `start`、道具状态、比例）、`pipeline/components/vid.py:gather`（`context.kind` / `vo` 改读 `contracts.effective`）、`prompts/templates/vid/h3_rewrite_system.j2` 第 8 条、`prompts/h3_format.py`。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
