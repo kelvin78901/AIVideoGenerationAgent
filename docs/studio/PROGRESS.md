@@ -16,15 +16,15 @@
 - **2**（b1bc8f4）镜头契约数据：`shots/contract.py`、迁移 `0024`、`ShotOut.contract` / `PATCH {contract}`、示例 `plan.json`。CI 修复 ccc5535。
 - **3**（1891ab0）关键帧画开始状态，视频按契约（只有 `delivery == dialogue` 进 take、动作预算、`h3_format.UNDONE`）。
 - **4**（60e16f9）分镜检查：规则 `shots/check.py` + 组件 `plancheck`，`GET/POST /episodes/{id}/shot-checks`。
-- **5a**（4f0ff04）道具 `physical`（尺寸材质新旧）进道具图和关键帧；OCR 不一致只提示。
-- **5b**（45e867f）有字的道具（素材分析 `on`）、道具图画字 + OCR；示例剧删 txt1（素材 7/9）。
+- **5a**（4f0ff04）道具 `physical` 进道具图和关键帧、OCR 只提示；**5b**（45e867f）有字的道具（素材分析 `on`）、道具图画字 + OCR、示例剧删 txt1（素材 7/9）。
 - **5c**（8b198bb）比例参考：新组件 `scale`（`pipeline/components/scale.py`，槽位 `ref_scale`，编辑模型，自动采纳）：道具锁定后和一个锁定角色同框出一张（描述里提到的角色，否则同场最多的）；关键帧在道具图后面紧跟它，视频不用；模板 `templates/scale/`；Models 页 27 行；前端 `ProductSlotSchema` 加 `ref_scale`。测试：keyframes / assets / asset refs / asset sync / config / capabilities / takes API、web fixtures 重导、前端 Models / Script vitest、tsc、eslint；ruff、mypy 干净。第 5 步勾掉。**Kelvin 开着 `start.ps1` 要重启后端。**
 
 ## 下一步
 
 - **6**（29382a4）关键帧检查：`pipeline/kfcheck.py` + 路由 `kfcheck`（Gemini Flash-Lite），`kf._check` 每张候选看一次 + OCR（`ocr.contains`），写 `payload.candidates[i].check`；估价含看图；模板 `templates/kf/check.j2`；Models 页 28 行；前端 zod 候选加 `check`。测试：keyframes / config / capabilities API、ocr 单元、web fixtures 重导、前端 Models / Storyboard / Script vitest、tsc；ruff、mypy 干净。
-- **7**（本提交）take 检查：`media/video.py:contact_sheet`（6 帧 3 × 2）、`pipeline/takecheck.py` + 路由 `takecheck`，`vid._check_take` 草稿和终版都跑，写 `payload.check`、`sheet` 文件；加 `cut` / `hold` 两条量出来的；Models 页 29 行。测试：video 单元、takes / generate / config API、web fixtures 重导、前端 Models / Generate / Script vitest、tsc；ruff、mypy 干净。
-- **下一步：第 8 步前端（契约和检查）**——**要等 Kelvin 看过草图**（`prototype/m5.5/`）。没看过就先做第 9 步的准备（本机第十九轮的脚本），或问 Kelvin。
+- **7**（8590129）take 检查：`media/video.py:contact_sheet`（6 帧 3 × 2）、`pipeline/takecheck.py` + 路由 `takecheck`，`vid._check_take` 草稿和终版都跑，写 `payload.check`、`sheet` 文件；加 `cut` / `hold` 两条量出来的；Models 页 29 行。测试：video 单元、takes / generate / config API、web fixtures 重导、前端 Models / Generate / Script vitest、tsc；ruff、mypy 干净。
+- **8a**（本提交）分镜页：契约一节、分镜检查横幅 / 镜头卡徽标 / 镜头内提示、关键帧候选的检查条目；i18n 两种语言；测试假后端 shot-checks。测试：前端 Storyboard / storyboard vitest（32）、i18n 检查、tsc、eslint、prettier；web fixtures（shots）重导。
+- **下一步：8b**：take 卡的检查（`pages/generate/TakeWall.tsx`，「自动质检」那块换成「契约检查」+ 拼图帧，草图 T1；「局部修复」按钮留着、点了提示 M6）；素材页道具的尺寸材质新旧（后端 `AssetPatch` 加 `physical`，`settings.physical`）和道具上的字（草图 A1、A2）、比例参考图；拿掉「仍然锁定」确认框和测试假后端的 409；截图。**第十九轮准备在跑**（`local_video.py --only contract --home %TEMP%\drama-ep19-5Oilw8\home --run run19-contract`），跑完按镜头 `--only episode --from X --to X` 出 take。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

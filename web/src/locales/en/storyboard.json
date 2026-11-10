@@ -140,5 +140,81 @@
     "mergeNone": "No later shot in this scene",
     "splitDone": "Split: {{next}} now follows {{id}}",
     "mergeDone": "The next shot is merged into {{id}}"
+  },
+  "contract": {
+    "label": "Shot contract",
+    "title": "Shot contract",
+    "hint": "From the shot plan: the keyframe draws the start, the video keeps to it; a change marks both out of date",
+    "kind": "How it plays",
+    "kinds": {
+      "performance": "Performance",
+      "action": "Action",
+      "dialogue": "Dialogue",
+      "insert": "Insert (empty, still)"
+    },
+    "kindHint": {
+      "performance": "Performance: at most {{n}} actions, a change happens once; hesitation is acted, not repeated.",
+      "action": "Action: at most {{n}} actions, one after another.",
+      "dialogue": "Dialogue: at most {{n}} actions; lips move with the line.",
+      "insert": "Insert: small motion only (light, a drop, a slow drift); nothing happens."
+    },
+    "start": "At the start",
+    "end": "At the end",
+    "subject": "Who / what",
+    "state": "State",
+    "addRow": "Add a row",
+    "removeRow": "Remove this row",
+    "inherited": "Starts where {{id}} ends; a change makes it this shot's own",
+    "props": "Props in this shot",
+    "propsHint": "a state is set, not acted",
+    "propState": "State of {{name}}",
+    "delivery": "How lines are said",
+    "deliveryOf": "How “{{text}}” is said",
+    "how": {
+      "dialogue": "On screen (lips move)",
+      "offscreen": "Off screen",
+      "inner": "Inner voice (lips closed)"
+    },
+    "deliveryHint": "Inner voice and off-screen lines are not in the video; the edit lays them on their own track."
+  },
+  "checks": {
+    "label": "Storyboard check",
+    "title": "Storyboard check · {{count}} to look at",
+    "onlyWarn": "(only a warning; confirming goes on)",
+    "stale": "the plan changed since the model's check",
+    "run": "Check",
+    "rerun": "Check again",
+    "clean": "The storyboard check found nothing",
+    "cleanRules": "The rules found nothing; the model has not checked yet",
+    "rule": "rule",
+    "model": "model",
+    "shotLabel": "This shot's check",
+    "shotTitle": "{{count}} to look at in this shot:",
+    "badge": "{{count}} to look at",
+    "itemsLabel": "Check",
+    "frame": "frame {{n}}",
+    "code": {
+      "undone": "A change made, undone and made again: {{steps}}. Hesitation can be a pause, a breath.",
+      "insert_event": "Something happens to the object in an insert (“{{words}}”): set the state, do not act it.",
+      "replay": "Same scene, framing and still camera as {{other}}: cut together it looks like a replay.",
+      "inner_mouth": "An inner-voice shot says “{{words}}”: lips stay closed on an inner voice.",
+      "state_jump": "Its start does not match how {{other}} ends ({{subject}}).",
+      "repeat": "A repeated action",
+      "over_budget": "More actions than the shot allows",
+      "other": "Other"
+    },
+    "item": {
+      "start": "start state",
+      "scale": "prop scale",
+      "text": "words",
+      "mouth": "lips closed",
+      "people": "nobody in it",
+      "ocr": "OCR reads the words",
+      "repeat": "no repeated action",
+      "event": "nothing happens by itself",
+      "end": "end state",
+      "cut": "one continuous shot",
+      "hold": "no still opening"
+    }
   }
 }

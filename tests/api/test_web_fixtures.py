@@ -344,6 +344,7 @@ def test_web_shots_fixture_is_current(client: TestClient) -> None:
         "shots": shots,
         "plan": next(p for p in owned if p["slot"] == "shot_plan"),
         "keyframes": keyframes,
+        "checks": client.get(f"{V1}/episodes/demo-e1/shot-checks").json(),  # M5.5
     }
     text = json.dumps(_fixed(export), ensure_ascii=False, indent=2) + "\n"
     if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":

@@ -503,4 +503,43 @@ describe("StoryboardPage", () => {
     await waitFor(() => expect(fakeShots.shots).toHaveLength(8));
     expect(shot("1-01")).toMatchObject({ confirmed: false, line_ids: ["demo-b2", "demo-b3"] });
   });
+
+  it("shows the storyboard check: the rules now, the model's on 「检查」 (M5.5)", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+    await ready();
+    const banner = await screen.findByRole("region", { name: "分镜检查" });
+    expect(banner).toHaveTextContent("分镜检查 · 2 处提示");
+    expect(banner).toHaveTextContent("同一个变化做了又撤销再做：拉开 → 关上 → 拉开");
+    expect(banner).toHaveTextContent("和 1-06 同一场、同景别、都是固定机位，接起来像回放");
+    expect(card("1-08")).toHaveTextContent("2 处提示");
+    await user.click(within(banner).getByRole("button", { name: "检查" }));
+    await waitFor(() => expect(banner).toHaveTextContent("分镜检查 · 3 处提示"));
+    expect(banner).toHaveTextContent("雨水把字一点点泡开");
+    expect(within(banner).getAllByText("模型")).toHaveLength(1);
+  });
+
+  it("the shot contract: a new kind is saved, its budget follows (M5.5)", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+    await ready();
+    await user.click(card("1-05"));
+    const contract = await screen.findByRole("region", { name: "镜头契约" });
+    expect(within(contract).getByText(/表演：最多 1 个动作/)).toBeInTheDocument();
+    await user.click(within(contract).getByRole("radio", { name: "插入（空镜、静物）" }));
+    await waitFor(() =>
+      expect(fakeShots.patches.at(-1)).toEqual({
+        id: shot("1-05")?.id,
+        contract: { kind: "insert" },
+      }),
+    );
+    // The section is drawn again for the saved contract.
+    expect(await screen.findByText(/插入：只许微动/)).toBeInTheDocument();
+    // 1-08 continues 1-06: it starts where 1-06 ends.
+    await user.click(card("1-08"));
+    expect(await screen.findByText("接 1-06 的结束时；改了就是这个镜头自己的")).toBeInTheDocument();
+    expect(screen.getByRole("note", { name: "这个镜头的检查提示" })).toHaveTextContent(
+      "这个镜头 2 处提示",
+    );
+  });
 });

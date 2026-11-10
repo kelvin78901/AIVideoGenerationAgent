@@ -140,5 +140,81 @@
     "mergeNone": "同一场里后面没有镜头了",
     "splitDone": "已拆分：{{id}} 后面多了 {{next}}",
     "mergeDone": "已把下一个镜头并进 {{id}}"
+  },
+  "contract": {
+    "label": "镜头契约",
+    "title": "镜头契约",
+    "hint": "分镜规划给的：关键帧画「开始时」，视频照它演；改了关键帧和视频会标待更新",
+    "kind": "表演方式",
+    "kinds": {
+      "performance": "表演",
+      "action": "动作",
+      "dialogue": "对白",
+      "insert": "插入（空镜、静物）"
+    },
+    "kindHint": {
+      "performance": "表演：最多 {{n}} 个动作，改变状态的动作只做一次；犹豫要演出来，不重复动作。",
+      "action": "动作：最多 {{n}} 个动作，一个接一个排满。",
+      "dialogue": "对白：最多 {{n}} 个动作，说话时嘴要动、对口型。",
+      "insert": "插入：只许微动（光、一滴水、镜头轻漂），不发生任何事。"
+    },
+    "start": "开始时",
+    "end": "结束时",
+    "subject": "谁 / 什么",
+    "state": "状态",
+    "addRow": "加一行",
+    "removeRow": "删掉这一行",
+    "inherited": "接 {{id}} 的结束时；改了就是这个镜头自己的",
+    "props": "道具在这个镜头里",
+    "propsHint": "状态是摆好的，不在镜头里发生",
+    "propState": "{{name}}的状态",
+    "delivery": "台词说法",
+    "deliveryOf": "「{{text}}」怎么说",
+    "how": {
+      "dialogue": "对白（嘴动）",
+      "offscreen": "画外",
+      "inner": "内心独白（嘴闭着）"
+    },
+    "deliveryHint": "内心独白和画外音不进视频，剪辑时另铺一轨。"
+  },
+  "checks": {
+    "label": "分镜检查",
+    "title": "分镜检查 · {{count}} 处提示",
+    "onlyWarn": "（只是提示，确认镜头照常）",
+    "stale": "分镜改过了，模型检查的结果过时",
+    "run": "检查",
+    "rerun": "重新检查",
+    "clean": "分镜检查没有发现问题",
+    "cleanRules": "规则没有发现问题；模型还没检查",
+    "rule": "规则",
+    "model": "模型",
+    "shotLabel": "这个镜头的检查提示",
+    "shotTitle": "这个镜头 {{count}} 处提示：",
+    "badge": "{{count}} 处提示",
+    "itemsLabel": "检查结果",
+    "frame": "第 {{n}} 帧",
+    "code": {
+      "undone": "同一个变化做了又撤销再做：{{steps}}。犹豫可以演成停住、吸气。",
+      "insert_event": "插入镜头里东西发生了变化（「{{words}}」）：状态应该摆好，不在镜头里发生。",
+      "replay": "和 {{other}} 同一场、同景别、都是固定机位，接起来像回放。",
+      "inner_mouth": "内心独白的镜头写了「{{words}}」：内心独白时嘴闭着。",
+      "state_jump": "开始时和 {{other}} 的结束时对不上（{{subject}}）。",
+      "repeat": "动作重复",
+      "over_budget": "动作超过上限",
+      "other": "其他"
+    },
+    "item": {
+      "start": "开始状态",
+      "scale": "道具比例",
+      "text": "字",
+      "mouth": "嘴闭着",
+      "people": "没有人",
+      "ocr": "OCR 读到字",
+      "repeat": "没有重复动作",
+      "event": "没有凭空的物理事件",
+      "end": "结束状态",
+      "cut": "一镜到底",
+      "hold": "开头不定格"
+    }
   }
 }

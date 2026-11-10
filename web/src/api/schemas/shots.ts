@@ -116,6 +116,27 @@ export const ShotSchema = z.object({
 });
 export type Shot = z.infer<typeof ShotSchema>;
 
+/** One 分镜检查 finding (M5.5): a rule's (worded by `code` and `params`) or the model's (`text`
+ * is its own words, content). Only a warning. */
+export const ShotIssueSchema = z.object({
+  shot_id: z.string(),
+  label: z.string(),
+  code: z.string(),
+  params: z.record(z.string(), z.string()),
+  source: z.enum(["rule", "llm"]),
+  text: z.string(),
+});
+export type ShotIssue = z.infer<typeof ShotIssueSchema>;
+
+/** `GET /episodes/{id}/shot-checks`: the rules now, the model's last check and whether the plan
+ * changed since (`stale`). */
+export const ShotChecksSchema = z.object({
+  issues: z.array(ShotIssueSchema),
+  llm_product_id: z.string().nullable(),
+  llm_state: z.enum(["none", "running", "ready", "stale", "failed"]),
+});
+export type ShotChecks = z.infer<typeof ShotChecksSchema>;
+
 /** `PATCH /shots/{id}`; `duration_s: null` = back to automatic (its audio, or the plan's). */
 export const ShotPatchSchema = ShotSchema.pick({
   shot_type: true,

@@ -4,13 +4,34 @@ import { z } from "zod";
 import { api, patch, post } from "@/api/client";
 import { productKeys } from "@/api/hooks/products";
 import { seriesKeys } from "@/api/hooks/series";
-import { ShotSchema, type Shot, type ShotPatch } from "@/api/schemas/shots";
+import { JobSchema } from "@/api/schemas/jobs";
+import { ShotChecksSchema, ShotSchema, type Shot, type ShotPatch } from "@/api/schemas/shots";
 
 const enc = encodeURIComponent;
 
 export const shotKeys = {
   list: (episodeId: string) => ["episodes", episodeId, "shots"] as const,
+  checks: (episodeId: string) => ["episodes", episodeId, "shot-checks"] as const,
 };
+
+/** 分镜检查 (M5.5): the rules' findings and the model's last check; a plan edit or the check's
+ * own run refreshes it (product events refresh every episode query). */
+export function useShotChecks(episodeId: string | undefined) {
+  return useQuery({
+    queryKey: shotKeys.checks(episodeId ?? ""),
+    queryFn: () => api(`/episodes/${enc(episodeId ?? "")}/shot-checks`, ShotChecksSchema),
+    enabled: !!episodeId,
+  });
+}
+
+/** 「检查」 / 「重新检查」: the model's check of the episode's plan (a job). */
+export function useRunShotChecks(episodeId: string | undefined) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => post(`/episodes/${enc(episodeId ?? "")}/shot-checks`, JobSchema),
+    onSuccess: () => client.invalidateQueries({ queryKey: shotKeys.checks(episodeId ?? "") }),
+  });
+}
 
 export function useShots(episodeId: string | undefined) {
   return useQuery({

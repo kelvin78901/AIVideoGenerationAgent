@@ -2787,5 +2787,32 @@
       "settings": null,
       "retired": false
     }
-  ]
+  ],
+  "checks": {
+    "issues": [
+      {
+        "shot_id": "demo-shot-1-08",
+        "label": "1-08",
+        "code": "undone",
+        "params": {
+          "steps": "拉开 → 关上 → 拉开"
+        },
+        "source": "rule",
+        "text": ""
+      },
+      {
+        "shot_id": "demo-shot-1-08",
+        "label": "1-08",
+        "code": "replay",
+        "params": {
+          "other": "1-06",
+          "framing": "medium"
+        },
+        "source": "rule",
+        "text": ""
+      }
+    ],
+    "llm_product_id": "demo-p-shot-check-e1",
+    "llm_state": "none"
+  }
 }

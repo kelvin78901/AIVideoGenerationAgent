@@ -31,7 +31,14 @@ import {
   type ProductVersion,
   type RunRequest,
 } from "@/api/schemas/products";
-import { ShotPatchSchema, ShotSchema, type Shot, type ShotPatch } from "@/api/schemas/shots";
+import {
+  ShotChecksSchema,
+  ShotPatchSchema,
+  ShotSchema,
+  type Shot,
+  type ShotIssue,
+  type ShotPatch,
+} from "@/api/schemas/shots";
 import { primaryModel } from "@/mocks/route";
 import data from "@/test/data/shots.json";
 import { fakeResolve } from "@/test/fakes/config";
@@ -39,6 +46,16 @@ import { fakeResolve } from "@/test/fakes/config";
 const demoShots = z.array(ShotSchema).parse(data.shots);
 const demoPlan = ProductSchema.parse(data.plan);
 const demoKeyframes = data.keyframes.map((p) => ProductSchema.parse(p));
+const demoChecks = ShotChecksSchema.parse(data.checks);
+/** What the Mock model's 分镜检查 finds in episode 1 (`pipeline/components/plancheck.py`). */
+const MOCK_LLM_ISSUE: ShotIssue = {
+  shot_id: "demo-shot-1-03",
+  label: "1-03",
+  code: "insert_event",
+  params: {},
+  source: "llm",
+  text: "插入镜头写了「雨水把字一点点泡开」：状态变化应该摆好，不要在镜头里发生。",
+};
 
 /** The episode the fixture's shots are of. */
 const EPISODE = "demo-e1";
@@ -50,6 +67,8 @@ export const fakeShots = {
   shots: structuredClone(demoShots),
   plan: structuredClone(demoPlan),
   keyframes: structuredClone(demoKeyframes),
+  /** 分镜检查 (M5.5): the rules' findings; `POST` adds the Mock model's. */
+  checks: structuredClone(demoChecks),
   /** Episodes whose 分镜确认 is confirmed. */
   confirmed: new Set<string>(),
   /** Every `PATCH /shots/{id}`, in order. */
@@ -60,6 +79,7 @@ export function resetFakeShots() {
   fakeShots.shots = structuredClone(demoShots);
   fakeShots.plan = structuredClone(demoPlan);
   fakeShots.keyframes = structuredClone(demoKeyframes);
+  fakeShots.checks = structuredClone(demoChecks);
   fakeShots.confirmed = new Set();
   fakeShots.patches = [];
 }
@@ -182,8 +202,14 @@ function retime(s: Shot) {
 
 /** The settings of `PATCH /shots/{id}` written in place (no checks); the refusal, or null. */
 function write(s: Shot, patch: ShotPatch): Response | null {
-  const { confirmed, keyframe_pick: pick, intent, duration_s: seconds, ...rest } = patch;
+  const { confirmed, keyframe_pick: pick, intent, duration_s: seconds, contract, ...rest } = patch;
   void confirmed;
+  if (contract) {
+    // 镜头契约 (M5.5): only the fields given; ``delivery`` only the lines given.
+    const delivery = { ...s.contract.delivery, ...contract.delivery };
+    s.contract = { ...s.contract, ...contract, delivery };
+    if (contract.kind === "insert") s.contract.beats = 0;
+  }
   if (seconds !== undefined) {
     if (seconds !== null && seconds < s.min_s)
       return error(422, "duration_below_audio", { id: s.id, min_s: s.min_s });
@@ -524,6 +550,20 @@ export function shotHandlers() {
     http.get("*/api/v1/episodes/:id/shots", ({ params }) =>
       HttpResponse.json(params.id === EPISODE ? fakeShots.shots : []),
     ),
+
+    http.get("*/api/v1/episodes/:id/shot-checks", ({ params }) =>
+      params.id === EPISODE
+        ? HttpResponse.json(fakeShots.checks)
+        : HttpResponse.json({ issues: [], llm_product_id: null, llm_state: "none" }),
+    ),
+
+    http.post("*/api/v1/episodes/:id/shot-checks", ({ params }) => {
+      if (params.id !== EPISODE) return error(404, "episode_not_found", { id: params.id });
+      const rules = fakeShots.checks.issues.filter((i) => i.source === "rule");
+      const issues = [...rules, MOCK_LLM_ISSUE].sort((a, b) => a.label.localeCompare(b.label));
+      fakeShots.checks = { ...fakeShots.checks, issues, llm_state: "ready" };
+      return HttpResponse.json(job(fakeShots.plan, "shot-check", "deepseek/v4.1-flash", "run"));
+    }),
 
     http.patch("*/api/v1/shots/:id", async ({ params, request }) => {
       const s = findShot(params.id);

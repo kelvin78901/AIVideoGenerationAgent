@@ -31,6 +31,8 @@ import { safeAreaOf } from "@/lib/safeArea";
 import { scriptBlocks, useBlockLead } from "@/pages/script/blocks";
 import { Animatic } from "@/pages/storyboard/Animatic";
 import { ShotCards } from "@/pages/storyboard/ShotCards";
+import { useIssueCounts } from "@/pages/storyboard/issues";
+import { ShotChecksBanner } from "@/pages/storyboard/ShotChecks";
 import { ShotSettings } from "@/pages/storyboard/ShotSettings";
 import { ShotTable } from "@/pages/storyboard/ShotTable";
 import { useInspectorStore } from "@/stores/inspector";
@@ -47,6 +49,7 @@ export default function StoryboardPage() {
   const { t: tc } = useTranslation();
   const { seriesId, episodeIdx, episode } = useRouteEpisode();
   const shots = useShots(episode?.id);
+  const issueCounts = useIssueCounts(episode?.id);
   const spec = useOutputSpec(seriesId);
   const assets = useAssets(seriesId, episode?.id);
   const episodeProducts = useProducts({ owner: `episode:${episode?.id ?? ""}` });
@@ -238,6 +241,7 @@ export default function StoryboardPage() {
                   onOpenHistory={() => show("history", component)}
                 />
               ) : null}
+              {episode ? <ShotChecksBanner episodeId={episode.id} /> : null}
               <div className="flex flex-wrap items-center gap-2">
                 <h2 className="text-base font-bold">
                   {t("list.title", { count: list.length, seconds })}
@@ -271,6 +275,7 @@ export default function StoryboardPage() {
                   aspect={aspect}
                   selectedId={shot.id}
                   onSelect={setSelectedId}
+                  issues={issueCounts}
                 />
               )}
               <ShotSettings

@@ -29,7 +29,9 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import { currentVersion } from "@/lib/versions";
 import { Blocking } from "@/pages/storyboard/Blocking";
+import { ContractSection } from "@/pages/storyboard/ContractSection";
 import { durationSource } from "@/pages/storyboard/duration";
+import { CheckLines, ShotIssues } from "@/pages/storyboard/ShotChecks";
 
 const LETTERS = "ABC";
 
@@ -87,7 +89,12 @@ function FirstFrame({
       seed: `${shot.id}-${version.n}-${i}`,
       src: file ? fileUrl(file.sha256) : null,
       overlay: safeArea ? <SafeAreaOverlay area={safeArea} /> : undefined,
-      meta: <span className="text-xs text-muted-foreground">{c.label ?? made}</span>,
+      meta: (
+        <span className="flex flex-col gap-0.5">
+          <span className="text-xs text-muted-foreground">{c.label ?? made}</span>
+          {c.check ? <CheckLines items={c.check.items} /> : null}
+        </span>
+      ),
     };
   });
   return (
@@ -299,6 +306,7 @@ export function ShotSettings({
           {t(shot.confirmed ? "shot.unconfirm" : "shot.confirm")}
         </Button>
       </div>
+      <ShotIssues episodeId={shot.episode_id} shotId={shot.id} />
 
       <Field label={t("shot.lines")}>
         {lines.length ? (
@@ -412,6 +420,15 @@ export function ShotSettings({
         </div>
       </div>
       <DurationNote shot={shot} onPatch={onPatch} />
+
+      <ContractSection
+        key={JSON.stringify(shot.contract)}
+        shot={shot}
+        lines={lines}
+        assets={assets}
+        disabled={busy}
+        onPatch={onPatch}
+      />
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${ids}-desc`}>{t("shot.desc")}</Label>

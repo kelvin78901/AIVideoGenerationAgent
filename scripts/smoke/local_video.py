@@ -73,7 +73,8 @@ EP_PICTURES = ("linwan", "hall", "room", "umbrella", "note", "band", "phone")
 EP_TEXTS = ("txt1", "txt2")  # on-screen text pictures: locked on a candidate OCR read right
 EP_TAKES = 2
 EP_RECORD = "episode-takes.json"  # in the data directory: each shot's takes, for ``cut``
-STEPS = ["frames", "vid", "chain", "tts104", "ab", "rewrite", "episode", "cut"]
+STEPS = ["frames", "vid", "chain", "tts104", "ab", "rewrite", "episode", "cut", "contract"]
+PLAN_MODEL = "deepseek/v4-pro"  # the plan route's (M5.5 run 19: ``contract``)
 TTS104_SEED = 191503631  # 1-04's first seed of 14c
 CHAIN = ("1-06", "1-08")  # 1-06 is tts; 1-08 continues its last frame
 VOICE = "demo-p-asset-vlinwan"
@@ -566,16 +567,18 @@ def main() -> int:
     unknown = set(only) - set(STEPS)
     if unknown:
         raise SystemExit(f"unknown steps: {', '.join(sorted(unknown))}")
-    if "rewrite" in only or "episode" in only:
+    if "rewrite" in only or "episode" in only or "contract" in only:
         if os.environ.get("DRAMA_LIVE") != "1":
             raise SystemExit("rewrite / episode call DeepSeek for real (money): set DRAMA_LIVE=1")
         real = [REWRITE_MODEL, LOOK_MODEL] if "episode" in only else [REWRITE_MODEL]
+        if "contract" in only:  # M5.5 run 19: the plan, its check, the keyframe check
+            real = [PLAN_MODEL, REWRITE_MODEL, LOOK_MODEL]
         os.environ["DRAMA_REAL_MODELS"] = ",".join(real)
     picks = {k: int(v) for k, v in (p.split("=") for p in args.picks.split(",") if p)}
 
     facts = studio_facts(args.studio.rstrip("/"))
     tmp = Path(tempfile.mkdtemp(prefix="drama-local-video-"))
-    out = EP_OUT if {"episode", "cut"} & set(only) else tmp / "out"
+    out = EP_OUT if {"episode", "cut", "contract"} & set(only) else tmp / "out"
     out.mkdir(parents=True, exist_ok=True)
     home = Path(args.home) if args.home else tmp / "home"
     os.environ.update({"DRAMA_HOME": str(home), "DRAMA_MOCK": "1", "DRAMA_REAL_LOCAL": "1"})
@@ -782,6 +785,18 @@ def main() -> int:
                             f"{name}.mp4 / .png / .txt"
                         )
             smoke.say(f"   DeepSeek spent ${spent():.4f} (cap ${args.cap})")
+        if "contract" in only:
+            from contract_prep import prepare as contract_prepare
+
+            smoke.expected_api = {PLAN_MODEL, REWRITE_MODEL, LOOK_MODEL}
+            contract_prepare(smoke)
+            calls = smoke.get("/dev/model-calls", limit=500)
+            for key in (PLAN_MODEL, REWRITE_MODEL, LOOK_MODEL):
+                paid = sum(
+                    float(c.get("cost_usd") or 0) for c in calls if c.get("model_key") == key
+                )
+                n = sum(1 for c in calls if c.get("model_key") == key)
+                smoke.say(f"   {key} in this data dir: {n} call(s), ${paid:.4f}")
         if "episode" in only:
             smoke.expected_api = {REWRITE_MODEL, LOOK_MODEL}
             episode(smoke, facts["comfy_url"], home, args.start, args.stop)
@@ -806,7 +821,10 @@ def main() -> int:
     meter.stop()
     # Only a run of every step replaces the report; a partial run writes next to its files.
     report = REPORT if set(only) == set(DEFAULT_STEPS) else out / "report.txt"
-    if {"episode", "cut"} & set(only):
+    if "contract" in only:
+        EP_SHEETS.mkdir(parents=True, exist_ok=True)
+        report = EP_SHEETS / "report-contract.txt"
+    elif {"episode", "cut"} & set(only):
         name = f"report-from-{args.start}.txt" if args.start else "report.txt"
         name = "report-prepare.txt" if args.stop == "prepare" else name
         report = EP_SHEETS / (name if "episode" in only else "report-cut.txt")
