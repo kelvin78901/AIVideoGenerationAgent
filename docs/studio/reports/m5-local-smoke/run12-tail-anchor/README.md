@@ -20,3 +20,11 @@ DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/tail_anchor.py --home <第十
 ## 做进产品（第 15h 步）
 
 两个 H3 工作流（`h3-i2v`、`h3-r2v`）在 `Tail guide` 后面加 `Tail end`（`MiniMaxH3AddGuide`，`frame_idx` 21 = `TAIL_FRAMES - 1`），图读首帧那个 LoadImage（连续镜头的首帧就是上一镜最后一帧），不加新槽位；没给尾段时和尾段一起旁路。`h3-i2v` 给了尾段时去掉 I2V 的首帧锚，首帧的 LoadImage 留着给 `Tail end` 读。
+
+## 产品原样核对（同一天，改完工作流之后）
+
+```
+DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/local_video.py --only episode --home <第十一轮的数据目录> --from 1-08 --to 1-08 --run run12-tail-anchor
+```
+
+不打补丁，用仓库里的 `h3-i2v`（带 `Tail end`）出 1-08 两条（改写、看图走缓存）：切点 **37.1 / 37.1 dB**，开头两帧 45.7 / 50.7 dB（裁头不再复制第一帧）。每条 293–298 秒，比第十一轮的 250 秒长；补丁版那条是 259 秒，所以多出来的不全是锚点造成的，没细查。拼图 `sheet-1-08-*.jpg`，报告 `report-from-1-08.txt`。
