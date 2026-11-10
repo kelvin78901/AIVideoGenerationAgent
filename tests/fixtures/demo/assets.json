@@ -27,7 +27,7 @@
       {
         "key": "prop:p-note",
         "name": "黄色便利贴",
-        "description": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。"
+        "description": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。"
       },
       {
         "key": "prop:p-hairtie",
@@ -41,6 +41,7 @@
       {
         "kind": "text",
         "name": "便利贴手写",
+        "on": "prop:p-note",
         "description": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
         "text": { "exact": "楼下便利店，等你到十二点。", "style": "handwritten", "method": "model" },
         "lines": [3]

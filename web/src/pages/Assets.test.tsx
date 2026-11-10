@@ -33,7 +33,7 @@ const list = () => screen.getByRole("region", { name: "素材清单" });
 const item = (name: RegExp) => within(list()).getByRole("button", { name });
 const asset = (id: string) => fakeAssets.assets.find((a) => a.id === id);
 const productOf = (id: string) => fakeAssets.products.find((p) => p.id === `demo-p-asset-${id}`);
-const ready = () => screen.findByText("已锁定 7 / 10");
+const ready = () => screen.findByText("已锁定 7 / 9");
 
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
@@ -46,13 +46,13 @@ afterEach(() => {
 });
 
 describe("AssetsPage", () => {
-  it("lists 13 assets, 7 locked, with the analysis summary", async () => {
+  it("lists 12 assets, 7 locked, with the analysis summary", async () => {
     renderAssets();
     await ready();
     expect(
-      screen.getByText("从剧本分析出：角色 2 · 场景 3 · 道具 4 · 画面文字 2 · 音色 2"),
+      screen.getByText("从剧本分析出：角色 2 · 场景 3 · 道具 4 · 画面文字 1 · 音色 2"),
     ).toBeInTheDocument();
-    expect(within(list()).getAllByRole("button", { pressed: false })).toHaveLength(12);
+    expect(within(list()).getAllByRole("button", { pressed: false })).toHaveLength(11);
     expect(await screen.findByText("当前产物 · 林晚 · 参考图 4 张候选")).toBeInTheDocument();
     // The API final v2 stays on screen; the picture locked from it is a version of its own.
     expect(screen.getByText(/v2 · Nano Banana Pro/)).toHaveTextContent("已锁定");
@@ -64,65 +64,23 @@ describe("AssetsPage", () => {
     renderAssets();
     await ready();
     await user.click(within(list()).getByRole("radio", { name: "画面文字" }));
-    expect(within(list()).getAllByRole("button")).toHaveLength(2);
+    expect(within(list()).getAllByRole("button")).toHaveLength(1);
   });
 
-  it("shows each text candidate's OCR check; compositing in post takes a rerun", async () => {
+  it("a prop's writing: each candidate shows its OCR check (M5.5: only a warning)", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
-    await user.click(item(/便利贴手写/));
+    await user.click(item(/黄色便利贴/));
     const cands = screen.getByRole("radiogroup", { name: "候选" });
     const cand = (name: string) => within(cands).getByRole("radio", { name });
     expect(within(cand("v1 · A")).getByRole("img", { name: "v1 · A" })).toBeInTheDocument();
-    expect(cand("v1 · A")).toHaveTextContent("模型直接出字OCR 一致");
+    expect(cand("v1 · A")).toHaveTextContent("OCR 一致");
     expect(cand("v1 · B")).toHaveTextContent("OCR 不一致：有错字");
     expect(cand("v1 · D")).toHaveTextContent("OCR 不一致：缺字或缺标点");
-    // The candidates were drawn by the model: switching the method changes nothing until a rerun.
-    await user.click(screen.getByRole("radio", { name: "后期贴字（推荐）" }));
-    await waitFor(() => expect(asset("txt1")?.text?.method).toBe("composite"));
-    expect(
-      await screen.findByText(
-        "这一版是按「模型直接出字」出的「楼下便利店，等你到十二点。」；字或做法改了，点「重跑」按现在的设置出",
-      ),
-    ).toBeInTheDocument();
-    expect(cand("v1 · B")).toHaveTextContent("OCR 不一致：有错字");
-    await user.click(screen.getAllByRole("button", { name: /^重跑/ })[0] as HTMLElement);
-    const base = await screen.findByRole("radio", { name: "v2 · A" });
-    // A blank base, the text laid over it as post will paste it.
-    expect(base).toHaveTextContent("楼下便利店，等你到十二点。");
-    expect(base).toHaveTextContent("无字底图 + 后期贴字OCR 确认底图没有字");
-    expect(
-      screen.getByText("每张都做了 OCR，确认底图上没有字；上面叠的字是后期贴字的预览"),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/这一版是按/)).not.toBeInTheDocument();
   });
 
-  it("locking text OCR read differently asks first; 「仍然锁定」 locks it", async () => {
-    const user = userEvent.setup();
-    renderAssets();
-    await ready();
-    await user.click(item(/便利贴手写/));
-    await user.click(screen.getByRole("radio", { name: "v1 · B" }));
-    await waitFor(() => expect(asset("txt1")?.pick).toBe(1));
-    await user.click(screen.getByRole("button", { name: "锁定为参考" }));
-    let dialog = await screen.findByRole("alertdialog");
-    expect(dialog).toHaveTextContent("候选 B 的字和要求不一致");
-    expect(dialog).toHaveTextContent("OCR 读出来是「楼下便利店，等你到十二占。」");
-    expect(dialog).toHaveTextContent("要求是「楼下便利店，等你到十二点。」");
-    await user.click(within(dialog).getByRole("button", { name: "取消" }));
-    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
-    expect(productOf("txt1")?.locked_hash).toBeNull();
-
-    await user.click(screen.getByRole("button", { name: "锁定为参考" }));
-    dialog = await screen.findByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: "仍然锁定" }));
-    expect(await screen.findByText("已锁定 8 / 10")).toBeInTheDocument();
-    expect(productOf("txt1")?.locked_hash).not.toBeNull();
-    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
-  });
-
-  it("picks a candidate and locks it; the count goes to 8 / 10", async () => {
+  it("picks a candidate and locks it; the count goes to 8 / 9", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
@@ -130,7 +88,7 @@ describe("AssetsPage", () => {
     await user.click(screen.getByRole("radio", { name: "v1 · C" }));
     await waitFor(() => expect(asset("band")?.pick).toBe(2));
     await user.click(screen.getByRole("button", { name: "锁定为参考" }));
-    expect(await screen.findByText("已锁定 8 / 10")).toBeInTheDocument();
+    expect(await screen.findByText("已锁定 8 / 9")).toBeInTheDocument();
     expect(item(/旧黑发圈/)).toHaveTextContent("已锁定");
     expect(productOf("band")?.locked_hash).not.toBeNull();
     expect(screen.getByRole("radio", { name: "v1 · C" })).toBeDisabled();
@@ -147,7 +105,7 @@ describe("AssetsPage", () => {
     expect(dialog).toHaveTextContent("分镜 · 1-02、1-06、1-09，共 3 个镜头用它做参考");
     expect(dialog).toHaveTextContent("其中镜头 1-02 已确认");
     await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
-    expect(await screen.findByText("已锁定 6 / 10")).toBeInTheDocument();
+    expect(await screen.findByText("已锁定 6 / 9")).toBeInTheDocument();
     expect(item(/红色长柄伞/)).toHaveTextContent("待选");
   });
 
@@ -240,7 +198,7 @@ describe("AssetsPage", () => {
     await ready();
     await user.click(screen.getByRole("button", { name: "画面文字" }));
     expect(
-      await screen.findByText("当前产物 · 便利贴手写 · 文字素材 4 张候选"),
+      await screen.findByText("当前产物 · 手机锁屏时间 · 文字素材 4 张候选"),
     ).toBeInTheDocument();
   });
 

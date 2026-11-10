@@ -41,7 +41,7 @@ from drama_series_agent.modelhub.workflows import (
     spec_workflows_dir,
 )
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
-from drama_series_agent.pipeline.components.img import prop_physical
+from drama_series_agent.pipeline.components.img import prop_physical, prop_text
 from drama_series_agent.pipeline.components.media import (
     MediaComponent,
     candidate_files,
@@ -322,6 +322,8 @@ async def _references(
         if a.kind == "text":
             t = text_settings(a, p.settings_json if p else None)
             texts.append({"name": a.name, "exact": t["exact"], "method": t["method"]})
+        elif (written := prop_text(a, p)) is not None:
+            texts.append({"name": a.name, "exact": written["exact"], "method": "model"})
         ref = await locked_ref(session, p) if p is not None else None
         if ref is None or p is None:
             unlocked.append(a.name)

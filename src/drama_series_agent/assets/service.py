@@ -82,7 +82,7 @@ from drama_series_agent.episodes.service import (
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_info
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
-from drama_series_agent.pipeline.components.img import prop_physical
+from drama_series_agent.pipeline.components.img import prop_physical, prop_text
 from drama_series_agent.pipeline.components.text import (
     TEXT_IMAGE_SLOT,
     TextComponent,
@@ -406,7 +406,11 @@ class AssetService:
             product = await asset_product(session, asset_id)
             assert product is not None
             current = product.current_version_id
-            text_now = text_settings(asset, product.settings_json) if asset.kind == "text" else {}
+            text_now = (
+                text_settings(asset, product.settings_json)
+                if asset.kind in ("text", "prop")
+                else {}
+            )
         if body.intent is not None:
             await self._runs.save_prompt(product.id, body.intent, None)
             async with self._db.session() as session:
@@ -503,7 +507,8 @@ class AssetService:
         sha = self._store.put_bytes(data)
         name = filename[:200]
         payload: dict[str, Any] = {"candidates": [{}]}
-        if product.slot == TEXT_IMAGE_SLOT and self._text is not None:
+        written = product.slot == TEXT_IMAGE_SLOT or prop_text(asset, product) is not None
+        if written and self._text is not None:
             checked, text = await self._text.check_upload(asset, product, sha)
             payload = {"candidates": [checked], "text": text}
         draft = VersionDraft(
@@ -842,6 +847,9 @@ def _source(
 
 
 def _text(asset: Asset, settings: dict[str, Any]) -> TextOut | None:
+    if asset.kind == "prop":  # 有字的道具 (M5.5)
+        t = text_settings(asset, settings)
+        return TextOut.model_validate({**t, "method": "model"}) if t["exact"].strip() else None
     if asset.kind != "text":
         return None
     return TextOut.model_validate(text_settings(asset, settings))

@@ -28,7 +28,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from drama_series_agent.assets.ops import physical_from, physical_text
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.models_db import Asset, Product, ProductVersion
-from drama_series_agent.modelhub.adapters.base import Estimate
+from drama_series_agent.modelhub.adapters.base import CallContext, Estimate
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.media import (
     MediaComponent,
@@ -42,6 +42,7 @@ from drama_series_agent.pipeline.components.media import (
 from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.prompts.compiler import Block
+from drama_series_agent.qa import ocr
 
 REF_IMAGE_SLOT = "ref_image"
 KIND_GUIDE = {
@@ -56,6 +57,30 @@ KIND_GUIDE = {
     ),
 }
 FINAL_NOTE = "以参考图里的草稿为准，画得更精细：构图、样子和颜色都不要改。"
+STYLE_GUIDE = {
+    "handwritten": "手写：圆珠笔写在纸上，笔画自然，有一点倾斜和深浅变化。",
+    "printed": "印刷：清楚的黑体或宋体，排得整齐。",
+    "screen": "屏幕界面：手机或电脑的系统字体，清晰、发光，界面简洁。",
+}
+# 有字的道具 (M5.5): the writing is part of the prop, drawn on its own picture.
+PROP_TEXT = "道具上的字，必须逐字一致"
+
+
+def text_settings(asset: Asset, settings: dict[str, Any] | None) -> dict[str, str]:
+    """The characters, how they are made and the lettering: the product's settings over what
+    the analysis found."""
+    seed = (asset.seed_json or {}).get("text") or {}
+    mine = (settings or {}).get("text") or {}
+    return {"exact": "", "method": "composite", "style": "printed", **seed, **mine}
+
+
+def prop_text(asset: Asset, product: Product | None) -> dict[str, str] | None:
+    """The writing on a prop (M5.5: the note's 「楼下便利店，等你到十二点。」), always drawn by
+    the model; None when the prop has none."""
+    if asset.kind != "prop":
+        return None
+    text = text_settings(asset, product.settings_json if product else None)
+    return {**text, "method": "model"} if text["exact"].strip() else None
 
 
 def prop_physical(asset: Asset, product: Product | None) -> dict[str, str] | None:
@@ -118,10 +143,14 @@ class ImgComponent(MediaComponent):
         blocks = [Block("类别", KIND_GUIDE.get(asset.kind, "")), Block("画幅", frame["aspect"])]
         if asset.kind == "prop" and (size := physical_text(prop_physical(asset, product))):
             blocks.append(Block("真实尺寸和材质", size))
-        return Inputs(
-            blocks=blocks,
-            context={"kind": asset.kind, "frame": frame, "characters": characters},
-        )
+        context: dict[str, Any] = {"kind": asset.kind, "frame": frame, "characters": characters}
+        if (text := prop_text(asset, product)) is not None:
+            blocks += [
+                Block(PROP_TEXT, f"「{text['exact']}」"),
+                Block("字迹", STYLE_GUIDE.get(text["style"], "")),
+            ]
+            context["text"] = text
+        return Inputs(blocks=blocks, context=context)
 
     # ------------------------------------------------------------------ run
 
@@ -157,6 +186,17 @@ class ImgComponent(MediaComponent):
         draft.dependencies = [*draft.dependencies, *deps]
         if source:
             draft.params["source"] = {"version_id": source[0].id, "idx": source[1]}
+        if (text := inputs.context.get("text")) is not None:
+            # 画面文字 and a prop's writing: OCR reads each candidate back (only a warning).
+            call_ctx = self._call_ctx(ctx, None)
+            checked = []
+            for f in draft.files:
+                if f.get("role") == "candidate":
+                    read = await ocr.read(
+                        self.services.router, self.services.store, f["sha256"], call_ctx
+                    )
+                    checked.append(ocr.check(text["exact"], read, text["method"]))
+            draft.payload = {**draft.payload, "candidates": checked, "text": text}
         return draft
 
     def estimate(self, inputs: Inputs, compiled: str, model: str) -> Estimate:
@@ -174,8 +214,18 @@ class ImgComponent(MediaComponent):
         return self.services.registry.get(model).estimate(req)
 
     def picture_params(self, inputs: Inputs) -> dict[str, Any]:
-        """Extra request params (画面文字: the characters to draw)."""
-        return {}
+        """Extra request params: the characters a model draws (画面文字, a prop's writing)."""
+        text = inputs.context.get("text")
+        return {"text": text["exact"]} if text and text["method"] == "model" else {}
+
+    async def check_upload(
+        self, asset: Asset, product: Product, sha256: str
+    ) -> tuple[dict[str, Any], dict[str, str]]:
+        """An uploaded picture's OCR against the text's settings now, and those settings."""
+        text = prop_text(asset, product) or text_settings(asset, product.settings_json)
+        ctx = CallContext(component_id=self.id, series_id=product.series_id, product_id=product.id)
+        read = await ocr.read(self.services.router, self.services.store, sha256, ctx)
+        return ocr.check(text["exact"], read, text["method"]), text
 
     # ------------------------------------------------------------------ internals
 

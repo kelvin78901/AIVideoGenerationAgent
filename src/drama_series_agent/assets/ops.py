@@ -213,6 +213,8 @@ def merge(
     for item in answer.get("assets") or []:
         kind = str(item.get("kind") or "")
         name = str(item.get("name") or "").strip()
+        if kind == "text" and _onto_prop(item, out, by_key, by_line):
+            continue
         target = by_key.get(str(item.get("key") or ""))
         if target is None and kind in KINDS and name:
             target = next((f for f in out if f.kind == kind and _same_name(f.name, name)), None)
@@ -255,6 +257,34 @@ def merge(
             if line is not None:
                 target.use(line.scene_id, line.line_id)
     return out
+
+
+def _onto_prop(
+    item: Mapping[str, Any],
+    found: Sequence[Found],
+    by_key: Mapping[str, Found],
+    by_line: Mapping[int, Line],
+) -> bool:
+    """有字的道具 (M5.5): on-screen text the answer says is written on a prop (``on``: the
+    prop's key or name) becomes the prop's writing, drawn on its own picture, not an asset of
+    its own (run 17: the note's picture was a blank yellow paper, the words a separate asset
+    only one shot used). True when it was taken."""
+    on = str(item.get("on") or "").strip()
+    text = item.get("text")
+    if not on or not isinstance(text, Mapping) or not text.get("exact"):
+        return False
+    prop = by_key.get(on) or next(
+        (f for f in found if f.kind == "prop" and _same_name(f.name, on)), None
+    )
+    if prop is None or prop.kind != "prop":
+        return False
+    style = text.get("style") if text.get("style") in _STYLES else "handwritten"
+    prop.text = {"exact": str(text["exact"]), "style": style, "method": "model"}
+    for n in item.get("lines") or []:
+        line = by_line.get(int(n)) if isinstance(n, int) else None
+        if line is not None:
+            prop.use(line.scene_id, line.line_id)
+    return True
 
 
 _STYLES = ("handwritten", "printed", "screen")

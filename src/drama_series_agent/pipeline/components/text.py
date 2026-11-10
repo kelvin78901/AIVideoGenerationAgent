@@ -11,7 +11,8 @@ Two ways to make it, the product's setting ``text.method``:
 Otherwise a run is a reference picture's (``img``): 4 candidates, the local draft and the API
 final from one of them, nothing adopted until one is locked. Each candidate carries its OCR
 (``payload.candidates[i]``: ``ocr``, ``ocr_ok``, ``ocr_issue``) and the version the settings it
-was made with (``payload.text``). Locking a mismatch takes ``force`` (``AssetService.lock``).
+was made with (``payload.text``). A mismatch only warns (M5.5). Writing on a prop is the
+prop's own picture's (``img.prop_text``), read back the same way.
 """
 
 from __future__ import annotations
@@ -21,34 +22,22 @@ from typing import Any
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.core.models_db import Asset, Product
-from drama_series_agent.modelhub.adapters.base import CallContext
-from drama_series_agent.pipeline.component import Inputs, RunContext
+from drama_series_agent.pipeline.component import Inputs
+from drama_series_agent.pipeline.components.img import (  # re-exported
+    STYLE_GUIDE as STYLE_GUIDE,
+)
 from drama_series_agent.pipeline.components.img import ImgComponent
+from drama_series_agent.pipeline.components.img import text_settings as text_settings
 from drama_series_agent.pipeline.components.media import output_frame
-from drama_series_agent.pipeline.drafts import VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.prompts.compiler import Block
-from drama_series_agent.qa import ocr
 
 TEXT_IMAGE_SLOT = "text_image"
-STYLE_GUIDE = {
-    "handwritten": "手写：圆珠笔写在纸上，笔画自然，有一点倾斜和深浅变化。",
-    "printed": "印刷：清楚的黑体或宋体，排得整齐。",
-    "screen": "屏幕界面：手机或电脑的系统字体，清晰、发光，界面简洁。",
-}
 # Where the characters go on in post (后期贴字).
 STYLE_PLACE = {"handwritten": "写在纸面上", "printed": "印在平整的表面上", "screen": "显示在屏幕上"}
 COMPOSITE_GUIDE = (
     "画面里不要出现任何文字、数字或符号。留出一块干净的位置，后期会把「{exact}」{place}。"
 )
-
-
-def text_settings(asset: Asset, settings: dict[str, Any] | None) -> dict[str, str]:
-    """The characters, how they are made and the lettering: the product's settings over what
-    the analysis found."""
-    seed = (asset.seed_json or {}).get("text") or {}
-    mine = (settings or {}).get("text") or {}
-    return {"exact": "", "method": "composite", "style": "printed", **seed, **mine}
 
 
 class TextComponent(ImgComponent):
@@ -77,26 +66,3 @@ class TextComponent(ImgComponent):
     def picture_params(self, inputs: Inputs) -> dict[str, Any]:
         text = inputs.context["text"]
         return {"text": text["exact"]} if text["method"] == "model" else {}
-
-    async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
-        draft = await super().run(ctx, inputs)
-        text = inputs.context["text"]
-        call_ctx = self._call_ctx(ctx, None)
-        candidates = []
-        for f in draft.files:
-            if f.get("role") == "candidate":
-                read = await ocr.read(
-                    self.services.router, self.services.store, f["sha256"], call_ctx
-                )
-                candidates.append(ocr.check(text["exact"], read, text["method"]))
-        draft.payload = {**draft.payload, "candidates": candidates, "text": text}
-        return draft
-
-    async def check_upload(
-        self, asset: Asset, product: Product, sha256: str
-    ) -> tuple[dict[str, Any], dict[str, str]]:
-        """An uploaded picture's OCR against the text's settings now, and those settings."""
-        text = text_settings(asset, product.settings_json)
-        ctx = CallContext(component_id=self.id, series_id=product.series_id, product_id=product.id)
-        read = await ocr.read(self.services.router, self.services.store, sha256, ctx)
-        return ocr.check(text["exact"], read, text["method"]), text

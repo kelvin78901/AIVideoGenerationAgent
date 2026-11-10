@@ -229,8 +229,7 @@
       "sound": null,
       "audio_mode": "native",
       "asset_ids": [
-        "note",
-        "txt1"
+        "note"
       ],
       "tail_from": null,
       "tail_note": null,
@@ -1755,7 +1754,7 @@
               "refs": [
                 "b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
                 "79e8df2bb33fd96879c578f0d29506683af125a542a0e8c48d9741520810a5bd",
-                "4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7"
+                "c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1"
               ],
               "ref_audio": [
                 "a7c1d3e5f585a7392e859e9bca5706397c5eba71eab602c445c42545d951389f"
@@ -1892,7 +1891,7 @@
               "refs": [
                 "b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
                 "79e8df2bb33fd96879c578f0d29506683af125a542a0e8c48d9741520810a5bd",
-                "4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7"
+                "c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1"
               ],
               "ref_audio": [
                 "a7c1d3e5f585a7392e859e9bca5706397c5eba71eab602c445c42545d951389f"

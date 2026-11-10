@@ -123,7 +123,7 @@ def test_the_demo_locks_seven_with_their_gate_decisions(client: TestClient) -> N
     listed = client.get(f"{V1}/series/demo/assets", params={"episode": "demo-e1"}).json()
     status = {a["id"]: a["status"] for a in listed}
     assert {k for k, v in status.items() if v == "locked"} == LOCKED
-    assert {k for k, v in status.items() if v == "choosing"} == {"room", "band", "txt1"}
+    assert {k for k, v in status.items() if v == "choosing"} == {"room", "band"}
     linwan = _product(client, "linwan")
     v1, v2, pick = linwan["versions"]
     assert (v1["stage"], v1["where"], len(v1["files"])) == ("draft", "local", 4)

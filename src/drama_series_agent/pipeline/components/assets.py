@@ -62,6 +62,9 @@ class FoundAsset(BaseModel):
     lines: list[int] = Field(default_factory=list)
     text: TextSpec | None = None
     note: str | None = None
+    # M5.5: text written on a prop (its key or name) is the prop's; a new prop's real size.
+    on: str | None = None
+    physical: dict[str, str] | None = None
 
 
 class AssetsAnswer(BaseModel):

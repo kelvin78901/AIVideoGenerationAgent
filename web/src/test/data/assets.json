@@ -213,7 +213,7 @@
       "series_id": "demo",
       "kind": "prop",
       "name": "黄色便利贴",
-      "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
+      "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。",
       "source": {
         "code": "script_line",
         "params": {
@@ -242,7 +242,11 @@
       "product_id": "demo-p-asset-note",
       "status": "locked",
       "pick": 0,
-      "text": null,
+      "text": {
+        "exact": "楼下便利店，等你到十二点。",
+        "method": "model",
+        "style": "handwritten"
+      },
       "voice": null,
       "note": null,
       "seed_changed": false,
@@ -329,45 +333,6 @@
         "material": "黑色手机壳、玻璃屏",
         "wear": "屏幕有一道细划痕"
       }
-    },
-    {
-      "id": "txt1",
-      "series_id": "demo",
-      "kind": "text",
-      "name": "便利贴手写",
-      "intent": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
-      "source": {
-        "code": "script_line",
-        "params": {
-          "scene": 1,
-          "line": 3
-        }
-      },
-      "shots": [
-        "1-03"
-      ],
-      "scenes": [
-        {
-          "scene_id": "demo-b1",
-          "episode_id": "demo-e1",
-          "number": 1,
-          "line_ids": [
-            "demo-b4"
-          ]
-        }
-      ],
-      "product_id": "demo-p-asset-txt1",
-      "status": "choosing",
-      "pick": 0,
-      "text": {
-        "exact": "楼下便利店，等你到十二点。",
-        "method": "model",
-        "style": "handwritten"
-      },
-      "voice": null,
-      "note": null,
-      "seed_changed": false,
-      "physical": null
     },
     {
       "id": "txt2",
@@ -1267,7 +1232,7 @@
       "component_id": "img",
       "current_version_id": "demo-p-asset-note-v1",
       "adopted_version_id": "demo-p-asset-note-v2",
-      "locked_hash": "sha256:985495cc918ff8d9543c6403f87370a037be53ba9c1999b8653a1d137aaf665c",
+      "locked_hash": "sha256:c21bda082c3838cc6d96ecf4132242ce579ce38631d86208942594c509de881d",
       "status": "locked",
       "versions": [
         {
@@ -1278,19 +1243,40 @@
           "parent_version_id": null,
           "payload": {
             "candidates": [
-              {},
-              {},
-              {},
-              {}
+              {
+                "ocr": "楼下便利店，等你到十二点。",
+                "ocr_ok": true,
+                "ocr_issue": null
+              },
+              {
+                "ocr": "楼下便利店，等你到十二占。",
+                "ocr_ok": false,
+                "ocr_issue": "wrong"
+              },
+              {
+                "ocr": "楼下便利店，等你到十二点。",
+                "ocr_ok": true,
+                "ocr_issue": null
+              },
+              {
+                "ocr": "楼下便利店，等你到十二。",
+                "ocr_ok": false,
+                "ocr_issue": "missing"
+              }
             ],
             "aspect": "9:16",
-            "refs": []
+            "refs": [],
+            "text": {
+              "exact": "楼下便利店，等你到十二点。",
+              "method": "model",
+              "style": "handwritten"
+            }
           },
           "files": [
             {
               "role": "candidate",
-              "path": "blobs/sha256/4c/4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7",
-              "sha256": "4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7",
+              "path": "blobs/sha256/c9/c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1",
+              "sha256": "c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1303,8 +1289,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/0e/0ef65181dbfd3d0a9e37e756b8963088abd63e39c7d427d135221082886ad568",
-              "sha256": "0ef65181dbfd3d0a9e37e756b8963088abd63e39c7d427d135221082886ad568",
+              "path": "blobs/sha256/1f/1f1591f6c78f0a772924930d7a24bb508bca6e90859c725d204a0683d7d9d71f",
+              "sha256": "1f1591f6c78f0a772924930d7a24bb508bca6e90859c725d204a0683d7d9d71f",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1317,8 +1303,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/e1/e16c5aaf4cb0d5ea7edd64463f3cb66893fd9927609631f2d7be621deb1267a9",
-              "sha256": "e16c5aaf4cb0d5ea7edd64463f3cb66893fd9927609631f2d7be621deb1267a9",
+              "path": "blobs/sha256/13/13f6841ae3f0c8eacbfe14b9a71ca060374958e384d30ceadccab7d66891d801",
+              "sha256": "13f6841ae3f0c8eacbfe14b9a71ca060374958e384d30ceadccab7d66891d801",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1331,8 +1317,8 @@
             },
             {
               "role": "candidate",
-              "path": "blobs/sha256/88/885ff91422eb6885ee078ca7c9b18d27bd11daf05cfa5cf944a5c5a7e6d6b5e6",
-              "sha256": "885ff91422eb6885ee078ca7c9b18d27bd11daf05cfa5cf944a5c5a7e6d6b5e6",
+              "path": "blobs/sha256/3b/3bbcf659b08f84b79cf7534b51133a535a64e8ab581b4f6197ea0914642247f9",
+              "sha256": "3bbcf659b08f84b79cf7534b51133a535a64e8ab581b4f6197ea0914642247f9",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1344,9 +1330,9 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:00d8bfaf7a226b774b233c1d59d8ea82f9c26443c3e4e2d09f1c92e3e859f102",
-          "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
-          "compiled": "[任务] 一张单幅写实照片，单一视角\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "content_hash": "sha256:677e39369c675bb1b90e5155acf7538972792dd85a853ec708e5facf9eabb505",
+          "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。",
+          "compiled": "[任务] 一张单幅写实照片，单一视角\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
           "compiled_overridden": false,
           "model_key": "comfy/qwen-image",
           "where": "local",
@@ -1372,13 +1358,17 @@
           "origin": "pick",
           "parent_version_id": "demo-p-asset-note-v1",
           "payload": {
-            "candidate": {}
+            "candidate": {
+              "ocr": "楼下便利店，等你到十二点。",
+              "ocr_ok": true,
+              "ocr_issue": null
+            }
           },
           "files": [
             {
               "role": "ref",
-              "path": "blobs/sha256/4c/4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7",
-              "sha256": "4c139761e7a2278936e9f541517a638aa07535b3d59e65f57d65a66ff81f48c7",
+              "path": "blobs/sha256/c9/c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1",
+              "sha256": "c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1",
               "mime": "image/png",
               "duration_s": null,
               "w": 768,
@@ -1390,9 +1380,9 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:985495cc918ff8d9543c6403f87370a037be53ba9c1999b8653a1d137aaf665c",
-          "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
-          "compiled": "[任务] 一张单幅写实照片，单一视角\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+          "content_hash": "sha256:c21bda082c3838cc6d96ecf4132242ce579ce38631d86208942594c509de881d",
+          "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。",
+          "compiled": "[任务] 一张单幅写实照片，单一视角\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
           "compiled_overridden": false,
           "model_key": "comfy/qwen-image",
           "where": "local",
@@ -1413,8 +1403,8 @@
         }
       ],
       "prompt": {
-        "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。",
-        "compiled": "[任务] 一张单幅写实照片，单一视角\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
+        "intent": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。",
+        "compiled": "[任务] 一张单幅写实照片，单一视角\n[描述] 方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。\n[风格] 写实电影感，干净背景，均匀柔光\n[约束] 单张内五官、发型、服装要完整清晰；画面里不要出现任何文字\n\n# 目标模型：comfy/qwen-image",
         "compiled_overridden": false,
         "model_key": "comfy/qwen-image"
       },
@@ -1734,154 +1724,6 @@
         "version_id": "demo-p-asset-phone-v1",
         "idx": 0
       },
-      "settings": null,
-      "retired": false
-    },
-    {
-      "id": "demo-p-asset-txt1",
-      "series_id": "demo",
-      "owner_type": "asset",
-      "owner_id": "txt1",
-      "slot": "text_image",
-      "component_id": "text",
-      "current_version_id": "demo-p-asset-txt1-v1",
-      "adopted_version_id": null,
-      "locked_hash": null,
-      "status": "ready",
-      "versions": [
-        {
-          "id": "demo-p-asset-txt1-v1",
-          "product_id": "demo-p-asset-txt1",
-          "n": 1,
-          "origin": "run",
-          "parent_version_id": null,
-          "payload": {
-            "candidates": [
-              {
-                "ocr": "楼下便利店，等你到十二点。",
-                "ocr_ok": true,
-                "ocr_issue": null
-              },
-              {
-                "ocr": "楼下便利店，等你到十二占。",
-                "ocr_ok": false,
-                "ocr_issue": "wrong"
-              },
-              {
-                "ocr": "楼下便利店，等你到十二点。",
-                "ocr_ok": true,
-                "ocr_issue": null
-              },
-              {
-                "ocr": "楼下便利店，等你到十二。",
-                "ocr_ok": false,
-                "ocr_issue": "missing"
-              }
-            ],
-            "aspect": "9:16",
-            "refs": [],
-            "text": {
-              "exact": "楼下便利店，等你到十二点。",
-              "method": "model",
-              "style": "handwritten"
-            }
-          },
-          "files": [
-            {
-              "role": "candidate",
-              "path": "blobs/sha256/83/838f07b74d34613e8d61bfe4677ee465561ffaee9cce85870d61f5ebd70b6617",
-              "sha256": "838f07b74d34613e8d61bfe4677ee465561ffaee9cce85870d61f5ebd70b6617",
-              "mime": "image/png",
-              "duration_s": null,
-              "w": 1080,
-              "h": 1920,
-              "idx": 0,
-              "view": null,
-              "line": null,
-              "emotion": null,
-              "waveform": null
-            },
-            {
-              "role": "candidate",
-              "path": "blobs/sha256/b2/b289083ebd33df717d5cc6cbadb0cd2b937d16c06eb0cedffe7100c699d594c5",
-              "sha256": "b289083ebd33df717d5cc6cbadb0cd2b937d16c06eb0cedffe7100c699d594c5",
-              "mime": "image/png",
-              "duration_s": null,
-              "w": 1080,
-              "h": 1920,
-              "idx": 1,
-              "view": null,
-              "line": null,
-              "emotion": null,
-              "waveform": null
-            },
-            {
-              "role": "candidate",
-              "path": "blobs/sha256/16/16aac4ad4d7b86c20b2d5db25d50ab30ce70575d72c4d91a2e81ae199e62560c",
-              "sha256": "16aac4ad4d7b86c20b2d5db25d50ab30ce70575d72c4d91a2e81ae199e62560c",
-              "mime": "image/png",
-              "duration_s": null,
-              "w": 1080,
-              "h": 1920,
-              "idx": 2,
-              "view": null,
-              "line": null,
-              "emotion": null,
-              "waveform": null
-            },
-            {
-              "role": "candidate",
-              "path": "blobs/sha256/1b/1bfcd5e2c3e7f6ef59e6effff707254cbe693cd3d469d423e88618a76eb18b0c",
-              "sha256": "1bfcd5e2c3e7f6ef59e6effff707254cbe693cd3d469d423e88618a76eb18b0c",
-              "mime": "image/png",
-              "duration_s": null,
-              "w": 1080,
-              "h": 1920,
-              "idx": 3,
-              "view": null,
-              "line": null,
-              "emotion": null,
-              "waveform": null
-            }
-          ],
-          "content_hash": "sha256:d123a3f64cd26e06ab6fe468de0777a13472e0dbdd5667d5eabd23387aff8cec",
-          "intent": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
-          "compiled": "[任务] 画面文字素材：一张画面，里面只有下面这一处字，一字不差\n[描述] 黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。\n[风格] 写实电影感，竖屏短剧的画面质感\n[约束] 单幅画面，不拼图、不分格；这处字只出现一次，画面里不要出现别的文字、水印或标志\n\n# 目标模型：openai/gpt-image-2",
-          "compiled_overridden": false,
-          "model_key": "openai/gpt-image-2",
-          "where": "api",
-          "seed": 1201,
-          "params": {
-            "mode": "run",
-            "calls": 1
-          },
-          "qa": null,
-          "qa_pass": null,
-          "fallback_reason": null,
-          "stage": null,
-          "rating": null,
-          "cost_usd": 1.12,
-          "job_id": null,
-          "created_at": "2026-10-18T09:00:00Z",
-          "note": null
-        }
-      ],
-      "prompt": {
-        "intent": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
-        "compiled": "[任务] 画面文字素材：一张画面，里面只有下面这一处字，一字不差\n[描述] 黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。\n[风格] 写实电影感，竖屏短剧的画面质感\n[约束] 单幅画面，不拼图、不分格；这处字只出现一次，画面里不要出现别的文字、水印或标志\n\n# 目标模型：comfy/qwen-image",
-        "compiled_overridden": false,
-        "model_key": "comfy/qwen-image"
-      },
-      "estimate": {
-        "model_key": "comfy/qwen-image",
-        "where": "local",
-        "cost_usd": 0.0,
-        "seconds": 0.0,
-        "priced": true,
-        "final_usd": null
-      },
-      "running": null,
-      "pick": null,
       "settings": null,
       "retired": false
     },
@@ -3602,11 +3444,6 @@
         "name": "手机"
       },
       {
-        "id": "txt1",
-        "kind": "text",
-        "name": "便利贴手写"
-      },
-      {
         "id": "txt2",
         "kind": "text",
         "name": "手机锁屏时间"
@@ -3689,13 +3526,6 @@
         "scene_id": "demo-b7",
         "line_ids": [
           "demo-b9"
-        ]
-      },
-      {
-        "asset_id": "txt1",
-        "scene_id": "demo-b1",
-        "line_ids": [
-          "demo-b4"
         ]
       },
       {

@@ -6,6 +6,7 @@
 - 另外从 [剧本] 的动作行（△）里找两类东西，写 kind、name、description 和 lines（它出现在哪几行，用每行前的 L 号）：
   - 设定里没有、但镜头里看得清的道具（kind: prop），写 physical：size（真实尺寸，带单位，按常识估写「约」）、material（材质）、wear（新旧）；
   - 画面里要出现的字，例如纸条、招牌、手机屏幕（kind: text）。text 写 exact（逐字，包括标点）、style（handwritten 手写 / printed 印刷 / screen 屏幕界面）、method（model：让模型直接出字，适合短的手写字和印刷字；composite：后期贴字，适合屏幕界面和长段文字）。
+  - 写在某个道具上的字（便利贴上的留言、小票背面的字）是道具的一部分：照样写 kind: text 和 text，另加 on 写那个道具的 key（或新道具的 name），字就画在道具图上，不再单独做一张图；道具的 description 里写清字写在哪、用什么笔。屏幕、招牌这类不属于某个可拿起的道具的字，不写 on。
 - 字幕不算画面文字。[已知素材] 里已有的不要再列。
 - 本集还没出场、但 [设定] 里马上要用到的角色、场景或音色，也可以列出来，lines 留空，note 写一句为什么。
 

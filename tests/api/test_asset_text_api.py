@@ -1,7 +1,8 @@
-"""画面文字 (SPEC 5 ``text``; M3 step 5): candidates checked by OCR, in Mock mode.
+"""画面文字 (SPEC 5 ``text``; M3 step 5) and a prop's writing (M5.5), checked by OCR, in Mock.
 
-The demo's 便利贴手写 (txt1) is drawn by the model, its B and D read differently by OCR; 手机锁屏
-时间 (txt2) is composited in post, its candidates blank bases.
+The demo's 黄色便利贴 carries its handwriting (M5.5: it was the text asset 便利贴手写 before), drawn
+by the model on the note's own picture, its B and D read differently by OCR; 手机锁屏时间 (txt2)
+is composited in post, its candidates blank bases.
 """
 
 from __future__ import annotations
@@ -85,8 +86,22 @@ def _ok(read: str | None, ok: bool | None = True, issue: str | None = None) -> d
     return {"ocr": read, "ocr_ok": ok, "ocr_issue": issue}
 
 
+def _open(client: TestClient, asset_id: str) -> None:
+    """Unlock a locked demo asset (「解锁」 through the impact preview, marking only)."""
+    resp = client.post(
+        f"{V1}/impact/preview", json={"kind": "asset_unlock", "target_id": asset_id, "patch": {}}
+    )
+    assert resp.status_code == 200, resp.text
+    done = client.post(
+        f"{V1}/impact/apply", json={"impact_id": resp.json()["id"], "action": "mark"}
+    )
+    assert done.status_code == 200, done.text
+    assert _product(client, asset_id)["locked_hash"] is None
+
+
 def test_the_demo_candidates_carry_their_ocr(client: TestClient) -> None:
-    (v1,) = _product(client, "txt1")["versions"]
+    note = _product(client, "note")
+    (v1,) = note["versions"][:1]
     assert v1["payload"]["text"] == {"exact": NOTE, "method": "model", "style": "handwritten"}
     assert v1["payload"]["candidates"] == [
         _ok(NOTE),
@@ -101,29 +116,29 @@ def test_the_demo_candidates_carry_their_ocr(client: TestClient) -> None:
     assert txt2["locked_hash"]
 
 
-def test_drawn_text_is_read_back_from_every_candidate(client: TestClient) -> None:
-    job = _run(client, "txt1")
+def test_a_props_writing_is_drawn_and_read_back(client: TestClient) -> None:
+    _open(client, "note")
+    job = _run(client, "note")
     assert job["queue"] == "gpu"  # hybrid: the draft is local
-    draft = _latest(client, "txt1")
+    draft = _latest(client, "note")
     assert (draft["stage"], draft["model_key"]) == ("draft", "comfy/qwen-image")
     assert draft["payload"]["candidates"] == [_ok(NOTE)] * 4
     assert _picture_texts(client, draft) == [{MOCK_TEXT_KEY: NOTE}] * 4
-    assert "[文字，必须逐字一致]\n" + NOTE in _prompt(client, draft)
+    prompt = _prompt(client, draft)
+    assert f"[道具上的字，必须逐字一致]\n「{NOTE}」" in prompt and "[字迹]\n手写" in prompt
     calls = [c for c in _rows(client, ModelCall) if c.component_id == "ocr"]
     assert len(calls) == 4
     assert {(c.model_key, c.where, c.cost_usd, c.status) for c in calls} == {
         ("local/rapidocr", "local", 0.0, "success")
     }
-    assert {c.product_id for c in calls} == {"demo-p-asset-txt1"}
+    assert {c.product_id for c in calls} == {"demo-p-asset-note"}
     assert {c.job_id for c in calls} == {job["id"]}
 
     # The API final from candidate C is read too.
     params = {"source_version_id": draft["id"], "source_idx": 2}
-    job = _run(client, "txt1", where="api", params=params)
-    assert job["queue"] == "api:openai"
-    final = _latest(client, "txt1")
+    job = _run(client, "note", where="api", params=params)
+    final = _latest(client, "note")
     assert (final["stage"], final["parent_version_id"]) == ("final", draft["id"])
-    assert final["model_key"] == "openai/gpt-image-2"
     assert final["payload"]["candidates"] == [_ok(NOTE)]
     assert len([c for c in _rows(client, ModelCall) if c.component_id == "ocr"]) == 5
 
@@ -135,53 +150,57 @@ def _prompt(client: TestClient, version: dict[str, Any]) -> str:
 
 def test_a_mismatch_is_flagged_but_locks(client: TestClient) -> None:
     """M5.5 (Kelvin 2026-11-10): checks warn, never block; the candidate says what OCR read."""
+    _open(client, "note")
     # Every candidate of a run misses the 点.
     _state(client).registry.mock_settings.ocr_mismatch = True
-    _run(client, "txt1")
-    draft = _latest(client, "txt1")
+    _run(client, "note")
+    draft = _latest(client, "note")
     assert draft["payload"]["candidates"] == [_ok(SHORT, False, "missing")] * 4
-    resp = client.post(f"{V1}/assets/txt1/lock")
+    resp = client.post(f"{V1}/assets/note/lock")
     assert resp.status_code == 200, resp.text
     assert resp.json()["status"] == "locked"
-    gates = [g for g in _rows(client, GateDecision) if g.gate == "assets" and g.scope_id == "txt1"]
-    assert [g.action for g in gates] == ["confirm"]
+    gates = [g for g in _rows(client, GateDecision) if g.gate == "assets" and g.scope_id == "note"]
+    assert [g.action for g in gates][-1] == "confirm"
 
 
 def test_a_matching_candidate_locks(client: TestClient) -> None:
-    resp = client.post(f"{V1}/assets/txt1/lock", json={"idx": 2})
+    _open(client, "note")
+    resp = client.post(f"{V1}/assets/note/lock", json={"idx": 2})
     assert resp.status_code == 200, resp.text
-    product = _product(client, "txt1")
+    product = _product(client, "note")
     pick = next(v for v in product["versions"] if v["id"] == product["adopted_version_id"])
     assert pick["payload"] == {"candidate": _ok(NOTE)}
 
 
 def test_compositing_draws_a_blank_base(client: TestClient) -> None:
-    resp = client.patch(f"{V1}/assets/txt1", json={"text": {"method": "composite"}})
-    assert resp.json()["text"] == {"exact": NOTE, "method": "composite", "style": "handwritten"}
-    _run(client, "txt1")
-    base = _latest(client, "txt1")
+    _open(client, "txt2")
+    _run(client, "txt2")
+    base = _latest(client, "txt2")
     assert base["payload"]["text"]["method"] == "composite"
     assert base["payload"]["candidates"] == [_ok("")] * 4
     assert _picture_texts(client, base) == [{}] * 4
     prompt = _prompt(client, base)
     assert "[后期贴字]\n画面里不要出现任何文字、数字或符号。" in prompt
-    assert f"留出一块干净的位置，后期会把「{NOTE}」写在纸面上。" in prompt
+    assert "留出一块干净的位置，后期会把「23:52」显示在屏幕上。" in prompt
     assert "[文字，必须逐字一致]" not in prompt
 
 
 def test_without_ocr_the_candidates_are_not_checked(client: TestClient) -> None:
+    _open(client, "note")
     _state(client).registry.mock_settings.fail_keys.add("local/rapidocr")
-    _run(client, "txt1")
-    draft = _latest(client, "txt1")
+    _run(client, "note")
+    draft = _latest(client, "note")
     assert draft["payload"]["candidates"] == [_ok(None, None)] * 4
-    assert client.post(f"{V1}/assets/txt1/lock").status_code == 200  # 未检查 never blocks
+    assert client.post(f"{V1}/assets/note/lock").status_code == 200  # 未检查 never blocks
 
 
 def test_an_uploaded_picture_is_read(client: TestClient) -> None:
+    _open(client, "note")
+
     def upload(png: bytes) -> dict[str, Any]:
-        resp = client.post(f"{V1}/assets/txt1/upload", files={"file": ("note.png", png)})
+        resp = client.post(f"{V1}/assets/note/upload", files={"file": ("note.png", png)})
         assert resp.status_code == 200, resp.text
-        return _latest(client, "txt1")
+        return _latest(client, "note")
 
     drawn = upload(gradient_png(8, 8, (240, 230, 160), texts={MOCK_TEXT_KEY: NOTE}))
     assert drawn["origin"] == "upload"
@@ -191,4 +210,4 @@ def test_an_uploaded_picture_is_read(client: TestClient) -> None:
     }
     blank = upload(gradient_png(8, 8, (240, 230, 160)))
     assert blank["payload"]["candidates"] == [_ok("", False, "missing")]
-    assert client.post(f"{V1}/assets/txt1/lock").status_code == 200  # flagged, not refused
+    assert client.post(f"{V1}/assets/note/lock").status_code == 200  # flagged, not refused

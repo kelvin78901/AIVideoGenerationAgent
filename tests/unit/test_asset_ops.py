@@ -90,3 +90,32 @@ def test_ids_carry_over_by_key_or_name() -> None:
     assert assets["scene:l-1:dawn"]["uses"] == [
         {"scene_id": "s1", "line_ids": []}, {"scene_id": "s2", "line_ids": []}
     ]  # fmt: skip
+
+
+def test_writing_on_a_prop_is_the_props() -> None:
+    """M5.5: text the answer puts ``on`` a prop becomes that prop's writing (drawn on its
+    picture), not an asset of its own; on something unknown it stays on-screen text."""
+    lines = ops.numbered_lines(SCRIPT)
+    bible = {
+        "entities": [
+            *BIBLE["entities"][:5],
+            {"id": "p-2", "kind": "prop", "name": "旧船票", "data": {"size": "约 8 cm × 4 cm"}},
+        ]
+    }
+    answer = {
+        "assets": [
+            {"kind": "text", "name": "船票上的字", "on": "prop:p-2",
+             "text": {"exact": "平安渡 · 一张", "style": "printed"}, "lines": [3]},
+            {"kind": "text", "name": "门上的字", "on": "门板",
+             "text": {"exact": "茶", "style": "printed", "method": "model"}, "lines": [3]},
+            {"key": "prop:p-1", "physical": {"size": "直径约 5 cm", "junk": "x"}},
+        ]
+    }  # fmt: skip
+    merged = {f.key: f for f in ops.merge(ops.collect(SCRIPT, bible), answer, lines, bible)}
+    ticket = merged["prop:p-2"]
+    assert ticket.text == {"exact": "平安渡 · 一张", "style": "printed", "method": "model"}
+    assert ticket.uses == {"s1": ["x1", "x3"]}  # the line with the words joins it
+    assert ticket.physical == {"size": "约 8 cm × 4 cm"}  # from the bible
+    assert "text:name:船票上的字" not in merged
+    assert merged["text:name:门上的字"].text is not None  # 门板 is not a prop it knows
+    assert merged["prop:p-1"].physical == {"size": "直径约 5 cm"}  # from the answer

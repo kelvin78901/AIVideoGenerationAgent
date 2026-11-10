@@ -61,7 +61,7 @@ from drama_series_agent.modelhub.pricing import to_usd
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
 from drama_series_agent.pipeline.components import assets, enrich, kf, plan, script, split, vid
 from drama_series_agent.pipeline.components.extract import demo_payload
-from drama_series_agent.pipeline.components.img import asset_aspect
+from drama_series_agent.pipeline.components.img import asset_aspect, prop_text
 from drama_series_agent.pipeline.components.media import frame_size, prompt_text
 from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.components.views import (
@@ -134,7 +134,6 @@ DEMO_ASSET_VERSIONS: dict[str, tuple[tuple[tuple[str, str, str | None], ...], in
     "note": ((("comfy/qwen-image", "10:33", "draft"),), 0),
     "band": ((("comfy/qwen-image", "10:33", "draft"),), None),
     "phone": ((("comfy/qwen-image", "10:33", "draft"),), 0),
-    "txt1": ((("openai/gpt-image-2", "10:44", None),), None),
     "txt2": ((("openai/gpt-image-2", "10:44", None),), 0),
     # Free local auditions, then the MiniMax final from A (design + five emotions), locked whole.
     "vlinwan": (
@@ -166,7 +165,6 @@ DEMO_ASSET_IDS = {
     "prop:p-note": "note",
     "prop:p-hairtie": "band",
     "prop:p-phone": "phone",
-    "text:name:便利贴手写": "txt1",
     "text:name:手机锁屏时间": "txt2",
     "voice:c-linwan": "vlinwan",
     "voice:c-zhouyu": "vzhouyu",
@@ -889,9 +887,10 @@ def _asset_files(
         return _voice_files(store, asset, stage)
     aspect = asset_aspect(asset.kind, "9:16")  # the demo's spec; scenes are drawn 16:9
     size = dims(aspect, "draft" if stage == "draft" else "1080p")  # type: ignore[arg-type]
-    text = text_settings(asset, None)
+    text = prop_text(asset, None) or text_settings(asset, None)
+    written = asset.kind == "text" or prop_text(asset, None) is not None
     reads: list[str | None] = [None] * (1 if stage == "final" else 4)
-    if asset.kind == "text":
+    if written:
         reads = list(_text_reads(text["exact"], text["method"]))
     files = []
     for i, read in enumerate(reads):
@@ -899,7 +898,7 @@ def _asset_files(
         png = mock_picture(size.w, size.h, model, product_id, stage, i, texts=texts)
         sha = store.put_bytes(png)
         files.append(file_entry("candidate", sha, "image/png", w=size.w, h=size.h, idx=i))
-    if asset.kind == "text":
+    if written:
         checks = [ocr.check(text["exact"], r, text["method"]) for r in reads]
         return {"candidates": checks, "aspect": aspect, "refs": [], "text": text}, files
     return {"candidates": [{} for _ in reads], "aspect": aspect, "refs": []}, files
@@ -908,7 +907,7 @@ def _asset_files(
 async def _seed_asset_versions(
     db: Database, products: ProductService, compiler: PromptCompiler
 ) -> None:
-    """The prototype's candidates for the assets that have them, 7 of 13 locked (each with its
+    """The prototype's candidates for the assets that have them, 7 of 12 locked (each with its
     gate decision), and the views drawn from 林晚's locked picture."""
     store = BlobStore()
     invalidation = slicers()
