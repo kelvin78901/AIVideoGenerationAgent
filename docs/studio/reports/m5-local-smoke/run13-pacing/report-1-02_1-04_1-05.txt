@@ -1,0 +1,18 @@
+== 1-02: 1-02 seed 764887328 again
+   1 job(s) in 161.1 s, GPU memory peak 31653 MiB
+   call deepseek/v4.1-flash [api] success 5.9 s audio=Nones
+   call comfy/h3 [local] success 154.0 s audio=5.17s
+   run11 1-02: 4.88s, still opening 0.71s, loud (2.35, 4.8500000000000005), cuts [], prompt 437 words, window None
+   new   1-02: 4.89s, still opening 0.25s, loud None, cuts [], prompt 440 words, window {'in_s': 0.25, 'out_s': 3.25}
+== 1-04: 1-04 seed 2072401478 again
+   1 job(s) in 211.4 s, GPU memory peak 31685 MiB
+   call deepseek/v4.1-flash [api] success 9.1 s audio=Nones
+   call comfy/h3-r2v [local] success 201.0 s audio=5.17s
+   run11 1-04: 4.88s, still opening 0.0s, loud (3.85, 4.4), cuts [], prompt 798 words, window None
+   new   1-04: 4.89s, still opening 0.0s, loud (3.8000000000000003, 4.3), cuts [], prompt 811 words, window {'in_s': 0.0, 'out_s': 4.55}
+== 1-05: 1-05 seed 7168025 again
+   1 job(s) in 162.6 s, GPU memory peak 31690 MiB
+   call deepseek/v4.1-flash [api] success 4.8 s audio=Nones
+   call comfy/h3 [local] success 156.6 s audio=5.17s
+   run11 1-05: 4.88s, still opening 0.62s, loud None, cuts [], prompt 440 words, window None
+   new   1-05: 4.89s, still opening 0.33s, loud None, cuts [], prompt 408 words, window {'in_s': 0.333, 'out_s': 3.333}
