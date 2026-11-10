@@ -26,7 +26,8 @@
 - **第 15k 步做完（本提交，不改产品）**：第十四轮（`run14-audio-lock/`，`scripts/smoke/audio_lock.py`）：先配音挂引导的成片音轨已经和配音一致（r 0.997），锁进音轨没改善、片尾还多出模型补的声音；调研的那条说法不成立。
 - **第 15m 步做完（本提交，比 15l 先做，因为编码器还在下）**：第十五轮（`run15-continuity/`，`scripts/smoke/cont_compare.py`，数据 `%TEMP%\drama-cont15-09uy9lez\home`）：尾段无损 / 声音 18 帧量不出差别（引导段、切点都在 0.1 dB 内），r2v 带参考更差（伞直接到手里、引导段漂、声音跳）。产品：尾段从上一镜 `raw` 切、无损（`tail_clip(lossless=True)`，`TAIL_AUDIO_FRAMES` 22）；连续镜头照旧 i2v。测试：video 单元、takes API。
 - **第 15l 步做完（本提交，不改产品）**：第十六轮（`run16-encoder/`，`scripts/smoke/encoder_ab.py`）：int8 和 nvfp4 同种子同提示词，1-04 几乎一样（29 dB，声音 r 0.991），1-08 没有哪条更好；默认照旧 nvfp4（int8 多 11 GB、多占内存）。int8 文件留在本机。
-- **下一步：第 15n 步**（整集第十七轮）：在第十一轮数据目录的副本上按现在的产品重出第 1 集（`local_video.py --only episode --run run17-episode`，**一个镜头一个镜头在前台跑**，`--from X --to X`，timeout 600000），量切点 PSNR、开头定格、镜头内切点、台词完整，和第十一轮对比；再第 16 步。
+- **第 15n 步做完（本提交）**：第十七轮整集（`run17-episode/README.md`，数据 `%TEMP%\drama-ep17-Pi3CKts4\home`，`local_video.py` 加 `--takes`）：开头定格全集 2.67 → 1.41 秒，两句台词都在剪辑范围里，无镜头内切点，连续切点 36.1 / 28.2 dB（28.2 = 1-09 自身运动）。
+- **下一步：第 16 步**：`reports/M5.md` 补 15c 之后各步（15d–15n、第八到十七轮）和 ROADMAP P1 那条；本机全量 pytest（后台约 17 分钟，跑时别改源文件）+ `pnpm -C web e2e`；然后 `gh pr create -R kelvin78901/AIVideoGenerationAgent --base main`，描述用 `reports/M5.md`。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - 之后：第 16 步改完报告开 PR；合并后 `/milestone` 出 M5.5。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。

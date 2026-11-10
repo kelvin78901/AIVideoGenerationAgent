@@ -557,8 +557,10 @@ def main() -> int:
     ap.add_argument("--to", dest="stop", help="episode: stop after this shot")
     ap.add_argument("--picks", default="", help="cut: takes other than the first, e.g. 1-04=2")
     ap.add_argument("--run", default=EP_RUN, help="episode / cut: the report folder's name")
+    ap.add_argument("--takes", type=int, default=2, help="episode: takes per shot")
     args = ap.parse_args()
-    global EP_OUT, EP_SHEETS
+    global EP_OUT, EP_SHEETS, EP_TAKES
+    EP_TAKES = args.takes
     EP_OUT, EP_SHEETS = SMOKE_DIR / "originals" / args.run, SMOKE_DIR / args.run
     only = [s for s in args.only.split(",") if s]
     unknown = set(only) - set(STEPS)
