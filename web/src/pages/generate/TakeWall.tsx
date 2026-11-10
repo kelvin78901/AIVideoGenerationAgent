@@ -1,3 +1,4 @@
+import { z } from "zod";
 import type { TFunction } from "i18next";
 import { Loader2, Play, Sparkles, Star } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -14,11 +15,27 @@ import type { Aspect } from "@/api/schemas/spec";
 import { CostBadge } from "@/components/CostBadge";
 import { MediaLightbox, type LightboxItem } from "@/components/MediaLightbox";
 import { MediaThumb } from "@/components/MediaThumb";
+import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { TAKE_CARD_WIDTH, TAKE_MEDIA_HEIGHT } from "@/lib/cards";
 import { formatPercent, formatTime, formatUsd } from "@/lib/format";
 import { qaFails, recommendedTake, takeNote, type TakeStatus } from "@/lib/takes";
+import { CheckLines } from "@/pages/storyboard/ShotChecks";
 import { cn } from "@/lib/utils";
+
+/** take 检查 (M5.5, ``payload.check``): the contract check of one take. */
+const TakeCheckSchema = z.object({
+  items: z.array(
+    z.object({
+      check: z.string(),
+      ok: z.boolean(),
+      note: z.string(),
+      frame: z.number().nullable().optional(),
+    }),
+  ),
+  ok: z.boolean(),
+  model: z.string().nullable(),
+});
 
 /** Where 2K finishing runs and what one take costs there (the 「2K 精修 · …」 button). */
 export interface UpscaleRoute {
@@ -337,6 +354,11 @@ function TakeCard({
   const { t: te } = useTranslation("enums");
   const adopted = v.id === product.adopted_version_id;
   const fails = qaFails(v).length;
+  // take 检查 (M5.5): what the contract check found; only a warning (sketch T1).
+  const checked = TakeCheckSchema.safeParse(v.payload.check);
+  const check = checked.success ? checked.data : null;
+  const checkFails = check ? check.items.filter((x) => !x.ok).length : 0;
+  const sheet = v.files.find((f) => f.role === "sheet");
   const note = takeNote(product, v);
   const take = t("wall.take", { n: v.n });
   const res = typeof v.payload.resolution === "string" ? v.payload.resolution : "768p";
@@ -444,6 +466,28 @@ function TakeCard({
               </span>
             </div>
           ))}
+        </div>
+      ) : check ? (
+        <div
+          role="group"
+          aria-label={t("wall.check")}
+          className="flex flex-col gap-1 rounded-lg bg-muted/60 px-2.5 py-2"
+        >
+          <div className="flex items-center text-xs font-bold">
+            <span className="flex-1">{t("wall.check")}</span>
+            <StatusBadge tone={checkFails ? "warn" : "pass"} icon={null}>
+              {checkFails ? t("wall.checkFails", { count: checkFails }) : t("wall.checkOk")}
+            </StatusBadge>
+          </div>
+          <CheckLines items={check.items} />
+          {checkFails && sheet ? (
+            <img
+              src={fileUrl(sheet.sha256)}
+              alt={t("wall.sheet")}
+              className="w-full rounded border"
+            />
+          ) : null}
+          <span className="text-xs text-muted-foreground">{t("wall.checkLater")}</span>
         </div>
       ) : (
         <div className="flex items-center rounded-lg bg-muted/60 px-2.5 py-2 text-xs">

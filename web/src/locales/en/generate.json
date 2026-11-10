@@ -69,7 +69,12 @@
     "upLocal": "local",
     "generating": "New take generating",
     "rating": "{{n}} / 5",
-    "keys": "← → switch takes · Space play · 1–5 rate · A adopt"
+    "keys": "← → switch takes · Space play · 1–5 rate · A adopt",
+    "check": "Contract check",
+    "checkOk": "All clear",
+    "checkFails": "{{count}} to look at",
+    "checkLater": "Face, lip sync, word errors: M6",
+    "sheet": "The 6 frames checked"
   },
   "qa": {
     "face": "Face match",
@@ -101,7 +106,7 @@
     "unblocked": "{{id}} can be generated now.",
     "unadopted": "Unadopted {{id}} T{{n}}.",
     "final": "Making the 2K final of {{id}} T{{n}} on the API.",
-    "fix": "Circle the area to fix in the picture; only that region is redrawn (local H3 + mask inpainting).",
+    "fix": "Repairing part of a take comes in M6 (with the lip-sync fix).",
     "upLocal": "Sent {{id}} T{{n}} to 2K finishing ({{model}}); runs locally, no charge.",
     "upApi": "Sent {{id}} T{{n}} to 2K finishing ({{model}}), est. {{cost}}.",
     "rated": "{{id}} T{{n}}: {{stars}} / 5"

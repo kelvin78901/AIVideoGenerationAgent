@@ -146,6 +146,32 @@ describe("GeneratePage", () => {
     expect(take(2)).toHaveTextContent("H3 Regenerate-2K");
   });
 
+  it("a checked take shows its contract check; a failure shows the frames (M5.5)", async () => {
+    const p = fakeGenerate.videos.find((x) => x.owner_id === "demo-shot-1-04");
+    const v = p?.versions[0];
+    if (!v) throw new Error("no take of 1-04");
+    v.payload = {
+      ...v.payload,
+      check: {
+        items: [
+          { check: "repeat", ok: false, note: "门关上后又拉开了一次", frame: 4 },
+          { check: "cut", ok: true, note: "", frame: null },
+        ],
+        ok: false,
+        model: "google/gemini-3.1-flash-lite",
+      },
+    };
+    const poster = v.files[0];
+    if (poster) v.files = [...v.files, { ...poster, role: "sheet", mime: "image/png" }];
+    renderGenerate();
+    await ready();
+    const check = within(take(1)).getByRole("group", { name: "契约检查" });
+    expect(check).toHaveTextContent("1 处提示");
+    expect(check).toHaveTextContent("✗ 没有重复动作 · 第 4 帧：门关上后又拉开了一次");
+    expect(check).toHaveTextContent("✓ 一镜到底");
+    expect(within(check).getByRole("img", { name: "检查看的 6 帧" })).toBeInTheDocument();
+  });
+
   it("adopts one take per shot, then un-adopts; 生成 goes to 4 / 9", async () => {
     const user = userEvent.setup();
     renderGenerate();
