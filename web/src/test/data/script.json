@@ -2078,7 +2078,7 @@
       "retired": false
     },
     {
-      "id": "fe2fc5f9ae6149448538b409cc0f3e60",
+      "id": "demo-p-shot-check-e1",
       "series_id": "demo",
       "owner_type": "episode",
       "owner_id": "demo-e1",
@@ -2188,7 +2188,7 @@
       "retired": false
     },
     {
-      "id": "febf5e9422b34e0eac453d29ef733189",
+      "id": "demo-p-shot-check-e2",
       "series_id": "demo",
       "owner_type": "episode",
       "owner_id": "demo-e2",
@@ -2291,7 +2291,7 @@
       "retired": false
     },
     {
-      "id": "1b771d8c5bd242cf9940c2e4a844adc3",
+      "id": "demo-p-shot-check-e3",
       "series_id": "demo",
       "owner_type": "episode",
       "owner_id": "demo-e3",

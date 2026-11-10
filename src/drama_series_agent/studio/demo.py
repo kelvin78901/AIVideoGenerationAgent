@@ -59,7 +59,16 @@ from drama_series_agent.modelhub.adapters.mock import (
 )
 from drama_series_agent.modelhub.pricing import to_usd
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
-from drama_series_agent.pipeline.components import assets, enrich, kf, plan, script, split, vid
+from drama_series_agent.pipeline.components import (
+    assets,
+    enrich,
+    kf,
+    plan,
+    plancheck,
+    script,
+    split,
+    vid,
+)
 from drama_series_agent.pipeline.components.extract import demo_payload
 from drama_series_agent.pipeline.components.img import asset_aspect, prop_text
 from drama_series_agent.pipeline.components.media import frame_size, prompt_text
@@ -230,6 +239,11 @@ def plan_product_id(episode_id: str) -> str:
     return f"demo-p-plan-{episode_id.removeprefix('demo-')}"
 
 
+def shot_check_product_id(episode_id: str) -> str:
+    """``demo-p-shot-check-e1``: the episode's 分镜检查 (M5.5)."""
+    return f"demo-p-shot-check-{episode_id.removeprefix('demo-')}"
+
+
 def keyframe_product_id(label: str) -> str:
     """``1-04`` → ``demo-p-kf-1-04`` (MSW ``kfProductId``)."""
     return f"demo-p-kf-{label}"
@@ -300,6 +314,14 @@ async def seed_demo(
                     slot=plan.SHOT_PLAN_SLOT,
                     component_id=plan.PlanComponent.id,
                     product_id=plan_product_id(e["id"]),
+                )
+                await products.ensure(
+                    series_id=DEMO_SERIES_ID,
+                    owner_type="episode",
+                    owner_id=e["id"],
+                    slot=plancheck.SHOT_CHECK_SLOT,
+                    component_id=plancheck.PlanCheckComponent.id,
+                    product_id=shot_check_product_id(e["id"]),
                 )
             for label in DEMO_KEYFRAMES:
                 await products.ensure(
