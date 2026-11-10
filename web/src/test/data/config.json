@@ -8,7 +8,7 @@
         "api_models": [
           "deepseek/v4-pro",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -19,7 +19,9 @@
           "google/gemini-3.6-flash",
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
-          "openrouter/any"
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "local_models": [
           "local/qwen3.6-27b",
@@ -34,7 +36,7 @@
         "api_models": [
           "deepseek/v4-pro",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -45,7 +47,9 @@
           "google/gemini-3.6-flash",
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
-          "openrouter/any"
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "local_models": [
           "local/qwen3.6-27b",
@@ -60,7 +64,7 @@
         "api_models": [
           "deepseek/v4-pro",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -71,7 +75,9 @@
           "google/gemini-3.6-flash",
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
-          "openrouter/any"
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "local_models": [
           "local/qwen3.6-27b",
@@ -86,7 +92,7 @@
         "api_models": [
           "deepseek/v4-pro",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -97,7 +103,9 @@
           "google/gemini-3.6-flash",
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
-          "openrouter/any"
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "local_models": [
           "local/qwen3.6-27b",
@@ -112,7 +120,7 @@
         "api_models": [
           "deepseek/v4-pro",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -123,7 +131,9 @@
           "google/gemini-3.6-flash",
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
-          "openrouter/any"
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "local_models": [
           "local/qwen3.6-27b",
@@ -223,7 +233,7 @@
         "api_models": [
           "deepseek/v4-pro",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -234,7 +244,9 @@
           "google/gemini-3.6-flash",
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
-          "openrouter/any"
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "local_models": [
           "local/qwen3.6-27b"
@@ -284,8 +296,78 @@
         ],
         "local_models": [
           "comfy/h3",
+          "comfy/h3-r2v",
           "comfy/wan-2.2",
           "comfy/ltx"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "vselect",
+        "stage": "generate",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "vprompt",
+        "stage": "generate",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "vlook",
+        "stage": "generate",
+        "kind": "vlm",
+        "api_models": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "local_models": [
+          "local/qwen3-vl-32b"
         ],
         "unavailable": {}
       },
@@ -387,7 +469,9 @@
           "in": 1.32,
           "out": 3.96,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "deepseek/v4.1-flash",
@@ -398,7 +482,22 @@
           "in": 0.3,
           "out": 1.2,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
+      },
+      {
+        "key": "moonshot/kimi-k3.1-pro",
+        "display": "Kimi K3.1 Pro",
+        "where": "api",
+        "price": {
+          "unit": "mtok",
+          "in": 13.0,
+          "out": 68.0,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "moonshot/kimi-k2.6",
@@ -406,10 +505,12 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.95,
-          "out": 4.0,
-          "currency": "USD"
-        }
+          "in": 6.5,
+          "out": 27.0,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "qwen/qwen3.8-max",
@@ -417,10 +518,12 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 2.0,
-          "out": 6.0,
-          "currency": "USD"
-        }
+          "in": 12.0,
+          "out": 36.0,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "qwen/qwen3.7-plus",
@@ -428,10 +531,12 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.4,
-          "out": 1.6,
-          "currency": "USD"
-        }
+          "in": 2.0,
+          "out": 8.0,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "qwen/qwen3.8-flash",
@@ -439,10 +544,12 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.15,
-          "out": 0.47,
-          "currency": "USD"
-        }
+          "in": 0.8,
+          "out": 2.7,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "volc/doubao-2.1-pro",
@@ -453,7 +560,9 @@
           "in": 6.0,
           "out": 30.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "zhipu/glm-5.3",
@@ -461,10 +570,12 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 1.4,
-          "out": 4.4,
-          "currency": "USD"
-        }
+          "in": 8.0,
+          "out": 28.0,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "zhipu/glm-5.3-flash",
@@ -472,10 +583,12 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.15,
-          "out": 0.5,
-          "currency": "USD"
-        }
+          "in": 0.8,
+          "out": 2.8,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/m3",
@@ -483,10 +596,12 @@
         "where": "api",
         "price": {
           "unit": "mtok",
-          "in": 0.3,
-          "out": 1.2,
-          "currency": "USD"
-        }
+          "in": 2.1,
+          "out": 8.4,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/gemini-3.6-flash",
@@ -497,7 +612,9 @@
           "in": 0.75,
           "out": 3.75,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/gemini-3.1-flash-lite",
@@ -508,7 +625,9 @@
           "in": 0.25,
           "out": 1.5,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "openai/gpt-6-luna",
@@ -519,31 +638,41 @@
           "in": 0.1,
           "out": 0.5,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "openrouter/claude-sonnet-5.5",
         "display": "Claude Sonnet 5.5（经 OpenRouter）",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false,
+        "tier": null
       },
       {
         "key": "openrouter/any",
         "display": "任意模型",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false,
+        "tier": null
       },
       {
         "key": "local/qwen3.6-27b",
         "display": "Qwen3.6-27B（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/qwen3-30b-a3b",
         "display": "Qwen3-30B-A3B（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/nano-banana-pro",
@@ -553,7 +682,9 @@
           "unit": "image",
           "amount": 0.134,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/nano-banana-2.1",
@@ -563,7 +694,9 @@
           "unit": "image",
           "amount": 0.0504,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "openai/gpt-image-2",
@@ -573,7 +706,9 @@
           "unit": "image",
           "amount": 0.23,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "volc/seedream-5.0",
@@ -583,7 +718,9 @@
           "unit": "image",
           "amount": 0.12,
           "currency": "CNY"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/h3-api",
@@ -591,9 +728,11 @@
         "where": "api",
         "price": {
           "unit": "second",
-          "amount": 0.08,
-          "currency": "USD"
-        }
+          "amount": 0.5,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/h3-regenerate-2k",
@@ -601,15 +740,19 @@
         "where": "api",
         "price": {
           "unit": "second",
-          "amount": 0.05,
-          "currency": "USD"
-        }
+          "amount": 0.3,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/context-ir",
         "display": "H3 Context-IR",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "volc/seedance-2.5",
@@ -617,9 +760,11 @@
         "where": "api",
         "price": {
           "unit": "second",
-          "amount": 0.41000000000000003,
-          "currency": "USD"
-        }
+          "amount": 0.673,
+          "currency": "CNY"
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "google/gemini-omni-flash-1.1",
@@ -629,7 +774,9 @@
           "unit": "second",
           "amount": 0.152,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "alibaba/wan-3.0",
@@ -639,19 +786,25 @@
           "unit": "second",
           "amount": 0.2,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "kling/kling-3.0",
         "display": "Kling 3.0",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false,
+        "tier": null
       },
       {
         "key": "google/veo-3.1",
         "display": "Veo 3.1",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false,
+        "tier": null
       },
       {
         "key": "minimax/speech-2.8-hd",
@@ -661,7 +814,9 @@
           "unit": "mchar",
           "amount": 350.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "minimax/speech-2.6-hd",
@@ -671,13 +826,17 @@
           "unit": "mchar",
           "amount": 350.0,
           "currency": "CNY"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "elevenlabs/v3",
         "display": "ElevenLabs v3",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false,
+        "tier": null
       },
       {
         "key": "sync/lipsync-2-pro",
@@ -687,7 +846,9 @@
           "unit": "second",
           "amount": 0.067,
           "currency": "USD"
-        }
+        },
+        "priced": false,
+        "tier": null
       },
       {
         "key": "topaz/starlight-precise-2.5",
@@ -697,25 +858,33 @@
           "unit": "second",
           "amount": 0.12,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "elevenlabs/music",
         "display": "ElevenLabs Music",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false,
+        "tier": null
       },
       {
         "key": "elevenlabs/sfx",
         "display": "ElevenLabs Sound Effects",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false,
+        "tier": null
       },
       {
         "key": "elevenlabs/scribe",
         "display": "ElevenLabs Scribe",
         "where": "api",
-        "price": null
+        "price": null,
+        "priced": false,
+        "tier": null
       },
       {
         "key": "worldlabs/marble",
@@ -725,145 +894,201 @@
           "unit": "call",
           "amount": 1.2,
           "currency": "USD"
-        }
+        },
+        "priced": true,
+        "tier": null
       },
       {
         "key": "comfy/h3",
         "display": "MiniMax H3（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
+      },
+      {
+        "key": "comfy/h3-r2v",
+        "display": "MiniMax H3 参考生视频（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/h3-fun-controlnet",
         "display": "H3 Fun ControlNet（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/wan-2.2",
         "display": "Wan 2.2（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "comfy/ltx",
         "display": "LTX（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "comfy/qwen-image-edit",
         "display": "Qwen-Image-Edit（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/qwen-image-edit-hq",
         "display": "Qwen-Image-Edit 40 步（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/qwen-image",
         "display": "Qwen-Image（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/flux2-dev",
         "display": "FLUX.2 dev（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "comfy/flux3-klein",
         "display": "FLUX 3 Klein（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/flux3-klein-t2i",
         "display": "FLUX 3 Klein 文生图（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/seedvr2",
         "display": "SeedVR2（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "comfy/flashvsr",
         "display": "FlashVSR（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
       },
       {
         "key": "local/indextts2",
         "display": "IndexTTS2（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/cosyvoice",
         "display": "CosyVoice（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/qwen3-tts",
         "display": "Qwen3-TTS（本地试听）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/latentsync",
         "display": "LatentSync（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/infinitetalk",
         "display": "InfiniteTalk（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/qwen3-vl-32b",
         "display": "Qwen3-VL-32B（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/ace-step",
         "display": "ACE-Step（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/mmaudio",
         "display": "MMAudio（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/whisper-large-v3",
         "display": "Whisper large-v3（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/paraformer",
         "display": "Paraformer（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       },
       {
         "key": "local/rapidocr",
         "display": "RapidOCR（本地）",
         "where": "local",
-        "price": null
+        "price": null,
+        "priced": true,
+        "tier": null
       }
     ],
     "local_runtime_ok": true
@@ -889,7 +1114,7 @@
           "local/qwen3.6-27b",
           "local/qwen3-30b-a3b",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -901,7 +1126,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.2
       },
@@ -924,7 +1150,7 @@
           "local/qwen3.6-27b",
           "local/qwen3-30b-a3b",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -936,7 +1162,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.5
       },
@@ -959,7 +1186,7 @@
           "local/qwen3.6-27b",
           "local/qwen3-30b-a3b",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -971,7 +1198,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.3
       },
@@ -994,7 +1222,7 @@
           "local/qwen3.6-27b",
           "local/qwen3-30b-a3b",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -1006,7 +1234,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.8
       },
@@ -1029,7 +1258,7 @@
           "local/qwen3.6-27b",
           "local/qwen3-30b-a3b",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -1041,7 +1270,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.3
       },
@@ -1202,7 +1432,7 @@
         "alt_order": [
           "local/qwen3.6-27b",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -1214,7 +1444,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.8
       },
@@ -1283,6 +1514,7 @@
         },
         "alt_order": [
           "comfy/h3",
+          "comfy/h3-r2v",
           "comfy/wan-2.2",
           "comfy/ltx",
           "volc/seedance-2.5",
@@ -1292,6 +1524,100 @@
           "google/veo-3.1"
         ],
         "per_call_cap_usd": 2.0
+      },
+      "vselect": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
+      "vprompt": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
+      "vlook": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3-vl-32b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
       },
       "ctrl": {
         "mode": "local",
@@ -1465,7 +1791,7 @@
           "local/qwen3-30b-a3b",
           "deepseek/v4-pro",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -1476,7 +1802,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.2
       },
@@ -1492,11 +1819,11 @@
           ],
           "qa_fail_n": 2,
           "timeout_s": 600,
-          "to": "moonshot/kimi-k2.6",
+          "to": "moonshot/kimi-k3.1-pro",
           "notify": "after"
         },
         "alt_order": [
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "local/qwen3.6-27b",
           "local/qwen3-30b-a3b",
           "deepseek/v4.1-flash",
@@ -1511,7 +1838,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.5
       },
@@ -1535,7 +1863,7 @@
           "local/qwen3.6-27b",
           "local/qwen3-30b-a3b",
           "deepseek/v4-pro",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "volc/doubao-2.1-pro",
           "zhipu/glm-5.3",
@@ -1546,7 +1874,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.3
       },
@@ -1566,7 +1895,7 @@
           "notify": "after"
         },
         "alt_order": [
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "local/qwen3.6-27b"
@@ -1593,7 +1922,7 @@
           "local/qwen3.6-27b",
           "local/qwen3-30b-a3b",
           "deepseek/v4-pro",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "volc/doubao-2.1-pro",
           "zhipu/glm-5.3",
@@ -1604,7 +1933,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.3
       },
@@ -1759,11 +2089,11 @@
           ],
           "qa_fail_n": 2,
           "timeout_s": 600,
-          "to": "moonshot/kimi-k2.6",
+          "to": "moonshot/kimi-k3.1-pro",
           "notify": "after"
         },
         "alt_order": [
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "local/qwen3.6-27b",
           "deepseek/v4.1-flash",
           "qwen/qwen3.8-max",
@@ -1777,7 +2107,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.8
       },
@@ -1850,6 +2181,100 @@
           "google/gemini-omni-flash-1.1"
         ],
         "per_call_cap_usd": 2.0
+      },
+      "vselect": {
+        "mode": "api",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "qwen/qwen3.7-plus",
+          "notify": "after"
+        },
+        "alt_order": [
+          "qwen/qwen3.7-plus",
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
+      "vprompt": {
+        "mode": "api",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "qwen/qwen3.7-plus",
+          "notify": "after"
+        },
+        "alt_order": [
+          "qwen/qwen3.7-plus",
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
+      "vlook": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
       },
       "ctrl": {
         "mode": "local",
@@ -2023,7 +2448,7 @@
           "local/qwen3-30b-a3b",
           "deepseek/v4-pro",
           "deepseek/v4.1-flash",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -2034,7 +2459,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.2
       },
@@ -2057,7 +2483,7 @@
           "deepseek/v4.1-flash",
           "local/qwen3-30b-a3b",
           "deepseek/v4-pro",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -2069,7 +2495,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.5
       },
@@ -2092,7 +2519,7 @@
           "deepseek/v4.1-flash",
           "local/qwen3-30b-a3b",
           "deepseek/v4-pro",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -2104,7 +2531,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.3
       },
@@ -2127,7 +2555,7 @@
           "deepseek/v4.1-flash",
           "local/qwen3-30b-a3b",
           "deepseek/v4-pro",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -2139,7 +2567,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.8
       },
@@ -2162,7 +2591,7 @@
           "deepseek/v4.1-flash",
           "local/qwen3-30b-a3b",
           "deepseek/v4-pro",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -2174,7 +2603,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.3
       },
@@ -2335,7 +2765,7 @@
         "alt_order": [
           "deepseek/v4.1-flash",
           "deepseek/v4-pro",
-          "moonshot/kimi-k2.6",
+          "moonshot/kimi-k3.1-pro",
           "qwen/qwen3.8-max",
           "qwen/qwen3.7-plus",
           "volc/doubao-2.1-pro",
@@ -2347,7 +2777,8 @@
           "openai/gpt-6-luna",
           "openrouter/claude-sonnet-5.5",
           "openrouter/any",
-          "custom"
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
         ],
         "per_call_cap_usd": 0.8
       },
@@ -2416,6 +2847,7 @@
         },
         "alt_order": [
           "google/veo-3.1",
+          "comfy/h3-r2v",
           "comfy/wan-2.2",
           "comfy/ltx",
           "minimax/h3-api",
@@ -2425,6 +2857,100 @@
           "kling/kling-3.0"
         ],
         "per_call_cap_usd": 2.0
+      },
+      "vselect": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "deepseek/v4.1-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "deepseek/v4.1-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
+      "vprompt": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "deepseek/v4.1-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "deepseek/v4.1-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
+      "vlook": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/gemini-3.1-flash-lite",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
       },
       "ctrl": {
         "mode": "local",
@@ -2880,10 +3406,70 @@
           "notify": "after"
         },
         "alt_order": [
+          "comfy/h3-r2v",
           "comfy/wan-2.2",
           "comfy/ltx"
         ],
         "per_call_cap_usd": 2.0
+      },
+      "vselect": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-30b-a3b"
+        ],
+        "per_call_cap_usd": 0.05
+      },
+      "vprompt": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-30b-a3b"
+        ],
+        "per_call_cap_usd": 0.05
+      },
+      "vlook": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.02
       },
       "ctrl": {
         "mode": "local",

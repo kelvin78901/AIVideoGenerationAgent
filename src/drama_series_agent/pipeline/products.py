@@ -15,6 +15,7 @@ table), then a failed last run, stale (``pipeline/invalidation.py``), locked, ad
 from __future__ import annotations
 
 from collections.abc import Awaitable, Callable, Sequence
+from datetime import datetime
 from typing import TYPE_CHECKING, Any
 
 from sqlmodel import col, func, select
@@ -394,6 +395,34 @@ class ProductService:
         await self._announce(p)
         return await self.get(p.id)
 
+    async def unadopt(self, product_id: str) -> ProductOut:
+        """「取消采纳」 (the take wall): nothing adopted until the user picks again. Refused
+        while locked, and for slots whose adopted version is mirrored into domain tables
+        (undoing that is not a thing those tables know)."""
+        async with self._db.session() as session:
+            p = await require_product(session, product_id)
+            if p.locked_hash:
+                raise PipelineError(409, "product_locked", id=p.id)
+            if self._materializers.get(p.slot):
+                raise PipelineError(409, "unadopt_unsupported", id=p.id, slot=p.slot)
+            p.adopted_version_id = None
+            p.updated_at = utcnow()
+            session.add(p)
+            await session.commit()
+        await self._announce(p)
+        return await self.get(p.id)
+
+    async def rate(self, version_id: str, rating: int | None) -> ProductOut:
+        """数字键打分 (1–5, None clears it); like ``note``, not part of what was made."""
+        async with self._db.session() as session:
+            v = await require_version(session, version_id)
+            v.rating = rating
+            session.add(v)
+            await session.commit()
+            p = await require_product(session, v.product_id)
+        await self._announce(p)
+        return await self.get(p.id)
+
     async def lock(self, product_id: str) -> ProductOut:
         async with self._db.session() as session:
             p = await require_product(session, product_id)
@@ -445,6 +474,8 @@ class ProductService:
         idx: int | None,
         *,
         record: LockRecorder | None = None,
+        pick_id: str | None = None,
+        at: datetime | None = None,
     ) -> ProductVersion:
         """「锁定为参考」 (M3), in one transaction: candidate ``idx`` of a version becomes a
         ``pick`` version holding that file alone (``role: ref``, with the source's model, prompt
@@ -464,7 +495,7 @@ class ProductService:
                 raise PipelineError(404, "version_not_found", id=version_id)
             v = source
             if idx is not None:
-                v = await self._pick_version(session, p, source, idx)
+                v = await self._pick_version(session, p, source, idx, pick_id, at)
                 created = True
             await self._adopt(session, p, v)
             p.locked_hash = v.content_hash
@@ -578,7 +609,13 @@ class ProductService:
         return out
 
     async def _pick_version(
-        self, session: AsyncSession, p: Product, source: ProductVersion, idx: int
+        self,
+        session: AsyncSession,
+        p: Product,
+        source: ProductVersion,
+        idx: int,
+        pick_id: str | None = None,
+        at: datetime | None = None,
     ) -> ProductVersion:
         picked = {**_candidate(source, idx), "role": "ref"}
         prompts = [f for f in source.files_json if f.get("role") == "prompt"]
@@ -607,6 +644,10 @@ class ProductService:
             params_json={"from_version": source.id, "idx": idx},
             stage=source.stage,
         )
+        if pick_id is not None:  # the demo seed's fixed ids and times
+            v.id = pick_id
+        if at is not None:
+            v.created_at = at
         session.add(v)
         await session.flush()
         query = select(Dependency).where(Dependency.version_id == source.id)

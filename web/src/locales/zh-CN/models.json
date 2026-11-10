@@ -57,8 +57,6 @@
     "saved": "{{name}} 的密钥已保存。",
     "deleted": "{{name}} 的密钥已删除。",
     "envNote": "这个密钥来自环境变量或 .env，要删除请改那边。",
-    "sharedWith": "这个密钥也用于：{{names}}",
-    "listSep": "、",
     "testOk": "连接正常，能看到 {{count}} 个模型。",
     "testOkNoList": "连接正常。",
     "testFail": "连接失败：{{detail}}",
@@ -67,6 +65,53 @@
     "docs": "去官网拿密钥",
     "baseUrl": "接口地址：{{url}}",
     "close": "关闭"
+  },
+  "site": {
+    "label": "站点",
+    "cn": "国内站",
+    "intl": "国际站",
+    "main": "默认",
+    "withKey": "{{site}} · 已有密钥",
+    "hint": "两个站点是两个账号：密钥、模型列表和价格各管各的。换站点后，这家的模型都改走那个站点，要在那边重新测试连接、勾选模型。",
+    "switched": "{{name}} 改用{{site}}。"
+  },
+  "list": {
+    "title": "模型列表",
+    "count": "共 {{count}} 个，勾了 {{picked}} 个",
+    "fetched": "{{time}} 拉取",
+    "lead": "勾上的模型才会出现在模型选择里。没有单价的模型每次运行前都会先问你，填上单价就按单价估算。",
+    "none": "测试连接后会列出这家的全部模型，你来勾选要用哪些。还没拉过列表时，用内置的参考表。",
+    "filter": "筛选模型",
+    "empty": "没有匹配的模型"
+  },
+  "price": {
+    "table": "参考价 {{price}}",
+    "user": "你填的 {{price}}",
+    "unknown": "价格未知",
+    "fill": "填价格",
+    "fillFor": "给 {{model}} 填价格",
+    "edit": "改",
+    "editFor": "改 {{model}} 的价格",
+    "clear": "清除",
+    "formFor": "{{model}} 的单价",
+    "in": "输入",
+    "out": "输出",
+    "currency": "币种",
+    "unit": "每百万 token",
+    "save": "保存",
+    "cancel": "取消",
+    "saved": "{{model}} 的单价已保存。",
+    "cleared": "{{model}} 的单价已清除。"
+  },
+  "media": {
+    "title": "用这个密钥的媒体模型",
+    "lead": "厂商出了新版本时可以改模型 ID（以官方文档为准）。",
+    "leadListed": "厂商出了新版本时可以改模型 ID，输入框里能从这家的模型列表里选。",
+    "custom": "已改",
+    "save": "保存",
+    "saved": "{{name}} 改用 {{id}}。",
+    "resetButton": "恢复默认",
+    "reset": "{{name}} 恢复默认的模型 ID。"
   },
   "fallback": {
     "title": "兜底时怎么做",
@@ -115,6 +160,52 @@
     "up": "上移 {{name}}",
     "down": "下移 {{name}}",
     "reset": "恢复成预设",
-    "resetDone": "「{{name}}」已恢复成预设。"
+    "resetDone": "「{{name}}」已恢复成预设。",
+    "gone": "没启用，点开换一个"
+  },
+  "wfRules": {
+    "title": "按镜头选工作流",
+    "lead": "视频生成在本机出片时，按这张表给每个镜头挑工作流：从上往下第一条命中的生效，都没命中用默认的「{{fallback}}」。在生成页 Inspector 里给镜头手动选的优先。这张表只对《{{series}}》生效。",
+    "saved": "本剧已改",
+    "defaults": "默认规则",
+    "reset": "恢复默认",
+    "resetDone": "已恢复成默认规则。",
+    "add": "添加规则",
+    "empty": "没有规则：每个镜头都用默认的「{{fallback}}」。",
+    "rule": "规则 {{n}}",
+    "then": "用",
+    "any": "不限",
+    "yes": "有",
+    "no": "没有",
+    "anyShot": "所有镜头",
+    "cond": {
+      "framing": "景别",
+      "shot_type": "镜头类型",
+      "dialogue": "台词",
+      "audio_mode": "声音",
+      "refs": "锁定参考图",
+      "voices": "锁定音色样本"
+    },
+    "flag": {
+      "dialogue": {
+        "true": "有台词",
+        "false": "没台词"
+      },
+      "refs": {
+        "true": "有锁定参考图",
+        "false": "没有锁定参考图"
+      },
+      "voices": {
+        "true": "有锁定音色样本",
+        "false": "没有锁定音色样本"
+      }
+    },
+    "condOf": "规则 {{n}} 的{{cond}}",
+    "modelOf": "规则 {{n}} 用的工作流",
+    "up": "上移规则 {{n}}",
+    "down": "下移规则 {{n}}",
+    "remove": "删除规则 {{n}}",
+    "suggest": "规则都没命中时，让 LLM 建议",
+    "suggestHint": "镜头第一次出片前，把镜头摘要和各工作流的能力交给「视频工作流建议」，它挑一个并说明理由（走 API，按镜头内容缓存，同一个镜头不重复问）。理由显示在生成页的 Inspector 里。"
   }
 }

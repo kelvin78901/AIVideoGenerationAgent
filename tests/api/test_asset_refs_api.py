@@ -27,8 +27,9 @@ from drama_series_agent.core.models_db import (
     ProductVersion,
 )
 from drama_series_agent.modelhub.adapters.mock import gradient_png
-from drama_series_agent.modelhub.workflows import shipped_workflow
+from drama_series_agent.modelhub.workflows import shipped_workflow, workflow_sha256
 from drama_series_agent.pipeline.component import RunContext
+from drama_series_agent.pipeline.components import media
 from drama_series_agent.pipeline.components.img import asset_aspect
 from drama_series_agent.pipeline.components.media import MediaCall, MediaComponent
 from drama_series_agent.pipeline.components.views import NEGATIVE, VIEWS
@@ -384,6 +385,42 @@ def test_a_retried_call_does_not_pay_again(client: TestClient) -> None:
     assert again.cached and again.cost_usd == 0 and again.files == first.files
     calls = [c for c in _rows(client, ModelCall) if c.model_key == "volc/seedream-5.0"]
     assert len(calls) == 1
+
+
+def test_a_changed_workflow_is_not_served_from_the_cache(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """M5 step 14e: H3's workflow went from 8 Turbo steps to 20, and a take on the same seed
+    came back from the cache in a second, made by the old graph."""
+    state = _state(client)
+    comp = state.components.get("img")
+    assert isinstance(comp, MediaComponent)
+    model = "comfy/qwen-image"
+    assert workflow_sha256(state.registry.spec(model))  # read from the file
+
+    async def call() -> MediaCall:
+        async with state.db.session() as s:
+            product = await s.get(Product, "demo-p-asset-room")
+        assert product is not None
+        ctx = RunContext(
+            product=product,
+            mode="run",
+            model_key=model,
+            seed=7,
+            intent="x",
+            compiled="x",
+            compiled_overridden=False,
+        )
+        req = comp.image_request(
+            "x", n=1, size=dims("9:16", "1080p"), aspect="9:16", seed=7, task="ref"
+        )
+        return await comp.media_call(ctx, req, None, model=model)
+
+    first = client.portal.call(call)  # type: ignore[union-attr]
+    assert not first.cached and client.portal.call(call).cached  # type: ignore[union-attr]
+    monkeypatch.setattr(media, "workflow_sha256", lambda spec: "edited")
+    assert not client.portal.call(call).cached  # type: ignore[union-attr]
+    assert len([c for c in _rows(client, ModelCall) if c.model_key == model]) == 2
 
 
 def _fake_comfy(client: TestClient, out: str) -> list[dict[str, Any]]:

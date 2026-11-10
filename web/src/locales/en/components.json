@@ -75,7 +75,38 @@
     "rerun": "Rerun",
     "switch": "Try another model",
     "globalLink": "Change the global defaults in Models & fallback",
-    "noProduct": "This component has no output yet"
+    "noProduct": "This component has no output yet",
+    "workflow": {
+      "title": "This shot's workflow",
+      "by": {
+        "manual": "Picked by hand",
+        "rule": "Rule {{n}}",
+        "suggest": "LLM suggestion",
+        "default": "Default"
+      },
+      "of": "v{{n}} used \"{{model}}\"",
+      "manual": "Picked for this shot under Local model above.",
+      "rule": "Rule {{n}} of the table matched: {{when}}.",
+      "suggest": "{{model}}'s reason: {{reason}}",
+      "default": "No rule matched; the default workflow.",
+      "next": "The next take uses \"{{model}}\" (rules and hand picks applied).",
+      "none": "Nothing made on this machine yet. The rules table picks when it runs.",
+      "api": "The current take came from an API; no workflow was picked.",
+      "change": "To change it, pick under Local model above; it applies to this shot only.",
+      "rulesLink": "Edit the rules",
+      "branches": "Branches",
+      "noBranches": "\"{{model}}\" has no branches to switch.",
+      "kind": {
+        "controlnet": "ControlNet",
+        "lora": "LoRA",
+        "upscale": "Upscale"
+      },
+      "default_on": "On by default",
+      "default_off": "Off by default",
+      "untested": "Not trialled",
+      "branchOf": "Branch \"{{name}}\" for this shot",
+      "branchReset": "Back to default"
+    }
   },
   "picker": {
     "location": "Run on",
@@ -107,6 +138,8 @@
     "noLocal": "This component has no model that runs locally.",
     "runtimeOk": "Local services: ComfyUI / inference server connected",
     "runtimeDown": "Local services unreachable: local runs wait until they are back",
+    "unverifiedGroup": "Unverified workflows · pick by hand only",
+    "unverifiedHint": "Imported but no trial has passed yet (or the file changed): never used as a fallback or in Try another.",
     "keyMissing": "No key",
     "fallback": "Automatic fallback",
     "fallbackOn": "If {{primary}} fails, switch to {{target}} automatically and record it in the history.",
@@ -115,7 +148,7 @@
     "when": "Fall back when",
     "trigger": {
       "error": "Error or out of VRAM",
-      "timeout": "No result after {{minutes}} min",
+      "timeout": "No result after {{minutes}} min (longer clips get their estimated time)",
       "qa_fail": "Auto QA fails {{n}} times in a row"
     },
     "target": "Fall back to",
@@ -136,7 +169,9 @@
       "machine_cuda": "This machine has no NVIDIA GPU (CUDA), so the local models cannot run",
       "machine_missing": "This machine still lacks {{count}} runtime item(s); add them under Environment"
     },
-    "reasonLine": "{{mode}}: {{reason}}"
+    "reasonLine": "{{mode}}: {{reason}}",
+    "unpriced": "Price unknown · asks before each run",
+    "gone": "{{model}} is set here but can't be used now (not picked on the Models page, or not listed on the provider's current site). Pick another."
   },
   "impact": {
     "sync": "Confirm and sync · est. {{cost}}",
@@ -203,6 +238,8 @@
       "then_shot_plan": "Episode {{n}} shot plan · marked out of date only if what it reads changes; never redone by itself",
       "stale_keyframe": "Episode {{n}} keyframes · shots {{shots}} become out of date: draw new candidates, pick one and confirm (not redrawn on their own)",
       "then_keyframe": "Episode {{n}} keyframes · shots {{shots}} · out of date only if what they read really changes",
+      "stale_video": "Episode {{n}} video · shots {{shots}} become out of date: make new takes and adopt one (not redone on their own)",
+      "then_video": "Episode {{n}} video · shots {{shots}} · out of date only if what they read really changes",
       "uses_keyframe": "Keyframes · shots {{names}} use it as a reference ({{count}}); they become out of date once a new picture is locked",
       "self_shot_plan": "Episode {{n}}'s confirmed shot plan changes to the new content",
       "gate_storyboard": "Episode {{n}}'s storyboard confirmation reopens: confirm it again afterwards",
@@ -248,7 +285,10 @@
     "title": "{{component}} needs your OK to start",
     "perCall": "On {{model}} this is estimated at {{estimate}}, over this step's per-call cap of {{limit}}.",
     "episode": "On {{model}} this is estimated at {{estimate}}; only {{limit}} is left of the episode budget.",
+    "shot": "On {{model}} this is estimated at {{estimate}}; only {{limit}} is left of this shot's cap.",
     "fallback": "{{failed}} failed ({{error}}). Switch to {{model}}? Estimated {{estimate}}.",
+    "unpriced": "{{model}} has no price yet, so what this run costs is not known. You can fill in its price on the Models page.",
+    "unknownPrice": "price unknown",
     "where": "Caps and fallback behaviour are under",
     "models": "Models & fallback",
     "confirm": "Confirm and run ({{estimate}})",

@@ -5,13 +5,16 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogTitle } from "@/components/ui/dialog";
 
 export interface LightboxItem {
+  /** The picture (a video's poster). */
   src: string;
   label: string;
+  /** A video take: played here, with its controls. */
+  video?: string;
 }
 
 /**
- * A picture at the size the screen allows (candidates and views are small cards): fitted to the
- * viewport, ← → (or the buttons) for the others of the same set.
+ * A picture or a video at the size the screen allows (candidates, views and takes are small
+ * cards): fitted to the viewport, ← → (or the buttons) for the others of the same set.
  */
 export function MediaLightbox({
   items,
@@ -44,11 +47,23 @@ export function MediaLightbox({
           <DialogDescription className="sr-only">
             {many ? t("lightbox.hintMany") : t("lightbox.hint")}
           </DialogDescription>
-          <img
-            src={item.src}
-            alt={item.label}
-            className="mx-auto max-h-[80vh] max-w-full rounded-md object-contain"
-          />
+          {item.video ? (
+            <video
+              key={item.video}
+              src={item.video}
+              poster={item.src || undefined}
+              aria-label={item.label}
+              controls
+              autoPlay
+              className="mx-auto max-h-[80vh] max-w-full rounded-md bg-black object-contain"
+            />
+          ) : (
+            <img
+              src={item.src}
+              alt={item.label}
+              className="mx-auto max-h-[80vh] max-w-full rounded-md object-contain"
+            />
+          )}
           {many ? (
             <div className="flex items-center justify-center gap-3">
               <Button variant="outline" size="sm" onClick={() => step(-1)}>

@@ -1,0 +1,42 @@
+M5 live smoke · 2026-11-08 12:28 · cap $3.0 · ['h3', 'regen', 'seedance']
+ComfyUI 0.41.2 at http://127.0.0.1:8188; data C:\Users\kelvin\AppData\Local\Temp\drama-local-video-z2icdq70\home
+connection minimax_llm: minimax/h3-api ok
+connection minimax_llm: minimax/h3-regenerate-2k ok
+connection volcengine: volc/seedance-2.5 ok
+== h3: 1-04 原生同步 · minimax/h3-api
+   h3-1-04: done in 292.0 s
+   model minimax/h3-api [api], files: take-h3-1-04-video.mp4 (1440x2560 4.18s), take-h3-1-04-poster.png (1440x2560), take-h3-1-04-last_frame.png (1440x2560)
+   clip 1440x2560 4.18s @ 24.0 fps, sound yes; asked 1.66s (minus the 0.3s cut: 1.36s; a model's shortest clip can be longer); voices ['林晚'], refs ['林晚', '老小区楼道 · 夜']
+   est (route default) $0.0080; job est $0.4686; billed $0.4801; spent so far $0.4801
+   payload 1080p refs ['林晚', '老小区楼道 · 夜'] voices ['林晚'] rewritten True; sent ['aspect', 'duration_s', 'first_frame', 'fps', 'ref_audio', 'refs', 'with_audio']
+== regen: 1-04 本地草稿 faae4efb → minimax/h3-regenerate-2k
+   regen-1-04: done in 140.7 s
+   model minimax/h3-regenerate-2k [api], files: take-regen-1-04-video.mp4 (1440x2560 4.88s), take-regen-1-04-poster.png (1440x2560), take-regen-1-04-last_frame.png (1440x2560)
+   clip 1440x2560 4.88s @ 24.0 fps, sound yes; asked 1.66s (minus the 0.3s cut: 1.36s; a model's shortest clip can be longer); voices ['林晚'], refs ['林晚', '老小区楼道 · 夜']
+   billed $0.2113; spent so far $0.6914
+== seedance: 1-01 · volc/seedance-2.5（720p）
+   seedance-1-01: done in 200.8 s
+   model minimax/h3-api [api], files: take-seedance-1-01-video.mp4 (1440x2560 4.18s), take-seedance-1-01-poster.png (1440x2560), take-seedance-1-01-last_frame.png (1440x2560)
+   clip 1440x2560 4.18s @ 24.0 fps, sound yes; asked 4.00s (minus the 0.3s cut: 3.70s; a model's shortest clip can be longer); voices [], refs []
+   est (route default) $0.0080; job est $0.8518; billed $0.4644; spent so far $1.1558
+
+STOPPED: seedance: ran on minimax/h3-api
+
+== model_call
+id   component  model                       where  status   fb  out        cost
+37   vid        minimax/context-ir          api    success  -   0 chars    $0.0294
+38   vid        minimax/h3-api              api    success  -   0 chars    $0.4507
+39   vid        minimax/h3-regenerate-2k    api    success  -   0 chars    $0.2113
+40   vid        volc/seedance-2.5           api    error    -   0 chars    $0.0000  model_not_found
+41   vid        minimax/context-ir          api    success  -   0 chars    $0.0137
+42   vid        minimax/h3-api              api    success  yes 0 chars    $0.4507
+total $1.1558 over 6 calls; failures 1
+
+job                          estimate   spent      seconds
+h3-1-04                      $0.4686    $0.4801    292.0
+regen-1-04                   $0.3380    $0.2113    140.7
+seedance-1-01                $0.8518    $0.4644    200.8
+
+spent $1.1558 of $3.0
+result: STOPPED
+files: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-z2icdq70\live-out

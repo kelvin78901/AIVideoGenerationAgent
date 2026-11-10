@@ -28,8 +28,10 @@ from drama_series_agent.api.routes import (
     episodes,
     files,
     gates,
+    generate,
     impact,
     jobs,
+    metrics,
     novel,
     products,
     providers,
@@ -39,6 +41,7 @@ from drama_series_agent.api.routes import (
     shots,
     spec,
     suggestions,
+    workflows,
 )
 from drama_series_agent.api.security import CLIENT_HEADER, LocalOnlyGuard
 from drama_series_agent.api.state import StudioState, get_state
@@ -96,6 +99,9 @@ def _v1_router() -> APIRouter:
     router.include_router(products.router)
     router.include_router(files.router)
     router.include_router(config.router)
+    router.include_router(workflows.router)
+    router.include_router(generate.router)
+    router.include_router(metrics.router)
     return router
 
 

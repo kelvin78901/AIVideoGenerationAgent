@@ -10,8 +10,6 @@ export const demoTiming = {
   runMs: 1400,
   /** 「重写这一段」 (prototype: 1.1 s). */
   rewriteMs: 1100,
-  /** Workflow library: a trial run on the sample inputs, and installing missing node packs. */
-  workflowTrialMs: 2500,
   /** 「立即同步」: one file per tick (prototype: 90 ms, 24 files). */
   syncTickMs: 90,
 };

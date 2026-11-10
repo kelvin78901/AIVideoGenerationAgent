@@ -6,7 +6,8 @@ page); the ``shot`` table mirrors the adopted one (``materialize``), and each sh
 continuous has its keyframe product (owner ``shot``, slot ``keyframe``). Edits to the plan
 append an ``edit`` version and adopt it; the picture description is the keyframe prompt's
 intent layer and the picked candidate is the keyframe product's pick, so neither touches the
-plan (M3: 描述 = 意图层).
+plan (M3: 描述 = 意图层). Every shot also has its video product (slot ``video``, M5): its
+takes are its versions.
 
 How long a shot runs is worked out when read (``timing.shot_duration``, Kelvin 2026-10-21):
 dubbing again changes it without a new version.
@@ -84,19 +85,32 @@ from drama_series_agent.spec.schema import SpecPatch, apply_patch
 
 KEYFRAME_SLOT = "keyframe"
 KF_COMPONENT = "kf"
+VIDEO_SLOT = "video"
+VID_COMPONENT = "vid"
 SHOT_GATE = "shot"
 STORYBOARD_GATE = "storyboard"
+TAKES_GATE = "takes"
 # The longest take the video route can make (seconds); None when no model on it says.
 LongestTake = Callable[[], Awaitable[float | None]]
 _HEADING_MARKS = re.compile(r"^(?:[日夜晨昏][　\s]+)?(?:[内外][　\s]+)?")
 
 
 async def keyframe_products(session: AsyncSession, shot_ids: Iterable[str]) -> dict[str, Product]:
+    return await shot_products(session, shot_ids, KEYFRAME_SLOT)
+
+
+async def video_products(session: AsyncSession, shot_ids: Iterable[str]) -> dict[str, Product]:
+    return await shot_products(session, shot_ids, VIDEO_SLOT)
+
+
+async def shot_products(
+    session: AsyncSession, shot_ids: Iterable[str], slot: str
+) -> dict[str, Product]:
     rows = await session.exec(
         select(Product).where(
             Product.owner_type == "shot",
             col(Product.owner_id).in_(list(shot_ids)),
-            Product.slot == KEYFRAME_SLOT,
+            Product.slot == slot,
         )
     )
     return {p.owner_id: p for p in rows.all()}
@@ -104,8 +118,8 @@ async def keyframe_products(session: AsyncSession, shot_ids: Iterable[str]) -> d
 
 async def materialize(session: AsyncSession, product: Product, version: ProductVersion) -> None:
     """Mirror an adopted shot plan: upsert the episode's shots by id, retire the ones it dropped;
-    each shot that is not continuous has its keyframe product (retired with the shot, back with
-    it)."""
+    each shot that is not continuous has its keyframe product, every shot its video product
+    (retired with the shot, back with it)."""
     episode_id = product.owner_id
     rows = {
         r.id: r
@@ -151,25 +165,29 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
             gone.version_id = version.id
             gone.updated_at = now
             session.add(gone)
-    existing = await keyframe_products(session, [*rows, *kept])
-    wanted = {s["id"] for s in shots if s["shot_type"] != "continuous"}
-    for s in shots:
-        if s["id"] in wanted and s["id"] not in existing:
-            session.add(
-                Product(
-                    series_id=product.series_id,
-                    owner_type="shot",
-                    owner_id=s["id"],
-                    slot=KEYFRAME_SLOT,
-                    component_id=KF_COMPONENT,
+    framed = {s["id"] for s in shots if s["shot_type"] != "continuous"}
+    for slot, component, wanted in (
+        (KEYFRAME_SLOT, KF_COMPONENT, framed),
+        (VIDEO_SLOT, VID_COMPONENT, kept),
+    ):
+        existing = await shot_products(session, [*rows, *kept], slot)
+        for s in shots:
+            if s["id"] in wanted and s["id"] not in existing:
+                session.add(
+                    Product(
+                        series_id=product.series_id,
+                        owner_type="shot",
+                        owner_id=s["id"],
+                        slot=slot,
+                        component_id=component,
+                    )
                 )
-            )
-    for owner, p in existing.items():
-        retired = owner not in wanted
-        if p.retired != retired:
-            p.retired = retired
-            p.updated_at = now
-            session.add(p)
+        for owner, p in existing.items():
+            retired = owner not in wanted
+            if p.retired != retired:
+                p.retired = retired
+                p.updated_at = now
+                session.add(p)
 
 
 async def ensure_plan(session: AsyncSession, product: Product, version: ProductVersion) -> None:
@@ -327,7 +345,9 @@ class ShotService:
             return await self.plan_aspect(target, SpecPatch.model_validate(patch))
 
         gates.precondition(STORYBOARD_GATE, self._all_confirmed)
+        gates.members(TAKES_GATE, self.takes, lock=True)
         episodes.counters["storyboard"] = self.badge
+        episodes.counters["generate"] = self.generate_badge
         impact.kind("shot_edit", shot_edit)
         impact.kind("spec_aspect", spec_aspect)
         impact.extra("line_edit", self._line_shots)
@@ -377,6 +397,36 @@ class ShotService:
             stale=stale,
         )
 
+    async def takes(self, session: AsyncSession, episode_id: str) -> list[tuple[str, Product]]:
+        """生成确认 covers the episode's shots' video products, by shot label, in order."""
+        episode = await session.get(Episode, episode_id)
+        plan = await plan_product(session, episode_id)
+        v = await _current(session, plan)
+        shots = ops.shots_of(v.payload_json) if v is not None else []
+        videos = await video_products(session, [s["id"] for s in shots])
+        labels = _labels(episode.idx if episode is not None else 0, shots)
+        return [
+            (labels[s["id"]], videos[s["id"]])
+            for s in shots
+            if s["id"] in videos and not videos[s["id"]].retired
+        ]
+
+    async def generate_badge(self, session: AsyncSession, episode_id: str) -> StepProgressOut:
+        """生成 n / m: the shots with an adopted take; 待更新: the video products gone stale.
+        Not started until the storyboard is confirmed."""
+        if not await gate_confirmed(session, STORYBOARD_GATE, episode_id):
+            return StepProgressOut(state="not_started")
+        takes = [p for _, p in await self.takes(session, episode_id)]
+        if not takes:
+            return StepProgressOut(state="not_started")
+        confirmed = await gate_confirmed(session, TAKES_GATE, episode_id)
+        return StepProgressOut(
+            state="confirmed" if confirmed else "in_progress",
+            done=sum(1 for p in takes if p.adopted_version_id),
+            total=len(takes),
+            stale=len(await self._invalidation.stale_ids(session, takes)),
+        )
+
     async def _all_confirmed(self, session: AsyncSession, episode_id: str) -> None:
         """分镜确认 needs every shot confirmed and none 「待更新」."""
         episode = await session.get(Episode, episode_id)
@@ -415,6 +465,7 @@ class ShotService:
                 ).all()
             }
             keyframes, states = await self.states(session, plan, shots)
+            videos = await video_products(session, [s["id"] for s in shots])
             shown_ids = [k.current_version_id for k in keyframes.values() if k.current_version_id]
             shown = {
                 v.id: v
@@ -482,7 +533,7 @@ class ShotService:
                     tail_note=s.get("tail_note"),
                     blocking=s.get("blocking") or [],
                     keyframe_product_id=kf.id if kf else None,
-                    video_product_id=None,
+                    video_product_id=video.id if (video := videos.get(s["id"])) else None,
                     keyframe_pick=picked,
                     keyframe_sha256=picture,
                     confirmed=state.confirmed,
@@ -627,9 +678,10 @@ class ShotService:
 
     async def plan_aspect(self, series_id: str, body: SpecPatch) -> PlannedChange:
         """``spec_aspect`` (改画幅, SPEC 13.3): the keyframes drawn so far (their API finals'
-        price) and the scenes' reference pictures drawn for the old aspect (a hint). 「只改这里」
-        writes the spec and takes the confirmations back (分镜确认 reopens); 「确认并同步」 also
-        draws the keyframes again as local drafts."""
+        price), the takes made so far (M5: redone from the new keyframes; the adopted ones'
+        API finals priced) and the scenes' reference pictures drawn for the old aspect (a
+        hint). 「只改这里」 writes the spec and takes the confirmations back (分镜确认 reopens);
+        「确认并同步」 also draws the keyframes again as local drafts."""
         async with self._db.session() as session:
             row = await session.get(OutputSpecRow, series_id)
             if row is None:
@@ -658,6 +710,16 @@ class ShotService:
                     )
                 ).all()
             )
+            videos = [v for v in (await video_products(session, [s.id for s in shots])).values()]
+            takes = 0
+            for v in videos:
+                takes += len(
+                    (
+                        await session.exec(
+                            select(ProductVersion.id).where(ProductVersion.product_id == v.id)
+                        )
+                    ).all()
+                )
             new = body.aspect or old
             # Scene pictures follow the spec only when components.yaml does not fix their
             # aspect (it draws them 16:9): then the new spec leaves them as they are.
@@ -673,6 +735,16 @@ class ShotService:
                 _line(
                     "keyframes_redraw",
                     {"count": len(keyframes), "shots": len(shots)},
+                    round(sum(costs), 4) if costs else None,
+                )
+            )
+        if changed and takes:
+            adopted = [v for v in videos if v.adopted_version_id]
+            costs = [c for v in adopted if (c := await self._runs.final_cost(v))]
+            lines.append(
+                _line(
+                    "videos_redo",
+                    {"count": takes, "adopted": len(adopted)},
                     round(sum(costs), 4) if costs else None,
                 )
             )

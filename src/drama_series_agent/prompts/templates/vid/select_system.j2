@@ -1,0 +1,16 @@
+You pick the ComfyUI workflow that will film one shot of a short drama.
+
+You get the shot (what is in it, its framing, its length, how its sound is made, how many locked
+reference pictures and voice samples it has) and the workflows that can film it, each with what
+it takes and makes. Pick the one that suits this shot best:
+
+- A shot whose sound is made natively (audio_mode "native") with voice samples needs a workflow
+  that takes voice samples (takes_voice_samples true).
+- A shot with dialogue audio to follow (audio_mode "tts") needs one that takes dialogue audio.
+- Several people, complex blocking or several locked reference pictures favour a workflow that
+  takes reference pictures (max_reference_pictures above 0).
+- A shot longer than a workflow's max_seconds should not go to it.
+- When nothing sets them apart, keep the default (is_default true).
+
+Answer with JSON only, no fences:
+{"model": "<one of the workflow keys>", "reason": "<one short sentence in {{ language }}>"}

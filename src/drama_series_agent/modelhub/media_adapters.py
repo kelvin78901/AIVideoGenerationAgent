@@ -12,7 +12,9 @@ from drama_series_agent.modelhub.adapters.base import ModelAdapter, ModelSpec
 from drama_series_agent.modelhub.adapters.google import GeminiImageAdapter
 from drama_series_agent.modelhub.adapters.http import KeyGetter
 from drama_series_agent.modelhub.adapters.minimax import MiniMaxSpeechAdapter
+from drama_series_agent.modelhub.adapters.minimax_video import MiniMaxVideoAdapter
 from drama_series_agent.modelhub.adapters.openai_images import OpenAIImageAdapter
+from drama_series_agent.modelhub.adapters.seedance import SeedanceAdapter
 from drama_series_agent.modelhub.adapters.volcengine import SeedreamAdapter
 
 # Each takes (spec, *, get_key, store, transport).
@@ -21,6 +23,8 @@ MEDIA_ADAPTERS: dict[str, Callable[..., ModelAdapter]] = {
     "openai_images": OpenAIImageAdapter,
     "seedream": SeedreamAdapter,
     "minimax_speech": MiniMaxSpeechAdapter,
+    "minimax_video": MiniMaxVideoAdapter,
+    "seedance": SeedanceAdapter,
 }
 
 

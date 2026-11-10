@@ -1,0 +1,18 @@
+subject_definitions:
+<Picture 1> is the first frame of [Shot 1], showing Lin Wan bent forward in the doorway outside her rented room at night, her right hand reaching down toward the closed red umbrella leaning against the wall on the right side of the frame, the stairwell near at the left of the frame and the door far at the right.
+<Subject 1> is Lin Wan, the 26-year-old woman whose appearance comes from <Picture 2>: a pale, tired bare face, dark hair in a low ponytail, half of her beige trench coat soaked dark, an old black hair tie on her left wrist.
+<Subject 2> is the red long-handled umbrella whose look comes from <Picture 3>: a pure-red canopy, a straight shaft with a curved wooden handle, the wet fabric folded and closed, leaning against the wall by the door.
+
+summary: [keyframe completion + reference generation] One continuous four-second shot with no cut. The video starts exactly on <Picture 1>: Lin Wan bends down in the doorway, picks up the closed red umbrella from against the wall, and the last frame freezes on that moment, while the camera slowly pushes in on her.
+
+retention_analysis:
+<Picture 1> ([Shot 1] first frame): fully_preserved - the opening composition, Lin Wan's bent pose, the stairwell at the left, the door at the right and the night lighting.
+<Subject 1> (appears in [Shot 1]): fully_preserved - Lin Wan's face, low ponytail, half-soaked beige trench coat and black hair tie stay the same from the first frame to the last.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the wet red canopy, the straight shaft and the curved wooden handle keep their look as she lifts it.
+
+detailed_description: Live-action, cinematic short-drama look, realistic night-time interior of a rented-room doorway, warm hallway light against cool stairwell shadow, soft film grain and steady, slow camera.
+[Shot 1] The shot begins from <Picture 1>. <Subject 1>, Lin Wan, is caught mid-bend just outside her rented room at night, seen in a close shot from slightly above and in front; the stairwell rises near on the left of the frame, her closed door sits far on the right, and <Subject 2>, the closed red umbrella, leans wet against the wall on the right, its curved wooden handle up. Her low ponytail slides over one shoulder, the soaked half of her beige trench coat hangs heavier than the dry side, and the old black hair tie shows on her left wrist. From the start, the camera pushes in with small amplitude at slow speed straight toward her, keeping her centered; it never pans away, tilts off her or cuts, and the stairwell, the door and the wall stay where they are the whole time. In the first second her right hand closes around the curved wooden handle, the wet red fabric still folded and closed, and she begins to straighten. Around two seconds she lifts the umbrella off the floor; a few drops run off the tip and fall, and the red canopy swings slightly as it clears the wall. Her tired face turns a little toward the umbrella, her eyes half lowered, her breathing quiet and even. By about three seconds she is standing upright, the umbrella held down at her side in her right hand, her shoulders settling. For the final moment the frame freezes on her standing in the doorway with the red umbrella in hand, the camera at its closest on her face and the red canopy at the lower right of the frame; the same doorway, the same lighting, no other person and no cut.
+
+overall_soundscape: A quiet night stairwell with a faint hum of hallway light, the soft rustle of wet fabric and the small click of the umbrella handle as she grips it, a few drops of water patting the floor, and Lin Wan's calm breathing.
+
+non_diegetic_music: N/A

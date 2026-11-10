@@ -211,7 +211,7 @@ describe("AppShell", () => {
       "已确认",
       "7/10", // the 10 assets episode 1 uses (M3: the backend's count)
       "3/9",
-      "3/9",
+      "未开始", // 生成 waits for 分镜确认 (the backend's)
       "未开始",
     ]);
     await userEvent.click(screen.getByRole("button", { name: "切换界面语言 / Switch language" }));

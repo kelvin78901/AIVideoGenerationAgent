@@ -32,7 +32,7 @@ class RunBody(BaseModel):
     model: str | None = None
     intent: str | None = None
     compiled: str | None = None  # a hand-edited compiled layer (「保存并重跑」)
-    count: int = Field(default=1, ge=1, le=8)
+    count: int | None = Field(default=None, ge=1, le=8)  # None: the component's (first takes)
     # ``api``: hybrid mode's 「用 API 出终版」 (SPEC 7.3).
     where: Literal["local", "api"] | None = None
     params: RunParams | None = None
@@ -41,6 +41,12 @@ class RunBody(BaseModel):
 class PickBody(BaseModel):
     version_id: str
     idx: int = Field(ge=0)
+
+
+class VersionPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    rating: int | None = Field(ge=1, le=5)
 
 
 class PromptBody(BaseModel):
@@ -77,6 +83,18 @@ async def set_current(version_id: str, state: State) -> ProductOut:
 async def adopt(version_id: str, state: State) -> ProductOut:
     """Adopt (and show) a version; 409 ``product_locked`` while a gate has it locked."""
     return await state.products.adopt(version_id)
+
+
+@router.post("/products/{product_id}/unadopt")
+async def unadopt(product_id: str, state: State) -> ProductOut:
+    """「取消采纳」 a take; 409 ``product_locked`` while locked."""
+    return await state.products.unadopt(product_id)
+
+
+@router.patch("/versions/{version_id}")
+async def patch_version(version_id: str, body: VersionPatch, state: State) -> ProductOut:
+    """数字键打分 on the take wall."""
+    return await state.products.rate(version_id, body.rating)
 
 
 @router.post("/products/{product_id}/lock")

@@ -3,6 +3,8 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
 import { api, patch, post, put } from "@/api/client";
+import { comfyKeys } from "@/api/hooks/comfy";
+import { RestoredSchema } from "@/api/schemas/comfy";
 import {
   ComfyWorkflowFileSchema,
   DepsPlanSchema,
@@ -20,13 +22,11 @@ export const workflowKeys = {
   comfyFiles: ["comfy", "workflows"] as const,
 };
 
-/** Polls while a trial runs (M5 moves this to job events). */
+/** A trial's end arrives as `job.updated` (`workflow_trial`), which refetches this list. */
 export function useWorkflows() {
   return useQuery({
     queryKey: workflowKeys.all,
     queryFn: () => api("/workflows", z.array(WorkflowSchema)),
-    refetchInterval: (q) =>
-      q.state.data?.some((w) => w.trial?.status === "running") ? 1000 : false,
   });
 }
 
@@ -78,6 +78,10 @@ const DepsInstalledSchema = z.object({
   models: z.number(),
   /** The ComfyUI-Manager snapshot taken first. */
   snapshot: z.string(),
+  /** A real ComfyUI loads new node packs when it restarts; the check shows them missing till then. */
+  restart_required: z.boolean(),
+  /** Packs that did not install: their name and why (a setup error code). */
+  failed: z.array(z.object({ name: z.string(), code: z.string() })),
 });
 
 export const useInstallDeps = (id: string) =>
@@ -87,3 +91,18 @@ export const useTrialWorkflow = (id: string) =>
   useWorkflowMutation(() => post(`/workflows/${enc(id)}/trial`, WorkflowSchema));
 
 export type { Workflow };
+
+/** 「回滚到这次安装前的快照」 from a workflow broken by a node-pack install (SPEC 6.4.5): the
+ * library is checked again (the sample machine is back at once, a real ComfyUI on restart). */
+export function useRollbackInstall() {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (snapshotId: string) =>
+      post(`/comfy/snapshots/${enc(snapshotId)}/restore`, RestoredSchema),
+    onSuccess: () =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: workflowKeys.all }),
+        client.invalidateQueries({ queryKey: comfyKeys.snapshots }),
+      ]),
+  });
+}

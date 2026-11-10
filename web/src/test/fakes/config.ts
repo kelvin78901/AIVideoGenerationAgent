@@ -93,7 +93,10 @@ export function configHandlers() {
       else {
         if (!scope_id) return error(422, "scope_id_required");
         const key = `${component_id}|${scope_id}`;
-        fakeConfig.item[key] = { ...fakeConfig.item[key], ...patch };
+        const prev = fakeConfig.item[key];
+        // Branch switches merge by id, as the backend's override paths do.
+        const branches = patch.branches && { ...prev?.branches, ...patch.branches };
+        fakeConfig.item[key] = { ...prev, ...patch, ...(branches ? { branches } : {}) };
       }
       return HttpResponse.json(fakeResolve(component_id, scope === "item" ? scope_id : null));
     }),

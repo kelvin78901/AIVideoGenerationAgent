@@ -1,0 +1,6 @@
+== 1-06: 1-06 seed 1711434514 again
+   1 job(s) in 162.8 s, GPU memory peak 31664 MiB
+   call deepseek/v4.1-flash [api] success 5.7 s audio=Nones
+   call comfy/h3 [local] success 155.4 s audio=5.17s
+   run11 1-06: 4.89s, still opening 0.0s, loud (0.15000000000000002, 1.6), cuts [], prompt 462 words, window {'in_s': 0.0, 'out_s': 4.89}
+   new   1-06: 4.89s, still opening 0.0s, loud (1.1500000000000001, 2.35), cuts [], prompt 464 words, window {'in_s': 0.0, 'out_s': 4.89}

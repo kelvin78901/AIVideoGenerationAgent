@@ -33,7 +33,8 @@ def cost_usd(
     if unit == "token":
         amount = (usage.tokens_in or 0) * (pricing.price_in or 0) / 1e6
         amount += (usage.tokens_out or 0) * (pricing.price_out or 0) / 1e6
-    elif unit == "image" and _by_tokens(pricing, usage):
+    elif unit in ("image", "second", "minute") and _by_tokens(pricing, usage):
+        # Billed by the tokens reported (GPT Image, Seedance); the unit price is the estimate.
         rates = pricing.token_rates or {}
         amount = sum(n * rates[kind] / 1e6 for kind, n in (usage.tokens or {}).items())
     elif unit == "image":

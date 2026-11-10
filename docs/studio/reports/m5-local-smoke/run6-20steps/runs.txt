@@ -1,0 +1,27 @@
+M5 local smoke · 2026-10-28 00:37
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 610.47; in use before 2207 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== rewrite-1-01-s325085565: 1-01 种子 325085565 · DeepSeek 按官方写法改写 + 本地 H3
+   1 job(s) in 158.8 s, GPU memory peak 31727 MiB
+   call comfy/h3 [local] success 157.9 s audio=5.17s
+   seed 325085565, rewritten by deepseek/v4.1-flash (464 words) → rewrite-1-01-s325085565.mp4 / .png / .txt
+== rewrite-1-01-s22: 1-01 种子 22 · DeepSeek 按官方写法改写 + 本地 H3
+   1 job(s) in 159.7 s, GPU memory peak 31699 MiB
+   call comfy/h3 [local] success 158.8 s audio=5.17s
+   seed 22, rewritten by deepseek/v4.1-flash (464 words) → rewrite-1-01-s22.mp4 / .png / .txt
+== rewrite-1-04-s191503631: 1-04 种子 191503631 · DeepSeek 按官方写法改写 + 本地 H3
+   2 job(s) in 207.1 s, GPU memory peak 31687 MiB
+   call comfy/h3-r2v [local] error comfy_failed 17.9 s audio=Nones
+   call comfy/h3-r2v [local] success 187.5 s audio=5.17s
+   job f2e1de8d730f48b481b15cbe4ca31123 failed: {'code': 'comfy_failed', 'params': {'message': 'SamplerCustomAdvanced: RuntimeError: hostbuf_file_reader_read failed\n'}}
+   seed 191503631, rewritten by deepseek/v4.1-flash (686 words) → rewrite-1-04-s191503631.mp4 / .png / .txt
+== rewrite-1-04-s22: 1-04 种子 22 · DeepSeek 按官方写法改写 + 本地 H3
+   1 job(s) in 189.1 s, GPU memory peak 31685 MiB
+   call comfy/h3-r2v [local] success 188.1 s audio=5.17s
+   seed 22, rewritten by deepseek/v4.1-flash (686 words) → rewrite-1-04-s22.mp4 / .png / .txt
+   DeepSeek spent $0.0038 (cap $0.1)
+
+result: SOME STEPS FAILED
+files: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-hr_2s8vc\out

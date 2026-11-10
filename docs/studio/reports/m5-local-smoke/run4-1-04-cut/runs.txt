@@ -1,0 +1,13 @@
+== 2026-10-27 21:09 noscene,refwording,noscene_guide on 1-04 seed 191503631
+== 2026-10-27 21:11 guidefmt on 1-04 seed 191503631
+noscene 1-04: ok in 169 s → 1-04-noscene-s191503631.mp4
+guidefmt 1-04: ok in 271 s → 1-04-guidefmt-s191503631.mp4
+== 2026-10-27 21:16 guidefmt on 1-04 seed 22
+refwording 1-04: ok in 400 s → 1-04-refwording-s191503631.mp4
+guidefmt 1-04: ok in 367 s → 1-04-guidefmt-s22.mp4
+noscene_guide 1-04: ok in 361 s → 1-04-noscene_guide-s191503631.mp4
+== 2026-10-27 21:25 official20,noscene,refwording,noscene_guide on 1-04 seed 22
+official20 1-04: ok in 427 s → 1-04-official20-s22.mp4
+noscene 1-04: ok in 172 s → 1-04-noscene-s22.mp4
+refwording 1-04: ok in 325 s → 1-04-refwording-s22.mp4
+noscene_guide 1-04: ok in 181 s → 1-04-noscene_guide-s22.mp4

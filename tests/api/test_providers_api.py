@@ -72,7 +72,13 @@ def test_test_connection_ok_and_bad(client: TestClient, respx_mock: respx.MockRo
     client.post("/api/v1/providers/deepseek/key", json={"api_key": SECRET})
     route.mock(return_value=httpx.Response(200, json={"data": [{"id": "deepseek-v4-pro"}]}))
     resp = client.post("/api/v1/providers/deepseek/test")
-    assert resp.json() == {"ok": True, "detail": None, "models": ["deepseek-v4-pro"], "media": []}
+    assert resp.json() == {
+        "ok": True,
+        "detail": None,
+        "site": "main",
+        "models": ["deepseek-v4-pro"],
+        "media": [],
+    }
     assert route.calls.last.request.headers["authorization"] == f"Bearer {SECRET}"
     assert SECRET not in resp.text
 
@@ -95,10 +101,11 @@ def test_test_connection_checks_the_media_models_on_the_key(
     google = next(
         p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "google_llm"
     )
-    assert google["media"] == [
-        {"key": "google/nano-banana-pro", "display": "Nano Banana Pro"},
-        {"key": "google/nano-banana-2.1", "display": "Nano Banana 2.1"},
+    assert [(m["key"], m["display"], m["custom_model_id"]) for m in google["media"]] == [
+        ("google/nano-banana-pro", "Nano Banana Pro", False),
+        ("google/nano-banana-2.1", "Nano Banana 2.1", False),
     ]
+    assert all(m["model_id"] for m in google["media"])
 
     client.post("/api/v1/providers/google_llm/key", json={"api_key": GEMINI_KEY})
     respx_mock.get("https://generativelanguage.googleapis.com/v1beta/openai/models").mock(
@@ -141,7 +148,9 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
     from drama_series_agent.modelhub.adapters.google import GeminiImageAdapter
     from drama_series_agent.modelhub.adapters.local_python import LocalPythonAdapter
     from drama_series_agent.modelhub.adapters.minimax import MiniMaxSpeechAdapter
+    from drama_series_agent.modelhub.adapters.minimax_video import MiniMaxVideoAdapter
     from drama_series_agent.modelhub.adapters.openai_images import OpenAIImageAdapter
+    from drama_series_agent.modelhub.adapters.seedance import SeedanceAdapter
     from drama_series_agent.modelhub.adapters.volcengine import SeedreamAdapter
     from drama_series_agent.modelhub.registry import UnavailableAdapter
 
@@ -157,15 +166,22 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
         p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "minimax_llm"
     )
     assert [m["key"] for m in minimax["media"]] == [
+        "minimax/h3-api",
+        "minimax/h3-regenerate-2k",
+        "minimax/context-ir",
         "minimax/speech-2.8-hd",
         "minimax/speech-2.6-hd",
     ]
-    assert isinstance(registry.get("minimax/h3-api"), UnavailableAdapter)  # not yet
+    for key in ("minimax/h3-api", "minimax/h3-regenerate-2k", "minimax/context-ir"):
+        assert isinstance(registry.get(key), MiniMaxVideoAdapter)
+    assert isinstance(registry.get("volc/seedance-2.5"), SeedanceAdapter)
+    assert isinstance(registry.get("kling/kling-3.0"), UnavailableAdapter)  # not yet
     for key in ("local/qwen3-tts", "local/indextts2", "local/rapidocr"):
         assert isinstance(registry.get(key), LocalPythonAdapter)
     for key in ("comfy/qwen-image", "comfy/qwen-image-edit", "comfy/qwen-image-edit-hq"):
         assert isinstance(registry.get(key), ComfyUIAdapter)
-    assert isinstance(registry.get("comfy/h3"), UnavailableAdapter)  # no workflow folder yet
+    assert isinstance(registry.get("comfy/h3"), ComfyUIAdapter)
+    assert isinstance(registry.get("comfy/h3-fun-controlnet"), UnavailableAdapter)  # no folder yet
 
 
 def test_real_local_runs_local_models_for_real_and_keeps_the_rest_mock(
@@ -184,4 +200,26 @@ def test_real_local_runs_local_models_for_real_and_keeps_the_rest_mock(
     assert isinstance(registry.get("comfy/qwen-image"), ComfyUIAdapter)
     assert isinstance(registry.get("local/rapidocr"), LocalPythonAdapter)
     for key in ("google/nano-banana-pro", "minimax/speech-2.8-hd", "local/qwen3.6-27b"):
+        assert isinstance(registry.get(key), MockAdapter), key
+
+
+def test_real_models_runs_only_the_named_models_for_real_and_only_when_live(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """``DRAMA_REAL_MODELS`` (M5 step 14c): one paid model real in Mock mode, never without
+    ``DRAMA_LIVE=1``."""
+    from drama_series_agent.core.config import get_config
+    from drama_series_agent.modelhub.adapters.mock import MockAdapter
+    from drama_series_agent.modelhub.registry import Registry
+
+    monkeypatch.setenv("DRAMA_REAL_MODELS", "deepseek/v4.1-flash")
+    monkeypatch.delenv("DRAMA_LIVE", raising=False)
+    assert isinstance(
+        Registry.from_config(get_config(), mock=True).get("deepseek/v4.1-flash"), MockAdapter
+    )
+    monkeypatch.setenv("DRAMA_LIVE", "1")
+    registry = Registry.from_config(get_config(), mock=True)
+    assert registry.real_keys == {"deepseek/v4.1-flash"}
+    assert not isinstance(registry.get("deepseek/v4.1-flash"), MockAdapter)
+    for key in ("deepseek/v4-pro", "minimax/h3-api", "comfy/h3"):
         assert isinstance(registry.get(key), MockAdapter), key

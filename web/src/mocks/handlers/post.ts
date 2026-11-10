@@ -11,13 +11,18 @@ import {
 } from "@/api/schemas/timeline";
 import { getDb } from "@/mocks/db";
 import { defaultClip, type Anchor } from "@/mocks/fixtures/demo/post";
-import { demoShots } from "@/mocks/handlers/shots";
+import { demoShots, demoVideos } from "@/mocks/handlers/shots";
 import { demoError, demoJson, v1 } from "@/mocks/http";
 
 const clipId = (shotId: string) => `demo-clip-${shotId}`;
 
+/** The backend's shots of the episode and their takes, fresh. */
+async function readShots(request: Request, episodeId: string): Promise<void> {
+  await Promise.all([demoShots(request, episodeId), demoVideos(request)]);
+}
+
 /** Lays the shots end to end and places the anchored audio and subtitles on them. The shots
- * are the backend's as last read (`demoShots`): handlers read them first. */
+ * and their takes are the backend's as last read (`readShots`): handlers read them first. */
 export function buildTimeline(episodeId: string): Timeline {
   const db = getDb();
   const shots = db.shots.filter((s) => s.episode_id === episodeId);
@@ -25,7 +30,7 @@ export function buildTimeline(episodeId: string): Timeline {
   let t = 0;
   const clips: Clip[] = shots.map((s) => {
     starts.set(s.label, t);
-    const video = s.video_product_id ? db.products[s.video_product_id] : undefined;
+    const video = db.videos.find((p) => p.id === s.video_product_id);
     const clip: Clip = {
       id: clipId(s.id),
       shot_id: s.id,
@@ -87,7 +92,7 @@ export const postHandlers = [
   http.get(v1("/episodes/:id/timeline"), async ({ params, request }) => {
     const id = String(params.id);
     if (!episodeExists(id)) return demoError(404, "episode_not_found", { id });
-    await demoShots(request, id);
+    await readShots(request, id);
     return demoJson(buildTimeline(id));
   }),
 
@@ -98,7 +103,7 @@ export const postHandlers = [
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     const clips = getDb().post.clips;
     clips[shot.id] = { ...defaultClip, ...clips[shot.id], ...body.data };
-    await demoShots(request, shot.episode_id);
+    await readShots(request, shot.episode_id);
     return demoJson(buildTimeline(shot.episode_id));
   }),
 
@@ -109,14 +114,14 @@ export const postHandlers = [
     if (!body.success) return demoError(422, "invalid_request", { issues: body.error.message });
     sub.text = body.data.text;
     sub.edited = sub.text !== sub.source_text;
-    await demoShots(request, getDb().post.episode_id);
+    await readShots(request, getDb().post.episode_id);
     return demoJson(buildTimeline(getDb().post.episode_id));
   }),
 
   http.get(v1("/episodes/:id/export/checks"), async ({ params, request }) => {
     const id = String(params.id);
     if (!episodeExists(id)) return demoError(404, "episode_not_found", { id });
-    await demoShots(request, id);
+    await readShots(request, id);
     return demoJson({ checks: exportChecks(id) });
   }),
 

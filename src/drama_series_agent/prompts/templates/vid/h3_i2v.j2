@@ -1,0 +1,12 @@
+{#- MiniMax H3 image to video (I2VA): the fixed first-frame line, a blank line, the three core fields
+    (MiniMax-H3 docs/VIDEO_PROMPT_WRITING_GUIDE_base_en.md, 2026-10-26). One shot, no cuts. -#}
+For the target video, at 0.00 seconds into the target video, <Picture 1> (from [Shot 1]) is fully referenced.
+
+integrated_multimodal_description: [Shot 1] {{ description }}
+{%- for d in dialogue %} {{ d.who }} (S{{ d.sx }}) {% if d.vo %}says in an off-screen voiceover{% else %}says{% endif %}: <d>[{{ language }}] {{ d.text }}</d>{% if d.vo %} while the lips remain completely closed.{% endif %}
+{%- endfor %}
+
+
+overall_soundscape: {{ soundscape }}
+
+non_diegetic_music: N/A

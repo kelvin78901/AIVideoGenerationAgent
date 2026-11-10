@@ -30,6 +30,7 @@ from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Any
 
+from drama_series_agent.modelhub.adapters import minimax_video, seedance
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
     Estimate,
@@ -42,6 +43,7 @@ from drama_series_agent.modelhub.adapters.base import (
     Usage,
 )
 from drama_series_agent.modelhub.pricing import cost_usd
+from drama_series_agent.modelhub.workflows import workflow_sha256
 
 LLM_KINDS = {"llm", "llm_aux", "vlm"}
 IMAGE_KINDS = {"image"}
@@ -171,10 +173,23 @@ def sine_wav(duration_s: float, freq_hz: float = 440.0, rate: int = 48000) -> by
     return buf.getvalue()
 
 
-async def solid_mp4(width: int, height: int, duration_s: float, fps: int, rgb_hex: str) -> bytes:
+async def solid_mp4(
+    width: int,
+    height: int,
+    duration_s: float,
+    fps: int,
+    rgb_hex: str,
+    audio_hz: float | None = None,
+) -> bytes:
+    """A solid-colour H.264 clip; with ``audio_hz`` it has a sine sound track (AAC) too."""
     import imageio_ffmpeg
 
     ffmpeg = imageio_ffmpeg.get_ffmpeg_exe()
+    sound = (
+        ["-f", "lavfi", "-i", f"sine=frequency={audio_hz}:duration={duration_s}"]
+        if audio_hz is not None
+        else []
+    )
     with TemporaryDirectory() as tmp:
         out = Path(tmp) / "mock.mp4"
         proc = await asyncio.create_subprocess_exec(
@@ -186,8 +201,10 @@ async def solid_mp4(width: int, height: int, duration_s: float, fps: int, rgb_he
             "lavfi",
             "-i",
             f"color=c=0x{rgb_hex}:s={width}x{height}:d={duration_s}:r={fps}",
+            *sound,
             "-pix_fmt",
             "yuv420p",
+            *(["-c:a", "aac", "-shortest"] if sound else []),
             "-y",
             str(out),
             stdout=asyncio.subprocess.DEVNULL,
@@ -197,6 +214,19 @@ async def solid_mp4(width: int, height: int, duration_s: float, fps: int, rgb_he
         if proc.returncode != 0:
             raise ModelError("mock_ffmpeg_failed", err.decode(errors="replace")[:300])
         return out.read_bytes()
+
+
+# The real video adapters bill by a tier they pick from the frame (``price_by_res`` keys).
+TIER_OF: dict[str, Callable[[ModelSpec, dict[str, Any]], str]] = {
+    "minimax_video": minimax_video.resolution_tier,
+    "seedance": seedance.resolution_tier,
+}
+
+
+def billed_tier(spec: ModelSpec, params: dict[str, Any]) -> str | None:
+    """The price tier the model's real adapter would bill at, so Mock costs match it."""
+    tier_of = TIER_OF.get(spec.adapter or "")
+    return tier_of(spec, params).lower() if tier_of else None
 
 
 class MockAdapter:
@@ -211,7 +241,11 @@ class MockAdapter:
     def estimate(self, req: ModelRequest) -> Estimate:
         usage = self._planned_usage(req)
         return Estimate(
-            cost_usd=cost_usd(self.spec.pricing, usage, resolution=req.params.get("resolution")),
+            cost_usd=cost_usd(
+                self.spec.pricing,
+                usage,
+                resolution=usage.resolution or req.params.get("resolution"),
+            ),
             seconds=self._delay(req),
             priced=self.spec.pricing.known,
         )
@@ -227,6 +261,17 @@ class MockAdapter:
         rng = random.Random(_digest(self.key, req.text(), req.seed, s.seed))
         if self.key in s.fail_keys or (s.fail_rate and rng.random() < s.fail_rate):
             raise ModelError("mock_failure", f"mock failure for {self.key}")
+        result = await self._result(req)
+        if self.spec.runtime == "comfyui" and self.spec.workflow:
+            # As ComfyUIAdapter records it (SPEC 6.4.5): the workflow file, its hash, no ComfyUI.
+            result.raw["comfy"] = {
+                "workflow_id": self.spec.workflow,
+                "workflow_sha256": workflow_sha256(self.spec),
+                "comfy_env_hash": None,
+            }
+        return result
+
+    async def _result(self, req: ModelRequest) -> ModelResult:
         kind = self.spec.kind
         if kind in LLM_KINDS or kind == "asr":
             return self._llm(req)
@@ -248,13 +293,14 @@ class MockAdapter:
     def _planned_usage(self, req: ModelRequest) -> Usage:
         kind = self.spec.kind
         if kind in LLM_KINDS:
-            return Usage(tokens_in=estimate_tokens(req.text()), tokens_out=req.max_tokens or 800)
+            return Usage(tokens_in=req.prompt_tokens(), tokens_out=req.max_tokens or 800)
         if kind in IMAGE_KINDS:
             return Usage(images=int(req.params.get("n", 1)))
         if kind in AUDIO_KINDS:
             return Usage(chars=len(req.text()), calls=_design_calls(req))
         if kind in VIDEO_KINDS:
-            return Usage(output_seconds=float(req.params.get("duration_s", 2.0)))
+            seconds = float(req.params.get("duration_s", 2.0))
+            return Usage(output_seconds=seconds, resolution=billed_tier(self.spec, req.params))
         if kind in OCR_KINDS:
             return Usage(images=1)
         return Usage()
@@ -335,12 +381,15 @@ class MockAdapter:
         h = int(req.params.get("height", 192))
         fps = int(req.params.get("fps", 24))
         duration = float(req.params.get("duration_s", 2.0))
-        colour = _digest(self.key, req.text(), req.seed).hex()[:6]
-        data = await solid_mp4(w, h, duration, fps, colour)
+        d = _digest(self.key, req.text(), req.seed)
+        # A video model that makes sound (H3 native audio, or lip-sync to the dialogue) returns
+        # a sound track; ``with_audio`` says so.
+        hz = 200 + d[1] * 2.0 if req.params.get("with_audio") else None
+        data = await solid_mp4(w, h, duration, fps, d.hex()[:6], audio_hz=hz)
         return ModelResult(
             files=[
                 OutputFile(role="video", mime="video/mp4", data=data, w=w, h=h, duration_s=duration)
             ],
-            usage=Usage(output_seconds=duration),
+            usage=Usage(output_seconds=duration, resolution=billed_tier(self.spec, req.params)),
             raw={"mock": True},
         )

@@ -217,7 +217,7 @@ const nodes: BoardNode[] = [
   ]),
   thumb("pp1", 540, 58, "红色长柄伞", m("locked", { n: 1 }), "ok", 3, [
     ["file", "E01/道具/红伞_v1.png"],
-    ["used_in", "1-02、1-09"],
+    ["used_in", "1-02、1-06、1-09"],
   ]),
   plain(
     "tx1",

@@ -44,8 +44,9 @@ class Pricing(BaseModel):
     # ``Usage.calls``.
     extras: dict[str, float] | None = None
     # Per million tokens by kind (``text_in``, ``image_in``, ``text_out``, ``image_out``) for
-    # image models billed by tokens (Gemini, GPT Image): a call that reports ``Usage.tokens``
-    # costs its tokens; ``price`` per image is then only the estimate.
+    # image models billed by tokens (Gemini, GPT Image), and video billed by tokens per
+    # resolution (Seedance: ``video_720p`` …): a call that reports ``Usage.tokens`` costs its
+    # tokens; ``price`` per image / ``price_by_res`` per second is then only the estimate.
     token_rates: dict[str, float] | None = None
     currency: str = "USD"
     as_of: str | None = None
@@ -63,6 +64,11 @@ class Pricing(BaseModel):
         return self.model_dump(exclude_none=True)
 
 
+# What a picture in a chat request counts as, for estimates (Gemini 3's default image
+# resolution is 1120 tokens; ai.google.dev media resolution, checked 2026-11-09).
+IMAGE_TOKENS = 1120
+
+
 class ModelRequest(BaseModel):
     kind: str
     messages: list[dict[str, Any]] | None = None
@@ -78,13 +84,32 @@ class ModelRequest(BaseModel):
     meta: dict[str, Any] = Field(default_factory=dict)
 
     def text(self) -> str:
-        """All prompt text, for estimates and mocks."""
+        """All prompt text, for estimates and mocks (the text parts of a message with
+        pictures too)."""
         parts = [self.prompt or ""]
         for msg in self.messages or []:
             content = msg.get("content")
             if isinstance(content, str):
                 parts.append(content)
+            elif isinstance(content, list):
+                parts += [str(c.get("text") or "") for c in content if c.get("type") == "text"]
         return "\n".join(p for p in parts if p)
+
+    def image_parts(self) -> int:
+        """Pictures sent as OpenAI-style ``image_url`` parts of the messages."""
+        return sum(
+            1
+            for msg in self.messages or []
+            if isinstance(msg.get("content"), list)
+            for c in msg["content"]
+            if c.get("type") == "image_url"
+        )
+
+    def prompt_tokens(self) -> int:
+        """The input an estimate counts: the text, and ``IMAGE_TOKENS`` a picture."""
+        from drama_series_agent.modelhub.adapters.mock import estimate_tokens
+
+        return estimate_tokens(self.text()) + IMAGE_TOKENS * self.image_parts()
 
 
 class Usage(BaseModel):
@@ -98,6 +123,9 @@ class Usage(BaseModel):
     calls: dict[str, int] | None = None
     # Tokens by kind as the provider reported them, priced by ``Pricing.token_rates``.
     tokens: dict[str, int] | None = None
+    # The resolution the provider made and billed (``Pricing.price_by_res``), when the adapter
+    # chose it rather than the request (H3's 768P / 2K).
+    resolution: str | None = None
 
 
 @dataclass
@@ -153,6 +181,10 @@ class CallContext:
     confirmed_usd: float | None = None
     # Streaming LLMs push text deltas here (e.g. to forward them over SSE).
     on_delta: Callable[[str], Awaitable[None]] | None = None
+    # Long local runs (ComfyUI) report how far they are here, e.g. to a job's ``progress``.
+    on_progress: Callable[[dict[str, Any]], Awaitable[None]] | None = None
+    # Why this model (按镜头选工作流, ``pipeline/vselect.py``): ``model_call.select_json``.
+    select: dict[str, Any] | None = None
 
 
 class ModelError(Exception):
@@ -188,6 +220,7 @@ class ModelSpec:
     key_name: str | None = None
     runtime: str | None = None
     workflow: str | None = None  # a ComfyUI model's workflow folder (SPEC 6.4)
+    workflow_root: str | None = None  # where that folder is, when not the repo's ``workflows/``
     adapter: str | None = None  # a media model's real adapter (``modelhub/media_adapters.py``)
     # A local Python model's worker (``adapters/local_python.py``): script, environment, what it
     # loads, and whether it takes the VRAM lease.

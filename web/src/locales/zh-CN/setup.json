@@ -119,7 +119,6 @@
     "eagle_later": "用 Eagle 管理素材时再装",
     "resolve_later": "用达芬奇做后期时再装",
     "update_comfy_native": "ComfyUI 自带：把 ComfyUI 更新到 {{version}} 或更新",
-    "dramastudio_pending": "还没发布：随 ComfyUI 对接一起提供",
     "weights_pending_p0": "等 P0 实测确定版本后再装",
     "env_torch_gpu": "锁定的 PyTorch 用不了这块显卡，重装也一样；先走 API，等清单更新"
   },

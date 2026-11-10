@@ -1,0 +1,284 @@
+{
+ "last_node_id": 7,
+ "last_link_id": 9,
+ "nodes": [
+  {
+   "id": 4,
+   "type": "CheckpointLoaderSimple",
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "MODEL",
+     "type": "MODEL",
+     "links": [
+      1
+     ]
+    },
+    {
+     "name": "CLIP",
+     "type": "CLIP",
+     "links": [
+      3,
+      5
+     ]
+    },
+    {
+     "name": "VAE",
+     "type": "VAE",
+     "links": [
+      8
+     ]
+    }
+   ],
+   "widgets_values": [
+    "sd_xl_base_1.0.safetensors"
+   ]
+  },
+  {
+   "id": 6,
+   "type": "CLIPTextEncode",
+   "mode": 0,
+   "title": "Positive",
+   "inputs": [
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 3
+    }
+   ],
+   "outputs": [
+    {
+     "name": "CONDITIONING",
+     "type": "CONDITIONING",
+     "links": [
+      4
+     ]
+    }
+   ],
+   "widgets_values": [
+    "a woman with a red umbrella in a stairwell"
+   ]
+  },
+  {
+   "id": 7,
+   "type": "CLIPTextEncode",
+   "mode": 0,
+   "title": "Negative",
+   "inputs": [
+    {
+     "name": "clip",
+     "type": "CLIP",
+     "link": 5
+    }
+   ],
+   "outputs": [
+    {
+     "name": "CONDITIONING",
+     "type": "CONDITIONING",
+     "links": [
+      6
+     ]
+    }
+   ],
+   "widgets_values": [
+    "text, watermark"
+   ]
+  },
+  {
+   "id": 5,
+   "type": "EmptyLatentImage",
+   "mode": 0,
+   "inputs": [],
+   "outputs": [
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      2
+     ]
+    }
+   ],
+   "widgets_values": [
+    832,
+    1216,
+    1
+   ]
+  },
+  {
+   "id": 3,
+   "type": "KSampler",
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "model",
+     "type": "MODEL",
+     "link": 1
+    },
+    {
+     "name": "positive",
+     "type": "CONDITIONING",
+     "link": 4
+    },
+    {
+     "name": "negative",
+     "type": "CONDITIONING",
+     "link": 6
+    },
+    {
+     "name": "latent_image",
+     "type": "LATENT",
+     "link": 2
+    }
+   ],
+   "outputs": [
+    {
+     "name": "LATENT",
+     "type": "LATENT",
+     "links": [
+      7
+     ]
+    }
+   ],
+   "widgets_values": [
+    156680208700286,
+    "randomize",
+    25,
+    7,
+    "euler",
+    "normal",
+    1
+   ]
+  },
+  {
+   "id": 8,
+   "type": "VAEDecode",
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "samples",
+     "type": "LATENT",
+     "link": 7
+    },
+    {
+     "name": "vae",
+     "type": "VAE",
+     "link": 8
+    }
+   ],
+   "outputs": [
+    {
+     "name": "IMAGE",
+     "type": "IMAGE",
+     "links": [
+      9
+     ]
+    }
+   ],
+   "widgets_values": []
+  },
+  {
+   "id": 9,
+   "type": "SaveImage",
+   "mode": 0,
+   "inputs": [
+    {
+     "name": "images",
+     "type": "IMAGE",
+     "link": 9
+    }
+   ],
+   "outputs": [],
+   "widgets_values": [
+    "ComfyUI"
+   ]
+  },
+  {
+   "id": 10,
+   "type": "Note",
+   "mode": 0,
+   "inputs": [],
+   "outputs": [],
+   "widgets_values": [
+    "SDXL base, 25 steps"
+   ]
+  }
+ ],
+ "links": [
+  [
+   1,
+   4,
+   0,
+   3,
+   0,
+   "MODEL"
+  ],
+  [
+   2,
+   5,
+   0,
+   3,
+   3,
+   "LATENT"
+  ],
+  [
+   3,
+   4,
+   1,
+   6,
+   0,
+   "CLIP"
+  ],
+  [
+   4,
+   6,
+   0,
+   3,
+   1,
+   "CONDITIONING"
+  ],
+  [
+   5,
+   4,
+   1,
+   7,
+   0,
+   "CLIP"
+  ],
+  [
+   6,
+   7,
+   0,
+   3,
+   2,
+   "CONDITIONING"
+  ],
+  [
+   7,
+   3,
+   0,
+   8,
+   0,
+   "LATENT"
+  ],
+  [
+   8,
+   4,
+   2,
+   8,
+   1,
+   "VAE"
+  ],
+  [
+   9,
+   8,
+   0,
+   9,
+   0,
+   "IMAGE"
+  ]
+ ],
+ "groups": [],
+ "extra": {},
+ "version": 0.4
+}

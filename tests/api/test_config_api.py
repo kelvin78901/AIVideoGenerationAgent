@@ -39,7 +39,8 @@ def test_components_catalog(client: TestClient) -> None:
     prices = {m["key"]: m["price"] for m in data["models"]}
     assert prices["deepseek/v4-pro"] == {"unit": "mtok", "in": 1.32, "out": 3.96, "currency": "USD"}
     assert prices["google/nano-banana-pro"] == {"unit": "image", "amount": 0.134, "currency": "USD"}
-    assert prices["minimax/h3-api"]["amount"] == 0.08  # from the draft tier
+    assert prices["minimax/h3-api"]["amount"] == 0.5  # from the draft tier (768P, 元 / 秒)
+    assert prices["minimax/h3-api"]["currency"] == "CNY"
     assert prices["volc/seedance-2.5"]["unit"] == "second"
     assert prices["minimax/speech-2.8-hd"] == {"unit": "mchar", "amount": 350.0, "currency": "CNY"}
     assert prices["volc/seedream-5.0"] == {"unit": "image", "amount": 0.12, "currency": "CNY"}
@@ -67,8 +68,16 @@ def test_resolve(client: TestClient) -> None:
     assert data["values"]["fallback"]["timeout_s"] == 600
     assert set(data["sources"].values()) == {"preset"}
     assert set(data["sources"]) == {
-        "mode", "api_model", "local_model", "fallback", "alt_order", "per_call_cap_usd"
+        "mode", "api_model", "local_model", "fallback", "alt_order", "per_call_cap_usd",
+        "branches",
     }  # fmt: skip
+    # A shot's branch switch: one source for the whole map (step 12c).
+    body = {"scope": "item", "scope_id": "shot:x", "component_id": "vid"}
+    resp = client.put(f"{V1}/override", json={**body, "data": {"branches": {"lora": True}}})
+    assert resp.status_code == 200, resp.text
+    shot = client.get(f"{V1}/resolve", params={"component": "vid", "item": "shot:x"}).json()
+    assert shot["values"]["branches"] == {"lora": True} and shot["sources"]["branches"] == "item"
+    assert shot["sources"]["mode"] == "preset"
     resp = client.get(f"{V1}/resolve", params={"component": "nope"})
     assert resp.status_code == 404 and _code(resp) == "unknown_component"
 

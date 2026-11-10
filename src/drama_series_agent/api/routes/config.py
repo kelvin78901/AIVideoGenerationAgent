@@ -56,6 +56,8 @@ class ConfigPatch(BaseModel):
     fallback: FallbackIn | None = None
     alt_order: list[str] | None = None
     per_call_cap_usd: float | None = Field(default=None, ge=0)
+    # Workflow branches on / off by id (SPEC 6.4.8); ``null`` goes back to the default.
+    branches: dict[str, bool | None] | None = None
 
 
 class OverrideBody(BaseModel):

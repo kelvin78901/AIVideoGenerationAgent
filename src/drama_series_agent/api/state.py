@@ -8,17 +8,27 @@ from pathlib import Path
 
 import httpx
 from fastapi import Request
+from sqlmodel import select
 
 from drama_series_agent.assets import service as assets_service
 from drama_series_agent.assets.dub import DubService
 from drama_series_agent.assets.service import AssetService
 from drama_series_agent.bible.service import BIBLE_SLOT, BibleService, bible_slicer, materialize
 from drama_series_agent.core import secrets
-from drama_series_agent.core.config import get_config, resolve
+from drama_series_agent.core.config import (
+    Accounts,
+    AccountState,
+    Library,
+    get_config,
+    resolve,
+    set_accounts,
+    set_library,
+)
+from drama_series_agent.core.config import ModelSetting as ModelSetting_
 from drama_series_agent.core.db import Database, migrate
 from drama_series_agent.core.events import EventBus
 from drama_series_agent.core.jobs import JobQueue
-from drama_series_agent.core.models_db import Product
+from drama_series_agent.core.models_db import ModelSetting, Product, ProviderAccount
 from drama_series_agent.core.overrides import load_defaults, load_overrides
 from drama_series_agent.core.paths import database_path
 from drama_series_agent.core.storage import BlobStore
@@ -32,7 +42,7 @@ from drama_series_agent.modelhub.budget import Budget, BudgetGuardImpl
 from drama_series_agent.modelhub.media_adapters import has_media_adapter, media_adapter
 from drama_series_agent.modelhub.registry import Registry
 from drama_series_agent.modelhub.router import Router
-from drama_series_agent.modelhub.workflows import has_workflow
+from drama_series_agent.modelhub.workflows import has_workflow, spec_workflows_dir
 from drama_series_agent.novel.service import NOVEL_SLOT, NovelService, novel_slicer
 from drama_series_agent.pipeline.cascade import CascadeService
 from drama_series_agent.pipeline.component import (
@@ -55,6 +65,7 @@ from drama_series_agent.pipeline.components.plan import (
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.components.text import TextComponent
+from drama_series_agent.pipeline.components.vid import VidComponent
 from drama_series_agent.pipeline.components.views import ViewsComponent
 from drama_series_agent.pipeline.components.voice import VoiceComponent
 from drama_series_agent.pipeline.gates import GateService
@@ -66,12 +77,14 @@ from drama_series_agent.pipeline.timing import longest_take_s
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.script import service as script_service
 from drama_series_agent.script.service import ScriptService
-from drama_series_agent.setup.service import SetupService
+from drama_series_agent.setup.service import PROFILE_DEMO, SetupService
 from drama_series_agent.shots import service as shots_service
 from drama_series_agent.shots.service import KEYFRAME_SLOT, ShotService
 from drama_series_agent.spec.compat import model_caps
 from drama_series_agent.suggestions import service as suggestions_service
 from drama_series_agent.suggestions.service import SUGGESTIONS_SLOT, SuggestionService
+from drama_series_agent.wflib.comfy import ComfyAccess, DemoComfy, HttpComfy
+from drama_series_agent.wflib.service import WorkflowLibrary
 
 
 @dataclass
@@ -98,8 +111,15 @@ class StudioState:
     gates: GateService
     impact: ImpactService
     cascade: CascadeService
+    workflows: WorkflowLibrary
     # Tests inject an httpx mock transport here; None means real network.
     http_transport: httpx.AsyncBaseTransport | None = None
+
+    async def refresh_accounts(self) -> None:
+        """A provider account or model setting changed: lay it over the config again and
+        rebuild the API models (their address, key, prices; the writing models picked)."""
+        set_accounts(await load_accounts(self.db))
+        self.registry.reload(get_config())
 
     @classmethod
     async def start(cls, db_path: Path | None = None) -> StudioState:
@@ -108,6 +128,8 @@ class StudioState:
         db = Database(path)
         bus = EventBus(db)
         store = BlobStore()
+        set_library(Library())  # a library left over from another app in this process (tests)
+        set_accounts(await load_accounts(db))
         registry = Registry.from_config(get_config())
         jobs = JobQueue(db, bus)
         setup = SetupService(db, bus, jobs)
@@ -166,6 +188,7 @@ class StudioState:
         components.add(dub)
         components.add(PlanComponent(components.services))
         components.add(KfComponent(components.services))
+        components.add(VidComponent(components.services))
         # A line's audio is one of dozens: lists of them skip the per-product estimate.
         products.quiet_slots.add(LINE_AUDIO_SLOT)
         episodes = EpisodeService(db, products, invalidation)
@@ -215,6 +238,22 @@ class StudioState:
         )
         assets.register(impact, gates, episodes)
         shots.register(gates, episodes, impact)
+
+        demo_comfy = DemoComfy()  # one, so what it "installs" stays
+
+        def comfy_access() -> ComfyAccess:
+            if setup.profile_id == PROFILE_DEMO:
+                return demo_comfy
+
+            async def url() -> str:
+                return (await setup.comfy_target()).url
+
+            return HttpComfy(url, transport=state.http_transport)
+
+        workflows = WorkflowLibrary(
+            db, registry, comfy_access, setup=setup, jobs=jobs, router=router
+        )
+        await workflows.sync()
         state = cls(
             db=db,
             bus=bus,
@@ -238,6 +277,7 @@ class StudioState:
             gates=gates,
             impact=impact,
             cascade=cascade,
+            workflows=workflows,
         )
 
         def openai_compat(spec: ModelSpec) -> OpenAICompatAdapter:
@@ -264,12 +304,18 @@ class StudioState:
 
         def comfyui(spec: ModelSpec) -> ModelAdapter:
             return ComfyUIAdapter(
-                spec, target=setup.comfy_target, store=state.store, transport=state.http_transport
+                spec,
+                target=setup.comfy_target,
+                store=state.store,
+                transport=state.http_transport,
+                workflows_dir=spec_workflows_dir(spec),
             )
 
         registry.add_factory(
             lambda spec: (
-                spec.where == "local" and spec.runtime == "comfyui" and has_workflow(spec.workflow)
+                spec.where == "local"
+                and spec.runtime == "comfyui"
+                and has_workflow(spec.workflow, spec_workflows_dir(spec))
             ),
             comfyui,
         )
@@ -294,8 +340,32 @@ class StudioState:
         await self.jobs.stop()
         await self.registry.aclose()  # local model workers exit with the app
         await self.db.dispose()
+        set_library(Library())  # the config goes back to the factory files
 
 
 def get_state(request: Request) -> StudioState:
     state: StudioState = request.app.state.studio
     return state
+
+
+async def load_accounts(db: Database) -> Accounts:
+    """The provider accounts and model settings as ``get_config()`` lays them over the factory
+    config (``core/config.py:with_accounts``)."""
+    async with db.session() as session:
+        rows = (await session.exec(select(ProviderAccount))).all()
+        settings = (await session.exec(select(ModelSetting))).all()
+    providers = {
+        r.provider_id: AccountState(
+            site=r.site,
+            base_url=r.base_url_override,
+            listed=tuple((r.models_json or {}).get("ids") or ()) if r.models_json else None,
+            enabled=tuple(r.enabled_json) if r.enabled_json is not None else None,
+        )
+        for r in rows
+    }
+    return Accounts(
+        providers=providers,
+        settings={
+            m.model_key: ModelSetting_(model_id=m.model_id, price=m.price_json) for m in settings
+        },
+    )

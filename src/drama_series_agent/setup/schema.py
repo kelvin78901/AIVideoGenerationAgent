@@ -159,6 +159,22 @@ class ComfySnapshot(BaseModel):
     restored_at: datetime | None  # when a scan found ComfyUI back at it
 
 
+class NodePackSource(BaseModel):
+    """A node pack a workflow needs (M5): its name, repository and the ref to check out; or a
+    setup item that installs it (``item``: DramaStudio's own pack, copied from the repo)."""
+
+    name: str
+    url: str
+    ref: str = "HEAD"
+    item: str | None = None
+
+
+class PacksInstalled(BaseModel):
+    snapshot: ComfySnapshot
+    installed: list[str]
+    failed: list[dict[str, str]]  # {name, code}
+
+
 class Restored(BaseModel):
     """``POST /comfy/snapshots/{id}/restore``: Manager applies it when ComfyUI next starts."""
 

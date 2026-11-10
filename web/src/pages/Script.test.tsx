@@ -4,7 +4,6 @@ import { Route, Routes } from "react-router";
 
 import { useEventStream } from "@/api/useEventStream";
 import { Toaster } from "@/components/ui/sonner";
-import { getDb } from "@/mocks/db";
 import { demoTiming } from "@/mocks/events";
 import { EP1 } from "@/mocks/fixtures/demo/episodes";
 import ScriptPage from "@/pages/Script";
@@ -38,7 +37,6 @@ function renderScript(path = "/s/demo/e/1/script") {
 
 const lineOf = (id: string) => fakeScript.scripts[EP1]?.lines.find((l) => l.id === id);
 const block = (text: RegExp) => screen.getByRole("button", { name: text, pressed: false });
-const stale = () => getDb().progress[EP1];
 const META = "2 场 · 12 段 · 其中 AI 新增 2 段";
 
 beforeEach(() => {
@@ -153,19 +151,16 @@ describe("ScriptPage", () => {
     await user.click(screen.getByRole("button", { name: "保存" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent(`改的是：△ ${EDITED}`);
-    // The backend's line, then the demo's videos after the script (M5).
     expect(dialog).toHaveTextContent("已确认的第 1 集剧本会改成新内容");
-    expect(dialog).toHaveTextContent("视频 · 1-02（已采纳）");
     // Nothing is saved while the dialog is open.
     expect(lineOf("demo-b3")?.edited).toBe(false);
     await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
-    // The backend saved it (/impact/apply); the demo marks the later steps.
+    // The backend saved it (/impact/apply) and marks what reads it.
     expect(fakeImpact.applied).toEqual([
       { kind: "line_edit", target_id: "demo-b3", action: "mark" },
     ]);
     expect(lineOf("demo-b3")).toMatchObject({ text: EDITED, edited: true });
-    expect(stale()?.generate.stale).toBe(1);
     expect(
       await screen.findByRole("button", { name: new RegExp(EDITED), pressed: true }),
     ).toHaveTextContent("已修改");
@@ -185,7 +180,6 @@ describe("ScriptPage", () => {
     expect(fakeScript.patches).toEqual([]);
     expect(fakeImpact.applied.map((a) => a.action)).toEqual(["undo"]);
     expect(lineOf("demo-b3")?.edited).toBe(false);
-    expect(stale()?.generate.stale).toBe(0);
     expect(screen.getByRole("button", { name: /门口靠着一把红色长柄伞/ })).not.toHaveTextContent(
       "已修改",
     );
@@ -219,7 +213,7 @@ describe("ScriptPage", () => {
     await user.click(screen.getByRole("button", { name: "重写这一段" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("改的是：林晚（低声，愣住）：……是你啊。");
-    await user.click(within(dialog).getByRole("button", { name: "确认并同步 · 预计 $0.33" }));
+    await user.click(within(dialog).getByRole("button", { name: "确认并同步" }));
     await waitFor(() => expect(lineOf("demo-b5")?.text).toBe("……是你啊。"));
     expect(await screen.findByText(/已开始同步/)).toBeInTheDocument();
   });

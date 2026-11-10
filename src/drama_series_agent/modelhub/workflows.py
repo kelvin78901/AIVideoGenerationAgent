@@ -6,8 +6,17 @@
 - ``bindings``: a slot (``prompt``, ``width``, ``ref_image`` 1, 2 … ``image_out``; SPEC 6.4.3) →
   the node's title (``_meta.title``, never its id) and the input field. A bound title must be
   unique in the graph and the field must be one of the node's inputs. ``optional: true`` on a
-  ``ref_image``: with fewer pictures than nodes, the unfilled node is removed together with the
-  inputs that read from it (those inputs must be optional on their nodes).
+  file slot (``first_frame``, ``video_in``, ``ref_image``, ``dialogue_audio``): without a file
+  (for ``ref_image``: fewer pictures than nodes) the bound node is removed together with the
+  inputs that read from it (those inputs must be optional on their nodes). ``bypass`` names
+  nodes that go too but pass one of their inputs on: whatever read the bypassed node now reads
+  what that input read (H3's audio guide hands its ``positive`` on when there is no audio); with
+  ``output``, only the readers of that output (a LoRA loader: ``model`` for output 0, ``clip``
+  for 1). ``replaces`` (a file slot): inputs removed when the slot *is* filled (H3's tail clip
+  takes over from the first-frame anchor, M5 step 15e).
+- ``branches`` (SPEC 6.4.8): parts a shot can switch off (ControlNet, LoRA, upscale): the nodes
+  that make one, removed like an optional slot's (with its bypasses) when it is off; ``default``
+  says whether it is on when nobody chose. A binding cannot point into a branch.
 - ``models``: the files its loaders name, by ComfyUI model folder (the health check asks the
   running ComfyUI for them).
 - ``caps``: like ``providers.yaml`` caps; ``sizes`` maps an aspect to the width and height the
@@ -21,24 +30,42 @@ from __future__ import annotations
 import copy
 import hashlib
 import json
+from collections.abc import Mapping
 from functools import lru_cache
 from pathlib import Path
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from drama_series_agent.core.config import _read_yaml
-from drama_series_agent.core.paths import REPO_ROOT
+from drama_series_agent.core.paths import REPO_ROOT, drama_home
+
+if TYPE_CHECKING:
+    from drama_series_agent.modelhub.adapters.base import ModelSpec
 
 WORKFLOWS_DIR = REPO_ROOT / "workflows"
+
+
+def user_workflows_dir() -> Path:
+    """Where imported workflows go (SPEC 6.4.2): ``~/.drama-studio/workflows/<slug>/``."""
+    return drama_home() / "workflows"
+
+
+def spec_workflows_dir(spec: ModelSpec) -> Path | None:
+    """The folder a model's workflow is in; None for the repo's ``workflows/``."""
+    return Path(spec.workflow_root) if spec.workflow_root else None
+
 
 Slot = Literal[
     "first_frame",
     "video_in",
     "ref_image",
+    "ref_audio",
     "prompt",
     "negative",
     "dialogue_audio",
+    "tail_clip",
+    "dialogue_frame",
     "width",
     "height",
     "fps",
@@ -49,10 +76,31 @@ Slot = Literal[
     "audio_out",
 ]
 OUTPUT_SLOTS = frozenset({"video_out", "image_out", "audio_out"})
+# Slots filled with an uploaded file's name (``input/dramastudio/…``).
+FILE_SLOTS = frozenset(
+    {"first_frame", "video_in", "ref_image", "ref_audio", "dialogue_audio", "tail_clip"}
+)
+# Numbered file slots (1, 2 …): a list of names, filled in order.
+LIST_SLOTS: tuple[Slot, ...] = ("ref_image", "ref_audio")
 
 
 class WorkflowError(ValueError):
     pass
+
+
+class Bypass(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    node: str  # the node's title
+    input: str  # the input whose link its readers take over
+    output: int | None = None  # only the readers of this output (None: all of them)
+
+
+class Input(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    node: str  # the node's title
+    input: str
 
 
 class Binding(BaseModel):
@@ -63,6 +111,21 @@ class Binding(BaseModel):
     node: str  # the node's title
     field: str | None = None  # the input; None for an output node
     optional: bool = False
+    bypass: list[Bypass] = Field(default_factory=list)  # with an optional slot left empty
+    replaces: list[Input] = Field(default_factory=list)  # removed when the slot is filled
+
+
+class Branch(BaseModel):
+    """A part of the graph a shot can switch off (SPEC 6.4.8)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    id: str  # what a shot's toggle names (``branches.<id>`` in the config)
+    kind: Literal["controlnet", "lora", "upscale"]
+    name: dict[str, str] = Field(default_factory=dict)
+    nodes: list[str]  # titles; removed when it is off
+    bypass: list[Bypass] = Field(default_factory=list)
+    default: bool = False
 
 
 class ModelFile(BaseModel):
@@ -79,6 +142,7 @@ class WorkflowMeta(BaseModel):
     kind: str
     tier: Literal["recommended", "mine", "unverified"] = "recommended"
     bindings: list[Binding]
+    branches: list[Branch] = Field(default_factory=list)
     models: list[ModelFile] = Field(default_factory=list)
     caps: dict[str, Any] = Field(default_factory=dict)
 
@@ -108,6 +172,31 @@ class Workflow:
             if b.field is None and b.slot not in OUTPUT_SLOTS:
                 raise WorkflowError(f"{slug}: {b.slot} needs a field")
             self._ids[b.node] = ids[0]
+            self._check_bypass(titles, b.bypass)
+            for r in b.replaces:
+                hits = titles.get(r.node, [])
+                if len(hits) != 1 or r.input not in (graph[hits[0]].get("inputs") or {}):
+                    raise WorkflowError(f"{slug}: replaces {r.node!r}.{r.input} is not one input")
+                self._ids[r.node] = hits[0]
+        bound = {b.node for b in meta.bindings}
+        for branch in meta.branches:
+            for title in branch.nodes:
+                ids = titles.get(title, [])
+                if len(ids) != 1:
+                    raise WorkflowError(f"{slug}: branch {branch.id}: {title!r} is not one node")
+                if title in bound:
+                    raise WorkflowError(f"{slug}: branch {branch.id} holds bound node {title!r}")
+                self._ids[title] = ids[0]
+            self._check_bypass(titles, branch.bypass)
+
+    def _check_bypass(self, titles: dict[str, list[str]], bypass: list[Bypass]) -> None:
+        for by in bypass:
+            found_ids = titles.get(by.node, [])
+            if len(found_ids) != 1:
+                raise WorkflowError(f"{self.slug}: bypass {by.node!r} is not one node")
+            if not _is_link((self.graph[found_ids[0]].get("inputs") or {}).get(by.input)):
+                raise WorkflowError(f"{self.slug}: bypass {by.node!r} has no link {by.input!r}")
+            self._ids[by.node] = found_ids[0]
 
     def bindings(self, slot: Slot) -> list[Binding]:
         return sorted((b for b in self.meta.bindings if b.slot == slot), key=lambda b: b.index or 0)
@@ -126,24 +215,85 @@ class Workflow:
     def output_nodes(self, slot: Slot) -> list[str]:
         return [self._ids[b.node] for b in self.bindings(slot)]
 
-    def fill(self, values: dict[Slot, Any], refs: list[str] | None = None) -> dict[str, Any]:
+    def branch_states(self, chosen: Mapping[str, bool | None] | None = None) -> dict[str, bool]:
+        """Each branch on or off: what was chosen, else its default."""
+        chosen = chosen or {}
+        out: dict[str, bool] = {}
+        for b in self.meta.branches:
+            value = chosen.get(b.id)
+            out[b.id] = b.default if value is None else bool(value)
+        return out
+
+    def fill(
+        self,
+        values: dict[Slot, Any],
+        refs: list[str] | None = None,
+        branches: Mapping[str, bool | None] | None = None,
+    ) -> dict[str, Any]:
         """A copy of the graph with the slots filled. ``refs``: the uploaded reference names,
-        for ``ref_image`` 1, 2 …; optional reference nodes left without one are removed."""
+        for ``ref_image`` 1, 2 … (``values["ref_audio"]``: the voice samples', a list too);
+        the other file slots take theirs from ``values``. An optional file slot left without
+        one is removed (with its bypasses); a required one is an error. ``branches``: which
+        are on (``branch_states``); one that is off is removed the same way."""
         graph = copy.deepcopy(self.graph)
+        states = self.branch_states(branches)
+        for branch in self.meta.branches:
+            if not states[branch.id]:
+                self._cut(graph, branch.bypass, [self._ids[t] for t in branch.nodes])
         for slot, value in values.items():
+            if slot in LIST_SLOTS:
+                continue
             for b in self.bindings(slot):
                 graph[self._ids[b.node]]["inputs"][str(b.field)] = value
-        refs = refs or []
-        ref_slots = self.bindings("ref_image")
-        for i, b in enumerate(ref_slots):
-            node_id = self._ids[b.node]
-            if i < len(refs):
-                graph[node_id]["inputs"][str(b.field)] = refs[i]
-            elif b.optional:
-                _remove(graph, node_id)
-            else:
-                raise WorkflowError(f"{self.slug}: needs at least {i + 1} reference pictures")
+        lists: dict[Slot, list[str]] = {
+            "ref_image": list(refs or []),
+            "ref_audio": list(values.get("ref_audio") or []),
+        }
+        for slot, names in lists.items():
+            for i, b in enumerate(self.bindings(slot)):
+                if i < len(names):
+                    graph[self._ids[b.node]]["inputs"][str(b.field)] = names[i]
+                elif b.optional:
+                    self._drop(graph, b)
+                else:
+                    raise WorkflowError(f"{self.slug}: needs at least {i + 1} of {slot}")
+        for b in self.meta.bindings:
+            if b.slot in FILE_SLOTS and b.slot not in LIST_SLOTS and values.get(b.slot) is None:
+                if not b.optional:
+                    raise WorkflowError(f"{self.slug}: needs {b.slot}")
+                self._drop(graph, b)
+            elif values.get(b.slot) is not None:
+                for r in b.replaces:
+                    self._unlink(graph, self._ids[r.node], r.input)
         return graph
+
+    def _unlink(self, graph: dict[str, Any], node_id: str, input_name: str) -> None:
+        """Remove one input; the node it read from goes too when nothing else reads it (the
+        first frame's loader once the tail clip replaces the anchor)."""
+        inputs = (graph.get(node_id) or {}).get("inputs") or {}
+        source = inputs.pop(input_name, None)
+        if not _is_link(source):
+            return
+        source_id = str(source[0])
+        read = any(
+            _links_to(v, source_id)
+            for n in graph.values()
+            for v in (n.get("inputs") or {}).values()
+        )
+        if not read and source_id in graph:
+            _remove(graph, source_id)
+
+    def _drop(self, graph: dict[str, Any], b: Binding) -> None:
+        self._cut(graph, b.bypass, [self._ids[b.node]])
+
+    def _cut(self, graph: dict[str, Any], bypass: list[Bypass], node_ids: list[str]) -> None:
+        """Remove ``node_ids`` and the bypassed nodes; a bypassed node's readers first take
+        over the link of its input."""
+        for by in bypass:
+            _rewire(graph, self._ids[by.node], by.input, by.output)
+        for node_id in [*dict.fromkeys(self._ids[by.node] for by in bypass), *node_ids]:
+            if node_id in graph:
+                _remove(graph, node_id)
 
 
 def _remove(graph: dict[str, Any], node_id: str) -> None:
@@ -153,6 +303,23 @@ def _remove(graph: dict[str, Any], node_id: str) -> None:
         inputs = node.get("inputs") or {}
         for name in [k for k, v in inputs.items() if _links_to(v, node_id)]:
             del inputs[name]
+
+
+def _rewire(graph: dict[str, Any], node_id: str, input_name: str, output: int | None) -> None:
+    """Whatever reads ``node_id`` (its ``output``, or any) now reads what its ``input_name``
+    reads."""
+    source = graph[node_id]["inputs"][input_name]
+    for other_id, node in graph.items():
+        if other_id == node_id:
+            continue
+        inputs = node.get("inputs") or {}
+        for name, value in list(inputs.items()):
+            if _links_to(value, node_id) and (output is None or value[1] == output):
+                inputs[name] = list(source)
+
+
+def _is_link(value: Any) -> bool:
+    return isinstance(value, list) and len(value) == 2 and isinstance(value[1], int)
 
 
 def _links_to(value: Any, node_id: str) -> bool:
@@ -184,3 +351,13 @@ def has_workflow(slug: str | None, root: Path | None = None) -> bool:
         return False
     folder = (root or WORKFLOWS_DIR) / slug
     return (folder / "workflow.api.json").is_file() and (folder / "workflow.yaml").is_file()
+
+
+def workflow_sha256(spec: ModelSpec) -> str | None:
+    """The hash of a ComfyUI model's workflow file as it is now (read each time, unlike
+    ``shipped_workflow``): what its results depend on besides the request. None without one."""
+    root = spec_workflows_dir(spec)
+    if not spec.workflow or not has_workflow(spec.workflow, root):
+        return None
+    api = (root or WORKFLOWS_DIR) / spec.workflow / "workflow.api.json"
+    return hashlib.sha256(api.read_bytes()).hexdigest()

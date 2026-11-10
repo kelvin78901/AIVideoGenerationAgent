@@ -522,8 +522,11 @@ class ScriptComponent(Component):
         intent = intent or compiler.default_intent(self.id)
         messages = compiler.messages(compiler.render(f"script/{task}.j2", intent=intent), blocks)
         req = self.request(messages, None, task, REWRITE_MAX_TOKENS)
-        cost = registry.get(model).estimate(req).cost_usd
-        await self._check_budget(cost, settings, product.owner_id, confirm_budget)
+        estimate = registry.get(model).estimate(req)
+        cost = estimate.cost_usd
+        await self._check_budget(
+            cost, settings, product.owner_id, confirm_budget, priced=estimate.priced
+        )
         ctx = RunContext(
             product=product,
             mode="rewrite",
@@ -562,15 +565,21 @@ class ScriptComponent(Component):
         return text, result.model_key
 
     async def _check_budget(
-        self, cost: float, settings: Any, episode_id: str, confirmed: bool
+        self, cost: float, settings: Any, episode_id: str, confirmed: bool, *, priced: bool
     ) -> None:
         if confirmed:
             return
         cap = cap_of(settings)
         if self.budget is not None:
-            verdict = await self.budget.before_enqueue(cost, cap=cap, episode_id=episode_id)
+            verdict = await self.budget.before_enqueue(
+                cost, cap=cap, episode_id=episode_id, priced=priced
+            )
             if not verdict.ok:
                 raise PipelineError(409, "over_budget", **verdict.params())
+        elif not priced:
+            raise PipelineError(
+                409, "over_budget", reason="unpriced", estimate_usd=0.0, limit_usd=None
+            )
         elif cap is not None and cost > cap + EPSILON:
             raise PipelineError(
                 409, "over_budget", reason="per_call", estimate_usd=round(cost, 4), limit_usd=cap

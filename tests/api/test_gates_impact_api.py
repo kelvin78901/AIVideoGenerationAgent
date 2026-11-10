@@ -138,6 +138,24 @@ def test_the_demo_starts_confirmed_and_a_reopened_gate_stays_open(demo_gates: No
         for product_id in (NOVEL, BIBLE, ENRICH, SCRIPT1):
             assert _row(client, product_id).locked_hash, product_id
         assert not _row(client, SPLIT).locked_hash  # no gate covers the plan
+        # 分镜 confirmed with every shot, so episode 1's takes are there (prototype 生成 3/9):
+        # 1-01–1-03 a local draft and its API final, adopted; 1-04 four takes to pick from.
+        assert steps["storyboard"]["state"] == "confirmed"
+        assert (steps["generate"]["done"], steps["generate"]["total"]) == (3, 9)
+        shots = {s["label"]: s for s in client.get(f"{V1}/episodes/demo-e1/shots").json()}
+        assert all(s["confirmed"] and not s["confirm_stale"] for s in shots.values())
+        takes = client.get(f"{V1}/products/{shots['1-01']['video_product_id']}").json()
+        draft, final = takes["versions"]
+        assert (draft["stage"], final["stage"], final["model_key"]) == (
+            "draft",
+            "final",
+            "minimax/h3-regenerate-2k",
+        )
+        assert takes["adopted_version_id"] == final["id"] and takes["status"] == "adopted"
+        assert final["parent_version_id"] == draft["id"]
+        four = client.get(f"{V1}/products/{shots['1-04']['video_product_id']}").json()
+        assert [v["origin"] for v in four["versions"]] == ["run", "run", "fallback", "switch"]
+        assert four["adopted_version_id"] is None and four["status"] == "ready"
         _gate(client, "novel", "reopen", "demo")
     with app() as client:  # a restart seeds what is missing, never a decision again
         steps = _progress(client)
@@ -197,7 +215,7 @@ def test_script_gate_is_per_episode(client: TestClient) -> None:
 
 
 def test_gate_errors(client: TestClient) -> None:
-    resp = client.post(f"{V1}/gates/takes/confirm", json={"scope_id": "demo-e1"})  # M5
+    resp = client.post(f"{V1}/gates/export/confirm", json={"scope_id": "demo-e1"})  # M7
     assert resp.status_code == 404 and _code(resp) == "unknown_gate"
     resp = client.post(f"{V1}/gates/script/confirm", json={"scope_id": "demo"})
     assert resp.status_code == 404 and _code(resp) == "episode_not_found"

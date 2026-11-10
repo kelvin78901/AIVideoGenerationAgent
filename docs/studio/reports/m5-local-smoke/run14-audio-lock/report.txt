@@ -1,0 +1,10 @@
+   1-04 audio_mode → tts
+== a: 1-04 先配音 · 台词挂引导（现在的做法） · seed 2072401478
+   1 job(s) in 165.1 s, GPU memory peak 31674 MiB
+   call deepseek/v4.1-flash [api] success 5.4 s audio=Nones
+   call comfy/h3 [local] success 158.3 s audio=5.17s
+== b: 1-04 先配音 · 台词锁进音轨 · seed 2072401478
+   1 job(s) in 159.1 s, GPU memory peak 31690 MiB
+   call comfy/h3 [local] success 158.0 s audio=5.17s
+   a: loud (0.1, 0.7000000000000001), sound vs dub envelope r = 0.997, window {'in_s': 0.0, 'out_s': 4.0}, cuts []
+   b: loud (0.1, 4.55), sound vs dub envelope r = 1.0, window {'in_s': 0.0, 'out_s': 4.8}, cuts []

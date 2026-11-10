@@ -1,4 +1,5 @@
-"""How long a shot runs (M4, Kelvin 2026-10-21): dialogue by its audio, the rest by the plan."""
+"""How long a shot runs (M4, Kelvin 2026-10-21; M5 step 15d): the user's or the plan's seconds,
+never shorter than the spoken audio."""
 
 from __future__ import annotations
 
@@ -9,10 +10,20 @@ import pytest
 from drama_series_agent.pipeline.timing import longest_take_s, shot_duration
 
 
-def test_dialogue_runs_as_long_as_its_audio() -> None:
-    d = shot_duration([1.2, 0.8], [], planned_s=4.0, manual_s=None)
+def test_dialogue_runs_as_long_as_its_audio_when_the_plan_gave_no_seconds() -> None:
+    d = shot_duration([1.2, 0.8], [], planned_s=None, manual_s=None)
     assert d.seconds == pytest.approx(0.3 + 2.0 + 0.2)
     assert d.source == "audio" and d.min_s == d.seconds and not d.split
+
+
+def test_a_dialogue_shot_keeps_the_plans_time_to_act() -> None:
+    """1-04: she freezes while the light flickers (4.5 s by the plan), one 1.0 s line."""
+    acted = shot_duration([1.0], [], planned_s=4.5, manual_s=None)
+    assert (acted.seconds, acted.source) == (4.5, "manual")
+    assert acted.min_s == pytest.approx(1.5)
+    # The plan guessed shorter than the line turned out: the audio wins.
+    wordy = shot_duration([1.2, 0.8], [], planned_s=2.0, manual_s=None)
+    assert (wordy.seconds, wordy.source) == (pytest.approx(2.5), "audio")
 
 
 def test_the_user_may_make_a_dialogue_shot_longer_never_shorter() -> None:

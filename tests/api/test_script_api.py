@@ -419,3 +419,17 @@ def test_the_mirror_can_be_rebuilt_from_the_adopted_version(client: TestClient) 
 
     _call(client, rebuild)
     assert rows() == before
+
+
+def test_rewrite_on_a_model_without_a_price_asks_first(client: TestClient) -> None:
+    body = {"scope": "component", "scope_id": None, "component_id": "script"}
+    data = {"mode": "api", "api_model": "openrouter/any"}
+    client.put(f"{V1}/config/override", json={**body, "data": data}).raise_for_status()
+    resp = client.post(f"{V1}/lines/demo-b2/rewrite", json={})
+    assert (resp.status_code, _code(resp)) == (409, "over_budget")
+    assert resp.json()["detail"]["params"]["reason"] == "unpriced"
+    assert not [c for c in _rows(client, ModelCall) if c.component_id == "script"]
+    resp = client.post(f"{V1}/lines/demo-b2/rewrite", json={"confirm_budget": True})
+    assert resp.status_code == 200, resp.text
+    (row,) = [c for c in _rows(client, ModelCall) if c.component_id == "script"]
+    assert row.unpriced and row.cost_usd == 0

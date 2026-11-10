@@ -9,6 +9,7 @@ import ModelsPage from "@/pages/Models";
 import { backend } from "@/test/backend";
 import { fakeConfig } from "@/test/fakes/config";
 import { fakeEpisodes } from "@/test/fakes/episodes";
+import { fakeGenerate } from "@/test/fakes/generate";
 import { renderAt } from "@/test/render";
 
 const renderModels = () =>
@@ -41,7 +42,10 @@ describe("ModelsPage", () => {
     expect(preset(/^均衡/)).toHaveAttribute("aria-pressed", "true");
     expect(preset(/^均衡/)).toHaveTextContent("当前");
     const components = screen.getByRole("table", { name: "组件设置" });
-    expect(within(components).getAllByRole("rowgroup")).toHaveLength(22);
+    expect(within(components).getAllByRole("rowgroup")).toHaveLength(25);
+    expect(row("视频提示词改写")).toHaveTextContent("DeepSeek");
+    expect(row("视频工作流建议")).toHaveTextContent("DeepSeek");
+    expect(row("首帧描述")).toHaveTextContent("Gemini 3.1 Flash-Lite");
     expect(mode("设定提取", "本地")).toBeChecked();
     expect(row("设定提取")).toHaveTextContent("Qwen3.6-27B");
     expect(row("参考图生成")).toHaveTextContent("Qwen-Image（本地） → Nano Banana Pro");
@@ -220,12 +224,24 @@ describe("ModelsPage", () => {
       key_source: "keyring",
       enabled: true,
       models: [],
-      media: [{ key: "google/nano-banana-pro", display: "Nano Banana Pro" }],
+      media: [
+        {
+          key: "google/nano-banana-pro",
+          display: "Nano Banana Pro",
+          model_id: "gemini-3-pro-image",
+          custom_model_id: false,
+        },
+      ],
     };
+    const settings: unknown[] = [];
     server.use(
       http.get("*/api/v1/providers", () =>
         HttpResponse.json({ providers: [google], llm_ui_order: [] }),
       ),
+      http.put("*/api/v1/providers/settings/*", async ({ request }) => {
+        settings.push({ url: new URL(request.url).pathname, body: await request.json() });
+        return HttpResponse.json({ model_key: "x", model_id: "y", price: null });
+      }),
       http.post("*/api/v1/providers/google_llm/test", () =>
         HttpResponse.json({
           ok: true,
@@ -245,11 +261,194 @@ describe("ModelsPage", () => {
     renderModels();
     await user.click(await screen.findByRole("button", { name: "Google（Gemini） · 已配置" }));
     const dialog = await screen.findByRole("dialog", { name: "Google（Gemini） 的 API 密钥" });
-    expect(within(dialog).getByText("这个密钥也用于：Nano Banana Pro")).toBeInTheDocument();
+    expect(
+      within(dialog).getByRole("heading", { name: "用这个密钥的媒体模型" }),
+    ).toBeInTheDocument();
+    const id = within(dialog).getByLabelText("Nano Banana Pro");
+    expect(id).toHaveValue("gemini-3-pro-image");
+    await user.clear(id);
+    await user.type(id, "gemini-3.5-pro-image");
+    await user.click(within(dialog).getByRole("button", { name: "保存" }));
+    await waitFor(() =>
+      expect(settings).toEqual([
+        {
+          url: "/api/v1/providers/settings/google/nano-banana-pro",
+          body: { model_id: "gemini-3.5-pro-image" },
+        },
+      ]),
+    );
     await user.click(within(dialog).getByRole("button", { name: "测试连接" }));
     expect(await within(dialog).findByText("连接正常，能看到 1 个模型。")).toBeInTheDocument();
     expect(
       within(dialog).getByText("Nano Banana Pro：不能用（model_not_found）"),
     ).toBeInTheDocument();
+  });
+
+  it("switches a provider's site, picks listed models and prices one", async () => {
+    const user = userEvent.setup();
+    let site = "cn";
+    let picked = ["kimi-k3.1-pro"];
+    let own: { in: number; out: number; currency: string } | null = null;
+    const calls: unknown[] = [];
+    const listed = () =>
+      site !== "cn"
+        ? null
+        : {
+            site: "cn",
+            fetched_at: "2026-10-26T08:00:00Z",
+            models: [
+              {
+                model_id: "kimi-k3.1-pro",
+                key: "moonshot/kimi-k3.1-pro",
+                display: "Kimi K3.1 Pro",
+                in_table: true,
+                enabled: picked.includes("kimi-k3.1-pro"),
+                price: { in: 13, out: 68, currency: "CNY" },
+                price_source: "table",
+              },
+              {
+                model_id: "kimi-k2.7-code",
+                key: "moonshot/kimi-k2.7-code",
+                display: "kimi-k2.7-code",
+                in_table: false,
+                enabled: picked.includes("kimi-k2.7-code"),
+                price: own,
+                price_source: own ? "user" : null,
+              },
+            ],
+          };
+    const moonshot = () => ({
+      id: "moonshot",
+      name: "Moonshot（Kimi）",
+      where: "api",
+      site,
+      sites: [
+        { id: "cn", base_url: "https://api.moonshot.cn/v1", docs: null, has_key: true },
+        { id: "intl", base_url: "https://api.moonshot.ai/v1", docs: null, has_key: false },
+      ],
+      base_url: site === "cn" ? "https://api.moonshot.cn/v1" : "https://api.moonshot.ai/v1",
+      docs: null,
+      verify: false,
+      needs_key: true,
+      has_key: site === "cn",
+      key_source: site === "cn" ? "keyring" : "none",
+      enabled: true,
+      models: [],
+      listed: listed(),
+      media: [],
+    });
+    server.use(
+      http.get("*/api/v1/providers", () =>
+        HttpResponse.json({ providers: [moonshot()], llm_ui_order: [] }),
+      ),
+      http.put("*/api/v1/providers/moonshot/models", async ({ request }) => {
+        const body = (await request.json()) as { enabled: string[] };
+        calls.push({ models: body.enabled });
+        picked = body.enabled;
+        return HttpResponse.json(moonshot());
+      }),
+      http.put("*/api/v1/providers/settings/*", async ({ request }) => {
+        const body = (await request.json()) as { price: typeof own };
+        calls.push({ price: body.price });
+        own = body.price;
+        return HttpResponse.json({
+          model_key: "moonshot/kimi-k2.7-code",
+          model_id: null,
+          price: own,
+        });
+      }),
+      http.patch("*/api/v1/providers/moonshot", async ({ request }) => {
+        const body = (await request.json()) as { site: string };
+        calls.push({ site: body.site });
+        site = body.site;
+        return HttpResponse.json(moonshot());
+      }),
+    );
+    renderModels();
+    await user.click(await screen.findByRole("button", { name: "Moonshot（Kimi） · 已配置" }));
+    const dialog = await screen.findByRole("dialog", { name: "Moonshot（Kimi） 的 API 密钥" });
+    const sites = within(dialog).getByRole("radiogroup", { name: "站点" });
+    expect(within(sites).getByRole("radio", { name: "国内站 · 已有密钥" })).toBeChecked();
+    expect(within(dialog).getByText("共 2 个，勾了 1 个", { exact: false })).toBeInTheDocument();
+    expect(within(dialog).getByText("参考价 ¥13 / ¥68 每百万 token")).toBeInTheDocument();
+    expect(within(dialog).getByText("价格未知")).toBeInTheDocument();
+
+    await user.click(within(dialog).getByRole("checkbox", { name: /kimi-k2\.7-code/ }));
+    await waitFor(() =>
+      expect(within(dialog).getByRole("checkbox", { name: /kimi-k2\.7-code/ })).toBeChecked(),
+    );
+    await user.click(within(dialog).getByRole("button", { name: "给 kimi-k2.7-code 填价格" }));
+    const form = within(dialog).getByRole("form", { name: "kimi-k2.7-code 的单价" });
+    await user.type(within(form).getByLabelText("输入"), "4");
+    await user.type(within(form).getByLabelText("输出"), "16");
+    await user.click(within(form).getByRole("button", { name: "保存" }));
+    expect(await within(dialog).findByText("你填的 ¥4 / ¥16 每百万 token")).toBeInTheDocument();
+
+    await user.click(within(sites).getByRole("radio", { name: "国际站" }));
+    expect(await screen.findByText("Moonshot（Kimi） 改用国际站。")).toBeInTheDocument();
+    expect(
+      await within(dialog).findByText("测试连接后会列出这家的全部模型", { exact: false }),
+    ).toBeInTheDocument();
+    expect(calls).toEqual([
+      { models: ["kimi-k3.1-pro", "kimi-k2.7-code"] },
+      { price: { in: 4, out: 16, currency: "CNY" } },
+      { site: "intl" },
+    ]);
+  });
+
+  it("edits the series' workflow rules: conditions, order, the LLM switch, back to defaults", async () => {
+    const user = userEvent.setup();
+    renderModels();
+    const section = await screen.findByRole("region", { name: "按镜头选工作流" });
+    const rules = await within(section).findByRole("list", { name: "按镜头选工作流" });
+    expect(within(section).getByText("默认规则")).toBeInTheDocument();
+    expect(section).toHaveTextContent("都没命中用默认的「MiniMax H3（本地）」");
+    expect(section).toHaveTextContent("只对《雨停之前》生效");
+    // The config's rule: 原生同步 with a locked voice sample → the reference-to-video workflow.
+    expect(within(rules).getByRole("combobox", { name: "规则 1 的声音" })).toHaveValue("native");
+    expect(within(rules).getByRole("combobox", { name: "规则 1 的锁定音色样本" })).toHaveValue(
+      "true",
+    );
+    expect(within(rules).getByRole("combobox", { name: "规则 1 的景别" })).toHaveValue("");
+    expect(within(rules).getByRole("combobox", { name: "规则 1 用的工作流" })).toHaveValue(
+      "comfy/h3-r2v",
+    );
+
+    await user.click(within(section).getByRole("button", { name: "添加规则" }));
+    await within(section).findByRole("combobox", { name: "规则 2 的景别" });
+    await user.selectOptions(
+      within(section).getByRole("combobox", { name: "规则 2 的景别" }),
+      "特写",
+    );
+    await user.selectOptions(
+      within(section).getByRole("combobox", { name: "规则 2 的台词" }),
+      "有",
+    );
+    await waitFor(() =>
+      expect(fakeGenerate.workflowRules.rules[1]).toEqual({
+        when: { framing: "closeup", dialogue: true },
+        model: "comfy/h3",
+      }),
+    );
+    expect(await within(section).findByText("本剧已改")).toBeInTheDocument();
+    // First match wins: move the close-up rule to the top.
+    await user.click(within(section).getByRole("button", { name: "上移规则 2" }));
+    await waitFor(() => expect(fakeGenerate.workflowRules.rules[0]?.model).toBe("comfy/h3"));
+    await user.selectOptions(
+      within(section).getByRole("combobox", { name: "规则 1 的景别" }),
+      "不限",
+    );
+    await waitFor(() =>
+      expect(fakeGenerate.workflowRules.rules[0]?.when).toEqual({ dialogue: true }),
+    );
+    await user.click(within(section).getByRole("switch", { name: "规则都没命中时，让 LLM 建议" }));
+    await waitFor(() => expect(fakeGenerate.workflowRules.suggest).toBe(true));
+
+    await user.click(within(section).getByRole("button", { name: "删除规则 1" }));
+    await waitFor(() => expect(fakeGenerate.workflowRules.rules).toHaveLength(1));
+    await user.click(within(section).getByRole("button", { name: "恢复默认" }));
+    expect(await screen.findByText("已恢复成默认规则。")).toBeInTheDocument();
+    expect(within(section).getByText("默认规则")).toBeInTheDocument();
+    expect(fakeGenerate.workflowRules.suggest).toBe(false);
   });
 });

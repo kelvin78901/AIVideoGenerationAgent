@@ -1,14 +1,22 @@
 /**
- * API key for one writing-model provider (not in the prototype): save, delete, test the
- * connection. Talks to the real backend (M0); the key is write-only and never shown again.
+ * API key for one writing-model provider (not in the prototype): which site (China /
+ * international, M5 step 7a), save, delete, test the connection; then the models its list
+ * returned and the media models on this key (`ProviderModels.tsx`). Talks to the real backend;
+ * the key is write-only and never shown again.
  */
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { toast } from "sonner";
 
 import { errorMessage } from "@/api/client";
-import { useDeleteProviderKey, useSaveProviderKey, useTestProvider } from "@/api/hooks/config";
+import {
+  useDeleteProviderKey,
+  useSaveProviderKey,
+  useSetProviderSite,
+  useTestProvider,
+} from "@/api/hooks/config";
 import type { Provider } from "@/api/schemas/providers";
+import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import {
@@ -20,6 +28,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { Input, Label } from "@/components/ui/form";
+import { MediaModelIds, ProviderModels } from "@/pages/models/ProviderModels";
 
 export function KeyDialog({
   provider,
@@ -42,8 +51,10 @@ function KeyForm({ provider: p }: { provider: Provider }) {
   const save = useSaveProviderKey(p.id);
   const remove = useDeleteProviderKey(p.id);
   const test = useTestProvider(p.id);
+  const site = useSetProviderSite(p.id);
   const onError = (err: unknown) => toast.error(errorMessage(tc, err));
-  const busy = save.isPending || remove.isPending;
+  const busy = save.isPending || remove.isPending || site.isPending;
+  const siteName = (id: string) => t(`site.${id}` as "site.cn", { defaultValue: id });
 
   const onSave = (e: React.FormEvent) => {
     e.preventDefault();
@@ -60,12 +71,36 @@ function KeyForm({ provider: p }: { provider: Provider }) {
 
   const result = test.data;
   return (
-    <DialogContent>
+    <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-2xl">
       <DialogHeader>
         <DialogTitle>{t("key.title", { name: p.name })}</DialogTitle>
         <DialogDescription>{t("key.lead")}</DialogDescription>
       </DialogHeader>
       <div className="flex flex-col gap-3">
+        {p.sites.length > 1 ? (
+          <div className="flex flex-col gap-1.5">
+            <SegmentedControl
+              label={t("site.label")}
+              value={p.site}
+              onChange={(next) =>
+                site.mutate(next, {
+                  onSuccess: () => {
+                    test.reset();
+                    toast.success(t("site.switched", { name: p.name, site: siteName(next) }));
+                  },
+                  onError,
+                })
+              }
+              options={p.sites.map((s) => ({
+                value: s.id,
+                label: s.has_key ? t("site.withKey", { site: siteName(s.id) }) : siteName(s.id),
+                disabled: busy,
+              }))}
+              className="self-start"
+            />
+            <p className="text-xs leading-relaxed text-muted-foreground">{t("site.hint")}</p>
+          </div>
+        ) : null}
         <div className="flex flex-wrap items-center gap-2 text-sm">
           <StatusBadge tone={p.has_key ? "info" : "warn"} icon={null}>
             {t(`key.status.${p.key_source}`)}
@@ -107,11 +142,6 @@ function KeyForm({ provider: p }: { provider: Provider }) {
         {p.key_source === "env" ? (
           <p className="text-xs text-muted-foreground">{t("key.envNote")}</p>
         ) : null}
-        {p.media.length ? (
-          <p className="text-xs text-muted-foreground">
-            {t("key.sharedWith", { names: p.media.map((m) => m.display).join(t("key.listSep")) })}
-          </p>
-        ) : null}
         {result ? (
           <div role="status" className="flex flex-col gap-1 text-sm">
             <p className={result.ok ? "text-tone-info-fg" : "text-tone-warn-fg"}>
@@ -130,6 +160,8 @@ function KeyForm({ provider: p }: { provider: Provider }) {
             ))}
           </div>
         ) : null}
+        <ProviderModels provider={p} />
+        <MediaModelIds provider={p} />
       </div>
       <DialogFooter className="gap-2 sm:justify-between">
         <Button

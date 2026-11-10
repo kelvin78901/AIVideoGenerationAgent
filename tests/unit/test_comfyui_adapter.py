@@ -1,10 +1,14 @@
-"""The ComfyUI adapter against a fake ComfyUI (httpx MockTransport): upload, prompt, history,
-view; interrupts on timeout; the VRAM lease's /free; the shipped workflows' bindings."""
+"""The ComfyUI adapter against a fake ComfyUI (httpx MockTransport, a fake /ws): upload,
+prompt, history, view; interrupts on timeout; the VRAM lease's /free; the shipped workflows'
+bindings; video takes (M5): input files, progress, the take checked against what was asked."""
 
 from __future__ import annotations
 
 import asyncio
+import contextlib
 import json
+import shutil
+from collections.abc import AsyncIterator
 from dataclasses import replace
 from pathlib import Path
 from typing import Any
@@ -13,16 +17,22 @@ import httpx
 import pytest
 
 from drama_series_agent.core.storage import BlobStore
+from drama_series_agent.media.video import TAIL_FRAMES
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
     ModelError,
     ModelRequest,
     ModelSpec,
 )
-from drama_series_agent.modelhub.adapters.comfyui import ComfyTarget, ComfyUIAdapter
-from drama_series_agent.modelhub.adapters.mock import solid_png
+from drama_series_agent.modelhub.adapters.comfyui import ComfyTarget, ComfyUIAdapter, WsConnect
+from drama_series_agent.modelhub.adapters.mock import sine_wav, solid_mp4, solid_png
 from drama_series_agent.modelhub.vram import VramLease
-from drama_series_agent.modelhub.workflows import WorkflowError, load_workflow, shipped_workflow
+from drama_series_agent.modelhub.workflows import (
+    WORKFLOWS_DIR,
+    WorkflowError,
+    load_workflow,
+    shipped_workflow,
+)
 
 URL = "http://127.0.0.1:8188"
 
@@ -67,6 +77,8 @@ class FakeComfy:
     ends with this status; ``lost``: the prompt is neither queued nor in the history."""
 
     def __init__(self) -> None:
+        self.video: bytes | None = None  # answer with this clip from node 92 (h3-i2v's output)
+        self.sockets: list[asyncio.Queue[str | None]] = []
         self.polls = 0
         self.hang = False
         self.lost = False
@@ -101,7 +113,14 @@ class FakeComfy:
                 return httpx.Response(400, json=self.refuse)
             assert body is not None
             self.prompts.append(body["prompt"])
-            return httpx.Response(200, json={"prompt_id": f"p{len(self.prompts)}", "number": 1})
+            pid = f"p{len(self.prompts)}"
+            for q in self.sockets:  # what ComfyUI says over /ws while it runs the prompt
+                for step in (1, 2):
+                    data = {"value": step, "max": 2, "prompt_id": pid, "node": "14"}
+                    q.put_nowait(json.dumps({"type": "progress", "data": data}))
+                done = {"node": None, "prompt_id": pid}
+                q.put_nowait(json.dumps({"type": "executing", "data": done}))
+            return httpx.Response(200, json={"prompt_id": pid, "number": 1})
         if path.startswith("/history/"):
             pid = path.rsplit("/", 1)[1]
             seen = self._seen[pid] = self._seen.get(pid, 0) + 1
@@ -109,13 +128,19 @@ class FakeComfy:
                 return httpx.Response(200, json={})
             if self.fail is not None:
                 return httpx.Response(200, json={pid: {"outputs": {}, "status": self.fail}})
-            out = {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "temp"}]}
             status = {"status_str": "success", "completed": True, "messages": []}
+            if self.video is not None:
+                clip = {"filename": f"{pid}.mp4", "subfolder": "dramastudio", "type": "output"}
+                outputs = {"92": {"images": [clip], "animated": [True]}}
+                return httpx.Response(200, json={pid: {"outputs": outputs, "status": status}})
+            out = {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "temp"}]}
             return httpx.Response(200, json={pid: {"outputs": {"8": out}, "status": status}})
         if path == "/queue" and method == "GET":
             running = [] if self.lost else [[1, f"p{len(self.prompts)}", {}, {}, []]]
             return httpx.Response(200, json={"queue_running": running, "queue_pending": []})
         if path == "/view":
+            if request.url.params["filename"].endswith(".mp4"):
+                return httpx.Response(200, content=self.video or b"")
             return httpx.Response(200, content=solid_png(928, 1664, (10, 20, 30)))
         if path in ("/interrupt", "/queue", "/free"):
             return httpx.Response(200)
@@ -123,6 +148,23 @@ class FakeComfy:
 
     def posted(self, path: str) -> list[Any]:
         return [b for m, p, b in self.calls if m == "POST" and p == path]
+
+    def websocket(self) -> WsConnect:
+        """A fake ``/ws``: what the fake says while running prompts, until the run ends."""
+
+        @contextlib.asynccontextmanager
+        async def connect(url: str) -> AsyncIterator[AsyncIterator[str]]:
+            assert url.startswith("ws://127.0.0.1:8188/ws?clientId=")
+            q: asyncio.Queue[str | None] = asyncio.Queue()
+            self.sockets.append(q)
+
+            async def messages() -> AsyncIterator[str]:
+                while (msg := await q.get()) is not None:
+                    yield msg
+
+            yield messages()
+
+        return connect
 
 
 @pytest.fixture
@@ -151,6 +193,8 @@ def _adapter(
     store: BlobStore,
     lease: VramLease | None = None,
     transport: httpx.AsyncBaseTransport | None = None,
+    websocket: WsConnect | None = None,
+    spec: ModelSpec = SPEC,
 ) -> ComfyUIAdapter:
     async def target() -> ComfyTarget:
         return ComfyTarget(url=URL, env_hash="env123")
@@ -159,13 +203,14 @@ def _adapter(
         await asyncio.sleep(0)
 
     return ComfyUIAdapter(
-        SPEC,
+        spec,
         target=target,
         store=store,
         lease=lease or VramLease(),
         transport=transport or httpx.MockTransport(fake.handler),
         workflows_dir=root,
         sleep=no_sleep,
+        websocket=websocket,  # never the real /ws: a ComfyUI may be listening on 8188
     )
 
 
@@ -199,7 +244,7 @@ def test_an_unfilled_optional_reference_goes_with_its_links(root: Path) -> None:
     assert graph["5"]["inputs"]["image"] == "dramastudio/a.png"
     assert "6" not in graph and "image2" not in graph["7"]["inputs"]
     assert graph["7"]["inputs"]["image1"] == ["5", 0] and graph["2"]["inputs"]["text"] == "雨"
-    with pytest.raises(WorkflowError, match="at least 1 reference"):
+    with pytest.raises(WorkflowError, match="at least 1 of ref_image"):
         load_workflow("fake-edit", root).fill({}, [])
 
 
@@ -341,3 +386,244 @@ async def test_workflows_on_the_same_weights_do_not_free_each_other(
     assert fake.posted("/free") == []
     await on("fake-other").run(_req(store), CallContext())
     assert fake.posted("/free") == [{"unload_models": True, "free_memory": True}]
+
+
+# --------------------------------------------------------------------------- video (M5)
+
+H3 = ModelSpec(
+    key="comfy/h3", kind="video", where="local", display="H3", runtime="comfyui",
+    workflow="h3-i2v",
+)  # fmt: skip
+
+
+@pytest.fixture
+def h3_root(root: Path) -> Path:
+    shutil.copytree(WORKFLOWS_DIR / "h3-i2v", root / "h3-i2v")
+    return root
+
+
+def _video_req(
+    store: BlobStore, *, audio: bool = True, n: int = 1, seconds: float = 3.0
+) -> ModelRequest:
+    params: dict[str, Any] = {"n": n, "width": 1080, "height": 1920, "aspect": "9:16",
+                              "duration_s": seconds, "fps": 30}  # fmt: skip
+    params["first_frame"] = store.put_bytes(solid_png(72, 128, (1, 2, 3)))
+    if audio:
+        params["dialogue_audio"] = store.put_bytes(sine_wav(1.0))
+    return ModelRequest(kind="video", prompt="她回头，雨还在下。", seed=7, params=params)
+
+
+@pytest.mark.parametrize("slug", ["h3-i2v", "h3-r2v"])
+def test_local_h3_drafts_sample_20_steps_without_turbo(slug: str) -> None:
+    """Kelvin 2026-10-27: Turbo (8 / 4 steps) looked too rough, drafts take the official 20."""
+    wf = shipped_workflow(slug)
+    assert not any(n["class_type"] == "LoraLoaderModelOnly" for n in wf.graph.values())
+    assert not any(m.folder == "loras" for m in wf.meta.models)
+    [unet] = [k for k, n in wf.graph.items() if n["class_type"] == "UNETLoader"]
+    [scheduler] = [n for n in wf.graph.values() if n["class_type"] == "BasicScheduler"]
+    [guider] = [n for n in wf.graph.values() if n["class_type"] == "BasicGuider"]
+    assert scheduler["inputs"]["steps"] == 20 and scheduler["inputs"]["model"] == [unet, 0]
+    assert guider["inputs"]["model"] == [unet, 0]
+
+
+def test_the_h3_workflow_bypasses_its_audio_guide_without_audio() -> None:
+    wf = shipped_workflow("h3-i2v")
+    assert wf.meta.kind == "video" and wf.output_nodes("video_out") == ["92"]
+    names = {m.name for m in wf.meta.models}
+    for node in wf.graph.values():
+        for key in ("unet_name", "clip_name", "vae_name", "lora_name"):
+            if key in node["inputs"]:
+                assert node["inputs"][key] in names, key
+    for w, h in wf.meta.caps["sizes"].values():
+        assert w % 32 == 0 and h % 32 == 0 and w * h <= wf.meta.caps["max_pixels"]
+    silent = wf.fill({"first_frame": "dramastudio/f.png"})
+    assert "130" not in silent and "131" not in silent
+    assert silent["16"]["inputs"]["conditioning"] == ["104", 0]  # the guide's positive, passed on
+    voiced = wf.fill({"first_frame": "dramastudio/f.png", "dialogue_audio": "dramastudio/a.wav"})
+    assert voiced["130"]["inputs"]["audio"] == "dramastudio/a.wav"
+    assert voiced["16"]["inputs"]["conditioning"] == ["131", 0]
+    with pytest.raises(WorkflowError, match="needs first_frame"):
+        wf.fill({})
+
+
+def test_a_tail_clip_replaces_the_first_frame_anchor() -> None:
+    """M5 step 15e (continuity B): the previous take's last frames with their sound are guided
+    at frame 0; the I2V first-frame anchor goes, the dubbed lines start after the tail."""
+    wf = shipped_workflow("h3-i2v")
+    plain = wf.fill({"first_frame": "dramastudio/f.png", "dialogue_audio": "dramastudio/a.wav"})
+    assert {"140", "141", "142", "143"}.isdisjoint(plain)
+    assert plain["131"]["inputs"]["positive"] == ["104", 0]
+    assert plain["104"]["inputs"]["first_frame"] == ["114", 0]
+    values = {"first_frame": "dramastudio/f.png", "dialogue_audio": "dramastudio/a.wav"}
+    tailed = wf.fill({**values, "tail_clip": "dramastudio/t.mp4", "dialogue_frame": 22})
+    assert tailed["140"]["inputs"]["file"] == "dramastudio/t.mp4"
+    guide = tailed["142"]["inputs"]
+    assert (guide["image"], guide["audio"], guide["frame_idx"]) == (["141", 0], ["141", 1], 0)
+    assert guide["positive"] == ["104", 0] and guide["latent"] == ["104", 1]
+    assert tailed["131"]["inputs"]["positive"] == ["143", 0]
+    # Step 15h: the shot before's last frame (the first frame's picture) pinned at the tail's
+    # last frame, so the take starts where that shot ended.
+    end = tailed["143"]["inputs"]
+    assert (end["positive"], end["image"], end["frame_idx"]) == (["142", 0], ["114", 0], 21)
+    assert end["frame_idx"] == TAIL_FRAMES - 1
+    assert tailed["131"]["inputs"]["frame_idx"] == 22
+    assert "first_frame" not in tailed["104"]["inputs"] and "114" in tailed  # read by the end
+    silent = wf.fill({"first_frame": "dramastudio/f.png", "tail_clip": "dramastudio/t.mp4"})
+    assert silent["16"]["inputs"]["conditioning"] == ["143", 0] and "131" not in silent
+
+    # Reference to video: the first frame is a reference there, not an anchor; it stays.
+    r2v = shipped_workflow("h3-r2v")
+    base = {"first_frame": "dramastudio/f.png"}
+    assert r2v.fill(base)["126"]["inputs"]["conditioning"] == ["136", 0]
+    tailed = r2v.fill({**base, "tail_clip": "dramastudio/t.mp4"})
+    assert tailed["126"]["inputs"]["conditioning"] == ["143", 0]
+    assert tailed["143"]["inputs"]["image"] == ["200", 0] and "143" not in r2v.fill(base)
+    assert tailed["136"]["inputs"]["ref_images.ref_image_0"] == ["200", 0]
+
+
+async def test_a_tail_clip_is_uploaded_and_the_lines_follow_it(
+    h3_root: Path, store: BlobStore
+) -> None:
+    fake = FakeComfy()
+    fake.video = await solid_mp4(72, 128, 6.0, 24, "336699", audio_hz=440)
+    adapter = _adapter(fake, h3_root, store, websocket=None, spec=H3)
+    req = _video_req(store, seconds=6.0)
+    tail = await solid_mp4(72, 128, 22 / 24, 24, "112233", audio_hz=220)
+    req.params.update(tail_clip=store.put_bytes(tail), tail_frames=22)
+    await adapter.run(req, CallContext())
+    graph = fake.prompts[0]
+    sha = req.params["tail_clip"]
+    assert ("dramastudio", f"{sha}.mp4") in fake.uploads
+    assert graph["140"]["inputs"]["file"] == f"dramastudio/{sha}.mp4"
+    assert graph["131"]["inputs"]["frame_idx"] == 22
+    assert "first_frame" not in graph["104"]["inputs"]
+
+
+async def test_a_video_take_with_its_inputs_and_progress(h3_root: Path, store: BlobStore) -> None:
+    fake = FakeComfy()
+    fake.video = await solid_mp4(72, 128, 5.0, 24, "336699", audio_hz=440)
+    fake.polls = 1
+    seen: list[dict[str, Any]] = []
+
+    async def on_progress(data: dict[str, Any]) -> None:
+        seen.append(data)
+
+    adapter = _adapter(fake, h3_root, store, websocket=fake.websocket(), spec=H3)
+    req = _video_req(store)
+    result = await adapter.run(req, CallContext(on_progress=on_progress))
+    graph = fake.prompts[0]
+    frame, audio = req.params["first_frame"], req.params["dialogue_audio"]
+    assert fake.uploads == [("dramastudio", f"{frame}.png"), ("dramastudio", f"{audio}.wav")]
+    assert graph["114"]["inputs"]["image"] == f"dramastudio/{frame}.png"
+    assert graph["130"]["inputs"]["audio"] == f"dramastudio/{audio}.wav"
+    assert (graph["104"]["inputs"]["width"], graph["104"]["inputs"]["height"]) == (768, 1344)
+    assert graph["111"]["inputs"]["value"] == 5.0  # 3 s asked, H3 makes 5-15 s
+    assert graph["91"]["inputs"]["fps"] == 24.0  # the model's own rate, not the frame's 30
+    assert graph["15"]["inputs"]["noise_seed"] == 7
+    assert graph["104"]["inputs"]["prompt"] == "她回头，雨还在下。"
+    [take] = result.files
+    assert (take.role, take.mime, take.w, take.h) == ("video", "video/mp4", 72, 128)
+    assert take.duration_s == pytest.approx(5.0, abs=0.1)
+    assert result.usage.output_seconds == take.duration_s and result.raw["seconds"] == 5.0
+    assert result.raw["comfy"]["workflow_id"] == "h3-i2v"
+    assert seen[0] == {"take": 1, "takes": 1, "step": 0, "steps": 0, "pct": 0.0}
+    assert seen[-1] == {"take": 1, "takes": 1, "step": 2, "steps": 2, "pct": 1.0}
+    assert adapter.estimate(_video_req(store, n=2)).seconds == pytest.approx(
+        2 * (17 * 5 + 2.4 * 25)
+    )
+
+
+async def test_without_a_socket_it_polls(h3_root: Path, store: BlobStore) -> None:
+    @contextlib.asynccontextmanager
+    async def refused(url: str) -> AsyncIterator[AsyncIterator[str]]:
+        raise OSError("connection refused")
+        yield  # pragma: no cover
+
+    fake = FakeComfy()
+    fake.video = await solid_mp4(72, 128, 5.0, 24, "336699")
+    fake.polls = 3
+    adapter = _adapter(fake, h3_root, store, websocket=refused, spec=H3)
+    result = await adapter.run(_video_req(store, audio=False), CallContext())
+    assert [f.role for f in result.files] == ["video"]
+    assert "130" not in fake.prompts[0]  # no dialogue audio: the guide is bypassed
+
+
+@pytest.mark.parametrize(
+    ("w", "h", "seconds", "code"),
+    [(72, 128, 2.0, "video_too_short"), (128, 72, 5.0, "video_wrong_size"),
+     (0, 0, 0.0, "invalid_response")],
+)  # fmt: skip
+async def test_a_take_unlike_what_was_asked_fails(
+    h3_root: Path, store: BlobStore, w: int, h: int, seconds: float, code: str
+) -> None:
+    fake = FakeComfy()
+    fake.video = await solid_mp4(w, h, seconds, 24, "336699") if w else b"not a video"
+    adapter = _adapter(fake, h3_root, store, spec=H3)
+    with pytest.raises(ModelError) as err:
+        await adapter.run(_video_req(store, seconds=5.0), CallContext())
+    assert err.value.code == code
+
+
+async def test_a_trial_makes_up_the_first_frame(h3_root: Path, store: BlobStore) -> None:
+    fake = FakeComfy()
+    fake.video = await solid_mp4(92, 160, 5.0, 24, "336699")  # 736 x 1280, scaled
+    params = {"width": 720, "height": 1280, "duration_s": 5, "n": 1, "trial": True}
+    req = ModelRequest(kind="video", prompt="试跑", seed=1, params=params)
+    await _adapter(fake, h3_root, store, spec=H3).run(req, CallContext())
+    assert fake.uploads == [("dramastudio", "trial-frame.png")]  # the audio is optional
+    graph = fake.prompts[0]
+    size = (graph["104"]["inputs"]["width"], graph["104"]["inputs"]["height"])
+    assert size == (736, 1280) and "131" not in graph  # 720 x 1280 in steps of 32
+
+
+def test_the_h3_reference_workflow_drops_unused_references_and_voices() -> None:
+    wf = shipped_workflow("h3-r2v")
+    graph = wf.fill(
+        {"first_frame": "dramastudio/f.png", "ref_audio": ["dramastudio/v1.wav"]},
+        ["dramastudio/r1.png"],
+    )
+    node = graph["136"]["inputs"]
+    assert graph["200"]["inputs"]["image"] == "dramastudio/f.png"  # <Picture 1>
+    assert graph["201"]["inputs"]["image"] == "dramastudio/r1.png"  # <Picture 2>
+    assert graph["210"]["inputs"]["audio"] == "dramastudio/v1.wav"  # <Audio 1>
+    assert {"202", "203", "204", "211", "212"}.isdisjoint(graph)
+    assert sorted(k for k in node if k.startswith(("ref_images.", "ref_audios."))) == [
+        "ref_audios.ref_audio_0",
+        "ref_images.ref_image_0",
+        "ref_images.ref_image_1",
+    ]
+
+
+@pytest.mark.parametrize(("key", "per_s"), [("comfy/seedvr2", 40.0), ("comfy/flashvsr", 32.0)])
+def test_the_2k_finishing_workflows_say_how_long_they_take(
+    key: str, per_s: float, store: BlobStore
+) -> None:
+    """M5 step 14d: 2K 精修's button shows the estimate's seconds, the workflow's
+    ``caps.est_seconds_per_s`` times the clip (SeedVR2 measured on the 5090, 2026-10-27)."""
+    from drama_series_agent.core.config import get_config
+    from drama_series_agent.modelhub.registry import Registry
+
+    spec = Registry.from_config(get_config(), mock=False).spec(key)
+    adapter = _adapter(FakeComfy(), WORKFLOWS_DIR, store, spec=spec)
+    req = ModelRequest(kind="upscale", params={"duration_s": 5.0, "width": 1080, "height": 1920})
+    assert adapter.estimate(req).seconds == per_s * 5.0
+    assert adapter.estimate(req).cost_usd == 0.0
+
+
+def test_a_longer_h3_clip_runs_slower_per_second(store: BlobStore) -> None:
+    """M5 step 15d: on the 5090 a 5 s H3 clip took about 150 s, a 15 s one 804 s; the estimate
+    (and the local timeout, half again as long) has a squared term."""
+    from drama_series_agent.core.config import get_config
+    from drama_series_agent.modelhub.registry import Registry
+
+    spec = Registry.from_config(get_config(), mock=False).spec("comfy/h3")
+    adapter = _adapter(FakeComfy(), WORKFLOWS_DIR, store, spec=spec)
+
+    def secs(duration_s: float) -> float:
+        req = ModelRequest(kind="video", params={"duration_s": duration_s})
+        return adapter.estimate(req).seconds
+
+    assert secs(5.0) == pytest.approx(145, abs=10)
+    assert secs(7.29) == pytest.approx(255, abs=15)
+    assert secs(15.0) == pytest.approx(804, abs=20)
+    assert secs(2.0) == secs(5.0)  # H3 makes 5 s at the least

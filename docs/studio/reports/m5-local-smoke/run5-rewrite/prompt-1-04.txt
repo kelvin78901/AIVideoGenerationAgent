@@ -1,0 +1,20 @@
+subject_definitions:
+<Picture 1> is the first frame of [Shot 1], showing Lin Wan from the chest up in the sixth-floor stairwell of an old residential building at night, her head tilted down toward a small note in her hands, the concrete stairs rising on the left of frame and her apartment door far back on the right.
+<Subject 1> is Lin Wan (S1), the 26-year-old woman whose appearance comes from <Picture 2>: a pale, tired, bare face with no makeup, dark hair in a loose low ponytail, a beige trench coat soaked darker on one side, and a thin old black hair tie around her left wrist.
+<Subject 2> is the old residential stairwell at night whose look comes from <Picture 3>: peeling plaster walls, worn concrete steps, a half-broken warm-yellow sound-activated ceiling lamp, and a rain-streaked window with wet footprints on the landing floor.
+<Audio 1> is the voice-timbre reference for <Subject 1> (S1).
+
+summary: [keyframe completion + reference generation + audio reference] One continuous four-and-a-half-second close shot with no cut. The video begins exactly on <Picture 1>: <Subject 1> stands in <Subject 2> looking down at a note, freezes, and whispers a single name in the voice timbre of <Audio 1> while the sound-activated lamp flickers above her face and the camera slowly pushes in.
+
+retention_analysis:
+<Picture 1> ([Shot 1] first frame): fully_preserved - the opening framing, her pose, the lighting and the stairwell layout behind her.
+<Subject 1> (appears in [Shot 1]): fully_preserved - Lin Wan's face, low ponytail, half-soaked beige trench coat and the black hair tie on her left wrist stay identical from first frame to last.
+<Subject 2> (appears in [Shot 1]): fully_preserved - the peeling walls, concrete steps, flickering ceiling lamp and rain-streaked window are only ever seen behind her; the stairwell is never shown on its own.
+<Audio 1>: reference - Lin Wan's voice timbre, without copying the original signal.
+
+detailed_description: Live-action, cinematic, realistic short-drama style with a muted grey-green and warm-amber palette, soft film grain, shallow depth of field and a steady, slow camera.
+[Shot 1] The shot begins from <Picture 1>. <Subject 1>, Lin Wan, is framed from the chest up, slightly right of center, her head tilted down toward a small note held in both hands at chest height; the worn concrete stairs rise close on the left of frame and her apartment door recedes far back on the right, while <Subject 2> surrounds her with peeling plaster, wet footprints on the landing and rain streaking the window beyond. The warm-yellow sound-activated ceiling lamp above her is half broken. From the first second the camera pushes in with small amplitude at slow speed straight toward her face, keeping her centered; it never pans away, never cuts and never leaves the stairwell. For the first second and a half she is motionless except for her eyes moving across the note. Around one second the lamp above her flickers: it dims to a dull ember for a beat, throws her face into shadow, then snaps back bright, and this one dip and return of light is the only change in lighting. At roughly the two-second mark she freezes — her breath catches, her shoulders lock, her eyes widen slightly as she recognizes the handwriting, and her fingers tighten on the paper's edge. At about three seconds her lips part and the tired young woman with a soft, low, slightly hoarse voice (S1) whispers, barely audible, using the voice timbre referenced from <Audio 1>, <d>[Chinese] ……周屿？</d> Her lips close again after the line. For the final second and a half she keeps staring at the note without blinking, her face now filling most of the frame from the shoulders up in close-up, the lamp still faintly pulsing above her. The shot ends on her stunned face in the same stairwell, with no change of place, no other person and no cut.
+
+overall_soundscape: Heavy rain drumming against the stairwell window and dripping onto the landing, the click and electrical buzz of the half-broken sound-activated lamp as it flickers, and Lin Wan's shallow, catching breathing; no other voices.
+
+non_diegetic_music: N/A

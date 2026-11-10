@@ -40,11 +40,27 @@ test("a locked spec changes aspect through the impact dialog and keeps it after 
 }) => {
   const errors = trackConsoleErrors(page);
   await setUi(page, {});
+  // A retry starts from the demo's 9:16 even when the failed try left 16:9 behind.
+  const spec = await (await page.request.get("/api/v1/series/demo/spec")).json();
+  if (spec.aspect !== "9:16") {
+    const write = { "X-Drama-Studio": "1" };
+    const preview = await page.request.post("/api/v1/impact/preview", {
+      headers: write,
+      data: { kind: "spec_aspect", target_id: "demo", patch: { aspect: "9:16" } },
+    });
+    const { id } = (await preview.json()) as { id: string };
+    const applied = await page.request.post("/api/v1/impact/apply", {
+      headers: write,
+      data: { impact_id: id, action: "mark" },
+    });
+    expect(applied.ok()).toBe(true);
+  }
   const tag = (text: string) => page.getByRole("link", { name: text });
   const change = async (platform: RegExp, aspect: string) => {
     await page.getByRole("button", { name: platform }).click();
     await page.getByRole("button", { name: "改，并标记待更新" }).click();
-    await expect(page.getByText(/会影响已经做好的部分/)).toHaveCount(0);
+    // Slow CI machines take a while to write it and close the dialog.
+    await expect(page.getByText(/会影响已经做好的部分/)).toHaveCount(0, { timeout: 20_000 });
     // Written by the backend's /impact/apply (`spec_aspect`, M4); the shots' confirmations go.
     await page.reload();
     await expect(page.locator("[data-loading]")).toHaveCount(0, { timeout: 15_000 });
@@ -79,14 +95,14 @@ test("first run: / opens 环境与安装; installing into ComfyUI asks first, sn
   await expect(page.getByRole("region", { name: "你的 ComfyUI" })).toContainText("D:\\ComfyUI");
 
   await page.getByRole("button", { name: "全选" }).click();
-  await page.getByRole("button", { name: "安装选中的 16 项" }).click();
+  await page.getByRole("button", { name: "安装选中的 18 项" }).click();
   const dialog = page.getByRole("alertdialog", { name: "开始安装前请确认" });
-  await expect(dialog.getByText("会改动你的 ComfyUI（10 项）")).toBeVisible();
+  await expect(dialog.getByText("会改动你的 ComfyUI（12 项）")).toBeVisible();
   await dialog.getByRole("button", { name: "确认，开始安装" }).click();
   await expect(page.getByRole("heading", { name: "准备好了" })).toBeVisible({ timeout: 60_000 });
   await expect(page.getByText(/^已存 ComfyUI 快照：/)).toBeVisible();
   // Still missing: H3 and SeedVR2 nodes (with a newer ComfyUI), our own nodes (not out yet).
-  await expect(nav.getByTestId("setup-badge")).toHaveText("缺 3 项");
+  await expect(nav.getByTestId("setup-badge")).toHaveText("缺 2 项");
 
   const snapshots = page.getByRole("list", { name: "快照" });
   await expect(snapshots.getByRole("listitem")).toHaveCount(1);
@@ -123,21 +139,27 @@ test("环境与安装 is in the left nav on every page", async ({ page }) => {
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("先看看这台电脑能跑什么");
 });
 
-test("workflow library: confirm guessed bindings, pass a trial, make it my workflow", async ({
+test("workflow library: import from ComfyUI, confirm the guessed bindings, pass a trial, make it mine", async ({
   page,
 }) => {
   const errors = trackConsoleErrors(page);
   await setUi(page, {});
   await openPage(page, "/models");
   const lib = page.getByRole("region", { name: "工作流库" });
-  const wan = lib.getByRole("rowgroup", { name: "Wan 2.2 图生视频（社区）" });
-  await lib.getByRole("button", { name: "展开 Wan 2.2 图生视频（社区）" }).click();
-  await expect(wan.getByText("还有 3 项是导入时自动猜的，确认后才能试跑和登记。")).toBeVisible();
-  await wan.getByRole("button", { name: "确认全部绑定" }).click();
-  await expect(wan.getByText(/还有 \d+ 项是导入时自动猜的/)).toHaveCount(0);
-  await wan.getByRole("tab", { name: "试跑" }).click();
-  await wan.getByRole("button", { name: "试跑", exact: true }).click();
-  await wan.getByRole("button", { name: "通过了，升为我的工作流" }).click({ timeout: 15_000 });
-  await expect(wan.getByRole("row").first()).toContainText("我的工作流");
+  await lib.getByRole("button", { name: "导入工作流" }).click();
+  const dialog = page.getByRole("dialog", { name: "导入工作流" });
+  await dialog
+    .getByRole("listitem", { name: "sdxl_basic.json" })
+    .getByRole("button", { name: "导入" })
+    .click();
+  const sdxl = lib.getByRole("rowgroup", { name: "sdxl_basic" });
+  await expect(sdxl.getByText("还有 6 项是导入时自动猜的，确认后才能试跑和登记。")).toBeVisible();
+  await sdxl.getByRole("button", { name: "确认全部绑定" }).click();
+  await expect(sdxl.getByText(/还有 \d+ 项是导入时自动猜的/)).toHaveCount(0);
+  await sdxl.getByRole("tab", { name: "试跑" }).click();
+  await sdxl.getByRole("button", { name: "试跑", exact: true }).click();
+  // The trial runs on the backend's GPU queue; its end arrives as job.updated.
+  await sdxl.getByRole("button", { name: "通过了，升为我的工作流" }).click({ timeout: 15_000 });
+  await expect(sdxl.getByRole("row").first()).toContainText("我的工作流");
   expect(errors).toEqual([]);
 });

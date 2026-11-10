@@ -128,7 +128,8 @@
       "audio": "Set by the spoken audio (a breath each side), at least {{min}} s",
       "manual": "Set by hand",
       "manualMin": "Set by hand · not shorter than its audio, {{min}} s",
-      "plan": "From the shot plan"
+      "plan": "From the shot plan",
+      "planMin": "From the shot plan · not shorter than its audio, {{min}} s"
     },
     "durationReset": "Back to the audio",
     "durationResetPlan": "Back to the plan's {{s}} s",

@@ -40,6 +40,15 @@ from drama_series_agent.modelhub.pricing import cost_usd
 from drama_series_agent.modelhub.registry import Registry
 
 DEFAULT_API_TIMEOUT_S = 600.0
+DEFAULT_LOCAL_TIMEOUT_S = 600.0
+LOCAL_TIMEOUT_MARGIN = 1.5  # over the estimate: a local run gets half again as long
+
+
+def local_timeout_s(configured: Any, estimate: Estimate) -> float:
+    """A local model's time limit: the fallback's ``timeout_s``, or longer when the estimate
+    says the run takes longer (M5 step 15d: a 15 s H3 clip runs about 13 minutes here)."""
+    base = float(configured) if isinstance(configured, int | float) and configured > 0 else 0.0
+    return max(base or DEFAULT_LOCAL_TIMEOUT_S, LOCAL_TIMEOUT_MARGIN * estimate.seconds)
 
 
 class BudgetGuard(Protocol):
@@ -216,9 +225,9 @@ class Router:
         await self.budget.check(spec, estimate, settings, ctx)
 
         timeout_s = (
-            float(settings.values["fallback"].get("timeout_s") or 600)
+            local_timeout_s(settings.values["fallback"].get("timeout_s"), estimate)
             if spec.where == "local"
-            else self.api_timeout_s
+            else float((spec.caps.model_extra or {}).get("timeout_s") or self.api_timeout_s)
         )
         row = ModelCall(
             series_id=ctx.series_id,
@@ -238,8 +247,11 @@ class Router:
             attempt=ctx.attempt,
             queued_at=utcnow(),
             unit_prices_json=spec.pricing.snapshot(),
+            unpriced=not spec.pricing.known,
             status="error",
             billed=False,
+            workflow_id=spec.workflow if spec.where == "local" else None,
+            select_json=ctx.select,
         )
         row.started_at = utcnow()
         try:
@@ -272,10 +284,15 @@ class Router:
         row.output_seconds = usage.output_seconds
         row.chars = usage.chars
         row.input_seconds = usage.input_seconds
+        comfy = result.raw.get("comfy")
+        if isinstance(comfy, dict):  # SPEC 6.4.5: which workflow file, which ComfyUI
+            row.workflow_id = comfy.get("workflow_id") or row.workflow_id
+            row.workflow_sha256 = comfy.get("workflow_sha256")
+            row.comfy_env_hash = comfy.get("comfy_env_hash")
         row.cost_usd = cost_usd(
             spec.pricing,
             usage,
-            resolution=req.params.get("resolution"),
+            resolution=usage.resolution or req.params.get("resolution"),
             rates=self._config().providers.currency_rates,
         )
         saved = await calllog.record(self.db, row)

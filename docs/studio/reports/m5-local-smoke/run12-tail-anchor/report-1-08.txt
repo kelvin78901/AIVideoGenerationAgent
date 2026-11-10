@@ -1,0 +1,6 @@
+1-08 with a last-frame anchor at frame 21 · work dir C:\Users\kelvin\AppData\Local\Temp\drama-anchor-_iymgm_b\home
+== anchor: 1-08 seed 1267956551, tail + last-frame anchor
+   1 job(s) in 260.5 s, GPU memory peak 31687 MiB
+   call comfy/h3 [local] success 258.9 s audio=7.29s
+   run11: guided frames 0/5/10/15/21 vs the tail 35.0 / 29.8 / 23.6 / 21.2 / 20.4 dB; cut 20.3 dB (take's first two pairs inf, 30.5)
+   anchored: guided frames 0/5/10/15/21 vs the tail 35.2 / 33.1 / 31.5 / 33.2 / 36.8 dB; cut 36.5 dB (take's first two pairs inf, 52.4)

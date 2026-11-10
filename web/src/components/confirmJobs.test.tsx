@@ -115,6 +115,25 @@ describe("ConfirmJobs", () => {
     ).toBeInTheDocument();
   });
 
+  it("says when the model has no price instead of showing $0", async () => {
+    serve(waitingJob({ reason: "unpriced", estimate_usd: 0, limit_usd: null }));
+    renderAt(<ConfirmJobs />);
+    expect(
+      await screen.findByText(
+        "DeepSeek V4 Pro 没有单价，这次花多少不知道。可以在模型页给它填上单价。",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "确认，开始运行（价格未知）" })).toBeInTheDocument();
+  });
+
+  it("names the shot's cap when a shot would pass it", async () => {
+    serve(waitingJob({ reason: "shot", estimate_usd: 0.92, limit_usd: 0.4 }));
+    renderAt(<ConfirmJobs />);
+    expect(
+      await screen.findByText("用 DeepSeek V4 Pro 预计 $0.92，这个镜头离单镜上限只剩 $0.40。"),
+    ).toBeInTheDocument();
+  });
+
   it("shows nothing when no run is waiting", async () => {
     renderAt(<ConfirmJobs />);
     await new Promise((r) => setTimeout(r, 50));

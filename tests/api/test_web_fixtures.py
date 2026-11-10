@@ -1,4 +1,5 @@
-"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script,assets,dub,shots}.json``:
+"""``web/src/test/data/{setup,config,novel,bible,suggestions,episodes,script,assets,dub,shots,generate,
+workflows}.json``:
 what the Mock backend answers.
 
 The front end's page tests serve these through their fake backend
@@ -26,6 +27,7 @@ from fastapi.testclient import TestClient
 from drama_series_agent.api.app import create_app
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.setup.installer import FAKE_FAILING_ITEM
+from drama_series_agent.studio import demo
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -41,8 +43,11 @@ def _fast_demo(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.fixture
-def client(demo_gates: None) -> Iterator[TestClient]:
-    """The demo as the app seeds it: 小说 and episode 1's 剧本 confirmed."""
+def client(demo_gates: None, monkeypatch: pytest.MonkeyPatch) -> Iterator[TestClient]:
+    """The demo as the app seeds it, but before its 分镜确认: 小说 and episode 1's 剧本
+    confirmed, its storyboard in progress (what the storyboard page tests confirm), no takes."""
+    gates = tuple(g for g in demo.CONFIRMED_GATES if g[0] != "storyboard")
+    monkeypatch.setattr(demo, "CONFIRMED_GATES", gates)
     with TestClient(create_app(), base_url=LOCAL, headers={"X-Drama-Studio": "1"}) as c:
         yield c
 
@@ -346,3 +351,100 @@ def test_web_shots_fixture_is_current(client: TestClient) -> None:
             f.write(text)
     current = SHOTS_FIXTURE.read_text(encoding="utf-8") if SHOTS_FIXTURE.exists() else ""
     assert current == text, f"{SHOTS_FIXTURE.name} is out of date: see this module's docstring"
+
+
+GENERATE_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "generate.json"
+
+
+def _stable_takes(videos: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """FFmpeg builds differ between platforms, so a Mock clip's bytes (and its poster, last frame
+    and length to the millisecond) do too: each take's files get ids from the version, their
+    lengths a tenth of a second, and the version a hash from its id."""
+    for p in videos:
+        for v in p["versions"]:
+            v["content_hash"] = f"sha256:{v['id']}"
+            for f in v["files"]:
+                if f["role"] == "prompt":
+                    continue
+                sha = hashlib.sha256(f"{v['id']}:{f['role']}".encode()).hexdigest()
+                f["sha256"], f["path"] = sha, f"blobs/sha256/{sha[:2]}/{sha}"
+                if f.get("duration_s") is not None:
+                    f["duration_s"] = round(f["duration_s"], 1)
+            if isinstance(v["payload"].get("duration_s"), float):
+                v["payload"]["duration_s"] = round(v["payload"]["duration_s"], 1)
+            request = v["params"].get("request")
+            if isinstance(request, dict) and isinstance(request.get("duration_s"), float):
+                request["duration_s"] = round(request["duration_s"], 1)
+    return videos
+
+
+@pytest.fixture
+def seeded() -> Iterator[TestClient]:
+    """The demo exactly as the app seeds it: 分镜 confirmed, episode 1's takes made."""
+    with TestClient(create_app(), base_url=LOCAL, headers={"X-Drama-Studio": "1"}) as c:
+        yield c
+
+
+def test_web_generate_fixture_is_current(demo_gates: None, seeded: TestClient) -> None:
+    """生成 of episode 1 once 分镜 is confirmed (``test/fakes/generate.ts``): its shots, the nine
+    video products with the seeded takes, the auto rules, the workflow rules, the run log, the
+    header's spend and the 生成 badge."""
+    client = seeded
+    shots = client.get(f"{V1}/episodes/demo-e1/shots").json()
+    videos = [client.get(f"{V1}/products/{s['video_product_id']}").json() for s in shots]
+    export = {
+        "shots": shots,
+        "videos": _stable_takes(videos),
+        "rules": client.get(f"{V1}/series/demo/generate-rules").json(),
+        "workflow_rules": client.get(f"{V1}/series/demo/workflow-rules").json(),
+        "log": client.get(f"{V1}/episodes/demo-e1/generate-log").json(),
+        "summary": client.get(
+            f"{V1}/metrics/summary", params={"scope": "episode", "episode": "demo-e1"}
+        ).json(),
+        "progress": client.get(f"{V1}/episodes/demo-e1/progress").json()["steps"]["generate"],
+    }
+    text = json.dumps(_fixed(export), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(GENERATE_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = GENERATE_FIXTURE.read_text(encoding="utf-8") if GENERATE_FIXTURE.exists() else ""
+    assert current == text, f"{GENERATE_FIXTURE.name} is out of date: see this module's docstring"
+
+
+WORKFLOWS_FIXTURE = REPO_ROOT / "web" / "src" / "test" / "data" / "workflows.json"
+IMPORTED = ("我的/雨夜氛围-ltx2.json", "sdxl_basic.json")
+
+
+def _checked_at(value: Any) -> Any:
+    """A health check's and a trial's time is ``at``."""
+    if isinstance(value, dict):
+        return {k: FIXED_TIME if k == "at" else _checked_at(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_checked_at(v) for v in value]
+    return value
+
+
+def test_web_workflows_fixture_is_current(client: TestClient) -> None:
+    """工作流库 (``test/fakes/workflows.ts``): the repo's workflows and two imported from the
+    sample ComfyUI's list, after 全部体检; that list; and, for each with something missing,
+    the change list installing it would make."""
+    for path in IMPORTED:
+        res = client.post(f"{V1}/workflows/import", json={"comfy_path": path})
+        assert res.status_code == 201, res.text
+    workflows = client.post(f"{V1}/workflows/check-all").json()
+    deps = {
+        w["id"]: client.post(f"{V1}/workflows/{w['id']}/deps").json()["changes"]
+        for w in workflows
+        if w["check"] and w["check"]["status"] != "ok"
+    }
+    export = {
+        "workflows": workflows,
+        "comfy_files": client.get(f"{V1}/comfy/workflows").json(),
+        "deps": deps,
+    }
+    text = json.dumps(_fixed(_checked_at(export)), ensure_ascii=False, indent=2) + "\n"
+    if os.environ.get("DRAMA_UPDATE_FIXTURES") == "1":
+        with open(WORKFLOWS_FIXTURE, "w", encoding="utf-8", newline="\n") as f:
+            f.write(text)
+    current = WORKFLOWS_FIXTURE.read_text(encoding="utf-8") if WORKFLOWS_FIXTURE.exists() else ""
+    assert current == text, f"{WORKFLOWS_FIXTURE.name} is out of date: see this module's docstring"

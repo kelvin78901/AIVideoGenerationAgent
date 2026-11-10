@@ -13,6 +13,7 @@ import { productKeys } from "@/api/hooks/products";
 import { applySetupProgress } from "@/api/hooks/setup";
 import { applySyncUpdate } from "@/api/hooks/sync";
 import { callKeys, upsertJob } from "@/api/hooks/useJobs";
+import { workflowKeys } from "@/api/hooks/workflows";
 import { JobSchema } from "@/api/schemas/jobs";
 import { SetupProgressSchema } from "@/api/schemas/setup";
 import { SyncRunSchema } from "@/api/schemas/sync";
@@ -49,7 +50,8 @@ export function onEvent(type: EventType, fn: Listener): () => void {
 
 /** Cache keys refetched when an event of that type arrives. Extended as resources are added. */
 const invalidates: Partial<Record<EventType, readonly (readonly unknown[])[]>> = {
-  "cost.updated": [callKeys.all],
+  // A call was billed: the calls list, and every spend total (the header, the dashboard).
+  "cost.updated": [callKeys.all, ["metrics"]],
   // Products feed series-level views (episode script status, suggestions, bible) and episode
   // ones (the script, the step badges).
   "product.updated": [productKeys.all, ["series"], ["episodes"]],
@@ -62,8 +64,12 @@ const invalidates: Partial<Record<EventType, readonly (readonly unknown[])[]>> =
 export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType, data: unknown) {
   if (type === "job.updated") {
     const job = JobSchema.safeParse(data);
-    if (job.success) upsertJob(client, job.data);
-    else console.error("[events] bad job.updated payload", job.error);
+    if (job.success) {
+      upsertJob(client, job.data);
+      // A workflow's trial started or ended (its steps alone change nothing in the library).
+      if (job.data.kind === "workflow_trial" && !job.data.progress)
+        void client.invalidateQueries({ queryKey: workflowKeys.all });
+    } else console.error("[events] bad job.updated payload", job.error);
   } else if (type === "setup.progress") {
     const ev = SetupProgressSchema.safeParse(data);
     if (ev.success) applySetupProgress(client, ev.data);
@@ -91,8 +97,42 @@ export function dispatchEvent(client: QueryClient, t: TFunction, type: EventType
     });
     toast[ev.level ?? "info"](text);
   }
-  for (const queryKey of invalidatesFor(type, data)) void client.invalidateQueries({ queryKey });
+  for (const queryKey of invalidatesFor(type, data)) invalidate(client, queryKey);
   for (const fn of listeners.get(type) ?? []) fn(data);
+}
+
+/** How long a refetched query waits before the next event may refetch it again. */
+export const REFETCH_WINDOW_MS = 250;
+
+const cooling = new WeakMap<QueryClient, Map<string, { pending: boolean }>>();
+
+/**
+ * Bursts of events refetch each query twice, not once per event: at the first event and once
+ * more at the end of the window if more came in. 生成确认 locks nine products and each one
+ * announces itself; refetching on every one sent about a hundred requests in a second (each
+ * refetch replaces the one in flight, which the backend still runs to the end), and the
+ * confirm itself waited behind them.
+ */
+function invalidate(client: QueryClient, queryKey: readonly unknown[]): void {
+  let keys = cooling.get(client);
+  if (!keys) cooling.set(client, (keys = new Map()));
+  const id = JSON.stringify(queryKey);
+  const held = keys.get(id);
+  if (held) {
+    held.pending = true;
+    return;
+  }
+  void client.invalidateQueries({ queryKey });
+  const state = { pending: false };
+  keys.set(id, state);
+  const tick = () => {
+    if (state.pending) {
+      state.pending = false;
+      void client.invalidateQueries({ queryKey });
+      setTimeout(tick, REFETCH_WINDOW_MS);
+    } else keys.delete(id);
+  };
+  setTimeout(tick, REFETCH_WINDOW_MS);
 }
 
 /** Slots made by the dozen refresh their own queries alone, not every product view. */

@@ -14,7 +14,11 @@ export function RunLog({
 }) {
   const { t } = useTranslation("generate");
   const { t: te } = useTranslation("enums");
-  const lines = [...entries].sort((a, b) => b.at.localeCompare(a.at));
+  // The backend lists them oldest first; within the same minute too (a fallback before its take).
+  const lines = entries
+    .map((e, i) => ({ e, i }))
+    .sort((a, b) => b.e.at.localeCompare(a.e.at) || b.i - a.i)
+    .map(({ e }) => e);
 
   const text = (e: GenerateLogEntry) => {
     const p = e.message.params;

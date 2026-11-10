@@ -243,3 +243,73 @@ def _prepare(data: bytes, t: DialogueTarget) -> PreparedAudio:
         peak_db=after.peak_db,
         waveform=waveform(samples),
     )
+
+
+TRACK_RATE = 48_000
+
+
+def dialogue_track(clips: list[bytes], total_s: float, lead_s: float) -> bytes:
+    """A shot's dialogue as one track (M5, the 先配音 shots' audio for the video model): its
+    lines' clips one after another from ``lead_s``, silence after them up to ``total_s``;
+    48 kHz mono 16-bit WAV."""
+    track = array.array("h", bytes(2 * round(lead_s * TRACK_RATE)))
+    for clip in clips:
+        samples, rate = _samples(clip)
+        if rate != TRACK_RATE:
+            samples, rate = _samples(_resampled(clip))
+        track.extend(samples)
+    track.extend(array.array("h", bytes(2 * max(0, round(total_s * TRACK_RATE) - len(track)))))
+    if sys.byteorder == "big":
+        track.byteswap()
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(TRACK_RATE)
+        w.writeframes(track.tobytes())
+    return buf.getvalue()
+
+
+SAMPLE_GAP_S = 0.25
+
+
+def joined_sample(clips: list[bytes], floor_s: float, ceiling_s: float) -> bytes | None:
+    """One speaker's clips joined into a voice sample at least ``floor_s`` long (M5 step 15b,
+    Kelvin 2026-11-08: the H3 API wants 2–15 s; a local voice's anchor can be under a second).
+    The clips, all in the same voice, follow one another with a short pause until the sample is
+    long enough, nothing repeated and no silence added to reach it; cut at ``ceiling_s``.
+    ``None`` when all of them together are still too short. 48 kHz mono 16-bit WAV."""
+    gap = array.array("h", bytes(2 * round(SAMPLE_GAP_S * TRACK_RATE)))
+    track = array.array("h")
+    for clip in clips:
+        try:
+            samples, rate = _samples(clip)
+        except (wave.Error, EOFError, AudioError):
+            rate = 0  # not 16-bit mono WAV: ffmpeg makes it one
+        if rate != TRACK_RATE:
+            samples, rate = _samples(_resampled(clip))
+        if track:
+            track.extend(gap)
+        track.extend(samples)
+        if len(track) >= floor_s * TRACK_RATE:
+            break
+    else:
+        return None
+    del track[round(ceiling_s * TRACK_RATE) :]
+    if sys.byteorder == "big":
+        track.byteswap()
+    buf = io.BytesIO()
+    with wave.open(buf, "wb") as w:
+        w.setnchannels(1)
+        w.setsampwidth(2)
+        w.setframerate(TRACK_RATE)
+        w.writeframes(track.tobytes())
+    return buf.getvalue()
+
+
+def _resampled(clip: bytes) -> bytes:
+    with TemporaryDirectory(prefix="drama-audio-") as tmp:
+        src, out = Path(tmp, "in.wav"), Path(tmp, "out.wav")
+        src.write_bytes(clip)
+        _ffmpeg("-i", str(src), "-ar", str(TRACK_RATE), "-ac", "1", "-c:a", "pcm_s16le", str(out))
+        return out.read_bytes()

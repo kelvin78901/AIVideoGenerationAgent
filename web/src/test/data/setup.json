@@ -528,8 +528,8 @@
           "id": "node_dramastudio",
           "group": "comfy",
           "name": {
-            "zh": "DramaStudio 节点包（素材板与存回）",
-            "en": "DramaStudio nodes (boards and save-back)"
+            "zh": "DramaStudio 节点包",
+            "en": "DramaStudio nodes"
           },
           "status": "missing",
           "found": {
@@ -537,14 +537,14 @@
             "params": {}
           },
           "fix": {
-            "code": "dramastudio_pending",
+            "code": "install_nodes",
             "params": {}
           },
           "required": true,
-          "installable": false,
+          "installable": true,
           "touches_comfy": true,
           "size_bytes": null,
-          "work_s": 35.0,
+          "work_s": 5.0,
           "install": null
         },
         {
@@ -659,6 +659,29 @@
           "installable": true,
           "touches_comfy": true,
           "size_bytes": 20800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_flashvsr",
+          "group": "w",
+          "name": {
+            "zh": "FlashVSR 1.1 权重",
+            "en": "FlashVSR 1.1 weights"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 6700000000,
           "work_s": 0.0,
           "install": null
         },
@@ -867,11 +890,13 @@
         "comfy",
         "node_flashvsr",
         "sage",
+        "node_dramastudio",
         "w_h3",
         "w_te",
         "w_img",
         "w_img_t2i",
         "w_flux3",
+        "w_flashvsr",
         "w_sr",
         "w_tts",
         "llmsrv"
@@ -912,6 +937,15 @@
             "action": "install",
             "to": "2.2.0",
             "source": "sageattention @ https://github.com/woct0rdho/SageAttention/releases/download/v2.2.0-windows.post6/sageattention-2.2.0+cu130torch2.10.0andhigher.post6-cp310-abi3-win_amd64.whl"
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "node_dramastudio",
+            "action": "install",
+            "to": "0.1.0",
+            "source": "integrations/comfyui-dramastudio"
           }
         },
         {
@@ -962,6 +996,16 @@
             "to": "feef60b",
             "source": "black-forest-labs/flux-3-image-klein-comfy",
             "gb": 20.8
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
+            "item": "w_flashvsr",
+            "action": "install",
+            "to": "f1bc675",
+            "source": "1038lab/FlashVSR",
+            "gb": 6.7
           }
         },
         {
@@ -1604,8 +1648,8 @@
           "id": "node_dramastudio",
           "group": "comfy",
           "name": {
-            "zh": "DramaStudio 节点包（素材板与存回）",
-            "en": "DramaStudio nodes (boards and save-back)"
+            "zh": "DramaStudio 节点包",
+            "en": "DramaStudio nodes"
           },
           "status": "optional",
           "found": {
@@ -1613,14 +1657,14 @@
             "params": {}
           },
           "fix": {
-            "code": "dramastudio_pending",
+            "code": "install_nodes",
             "params": {}
           },
           "required": false,
-          "installable": false,
+          "installable": true,
           "touches_comfy": false,
           "size_bytes": null,
-          "work_s": 35.0,
+          "work_s": 5.0,
           "install": null
         },
         {
@@ -1735,6 +1779,29 @@
           "installable": true,
           "touches_comfy": false,
           "size_bytes": 20800000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_flashvsr",
+          "group": "w",
+          "name": {
+            "zh": "FlashVSR 1.1 权重",
+            "en": "FlashVSR 1.1 weights"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_upscale_api",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 6700000000,
           "work_s": 0.0,
           "install": null
         },
@@ -1941,6 +2008,7 @@
         "comfy",
         "comfy_manager",
         "node_vhs",
+        "node_dramastudio",
         "w_img",
         "w_img_t2i",
         "w_flux3",

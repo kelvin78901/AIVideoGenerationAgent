@@ -12,9 +12,16 @@ from typing import Any, Literal
 from pydantic import BaseModel
 
 from drama_series_agent.core.capabilities import CUDA, Capabilities, local_model
-from drama_series_agent.core.config import ComponentDefault, MediaModel, StudioConfig
+from drama_series_agent.core.config import (
+    ComponentDefault,
+    LocalModel,
+    MediaModel,
+    StudioConfig,
+)
+from drama_series_agent.modelhub.pricing import pricing_for_media
 
 Where = Literal["local", "api"]
+Tier = Literal["recommended", "mine", "unverified"]
 
 
 class ModelOption(BaseModel):
@@ -22,6 +29,10 @@ class ModelOption(BaseModel):
     display: str
     where: Where
     price: dict[str, Any] | None
+    # False: an API model nobody priced yet (a listed model, M5 step 7a); a run asks first.
+    priced: bool = True
+    # A ComfyUI workflow's library tier (SPEC 6.4.4); unverified ones are picked by hand only.
+    tier: Tier | None = None
 
 
 class Message(BaseModel):
@@ -87,16 +98,39 @@ def model_options(cfg: StudioConfig) -> list[ModelOption]:
                     "out": m.price.out,
                     "currency": _currency(m.price.currency),
                 }
-            out.append(ModelOption(key=m.key, display=m.display, where=provider.where, price=price))
+            priced = provider.where != "api" or m.price is not None
+            out.append(
+                ModelOption(
+                    key=m.key, display=m.display, where=provider.where, price=price, priced=priced
+                )
+            )
     for media in cfg.providers.media_models:
         out.append(
             ModelOption(
-                key=media.key, display=media.display, where="api", price=_media_price(media)
+                key=media.key,
+                display=media.display,
+                where="api",
+                price=_media_price(media),
+                priced=pricing_for_media(media, None).known,
             )
         )
     for loc in cfg.providers.local_models:
-        out.append(ModelOption(key=loc.key, display=loc.display, where="local", price=None))
+        out.append(
+            ModelOption(
+                key=loc.key, display=loc.display, where="local", price=None, tier=_tier(loc, cfg)
+            )
+        )
     return out
+
+
+def _tier(loc: LocalModel, cfg: StudioConfig) -> Tier | None:
+    """A workflow's tier: the library's when it has the workflow (a changed file demotes even
+    a factory one), otherwise recommended (``providers.yaml`` ships it)."""
+    if loc.runtime != "comfyui" or not loc.workflow:
+        return None
+    if loc.key in cfg.unverified:
+        return "unverified"
+    return "mine" if loc.tier == "mine" else "recommended"
 
 
 def _machine_reason(lacks: list[list[str]]) -> Message:

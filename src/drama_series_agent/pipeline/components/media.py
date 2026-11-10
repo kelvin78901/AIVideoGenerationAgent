@@ -34,6 +34,7 @@ from drama_series_agent.core.models_db import (
 from drama_series_agent.media.audio import prepare_clip
 from drama_series_agent.modelhub.adapters.base import ModelError, ModelRequest
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm, Router, StoredFile
+from drama_series_agent.modelhub.workflows import workflow_sha256
 from drama_series_agent.pipeline.component import (
     Component,
     ComponentError,
@@ -158,6 +159,12 @@ class MediaComponent(Component):
             meta={"component": self.id, "task": task},
         )
 
+    def _workflow_sha256(self, model: str) -> str | None:
+        try:
+            return workflow_sha256(self.services.registry.spec(model))
+        except ModelError:
+            return None
+
     async def media_call(
         self,
         ctx: RunContext,
@@ -169,7 +176,7 @@ class MediaComponent(Component):
         fallback_reason: str | None = None,
     ) -> MediaCall:
         """One call, its stored files cached by request (a retry does not pay again)."""
-        key = _media_key(model, req)
+        key = _media_key(model, req, self._workflow_sha256(model))
         async with self.services.db.session() as session:
             row = await session.get(LlmCache, key)
         if row is not None:
@@ -296,16 +303,17 @@ class MediaComponent(Component):
         )
 
 
-def _media_key(model: str, req: ModelRequest) -> str:
-    raw = canonical_json(
-        {
-            "model": model,
-            "prompt": req.prompt,
-            "params": req.params,
-            "seed": req.seed,
-            "task": req.meta.get("task"),
-        }
-    )
+def _media_key(model: str, req: ModelRequest, workflow_sha256: str | None = None) -> str:
+    key: dict[str, Any] = {
+        "model": model,
+        "prompt": req.prompt,
+        "params": req.params,
+        "seed": req.seed,
+        "task": req.meta.get("task"),
+    }
+    if workflow_sha256:  # a changed workflow makes something else from the same request
+        key["workflow"] = workflow_sha256
+    raw = canonical_json(key)
     return "media:" + hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 

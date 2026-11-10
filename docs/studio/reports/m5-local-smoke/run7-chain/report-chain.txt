@@ -1,0 +1,62 @@
+M5 local smoke · 2026-11-08 05:10
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 29725 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== refs: 林晚、楼道、红伞重新画（先解锁）· Qwen-Image-2512，各锁第 1 张
+   3 job(s) in 35.2 s, GPU memory peak 31477 MiB
+   call comfy/qwen-image [local] success 11.4 s images=4
+   call comfy/qwen-image [local] success 11.6 s images=4
+   call comfy/qwen-image [local] success 11.4 s images=4
+== kf: 1-01、1-04 关键帧草稿（本地），确认第 1 张
+   2 job(s) in 66.3 s, GPU memory peak 23337 MiB
+   call comfy/flux3-klein [local] success 41.7 s images=3
+   call comfy/flux3-klein [local] success 24.2 s images=3
+   model comfy/flux3-klein [local], files: kf-1-01-candidate-0.png (928x1664), kf-1-01-candidate-1.png (928x1664), kf-1-01-candidate-2.png (928x1664)
+   model comfy/flux3-klein [local], files: kf-1-04-candidate-0.png (928x1664), kf-1-04-candidate-1.png (928x1664), kf-1-04-candidate-2.png (928x1664)
+== kf-stale: 待更新的 1-02、1-05、1-06 重画，再确认分镜
+   3 job(s) in 59.2 s, GPU memory peak 25378 MiB
+   call comfy/flux3-klein [local] success 24.2 s images=3
+   call comfy/flux3-klein [local] success 17.2 s images=3
+   call comfy/flux3-klein [local] success 17.1 s images=3
+   分镜 confirmed 9/9
+== voice: 林晚换本地音色（先解锁）· Qwen3-TTS VoiceDesign 试听
+   1 job(s) in 66.0 s, GPU memory peak 7473 MiB
+   call local/qwen3-tts [local] success 46.4 s audio=0.72s
+   call local/qwen3-tts [local] success 6.4 s audio=3.68s
+   call local/qwen3-tts [local] success 3.2 s audio=1.84s
+   call local/qwen3-tts [local] success 3.2 s audio=1.84s
+   call local/qwen3-tts [local] success 1.8 s audio=0.96s
+   call local/qwen3-tts [local] success 3.5 s audio=2.0s
+== voice-final: 林晚本地终版 · IndexTTS-2.5，锁定
+   1 job(s) in 78.1 s, GPU memory peak 9838 MiB
+   call local/indextts2 [local] success 65.6 s audio=0.7894784580498866s
+   call local/indextts2 [local] success 2.8 s audio=1.2770975056689342s
+   call local/indextts2 [local] success 2.9 s audio=1.3119274376417234s
+   call local/indextts2 [local] success 2.8 s audio=1.474467120181406s
+   call local/indextts2 [local] success 2.7 s audio=1.3119274376417234s
+   lock: locked
+== dub: 全部配音 · 林晚的本地音色走 IndexTTS-2.5
+   2 job(s) in 2.6 s, GPU memory peak 9768 MiB
+   call local/indextts2 [local] success 1.0 s audio=1.195827664399093s
+   call local/indextts2 [local] success 2.2 s audio=1.9504761904761905s
+== vid-1-06: 1-06 视频草稿（scene_change，声音 tts）
+   1 job(s) in 159.3 s, GPU memory peak 31691 MiB
+   call deepseek/v4.1-flash [api] success 0.0 s audio=Nones
+   call comfy/h3 [local] success 158.1 s audio=5.17s
+   NOT LOCAL: ['deepseek/v4.1-flash'] (a fallback ran)
+   model comfy/h3 [local], files: take-1-06-video.mp4 (768x1344 4.88s), take-1-06-poster.png (768x1344), take-1-06-last_frame.png (768x1344), take-1-06-raw.mp4 (768x1344 5.17s)
+   clip 768x1344 4.88s @ 24.0 fps, sound yes; asked 5.00s (minus the 0.3s cut: 4.70s; a model's shortest clip can be longer); voices [], refs []
+   dubbed track sent: yes
+== vid-1-08: 1-08 视频草稿（continuous，声音 native）
+   1 job(s) in 213.1 s, GPU memory peak 31707 MiB
+   call deepseek/v4.1-flash [api] success 0.0 s audio=Nones
+   call comfy/h3 [local] success 212.0 s audio=6.58s
+   NOT LOCAL: ['deepseek/v4.1-flash'] (a fallback ran)
+   model comfy/h3 [local], files: take-1-08-video.mp4 (768x1344 6.29s), take-1-08-poster.png (768x1344), take-1-08-last_frame.png (768x1344), take-1-08-raw.mp4 (768x1344 6.58s)
+   clip 768x1344 6.29s @ 24.0 fps, sound yes; asked 6.00s (minus the 0.3s cut: 5.70s; a model's shortest clip can be longer); voices [], refs []
+   1-08 started from 1-06's last frame: yes
+   1-06 last frame | 1-08 poster (after the 0.3 s cut): PSNR ? → tail-1-06-1-08.png
+
+result: SOME STEPS FAILED
+files: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-z2icdq70\out

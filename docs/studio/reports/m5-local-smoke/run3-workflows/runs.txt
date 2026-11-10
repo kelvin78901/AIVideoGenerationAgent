@@ -1,0 +1,17 @@
+== 2026-10-27 20:01 official20,seedhunter20 on 1-01,1-04
+official20 1-01: ok in 153 s → 1-01-official20.mp4
+official20 1-04: ok in 184 s → 1-04-official20.mp4
+seedhunter20 1-01: error after 12 s — SamplerCustomAdvanced: hostbuf_file_reader_read failed (RAM low while loading; retried after a ComfyUI restart)
+seedhunter20 1-04: ok in 184 s → 1-04-seedhunter20.mp4
+== 2026-10-27 20:23 seedhunter20,official20_pt,seedhunter_full,seedvr2 on 1-01
+seedhunter20 1-01: ok in 156 s → 1-01-seedhunter20.mp4
+official20_pt 1-01: ok in 274 s → 1-01-official20_pt.mp4
+seedhunter_full 1-01: error after 144 s — SamplerCustomAdvanced: shape mismatch: value tensor of shape [1008, 96] cannot be broadcast to indexing result of shape [2040, 96]
+seedvr2 1-01: ok in 194 s → 1-01-seedvr2.mp4
+== 2026-10-27 20:36 official20_pt,seedhunter_full,seedvr2 on 1-04
+official20_pt 1-04: ok in 346 s → 1-04-official20_pt.mp4
+seedhunter_full 1-04: ok in 322 s → 1-04-seedhunter_full.mp4
+seedvr2 1-04: ok in 211 s → 1-04-seedvr2.mp4
+== 2026-10-27 20:51 seedhunter_full on 1-04,1-01
+seedhunter_full 1-04: ok in 352 s → 1-04-seedhunter_full.mp4
+seedhunter_full 1-01: ok in 301 s → 1-01-seedhunter_full.mp4

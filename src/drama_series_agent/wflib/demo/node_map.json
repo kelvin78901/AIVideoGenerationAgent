@@ -1,0 +1,41 @@
+{
+ "https://github.com/Lightricks/ComfyUI-LTXVideo": [
+  [
+   "LTXVConditioning",
+   "EmptyLTXVLatentVideo",
+   "LTXVImgToVideo",
+   "LTXVScheduler"
+  ],
+  {
+   "title_aux": "ComfyUI-LTXVideo"
+  }
+ ],
+ "https://github.com/Kosinkadink/ComfyUI-VideoHelperSuite": [
+  [
+   "VHS_VideoCombine",
+   "VHS_LoadVideo"
+  ],
+  {
+   "title_aux": "ComfyUI-VideoHelperSuite"
+  }
+ ],
+ "https://github.com/1038lab/ComfyUI-FlashVSR": [
+  [
+   "AILab_FlashVSR"
+  ],
+  {
+   "title_aux": "ComfyUI-FlashVSR"
+  }
+ ],
+ "https://example.com/ComfyUI-FilmGrainFX": [
+  [
+   "FilmGrainFX"
+  ],
+  {
+   "title_aux": "ComfyUI-FilmGrainFX",
+   "demo_breaks": [
+    "KSampler"
+   ]
+  }
+ ]
+}

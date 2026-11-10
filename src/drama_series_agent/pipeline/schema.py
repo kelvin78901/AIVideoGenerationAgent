@@ -72,6 +72,11 @@ class EstimateOut(BaseModel):
     where: Literal["local", "api"]
     cost_usd: float
     seconds: float | None
+    # False: the model has no known price (cost_usd is 0); a run waits for a yes first.
+    priced: bool = True
+    # 「用 API 出终版」 of a take where the component has a ``final_api`` (videos: Regenerate-2K
+    # of the shot's length); None elsewhere.
+    final_usd: float | None = None
 
 
 class RunningOut(BaseModel):

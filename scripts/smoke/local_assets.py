@@ -126,6 +126,7 @@ class Smoke:
         self.meter = meter
         self.lines: list[str] = []
         self.ok = True
+        self.expected_api: set[str] = set()  # real API calls a step makes on purpose
 
     def say(self, text: str = "") -> None:
         print(text, flush=True)
@@ -184,7 +185,11 @@ class Smoke:
         calls = [c for c in self.rows(ModelCall) if c.job_id in job_ids]
         calls.sort(key=lambda c: c.id or 0)
         failed = [j for j in jobs if j["state"] != "succeeded"]
-        not_local = [c for c in calls if c.where != "local" and c.status == "success"]
+        not_local = [
+            c
+            for c in calls
+            if c.where != "local" and c.status == "success" and c.model_key not in self.expected_api
+        ]
         peak = self.meter.peak(t0, t1)
         self.say(f"   {len(jobs)} job(s) in {t1 - t0:.1f} s, GPU memory peak {peak} MiB")
         for c in calls:

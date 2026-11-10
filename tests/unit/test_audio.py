@@ -14,6 +14,8 @@ from drama_series_agent.media.audio import (
     WAVEFORM_BARS,
     AudioError,
     DialogueTarget,
+    dialogue_track,
+    joined_sample,
     prepare_dialogue,
 )
 
@@ -81,3 +83,36 @@ async def test_a_whispered_line_keeps_its_soft_ending_and_a_tail() -> None:
         frames = w.readframes(w.getnframes())
     last = struct.unpack(f"<{int(0.1 * 48000)}h", frames[-int(0.1 * 48000) * 2 :])
     assert max(abs(s) for s in last) == 0  # it ends on silence, not mid-sound
+
+
+def test_a_shots_dialogue_track_strings_its_lines_after_a_breath() -> None:
+    """M5: the 先配音 shot's lines one after another from 0.3 s, padded to the shot's length;
+    a clip at another rate is resampled to 48 kHz."""
+    first = _wav([(1.0, 0.5)], rate=48000)
+    second = _wav([(0.5, 0.5)], rate=44100)
+    track = dialogue_track([first, second], total_s=2.5, lead_s=0.3)
+    with wave.open(io.BytesIO(track)) as w:
+        assert (w.getframerate(), w.getnchannels(), w.getsampwidth()) == (48000, 1, 2)
+        frames = w.readframes(w.getnframes())
+        assert w.getnframes() / 48000 == pytest.approx(2.5, abs=0.01)
+    samples = struct.unpack(f"<{len(frames) // 2}h", frames)
+    lead = round(0.3 * 48000)
+    assert not any(samples[:lead]) and any(samples[lead : lead + 4800])
+    assert not any(samples[round(1.85 * 48000) :])  # after the two lines (1.8 s): silence
+
+
+def test_a_short_voice_sample_is_joined_from_the_voices_other_clips() -> None:
+    """M5 step 15b (Kelvin 2026-11-08): the H3 API wants 2–15 s of voice; the same voice's
+    clips one after another with a short pause, only as many as needed, nothing repeated; cut
+    at the ceiling; ``None`` when all of them are still too short."""
+    clips = [_wav([(0.9, 0.5)], rate=48000), _wav([(0.8, 0.5)], rate=44100)]
+    clips += [_wav([(1.5, 0.5)], rate=48000), _wav([(3.0, 0.5)], rate=48000)]
+    sample = joined_sample(clips, 2.0, 15.0)
+    assert sample is not None
+    with wave.open(io.BytesIO(sample)) as w:
+        assert (w.getframerate(), w.getnchannels()) == (48000, 1)
+        seconds = w.getnframes() / 48000
+    assert seconds == pytest.approx(0.9 + 0.25 + 0.8 + 0.25 + 1.5, abs=0.02)  # three of four
+    with wave.open(io.BytesIO(joined_sample(clips, 2.0, 2.5) or b"")) as w:
+        assert w.getnframes() / 48000 == pytest.approx(2.5, abs=0.01)
+    assert joined_sample(clips[:2], 2.0, 15.0) is None  # 1.95 s with the pause: too short

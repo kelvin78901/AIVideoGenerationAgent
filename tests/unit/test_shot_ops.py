@@ -140,6 +140,32 @@ def test_references_come_from_the_episode_or_the_rules() -> None:
     assert [(b["id"], b["label"]) for b in people] == [("linwan", "林晚")]
 
 
+def test_props_and_characters_the_shot_names_join_its_references() -> None:
+    """M5 step 15f: 1-06's action 「把伞靠回墙边」 named the umbrella its references left out, so
+    its keyframe drew a black one; a name, another name or the end of a prop's name counts."""
+    ctx = _ctx()
+    ctx.asset_names.update(note="黄色便利贴", band="旧黑发圈", phone="手机")
+    ctx.asset_aliases = {"umbrella": ["红伞"], "band": ["旧发圈"]}
+    ctx.lines = [
+        ops.PlanLine(6, "demo-b7", "demo-b8", "action", "林晚把伞靠回墙边，进屋，关门。"),
+        ops.PlanLine(7, "demo-b7", "demo-b9", "vo", "他的手机号我还记得。"),
+    ]
+    ctx.scene_ids = ["demo-b7"]
+    answer = {"shots": [{"lines": [6, 7], "refs": ["room"], "picture": "她后背贴着门，机位低。"}]}
+    (shot,) = ops.normalize(answer, ctx)["shots"]
+    # The picture and the action line are read, not the voice-over; 贴 and 机 are not the note
+    # and the phone.
+    assert shot["asset_ids"] == ["room", "linwan", "umbrella"]
+
+    def named(*texts: str) -> list[str]:
+        return ops.mentioned_assets(texts, ctx)
+
+    assert named("门外，她弯腰拿起那把红伞") == ["umbrella"]  # the alias
+    assert named("指尖停在便利贴上，摸了摸发圈", "林晚") == ["note", "band", "linwan"]
+    assert named("手机亮屏") == ["phone"] and named("她拿起了那把伞") == ["umbrella"]
+    assert named("雨伞架", "伞兵") == []  # the end of a name alone, without a measure word
+
+
 def test_a_rerun_keeps_the_ids_of_the_same_shots() -> None:
     ctx = _ctx()
     first = ops.normalize(_demo_answer(), ctx)

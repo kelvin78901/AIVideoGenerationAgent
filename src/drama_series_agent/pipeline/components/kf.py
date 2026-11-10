@@ -34,7 +34,12 @@ from drama_series_agent.core.models_db import Asset, OutputSpecRow, Product, Pro
 from drama_series_agent.episodes.service import script_product
 from drama_series_agent.modelhub.adapters.base import Estimate, ModelError
 from drama_series_agent.modelhub.registry import Registry
-from drama_series_agent.modelhub.workflows import Workflow, has_workflow, load_workflow
+from drama_series_agent.modelhub.workflows import (
+    Workflow,
+    has_workflow,
+    load_workflow,
+    spec_workflows_dir,
+)
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.media import (
     MediaComponent,
@@ -63,6 +68,12 @@ MOVE = {"static": "固定机位", "push": "缓推", "follow": "跟拍", "pan": "
 # A shot whose references have no character: said outright, or the model adds a stranger
 # (1-02, the umbrella at the door: 5 of 6 drafts had a woman in them; 1 of 6 with this).
 NO_PEOPLE = "这个镜头里没有人物，不要画人。"
+# The physical world (M5 step 15o, Kelvin 2026-11-10): what a real camera in a real place sees.
+REAL_WORLD = (
+    "按真实世界实拍：人物和道具按真实尺寸和比例（长柄伞立着到人的胯部，便利贴手掌大小）；"
+    "材质真实、有使用痕迹，不是产品图或 CG 渲染；光线来自画面里的光源；手写的字是手写笔迹，"
+    "被雨打湿的地方颜色变深、墨迹微晕；人体自然（每只手五根手指），物体不互相穿插、不悬空。"
+)
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
 
@@ -112,9 +123,10 @@ def local_workflow(registry: Registry, model: str) -> Workflow | None:
         spec = registry.spec(model)
     except ModelError:
         return None
-    if spec.where != "local" or not has_workflow(spec.workflow):
+    root = spec_workflows_dir(spec)
+    if spec.where != "local" or not has_workflow(spec.workflow, root):
         return None
-    return load_workflow(str(spec.workflow))
+    return load_workflow(str(spec.workflow), root)
 
 
 async def stale_aspect(session: AsyncSession, product: Product, version: ProductVersion) -> bool:
@@ -185,6 +197,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             blocks.append(Block("画面文字", f"{t['name']}：留出位置，不要画字（后期贴字）"))
     if not await _has_character(session, shot.get("asset_ids") or []):
         blocks.append(Block("人物", NO_PEOPLE))
+    blocks.append(Block("真实感", REAL_WORLD))
     return Inputs(
         blocks=blocks,
         deps=deps,
@@ -242,6 +255,11 @@ async def _references(
                 "product_id": p.id,
                 "sha256": ref["sha256"],
                 "hash": h,
+                # How it looks in words (what the user wrote for its picture, else the analysis):
+                # the H3 prompt rewrite cannot see the picture (vid, M5 step 14b).
+                "desc": str(
+                    (p.prompt_json or {}).get("intent") or a.seed_json.get("description") or ""
+                ),
             }
         )
     return refs, unlocked, texts

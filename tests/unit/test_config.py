@@ -28,7 +28,7 @@ def test_factory_defaults_follow_balanced_preset() -> None:
     assert res.values["mode"] == "api"
     assert res.values["api_model"] == "deepseek/v4-pro"
     assert res.values["fallback"]["to"] == "qwen/qwen3.8-max"
-    assert res.values["alt_order"][0] == "moonshot/kimi-k2.6"
+    assert res.values["alt_order"][0] == "moonshot/kimi-k3.1-pro"
     assert res.sources["api_model"] == "preset"
 
 

@@ -1,0 +1,7 @@
+== 1-08-int8: 1-08 · qwen3vl_32b_minimax_h3_int8_convrot.safetensors · seed 1744039017
+   1 job(s) in 304.3 s, GPU memory peak 31728 MiB
+   call comfy/h3 [local] success 302.7 s audio=7.29s
+   1-04 nvfp4: 4.89s, still opening 0.0s, loud (3.6, 4.4), cuts [], window {'in_s': 0.0, 'out_s': 4.65}, prompt 54564f12
+   1-04 int8 : 4.89s, still opening 0.0s, loud (3.6, 4.4), cuts [], window {'in_s': 0.0, 'out_s': 4.65}, prompt 54564f12
+   1-08 nvfp4: 6.38s, still opening 0.0s, loud (0.15000000000000002, 0.9), cuts [], window {'in_s': 0.0, 'out_s': 6.0}, prompt ca6fb4f0
+   1-08 int8 : 6.38s, still opening 0.04s, loud (0.15000000000000002, 3.75), cuts [], window {'in_s': 0.042, 'out_s': 6.042}, prompt ca6fb4f0

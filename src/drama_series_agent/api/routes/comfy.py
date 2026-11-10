@@ -46,10 +46,12 @@ async def restore_snapshot(snapshot_id: str, state: State) -> Restored:
     """ComfyUI-Manager restores it the next time ComfyUI starts: we never restart the user's
     ComfyUI ourselves, the page says to (``restart_required``)."""
     try:
-        return await state.setup.restore_snapshot(snapshot_id)
+        restored = await state.setup.restore_snapshot(snapshot_id)
     except SnapshotNotFound:
         raise ApiError(404, "comfy_snapshot_not_found", id=snapshot_id) from None
     except SetupBusy:
         raise ApiError(409, "setup_busy") from None
     except SnapshotFailed as exc:
         raise ApiError(409, "comfy_snapshot_failed", reason=exc.reason) from None
+    await state.workflows.restored(restored.snapshot.manager_name)
+    return restored

@@ -180,6 +180,14 @@ tests/         unit/  api/  e2e/  fixtures/demo/   (示例项目《雨停之前�
 | `sync_target` | id, kind（comfy / folder / eagle / resolve）, enabled, config_json（路径、端口、模式）, status_json（最近一次检测结果） |
 | `sync_item` | target_id, version_id, external_ref（文件路径、Eagle item id、画布节点 id）, content_hash, synced_at, status |
 
+**M5 的实际做法**（迁移 `0019`–`0023`；细节见 `plans/M5.md` 和 DECISIONS 里 M5 各步）：
+
+- `comfy_workflow`（`0019`）按上表，另加 `name_json`（`{zh, en}`）和 `kind`（image / video / upscale…，ModelPicker 按组件的 kind 分组）；`slug` 唯一。
+- `model_call` 加 `workflow_id / workflow_sha256 / comfy_env_hash / select_json`（`0019`）和 `unpriced`（`0023`，见 10）。
+- 视频产物在物化镜头时就建（owner `shot`，slot `video`，迁移 `0020` 给旧镜头补上），见 5.1。
+- `provider_account` 加 `site`（`0021`，空 = 厂商的 `default_site`）、`models_json`（拉到的模型列表 `{site, ids, fetched_at}`）、`enabled_json`（勾选的 id）；新表 `model_setting`（model_key, model_id, price_json：用户填的单价、媒体模型 ID，`0022`）。`custom_model` 仍没用上。
+- 不建表、存 `app_setting` 的剧集设置：生成页自动规则 `generate.rules.<剧集 id>`（只存改过的字段）、按镜头选工作流的规则表 `vid.select.<剧集 id>`。
+
 ## 5. 流水线组件
 
 组件 ID 和原型「模型与兜底」页一致。每个组件实现同一个接口：
@@ -220,7 +228,11 @@ class Component(Protocol):
 | music | 配乐 | music | 场景情绪 → 配乐 | — |
 | sub | 字幕对齐 | asr | 成片音频 + 剧本台词 → 时间轴 | — |
 
-`assets` 和 `dub` 在原型里没有单独一行（分别在 03 素材页顶部和「音色」组件里），实现时作为独立组件，界面放在同一页。标 ⁺ 的 `views`、`ocr` 是 M3 加的，原型没有；「模型与兜底」页因此多「补视图」「台词配音」「文字核对（OCR）」三行。
+| vprompt⁺ | 视频提示词改写 | llm | H3 格式的草稿提示词 + 参考图描述 → 按 MiniMax 官方写法的英文提示词（M5，只给本地 H3） | — |
+| vlook⁺ | 首帧描述 | vlm | 真实首帧（锁定关键帧 / 上一条的尾帧）→ 一段英文画面描述，给 `vprompt` 当 `<Picture 1>` 的描述（M5 第 15g 步，只给本地 H3） | — |
+| vselect⁺ | 视频工作流建议 | llm | 镜头摘要 + 能选的工作流 → 选哪个 + 理由（M5，开关默认关） | — |
+
+`assets` 和 `dub` 在原型里没有单独一行（分别在 03 素材页顶部和「音色」组件里），实现时作为独立组件，界面放在同一页。标 ⁺ 的 `views`、`ocr` 是 M3 加的，`vprompt`、`vselect`、`vlook` 是 M5 加的，原型都没有；「模型与兜底」页因此多「补视图」「台词配音」「文字核对（OCR）」「视频提示词改写」「视频工作流建议」「首帧描述」六行。
 
 ### 5.1 关键行为
 
@@ -229,7 +241,7 @@ class Component(Protocol):
 - **LLM 修改先给差异**：LLM 对已有内容的改动以 diff（修订）形式展示，用户接受后才写成新的 version。
 - **音频先行定时长**：`shot.duration_s = Σ(该镜台词音频时长) + 前后留白（默认 0.3 s + 0.2 s，可配）`；超过目标模型单段上限（H3 为 2–15 s）时提示拆镜。没有台词的镜头用手填时长。
   - M3（`pipeline/timing.py`）算到台词和场：一句 = 配过音就是音频长度，没配用剧本的估计，再没有按每秒 4 个字；一场 = 有说话人的行相加（动作行的时长 M4 由镜头决定）。镜头的 `shot_seconds` 写好、测好，M4 接上。
-  - M4（`timing.shot_duration`，Kelvin 定）：说话的行（对白 + 画外音）的音频一句接一句，前后各留 0.3 / 0.2 秒，是这个镜头最短的长度，有对白时就用它（来源「音频」）；用户手填更长的就用手填的（「手动」），短于音频 422 `duration_below_audio {min_s}`，传 `null` 恢复自动；之后重配音变长了就按音频算。没对白的镜头用手填的，再没有用分镜规划的秒数，再没有 3 秒。画外音叠在动作镜头上时取两者中长的。单段上限取 `vid` 路由上各模型 `caps.duration_s` 上限中最小的（H3 15 秒），超过给 `split_hint`。
+  - M4（`timing.shot_duration`，Kelvin 定）：说话的行（对白 + 画外音）的音频一句接一句，前后各留 0.3 / 0.2 秒，是这个镜头最短的长度；时长 = 手填的，再没有用分镜规划的秒数，取它和音频中长的（音频长：来源「音频」；否则「手动」，界面显示「按分镜规划 · 不短于台词音频 n 秒」）。分镜规划没给秒数的对白镜头就按音频，没对白的 3 秒。手填短于音频 422 `duration_below_audio {min_s}`，传 `null` 恢复自动；之后重配音变长了就按音频算。画外音叠在动作镜头上时同样只是不能短于它。M5 第 15d 步起对白镜头也留分镜规划的秒数（原来按音频，1-04「愣住、灯一明一暗」的 4.5 秒被压成 1.5 秒），分镜规划提示词改成每个镜头都写秒数、留够表演时间。单段上限取 `vid` 路由上各模型 `caps.duration_s` 上限中最小的（H3 15 秒），超过给 `split_hint`。
   - 台词音频进版本前统一处理（`media/audio.py`，ffmpeg）：48 kHz 单声道，−18 LUFS、真峰值 −1.5 dBTP（`components.yaml` 的 `audio.dialogue`），增益取「到目标响度」和「真峰值不超」中小的，不压缩不削波；首尾静音按拉响度之后的音量判断，结尾留 `tail_s`（0.3 s）的一半自然收尾 + 50 ms 淡出，再补另一半静音。后端算好 64 段波形峰值给前端画。
   - 情绪：手动设的优先，否则按语气里的关键词（`config/voice.yaml` 的 `tones`），都没有就是平静。
 - **动态分镜**：前端把关键帧按时长排在时间线上，配台词音频播放；不需要后端渲染。可选导出幻灯片式 MP4（FFmpeg）。
@@ -239,6 +251,16 @@ class Component(Protocol):
   - `kf`：和 `img` 一样是候选类（一次 3 张）、混合模式（本地草稿 → 选一张 →「用 API 出终版」1 张，父版本是草稿）。编译层写画幅、景别和之后的机位运动、场景、站位（俯视图转成「林晚在画面右侧，远处；机位在正前方」，只写这个镜头参考素材里有的角色和道具）、拍的动作行、画面文字（模型出字写逐字内容，后期贴字写「留出位置」）。参考图只传已锁定的，按角色 → 场景 → 道具 → 画面文字取到模型能收的张数（`caps.max_refs`，本地工作流按 `ref_image` 槽数），出终版时草稿占第 1 张；没传的在提示词里点名。
   - **默认模型**（Kelvin 2026-10-26，对比见 `reports/m4-kf-bakeoff.txt`）：本地草稿 FLUX 3 Klein（`comfy/flux3-klein`），API 终版 Nano Banana 2.1（`google/nano-banana-2.1`）。`kf.local` 是 `[flux3-klein, flux3-klein-t2i, qwen-image-edit, qwen-image, flux2-dev]`。Klein 的权重（清单 `w_flux3`）在要登录的 HF 仓库，不是必装项；**没装的机器草稿换 `kf.local` 里下一个能跑、有工作流的本地模型**（Qwen-Image-Edit），都跑不了才改走 API（`capabilities.restrict` 的 `local_models`）。`Resolved.unavailable` 列出组件所有跑不了的本地模型，不只是路由上被拿掉的。
   - **组件可以按输入换模型**（`Component.model_for`，`RunService` 先读输入再定模型、编译和估价）：Klein 和 Qwen-Image-Edit 2511 都只能按参考图编辑，一个镜头没有锁定的参考图时本地草稿改用 `kf.local` 里排在当前模型后面、这台机器能跑的第一个文生图模型（本家的：Klein 文生图 / Qwen-Image）。
+- **视频（M5，`pipeline/components/vid.py`）**：
+  - **产物**：物化镜头时每个镜头（连续镜头也有）建一个视频产物（owner `shot`，slot `video`），跟着镜头退役、回来；出视频要分镜已确认（409 `storyboard_not_confirmed`）。一条 take = 一个版本：第一次出 `takes_per_shot` 条（生成页自动规则，默认 `vid.candidates` = 2，组件钩子 `run_count`），「再出一条」1 条，出终版 1 条；估价、预算按条数乘。
+  - **首帧**：普通镜头用锁定的关键帧（没锁 409 `keyframe_not_locked`）；连续镜头用它接的镜头**已采纳 take 的尾帧**（没采纳 409 `upstream_not_adopted`）。**本地 H3 的连续镜头改成末尾片段续写**（M5 第 15e 步）：再送那条 take 最后 22 帧画面和声音（`tail_clip`，从它的原片 `raw` 切、无损编码（第 15m 步），工作流里官方 `MiniMaxH3AddGuide` 钉在第 0 帧，再用一个把上一镜最后一帧钉在第 21 帧，切点才接得上（第 15h 步）；`h3-i2v` 去掉首帧锚、台词引导挪到第 22 帧），多要 22 帧；兜底到 API（不收片段）仍用尾帧当首帧。锁定参考图按模型能收的张数，带分析里的长相描述（`refs[].desc`）。
+  - **声音按 `audio_mode`**：`tts` = PLAN 模式 A，这个镜头说话的行的已采纳配音从 0.3 秒起拼成一条（`media/audio.py:dialogue_track`），当 `dialogue_audio`（缺一句 409 `line_audio_missing`）；`native` = 模式 B，说话人锁定音色的样本按说话顺序（S1、S2…）当 `ref_audio`，H3 自己出声；`none` 不出声。H3 API 要 2–15 秒的音色样本（`caps.audio_s`）：锚点不够长就按顺序拼同一个声音的几段（`media/audio.py:joined_sample`），全拼完还不够 `voice_sample_short`，调用前停下。模式 C（后期对口型）是 M6。
+  - **内心独白 / 画外音不进 take**（M5 第 15o、15p 步）：剧本里 `vo` 的行不进配音轨、不写进提示词的台词、不算音色样本，提示词注明剪辑时另铺、嘴闭着，剪辑（M7）单独铺这一轨。镜头里没有人物、也没人说话的是插入镜头（`context.kind = insert`），改写只许微动、东西本身不发生事；改写和关键帧提示词都写进物理世界和前后一致的约束（真实尺寸、材质、物体不凭空出现、状态延续、不穿模）。
+  - **选模型**：`Component.choose_model`（异步，估价只读缓存、入队时才问 LLM）：调用方点名 / Inspector 手动选的 → 剧集规则表第一条命中的 → LLM 建议（`vselect`）→ 路由的本地模型。默认规则表一条「原生同步 + 有锁定音色样本 → `comfy/h3-r2v`」。见 6.4.8。
+  - **提示词**：编译层 `templates/vid/default.j2`（中文，用户能改）；发给 H3 时套官方格式（`h3_i2v.j2` 首帧那一行 + 三个字段，`h3_r2v.j2` 参考模式六段，台词 `(S1) says: <d>…</d>`、配乐一律 `N/A`、参考图写进 `<Subject N>`）。本地 H3 再经 `vprompt` 按 MiniMax 官方 `h3-prompt-writing` 改写成英文（`prompts/h3_format.py:check` 校验段落、标签、台词原文、单镜头、字数；不合格带着问题重问一次，还不合格 `prompt_not_conformant`、不出片）；API 的 H3 走官方 Context-IR（`caps.prompt_ir`，失败就用我们自己的提示词）。改写和 Context-IR 都按输入缓存，几条候选共用一段提示词、只差种子。改写前先经 `vlook`（`pipeline/vlook.py`，默认 Gemini 3.1 Flash-Lite）看真实首帧，描述代替分镜意图写进 `<Picture 1>`；按图缓存，失败照旧用分镜意图。
+  - **每条 take**：裁掉开头 0.3 秒（`media/video.py:trim_head`，重新编码按帧切），带尾段出的裁掉开头那 22 帧（就是上一镜的尾段），文件 `video`（时长、宽高）、`poster`（第一帧）、`last_frame`（最后一帧，给下一镜当首帧）、`prompt`（实际发出的）；本地草稿另存 `raw`（没裁头的原片）和 `params.request`（实际请求），供 Regenerate-2K 原样重发。本地出的 `stage=draft`。质检是 M6：`qa` 为空，界面「未检查」，没有「推荐」，默认选中最新一条。
+  - **依赖和失效**：关键帧（或上一镜的视频）、台词音频、锁定参考图和音色、镜头结构字段变了 → 待更新；影响范围加视频行（`stale_video`；改画幅另有 `videos_redo`：已有几条、已采纳几条、已采纳的出 API 终版要多少钱）。「确认并同步」不自动重出视频。
+  - **生成闸门 `takes`**：每个镜头有采纳的 take 才能确认（409 `takes_not_adopted {count, labels}`），确认时锁定、重新打开时解锁；导航徽标「生成 n/m」。
 - **画面文字**：分镜表里记录每个镜头的预期文字；质检用 OCR 逐字比对。
   - M3 先在素材上做（`qa/ocr.py`）：每张候选过一次 OCR（`router.call()`、写 `model_call`，$0）。两边 NFKC、去空白后逐字比，标点也算；只有句末标点没读到算一致。不一致分 `missing` / `wrong` / `has_text`（后期贴字的底图上读出了字）。没有 OCR 时标「未检查」（`ocr_ok: null`），不拦锁定。
   - 两种做法：模型直接出字（提示词带逐字内容和字体），或后期贴字（底图不要字、留位置；真正的合成在 M7）。
@@ -286,6 +308,16 @@ class ModelAdapter(Protocol):
 - **测试连接**：`POST /providers/{id}/test` 再逐个检查用这个密钥的媒体模型（结果在 `media`），只发不花钱的请求：Gemini、OpenAI 查 `GET /models/{id}`；方舟发一个一定被拒的请求（回 400 说明密钥和模型 ID 都对）；MiniMax 用 `POST /v1/get_voice`。
 - 自动化测试全部用 respx，不触网；真实调用只在 `scripts/smoke/live_assets.py`（`DRAMA_LIVE=1`）。
 
+**M5 的实际做法**（视频 API 和厂商账号；2026-10-26 按官方文档核对，2026-11-08 真实冒烟）：
+
+- **MiniMax H3 走 V2 接口**（`adapters/minimax_video.py`，按 `kind` 分三种）：生成 `POST /v2/video_generation`、Context-IR `/v2/h3_context_ir`（`llm_aux`，官方的多模态提示词改写）、Regenerate-2K `/v2/video_regeneration`（`upscale`），共用 `GET /v2/query/video_generation/{task_id}` 轮询（5 秒起、×1.5、封顶 30 秒），下载后探测。首帧和参考素材不能混用：有声音输入 → 参考生视频（首帧当 `<Picture 1>`、再加锁定参考图共 9 张、音频最多 3 条，`tts` 的台词音轨 `fully_copy`）；没有 → 图生视频。分辨率由适配器按画面短边挑（短边超过 768 → `2K`，否则 `768P`），实际档位写 `Usage.resolution`，路由按它记账。被取消或超时时 `DELETE` 还在排队的任务。
+- **Seedance 2.5**（`adapters/seedance.py`，火山方舟异步任务）：JSON 字段传参，只发首帧（`ratio: adaptive`），不发参考图和音频，`tts` 镜头 `generate_audio: false`；按 token 计费（宽 × 高 × 24 × 秒 / 1024），记账用返回的 `completion_tokens`。原生 1080p。**还没真调过**：账号没开通（`ModelNotOpen`，开通要交保证金，Kelvin 2026-11-08 定先不管），没开通时报 `model_not_found`、不扣钱、路由兜底。
+- **价格存人民币**（按 `currency_rates` 折算）：H3 768P ¥0.50/s、2K ¥0.80/s，每个任务前 5 张图免费、之后 ¥0.20/张；Regenerate-2K 输出 + 输入视频各 ¥0.30/s；Context-IR ¥5.80 / 23.00 每百万 token。API 视频的超时按模型配（`caps.timeout_s`，1800 秒；Context-IR 180 秒），HTTP 529 也重试。
+- **建任务不重发**（`adapters/http.py:send(create=True)`）：会收钱的建任务请求只在根本没连上时重发，发出去之后的超时 / 断线报 `timeout` / `network_error`、不可重试、路由也不再重试同一模型（提示去供应商的任务列表看）。查询、下载照旧重试。原因：慢上行下 POST 写超时，重发一次 MiniMax 就多建一个任务。
+- **输入压小**（`adapters/upload.py`）：图片超过 256 KB 转 JPEG（约质量 90）、音频超过 512 KB 转 192 kbps MP3，变小才换；写超时按体积放宽（max(120 s, 字节 / 16 KB/s + 30 s)）。Regenerate-2K 的草稿 MP4 不动。
+- **厂商国内站 / 国际站**：厂商行可写 `sites`（`cn` / `intl`，各自的地址、密钥名、文档）和 `default_site`，Kimi、百炼、智谱、MiniMax 默认国内站；密钥按站点分开存（国际加 `_INTL`）；另一站的价格写在模型行的 `by_site`，媒体模型跟着它 `account` 的站点走。`PATCH /providers/{id} {site}` 换站会清掉拉到的模型列表和勾选。
+- **写作模型按厂商的列表选**（账号叠加层 `core/config.py:set_accounts`，`get_config()` = 出厂配置 + 工作流库 + 账号）：「测试连接」把 `GET /models` 的结果存下来，第一次自动勾上参考表认识的 id；写作模型行 = 勾选的模型（参考表外的用厂商的 `model_defaults`、价格未知）；`components.yaml` 写 `api: [llm]` 的组件展开成全部已启用的写作模型。用户可填单价、改媒体模型 ID（`model_setting`）。**没单价的模型先确认**：入队 `reason: unpriced`，路由守卫对没确认过的调用报 `BudgetExceeded(scope="unpriced")`。
+
 ### 6.4 ComfyUI 与工作流库
 
 Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作流。平台默认用这份已有的 ComfyUI，并把每个工作流登记成一个本地模型（2026-10-18 Kelvin 定，见 DECISIONS 同日条目）。
@@ -318,6 +350,13 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 - **登记后出现在对应组件的 ModelPicker 本地模型列表里**。路由、兜底、记账、质检的规则都不变：它就是一个 `where=local` 的模型，照样走 `router.call()`、GPU 队列和 `model_call`。
 - `providers.yaml` 里现有的 `comfy/*` 本地模型（H3、SeedVR2、FlashVSR、Qwen-Image-Edit……）以后都由工作流库提供：有对应的推荐档工作流才算可用。
 
+**M5 的实际做法**（`wflib/`、`api/routes/workflows.py`）：
+
+- **库是配置的一层**（`core/config.py:set_library`）：`get_config()` 把 `providers.yaml` 里没有的工作流变成本地模型 `comfy/<slug>`，按 kind 放进组件的 `local`（video → 视频生成；image → 关键帧、参考图；upscale → 超分；lipsync → 口型），ModelPicker、路由、能力过滤、注册表都不用改。仓库工作流被 `providers.yaml` 的模型点名时，库里就是那个模型（`h3-i2v` → `comfy/h3`），不另登记。
+- **仓库 `workflows/<slug>/` 是推荐档，文件即真相**：启动时按文件刷新绑定、能力、名字；文件哈希变了刷新模型清单、清掉旧体检。上游 `selfhost/` 的旧格式不登记。M5 的推荐档：`h3-i2v`（`comfy/h3`，官方 I2V 模板 + `MiniMaxH3AddGuide` 挂台词音频）、`h3-r2v`（`comfy/h3-r2v`，官方 R2V 模板，原生同步收音色样本）、两个都 20 步不开 Turbo（Kelvin 2026-10-27 定）；`seedvr2-up`、`flashvsr-up`（2K 精修本地档，按钮在 M6）。
+- **未验证的只能手动选**：`resolve` 在覆盖之后把它们从 `alt_order` 和 `fallback.to` 拿掉，规则表和 LLM 建议也不选；「我的工作流」加进组件的 `alt_order`。`GET /config/components` 的 `models[].tier` 给选择器显示档位，未验证的单独一组。
+- **导入**：拖进 JSON 或 ComfyUI 自己的工作流列表（`/api/userdata?dir=workflows`）。UI 格式按 `/object_info` 转成 API 格式（`wflib/convert.py`：静音的去掉、旁路的直通、`Reroute` / `PrimitiveNode` 处理掉；不认识的节点类 409 `workflow_unknown_nodes`，子图 409 `workflow_subgraph`）；没装的节点类转不了，社区分享的「Export (API)」格式可以直接导。素材板不能导入。用户导入的放 `~/.drama-studio/workflows/<slug>/`，`workflow.yaml` 的 `pending` 记还没确认的猜测。
+
 #### 6.4.3 对接方式
 
 - **首选：DramaStudio 输入 / 输出节点**（节点包 `integrations/comfyui-dramastudio` 的一部分，M5 先做；14.2 的镜头、素材、存回节点仍在 M9）：
@@ -325,6 +364,7 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
   - 输出：视频、图片、音频；
   - 绑定里的槽位名：`first_frame`、`video_in`、`ref_image`（带序号）、`prompt`、`negative`、`dialogue_audio`、`width`、`height`、`fps`、`seconds`、`seed`、`video_out`、`image_out`、`audio_out`（前端契约 `web/src/api/schemas/workflows.ts`）；
   - 平台只认这些节点：提交时按节点类型填值，按节点类型取结果，不用写绑定。节点在画布里有默认值，用户在 ComfyUI 里能直接手动跑。
+  - 实现（M5 第 11 步）：导入时按节点类生成绑定（`wflib/dramastudio.py`，状态 `dramastudio`，用户不用确认也不能改），之后和普通工作流走同一套填值、取结果的代码；音色样本节点对应 `ref_audio`；参考图、音色样本按节点的 `index` 编号，是可选槽位。
 - **兼容：普通工作流**（官方和社区的，没有 DramaStudio 节点）：导入时自动猜绑定，例如 `LoadImage` → 首帧、正向 `CLIPTextEncode` → 提示词、采样器的 `seed` → 种子、`EmptyLatent*` 的宽高 → 尺寸、`SaveVideo` / `VHS_VideoCombine` → 视频输出。猜的结果在绑定页逐项给用户确认，没确认完不能登记。
 - **调用流程**：上传输入（`/upload/image` 等）→ 提交 `/prompt` → 用 WebSocket 收进度 → 从 `/history/{id}` 找输出节点的产物 → `/view` 下载。宽高、帧率、时长一律从成片规格（第 13 节）和镜头读出来填进对应槽位。
 
@@ -344,11 +384,19 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 | 我的工作流 | 用户导入，试跑通过 | 同上 |
 | 未验证 | 导入了但还没试跑通过（或文件变了、体检坏了） | 只能在 ModelPicker 里手动选；不进预设、兜底和「不满意换一个」的自动顺序 |
 
+**M5 的实际做法**（`wflib/service.py`）：
+
+- **查缺只靠 `/object_info`**：不认识的节点类算缺；模型文件对照加载器那一项的可选列表。缺的节点类按 ComfyUI-Manager 的节点表（`/v2/customnode/getmappings`）归到节点包：Manager 4 把 Registry 收录的包换成 Registry id 当键、类名也不一定真实，所以体检自己套 `nodename_pattern`，git 地址去 Comfy Registry 查（`GET https://api.comfy.org/nodes/<id>` 的 `repository`）。节点表里也没有的记 `unknown_node`；绑定对不上图记 `binding_broken`；缺 `DramaStudio*` 节点类列成我们自己的包（`source: studio`，装的时候走安装清单 `node_dramastudio`）。导入后马上体检一次。
+- **装依赖只装节点包**（`SetupService.install_node_packs`）：先存 Manager 快照，再 `git_clone` 到 `custom_nodes/` + `uv_pip` 装 requirements，和安装器同一个 runner。**克隆的是主分支，没有锁版本**。模型文件不自动下，列着让用户自己放进 models 目录后再体检。真实 ComfyUI 要重启才加载新包（返回 `restart_required`）。
+- **试跑**是 GPU 队列的任务 `workflow_trial`（只跑一次、不兜底，走 `router.call()`，有 `model_call`）：固定一句提示词、草稿档尺寸（没写画幅就 9:16）、最短时长，缺的输入文件自己造；进度走 `job.updated`。通过后记下这次的文件哈希。试跑不属于某部剧，不读成片规格（硬规则 10 的明确例外）。
+- **档位**：推荐档不能改，绑定只读（409 `workflow_tier_repo`）；升「我的」要绑定全确认 + 试跑通过 + 文件没变；改绑定降为未验证。
+
 #### 6.4.5 可复现
 
-- 本地 ComfyUI 生成的每个 `product_version` 和 `model_call` 都记下 `workflow_id`、`workflow_sha256`、`comfy_env_hash`。`comfy_env` 按哈希存当时的 ComfyUI 版本和全部节点包版本，所以任何一版都查得到是用哪份工作流、哪套节点跑出来的。（M3：`product_version` 已有这三列，取第一个本地调用的；`model_call` 还没有，M5 接工作流库时加。）
+- 本地 ComfyUI 生成的每个 `product_version` 和 `model_call` 都记下 `workflow_id`、`workflow_sha256`、`comfy_env_hash`。`comfy_env` 按哈希存当时的 ComfyUI 版本和全部节点包版本，所以任何一版都查得到是用哪份工作流、哪套节点跑出来的。（M3：`product_version` 已有这三列，取第一个本地调用的；M5 起 `model_call` 也有：路由开始调用时就写 `workflow_id`，成功后从适配器的 `raw["comfy"]` 补哈希和环境；Mock 下本地 ComfyUI 模型也带工作流和哈希。节点包版本不另存，`comfy_env_hash` → `comfy_env.node_packs_json`。媒体结果缓存的键也带工作流文件哈希，改了工作流同种子不会拿回旧片。）
 - 工作流文件变了（哈希不同）就降为「未验证」，重新试跑通过后回到原来的档。
 - 每次装或升级节点包后，自动把所有已登记的工作流体检一遍：先做静态检查（节点类、被绑定节点的标题和字段、模型文件都还在）；用到了变动节点包的推荐档和「我的」档工作流，再在 GPU 队列里排一次低优先级试跑。有坏的就提示，并给出「回滚到这次安装前的快照」。
+  - M5 只做了静态检查，**没有排自动试跑**。之前正常、装完不正常的工作流记问题 `broke_after_install {snapshot_id}`，回滚或修好之前一直挂着；工作流详情的「体检」页签列出问题、给「回滚到这次安装前的快照」。回滚接口排上后，示例机器立刻复原并全部体检；真实 ComfyUI 等重启后由下一次扫描核对（6.4.1）。
 
 #### 6.4.6 界面
 
@@ -361,12 +409,12 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 - 试跑：示例输入、结果预览，通过后改档；
 - 分档：手动降为未验证，或升为「我的工作流」（要先试跑通过）。
 
-先用示例数据做出来（M1，MSW 返回），M5 再接后端。M1 已做，Kelvin 审过（审阅图 `reports/ui/workflows/`）：放页面最下面，点一行在下面展开，三个标签「绑定 / 体检 / 试跑」，默认打开最该处理的那个；装依赖复用首次启动页的确认弹窗。改档规则和试跑进度的轮询见 DECISIONS「M1 工作流库界面」。
+先用示例数据做出来（M1，MSW 返回），M5 再接后端。M1 已做，Kelvin 审过（审阅图 `reports/ui/workflows/`）：放页面最下面，点一行在下面展开，三个标签「绑定 / 体检 / 试跑」，默认打开最该处理的那个；装依赖复用首次启动页的确认弹窗。改档规则和试跑进度的轮询见 DECISIONS「M1 工作流库界面」。M5 接了后端、删了 MSW（第 10b 步）：试跑进度改走 `job.updated`（显示采样步数），装依赖按钮只算节点包，「体检」页签列出问题和回滚按钮。
 
 #### 6.4.7 运行
 
 - 本地 GPU 队列并发 1；调度器按“同一工作流”分组连续执行，切换大模型前调 `/free` 释放显存（PLAN：同一套模型的镜头连续跑，不再每镜卸载）。
-- 本地任务超时（默认 10 分钟，可配）视为失败，进入兜底流程；取消时调 `/interrupt`（第 9 节）。
+- 本地任务超时（默认 10 分钟，可配）视为失败，进入兜底流程；取消时调 `/interrupt`（第 9 节）。超时按预计耗时放宽（M5 第 15d 步，`router.local_timeout_s`）：max(配置的 `timeout_s`, 1.5 × 估价的 `seconds`)；运行记录的「超过 n 分钟」读那次超时调用实际跑了多久。
 
 **M3 的实际做法**（最小版的 ComfyUI 适配器，`modelhub/workflows.py`、`adapters/comfyui.py`；DECISIONS 2026-10-21「第 12 步（下）」「第 13 步」）：
 
@@ -380,6 +428,14 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 - **GPU 队列先跑完已加载模型的任务**（`core/jobs.py`）：同一优先级里先跑和上一个任务同一模型（`params.model_key`）的；一个任务里换模型由显存租约管。
 - **`DRAMA_REAL_LOCAL=1`**：Mock 模式下本地模型（`runtime` 是 `comfyui` / `python`）照样建真实适配器，API 和写作模型仍是 Mock。本机真跑不花钱：`scripts/smoke/local_assets.py`。
 
+**M5 的实际做法**（完整版适配器；DECISIONS「M5 第 4 步」「第 7 步」「第 14e 步」）：
+
+- **视频和音频进出**：首帧、输入视频、台词音频、音色样本都按 sha256 从 blob 库取、传 `/upload/image`；取 `video_out` / `audio_out`（SaveVideo 在 `images` 下、VideoHelperSuite 在 `gifs` 下都认），探测后校验：读不了 `invalid_response`、比要的短 0.5 秒以上 `video_too_short`、画幅差 2% 以上 `video_wrong_size`；`usage.output_seconds` 记实际秒数。
+- **WebSocket 进度**（`/ws?clientId=`）：`progress` → `CallContext.on_progress` → `job.updated`；收到「跑完」马上读 `/history`，有 socket 时每 5 秒兜底读一次，连不上回到每秒轮询。测试里一定传 `websocket=None` 或假的。
+- **可选槽位和旁路**：可选的文件槽位没给文件时删掉绑定的节点；`bypass` 列的节点去掉并把它某个输入的连线交给读者（没有台词音频时 AddGuide 直通；`Bypass.output` 按输出接，给 LoRA 这种两个输出的节点用）。
+- **本地失败 / 超时兜底**：整条 take 在兜底模型上按它的格式重建请求重做（`run_flow`，H3 API 的模式、Context-IR），版本 `origin=fallback` + `fallback_reason`，运行记录里一行 `fallback_timeout` / `fallback_error`。GPU 队列按 `model_key` 分组（M1 的 `grouped`），视频 take 照样适用。
+- **本机实测**（5090，ComfyUI Desktop 0.41.2）：本地 H3 20 步一条 5 秒 768×1344 的片子 2.5–3 分钟，15 秒的 13.4 分钟（越长每秒越慢：估价 = `est_seconds_per_s` × 秒数 + `est_seconds_per_s2` × 秒数²，`h3-i2v` 17 / 2.4、`h3-r2v` 20 / 2.9），显存峰值约 31.6 GB；SeedVR2 放大到 1080×1920 约 40 秒每秒成片，FlashVSR 约 32。
+
 #### 6.4.8 按镜头选工作流；拼节点（beta）
 
 2026-10-18 Kelvin 定。
@@ -392,6 +448,15 @@ Kelvin 本机已经装了 ComfyUI，以后会用官方和社区的各种工作�
 - **拼节点（beta，默认关）**：按 `/object_info` 的节点类型，从已有的成熟工作流（推荐档和「我的工作流」）里取片段拼成新图，给用户参考。
   - **拼完不跑**：不进 GPU 队列，不进路由。
   - 用户可以在 ComfyUI 里打开它；要用时走正常的导入流程，从「未验证」开始：确认绑定 → 体检 → 试跑。
+  - 拼节点 2026-10-26 挪到 P3（Kelvin 定）。
+
+**M5 的实际做法**（`pipeline/vselect.py`、`modelhub/workflows.py:Branch`；DECISIONS「M5 第 12a–12c 步」）：
+
+- **先后顺序**：调用方点名的（「不满意换一个」、指定模型）和镜头在 Inspector 里手动选的（`local_model` 的 item 覆盖）→ 剧集规则表第一条命中的 → LLM 建议（开着、规则都没命中、能选的不止一个时）→ 路由的本地模型。只在本地工作流之间挑；路由是 API 模型时不选。能选的 = 视频组件 `local` 里有工作流的、不是未验证的、这台机器跑得了的。
+- **规则表**按剧存（`app_setting` 的 `vid.select.<剧集 id>`；没存过读 `components.yaml` 的 `vid.select_rules`），条件 `shot_type`、`framing`、`dialogue`、`audio_mode`、`refs`、`voices`，不写的不限。界面在「模型与兜底」（`pages/models/WorkflowRules.tsx`）。
+- **LLM 建议**：路由组件 `vselect`（默认 DeepSeek V4.1 Flash，单次上限 $0.05），镜头第一次出片入队时问（Kelvin 定，开关默认关），答案按「模型 + 发出去的内容」缓存；失败、超预算、答了不在候选里的 → 用默认，只记日志。
+- **记录**：视频那次调用的 `model_call.select_json` = `{by: manual | rule | suggest | default, rule?, reason?, suggested_by?}`，视频版本 `params.select` 存同样的内容（命中规则时多存规则本身）；Inspector（`components/ShotWorkflow.tsx`）显示最近一条本地候选选了哪个、为什么，下一条用哪个。
+- **分支**：`workflow.yaml` 的 `branches`（`id`、`kind` controlnet / lora / upscale、`nodes`、`bypass`、`default`），关掉的在填图时拿掉；按镜头开关**存成配置覆盖** `branches: {id: bool | null}`（不是计划写的 `shot.control_json`，那个留给控制视频）；视频请求带 `params.branches`（也进缓存键）；每个分支单独试跑（`POST /workflows/{id}/trial {branch}`，结果在 `trial_json.branches.<id>`）。**仓库工作流现在都没有分支**，开关暂时没有实际可开的对象；导入的工作流不能定义分支。
 
 ### 6.5 本地工具类模型
 
@@ -457,7 +522,7 @@ per_call_cap_usd: 0.50
 | 重跑 | 同一模型、新随机种子、同样的提示词 → 新 version（origin=rerun） |
 | 不满意换一个 | 按 `alt_order` 取下一个（跳过当前），或用户手选；输入不变，按目标模型重新编译 → 新 version（origin=switch） |
 | 历史 | 列出所有 version：设为当前、采纳这一版、对比 |
-| 再出一条（视频） | 同配置再生成 N 条候选 take |
+| 再出一条（视频） | 同配置再生成候选 take（M5：镜头第一次出 `takes_per_shot` 条，之后每点一次 1 条） |
 
 ### 7.5 兜底
 
@@ -477,12 +542,20 @@ per_call_cap_usd: 0.50
 - **每次模型调用前**（路由器的 `BudgetGuard`）：用户确认过的任务可以花到确认的金额（`job.confirmed_usd`，重启续跑不再问），其余每次调用都要在单次上限内；兜底换到更贵的模型超了就失败（`budget_exceeded`），不悄悄多花。兜底方式「先问」时任务进 `waiting_confirm`，确认后用兜底模型继续。
 - 同步接口的改写（剧本行 / 场、补全建议按要求重写）超限返回 409 `over_budget {estimate_usd, limit_usd}`，前端确认后带 `confirm_budget: true` 再发一次。
 - 估价按 `max_tokens` 算输出，是上限：真实花费通常低得多（第 13 步冒烟：剧本化估 $0.025，实花 $0.005）。各模型默认关掉「思考」，否则思考过程的 token 不在估价里（见 6.2 `providers.yaml` 的 `request`）。
-- 还没做：上面的「全局开关」（单独的暂停开关；超过本集剩余的新任务已经会先问），表头花费仍是示例数据（`/metrics/summary` 在 M8）。
+- 还没做：上面的「全局开关」（单独的暂停开关；超过本集剩余的新任务已经会先问）。表头花费 M5 起读后端的 `/metrics/summary`（最小版，见下）。
+- **M5 加的**：单镜头上限。镜头上的工作（`owner_type=shot` 的产物）入队前还要对比「镜头已花（`model_call.shot_id`）+ 这个镜头还在排队 / 运行的预留 + 这次估价」和生成页自动规则的 `shot_cap_usd`（按剧集存，默认取 `components.yaml` 的 `shot_cap_usd`），超了 `reason: shot`。检查顺序：未知价 → 单次 → 单镜 → 本集。`/metrics/summary` 的预计 = 已花 + 活动任务还要花的 + 视频没跑过的镜头 × 估价 × 每镜候选数（其他组件 M8 补）。
 - **M3 加的**：确认过的任务最多花到「确认金额 + 余量」，余量取确认金额的 10% 和 $0.05 中大的（`components.yaml` 的 `confirm_margin`，Kelvin 2026-10-21 定）；没确认的任务仍按单次上限、不留余量。原因：估价稍低时（Nano Banana Pro 实测低 2.7%），多次调用的任务会停在最后一次，前面的钱白花。媒体调用的结果按请求缓存（`llm_cache`，key 前缀 `media:`，含返回的 JSON 如 `voice_id`），任务重试或重启续跑时出过的不再花钱。
 
 ### 7.7 混合模式
 
-本地出草稿（免费抽卡），用户点「采纳」时才用 API 出终版：视频走 H3 Regenerate-2K（输入为本地 768p take），LLM 走 API 模型重写定稿。终版作为同一 product 的新 version，origin=run，`parent_version_id` 指向草稿。
+本地出草稿（免费抽卡），用户点「用 API 出终版」时才花钱（M5 起视频也是按按钮，不在采纳时自动出，Kelvin 2026-10-26 定）：视频走 H3 Regenerate-2K（输入为本地 768p take），LLM 走 API 模型重写定稿。终版作为同一 product 的新 version，origin=run，`parent_version_id` 指向草稿。
+
+**M5 的实际做法**（视频；DECISIONS「M5 第 7 步」「第 9c 步」）：
+
+- 「用 API 出终版 · 约 $x」只出现在本地 H3 草稿的候选卡上（`stage=draft`、本地、H3 系）。`POST /products/{id}/run {where: api, params: {source_version_id}}` 走组件的 `final_api`（`components.yaml` 的 `vid.final_api: minimax/h3-regenerate-2k`），不是路由的 API 模型（H3 API 是重新出一条，不是把草稿出成 2K）。只出 1 条。
+- 终版原样重发草稿的 `raw`（没裁头的原片，帧数 17k+5）、`params.request` 和实际发出的提示词，出来的 2K 同样裁头（带尾段的草稿裁 22 帧，尾段不发给 API）、取封面和尾帧，`stage=final`，父版本是草稿。不是本地 H3 出的草稿 → 任务失败 `draft_not_regenerable`；终版失败不兜底，草稿不动。
+- 价格由后端算：`EstimateOut.final_usd`（`RunService._final_api_cost`，按镜头时长估 Regenerate-2K 的输出 + 输入视频），前端不自己算。
+- 没有预先检查 Regenerate-2K 的输入规格（24 fps、带音轨、宽高 32 的倍数、面积 ≤ 768×1344）：不合格 MiniMax 拒绝任务、不收费。已知 1:1、21:9 的本地草稿面积超了。
 
 **M3 的实际做法**（素材；Kelvin 2026-10-20 定的第 5 项）：
 
@@ -493,7 +566,7 @@ per_call_cap_usd: 0.50
 ## 8. 提示词
 
 - **两层**：意图层（用户的语言，和模型无关，存 `intent`）和编译层（按目标模型格式生成，存 `compiled`）。
-- 编译器：`prompts/templates/<component>/<model_family>.j2`（Jinja2），上下文包括设定卡、锁定资产、连续性账本、上游内容。H3 用官方六段式。需要时可再让 LLM 润色编译结果（可配）。
+- 编译器：`prompts/templates/<component>/<model_family>.j2`（Jinja2），上下文包括设定卡、锁定资产、连续性账本、上游内容。H3 用官方六段式。需要时可再让 LLM 润色编译结果（可配）。M5：本地 H3 必经 LLM 改写（组件 `vprompt`，按官方写法校验，不合格不出片），API 的 H3 走官方 Context-IR，见 5.1「视频」。
 - 手改过编译层的，上游变化时询问“保留手改 / 重新编译”。
 - 保留上游的提示词黑名单校验（`prompts/blacklist.py`）。
 - 提示词模板是文件，进 git；每个 version 存下实际发送的完整提示词。
@@ -509,7 +582,7 @@ per_call_cap_usd: 0.50
 
 ### 9.1 HTTP 接口概览（`/api/v1`）
 
-标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`unadopt`、打分、`upscale` 除外，M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；M3 加上资产、台词配音、取文件、`pick`、素材闸门（`assets`）；M4 加上镜头、拆分合并、分镜闸门（`storyboard`）、确认镜头、影响范围 `shot_edit` / `spec_aspect`；其余仍由 MSW 返回示例数据（生成页、后期页的示例数据读后端的镜头；`GET /episodes/{id}/shots` 只给示例第 1 集叠加 `video_product_id`，M5 删）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
+标 ⁺ 的是后来补的接口（M0.5 做界面、M1 做首次启动和工作流库界面、M2 接真实后端时页面需要，原表没有）。M2 已在后端实现的：剧集、小说与设定、分集 / 场 / 剧本（镜头除外）、产物与版本（`upscale` 除外，M6；`unadopt`、打分 M5）、影响范围、闸门（novel / script）、任务、配置与模型（`/custom-models` 除外）；M3 加上资产、台词配音、取文件、`pick`、素材闸门（`assets`）；M4 加上镜头、拆分合并、分镜闸门（`storyboard`）、确认镜头、影响范围 `shot_edit` / `spec_aspect`；M5 加上视频产物（镜头的 `video_product_id` 从后端出）、生成闸门（`takes`）、生成规则、运行记录、取消采纳、打分、`/metrics/summary`（最小版）、工作流库全部接口、按镜头选工作流的规则表、厂商站点和模型列表；其余仍由 MSW 返回示例数据：2K 精修 `upscale`（M6）、后期（M7）、看板除 summary 外的指标（M8；summary 在示例模式下是「示例 + 后端已花」叠加）、同步（M9），以及后期和看板要的示例产物（MSW 只回答它自己库里的 id，其余放行到后端）。请求和响应的字段以 `web/src/api/schemas/`（zod）为准，各接口的细节和理由见 DECISIONS「2026-10-14 · M0.5 界面先行」里按步骤记的条目。M0.5 里这些接口先由浏览器里的 MSW 返回示例数据，哪个里程碑实现哪个接口见 `web/src/mocks/handlers/index.ts` 的表；实现一个就删掉对应的 handler。
 
 | 资源 | 接口 |
 | --- | --- |
@@ -520,17 +593,17 @@ per_call_cap_usd: 0.50
 | 台词配音⁺ | `GET /episodes/{id}/dub`（每句的说话人、音色、状态 done / stale / missing / running / failed / no_voice / voice_not_locked、情绪和 `tone_emotion`、音频带波形、时长；每场时长和已配句数），`POST /episodes/{id}/dub` `{dry_run?, line_ids?}`（`dry_run` 只给估价和句数；否则每句排一个 `product.run`，跳过的行写明原因；`line_ids` 不管状态都重配），`PATCH /lines/{id}/dub` `{emotion}`（null = 按语气） |
 | 文件⁺ | `GET /files/{sha256}`：版本里的媒体文件，类型按文件头判断，支持 Range，`immutable` 缓存 |
 | 产物与版本 | `GET /products?owner=&component=`⁺，`GET /products/{id}`（含版本列表、`prompt`、`estimate`、`running`），`POST /products/{id}/run` `{mode: rerun\|switch\|run, model?, intent?, compiled?, count?, where?, params?}` → job（M3 加 `where: api` = 混合模式出终版，`params` 是带类型的 `RunParams`：`task`、`source_version_id`、`source_idx`，未知字段 422），`POST /products/{id}/pick`⁺ `{version_id, idx}`，`POST /versions/{id}/set-current\|adopt`，`POST /products/{id}/lock`，`POST /products/{id}/unlock`⁺，`POST /products/{id}/unadopt`⁺，`PUT /products/{id}/prompt`⁺，`POST /products/{id}/compile`⁺，`PATCH /versions/{id}`⁺（打分），`POST /versions/{id}/upscale`⁺ → job |
-| 生成 | `GET/PUT /series/{id}/generate-rules`⁺（每镜候选数、质检不过自动重跑、单镜上限），`GET /episodes/{id}/generate-log`⁺（运行记录） |
+| 生成 | `GET/PUT /series/{id}/generate-rules`⁺（每镜候选数 `takes_per_shot`、质检不过自动重跑 `qa_retry_max`（M6 才用）、单镜上限 `shot_cap_usd`；质检阈值只读，PUT 带它 422），`GET /episodes/{id}/generate-log`⁺（运行记录：从视频产物和任务推出，code `take` / `switch` / `final` / `fallback_timeout` / `fallback_error` / `started` / `waiting` / `failed`），`GET/PUT/DELETE /series/{id}/workflow-rules`⁺（M5：按镜头选工作流的规则表和 LLM 建议开关，返回带 `saved` 和能选的 `models`；规则的模型不能选 422 `workflow_rule_model`）。M5 的 `unadopt` 只给没有物化的槽位（视频、关键帧候选这类），其余 409 `unadopt_unsupported`；打分 `PATCH /versions/{id} {rating}`（1–5 或 null）不改内容哈希 |
 | 后期 | `GET /episodes/{id}/timeline`⁺，`PATCH /clips/{id}`⁺，`PATCH /subtitles/{id}`⁺，`GET /episodes/{id}/export/checks`⁺，`POST /episodes/{id}/export`⁺ `{format: mp4\|fcpxml\|otio\|srt}` → job |
 | 影响范围 | `POST /impact/preview`（给一个待改动，返回受影响的产物和预计花费），`POST /impact/apply` `{action: mark\|rerun\|undo}` |
-| 闸门 | `POST /gates/{gate}/confirm\|reopen`（M3 加 `assets`：`scope_id` 是集 id，没锁完 409 `assets_not_locked {count, names}`；M4 加 `storyboard`：`scope_id` 是集 id，镜头没确认完或有待更新的 409 `shots_not_confirmed {count, labels}`） |
+| 闸门 | `POST /gates/{gate}/confirm\|reopen`（M3 加 `assets`：`scope_id` 是集 id，没锁完 409 `assets_not_locked {count, names}`；M4 加 `storyboard`：`scope_id` 是集 id，镜头没确认完或有待更新的 409 `shots_not_confirmed {count, labels}`；M5 加 `takes`：`scope_id` 是集 id，有镜头没采纳 take 409 `takes_not_adopted {count, labels}`，确认时锁定各镜头的视频产物） |
 | 任务 | `GET /jobs`，`GET /jobs/{id}`⁺，`POST /jobs/{id}/cancel\|confirm` |
-| 配置与模型 | `GET /config/components`⁺（组件目录、可选模型、`local_runtime_ok`），`GET /config/resolve`，`PUT /config/override`，`DELETE /config/override`⁺（恢复成预设），`GET/PUT /config/defaults`⁺（预设、兜底方式；代替原来的 `POST /config/preset`），`GET /providers`，`POST /providers/{id}/key`，`DELETE /providers/{id}/key`⁺，`POST /providers/{id}/test`，`POST /custom-models`（以后） |
+| 配置与模型 | `GET /config/components`⁺（组件目录、可选模型、`local_runtime_ok`），`GET /config/resolve`，`PUT /config/override`，`DELETE /config/override`⁺（恢复成预设），`GET/PUT /config/defaults`⁺（预设、兜底方式；代替原来的 `POST /config/preset`），`GET /providers`，`POST /providers/{id}/key`，`DELETE /providers/{id}/key`⁺，`POST /providers/{id}/test`，`POST /custom-models`（以后）；M5 加：`PATCH /providers/{id}`⁺ `{site}`（换站点），`POST …/key {site?}`、`DELETE …/key?site=` 按站点存删，`PUT /providers/{id}/models`⁺ `{enabled}`（勾选拉到的模型；没拉过 409 `models_not_listed`、不在列表 422 `unknown_model_id`），`PUT/DELETE /providers/settings/{model_key}`⁺（单价、媒体模型 ID）；`GET /providers` 每个厂商带 `site` / `sites` / `listed`，`GET /config/components` 的模型带 `tier`、`priced` |
 | 开发⁺ | `POST /dev/llm-test`（只在 Mock 下），`GET /dev/model-calls`（最近的 `model_call`，冒烟脚本也读它） |
 | 看板 | `GET /metrics/summary`⁺（顶栏花费），`GET /metrics/kpis\|spend-series\|calls-series\|shots\|components\|speed\|apis\|local-models\|qa\|episodes`⁺，`GET /metrics/export.csv`⁺（第 11 节） |
 | 同步 | `GET/PUT /sync/targets`，`POST /sync/targets/{id}/detect`⁺，`POST /sync/run`，`GET /sync/log`，`GET /sync/board?episode=`⁺（ComfyUI 素材板），`POST /ingest`（ComfyUI 节点存回，第 14.2 节） |
 | 首次启动 | `GET /setup/profile`（`simulated`：Mock 的示例机器；`download_bps`、`app_dir`；每项 `size_bytes`、`work_s`、`touches_comfy`，安装中的 `install`：`pct`、`bytes_done`、`bytes_total`、`speed`、`eta_s`、`verifying`），`POST /setup/scan` → 202，`POST /setup/install` `{items, mirror, dir}` → 202（要用户点头的列在 `install.confirm`，改 ComfyUI 的改动清单 `install.changes`，装前的快照 `install.snapshot` 或 `install.snapshot_error`），`POST /setup/install/confirm\|cancel`⁺，`POST /setup/items/{id}/retry\|skip`，`POST /dev/setup/machine`⁺ `{machine: pc\|mac}`（只在 Mock 下切示例机器，清空扫描和安装；真实模式 403 `setup_not_simulated`） |
-| ComfyUI 与工作流库（6.4） | M1 已实现：`GET /comfy/env`（识别结果：路径、端口、版本、节点包、模型文件），`GET/POST /comfy/snapshots`（每份带最近一次回滚 `restore: {state, requested_at, diff}`），`POST /comfy/snapshots/{id}/restore` → `{snapshot, restart_required}`；M5（M1 先由 MSW 返回示例数据）：`GET /workflows`，`GET /comfy/workflows`⁺（ComfyUI 自己的工作流列表，供导入），`POST /workflows/import`，`GET/PATCH /workflows/{id}`（含改档），`PUT /workflows/{id}/bindings`，`POST /workflows/{id}/check`，`POST /workflows/{id}/deps`⁺（缺的节点包和模型的改动清单），`POST /workflows/{id}/deps/install`⁺（确认后先存快照再装），`POST /workflows/{id}/trial` → job，`POST /workflows/check-all` |
+| ComfyUI 与工作流库（6.4） | M1 已实现：`GET /comfy/env`（识别结果：路径、端口、版本、节点包、模型文件），`GET/POST /comfy/snapshots`（每份带最近一次回滚 `restore: {state, requested_at, diff}`），`POST /comfy/snapshots/{id}/restore` → `{snapshot, restart_required}`；M5（M1 先由 MSW 返回示例数据）：`GET /workflows`，`GET /comfy/workflows`⁺（ComfyUI 自己的工作流列表，供导入），`POST /workflows/import`，`GET/PATCH /workflows/{id}`（含改档），`PUT /workflows/{id}/bindings`，`POST /workflows/{id}/check`，`POST /workflows/{id}/deps`⁺（缺的节点包和模型的改动清单），`POST /workflows/{id}/deps/install`⁺（确认后先存快照再装），`POST /workflows/{id}/trial` → job（M5 加 `{branch?}` 只开一个分支试跑），`POST /workflows/check-all`。M5 已全部实现、删了 MSW；回滚接口排上后示例机器立刻复原并全部体检 |
 | 事件 | `GET /events`（SSE） |
 
 ## 10. 调用记录（埋点）
@@ -546,7 +619,9 @@ per_call_cap_usd: 0.50
 | 花费 | unit_prices_json（当时的单价快照）, cost_usd, billed（失败是否计费） |
 | 本地资源 | vram_peak_mb, gpu_util_avg（pynvml 每秒采样） |
 | 结果 | status（success / error / timeout / canceled）, error_code（如 429）, qa_scores_json, qa_pass |
-| 复现 | workflow_id, workflow_sha256, comfy_env_hash（本地 ComfyUI 调用才有，6.4.5） |
+| 复现 | workflow_id, workflow_sha256, comfy_env_hash（本地 ComfyUI 调用才有，6.4.5；M5 加） |
+| 选择 | select_json（视频那次调用为什么用这个工作流，6.4.8；M5 加） |
+| 价格 | unpriced（模型没有单价，`cost_usd` 记 0；M5 加，表头可数「价格未知的已计费调用」） |
 
 - 花费按当时单价现算并存快照；以后改价，历史花费不变。
 - 预算检查、看板、CSV 导出都只读这张表。
@@ -634,7 +709,7 @@ M1 加的字段：
 
 - `detect.native_since`：ComfyUI 自带的节点从哪个版本开始有。ComfyUI 在跑时按 `/object_info` 里的节点类判断，没在跑时按 ComfyUI 版本判断。
 - 安装步骤的 `version`：给改动清单看的版本号（tag）；没写时用 commit 的前 7 位。
-- `installable: false`：有安装步骤但暂时不能装（DramaStudio 节点包、本地 LLM）。
+- `installable: false`：有安装步骤但暂时不能装（本地 LLM；DramaStudio 节点包 M5 起能装）。
 - `download` 的 `files`：文件名，或 `{path, folder, sha256}`。写了 `folder`（ComfyUI 的模型类别）就放到 ComfyUI 放这类新文件的目录：`extra_model_paths.yaml` 里 `is_default: true` 的那个（识别结果里 `ModelDir.default`，ComfyUI Desktop 的共享模型目录），没有就 `{comfy}/models/<folder>`；没写的放 `dest` 下。检测 `downloads`：这些文件都在（ComfyUI 的文件在它任一模型目录里都算）。
 - `size_gb`（超过 10 GB 先确认，也用于预计用时）；`pkg` 步骤的 `admin: [winget, apt]`（这些包管理器要管理员权限，先确认）；`uv_pip` 的 `by_torch`（按 ComfyUI 的 Python 里现在的 PyTorch 选包，键 `<major.minor>+<cuda>`，表里没有就报 `torch_unsupported`）；`snapshot_first: false`（只有 ComfyUI-Manager 本身）；`fix` / `if_missing`；按平台覆盖的 `windows` / `macos` / `linux`。
 - 顶层 `mirrors`（官方 / 国内：Hugging Face、PyPI、GitHub 代理前缀）和 `recommend`（按顺序取第一条满足 `when` 的预设）。
@@ -703,7 +778,7 @@ M3 加的（DECISIONS 2026-10-21「第 12 步（下）」）：
 - `spec/compat.py`：对当前路由里的每个模型，用适配器 `caps`（支持的画幅、最高分辨率、帧率、时长）判定 原生支持 / 需要转换 / 不支持，返回给前端表格；“不支持”的模型在 ModelPicker 里隐藏。路由按这台机器能力过滤后的算（7.3）。
 - 第一张关键帧被采纳时写 `output_spec.locked_at`。锁定后改画幅：用失效传播算出受影响的关键帧和视频（以及按旧画幅出的场景参考图，标为可选），显示数量和预计花费，选项同 ImpactDialog。改分辨率或帧率只影响精修和导出，不触发重做。
   - 接口：锁定后 `PUT /series/{id}/spec` 改画幅返回 409 `spec_locked`；用户在影响范围里选了处理方式后带 `?confirmed_impact=<impact id>` 再写。M1 只检查这个参数不为空，影响范围由 MSW 示例给（M4 之前）；M2 有真的影响范围后再校验 id。
-  - **M4 的实际做法**：`locked_at` 在第一张关键帧被采纳（= 第一个镜头确认，锁定选中的关键帧）时写，同一个事务（`on_adopt("keyframe")`）；出草稿不锁。改画幅是影响范围 `spec_aspect`（后端 `ShotService.plan_aspect`）：`keyframes_redraw {count, shots}`，估价按路由上的 API 模型出终版（示例 7 × $0.134），视频到 M5 才列；场景参考图固定画 16:9（`components.yaml` 的 `img.aspects`，Kelvin 2026-10-26），不跟规格变，所以不再列「建议重出场景参考图」（`ref_images_suggest` 只在配置让场景图跟着规格时才有）；「只改这里」写规格、取消所有已确认的镜头（分镜闸门跟着重开），「确认并同步」再给这些关键帧重出本地草稿。应用 `spec_aspect` 本身就写规格；`PUT …/spec?confirmed_impact=` 现在真的校验 id：必须是这个剧应用过的 `spec_aspect` 预览、改的是同一个画幅（内存里记最近 100 条，重启就没了），否则 409 `spec_locked`。
+  - **M4 的实际做法**：`locked_at` 在第一张关键帧被采纳（= 第一个镜头确认，锁定选中的关键帧）时写，同一个事务（`on_adopt("keyframe")`）；出草稿不锁。改画幅是影响范围 `spec_aspect`（后端 `ShotService.plan_aspect`）：`keyframes_redraw {count, shots}`，估价按路由上的 API 模型出终版（示例 7 × $0.134），视频 M5 起列成 `videos_redo`（已有几条、已采纳几条、已采纳的出 API 终版要多少钱）；场景参考图固定画 16:9（`components.yaml` 的 `img.aspects`，Kelvin 2026-10-26），不跟规格变，所以不再列「建议重出场景参考图」（`ref_images_suggest` 只在配置让场景图跟着规格时才有）；「只改这里」写规格、取消所有已确认的镜头（分镜闸门跟着重开），「确认并同步」再给这些关键帧重出本地草稿。应用 `spec_aspect` 本身就写规格；`PUT …/spec?confirmed_impact=` 现在真的校验 id：必须是这个剧应用过的 `spec_aspect` 预览、改的是同一个画幅（内存里记最近 100 条，重启就没了），否则 409 `spec_locked`。
 - 另出一版：主画幅 9:16 时可选“导出时外扩出 16:9”（另计费，走外扩模型适配器）；主画幅 16:9 时可选“按人物位置自动裁成 9:16”（本地，不花钱）。
 
 ## 14. 素材整理与外部同步

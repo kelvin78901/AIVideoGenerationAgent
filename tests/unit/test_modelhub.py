@@ -18,6 +18,7 @@ from drama_series_agent.modelhub.adapters.base import (
     Estimate,
     ModelError,
     ModelRequest,
+    ModelResult,
     ModelSpec,
     Pricing,
     Usage,
@@ -32,7 +33,7 @@ from drama_series_agent.modelhub.adapters.mock import (
 )
 from drama_series_agent.modelhub.pricing import cost_usd
 from drama_series_agent.modelhub.registry import Registry, UnavailableAdapter, is_mock_mode
-from drama_series_agent.modelhub.router import BudgetExceeded, Router
+from drama_series_agent.modelhub.router import BudgetExceeded, Router, local_timeout_s
 
 
 def _llm_req(text: str = "林晚撑着红伞走进楼道。", **params: object) -> ModelRequest:
@@ -55,6 +56,14 @@ def test_media_pricing_units() -> None:
     assert cost_usd(h3, Usage(output_seconds=10), resolution="2k") == pytest.approx(1.3)
     seedance = Pricing(unit="minute", price=24.6)
     assert cost_usd(seedance, Usage(output_seconds=30)) == pytest.approx(12.3)
+    # Seedance: per second by resolution up front, the reported tokens as the bill.
+    tok = Pricing(
+        unit="second", price_by_res={"720p": 1.512}, token_rates={"video_720p": 70}, currency="CNY"
+    )
+    five = Usage(output_seconds=5, resolution="720p")
+    assert cost_usd(tok, five, resolution="720p") == pytest.approx(7.56 / 7.1)
+    billed = five.model_copy(update={"tokens": {"video_720p": 108_000}})
+    assert cost_usd(tok, billed, resolution="720p") == pytest.approx(7.56 / 7.1)
     regen = Pricing(unit="second", price=0.05, input_price_per_second=0.05)
     assert cost_usd(regen, Usage(output_seconds=10, input_seconds=10)) == pytest.approx(1.0)
     cny = Pricing(unit="call", price=7.1, currency="CNY")
@@ -83,7 +92,8 @@ def test_registry_reads_all_model_sections() -> None:
     assert llm.pricing.price_in == pytest.approx(1.32)
     assert reg.spec("local/qwen3.6-27b").where == "local"
     h3 = reg.spec("minimax/h3-api")
-    assert h3.pricing.unit == "second" and h3.pricing.price_by_res == {"768p": 0.08, "2k": 0.13}
+    assert h3.pricing.unit == "second" and h3.pricing.price_by_res == {"768p": 0.50, "2k": 0.80}
+    assert h3.pricing.currency == "CNY"
     tts = reg.spec("minimax/speech-2.8-hd")
     assert tts.pricing.unit == "char" and tts.pricing.price == pytest.approx(350 / 1e6)
     assert tts.pricing.currency == "CNY" and tts.base_url == "https://api.minimax.cn/v1"
@@ -96,7 +106,7 @@ def test_registry_reads_all_model_sections() -> None:
     # Media models use their account's key (one MiniMax / Google key for everything).
     assert tts.key_name == "MINIMAX_API_KEY" and tts.base_url
     assert reg.spec("google/nano-banana-pro").key_name == "GEMINI_API_KEY"
-    assert reg.spec("comfy/h3").caps.aspects and reg.spec("comfy/h3").workflow == "h3_i2v"
+    assert reg.spec("comfy/h3").caps.aspects and reg.spec("comfy/h3").workflow == "h3-i2v"
     assert reg.spec("comfy/h3").where == "local" and reg.spec("comfy/h3").pricing.unit == "free"
     assert isinstance(reg.get("deepseek/v4-pro"), UnavailableAdapter)
     with pytest.raises(ModelError) as err:
@@ -222,6 +232,34 @@ async def test_call_uses_component_default_and_logs(hub: tuple[Router, Registry,
     assert cost_events[0].data["call_id"] == routed.call_id
 
 
+async def test_a_local_workflow_call_logs_the_workflow(
+    hub: tuple[Router, Registry, EventBus], monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """SPEC 6.4.5: model_call says which workflow file and which ComfyUI made it."""
+    router, reg, _ = hub
+    adapter = reg.get("comfy/flux3-klein")
+    real_run = adapter.run
+
+    async def run(req: ModelRequest, ctx: CallContext) -> ModelResult:
+        result = await real_run(req, ctx)
+        comfy = {"workflow_id": "flux3-klein", "workflow_sha256": "ab" * 32, "comfy_env_hash": "e1"}
+        return ModelResult(files=result.files, usage=result.usage, raw={"comfy": comfy})
+
+    monkeypatch.setattr(adapter, "run", run)
+    req = ModelRequest(kind="image", prompt="林晚站在楼道口", params={"n": 1})
+    await router.call("kf", req, model="comfy/flux3-klein")
+    row = (await calllog.recent(router.db))[0]
+    assert (row.workflow_id, row.workflow_sha256, row.comfy_env_hash) == (
+        "flux3-klein",
+        "ab" * 32,
+        "e1",
+    )
+    # An API model has none of them.
+    await router.call("kf", req, model="google/nano-banana-2.1")
+    api = next(r for r in await calllog.recent(router.db) if r.where == "api")
+    assert (api.workflow_id, api.workflow_sha256, api.comfy_env_hash) == (None, None, None)
+
+
 async def test_hybrid_defaults_to_local_draft_and_api_on_request(
     hub: tuple[Router, Registry, EventBus],
 ) -> None:
@@ -305,6 +343,32 @@ async def test_timeout_falls_back_and_logs_timeout(hub: tuple[Router, Registry, 
     assert first.status == "timeout" and first.error_code == "timeout"
 
 
+def test_a_long_local_run_gets_half_again_its_estimate() -> None:
+    """M5 step 15d: a 15 s H3 clip runs about 13 minutes here; a fixed 10 minutes cut it off."""
+    assert local_timeout_s(600, Estimate(cost_usd=0.0, seconds=100)) == 600
+    assert local_timeout_s(600, Estimate(cost_usd=0.0, seconds=804)) == pytest.approx(1206)
+    assert local_timeout_s(None, Estimate(cost_usd=0.0, seconds=1)) == 600
+
+
+async def test_the_local_timeout_follows_the_estimate(
+    hub: tuple[Router, Registry, EventBus],
+) -> None:
+    router, reg, _ = hub
+    async with router.db.session() as s:
+        await put_override(
+            s, scope="component", component_id="vid", data={"fallback": {"timeout_s": 1}}
+        )
+    reg.mock_settings.hang_keys.add("comfy/h3")
+    # The Mock estimates its delay: 1 s, so the local run gets 1.5 s, past the configured 1 s.
+    req = ModelRequest(kind="video", params={"mock_delay_s": 1.0, "duration_s": 5.0})
+    routed = await router.call("vid", req)
+    assert routed.fallback_reason == "timeout"
+    first = sorted(await calllog.recent(router.db), key=lambda r: r.id or 0)[0]
+    assert first.model_key == "comfy/h3" and first.status == "timeout"
+    assert first.started_at and first.finished_at
+    assert (first.finished_at - first.started_at).total_seconds() >= 1.4
+
+
 async def test_all_models_fail(hub: tuple[Router, Registry, EventBus]) -> None:
     router, reg, _ = hub
     reg.mock_settings.fail_keys.update({"deepseek/v4-pro", "qwen/qwen3.8-max"})
@@ -346,3 +410,18 @@ async def test_component_switched_off(hub: tuple[Router, Registry, EventBus]) ->
         await router.call("world", _llm_req())
     assert err.value.code == "component_off"
     assert await calllog.recent(router.db) == []
+
+
+def test_a_picture_in_a_chat_request_is_counted_in_the_estimate() -> None:
+    """M5 step 15g: a vision request's text parts are its text; each image part counts as
+    IMAGE_TOKENS more input."""
+    from drama_series_agent.modelhub.adapters.base import IMAGE_TOKENS, ModelRequest
+
+    content = [
+        {"type": "text", "text": "describe this"},
+        {"type": "image_url", "image_url": {"url": "data:image/png;base64,AAAA"}},
+    ]
+    req = ModelRequest(kind="vlm", messages=[{"role": "user", "content": content}])
+    plain = ModelRequest(kind="llm", prompt="describe this")
+    assert req.text() == "describe this" and req.image_parts() == 1
+    assert req.prompt_tokens() == plain.prompt_tokens() + IMAGE_TOKENS

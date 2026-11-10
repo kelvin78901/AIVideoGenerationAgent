@@ -1,0 +1,10 @@
+continuity A/B/C · work dir C:\Users\kelvin\AppData\Local\Temp\drama-cont-hp7wfvvm\home
+   A 1-06: 5f5a68f6a8434216b4a74ca2e0f63319 seed 1656085087 comfy/h3
+   A 1-07: f697ed4571844710a26d44a5b122291f seed 114679585 comfy/h3
+   A 1-08: 74949edd8aae46a58b4a2aaff4f38f1c seed 1227550807 comfy/h3
+   A 1-09: ce5d99375e904fbeb9f8ecb88415d51b seed 702585574 comfy/h3
+   chain-A.mp4 18.05s
+   chain-B.mp4 17.51s
+   chain-C.mp4 16.80s
+   chain-side-by-side.mp4 (A | B | C; sound from A)
+   DeepSeek in this work dir (incl. the episode run's): $0.0234

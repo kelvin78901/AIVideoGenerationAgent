@@ -13,12 +13,13 @@ from __future__ import annotations
 
 import asyncio
 import random
+from dataclasses import replace
 from typing import Any, Literal
 
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from drama_series_agent.core.config import Resolved
+from drama_series_agent.core.config import Resolved, get_config
 from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.jobs import (
     TERMINAL,
@@ -35,9 +36,11 @@ from drama_series_agent.pipeline.component import (
     Component,
     ComponentError,
     ComponentRegistry,
+    Inputs,
     RunContext,
 )
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.generate import load_rules
 from drama_series_agent.pipeline.products import ProductService, require_product
 from drama_series_agent.pipeline.schema import EstimateOut, ProductOut, PromptOut
 
@@ -171,6 +174,7 @@ class RunService:
         except ModelError:
             return None, None
         prompt = None
+        intent: str | None = None
         comp = self.components.get(product.component_id)
         async with self.services.db.session() as session:
             lang = await self._lang(session, product.series_id)
@@ -178,20 +182,27 @@ class RunService:
                 inputs = await comp.inputs(session, product) if comp is not None else None
             except (LookupError, PipelineError, ComponentError):
                 inputs = None  # upstream not ready yet: no price to show
-            if comp is not None and inputs is not None:
-                model = comp.model_for(inputs, model, settings)
-            if product.prompt_json:
-                compiled = str(product.prompt_json.get("compiled", ""))
-            else:
+            if not product.prompt_json:
                 intent = (
                     await comp.default_intent(session, product, lang)
                     if comp is not None
                     else compiler.default_intent(product.component_id, lang)
                 )
-                compiled = compiler.compile(product.component_id, intent, model)
-                prompt = PromptOut(
-                    intent=intent, compiled=compiled, compiled_overridden=False, model_key=model
-                )
+        # Outside the session: choosing opens its own (the rules table). Nested, every page
+        # that loads many products at once held one connection each while waiting for a
+        # second, and the pool (15) ran dry for its 30 s timeout (CI's e2e hangs, M5).
+        if comp is not None and inputs is not None:
+            chosen = await comp.choose_model(
+                product, inputs, model, settings, lang=lang, named=False, ask=False
+            )
+            model = chosen.model
+        if intent is None:
+            compiled = str((product.prompt_json or {}).get("compiled", ""))
+        else:
+            compiled = compiler.compile(product.component_id, intent, model)
+            prompt = PromptOut(
+                intent=intent, compiled=compiled, compiled_overridden=False, model_key=model
+            )
         if comp is None or inputs is None:
             return prompt, None
         try:
@@ -200,8 +211,29 @@ class RunService:
             return prompt, None
         spec = self.services.registry.spec(model)
         return prompt, EstimateOut(
-            model_key=model, where=spec.where, cost_usd=round(est.cost_usd, 4), seconds=est.seconds
+            model_key=model,
+            where=spec.where,
+            cost_usd=round(est.cost_usd, 4),
+            seconds=est.seconds,
+            priced=est.priced,
+            final_usd=self._final_api_cost(comp, inputs, compiled, model),
         )
+
+    def _final_api_cost(
+        self, comp: Component, inputs: Inputs, compiled: str, model: str
+    ) -> float | None:
+        """What 「用 API 出终版」 of one take costs where the component has a ``final_api``."""
+        try:
+            final = get_config().components.component(comp.id).final_api
+        except KeyError:
+            return None
+        if not final:
+            return None
+        inputs.params = {**inputs.params, "source_version_id": "-"}
+        try:
+            return round(comp.estimate(inputs, compiled, model).cost_usd, 4)
+        except (LookupError, PipelineError, ComponentError, ModelError):
+            return None
 
     async def final_cost(self, product: Product) -> float | None:
         """What 「用 API 出终版」 of a candidate product costs on its route's API model (M4: the
@@ -233,7 +265,7 @@ class RunService:
         model: str | None = None,
         intent: str | None = None,
         compiled: str | None = None,
-        count: int = 1,
+        count: int | None = None,
         cascade: dict[str, str] | None = None,
         where: Where | None = None,
         params: dict[str, Any] | None = None,
@@ -241,7 +273,8 @@ class RunService:
         """Queue a run. ``cascade`` (``{id, origin}``): one rerun of 确认并同步
         (``pipeline/cascade.py``), adopted when it succeeds. ``where``: ``api`` is hybrid
         mode's 「用 API 出终版」 (SPEC 7.3; the route's API model). ``params``: what the
-        component reads besides the prompt (``Inputs.params``)."""
+        component reads besides the prompt (``Inputs.params``). ``count``: versions to make,
+        the component's ``run_count`` when None; the estimate covers them all."""
         router = self.services.router
         async with self.services.db.session() as session:
             p = await require_product(session, product_id)
@@ -255,6 +288,15 @@ class RunService:
             )
             lang = await self._lang(session, p.series_id)
             starting = None if p.prompt_json else await comp.default_intent(session, p, lang)
+            # An API final is one version from one draft.
+            final = bool((params or {}).get("source_version_id"))
+            count = count or (1 if final else await comp.run_count(session, p))
+            # Work on a shot also meets the shot's cap (generate rules).
+            shot = (
+                (p.owner_id, (await load_rules(session, p.series_id)).shot_cap_usd)
+                if p.owner_type == "shot"
+                else None
+            )
         settings = await router.settings(comp.id, item_of(p))
         if mode == "switch":
             base = current.model_key if current and current.model_key else None
@@ -269,7 +311,13 @@ class RunService:
         async with self.services.db.session() as session:
             inputs = await comp.inputs(session, p)
         inputs.params = params
-        target = comp.model_for(inputs, target, settings)
+        chosen = await comp.choose_model(
+            p, inputs, target, settings, lang=lang, named=model is not None or mode == "switch",
+            ask=True,
+        )  # fmt: skip
+        target = chosen.model
+        if chosen.select is not None:
+            params["select"] = chosen.select
 
         saved = PromptOut.model_validate(p.prompt_json) if p.prompt_json else None
         # A plain rerun keeps a hand-edited compiled layer; a new intent or another model
@@ -287,10 +335,16 @@ class RunService:
         )
         await self.products.set_prompt(p.id, prompt.model_dump())
 
-        estimate = comp.estimate(inputs, compiled, target)
-        # Hard rule 6: over the per-call cap or what is left of the episode → ask first.
+        one = comp.estimate(inputs, compiled, target)
+        estimate = replace(one, cost_usd=one.cost_usd * count, seconds=one.seconds * count)
+        # Hard rule 6: over the per-call cap or what is left of the episode, or no known
+        # price → ask first.
         verdict = await self.budget.before_enqueue(
-            estimate.cost_usd, cap=cap_of(settings), episode_id=inputs.episode_id
+            estimate.cost_usd,
+            cap=cap_of(settings),
+            episode_id=inputs.episode_id,
+            priced=estimate.priced,
+            shot=shot,
         )
         spec = self.services.registry.spec(target)
         queue = "gpu" if spec.where == "local" else f"api:{spec.provider_id}"
@@ -401,6 +455,7 @@ class RunService:
                 base_version=base,
                 progress=jctx.progress,
                 fallback_reason=params.get("fallback_reason"),
+                select=inputs.params.get("select"),
             )
             draft = await comp.run(ctx, inputs)
             origin = "fallback" if draft.fallback_reason else mode
@@ -436,7 +491,8 @@ class RunService:
             job = await session.get(Job, p.running_job_id) if p.running_job_id else None
         inputs.params = dict((job.params_json if job else {}).get("params") or {})
         compiled = str((p.prompt_json or {}).get("compiled", ""))
-        est = comp.estimate(inputs, compiled, exc.fallback).cost_usd
+        estimate = comp.estimate(inputs, compiled, exc.fallback)
+        est = estimate.cost_usd
         return JobNeedsConfirm(
             {
                 "model_key": exc.fallback,
@@ -447,6 +503,7 @@ class RunService:
                     "error": exc.reason,
                     "estimate_usd": round(est, 4),
                     "limit_usd": None,
+                    "priced": estimate.priced,
                 },
             },
             est_cost_usd=round(est, 6),

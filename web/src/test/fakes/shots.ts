@@ -500,8 +500,8 @@ function run(p: Product, body: RunRequest): Job {
 
 // ------------------------------------------------------------------ endpoints
 
-/** The fake backend's answers the MSW demo merges in (`mocks/backend.ts`): the shots it lays
- * the takes over, and a shot's or the episode's products. */
+/** The fake backend's answers the MSW demo reads (`mocks/backend.ts`): the shots the post demo
+ * lays out, and a shot's or the episode's products. */
 export function shotsBackendFetch(url: URL): Response | null {
   const m = /\/episodes\/([^/]+)\/shots$/.exec(url.pathname);
   if (m) {
@@ -521,9 +521,8 @@ export function fakeShotProducts(owner: string): Product[] {
 
 export function shotHandlers() {
   return [
-    // Episode 1's list goes through the MSW demo (it lays its takes over it).
     http.get("*/api/v1/episodes/:id/shots", ({ params }) =>
-      params.id === EPISODE ? undefined : HttpResponse.json([]),
+      HttpResponse.json(params.id === EPISODE ? fakeShots.shots : []),
     ),
 
     http.patch("*/api/v1/shots/:id", async ({ params, request }) => {

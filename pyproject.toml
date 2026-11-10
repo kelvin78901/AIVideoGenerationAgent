@@ -26,6 +26,7 @@ dependencies = [
   "nvidia-ml-py>=13.615.71",
   "jinja2>=3.1.6",
   "python-docx>=1.2.0",
+  "websockets>=15.0",
 ]
 
 [project.optional-dependencies]
@@ -54,7 +55,7 @@ build-backend = "setuptools.build_meta"
 where = ["src"]
 
 [tool.setuptools.package-data]
-drama_series_agent = ["py.typed", "prompts/templates/**/*"]
+drama_series_agent = ["py.typed", "prompts/templates/**/*", "wflib/demo/**/*"]
 
 # ---------------------------------------------------------------------------
 # Quality tools. New studio code is checked strictly; upstream modules are

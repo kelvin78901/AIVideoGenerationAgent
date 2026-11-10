@@ -1,7 +1,8 @@
 /**
  * M4 on the Mock backend (plan step 8; VITE_DEMO_DATA=0, the storyboard is the backend's): the
- * demo episode's animatic plays its dubbed lines (`seeded` dubbed them), then shot 1-04 is picked,
- * finished on the API model and confirmed, the other shots too, and 分镜确认. Runs after
+ * demo episode's animatic plays its dubbed lines (`seeded` dubbed them), then shots 1-04 … 1-09
+ * are unconfirmed (the seed confirms 分镜), 1-04 is picked, finished on the API model and
+ * confirmed, the other shots too, and 分镜确认. Runs after
  * `seeded` and before `real` and `smoke`, which find the storyboard confirmed.
  */
 import { expect, test, type Page } from "@playwright/test";
@@ -64,6 +65,15 @@ test("a shot picked, finished on the API and confirmed; every shot, then 分镜�
 }) => {
   test.setTimeout(90_000);
   const { errors, missing } = trackContract(page);
+  // The demo starts with 分镜 confirmed (its takes need it): 取消确认 1-04 … 1-09 first, which
+  // reopens it, then confirm them again here.
+  for (const label of ["1-04", "1-05", "1-06", "1-07", "1-08", "1-09"]) {
+    const resp = await page.request.patch(`/api/v1/shots/demo-shot-${label}`, {
+      data: { confirmed: false },
+      headers: { "X-Drama-Studio": "1" },
+    });
+    expect(resp.ok()).toBe(true);
+  }
   await setUi(page, {});
   await openPage(page, "/s/demo/e/1/storyboard?shot=demo-shot-1-04");
   const frames = page.getByRole("radiogroup", { name: "首帧" });
@@ -71,8 +81,9 @@ test("a shot picked, finished on the API and confirmed; every shot, then 分镜�
   await b.click();
   await expect(b).toHaveAttribute("aria-checked", "true");
   await page.getByRole("button", { name: /^用 API 出终版/ }).click();
-  // The final arrives over SSE: one picture, made from B on the API model.
-  const final = frames.getByRole("radio", { name: "v2 · A" });
+  // The final arrives over SSE: one picture, made from B on the API model (v2 is the seed's
+  // pick of A, which locked it).
+  const final = frames.getByRole("radio", { name: "v3 · A" });
   await expect(final).toBeVisible({ timeout: 20_000 });
   await expect(final).toContainText("API 终版");
   await page.getByRole("button", { name: "确认这个镜头" }).click();

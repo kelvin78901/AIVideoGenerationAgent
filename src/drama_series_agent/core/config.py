@@ -13,13 +13,13 @@ from __future__ import annotations
 import copy
 import re
 from collections.abc import Iterable, Mapping
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from functools import lru_cache
 from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, model_validator
 
 from drama_series_agent.core.capabilities import Capabilities, restrict
 from drama_series_agent.core.paths import config_dir
@@ -29,7 +29,15 @@ LAYERS: tuple[Layer, ...] = ("preset", "project", "component", "item")
 PresetId = Literal["quality", "balanced", "cheap", "local"]
 PRESETS: tuple[PresetId, ...] = ("quality", "balanced", "cheap", "local")
 # The top-level fields of a component's settings; the UI shows one source per field.
-CONFIG_FIELDS = ("mode", "api_model", "local_model", "fallback", "alt_order", "per_call_cap_usd")
+CONFIG_FIELDS = (
+    "mode",
+    "api_model",
+    "local_model",
+    "fallback",
+    "alt_order",
+    "per_call_cap_usd",
+    "branches",
+)
 
 
 class _Loose(BaseModel):
@@ -51,7 +59,10 @@ class LlmModel(_Loose):
     key: str
     display: str
     model_id: str | None = None
+    # The price on the provider's default site; ``by_site`` overrides it (and any other field)
+    # on another site, e.g. ``{intl: {price: {in, out, currency: USD}}}``.
     price: TokenPrice | None = None
+    by_site: dict[str, dict[str, Any]] = Field(default_factory=dict)
     offpeak: dict[str, Any] | None = None
     json_mode: bool = False
     verify: bool = False
@@ -64,19 +75,69 @@ class LlmModel(_Loose):
     needs: list[str] = Field(default_factory=list)
     requires_cuda: bool = False
 
+    def on_site(self, site: str | None) -> LlmModel:
+        """This row as priced on ``site`` of its provider."""
+        over = self.by_site.get(site or "")
+        if not over:
+            return self
+        return LlmModel.model_validate(
+            {**self.model_dump(by_alias=True, exclude={"by_site"}), **over}
+        )
+
+
+class Site(_Loose):
+    """Where a provider is reached: its China and international sites are separate accounts
+    (different base URLs, keys that do not carry over)."""
+
+    base_url: str | None = None
+    key_name: str | None = None
+    docs: str | None = None
+
+
+MAIN_SITE = "main"
+
 
 class LlmProvider(_Loose):
     id: str
     name: str
+    # One site: ``base_url`` / ``key_name`` / ``docs``. Two: ``sites`` (``cn``, ``intl``) and
+    # ``default_site``; then these three fields mirror the default site.
     base_url: str | None = None
     key_name: str | None = None
     where: Literal["local", "api"] = "api"
     docs: str | None = None
+    sites: dict[str, Site] = Field(default_factory=dict)
+    default_site: str | None = None
     verify: bool = False
     # Ask the server for a context of ``max_context`` (``options.num_ctx``, Ollama): its
     # default can be as small as 2–4k and silently cuts long prompts.
     send_num_ctx: bool = False
+    # The reference table: known models' names, prices (per site), context and request fields.
+    # Which models can be picked comes from the provider's own list once it has been fetched
+    # (``provider_account``); until then, this table (M5 step 7a).
     models: list[LlmModel] = Field(default_factory=list)
+    # How a listed model that is not in the table is called (``json_mode``, ``request`` …).
+    model_defaults: dict[str, Any] = Field(default_factory=dict)
+    # Set by ``with_accounts``: the whole table on the current site, picked or not.
+    table: list[LlmModel] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def _sites(self) -> LlmProvider:
+        if not self.sites:
+            self.sites = {
+                MAIN_SITE: Site(base_url=self.base_url, key_name=self.key_name, docs=self.docs)
+            }
+        if self.default_site not in self.sites:
+            self.default_site = next(iter(self.sites))
+        main = self.sites[self.default_site]
+        self.base_url, self.key_name, self.docs = main.base_url, main.key_name, main.docs
+        return self
+
+    def site(self, site: str | None) -> tuple[str, Site]:
+        """The named site, or the default one when it is unknown or None."""
+        name = site if site in self.sites else self.default_site
+        assert name is not None
+        return name, self.sites[name]
 
 
 class MediaModel(_Loose):
@@ -94,6 +155,18 @@ class MediaModel(_Loose):
     currency: str = "USD"
     caps: dict[str, Any] = Field(default_factory=dict)
     verify: bool = False
+    # Fields that differ on another site of its account (prices, currency), e.g.
+    # ``{intl: {price_by_res: {…}, currency: USD}}``.
+    by_site: dict[str, dict[str, Any]] = Field(default_factory=dict)
+
+    def on_site(self, site: str | None) -> MediaModel:
+        """This row as priced on ``site`` of its account."""
+        over = self.by_site.get(site or "")
+        if not over:
+            return self
+        return MediaModel.model_validate(
+            {**self.model_dump(by_alias=True, exclude={"by_site"}), **over}
+        )
 
 
 class LocalModel(_Loose):
@@ -102,6 +175,9 @@ class LocalModel(_Loose):
     display: str
     runtime: str | None = None
     workflow: str | None = None
+    # A library workflow outside the repo (``~/.drama-studio/workflows``, M5); None: ``workflows/``.
+    workflow_root: str | None = None
+    tier: str | None = None  # a library workflow's tier (recommended / mine / unverified)
     # ``runtime: python``: the worker script (``workers/<worker>.py``), the environment it runs in
     # (``~/.drama-studio/envs/<env>``), what it loads (``args``, ``{models}`` / ``{envs}``
     # expanded) and whether it needs the GPU (the VRAM lease; RapidOCR does not).
@@ -127,6 +203,15 @@ class ProvidersConfig(_Loose):
     def provider(self, provider_id: str) -> LlmProvider | None:
         return next((p for p in self.llm_providers if p.id == provider_id), None)
 
+    def account_of(self, model_key: str) -> LlmProvider | None:
+        """The provider whose key (and site) a model uses: its own for a writing model, its
+        ``account`` for a media model."""
+        for provider in self.llm_providers:
+            if any(m.key == model_key for m in provider.models):
+                return provider
+        media = next((m for m in self.media_models if m.key == model_key), None)
+        return self.provider(media.account) if media and media.account else None
+
 
 # --------------------------------------------------------------------------- components.yaml
 
@@ -136,6 +221,28 @@ class BalancedRoute(_Loose):
     api: str | None = None
     local: str | None = None
     fallback_to: str | None = None
+
+
+class SelectWhen(BaseModel):
+    """A rule's conditions (SPEC 6.4.8); a field left out matches anything."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    shot_type: str | None = None  # continuous / same_scene_cut / scene_change
+    framing: str | None = None  # 景别: wide / medium / close / closeup
+    dialogue: bool | None = None  # the shot has lines
+    audio_mode: Literal["tts", "native", "none"] | None = None
+    refs: bool | None = None  # a locked reference picture
+    voices: bool | None = None  # a locked voice sample
+
+
+class SelectRule(BaseModel):
+    """按镜头选工作流: shots that meet ``when`` go to local model ``model``."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    when: SelectWhen = Field(default_factory=SelectWhen)
+    model: str
 
 
 class ComponentDefault(_Loose):
@@ -150,11 +257,18 @@ class ComponentDefault(_Loose):
     cheap_api: str | None = None
     per_call_cap_usd: float | None = None  # 单次花费上限; default: ComponentsConfig's
     candidates: int | None = None
+    # 「用 API 出终版」 of a local draft goes to this model, not the route's API model (vid: H3
+    # Regenerate-2K).
+    final_api: str | None = None
     gate: str | None = None
     follows_output_spec: bool = False
     # Asset kind → the aspect its reference pictures are drawn at, whatever the output spec
     # (img: scenes 16:9, Kelvin 2026-10-26); a kind not listed follows the spec.
     aspects: dict[str, str] = Field(default_factory=dict)
+    # 按镜头选工作流 (vid, SPEC 6.4.8): the rules table a series starts from, and whether the
+    # LLM suggests a workflow when no rule matches.
+    select_rules: list[SelectRule] = Field(default_factory=list)
+    select_suggest: bool = False
 
 
 class FallbackDefaults(_Loose):
@@ -193,6 +307,7 @@ class ComponentsConfig(_Loose):
     fallback_defaults: FallbackDefaults = Field(default_factory=FallbackDefaults)
     audio: AudioDefaults = Field(default_factory=AudioDefaults)
     per_call_cap_usd: float | None = 0.5  # hard rule 6: a run above this waits for a yes
+    shot_cap_usd: float = 2.0  # a shot's spend above this waits for a yes (generate rules)
     confirm_margin: ConfirmMargin = Field(default_factory=ConfirmMargin)
     components: list[ComponentDefault] = Field(default_factory=list)
 
@@ -281,6 +396,52 @@ class StudioConfig:
     components: ComponentsConfig
     spec: SpecConfig
     voice: VoiceConfig = field(default_factory=VoiceConfig)
+    # Library workflows that may only be picked by hand (SPEC 6.4.4: 未验证): never on a route
+    # the studio picks itself (``alt_order``, ``fallback.to``).
+    unverified: frozenset[str] = frozenset()
+
+
+@dataclass(frozen=True)
+class Library:
+    """What the workflow library (``wflib``, M5) adds to the factory config: imported workflows
+    as local models, each in the components that serve its kind."""
+
+    models: tuple[LocalModel, ...] = ()
+    serves: tuple[tuple[str, str], ...] = ()  # (component id, model key)
+    mine: frozenset[str] = frozenset()  # 我的工作流: also in 「不满意换一个」
+    unverified: frozenset[str] = frozenset()
+
+
+_library = Library()
+
+
+def set_library(library: Library) -> None:
+    """The library changed (startup, import, a tier): the next ``get_config()`` includes it."""
+    global _library
+    _library = library
+    get_config.cache_clear()
+
+
+def with_library(cfg: StudioConfig, lib: Library) -> StudioConfig:
+    if not lib.models and not lib.unverified:
+        return cfg
+    known = {m.key for m in cfg.providers.local_models}
+    added = [m for m in lib.models if m.key not in known]
+    providers = cfg.providers.model_copy(
+        update={"local_models": [*cfg.providers.local_models, *added]}
+    )
+    comps = []
+    for comp in cfg.components.components:
+        extra = [k for c, k in lib.serves if c == comp.id and k not in comp.local]
+        if extra:
+            update: dict[str, Any] = {"local": [*comp.local, *extra]}
+            mine = [k for k in extra if k in lib.mine]
+            if mine and comp.alt_order is not None:
+                update["alt_order"] = [*comp.alt_order, *mine]
+            comp = comp.model_copy(update=update)
+        comps.append(comp)
+    components = cfg.components.model_copy(update={"components": comps})
+    return replace(cfg, providers=providers, components=components, unverified=lib.unverified)
 
 
 class _Yaml12BoolLoader(yaml.SafeLoader):
@@ -322,10 +483,126 @@ def load_config(directory: Path | None = None) -> StudioConfig:
     )
 
 
+@dataclass(frozen=True)
+class AccountState:
+    """A provider account as the user set it up (``provider_account``): its site, an address
+    override, the model ids its list returned and the ones picked (None: never listed, the
+    reference table stands)."""
+
+    site: str | None = None
+    base_url: str | None = None
+    listed: tuple[str, ...] | None = None
+    enabled: tuple[str, ...] | None = None
+
+
+@dataclass(frozen=True)
+class ModelSetting:
+    """What the user set for one model (``model_setting``): another model id, a price."""
+
+    model_id: str | None = None
+    price: dict[str, Any] | None = None
+
+
+@dataclass(frozen=True)
+class Accounts:
+    providers: dict[str, AccountState] = field(default_factory=dict)
+    settings: dict[str, ModelSetting] = field(default_factory=dict)
+
+
+_accounts = Accounts()
+# In ``components.yaml`` a component's ``api`` list may say ``llm``: every writing model the
+# user has (picked from the providers' lists, or the reference tables).
+ALL_LLMS = "llm"
+
+
+def current_accounts() -> Accounts:
+    return _accounts
+
+
+def set_accounts(accounts: Accounts) -> None:
+    """Provider accounts changed (startup, a site, a list, a pick, a price): the next
+    ``get_config()`` includes them."""
+    global _accounts
+    _accounts = accounts
+    get_config.cache_clear()
+
+
+def listed_model(provider: LlmProvider, model_id: str) -> LlmModel:
+    """A model from the provider's list that the reference table does not know: called with
+    the provider's ``model_defaults``, price unknown."""
+    return LlmModel.model_validate(
+        {
+            **provider.model_defaults,
+            "key": f"{provider.id}/{model_id}",
+            "display": model_id,
+            "model_id": model_id,
+        }
+    )
+
+
+def _set(row: LlmModel, setting: ModelSetting | None) -> LlmModel:
+    if setting is None or setting.price is None:
+        return row
+    return row.model_copy(update={"price": TokenPrice.model_validate(setting.price)})
+
+
+def with_accounts(cfg: StudioConfig, acc: Accounts) -> StudioConfig:
+    """Each provider on its account's site (address, key, prices), its writing models the
+    picked ones, the user's prices and model ids; ``api: [llm]`` spelled out."""
+    prov = cfg.providers
+    providers: list[LlmProvider] = []
+    for p in prov.llm_providers:
+        state = acc.providers.get(p.id, AccountState())
+        site, place = p.site(state.site)
+        table = [row.on_site(site) for row in p.models]
+        rows = table
+        if state.enabled is not None and p.where == "api":
+            known = {r.model_id: r for r in table if r.model_id}
+            rows = [known.get(m) or listed_model(p, m) for m in state.enabled]
+        rows = [_set(r, acc.settings.get(r.key)) for r in rows]
+        update = {
+            "base_url": state.base_url or place.base_url,
+            "key_name": place.key_name,
+            "docs": place.docs,
+            "models": rows,
+            "table": table,
+        }
+        providers.append(p.model_copy(update=update))
+    media: list[MediaModel] = []
+    for m in prov.media_models:
+        owner = prov.provider(m.account) if m.account else None
+        state = acc.providers.get(owner.id, AccountState()) if owner else AccountState()
+        row = m.on_site(owner.site(state.site)[0] if owner else None)
+        setting = acc.settings.get(m.key)
+        if setting is not None and setting.model_id:
+            row = row.model_copy(update={"model_id": setting.model_id})
+        media.append(row)
+    llms = [r.key for p in providers if p.where == "api" for r in p.models]
+    order = [k for k in prov.llm_ui_order if k in llms]
+    llms = order + [k for k in llms if k not in order]
+    comps = [
+        c.model_copy(update={"api": _spelled(c.api, llms)}) if ALL_LLMS in c.api else c
+        for c in cfg.components.components
+    ]
+    return replace(
+        cfg,
+        providers=prov.model_copy(update={"llm_providers": providers, "media_models": media}),
+        components=cfg.components.model_copy(update={"components": comps}),
+    )
+
+
+def _spelled(keys: list[str], llms: list[str]) -> list[str]:
+    out: list[str] = []
+    for k in keys:
+        out += [m for m in llms if m not in out] if k == ALL_LLMS else [k]
+    return out
+
+
 @lru_cache(maxsize=1)
 def get_config() -> StudioConfig:
-    """Process-wide factory config (tests changing ``DRAMA_CONFIG_DIR`` call cache_clear)."""
-    return load_config()
+    """Process-wide factory config plus the workflow library and the provider accounts (tests
+    changing ``DRAMA_CONFIG_DIR`` call cache_clear)."""
+    return with_accounts(with_library(load_config(), _library), _accounts)
 
 
 # --------------------------------------------------------------------------- resolution
@@ -484,5 +761,17 @@ def resolve(
         for path, value in _flatten(ov.data).items():
             _set_path(values, path, value)
             sources[path] = ov.scope
+    if cfg.unverified:
+        _manual_only(values, cfg.unverified)
     unavailable = restrict(values, cfg.providers, caps, comp.local) if caps is not None else {}
     return Resolved(values=values, sources=sources, unavailable=unavailable)
+
+
+def _manual_only(values: dict[str, Any], unverified: frozenset[str]) -> None:
+    """Unverified workflows run only when picked by hand (SPEC 6.4.4): off the fallback and
+    「不满意换一个」; a ``local_model`` the user chose stays."""
+    fallback = values.get("fallback")
+    if isinstance(fallback, dict) and fallback.get("to") in unverified:
+        fallback["to"] = None
+    if isinstance(values.get("alt_order"), list):
+        values["alt_order"] = [k for k in values["alt_order"] if k not in unverified]

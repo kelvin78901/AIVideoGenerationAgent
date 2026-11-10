@@ -4,6 +4,7 @@ In mock mode every model is served by ``MockAdapter`` with the real model's key 
 Mock mode is the default; real calls need ``DRAMA_MOCK=0`` explicitly. ``DRAMA_REAL_LOCAL=1``
 keeps Mock but runs the local ComfyUI workflows and Python workers for real: free local
 models on this machine, while API and writing models stay Mock (the local smoke test).
+``DRAMA_REAL_MODELS`` (with ``DRAMA_LIVE=1``) names single models that run for real too.
 """
 
 from __future__ import annotations
@@ -11,7 +12,7 @@ from __future__ import annotations
 import os
 from collections.abc import Callable, Iterable
 
-from drama_series_agent.core.config import StudioConfig
+from drama_series_agent.core.config import LocalModel, StudioConfig
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
     Caps,
@@ -42,7 +43,20 @@ def is_real_local() -> bool:
     return os.environ.get("DRAMA_REAL_LOCAL") == "1"
 
 
+def real_models() -> frozenset[str]:
+    """``DRAMA_REAL_MODELS=a,b`` with ``DRAMA_LIVE=1``: these model keys run for real in Mock
+    mode, the rest stay Mock (a local smoke test that needs one paid model, e.g. the H3 prompt
+    rewrite of M5 step 14c, without letting a fallback reach other paid APIs)."""
+    if os.environ.get("DRAMA_LIVE") != "1":
+        return frozenset()
+    raw = os.environ.get("DRAMA_REAL_MODELS", "")
+    return frozenset(k.strip() for k in raw.split(",") if k.strip())
+
+
 def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
+    """Every model in the config. ``get_config()`` has the provider accounts on it already
+    (``core/config.py:with_accounts``): each provider on its current site, its writing models
+    the picked ones, the user's prices and model ids."""
     prov = cfg.providers
     specs: list[ModelSpec] = []
     for provider in prov.llm_providers:
@@ -84,25 +98,28 @@ def specs_from_config(cfg: StudioConfig) -> list[ModelSpec]:
                 caps=Caps.model_validate(media.caps),
             )
         )
-    for local in prov.local_models:
-        specs.append(
-            ModelSpec(
-                key=local.key,
-                kind=local.kind,
-                where="local",
-                display=local.display,
-                provider_id=local.key.split("/", 1)[0],
-                runtime=local.runtime,
-                workflow=local.workflow,
-                worker=local.worker,
-                env=local.env,
-                worker_args=dict(local.args),
-                gpu=local.gpu,
-                pricing=Pricing(unit="free", as_of=prov.as_of),
-                caps=Caps.model_validate(local.caps),
-            )
-        )
+    specs += [local_spec(local, prov.as_of) for local in prov.local_models]
     return specs
+
+
+def local_spec(local: LocalModel, as_of: str | None = None) -> ModelSpec:
+    """A ``providers.yaml`` local model (or a library workflow, ``wflib``) as a spec."""
+    return ModelSpec(
+        key=local.key,
+        kind=local.kind,
+        where="local",
+        display=local.display,
+        provider_id=local.key.split("/", 1)[0],
+        runtime=local.runtime,
+        workflow=local.workflow,
+        workflow_root=local.workflow_root,
+        worker=local.worker,
+        env=local.env,
+        worker_args=dict(local.args),
+        gpu=local.gpu,
+        pricing=Pricing(unit="free", as_of=as_of),
+        caps=Caps.model_validate(local.caps),
+    )
 
 
 class UnavailableAdapter:
@@ -137,6 +154,7 @@ class Registry:
         self._specs = {s.key: s for s in specs}
         self.mock = is_mock_mode() if mock is None else mock
         self.real_local = is_real_local() if real_local is None else real_local
+        self.real_keys = real_models()
         self.mock_settings = mock_settings or MockSettings()
         self._factories: list[tuple[Callable[[ModelSpec], bool], AdapterFactory]] = []
         self._adapters: dict[str, ModelAdapter] = {}
@@ -144,6 +162,18 @@ class Registry:
     @classmethod
     def from_config(cls, cfg: StudioConfig, **kwargs: object) -> Registry:
         return cls(specs_from_config(cfg), **kwargs)  # type: ignore[arg-type]
+
+    def reload(self, cfg: StudioConfig) -> None:
+        """The provider accounts changed (a site, a pick, a price): the API models are built
+        again from ``cfg``; writing models no longer picked are dropped."""
+        fresh = {s.key: s for s in specs_from_config(cfg) if s.where == "api"}
+        for key, spec in list(self._specs.items()):
+            if spec.where == "api" and key not in fresh:
+                del self._specs[key]
+                self._adapters.pop(key, None)
+        for spec in fresh.values():
+            if self._specs.get(spec.key) != spec:
+                self.add_spec(spec)
 
     def add_factory(self, matches: Callable[[ModelSpec], bool], factory: AdapterFactory) -> None:
         """Real adapters register here, e.g. OpenAI-compatible for every ``llm`` spec."""
@@ -182,6 +212,7 @@ class Registry:
 
     def _build(self, spec: ModelSpec) -> ModelAdapter:
         real = self.real_local and spec.where == "local" and spec.runtime in REAL_LOCAL_RUNTIMES
+        real = real or spec.key in self.real_keys
         if self.mock and not real:
             return MockAdapter(spec, self.mock_settings)
         for matches, factory in self._factories:

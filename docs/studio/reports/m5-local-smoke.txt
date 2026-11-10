@@ -1,0 +1,50 @@
+M5 local smoke · 2026-10-27 17:48
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 610.47; in use before 21559 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== refs: 林晚、楼道、红伞重新画（先解锁）· Qwen-Image-2512，各锁第 1 张
+   3 job(s) in 55.3 s, GPU memory peak 31225 MiB
+   call comfy/qwen-image [local] success 31.6 s images=4
+   call comfy/qwen-image [local] success 11.7 s images=4
+   call comfy/qwen-image [local] success 11.2 s images=4
+== kf: 1-01、1-04 关键帧草稿（本地），确认第 1 张
+   2 job(s) in 65.8 s, GPU memory peak 25554 MiB
+   call comfy/flux3-klein [local] success 41.0 s images=3
+   call comfy/flux3-klein [local] success 24.2 s images=3
+   model comfy/flux3-klein [local], files: kf-1-01-candidate-0.png (928x1664), kf-1-01-candidate-1.png (928x1664), kf-1-01-candidate-2.png (928x1664)
+   model comfy/flux3-klein [local], files: kf-1-04-candidate-0.png (928x1664), kf-1-04-candidate-1.png (928x1664), kf-1-04-candidate-2.png (928x1664)
+== kf-stale: 待更新的 1-02、1-05、1-06 重画，再确认分镜
+   3 job(s) in 59.2 s, GPU memory peak 25554 MiB
+   call comfy/flux3-klein [local] success 24.1 s images=3
+   call comfy/flux3-klein [local] success 17.2 s images=3
+   call comfy/flux3-klein [local] success 16.9 s images=3
+   分镜 confirmed 9/9
+== vid-1-01: 1-01 视频草稿 · 应走 comfy/h3（本地 H3，768P，8 步 Turbo）
+   1 job(s) in 86.7 s, GPU memory peak 31579 MiB
+   call comfy/h3 [local] success 85.7 s audio=5.17s
+   model comfy/h3 [local], files: take-1-01-video.mp4 (768x1344 4.88s), take-1-01-poster.png (768x1344), take-1-01-last_frame.png (768x1344), take-1-01-raw.mp4 (768x1344 5.17s)
+   clip 768x1344 4.88s @ 24.0 fps, sound yes; asked 4.00s (minus the 0.3s cut: 3.70s); voices [], refs []
+   LENGTH differs from what was asked   ← 见下面「看片记录」：H3 最短 5 秒，脚本的检查改成「不短于镜头」
+== vid-1-04: 1-04 视频草稿 · 应走 comfy/h3-r2v（本地 H3，768P，8 步 Turbo）
+   1 job(s) in 57.6 s, GPU memory peak 31620 MiB
+   call comfy/h3-r2v [local] success 56.7 s audio=5.17s
+   model comfy/h3-r2v [local], files: take-1-04-video.mp4 (768x1344 4.88s), take-1-04-poster.png (768x1344), take-1-04-last_frame.png (768x1344), take-1-04-raw.mp4 (768x1344 5.17s)
+   clip 768x1344 4.88s @ 24.0 fps, sound yes; asked 4.50s (minus the 0.3s cut: 4.20s); voices ['林晚'], refs ['林晚', '老小区楼道 · 夜']
+   LENGTH differs from what was asked   ← 见下面「看片记录」：H3 最短 5 秒，脚本的检查改成「不短于镜头」
+
+result: SOME STEPS FAILED
+files: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-coeyu9xf\out
+
+---- 看片记录（2026-10-27，逐帧看过）----
+- 时长：H3 工作流支持 5–15 秒（caps.duration_s），4 / 4.5 秒的镜头落到最短 5 秒，帧数 17k+5 → 124 帧 5.17 秒，裁头后 4.88 秒。
+  不是 bug：片子比镜头长，后期按镜头裁（M7）。脚本的检查改成「不短于镜头」。
+- 尺寸 768x1344（H3 的 9:16 档，32 的倍数），24 fps，两条都有声音轨。显存峰值 31.6 GB / 32.6 GB，没有 OOM。
+- 速度：热的时候 5 秒片子约 57 秒（每秒成片 ~11 秒，workflow.yaml 的 est_seconds_per_s 写的 25，第 14 步再改）；
+  第一条 87 秒含换模型加载。
+- 1-01（H3 图生视频，无台词）：一个连续镜头，林晚在楼道里走、转身上楼，和关键帧接得上。
+- 1-04（H3 参考生视频，林晚锁定音色）：第一次那条前 2.5 秒对（看便利贴），后半段镜头一路移到另一个地方（白墙、门边，
+  便利贴没了）。场景检测（FFmpeg scene score ≤ 0.05）抓不到，是连续移走不是硬切。
+- A/B（--only ab，种子 11 / 22 / 33，A 原提示词，B 加「一镜到底：不切镜、不换地方」中英各一句）：6 条都留在楼道里；
+  22 的 A 和 B 几乎一样，B 那句基本没作用。结论：第一次换地方是那颗种子（7 条里 1 条），提示词不改，靠每镜 2 条
+  候选和「再出一条」兜。22、33 是缓推到近景开口说话，和镜头设定（近景、缓推、低声说话）对得上；11 是她转身、镜头绕着走。

@@ -2,6 +2,403 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-10 · M5 第 15o、15p 步：插入镜头只许微动、提示词写进物理约束；内心独白不进 take
+
+- **起因**：Kelvin 看第十七轮成片：红伞太大太假、伞上便利贴空白、便利贴字是印刷体、雨水像倒水、内心独白看着像口型没对上、开门三次像鬼打墙。逐条根因见 `reports/m5-quality-defects.md`。**Kelvin 定**：根治方案（镜头契约 + 每一环按契约检查）并进 M5.5；我们自己引入的两处先在 M5 修；而且**提示词里就要写进物理世界的约束、前后一致，规避穿帮**。
+- **15o**：`vid.gather` 按镜头里有没有人物 / 有没有人说话分「表演」和「插入」（`context.kind` → `Facts.shot_kind`）。改写系统提示词第 8 条按类型给动作预算（插入镜头只许微动、东西本身不发生事；表演镜头改变状态的动作只做一次），新增第 11 条物理世界和前后一致；`h3_format` 在插入镜头里拒 pour / burst / splash / stream of water 等词。关键帧每张加「真实感」一段；道具参考图不再要求浅色背景（白底产品照就是伞假的来源）。
+- **15p**：剧本 `vo` 的台词（内心独白、画外音）不进 take：不进配音轨、不进 `<d>`、不算音色样本，提示词里注明剪辑时另铺、嘴闭着；先配音镜头只有 `vo` 时出 take 前不用先配音。剪辑铺这句（M7 混音按 OS 处理）。原因：take 里生成的声音听起来就是在房间里说的话，嘴又闭着，看着像口型没对上。
+- **实测**（第十八轮，`reports/m5-local-smoke/run18-physical/README.md`）：同种子，1-03 不再倒水，1-06 take 里没有台词，1-08 的犹豫演出来了（分镜仍写开两次）。关键帧和道具图的改动要重画才看得到，M5.5 一起验。
+
+## 2026-11-09 · M5 第 15l 步：H3 文本编码器照旧用 nvfp4
+
+- **实测**（第十六轮，`reports/m5-local-smoke/run16-encoder/README.md`，`scripts/smoke/encoder_ab.py`）：同种子同提示词，只换 `Text encoder`。1-04（台词「……周屿？」）两条几乎一样（画面 29 dB，声音包络 r 0.991）；1-08 同一画面、同样动作顺序，开门时机略不同（23 dB，r 0.72），没有哪条更好。
+- **定**：默认不换。int8_convrot 多 11 GB 下载、多占内存，没有看得出的好处。int8 文件留在 Kelvin 本机。没测到的：长中文台词的发音。
+
+## 2026-11-09 · M5 第 15m 步：尾段从原片切、无损；连续镜头照旧不带参考图
+
+- **实测**（第十五轮，`reports/m5-local-smoke/run15-continuity/README.md`）：1-09 四种、1-08 三种，同种子。尾段无损和 crf 10、声音 22 帧和 18 帧，引导段（36–37 dB）和切点都在 0.1 dB 以内；切点后的响度各方案差 20 dB 以上但没有规律，是生成本身的随机。`h3-r2v` 带林晚、红伞参考（不送场景图）更差：伞没有拿起的动作就到了手里，引导段第 10 帧漂到 29 dB，切点后声音突然大 18 dB。
+- **定**：尾段从上一镜的 `raw`（H3 原片，没有就用 `video`）切，H.264 无损（`-qp 0`）+ ALAC（`media/video.py:tail_clip(lossless=True)`）：量不出差别，但少一次有损压缩，每段约 5 MB。声音保持 22 帧（`TAIL_AUDIO_FRAMES`，可调）。连续镜头照旧走 `h3-i2v`、不带参考图：15f 在上游把道具画对后，参考图没有好处。每段换种子本来就是（每条 take 各抽一个）。
+
+## 2026-11-09 · M5 第 15j 步实测、第 15k 步：先配音不改成音频锁定
+
+- **15j 实测**（第十三轮，`run13-pacing/README.md`）：同种子重出，开头定格 1-02 0.71 → 0.25 秒、1-05 0.62 → 0.33 秒，无镜头内切点；1-04 台词时机没变（草稿本来就是先愣住再说），靠 window 保住整句。新 1-02 推镜变弱，一个种子不下结论，整集再看。
+- **15k**（第十四轮，`run14-audio-lock/README.md`）：1-04 改先配音，同种子比「挂引导」和「锁进音轨」。挂引导的成片音轨和配音包络相关 0.997，台词段嘴在动；锁进音轨 1.0，但配音轨比片子短，模型在片尾补出一段很响的声音。**调研报告里「AddGuide 不保留配音」在这条上不成立**，所以不做进产品，`h3-i2v` 的 tts 分支不变。以后要锁的话配音轨得补静音到出片长度并整段加掩码。
+- **15l 的下载**：huggingface.co 本机约 2 MB/s、hf-mirror.com 约 5.5 MB/s，改从镜像续传（`curl -C -`）。
+
+## 2026-11-09 · M5 第 15j 步：改写按真实片长排满动作、一镜到底；镜头内切点记进 payload
+
+- **改写拿到的片长**：`_facts.duration_s` 原来是镜头计划秒数（1-04 是 4 秒，模型写「four-second shot」，H3 实际出 5.17 秒，台词就落到 3.6 秒以后）。现在是 H3 真正出的长度（`vid.py:_rendered_s`：按模型 `caps.duration_s` 夹到至少 5 秒，再向上取到 17k+5 帧），系统提示词说明这才是要排满的长度、草稿里别的秒数不算。
+- **系统提示词**（`templates/vid/h3_rewrite_system.j2`）加三条：开头就要有东西在动、2–4 个动作排满全程、首尾不留静止的一秒、只用一个主运镜；不用 then 串动作或运镜（社区实测 then 处会被切，调研报告第 4 节，未本机核实）；台词配嘴型动作、放在草稿给的时机、不压到片尾。**示例原来写着「前一秒半除了眼睛什么都不动」「最后一秒半一直盯着看」**，等于教模型开头定格，改成从第一刻就有眼动和呼吸、台词后接着有动作。
+- **检查器**：描述段里出现 then 就带着问题重问（`h3_format._shots`）。
+- **镜头内切点**（`media/video.py:scene_cuts`，FFmpeg 场景分数 > 0.35）：记进 `payload.cuts`，一镜到底的 take 应该是空的；M6 质检用。第十一轮 18 条都是空的（「乱跳」不是镜头内被切），第十轮拼接片的三个镜头切点都测得出。
+
+## 2026-11-09 · M5 第 15i 步：每条 take 记可用片段（window），粗剪按它取
+
+- **量什么**（`media/video.py:usable_window`）：开头定格 = 相邻帧 PSNR 第一次低于 45 dB 之前的时长（第十一轮 1-02、1-05 前 17–24 帧 ≥ 50 dB）；台词 = 音轨里超过最响 50 ms 的 25% 的那段（只在镜头有台词、声音不是 none 时用），前后各留 0.25 秒。窗口 = 从动起来的地方开始（不晚于「片长 − 镜头秒数」），至少镜头秒数，台词完整。纯启发式，不调模型；环境音比台词响时会量错（M6 质检可以换成真正的语音检测）。
+- **只记不裁**：take 的片子保持完整（Regenerate-2K、尾段续写都要整条），`payload.window = {in_s, out_s}`，终版重量一次。M7 后期按它剪；连续镜头照旧从 0 开始、被接的那条剪到片尾（第 15e 步的规则优先）。
+- **第十一轮的片子当场补量**：`local_video.py cut` 遇到没有 window 的旧 take 就现量。按它重剪（1-08、1-09 换成加锚点后的新片）：1-02 从 0.71 秒、1-05 从 0.62 秒、1-07 从 0.92 秒开始，1-04 剪到 4.65 秒（台词 3.6–4.3 秒完整）；1-08 → 1-09 切点 31.7 dB（第十一轮 16.5）。`reports/m5-local-smoke/originals/run12-tail-anchor/ep1-cut.mp4`。
+
+## 2026-11-09 · 成片质量五项在 M5 里做（Kelvin 定）
+
+- 起因：Kelvin 看第十一轮整集：口型对不上、动作不流畅、帧间乱跳。本机测量 + 调研（`reports/m5-h3-research.md`）的结论：粗剪按计划秒数从头裁（H3 最短 5.17 秒，台词和动作常在后半段被剪掉，开头约 1 秒的定格留着；1-04 的台词在 3.6–4.3 秒、粗剪在 4.0 秒切走，原片里口型是对上的）；改写告诉模型的是计划秒数；先配音走的 AddGuide 只是条件，模型照样自己生成音轨；文本编码器 nvfp4 长提示词会读错词；片子内部没有硬跳（原片和裁后一致）。权重剪枝 int8 不是主因。
+- **Kelvin 定：五项都在 M5 做完再开 PR**（第 15i–15n 步）：可用片段（按内容剪）、按真实片长改写并约束一镜到底、先配音改音频锁定、文本编码器 A/B、连续镜头带参考 + 尾段无损，最后整集再核对。
+
+## 2026-11-09 · M5 第 15h 步：整集重跑；尾段引导加末帧锚点（Kelvin 定），裁头按时间戳
+
+- **第十一轮整集重跑**（`reports/m5-local-smoke/run11-episode/README.md`）：1-04 有了完整表演（15d），红伞从 1-06 一路保持到 1-09，1-09 门开着、弯腰拿起红伞（15e、15f、15g）。花费 DeepSeek $0.017、Gemini $0.0045。
+- **切点跳**：连续镜头的切点 PSNR 20.3 / 16.5 dB（片子里相邻帧 34–48 dB）。尾段引导只在第 0 帧贴得紧，往后漂（第 21 帧约 20 dB），裁掉 22 帧后从上一镜没到过的姿势开始。第九轮 B 也一样（18.6 dB），当时只看拼图判断成「看不出跳」，看漏了；以后衔接一律量切点 PSNR，不只看拼图。
+- **Kelvin 定：加末帧锚点再测**。第十二轮（`run12-tail-anchor/README.md`）：再串一个官方 `MiniMaxH3AddGuide`，把上一镜最后一帧钉在第 21 帧，引导段全程 31–37 dB，切点 **36.5 dB**，动作没被卡住。
+- **做进产品**：两个 H3 工作流加 `Tail end` 节点（`frame_idx` 21 = `media/video.py:TAIL_FRAMES - 1`，适配器测试核对两者一致），图读首帧的 LoadImage（连续镜头的首帧就是上一镜的尾帧），不加槽位；`tail_clip` 的旁路列表依次是 `Tail end`、`Tail guide`、`Tail parts`（按顺序改接，没尾段时整串拿掉）。`h3-i2v` 的 `replaces` 去掉 I2V 首帧锚时，LoadImage 因为 `Tail end` 还在读而留着。
+- **裁头按时间戳**：`-ss` 输入定位再编码把裁后的第一帧复制了一次（开头两帧完全一样），`_trim_head` 改用 `trim` / `atrim` 滤镜，起点提前 1 毫秒（22/24 秒四舍五入后比第 22 帧的时间戳大）。0.3 秒裁头同样适用。输出显式给原片帧率（`-r`；按滤镜后的时间戳 FFmpeg 会猜成 25.14）。截尾段（`_tail`）也改成数实际帧数、按帧号 `trim`：容器时长包含略长的音轨，按它推起点会少截两帧（API 测试抓到的）。
+- 留下的：1-06 关键帧画的是概括画面（M5.5）；1-07 屏幕时间从 23:52 跳到 23:53（M6 质检）。
+
+## 2026-11-09 · M5 第 15g 步：改写前看真实首帧（新路由 vlook，默认 Gemini 3.1 Flash-Lite）
+
+- 起因：第八轮原因 5，改写只拿到分镜意图（连续镜头什么都没有），1-09 被写成「楼道里、门关着、红伞」，真实首帧是屋里、门开着、黑伞，H3 先关门再拿黑伞。
+- **新路由 `vlook`**（`config/components.yaml`，kind `vlm`，`pipeline/vlook.py`）：本地 H3 改写前描述 `first_frame`（普通镜头是锁定关键帧，连续镜头是上一条的尾帧），代替 `_facts` 里 `<Picture 1>` 的描述（原来是关键帧的意图，空的话现在用镜头的规划意图）。提示词 `templates/vid/first_frame_look.j2`（英文，只写看得到的：地方、机位、人的位置朝向衣服颜色、每个道具和颜色、门窗开关、光）。经 `router.call()`，`model_call` 记在 `vlook` 下、带镜头 id；版本的调用列表里也有一条。
+- **选型**：Kelvin 有 Google、OpenAI、Moonshot、火山、MiniMax、DeepSeek 的密钥；带看图的里 Gemini 3.1 Flash-Lite 最便宜（$0.25 / $1.50 每百万 token，一张图默认 1120 token，一次约 $0.0005），正式版 ID `gemini-3.1-flash-lite` 按 ai.google.dev 模型页、价格页核对后填进 `providers.yaml`（预览版 ID 5 月已下线）；`gemini-3.6-flash` 的 ID 还没核对，留在可选列表。本地 Qwen3-VL-32B 列为本地选项但不默认：出片时 H3 占满 32 GB 显存、内存也紧，每个镜头前换一次大模型不划算。
+- **图怎么发**：OpenAI 兼容的 `image_url` 消息块（data URI；适配器原样转发 `messages`），先过 `upload.compact_picture`（慢上行，第 15a 步）。估价：`ModelRequest.text()` 读消息块里的文字，`prompt_tokens()` 每张图加 `IMAGE_TOKENS = 1120`（Gemini 3 默认图片分辨率），OpenAI 兼容和 Mock 适配器都用它；视频组件估价把一次看图加进本地 H3 的改写估价。
+- **缓存和失败**：`LlmCache` 键 = 模型 + 图的 sha256 + 提示词，同一首帧的几条候选、「再出一条」、重跑都只看一次；看图失败或路由关掉不挡出片（改写照旧用分镜意图），预算和确认照常拦。改写的缓存键含描述，所以首帧换了就重新改写。
+
+## 2026-11-09 · M5 第 15f 步：无台词的连续镜头照旧走 h3-i2v（Kelvin 定）；分镜规划补上画面里提到的道具、角色
+
+- **第十轮**（`reports/m5-local-smoke/run10-refs/README.md`）：1-09 同种子、都带 1-08 的尾段。`h3-i2v` 切点接得上、伞是黑的；`h3-r2v` 带林晚、伞、楼道三张图时尾段一过就硬切到楼道（把场景图当成要拍的地方）；`h3-r2v` 不送场景图时接得上、伞变红，但从尾段带来的黑伞在她拿起时当场变红。黑伞来自上游 1-05、1-06 的关键帧（分镜规划漏了道具）。
+- **Kelvin 定：连续镜头照旧走 `h3-i2v`**，默认规则表（`config` 的 vid 规则、`pipeline/vselect.py`）不改。道具颜色靠上游关键帧画对，也就是下一条。非连续的无台词镜头这一轮没测（它们有锁定关键帧当首帧锚），也不改。
+- **分镜规划补参考素材**（`shots/ops.py:mentioned_assets`，在 `_shot` 里接在模型给的 / 规则算的参考素材后面）：镜头的画面描述（`picture`）和动作行（不读台词、画外音：说到的不一定在画面里）提到的角色、道具加进 `asset_ids`，按第一次出现的顺序。提到 = 素材名、它来自的设定条目的名字和别名（`plan.py:asset_aliases`，「红伞」）出现在文字里；道具还认名字的后缀（两个字以上：「便利贴」「发圈」）；只剩一个字（「伞」）时前面要是量词或「这 / 那」（「那把伞」「把伞靠回」），免得「贴着」算便利贴、「机位」算手机。不用模型：规则确定、不花钱，漏的比 LLM 少（第八轮里模型给的 refs 就漏了）。规划提示词没改（改了要重导 web 测试数据和提示词哈希，规则已经兜住）。
+- 示例剧跟着变：1-04（画面「看着便利贴」）加便利贴、1-06（动作「把伞靠回墙边」）加红伞；web 测试数据重导。
+
+## 2026-11-09 · M5 第 15e 步：连续镜头改成末尾片段续写（B）
+
+- 两个工作流加三个节点 `Tail clip`（LoadVideo）→ `Tail parts`（GetVideoComponents）→ `Tail guide`（官方 `MiniMaxH3AddGuide`，frame 0，画面和声音都钉），新槽位 `tail_clip`（可选，没给时旁路，`Tail parts` 也用旁路一起拿掉）。做法照第九轮 B 的实验图。
+- 绑定加 `replaces`：槽位**填了**时去掉的输入，它读的节点没人读了也一起拿掉。`h3-i2v` 给了尾段就去掉 I2V 的 `first_frame`（首帧锚和尾段在第 0 帧冲突）；`h3-r2v` 的首帧是参考图 `<Picture 1>` 不是锚，留着（拿掉会让后面的 `<Picture N>` 编号错位）。
+- `h3-i2v` 的台词音频（`tts`）和尾段都在第 0 帧会打架：新槽位 `dialogue_frame` 绑台词引导的 `frame_idx`，适配器在给了尾段时填尾段帧数（请求参数 `tail_frames`），否则 0。官方节点说明音频从该帧开始、裁到片尾。
+- 槽位清单只留一份：`wflib/schema.py` 的 `SlotName` 改成引用 `modelhub/workflows.py:Slot`（原来是抄的一份，加槽位时 API 报 500）。
+- **视频组件**（`pipeline/components/vid.py`）：连续镜头读上一镜已采纳 take 的 `video`（裁过头、就是成片里那段）和 `last_frame`。走的是工作流有 `tail_clip` 槽位的本地模型时（`h3-i2v`、`h3-r2v`），`media/video.py:tail_clip` 截最后 22 帧带声音（重新编码，帧率读片子自己的），请求加 `tail_clip`、`tail_frames: 22`，`duration_s` 加 22/fps 秒；`first_frame` 照样是尾帧（`h3-r2v` 的 `<Picture 1>`；兜底时用）。估价和本地超时也按加长的秒数算。兜底到 H3 API 时 `run_flow` 按 API 重建请求，不带尾段，首帧是尾帧（和原来一样）。依赖照记上一镜的视频产物（尾段和尾帧都从它来）。
+- **存 take**：`clip_files` 的裁头秒数由请求定（`head_s`）：带 `tail_frames` 的裁 22/fps 秒（那段就是上一镜的尾段，H3 开头的杂音也在里面），否则照旧 0.3 秒；`raw` 留没裁的原片。「用 API 出终版」重发这种草稿时 `video_in` 是带尾段的原片，出来的 2K 同样裁 22 帧；`tail_clip`、`tail_frames` 不发给 API。
+- **截尾段每条 take 重做一次**（同一次出两条就截两次，零点几秒），不缓存：同样的输入编码出来一样，存储按内容去重。
+- 示例种子不用改：种子只出 1-01–1-04 的 take，连续镜头 1-08、1-09 还在等上一镜。
+- **M7 后期的剪辑规则（先记下，M7 做）**：带尾段出的连续镜头，开头已经去掉了和上一镜重复的那 22 帧，粗剪按每条 take 的整条片子首尾相接，不再按镜头时长截、不再在切点裁头 0.3 秒（后期页的「裁头 0.3 秒」开关对这种镜头不生效）；上一镜换了采纳的 take，这一镜走失效传播（依赖记的是上一镜视频产物）。
+
+## 2026-11-08 · M5 第 15d 步：对白镜头留表演时间；本地超时按预计耗时放宽
+
+- **时长**（`pipeline/timing.py:shot_duration`）：手填的，再没有用分镜规划的秒数，和说话的行的音频（前后留白）取长的；分镜规划没给秒数的对白镜头才按音频。原来有对白就只按音频，1-04 规划的「愣住、灯一明一暗」4.5 秒被压成 1.5 秒（第八轮原因 3）。分镜规划提示词改成每个镜头都写秒数、留够表演时间。来源字段不变（`audio` / `manual`），界面多一句「按分镜规划 · 不短于台词音频 n 秒」，「恢复」按钮在规划秒数比音频长时写「恢复规划的 n 秒」。
+- **估价**：本地 H3 越长每秒越慢（5 秒约 150 秒、7.29 秒 255 秒、15 秒 804 秒），线性的 `est_seconds_per_s` 对 15 秒片低估近一半。工作流 caps 加可选的 `est_seconds_per_s2`（平方项，注意力随帧数平方增长），估价 = per_s × 秒数 + per_s2 × 秒数²：`h3-i2v` 按三个实测点拟合成 17 / 2.4（三点误差都在 2% 内）；`h3-r2v` 只有 5 秒的实测点，按同一条曲线放大 1.2 倍成 20 / 2.9。超分两个工作流仍是线性。
+- **超时**（`modelhub/router.py:local_timeout_s`）：本地模型 = max(兜底配置的 `timeout_s`, 1.5 × 估价的 `seconds`)，估价已经乘了一次调用的条数。计划写的是 `est_seconds_per_s × 秒数 × 1.5`，改用估价是因为估价已经有平方项和条数，两处不会算得不一样。15 秒 `h3-i2v` 一条 ≈ 20 分钟。没有改兜底配置的默认 10 分钟，也没有让它随片长缩短。
+- **运行记录**：「本地任务超过 n 分钟」原来写的是配置的超时，现在读那次超时调用（同一任务、`status=timeout` 的 `model_call`）实际跑了多久，找不到才用配置值。兜底设置里那条触发条件加一句「长片按预计耗时放宽」。
+
+## 2026-11-08 · 整集实测之后在 M5 里补四项（Kelvin 定）
+
+- 第 15c 步整集实测（第八、九轮）暴露的问题里，Kelvin 定这四项在 M5 里改、PR 等改完再开：衔接改成 B（末尾片段续写）、无台词镜头也带参考图（含分镜规划补道具）、改写前看真实首帧、对白镜头时长和本地超时。计划第 15d–15h 步。
+- 留到以后（记进报告的遗留）：关键帧画动作起点而不是概括画面（M5.5 图片来源与编辑时一起看）、1-07 画面文字镜头弹出通知（M6 质检）、C 长镜头重测（15h 视情况）。
+- 依据：B 比 A 好（1-09 门保持开着、走到门口拿伞、脸更稳、切点不跳）；问题在两条候选里都出现，换种子解决不了。
+
+## 2026-11-08 · 插入第 15c 步：整集本机实测（Kelvin 定）
+
+- 起因：Kelvin 看了本机和冒烟的几个片段，觉得太短、不连贯，要先跑一整集看一致性、镜头调度，并实测 PLAN 的长视频方案（「连续动作镜头用上一段末尾片段续写」；现在实现的只是上一镜最后一帧当首帧）。
+- **Kelvin 定**：示例第 1 集（9 个镜头、约 35 秒）；每镜 2 条、全本地，不出 2K 终版；衔接方案 A（尾帧当首帧）、B（末尾片段续写）、C（合成一条长镜头）三种都比。第 16 步收尾的 SPEC / ROADMAP / 报告草稿先提交，PR 等整集跑完、按结果改完再开。
+- 本机 ComfyUI 0.41.2 自带的官方模板里有 `video_minimax_h3_i2v_continuation`、`video_minimax_h3_multiframe_reference`（`MiniMaxH3AddGuide` 按秒数钉多张图），`MiniMaxH3ImageToVideo` 还有可选的 `last_frame`、`MiniMaxH3ReferenceToVideo` 有 `ref_videos`：B、C 先用这些在 scratchpad 里做实验工作流。
+
+## 2026-11-08 · M5 第 15b 步：音色样本不够长时拼同一个声音的几段话
+
+- 起因：H3 API 要 2–15 秒的音频（2013），林晚本地音色的锚点只有 0.87 秒。
+- **Kelvin 定**：不重复、不补静音，把同一个人的几段话拼在一起交上去，不浪费额度。
+- 做法：`providers.yaml` 的 `minimax/h3-api`、`minimax/h3-regenerate-2k` 加 `caps.audio_s: [2, 15]`；`vid.py` 收集音色时带上这个声音锁定版本里的全部片段（先 `anchor`、再各情绪 `variant`，都是同一个声音）；`_voice_samples`：锚点在范围内就原样送，否则 `media/audio.py:joined_sample` 按顺序拼（每段之间停 0.25 秒，只拼到够长为止，超过上限截掉），存成新文件作为 `ref_audio`，请求记录里就是实际送出去的那段。全部拼完还不够就报 `voice_sample_short`，在调用前停下，不花钱。本地 `comfy/h3-r2v` 没有 `audio_s`，仍送锚点。「用 API 出终版」（Regenerate-2K）重发草稿的音色时同样处理。
+- 先配音（`dialogue_audio`）不处理：配音轨按镜头时长生成，本来就够长。
+
+## 2026-11-08 · M5 第 15a 步：慢上行：任务 API 的输入压小、建任务不重发
+
+- 起因：真实冒烟第一轮（Kelvin 在海外）往 api.minimax.cn 上传约 20 KB/s、火山方舟约 40 KB/s；H3 的请求体是 PNG / WAV 的 data URI（几 MB），POST 120 秒写超时；`send()` 把超时当可重试，**每次重发 MiniMax 都又建了一个任务**（列表里 3 个 Context-IR + 1 个生成；这次都因音频太短失败、没扣钱，成功的话就是重复收费）。
+- **`send(create=True)`**（`modelhub/adapters/http.py`）：建任务（收钱）的请求只在根本没连上（`ConnectError` / `ConnectTimeout`）时重发；发出去之后的超时或断线报 `timeout` / `network_error`，`retryable=False`（路由也不再重试同一模型），信息里提示去供应商的任务列表看。MiniMax H3（生成、Context-IR、Regenerate-2K）和 Seedance 的建任务都用它；查询、下载照旧重试。
+- **输入压小**（`modelhub/adapters/upload.py`）：图片超过 256 KB 转 JPEG（ffmpeg `-q:v 3`，约质量 90），音频超过 512 KB 转 192 kbps MP3，变小才换；请求体在线程里组装（ffmpeg 不卡事件循环）。H3 首帧 / 参考图 / 音频、Seedance 首帧都走它。Regenerate-2K 的 `base_video`（草稿 MP4）不动。
+- **写超时按请求体放宽**：`upload_timeout`：写 = max(120 s, 字节 / 16 KB/s + 30 s)，其余照旧。
+- **Context-IR 超时 600 → 180 秒**（`providers.yaml`）：超时就用我们自己的提示词。
+- 没做（Kelvin 暂不开）：MiniMax 国际站。还没修：本地音色样本不够 H3 API 要的 2 秒（下一步）。
+
+## 2026-11-08 · 新里程碑 M5.5「图片来源与编辑」、M7.5「角色微调与 3D 建模」（Kelvin 定）
+
+- Kelvin：只靠文生图保证不了图片质量，要支持用户自己上传图片和参考、图生图、超分、微调、建模。定了：M5 照原计划收尾；**M6 前插 M5.5**（上传关键帧 / 素材多参考 / 六视图单张 / 手动新建素材 / 镜头参考图带用途 / 风格板、图生图、局部修复、图片超分、上传图也能出终版）；**上传关键帧画幅不对就自动裁切、可拖动选位置**；「微调」= 角色 LoRA 训练，「建模」= 图生 3D，单列 M7.5（建议排 M7 之后，开始前再定）。ROADMAP M5「局部修复入口」挪到 M5.5。
+- 现状（2026-11-08 查过）：只有素材的「上传参考图」（`POST /assets/{id}/upload`，`ref_image` / `text_image`）；关键帧、六视图、视频首帧都不能上传；镜头只能加已锁定的素材当参考。
+
+## 2026-11-08 · M5 第 14g 步：本机先配音、尾帧衔接；1-04 两种声音对比
+
+- 示例剧里 `tts` 的镜头是 1-06（林晚的旁白），1-08 接它的尾帧；计划写的「1-04（`tts`）」按 Kelvin 要求另做同种子对比（`local_video.py --only tts104`：影响范围改 `audio_mode`，声音不在关键帧的依赖里，首帧不变）。
+- 结果（`reports/m5-local-smoke/run7-chain/`）：尾帧衔接好（PSNR 35 dB）；本地 `tts`（H3 图生视频 + 音轨）明显不如原生同步：画面几乎不动、H3 把台词画成字幕、不收参考图。**先不改**：记下来，M6（质检、口型）时再定是提示词禁字幕、还是 `tts` 也走 R2V；默认仍是原生同步。
+- 「NOT LOCAL」：本地 H3 的改写在这个脚本里走 Mock（API 模型），`Smoke.step` 把它算成兜底，报告的结果是「SOME STEPS FAILED」；视频本身都是本地，不影响结论，脚本没改。
+
+## 2026-11-08 · M5 第 14f 步：本机导入社区工作流；Manager 4 的节点表
+
+- **缺的节点包按 Manager 4 的节点表找**（`wflib/service.py:_packs_for`）：ComfyUI-Manager V4.2.2 的 `/v2/customnode/getmappings` 把收录进 Comfy Registry 的包换成 Registry id 当键（本机 5725 条里 3296 条），类名也不一定是真实的（rgthree 列的是 `RgthreeSeed`，真实的是 `Seed (rgthree)`），它只给已经装上的包套 `nodename_pattern`。所以体检自己套名字规则（`re.search`，坏的正则跳过）；键不是 git 地址的记 `source: registry`，git 地址去 Comfy Registry 查（`ComfyAccess.repository`：`GET https://api.comfy.org/nodes/<id>` 的 `repository`，Manager 自己的数据也从这来；只查缺的那几个包，查不到就列出来但不能装）。原因：本机第一次导入用了 rgthree 节点的工作流时，体检认不出缺的包、也拿不到克隆地址。Manager 4 没有旧的 `getlist` 接口（只在 legacy 里），所以不从它那里取。安装仍是我们自己克隆 GitHub 主分支（没有锁版本；Registry 把 rgthree 最新版标了 flagged，Kelvin 知道后仍同意装）。
+- **ComfyUI 工作流列表的 `modified` 两种单位都认**：0.41 给的是毫秒，旧版是秒；大于 1e11 就当毫秒。
+- **本机脚本 `scripts/smoke/local_workflow.py`**：临时数据目录、`DRAMA_SETUP=real` 自己扫描本机（只读），不动开着的工作台；不带 `--install` 只看体检和改动清单；`--install` 先存快照再装，等用户重启 ComfyUI（轮询 `/object_info/<类名>`），再体检、试跑、升「我的工作流」。数据目录留着（快照记录在里面）。社区工作流用的是 API 格式：没装的节点类 ComfyUI 不认识，UI 格式转不了（`ConvertError`），社区里分享的「Export (API)」正是这种。
+
+## 2026-11-08 · M5 第 13d 步：Playwright `m5`；表头花费实时更新；事件风暴节流
+
+- **Playwright 新项目 `m5`**（`web/e2e/m5.spec.ts`，`VITE_DEMO_DATA=0`）：排在 `m4` 之后、`real` 之前（`seeded` → `m4` → `m5` → `real` → `smoke`）。生成页走界面：1-05 首次出两条本地候选、采纳 / 取消 / 再采纳、「用 API 出终版」出 2K 终版、表头花费变多、运行记录、生成确认被拒（还有 5 个镜头）；其余镜头用接口各出一条并采纳（1-04 也重出：`m4` 给它换过首帧，种子的候选已经过期，徽标是「待更新」）；再点「去后期」进后期、步骤「已确认」，「重新打开」。模型页走界面：扫描示例 PC（装节点包要有 ComfyUI），导入 `社区/图生视频-wan22.json` → 确认绑定 → 装 VHS（先存快照）→ 试跑 → 我的工作流；导入 `社区/胶片颗粒-filmgrain.json` 装上坏包 → wan22「有问题 2 处」、问题列表 → 回滚 → 正常。结尾 `POST /dev/setup/machine` 换回没扫描的示例 PC（清掉快照），后面 `smoke` 的「首次运行」照旧从「开始检测」开始；生成闸门也重新打开了，后面的项目看到的是没锁的视频。
+- **`cost.updated` 也刷新 `["metrics"]`**：之前只刷新调用列表，表头「本集 API 花费」和看板要重新加载才变（`m5` 测出来的；验收要求表头实时更新）。
+- **SSE 带来的重拉按查询键节流**（`api/events.ts:invalidate`，窗口 `REFETCH_WINDOW_MS` = 250 ms）：同一个查询键第一条事件立刻重拉（单条事件的行为不变），窗口里再来的合并成窗口结束时一次。原因：生成确认逐个锁 9 个产物、每个都发 `product.updated`，前端每条都让产物、剧集、各集的查询全部重拉，一秒里约 100 个请求；TanStack 重拉时取消上一次，但后端照样跑完，确认 / 重新打开排在后面，本机 1.5–1.8 秒，偶尔超过 5 秒（`m5` 两次卡在这）。节流后同一场景约 70 个（一轮约 35 个查询 × 开头和结尾两轮）。按 `QueryClient` 分开记，测试之间不串。
+- `smoke` 本机第一轮有两个超时（改画幅的影响范围弹窗 20 秒没关、切示例机器没反应），第二轮整套 39 个过；后端日志里的「Exception terminating connection」（请求被取消时关连接）上一轮绿的 CI 里也有 8 条，不是这次带来的。
+
+## 2026-10-28 · M5 第 13b 步：示例 ComfyUI 能装坏、能回滚；工作流库的端到端测试
+
+- **示例机器多两个「社区」工作流**（`wflib/demo/workflows/社区/`，在 ComfyUI 列表最上面）：`图生视频-wan22.json`（Wan 2.2 图生视频的写法，缺 ComfyUI-VideoHelperSuite，装上就能体检通过、试跑、升「我的工作流」）；`胶片颗粒-filmgrain.json`（缺示例坏包 ComfyUI-FilmGrainFX，地址用 `example.com`，一看就是假的）。示例 `object_info` 补核心节点 `WanImageToVideo`。
+- **坏包怎么坏**：`node_map.json` 里那个包的元数据带 `demo_breaks: ["KSampler"]`；`DemoComfy.install(snapshot, packs)` 加上包的节点类、拿掉它弄坏的类，并记下装之前的样子；`DemoComfy.restore(snapshot)` 退回去。示例坏包是我们自己的约定，真实 Manager 的节点表没有这个键。
+- **回滚后重新体检**：`POST /comfy/snapshots/{id}/restore` 排上回滚后调 `WorkflowLibrary.restored(manager_name)`：示例机器立刻复原并全部体检；真实 ComfyUI 要重启才生效，仍由下一次扫描核对（SPEC 6.4.1），这里什么都不做。
+- **「装后变坏」的提示带快照 id、会一直挂着**：`broke_after_install` 的参数加 `snapshot_id`（界面的「回滚到这次安装前的快照」要用）；之前只在「上次正常、这次坏了」那一次体检里出现，再点一次体检就没了。现在上次已经带着它、这次还没好，就继续带着，回滚或修好为止。
+- **界面**（第 13c 步）：之前模型页工作流详情只列缺的节点包和模型，`problems` 一条都不显示。现在「体检」页签多一节「问题」（`workflows:problem.<code>`：`binding_broken`、`unknown_node`、`broke_after_install`），`broke_after_install` 下面有「回滚到这次安装前的快照」：先在原地说明（Manager 下次启动 ComfyUI 时执行、不替你重启），确认后调回滚接口，刷新工作流库和快照列表。没用弹窗：只有一个按钮、一段说明，和「环境与安装」里的快照回滚同一个接口。第 13d 步做 Playwright `m5` 和截图。
+
+## 2026-10-28 · M5 第 13a 步：Mock 照真实适配器记钱、记工作流；生成的端到端测试
+
+- **Mock 按真实适配器的价档记钱**：视频按秒计价的模型（`price_by_res`）由真实适配器按画面挑价档（H3：短边超过 768 用 2K；Seedance：短边够得着的最高档）。Mock 以前拿 `params.resolution` 查表，API 出片时那是交付档（如 `1080p`），表里没有 → 0 元。现在两家适配器把挑档抽成模块函数 `resolution_tier(spec, params)`，Mock 按 `spec.adapter` 调同一个（`mock.billed_tier`），用量里带上 `resolution`，估价和记账都按它。示例种子的花费是写死的，快照没变。
+- **Mock 也记工作流和哈希**：本地 ComfyUI 模型（`runtime: comfyui` 且有 `workflow`）的 Mock 结果带 `raw["comfy"]`（工作流 id、`workflow_sha256`，`comfy_env_hash` 为空），和 `ComfyUIAdapter` 一样，`model_call` 和版本就都有了。验收要求「本地的带工作流哈希」，Mock 下以前是空的。
+- **端到端测试从示例剧开始**（`tests/e2e/test_storyboard_to_takes.py`）：后端在 Mock 下启动时自己种示例剧（分镜已确认、1-01–1-03 已采纳、1-04 四条待挑），所以 M5 的验收不再从导入小说走起（M4 那条已覆盖）。`model_call.version_id` 对视频仍是空的（调用时版本还没建，M4 起就这样），测试按 `job_id` 对上。
+- 第 13 步拆成三小步：13a 这一步、13b 导入社区工作流和装坏节点包回滚的端到端、13c Playwright `m5` 和截图。
+
+## 2026-10-28 · 估价不再嵌套开会话（CI 的 e2e 卡住的主因）
+
+- **原因**：第 12a 步起，`RunService.describe`（每个产品的 GET 都要算估价）在自己的会话里调 `choose_model`，选工作流又开一个会话读规则表：一个请求同时要两个连接。后期页、看板一次拉几十个产品，连接池（SQLAlchemy 默认 5 + 10）被每个请求的第一个连接占满，大家都在等第二个，等满 30 秒超时。本机并发 36 个视频产品的 GET：修之前 30.5 秒后 `QueuePool limit … reached`，修之后 1.0 秒全 200（`test_workflow_select_api` 新测试）。
+- **做法**：`describe` 先在会话里读输入和默认意图，关掉会话再选工作流、编译提示词（入队那条路径本来就是这样）。约定：**持有会话时不要调用会自己开会话的函数**（`choose_model`、`vselect.*`、组件里查缓存的那些）。
+- 下面那条「会话屏蔽 anyio 取消」照样保留：它管的是「写到一半被取消、连接带着写锁留下」，CI 日志里那条报错还会不会出现，看这一轮。
+
+## 2026-10-28 · 数据库会话不让 Starlette 中途取消（修 CI 的 e2e 卡住）
+
+- **现象**：第 11 步起 CI 的 Playwright smoke 一轮比一轮红（后期页一直「正在加载」、检测一直「正在检测…」、SSE 没有任务更新），本机全过。e49a128 那轮后端日志在 smoke 页面测试期间报了 6 次「Exception terminating connection … CancelledError: Cancelled via cancel scope … by RequestResponseCycle.run_asgi」，之后读照常、写全卡住。
+- **原因**：浏览器关页面时 Starlette 用 anyio 取消作用域取消流式响应（SSE），anyio 的取消是电平触发的；数据库语句执行到一半被取消，SQLAlchemy 当场终止连接，终止这一步又被取消，连接带着写事务和 SQLite 的写锁留下，后面的写全在等。本机用「写到一半时 `move_on_after`」复现出同一条日志并卡死（`tests/unit/test_db.py`）。
+- **做法**：`Database.session()` 整段放在 `anyio.CancelScope(shield=True)` 里：会话里的工作做完、照常回滚 / 还连接，取消落到会话外的下一个 await。我们自己的代码不用 anyio 取消；任务队列的取消、`asyncio.timeout` 是原生 `task.cancel()`，屏蔽挡不住它们（验证过），所以只影响「客户端走了」这一种。只在关闭时屏蔽 `close()` 不够（试过：取消发生在语句执行中，轮不到 `close()`）。`core/events.py` 原来给两个 SSE 读单独加的屏蔽现在多余，留着不碍事。
+
+## 2026-10-28 · M5 第 12c 步：按镜头选工作流的界面
+
+- **规则表放「模型与兜底」**（组件表和工作流库之间，`pages/models/WorkflowRules.tsx`）：一行一条规则，六个条件各一个下拉（「不限」= 不写这个条件），右边选工作流（只列接口给的 `models`，存过但现在不能选的也留在下拉里）、上移 / 下移 / 删除；每改一处整表 `PUT`；改过的剧显示「本剧已改」和「恢复默认」（`DELETE`）。LLM 建议开关在表下面，默认关。模型页没有剧集路由，按「最近打开的剧，否则示例剧」（`useSeriesId`），说明里写明只对哪部剧生效。没有原型，按 M0.5 风格；1440 和 2000 px 都是一行。
+- **「选了哪个、为什么」从视频版本读**：视频 take 的版本 `params.select` 存一份和 `model_call.select_json` 一样的内容（不另开接口，`GET /products/{id}` 本来就带 `params`）；命中规则时 `select` 多存规则本身 `when`（规则表之后可能被改，序号对不上）。示例种子的本地 take 也带上（1-04 的草稿是规则 1，1-01–1-03 是默认），前端快照 `generate.json` 重导，另加 `workflow_rules`。
+- **Inspector**（`components/ShotWorkflow.tsx`，只在视频生成且有镜头时）：显示「最近一条本地候选」的选择——当前版本是本地的就用它，是 API 终版就看它的父版本（本地草稿），否则看最新一条本地 take；没有就说还没在本机出过片。下一条用哪个工作流读产品估价的 `model_key`（后端估价已经过规则表和手动选择），分支按这个工作流列；手动换仍然是上面 ModelPicker 的「本地模型」（item 覆盖），这里只给说明和「改规则表」链接（`/models#workflow-rules`，页面会滚过去）。
+- **分支开关**：`CONFIG_FIELDS` 两边都加 `branches`，`/config/resolve` 的 `sources.branches` 是整张表最具体的那一层；开关写 item 覆盖 `{branches: {id: bool}}`，拨回默认值时写 `null`（回到默认），有手动值时显示「恢复默认」；没试跑过的分支带「没试跑过」标记但仍可开（禁用留到有带分支的仓库工作流时再定，见第 12b 步）。仓库工作流现在都没有分支，界面显示「没有可开关的分支」；页面测试用假工作流验证开关。
+- 新错误码词条：`workflow_rule_model`、`workflow_unknown_branch`。
+
+## 2026-10-28 · M5 第 12b 步：工作流里的可开关分支
+
+- **`workflow.yaml` 的 `branches`**（`modelhub/workflows.py:Branch`）：`id`（开关用的名字）、`kind`（`controlnet` / `lora` / `upscale`）、`name`、`nodes`（关掉时拿掉的节点标题）、`bypass`、`default`（没人选时开不开）。关掉的分支在填图时和可选槽位一样拿掉：先把被旁路节点的读者接到它某个输入的来源上，再删节点和读它的输入。分支里不能有被绑定的节点（装载时报 `WorkflowError`）。
+- **旁路按输出接**（`Bypass.output`）：LoRA 加载器两个输出（0 模型、1 CLIP），各自接回 `model` / `clip` 的来源；不写 `output` 时和以前一样所有读者都接过去（H3 的音频引导）。旁路的实现从「接完就删」改成先接线、最后统一删，同一个节点可以有多条旁路。
+- **按镜头开关存成配置覆盖**（`ConfigPatch.branches: {id: bool | null}`，`null` 回到默认），不存 `shot.control_json`（计划原写法）：Inspector 本来就按镜头写 item 覆盖（换模型也是），还白得组件级默认开关；`control_json` 留给控制视频的设置。开关按分支 `id` 认，不分工作流（「这个镜头用 ControlNet」对哪个工作流都是一个意思）。`/config/resolve` 的 `sources` 里加 `branches` 要改前端契约的 `CONFIG_FIELDS`，和界面一起在 12c 做；现在 `values.branches` 已经有。
+- **视频 take 的请求带 `params.branches`**（只有本地工作流有分支时）：按 `branch_states(镜头 / 组件的选择)` 算出每个分支开关，ComfyUI 适配器填图时用；它在请求参数里，所以也进媒体缓存键（换开关不会拿回旧片）。
+- **每个分支单独试跑**：`POST /workflows/{id}/trial {branch}` 在示例输入上只开这个分支跑一次，结果存在 `trial_json.branches.<id>`，和工作流自己的试跑互不覆盖；工作流的试跑通过才更新文件哈希，分支试跑不动。`WorkflowOut.branches`（`id / kind / name / default / trial`），前端契约 `WorkflowBranchSchema`（默认空列表）。不认识的分支 422 `workflow_unknown_branch`。
+- **没做的**：仓库里的推荐工作流现在都没有分支（H3 的 Turbo LoRA 要同时改步数，不是单纯开关，Kelvin 定留着以后做「快速草稿」档），所以开关暂时没有实际可开的对象；换 LoRA（选别的 LoRA 文件）、分支没试跑过时禁止打开，等真有带分支的工作流再做。导入的工作流不能自己定义分支（没有界面），只有仓库工作流在 `workflow.yaml` 里写。
+
+## 2026-10-28 · M5 第 12a 步：按镜头选工作流（后端：规则表、LLM 建议、记进 model_call）
+
+第 12 步分三小步：12a 规则表和 LLM 建议的后端，12b 可开关分支，12c 界面（规则表放「模型与兜底」、Inspector 显示选了哪个和理由、按镜头开关分支）和截图。
+- **Kelvin 定（2026-10-28）**：LLM 建议在镜头第一次出片前自动问，开关默认关；默认规则表放一条「原生同步 + 有锁定音色样本 → `comfy/h3-r2v`」。原来写死在 `vid.model_for` 里的这条挪进表里（删掉表里这条，原生同步的镜头就走组件默认的 `h3-i2v`）。
+- **先后顺序**（`pipeline/vselect.py`）：调用方点名的模型（「不满意换一个」、指定模型）和这个镜头在 Inspector 里手动选的（`local_model` 的 item 覆盖）→ 剧集规则表第一条命中的 → LLM 建议（开着、规则都没命中、能选的不止一个时）→ 路由的本地模型。规则在 LLM 前面：表是用户明说的，LLM 只补没写到的。路由是 API 模型时不选（只在本地工作流之间挑）。
+- **能选的**（`pickable`）：视频组件 `local` 里有工作流的、不是「未验证」、这台机器跑得了的；规则指向的模型选不了就跳过这条。存规则时只查前三项（换机器不该让表存不进去）。
+- **规则表按剧存** `app_setting` 的 `vid.select.<series id>`（和生成规则一样）；没存过读 `components.yaml` 的 `vid.select_rules` / `select_suggest`。条件：`shot_type`、`framing`（景别）、`dialogue`、`audio_mode`、`refs`（有锁定参考图）、`voices`（有锁定音色样本），不写的不限；多的字段 422。接口 `GET / PUT / DELETE /series/{id}/workflow-rules`（`DELETE` 回到配置的表；返回带 `saved` 和能选的 `models`）；规则的模型不能选时 422 `workflow_rule_model`。
+- **LLM 建议**：新路由组件 `vselect`（视频工作流建议，默认 DeepSeek V4.1 Flash，单次上限 $0.05），在**入队时**问（不在任务里问：模型定了才能估价、排 GPU 队列、按模型分组）；估价只读缓存不问。告诉它镜头（景别、类型、时长、声音、台词条数、参考图张数、音色样本张数、画面描述）和候选工作流（名字、档位、是不是默认、最长秒数、参考图槽位数、收不收音色样本 / 台词音频），要 JSON `{model, reason}`，理由用剧的语言。答案按「模型 + 发出去的内容」缓存在 `llm_cache`：镜头或候选变了才再问。失败、超预算、答了不在候选里的 → 用默认，只记日志。Mock 下选收音色样本的（原生同步 + 有音色时），否则默认。
+- **记进 `model_call.select_json`**：`CallContext.select`（`RunContext.select` ← 任务参数 `params.select`）；视频那次调用写 `{by: manual | rule | suggest | default, rule?, reason?, suggested_by?}`，提示词改写、Context-IR 这些不写；LLM 建议本身另有一行 `component_id = vselect` 的调用记录。
+- **组件钩子** `Component.choose_model(...)`（异步，默认就是 `model_for`）：`runs.py` 的估价和入队都改走它。
+
+## 2026-10-28 · M5 第 11 步：DramaStudio 节点包（工作流的输入 / 输出节点）
+
+- **节点包 `integrations/comfyui-dramastudio`**（`nodes.py`，13 个节点，版本 0.1.0）：输入 首帧、参考图（带 `index`）、输入视频、台词音频、音色样本（带 `index`，对应 `ref_audio`）、提示词、反向提示词、尺寸（宽、高）、帧率和时长（一个节点：`fps`、`seconds`，另出 `fps_int` 和 `frames` = 帧率 × 秒数取整；要 4n + 1 帧的模型自己接数学节点）、种子；输出 视频（MP4）、图片（PNG）、音频（FLAC），存进 `output/dramastudio/`，列文件的格式和 ComfyUI 自带的 SaveVideo / SaveImage / SaveAudio 一样，适配器取结果不用改。文件输入像 `LoadImage`：下拉列 `input` 文件夹（含子文件夹，平台上传在 `dramastudio/`）、能上传，`VALIDATE_INPUTS` 只查文件在不在（平台刚上传的文件不在 ComfyUI 启动时的列表里），`IS_CHANGED` 按文件哈希。每个输入都有默认值，在 ComfyUI 里能直接手动跑。
+- **用经典写法（`INPUT_TYPES`），ComfyUI 的模块在用到时才 import**：不用 V3 的 `io.ComfyNode`，这样节点定义在没有 ComfyUI、没有 torch 的测试环境里也能加载。存图片和音频借 `comfy_api.latest.ui` 的 `ImageSaveHelper` / `AudioSaveHelper`，读视频用 `InputImpl.VideoFromFile`，读音频用 `comfy_extras.nodes_audio.load`（和 `LoadAudio` 一样），存视频用 `VIDEO.save_to`。在本机 ComfyUI 0.41.2 自己的 Python 里逐个跑过（读图、参考图、存图、带声音的视频存出再读回、音频存出再读回；临时目录，没装进 ComfyUI、没发 `/prompt`）。
+- **「不用写绑定」= 导入时按节点类自动生成绑定**（`wflib/dramastudio.py:NODES`，状态 `dramastudio`），照样写进 `workflow.yaml`，填值、取结果、可选槽位走同一套代码，没另开一条「按节点类型提交」的路。用了 DramaStudio 节点的工作流只认这些节点，不再猜别的（`LoadImage` 之类不绑定）；同一个槽位有两个节点取第一个；参考图 / 音色样本按节点的 `index` 编号，没有就接着往后排，并且是可选的（镜头的参考图比节点少，多的节点连同读它的输入一起拿掉）；其余文件槽位必需。重名的节点照猜绑定的规则改成唯一标题。认不出的 `DramaStudio*` 节点（M9 的镜头、素材、存回）不绑定。
+- **体检认得我们自己的包**：缺 `DramaStudio*` 节点类时列成缺节点包「DramaStudio」（`source: studio`、版本取包里 `pyproject.toml`，前端契约 `MissingPack.source` 加 `studio`），不是 `unknown_node`。「安装缺的节点包」时它走安装清单的 `node_dramastudio`（`NodePackSource.item`，和其他节点包一起先存快照）。
+- **安装清单 `node_dramastudio` 可装了**：去掉 `installable: false` 和 `dramastudio_pending`（中英文词条删掉），缺少时提示「安装节点」；步骤只剩复制（`copy`，版本 0.1.0，复制时跳过 `__pycache__`）；「写入本地令牌和后端地址」的 `script` 步骤等 M9 的存回节点再加。名字改成「DramaStudio 节点包」。它会改用户的 ComfyUI，所以和其他节点包一样列进改动清单、默认不勾、先存快照。PC 示例机器全选从 17 项变 18 项、改动 ComfyUI 的从 11 项变 12 项，装完后缺的只剩 H3、SeedVR2 两项（要升级 ComfyUI）。
+- **没做的**：包的版本更新检测（检测只看目录在不在；重装会覆盖）留到 M9 加存回节点时一起做；节点的前端扩展（下拉选镜头等）M9。
+
+## 2026-10-28 · M5 第 10b 步：工作流库前端接后端；试跑走任务事件
+
+- **删 MSW 的工作流库**（`mocks/handlers/workflows.ts`、`fixtures/demo/workflows.ts`、`db.ts` 两项、`demoTiming.workflowTrialMs`）：示例模式下模型页的工作流库直接读 Mock 后端。页面测试改用 `test/fakes/workflows.ts`，数据是 `test_web_fixtures.py` 新导出的 `workflows.json`（仓库的 9 个工作流全部体检后 + 示例 ComfyUI 列表里的两个导入后的样子；体检、试跑的时间 `at` 也固定）。原来 MSW 里的「Wan 2.2（社区）」「Flux Kontext（社区）」「LatentSync（我的）」后端没有，测试改成用雨夜氛围-ltx2（缺节点包和模型）、sdxl_basic（绑定待确认、体检正常）和 FlashVSR（缺节点包）。
+- **示例 ComfyUI 补节点类**（`wflib/demo/object_info.json` 加 38 个，只有名字、没有输入；`node_map.json` 加 1038lab 的 ComfyUI-FlashVSR）：以前仓库工作流在 Mock 下全是「坏了」（`unknown_node`：UNETLoader、CLIPLoader 都没有），接上后端后模型页会一片红。现在除 FlashVSR（缺节点包、可装）外都正常；H3 和 SeedVR2 节点按 ComfyUI 0.41 自带算。
+- **试跑进度走 `job.updated`**：`useWorkflows` 不再每秒轮询；`api/events.ts` 收到 `workflow_trial` 的状态变化（不带 `progress` 的那种）就刷新工作流库；试跑中显示采样步数（`JobSchema.progress`，ComfyUI 的 `step` / `steps`，从任务列表缓存里读）。
+- **装依赖只算节点包**：后端 `install_deps` 本来就只装节点包、模型文件留给用户放（第 3 步）。按钮改成「安装缺的 N 个节点包」，改动清单只列节点包，缺模型时提示自己放进 models 目录后重新体检；提示里带 `restart_required`（真 ComfyUI 要重启）和 `failed`。
+- **仓库工作流的绑定只看不改**（写在 `workflow.yaml`，后端本来就 409 `workflow_tier_repo`），说明一句。
+- ModelPicker 的档位徽标改用工作流库的颜色和词（`workflows:tier.*`），不另起一套。
+
+## 2026-10-28 · M5 第 10a 步：ModelPicker 显示工作流档位，未验证的单独一组
+
+- **`GET /config/components` 的 `models[].tier`**（`modelhub/catalog.py:_tier`）：只有 `runtime: comfyui` 且有 `workflow` 的本地模型有值；在库的「未验证」集合里 → `unverified`（文件变了的仓库工作流也算），库里升过「我的」→ `mine`，其余（`providers.yaml` 带的）→ `recommended`；LLM、API、Python worker 模型是 `null`。没另开接口，选择器本来就读这份目录。
+- **选择器**：本地模型照旧一个单选组，未验证的放在组末一个带标题的小组里（「未验证的工作流 · 只能手动选」+ 一句说明），每个工作流带档位徽标（颜色和词跟工作流库一样，第 10b 步）；「兜底到」不列未验证的（后端 `_manual_only` 本来就会去掉）。手动选成本地模型照常写覆盖。
+- 原因：SPEC 6.4.4 / 7「未验证只能手动选」；后端第 2 步已经把它挡在自动路由外，界面要让人看出来为什么它不会被自动用到。
+
+## 2026-10-28 · M5 第 14e 步：本地 H3 草稿 20 步；媒体缓存认工作流文件；库同步跟着仓库文件走
+
+- **`workflows/h3-i2v`、`h3-r2v`**：删 `LoraLoaderModelOnly`（Turbo LoRA），`BasicGuider` 和 `BasicScheduler` 直接接 `UNETLoader`，`steps` 8 / 4 → 20（res_multistep + simple，官方关 Turbo 的默认）；`models` 去掉两个 LoRA，名字去掉「Turbo」；`est_seconds_per_s` 25 → 30 / 36（第六轮本机实测 158 / 188 秒一条 5.17 秒的片子，`reports/m5-local-smoke/run6-20steps/`）。
+- **媒体调用的结果缓存键加上工作流文件哈希**（`media._media_key` + `modelhub/workflows.py:workflow_sha256`，每次读文件，不走 `shipped_workflow` 的进程内缓存）。原因：这个缓存是为了重试 / 续跑不重复花钱，键只有「模型键 + 提示词 + 参数 + 种子」；工作流改成 20 步后，同种子的 take 1 秒内拿回 Turbo 的旧片子、不写 `model_call`。没有工作流的模型键不变，旧缓存照常命中。
+- **工作流库同步仓库工作流时，文件哈希变了就刷新 `deps_json.models`、清掉旧体检**（`wflib/service.py:sync`）：以前只更新哈希、名字、能力，旧的模型清单（含 LoRA）和旧图的体检结果一直留着。仍是推荐档；体检要再跑一次（工作流库「全部体检」或导入时）。
+- **安装清单的 `w_h3` 仍下载两个 Turbo LoRA（3.9 GB）**：Kelvin 2026-10-28 定留着，以后可能做「快速草稿」档。
+- 顺带修 CI（379c314，第 14c / 14d 步之后红了三次）：安装 / 扫描测试补 `w_flashvsr`，运行记录测试改成本地 take 只有改写的花费。
+
+## 2026-10-27 · Kelvin 定：本地 H3 草稿用 20 步、不开 Turbo；原生配音的声音合格
+
+- **本地 H3 草稿（`comfy/h3`、`comfy/h3-r2v`）改成 20 步、不开 Turbo LoRA**（res_multistep + simple，官方关 Turbo 的默认）。原因：Kelvin 看了第三轮（`reports/m5-local-smoke/run3-workflows/`）和第五轮（`run5-rewrite/`），Turbo（8 / 4 步）画质不够；20 步一条 5 秒片约 2.5–6 分钟，换来画质。提示词改写（第 14b 步）解决切走 / 漂移，步数解决画质，两者独立。做法见计划第 14e 步。
+- **原生配音（`native`，H3 参考生视频 + 锁定音色样本）的声音 Kelvin 听过，合格**：第五轮 1-04 的台词没有乱码、音色像林晚。第二轮 ab-22-B 的乱码音频是 Turbo 4 步时声音没收敛（官方说说话和音色要 12 步以上），换 20 步后不再是问题。
+
+## 2026-10-27 · M5 第 14d 步：2K 精修的本地档（SeedVR2 默认、FlashVSR 兜底）
+
+- **Kelvin 定**：「2K 精修」（`up`）本地默认 SeedVR2，兜底 FlashVSR，按钮上显示预计耗时。范围：M5 做后端和工作流，按钮和 `POST /versions/{id}/upscale` 仍是 M6（计划原样）。`components.yaml` 的 `up` 本来就是 `local: comfy/seedvr2`、`fallback_to: comfy/flashvsr`，只补了注释。
+- **`workflows/seedvr2-up`**：第三轮本机对比验证过的图（ComfyUI 自带 SeedVR2 节点 + 7B int8，官方模板 `utility_seedvr2_3b_int8_upscale_video` 换 7B），直接缩放到成片尺寸（居中裁），时间方向按显存自动分块，lab 调色，原片的声音和帧率原样带过去。
+- **`workflows/flashvsr-up`**：1038lab 的 `AILab_FlashVSR`（Balanced 预设）只能 ×2 / ×4，所以 ×2 再缩到成片尺寸。
+- **FlashVSR 权重进安装清单 `w_flashvsr`**（锁 1038lab/FlashVSR f1bc6756，五个文件 6.7 GB、带 sha256，下到 `ComfyUI/models/FlashVSR`）：节点缺文件时会自己整仓下载 13 GB（含用不上的两个），而且绕过我们的快照和进度。`comfy/flashvsr` 的 `needs` 加上它；本机已经下好。
+- **预计耗时 = 估价的 `seconds`**：ComfyUI 适配器本来就按 `caps.est_seconds_per_s × 片长` 算，按钮（M6）直接用。本机实测：5.17 秒的 768×1344 片子放大到 1080×1920，SeedVR2 194 / 211 s（→ 40 s 每秒），FlashVSR 164 s（→ 32 s 每秒），都含加载模型。FlashVSR 并没有快很多，当兜底（SeedVR2 失败、超时）而不是「快速档」。
+- **本机体检 + 试跑都过**（工作流库的 `check` / `trial`）：SeedVR2 15 / 15 个节点、FlashVSR 6 / 6，试跑 27 s / 69 s。1:1 裁脸：两者都没改脸，FlashVSR 皮肤纹理多一点、略显锐化，SeedVR2 更顺（`reports/m5-local-smoke/run3-workflows/1-04-face-seedvr2-vs-flashvsr.jpg`）。
+
+## 2026-10-27 · M5 第 14b 步：本地 H3 的提示词按官方写法改写
+
+- **原因**（本机对比 `reports/m5-local-smoke/run4-1-04-cut/`，同首帧、同种子、官方 20 步）：1-04 第 2 秒切走、画面漂到别处，换采样器、关 Turbo、换社区工作流、关 SageAttention 都没用；切过去的画面就是参考图本身（场景图、人物全身像）。按 MiniMax 官方 `h3-prompt-writing`（GitHub `MiniMax-AI/MiniMax-H3`，b731d8846cf7 的 `base-en.txt` / `ref-en.txt`）手写的提示词两个种子都一镜到底。我们原来的模板违反了三条：要英文（只有台词保留原文）、主体描述 350–500 词逐拍写、只定长相 / 场景的参考图不能单独写成 `<Picture N>` 一行（那是给首帧 / 关键帧的），要写进 `<Subject N>`。
+- **改写走新路由组件 `vprompt`**（视频提示词改写，`kind: llm`，写作模型可选、可本地）：经 `router.call()`，`model_call` 记在 `vprompt` 名下；模型页多一行。默认 DeepSeek V4.1 Flash（便宜、英文够用），兜底 Qwen3.7 Plus，「全本地」时用 Qwen3.6-27B。只给本地 H3：API 的 H3 已经有官方的 Context-IR（多模态，能看图），不重复改写。
+- **务必符合官方模板 = 代码校验**（`prompts/h3_format.py:check`）：段落名和顺序、I2VA 第一行逐字、标签只用发了的且都要引用、参考图只能出现在 `<Subject N>` 行里、英文（`<d>` 和引号里的画面文字除外）、台词原文逐字按顺序、旁白格式、只有 `[Shot 1]`（我们每个镜头就是一条，换景别用运镜）、`non_diegetic_music` 必须 N/A（配乐后期加）、字数（Ref2VA 300–650、I2VA 120–650，比官方的 350–500 宽一点）。不合格把问题列给模型重问一次（`REWRITE_TRIES = 2`），还不合格报 `prompt_not_conformant`、不出片、原始回答存成文件：宁可不出也不送不合格的提示词。
+- **规则用我们自己的话转述**（`templates/vid/h3_rewrite_system.j2`），只照抄格式字符串（I2VA 第一行、段落名、标记词），范例用第四轮验证过的 1-04 那段：官方仓库没有单独的许可证（模型是 MiniMax H3 Community License），不把原文整份放进仓库。
+- **改写模型看不到图**：参考图带上分析里的长相描述（`refs[].desc`：用户给那张图写的描述，否则分析的 `description`），首帧带关键帧的描述（`first_desc`）；原来的模板输出（中文描述）作为 `draft` 一起给。
+- **缓存**：按（模型、消息）缓存改写结果，一次出两条候选（种子不同）共用一段提示词，「再出一条」输入没变也不重问；候选之间只差种子，好比较。
+- **估价**：本地 H3 的 take 加上改写的上限（按问两次、6000 输出 token 算，DeepSeek V4.1 Flash 约 $0.008）；按条数乘，实际只问一次，偏高。
+- **模板**：`h3_r2v.j2`（API 的 Context-IR 和本地改写的起点）的参考图改成 `<Subject N> is …, whose look comes from <Picture N>`。`h3_i2v.j2` 不变（它就是改写的起点）。
+
+## 2026-10-27 · M5 第 9c 步：候选卡、视频播放、出终版按钮、队列卡
+
+- **候选卡固定宽度**（`lib/cards.ts:TAKE_CARD_WIDTH`，竖屏 236 px、横屏 320 px，换行排列），竖屏的画面框按原型固定 290 px 高、封面帧按真实比例居中；原来按面板宽度伸缩的网格在约 2000 px 的屏上会把画面拉大、`max-h` 截高后比例也不对。
+- **播放走大图**：`MediaLightbox` 的条目可以带 `video`，在对话框里放后端的片子（封面帧当 poster、自带控件、自动播放，← → 换条）；卡片上的播放按钮和空格都打开它。原来的「示例数据里没有视频文件」提示删掉。
+- **「用 API 出终版 · 约 $x」只给本地 H3 草稿**（`stage=draft`、本地、H3 系；Regenerate-2K 只收 H3 自己的草稿，后端对别的返回 `draft_not_regenerable`）。价格是后端的：`EstimateOut` 新加 `final_usd`，组件配了 `final_api`（目前只有 `vid`）时由 `RunService.describe` 按镜头时长估 Regenerate-2K；前端不自己算（按秒计价还带输入视频，只有后端知道）。其他快照里的估价多了 `"final_usd": null`，重导。
+- **队列卡**：本地、API 两张卡各列活动任务按模型分组的「运行 n · 排队 n」（按出现顺序，GPU 同模型连着跑），API 卡另列「n 个本地任务已兜底到 API」（`fallback_from_job_id`）和「n 个任务等你确认花费」（`waiting_confirm`）。质检卡里「自动兜底 n 次」仍按版本数。
+
+## 2026-10-27 · M5 第 9b 步：生成页接后端（数据）
+
+- **删掉的 MSW**：生成页的规则、运行记录、取消采纳、打分（`handlers/generate.ts` 只剩 M6 的 2K 精修）；示例 take 和它们的质检（`fixtures/demo/takes.ts` 改名 `finishing.ts`，只剩 2K 精修 / 口型 / 质检三个本集产物）；镜头上的 `video_product_id` 叠加（`handlers/shots.ts` 只剩给后期示例读镜头和 take 的 `demoShots` / `demoVideos`）；生成徽标叠加（`series.ts`）、`takes` 闸门（`gates.ts`）；影响范围的视频叠加（`handlers/impact.ts`、`fixtures/demo/impacts.ts` 整个删掉：后端的预览从第 5 步起自己列视频行）。MSW 的产品列表：没有 owner、示例里也没有的（`?component=vid`）放行给后端；镜头的产品全是后端的。
+- **`/metrics/summary` 留一层叠加到 M8**：数据看板整页还是示例（各张表对着 $8.94），所以 MSW 的 summary 是「示例的已花 / 预计 + 后端已花」、预算用后端的、洞察用示例的。表头和生成页的花费因此会跟着真实（Mock）花费实时涨。计划说删掉这个 handler，改成叠加，M8 再删。
+- **后期示例的时间线读后端的 take**：`buildTimeline` 用 `demoVideos()`（`GET /products?component=vid`）找每个镜头采纳的版本。
+- **测试假后端** `test/fakes/generate.ts`（数据 `generate.json`，`test_web_fixtures.py` 从「应用启动时那样」的示例导出：分镜已确认、有 take）：视频产物、跑 take（先出 `takes_per_shot` 条、再出一条 1 条、出终版 1 条 2K；没确认分镜 409、上一镜没采纳 409）、采纳 / 取消采纳 / 打分、规则、运行记录、生成闸门和徽标。别的页面测试仍是「分镜进行中」，生成页测试先 `confirmFakeStoryboard()`。FFmpeg 各平台出的字节不同，导出时 take 文件的 sha256 按版本 id 重算、时长取到 0.1 秒、版本哈希按 id 写（`_stable_takes`）。`shots` 和影响范围的假后端改成直接回答（以前经 MSW 转发）。
+- **`?shot=` 和 Inspector 的 `item` 都用镜头 id**（生成页、后期页「换一条候选」，和分镜页一致）。
+- **M5 的 take 没有质检**：候选卡的质检框显示「未检查」，状态卡「10 条候选还没质检」；没有质检分数就没有「推荐」，默认选中最新一条。
+- **运行记录同一分钟的两行**：后端按时间正序（兜底那行在它出的 take 前），页面倒序时并列的也倒过来。
+- **示例种子补一处**：1-04 原生同步、有林晚的锁定音色，本地草稿改走 `comfy/h3-r2v` 并带音色样本（依赖也记上），和真跑一致。
+
+## 2026-10-27 · M5 第 9a 步：示例的分镜确认、视频 take 种子
+
+- **示例第 1 集的分镜改成已确认**（Kelvin 2026-10-27 定）：原型里分镜页（3/7 确认）和生成页（3/9 采纳）是各自的假数据；后端规定分镜确认后才能出视频，接了后端只能二选一。`CONFIRMED_GATES` 加 `("storyboard", "demo-e1")`；确认它之前，种子把没决定过的镜头确认掉（1-04–1-07 锁定关键帧当前版本上选中的那张，默认 A；1-08、1-09 只写决定；时间 11:24）。用户重开过的闸门照旧不再确认。
+- **视频 take 照原型种**（`DEMO_TAKES`）：1-01–1-03 本地 H3 草稿 + 「用 API 出终版」（Regenerate-2K，父版本是草稿，已采纳）；1-04 首跑两条草稿、一条本地超时后在 H3 API 上出的（`origin=fallback`、`fallback_reason=timeout`）、一条「不满意换一个」的 Seedance 2.5，待挑；1-05–1-07 没跑过；1-08、1-09 等上一镜。每条和 Mock 跑出来的存法一样：输入来自 `vid.gather`（依赖照记，不会一种下去就待更新），片子是 Mock 纯色 mp4（有声音），裁头、封面帧、尾帧走 `vid.clip_files`（从 `VidComponent._clip_files` 抽出的模块函数），本地草稿留 `raw` 和 `params.request`，所以示例草稿也能真的「用 API 出终版」。花费按国内价算进版本的 `cost_usd`，**不写 `model_call`**（和关键帧种子一样），所以表头「本集已花」不含种子的钱。运行中 / 排队的卡片不预置：Mock 任务一启动就会跑完，点「生成」就能看到。
+- **`lock_pick` 加 `pick_id` / `at`**（只有种子用）：锁定候选时新建的 pick 版本用固定 id（`demo-p-kf-1-04-v2`）和示例时间，快照和 MSW 示例对得上。
+- **前端快照仍从「分镜确认之前」导出**：`test_web_fixtures.py` 的 `client` 去掉分镜闸门，`shots.json` 等不变——分镜页测试测的正是「进行中 → 确认镜头」，这个场景照样成立；生成页要的带 take 的数据第 9b 步另导一份。Playwright `m4` 开头先用接口把 1-04–1-09 取消确认（顺带重开分镜），再在界面上走原来的确认流程；1-04 的终版因此是 v3（v2 是种子的 pick）。
+- **原因**：测试默认不种闸门（`conftest._demo_gates_open`），所以视频种子（要跑 ffmpeg）只在应用启动、`demo_gates` 的测试里发生，不拖慢几百个 API 测试。
+
+## 2026-10-27 · M5 第 8 步：生成页接口（后端）
+
+- **自动规则按剧集存在 `app_setting`**（key `generate.rules.<剧集 id>`，只存改过的字段），没改过的读配置：`takes_per_shot` ← `vid.candidates`（2），`qa_retry_max` ← `fallback_defaults.qa_fail_n`（2），`shot_cap_usd` ← `components.yaml` 新加的顶层 `shot_cap_usd`（$2，原型的值），`thresholds` ← `qa` 组件的阈值（只读，PUT 里带它 422）。没有新表、没有迁移。原因：这三项是「这部剧怎么出片」的设置，不是某个组件的路由；放进组件覆盖层会和模型页的「恢复成预设」搅在一起。`qa_retry_max` 现在只存不用，M6 的质检重跑读它（模型页的 `fallback.qa_fail_n` 仍是兜底配置的默认）。
+- **`takes_per_shot` 生效**：`Component.run_count` 改成 `async (session, product)`，视频组件首跑读剧集的规则；再出一条仍是 1 条。
+- **单镜头上限**（硬规则 6 原来缺的一档）：`Budget.before_enqueue(shot=(镜头 id, 上限))`，镜头上的工作（关键帧、视频，`owner_type=shot` 的产物）入队前检查「镜头已花（`model_call.shot_id`）+ 这个镜头的产物还在排队 / 运行的预留 + 这次估价」；超了进 `waiting_confirm`，`reason: shot`，`limit_usd` 是镜头剩下的。顺序：未知价 → 单次 → 单镜 → 本集。路由守卫（每次调用前）不查单镜：入队时已经问过，确认的任务按确认金额走。前端 `JobConfirmSchema` 加 `shot`，确认弹窗一句新文案。
+- **运行记录不建表**，读时从本集镜头的视频产物推出：每个 take（`origin` 是 run / rerun / switch / fallback 的版本）一行，code `take` / `switch` / `final`（M5 没质检；有 `qa` 后是 `take_pass|fail`、`switch_pass|fail`）；兜底出的 take 前面加一行 `fallback_timeout`（分钟数取视频组件的 `fallback.timeout_s`）/ `fallback_error`；还在运行、等确认、失败的任务各一行（`started`、`waiting`、`failed`，后两个标黄）。按时间排，id 带前缀（`v-` / `fb-` / `job-`）。新加的 code 中英文都加了。
+- **取消采纳**只给没有物化的槽位（视频、关键帧候选这类）：设定、剧本、分镜规划这些采纳后写进业务表的，`unadopt` 返回 409 `unadopt_unsupported`（业务表不知道怎么「退回」）；锁定时 409 `product_locked`。**打分**（`PATCH /versions/{id} {rating}`，1–5 或 null）和 `note` 一样是版本上唯一可改的字段，不算内容、不改哈希。
+- **最小 `/metrics/summary`**：已花 = 范围内 billed 的 `model_call.cost_usd`；预算 = 本集的，全剧是各集已设的之和（都没设就 null）；预计 = 已花 + 活动任务还要花的（和本集剩余同一算法，`Budget.reserved`）+ 视频从没跑过的镜头 × 下一次估价 × `takes_per_shot`。上游没好（没有估价）的镜头先不算，其他组件的「剩余」M8 再加；`insights` 先返回空。
+
+## 2026-10-26 · M5 第 7a 步（四）：服务页的站点、模型列表和价格（前端）
+
+- **密钥对话框**（`KeyDialog.tsx` + 新的 `ProviderModels.tsx`；原型里没有，按现有对话框的样式做）：两个站点的厂商顶部有「国内站 / 国际站」切换（有密钥的站点标「已有密钥」），切换就是 `PATCH /providers/{id}`，提示「两个站点是两个账号」；测试连接后出**模型列表**（勾选、参考价 / 你填的价 / 「价格未知」徽标、「填价格 / 改 / 清除」行内小表单：输入、输出每百万 token，¥ / $），超过 12 个模型出筛选框（OpenRouter）；没拉过列表时一句提示「用内置的参考表」。原来那句「这个密钥也用于：…」换成**媒体模型 ID** 小节：每个媒体模型一个输入框（有列表的厂商用 `datalist` 给建议），「保存」「已改」「恢复默认」。
+- **后端补两个字段**：`/config/components` 的每个模型加 `priced`（API 写作模型有没有单价；媒体模型按 `pricing_for_media(...).known`，所以订阅制、没价的也算未知）；`GET /providers` 的 `media` 每项加 `model_id`（当前生效的）和 `custom_model_id`。
+- **选择器**：API 模型没单价时，价格那行换成徽标「价格未知 · 运行前会先问你」；路由里的 API 模型不在这个组件的可选列表里（没勾选 / 换站点后没有）时，「API 服务」下面红字提示去换。模型页的组件表里，主用模型那格同样标红「没启用，点开换一个」。
+- **改了站点、勾选、价格、媒体 ID、测试连接之后**一起刷新 `providers`、`config`（选择器目录、路由）和 `products`（估价）三组查询。
+- **和计划不同**：计划说删掉 `mocks/fixtures/demo/models.ts` 里写死的模型表；它现在只给 MSW 示例版本起模型名，选择器早就读真实的 `/config/components`，所以留着不删。
+
+## 2026-10-26 · M5 第 7a 步（三）：价格未知的模型先确认
+
+- **补硬规则 6 的漏洞**：以前没单价的模型按 $0 估价，从不进 `waiting_confirm`。现在 `Budget.before_enqueue(…, priced=False)` 一律返回 `Verdict(False, reason="unpriced")`（不看上限和本集预算），任务进 `waiting_confirm`，`params.confirm = {reason: "unpriced", estimate_usd: 0, limit_usd: null}`。填了单价（`model_setting`）就回到正常的上限检查。
+- **路由守卫用 `BudgetExceeded(scope="unpriced")`，不用计划里写的 `NeedsConfirm`**：`NeedsConfirm` 是「兜底要先问」专用（带失败的模型和兜底目标），挪作他用会让任务走 `_ask_fallback`；而同步调用的地方（重写、补全的「按要求重写」）本来就把 `BudgetExceeded` 转成 409 `over_budget`。规则：没确认过（`confirmed_usd` 为空、任务也没确认）的调用遇到未知价就停；确认过的任务照旧按「确认额 + 余量」判断（未知价的花费记 0，所以一定放行）。后果：一个没确认过的任务兜底到未知价的模型会以 `budget_exceeded` 失败，而不是悄悄花钱——和「兜底更贵就失败」一致。
+- **同步重写**：剧本化的重写（`_check_budget`）和补全的「按要求重写」遇到未知价返回 409 `over_budget`，`reason: "unpriced"`；带 `confirm_budget` 重发就跑。
+- **兜底要先问的确认**里加 `priced`（兜底目标没单价时为 false），前端把预计花费显示成「价格未知」。
+- **记账**：迁移 `0023` 给 `model_call` 加 `unpriced`（路由按 `spec.pricing.known` 写，`cost_usd` 仍是 0）；`calllog.unpriced_calls(series_id / episode_id)` 数「价格未知的已计费调用」，给第 9 步表头用。`EstimateOut` 加 `priced`（前端 schema 可选字段）。
+- **前端只做了最小的**：`JobConfirmSchema.reason` 加 `unpriced`（不加的话确认弹窗解析失败）、确认弹窗文案「{{model}} 没有单价，这次花多少不知道。可以在模型页给它填上单价。」、按钮「确认，开始运行（价格未知）」。选择器徽标等在 7a-4。
+
+## 2026-10-26 · M5 第 7a 步（二）：写作模型按厂商列表选
+
+- **「账号叠加层」代替第 7a-1 步注册表里的站点参数**：仿照工作流库的 `set_library` / `with_library`，`core/config.py` 加 `set_accounts` / `with_accounts`，`get_config()` = 出厂配置 + 工作流库 + 账号。叠加后：每个厂商的 `base_url` / `key_name` / `docs` 是当前站点的；写作模型行是**勾选的模型**（参考表里有的用表里那行，表外的 `<厂商>/<model_id>`、参数用厂商新字段 `model_defaults`、价格未知）；表里各行的价格换成当前站点的；用户的单价、媒体模型 ID 叠上去；`components.yaml` 里写 `api: [llm]` 的组件展开成所有已启用的写作模型（按 `llm_ui_order`，再按厂商顺序）。好处：目录、估价、选择器、路由都直接读 `get_config()`，选择器里的价格也跟着站点走。`specs_from_config` 退回只读配置，`Registry.set_account` 换成 `Registry.reload(cfg)`（重建 API 模型、删掉不再勾选的写作模型）；`StudioState.refresh_accounts()` 在账号或设置变了之后调用。
+- **数据**（迁移 `0022`）：`provider_account.models_json`（`{site, ids, fetched_at}`）、`enabled_json`（勾选的 id；空 = 没拉过列表，参考表照旧生效）；新表 `model_setting`（`model_key`、`model_id`、`price_json`）。`custom_model` 表照旧没用上。
+- **列表怎么来、怎么勾**：「测试连接」成功就把 `GET /models` 的结果存下来；第一次拉到时自动勾上参考表认识的 id，之后保留用户的勾选、去掉厂商不再列出的 id（退役的模型自然消失，路由用到它时照常 `unknown_model`）。`PUT /providers/{id}/models {enabled}` 勾选（只能勾列表里有的，422 `unknown_model_id`；没拉过列表 409 `models_not_listed`）。**换站点会清掉列表和勾选**：另一站是另一个账号，列表要在那边重新拉，拉之前用参考表。
+- **单价和模型 ID**：`PUT /providers/settings/{model_key}` `{price: {in, out, currency}, model_id}`、`DELETE` 同路径。只认注册表里的模型、厂商列表里出现过的模型或参考表里的模型（404 `unknown_model`）。`GET /providers` 每个厂商加 `listed`：拉到的每个 id、是否勾选、是否在参考表、价格和来源（`user` / `table` / 未知）。
+- **参考表的变化**：Kimi 加 **K3.1 Pro**（`kimi-k3.1-pro`，¥13/68、$2/10 每百万 token，上下文 1,048,576）。思考关不掉，流水线默认 `reasoning_effort: low`（**Kelvin 2026-10-26 定**：思考按输出计费、占 `max_tokens`，估价也没算）。默认路由里的 `moonshot/kimi-k2.6`（剧本化、大纲的兜底，剧本化的「不满意换一个」第一个）换成 K3.1 Pro；K2.6 留在表里（示例数据、历史版本在用，2026 年底退役）。写作模型从 14 个变成 16 个（加了 K3.1 Pro；K2.6 也还在），选择器的「更多供应商」跟着变。各厂商的 `model_defaults`：DeepSeek 关思考、百炼 `enable_thinking: false`、MiniMax 关思考且不开 JSON 模式，其余开 JSON 模式。
+- **媒体模型的列表下拉**（OpenAI、Gemini 拉列表给媒体模型改 ID 当建议）留到前端那步（7a-4）一起做；后端现在能存媒体模型的 ID 覆盖。
+
+## 2026-10-26 · M5 第 7a 步（一）：厂商的国内站 / 国际站
+
+起因：Kelvin 的 Kimi 密钥是国内站的，配置写死国际站，测试连接 401（国内站 200）。Kelvin 定：每个厂商能切站点、默认国内站；模型改成按厂商返回的列表选（第 7a-2 步）。计划见 `plans/M5-7a.md`。
+
+- **配置**：厂商行可以写 `sites`（`cn` / `intl`，各自的 `base_url`、`key_name`、`docs`）和 `default_site`；只写 `base_url` / `key_name` 的旧写法照读（当成一个叫 `main` 的站点）。有两站的：Kimi、百炼（Qwen）、智谱、MiniMax，四家都默认国内站。价格按默认站写，另一站的写在模型行的 `by_site`（写作模型和媒体模型都能用，媒体模型跟着它 `account` 的站点走：MiniMax 换国际站时配音、H3、Regenerate、Context-IR 都换成美元价）。
+- **密钥按站点分开存**：国内用原来的名字（`MOONSHOT_API_KEY`、`MINIMAX_API_KEY` …），国际加 `_INTL`（`MOONSHOT_INTL_API_KEY` …）。两站是独立账号，换站不丢另一站的密钥。百炼的 `DASHSCOPE_API_KEY` 以前指国际站，现在指国内站（这台机器没存过百炼密钥）。
+- **账号的站点存 `provider_account.site`**（迁移 `0021`），空 = `default_site`。注册表启动时按账号建 spec（`specs_from_config(cfg, accounts)`）；`PATCH /providers/{id} {site}` 换站后 `Registry.set_account` 重建这个厂商的写作模型和用它密钥的媒体模型（地址、密钥、价格）。`base_url_override`（以前只有测试连接读）现在实际调用也认，优先于站点地址。
+- **接口**：`GET /providers` 每个厂商加 `site`、`sites`（各站地址、有没有密钥），原来的 `base_url` / `has_key` / `docs` 是当前站点的；`POST …/key {site?}`、`DELETE …/key?site=` 按站点存删（不写是当前站点）；测试连接用当前站点，结果带 `site`。不认识的站点 422 `unknown_site`。
+- **2026-10-26 按两站官方价格页核对的价**（每百万 token，国内人民币 / 国际美元）：Kimi K2.6 ¥6.5/27、$0.95/4.00（K2 系列 2026 年底退役）；Qwen3.8-max ¥12/36、$2/6，3.7-plus ¥2/8、$0.40/1.60（256K 以内，两站都有限时 8 折，写原价），3.8-flash ¥0.8/2.7、$0.15/0.47；GLM-5.3 ¥8/28、$1.40/4.40，5.3-Flash ¥0.8/2.8、$0.15/0.50（国内不免费）；MiniMax-M3 ¥2.10/8.40、$0.30/1.20（两站都是「永久五折」后的价）。MiniMax 国际站媒体价：配音 $100 / 百万字符、音色设计 $3、快速复刻 $1.5、设计试听 $60 / 百万字符；H3 768P $0.08/s、2K $0.13/s、超 5 张的图 $0.04；Regenerate $0.05/s（输入同价、图 $0.025）；Context-IR $0.90/3.60。
+- **顺带改正的模型参数**：智谱 `model_id` 填上 `glm-5.3` / `glm-5.3-flash`（以前是 null，调不了）；GLM-5.3 关不掉思考（发 `thinking: disabled` 会报错），不加 `request`；MiniMax-M3 的 `model_id` 填 `MiniMax-M3`、加 `thinking: disabled`、`json_mode` 改 false（文档的 Chat Completions 没有 `response_format`）；上下文：K2.6 262,144，GLM-5.3、M3 1M。
+- **`docs/studio/seed/providers.yaml` 不跟着改**（计划写了「同步」）：它是 M0 拷进 `config/` 的初始数据，之后从没同步过，`config/` 才是现行配置。
+- 测试里「兜底模型比原模型贵」那条（`test_a_pricier_fallback_after_a_yes_fails`）的前提变了：Qwen3.7-plus 国内价比 DeepSeek Flash 便宜，测试改成先把百炼切到国际站。
+
+## 2026-10-26 · M5 第 7 步：视频出终版、本地失败 / 超时兜底
+
+- **「用 API 出终版」走组件的 `final_api`**（`components.yaml` 的 `vid.final_api: minimax/h3-regenerate-2k`，新配置项），不是路由的 API 模型（H3 API 是重新出一条，不是把草稿出成 2K）。前端照关键帧的写法：`POST /products/{id}/run {where: api, params: {source_version_id}}`；`model_for` 换到 `final_api`，估价（含影响范围的 `final_cost`）也按它算。**出终版只出一个版本**（`RunService.start` 有 `source_version_id` 时条数是 1，以前按 `run_count`，视频第一次会是 2）。
+- **草稿多存两样，供 Regenerate-2K 原样重发**：本地 take 的文件加 `raw`（没裁头的原片，帧数和官方要求的 17k+5 对得上；裁头后的不行），版本 `params_json.request` 记实际发出的请求（首帧、参考图、音色 / 台词音轨的 sha256、画幅、时长、`with_audio`），`prompt` 文件本来就是实际发出的提示词。终版用这些 + `video_in: raw`，出来的 2K 视频同样裁头 0.3 秒、取封面和尾帧，`stage=final`、父版本是草稿，payload 沿用草稿的、`resolution: 2k`。不是本地 H3 出的草稿（API take、旧的没有 `raw` 的）→ 任务失败 `draft_not_regenerable`。终版失败不兜底，草稿不动。
+- **不预先检查 Regenerate-2K 的输入规格**（24 fps、带音轨、宽高 32 的倍数、面积 ≤ 768×1344）：不合格时 MiniMax 拒绝任务（失败不收费）。已知风险：本地工作流 1:1（1024×1024）、21:9（1568×672）面积超了；`none` 镜头的草稿可能没有音轨。第 14 / 15 步实测后再定是改工作流尺寸还是在 UI 上禁用。
+- **本地 take 失败或超时，整条 take 在兜底模型上重做**（`run_flow`，和配音终版一样）：请求按兜底模型重建（H3 API 的模式、提示词格式、Context-IR），不是把本地请求原样转发；每次调用 `fallback=False`。版本 `origin=fallback`、`fallback_reason` 是 `error` / `timeout`，本地那次的 `model_call` 记失败或超时（`notify: ask` 时先问，沿用 `run_flow`）。Context-IR 的花费算进版本的 `cost_usd`。
+- **GPU 分组**：视频 take 走 `gpu` 队列、按 `model_key` 分组（M1 的 `grouped`），新测试在 `vid` 这一层验证：H3 在跑时，后排的 H3 take 先于先排的 H3 参考生视频。
+
+## 2026-10-26 · M5 第 6 步：视频 API 适配器（MiniMax H3、Seedance 2.5）
+
+按官方文档核对（MiniMax 国内文档在 platform.minimaxi.com，`platform.minimax.cn` 只有控制台；火山方舟 docs.volcengine.com 82379/1520757、1521309、1521720、1330310、1544106、1299023）。没真调过，真调在第 15 步。
+
+- **H3 走 V2 接口，不是旧的海螺接口**：`POST /v2/video_generation`、`/v2/h3_context_ir`、`/v2/video_regeneration` 三种异步任务，共用 `GET /v2/query/video_generation/{task_id}` 轮询（指数退避，5 秒起、×1.5、封顶 30 秒），视频在 `content.url`，下载后探测（读不了 `invalid_response`、短了 `video_too_short`，都算已花钱）。地址是账号的 `…/v1` 去掉版本号。一个适配器 `adapters/minimax_video.py` 按 `kind` 分三种（`video` / `llm_aux` / `upscale`），`model_id` 都是 `MiniMax-H3`。调用被取消或超时时 `DELETE` 掉还在排队的任务（运行中的停不了）。
+- **H3 API 的两种模式**：首帧和参考素材不能混用。有声音输入（`tts` 的台词音轨、`native` 的音色样本）→ 参考生视频，首帧当 `<Picture 1>`、再加锁定参考图（共 9 张）、音频最多 3 条；没有声音输入 → 图生视频，首帧是硬锚定，不带参考图。`tts` 镜头经 API 时台词音轨是 `<Audio 1>`、`fully_copy`（`h3_r2v.j2` 加了 `dub` 分支），对应 PLAN 的模式 A；本地 `h3-i2v` 照旧用 AddGuide。H3 总会出声，`with_audio` 关不掉；没有种子。
+- **Context-IR 是官方的多模态提示词改写（异步任务，只出提示词）**，不是聊天接口。`vid` 对 `caps.prompt_ir` 有值的 API 模型（H3 API）先调一次（经 `router.call()`，单独一条 `model_call`，同一次运行的几条 take 共用缓存），把我们的 H3 格式（中文描述 + 英文字段）连同同样的图片、音频交给它，拿回英文提示词再出视频；版本的 `prompt` 文件存的就是实际发出的提示词（Regenerate-2K 要原样重发）。改写失败不挡出视频，用我们自己的提示词，payload `prompt_ir: false`。估价把它加进去。
+- **分辨率由适配器按画面短边选**：H3 短边超过 768 → `2K`，否则 `768P`（API 跑交付档，所以 1080p 交付也出 2K，和 PLAN 的方案 B 一致）；Seedance 取短边够得着的最高档（1080p / 720p / 480p）。实际出的档位写进新字段 `Usage.resolution`，路由按它记账（以前只认请求里的 `resolution`，视频组件没传，H3 估价会是 0）。
+- **价格用人民币存配置**（计划写的是「换算成美元存配置」）：和配音、Seedream 一样存 CNY，按 `currency_rates` 折算，汇率变了不用改单价。H3 768P 0.50 元 / 秒、2K 0.80 元 / 秒，每个任务前 5 张图免费、之后 0.20 元 / 张（`extras.extra_image`）；Regenerate-2K 输出 0.30 元 / 秒 + 输入视频 0.30 元 / 秒（官方示例里 `base_video` 记 0 秒，估价按收算，记账按返回的 `usage`）；Context-IR 5.80 / 23.00 元每百万 token。
+- **Seedance 2.5**（`doubao-seedance-2-5-260628`，`adapters/seedance.py`）：参数用 JSON 字段（强校验），不用 `--rs` 文本指令；只发首帧（`ratio: adaptive`，2.5 首帧模式只能这样，画幅跟着关键帧），不发参考图（`max_refs: 0`）和音频；`tts` 镜头 `generate_audio: false`（台词后期铺）。**按 token 计费**（宽 × 高 × 24 × 秒 / 1024；480p / 720p 70 元、1080p 77 元每百万 token）：`price_by_res` 存 9:16 每秒的估价，记账用返回的 `completion_tokens` × `token_rates`（`cost_usd` 的 token 计费从图片扩到按秒的单位）。**1080p 原生支持**，规格兼容表里 Seedance 从「部分渠道只到 720p，需要再超分」变成原生（2K 交付时仍要超分）。
+- **API 视频的超时按模型配**：`caps.timeout_s`（H3、Regenerate、Seedance 1800 秒），没有就用路由默认的 600 秒。HTTP 529（过载）加进重试。
+- **之后的事**：本地 → API 兜底时请求是按本地模型做的（I2V 格式、不过 Context-IR），第 7 步做兜底时再按 API 模型重建请求。Regenerate-2K 要未裁头的 768P 原片（帧数 17k+5、带音轨、宽高是 32 的倍数、面积 ≤ 768 × 1344）：现在 take 只存裁头后的视频，第 7 步要另存原片；本地工作流 1:1（1024 × 1024）和 21:9（1568 × 672）的面积超过这个上限，到时要核对。
+
+## 2026-10-26 · M5 第 5 步：视频组件 `vid`（后端，Mock）
+
+- **视频产物在物化时就建，不等分镜确认**（和计划写的「分镜闸门确认后」不同）：`shots/service.py:materialize` 给每个镜头（连续镜头也有）建 owner `shot`、slot `video` 的产物，跟着镜头退役、回来，和关键帧一个写法；**出视频要分镜已确认**（409 `storyboard_not_confirmed`）。这样产物 id 稳定（示例固定成 `demo-p-vid-<镜头号>`，和 MSW 的一致），影响范围和失效也有地方挂。已有的镜头由迁移 `0020`（只改数据）补上。
+- **一条 take = 一个版本**（前端契约：评分、质检、采纳都按版本）。第一次出 `candidates` 条（2），之后「再出一条」1 条：组件新钩子 `run_count`，`POST /products/{id}/run` 的 `count` 默认改成「由组件定」。**估价乘上条数**：以前 `count` > 1 时只按一条估价和查预算（硬规则 6 的漏洞），现在 `start` 按 `count` 倍。
+- **首帧**：普通镜头用锁定的关键帧（没锁 409 `keyframe_not_locked`）；连续镜头用它接的那个镜头**已采纳 take 的尾帧**（没采纳 409 `upstream_not_adopted {id: 镜头号}`）。依赖记关键帧产物或上一镜的视频产物，上游换了就「待更新」。
+- **声音按 `audio_mode`**：`tts` 把这个镜头说话的行的已采纳配音从 0.3 秒起一句接一句拼成一条 48 kHz 单声道（`media/audio.py:dialogue_track`，补静音到镜头时长），当 `dialogue_audio` 传；有一句没配音就 409 `line_audio_missing`。`native` 把说话人锁定音色的 `anchor` 样本按说话顺序（S1、S2 …）当 `ref_audio` 传，`model_for` 换到工作流收 `ref_audio` 的本地模型（`comfy/h3-r2v`）；没锁音色的说话人只写在提示词里。`none` 不要声音（`with_audio: false`，`overall_soundscape: N/A`）。
+- **新槽位 `ref_audio`**（带序号的音色样本，`h3-r2v` 用）：后端 `Slot`、库的 `SlotName`、前端 `SlotSchema` 和两种语言的词表都加了。`workflows/h3-r2v/` 照官方 R2V 模板（ref2va 权重、4 步 Turbo LoRA、首帧当 `<Picture 1>`、参考图最多 4 张、音色最多 3 个），同样对本机 `/object_info` 静态核过；`providers.yaml` 加 `comfy/h3-r2v`，视频组件的本地列表加上它。
+- **提示词两层不变**：编译层是 `templates/vid/default.j2`（中文，用户能改）；发给 H3 时套 H3 自己的格式（`h3_i2v.j2`：首帧那一行 + 三个字段；`h3_r2v.j2`：参考模式的六段 `subject_definitions` … `non_diegetic_music`），台词写成 `(S1) says: <d>[Chinese] …</d>`、画外音照官方写法、配乐一律 `N/A`。格式照 MiniMax 官方的两份提示词指南（HF `MiniMaxAI/MiniMax-H3` 的 docs）。官方要英文正文：现在是中文描述放进英文字段，第 6 步的 Context-IR 再按官方指南写英文。「六段式」指的就是参考模式的六段。
+- **每条 take 裁掉开头 0.3 秒**，文件 `video`（带时长、宽高）、`poster`（第一帧）、`last_frame`（最后一帧）、`prompt`；payload 记 `duration_s`、`asked_s`、`resolution`、`aspect`、`audio_mode`、`refs`、`voices`。本地出的 `stage=draft`（终版第 7 步）。质检是 M6，`qa` 为空。
+- **生成确认 `takes`**：GateService 的 members 闸门加 `lock=True`：确认时每个镜头都要有采纳的 take（409 `takes_not_adopted {count, labels}`），然后锁定；重新打开时解锁。导航徽标「生成 n/m」：分镜确认前「未开始」，之后是有采纳 take 的镜头数，待更新数按失效算。
+- **影响范围**：`video` 进影响范围的排序和步骤表（步骤 `generate`），镜头设定、台词、关键帧变了走通用的 `stale_video` / `then_video` 行；改画幅另加 `videos_redo`（已有几条 take、几条已采纳、已采纳的出 API 终版要多少钱）。「确认并同步」不自动重出视频（和关键帧一样只标待更新）。
+- **本地运行的进度**：组件的 `CallContext` 带上 `on_progress = RunContext.progress`，ComfyUI 的采样步数直接走 `job.updated`。
+
+## 2026-10-26 · M5 第 4 步：ComfyUI 适配器完整版、H3 本地工作流
+
+- **H3 本地工作流 `workflows/h3-i2v/` 照官方 I2V 模板**（`video_minimax_h3_i2v.json`，子图展开成 API 格式），节点名、输入名、可选值对着 Kelvin 本机 ComfyUI 0.41.2 的 `/object_info` 静态核过（没真跑，真跑在第 14 步）。用 `MiniMaxH3ImageToVideo`（fl2va 权重）而不是上游 `selfhost/` 的 `MiniMaxH3ReferenceToVideo`：首帧是硬锚定，不是提示词里的「<Picture 1> 是首帧」。草稿固定开 8 步 Turbo LoRA（官方开关默认关，参数照官方 Turbo 默认）。尺寸按画幅取 768P 档（短边 768，和 H3 API 768P、Regenerate-2K 的输入对上），帧率固定 24，时长落到 5–15 秒，帧数照官方表达式落到 17k+5。每秒成片的估时 `est_seconds_per_s: 25` 是估的，第 14 步实测后改。
+- **配音方式 `tts` 的台词音频用 `MiniMaxH3AddGuide` 挂在第 0 帧**：I2V 节点本身不收音频，官方的 AddGuide 把音频按原样锚进去（相当于 PLAN 模式 A 的 fully_copy）。**`native` 模式的锁定音色样本这个工作流收不了**（音色参考只有 Reference to Video 节点的 `ref_audios`，配 ref2va 权重）：**Kelvin 2026-10-26 定（选 B）**：第 5 步加 `workflows/h3-r2v/`（`MiniMaxH3ReferenceToVideo` + ref2va 权重 + 它自己的 4 步 Turbo LoRA），`native` 镜头走它，锁定音色样本当 `<Audio N>` 传进去、首帧当 `<Picture 1>`（软约束，提示词里写明它是起始帧）；`tts` 和 `none` 镜头走 `h3-i2v`。
+- **绑定加 `bypass`**：可选的文件槽位（`first_frame`、`video_in`、`ref_image`、`dialogue_audio`）没给文件时，绑定的节点删掉；`bypass` 列的节点也去掉，但把它某个输入的连线交给读它的节点（没有台词音频时 AddGuide 的 `positive` 直接进引导器）。不能像参考图那样直接删：引导器的 `conditioning` 是必填的。第 12 步的可开关分支（LoRA、ControlNet）也用这个。必填的文件槽位没给文件 → `ref_missing`。
+- **适配器**：输入文件按 sha256 从 blob 库取，和参考图一样传 `/upload/image`（ComfyUI 收任何文件）；参数名 `first_frame` / `video_in` / `dialogue_audio`（sha256）、`duration_s`、`fps`，和 Mock 视频一致。WebSocket（`/ws?clientId=`，`websockets` 库，原来是 uvicorn 带进来的，现在写进依赖）收 `progress` → `CallContext.on_progress`（新字段，试跑任务接到 `job.updated`）；收到「跑完」就马上读 `/history`，有 socket 时历史每 5 秒兜底读一次，连不上或断了回到每秒轮询。取输出按槽位：`image_out` / `video_out` / `audio_out`，SaveVideo 的文件在 `images` 下、VideoHelperSuite 在 `gifs` 下都认。视频取回后探测：读不了 `invalid_response`、比要的短 0.5 秒以上 `video_too_short`、画幅差 2% 以上 `video_wrong_size`；`usage.output_seconds` 记实际秒数。试跑（`params.trial`）缺必填的输入文件时自己造一张图 / 一段音 / 一段视频。
+- **仓库工作流被 `providers.yaml` 的模型点名时，库里就是那个模型**（`h3-i2v` → `comfy/h3`），不再另登记一个 `comfy/h3-i2v`；否则视频组件会多出一个只要 ComfyUI 就能跑的本地模型，绕过 `comfy/h3` 的 `needs`（节点、权重、CUDA）。
+
+## 2026-10-26 · M5 第 3 步：体检、装依赖、试跑
+
+- **体检只靠 `/object_info`**：图里的节点类 ComfyUI 不认识的算缺；**模型文件对照加载器那一项的可选列表**（ComfyUI 把模型文件夹里的文件列成下拉选项），不在里面的算缺，不另调 `/models/<folder>`。缺的节点类按 ComfyUI-Manager 的节点表（`/v2/customnode/getmappings?mode=cache`，旧版 Manager 不带 `/v2`）归到节点包；节点表里也没有的记成问题 `unknown_node`，状态「坏了」。绑定对不上图（标题没了、字段改名）记 `binding_broken`。导入后马上体检一次（ComfyUI 没开就先不体检）。
+- **装节点包复用安装器**：`SetupService.install_node_packs` 先存 ComfyUI-Manager 快照（原因记 `install`，改动清单写节点包；快照列表的契约只有 install / manual 两种），再给每个包拼一个临时安装项（`git_clone` 到 `custom_nodes/<仓库名>` + `uv_pip` 装它的 requirements，和清单里的节点包一样），交给同一个 runner；示例机器走 FakeRunner。还没跑过我们安装器的机器也能装（镜像用 auto，没有权重文件夹）。**真实 ComfyUI 要重启才加载新节点包**：接口返回 `restart_required: true`，重启后再「全部体检」；示例机器装完立刻生效并自动全部体检。没有下载地址的模型文件不装，继续列着，让用户自己放。
+- **装完节点包后坏了的工作流指回快照**：库记住最近一次装节点包前的快照；之前体检是「正常」、现在不是的工作流，加问题 `broke_after_install`（带快照名），状态记「坏了」，界面据此提示回滚（回滚走已有的 `/comfy/snapshots/{id}/restore`）。
+- **试跑是 GPU 队列的任务**（`workflow_trial`，只跑一次不重试），通过 `router.call()` 用工作流对应的第一个组件、指定这个模型、不兜底，所以有 `model_call`。示例输入：固定一句提示词，尺寸是它支持的第一个画幅的草稿档（`spec/dims.py`，没写就 9:16 → 768×1366），视频取最短时长（没写 3 秒），图片时长记 0。通过后把「这次通过的文件哈希」记成登记哈希。试跑不属于某部剧，所以不读某集的成片规格，这是硬规则 10 的一个明确例外。
+
+## 2026-10-26 · M5 第 2 步：工作流库（登记、档位、导入、绑定）
+
+- **库进配置，而不是另开一套**：`core.config` 加 `Library` 覆盖层（`set_library`）。`get_config()` = 工厂 YAML + 库：`providers.yaml` 里没有的工作流变成本地模型 `comfy/<slug>`，按 kind 放进组件的 `local`（video → 视频生成；image → 关键帧、参考图；upscale → 超分；lipsync → 口型）。这样 ModelPicker、路由、能力过滤、注册表都不用改就认得导入的工作流。启动、导入、改档位、改绑定时重新发布；应用停止和每个测试开始时清空（否则上一个应用的库会漏进后面的测试）。
+- **未验证的只能手动选**：`StudioConfig.unverified`，`resolve` 在覆盖之后把它们从 `alt_order`（「不满意换一个」）和 `fallback.to` 里拿掉；用户自己选的 `local_model` 保留。「我的工作流」加进组件的 `alt_order`。
+- **仓库的 `workflows/<slug>/` 是推荐档，文件即真相**：每次启动按文件刷新绑定、能力、名字；`selfhost/`（上游旧格式）跳过。用户导入的放 `~/.drama-studio/workflows/<slug>/`（`workflow.api.json` + `workflow.yaml`，yaml 里 `pending` 记还没确认的猜测，`origin` 记来源），模型的 `workflow_root` 指过去，`ComfyUIAdapter` / `kf.local_workflow` 按它找文件。文件哈希变了：显示 `file_changed`，「我的工作流」降为未验证。
+- **导入**：拖进来的 JSON 或 ComfyUI 列表里的路径；**UI 格式按 `/object_info` 转成 API 格式**（`wflib/convert.py`：静音的节点去掉、旁路的节点按同类型输入直通、`Reroute` 直通、`PrimitiveNode` 的值填进去、种子后面的「生成后控制」不算输入、备注去掉；不认识的节点类 409 `workflow_unknown_nodes` 列出来，子图 409 `workflow_subgraph`）。ComfyUI 存的、它自己列表里的都是 UI 格式，不转的话列表导入没法用。
+- **猜绑定**（`wflib/guess.py`）：沿条件链往上找接到采样器 `positive` / `negative` 的 `CLIPTextEncode`（经过 `LTXVConditioning` 这种两路都进的节点时只走同名那一路）；第二个 `LoadImage` 起是参考图 1、2…；被猜中的节点标题不唯一时改成「原标题 #节点 id」，绑定按标题找。只把图里真能接上的绑定写进 yaml。
+- **ComfyUI 的工作流列表走它的 user data 接口**（`/api/userdata?dir=workflows`、`/api/userdata/workflows%2F<path>`）：文件夹版、便携版、Desktop 都一样；Mock 的示例机器用 `wflib/demo/`（LTX-2 的 API 格式、SDXL 的 UI 格式、素材板）。素材板按文件名前缀「DramaStudio 素材板」或 JSON 里的 `extra.dramastudio.board` 认出来，不能导入。
+- **接口返回的 `name` 是中文名**（契约是单个字符串；导入的工作流中英文同名）。
+
+## 2026-10-26 · M5 第 1 步：工作流表、model_call 的工作流列、视频小工具
+
+- **表 `comfy_workflow`**（迁移 `0019`）按 SPEC 4 的列，另加两列：`name_json`（`{zh, en}`，SPEC 写的 `name` 是单语言）和 `kind`（image / video / upscale…，ModelPicker 按组件的 kind 分组要用）。`slug` 唯一。文件还在 `workflows/<slug>/`，表里存档位、确认过的绑定、体检和试跑结果、做这些时的文件哈希。
+- **`model_call` 加 `workflow_id / workflow_sha256 / comfy_env_hash / select_json`**：路由在开始调用时就写 `workflow_id`（本地模型的 `spec.workflow`，失败的调用也有），成功后从适配器的 `raw["comfy"]` 补哈希和环境；`select_json` 留给第 12 步按镜头选工作流的理由。节点包版本不另存：`comfy_env_hash` → `comfy_env.node_packs_json`。
+- **`media/video.py`**：`probe`（解析 FFmpeg 对输入的输出：尺寸、时长、帧率、有没有声音；`imageio-ffmpeg` 不带 ffprobe）、`trim_head`（默认 0.3 秒，**重新编码** H.264 CRF 16 + AAC，保证按帧切而不是落到最近的关键帧）、`frame`（第一帧当封面、最后一帧给连续镜头当首帧，PNG）。都在线程里跑 FFmpeg。
+- **Mock 视频可以带声音**（`with_audio` 参数 → 正弦波 AAC 音轨）：H3 原生音频、按台词对口型时视频本身有声音，后面的组件和后期要能区分。
+
+## 2026-10-26 · M5 计划（Kelvin 定的四项）
+
+计划见 `plans/M5.md`。
+- **视频出终版按按钮**：本地草稿采纳后不自动出 2K，和关键帧一样在候选卡上点「用 API 出终版 · 约 $x」才花钱（H3 Regenerate-2K）。SPEC 7.7 写的「采纳时自动出」按这条改。原因：每次采纳草稿都花钱，用户控制不了。
+- **按镜头选工作流做规则表 + LLM 建议，建议走 API 模型**（默认 DeepSeek，不占本机显卡、不跑本地 LLM）；**拼节点（beta）挪到之后（P3）**，ROADMAP 跟着改。
+- **本机真跑 + 真实冒烟上限 $3**：本机下 H3 权重（约 65 GB，先存快照）跑草稿；API 冒烟 H3 API、Regenerate-2K、Seedance 2.5 各 1 条（视频比图片贵，默认的 $1 不够）。
+- **配音方式两种都保留，每个镜头自己选**：分镜规划按镜头建议、用户在分镜页改，不设全局默认。对照 PLAN 的音频驱动模式：`tts`（先配音再对口型）= 模式 A（台词音频喂给 H3，`fully_copy`）；`native`（原生同步）= 模式 B（H3 自己出声，给锁定音色样本，说话人编号 S1/S2）；`none` = 不出声。模式 C（后期对口型）是 M6 的口型修复。`models_db.py` 注释里的「SPEC A / B / C」按这个对照改。
+- **不在 M5 做**：自动质检和不达标重跑（M6，M5 的 take 显示「未检查」）、2K 精修接口和口型修复（M6）、后期页裁头开关和混音（M7）、看板其他指标（M8，M5 只做表头要的 `/metrics/summary`）、素材板和存回工作台节点（M9）。
+
 ## 2026-10-26 · 关键帧默认模型：本地 FLUX 3 Klein、API Nano Banana 2.1（Kelvin 定）
 
 - **默认路由**：`components.yaml` 的 `kf` 预设 `balanced` 改成 `local: comfy/flux3-klein`、`api: google/nano-banana-2.1`；`kf.local` 改成 Klein 在前（`[flux3-klein, flux3-klein-t2i, qwen-image-edit, qwen-image, flux2-dev]`）。参考图 `img` 不换（仍是 Qwen-Image 草稿 → Nano Banana Pro）。

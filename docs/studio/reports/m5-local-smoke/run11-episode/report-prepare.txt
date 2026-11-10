@@ -1,0 +1,93 @@
+M5 local smoke · 2026-11-09 09:02
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 1988 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== voice: 林晚换本地音色（先解锁）· Qwen3-TTS VoiceDesign 试听
+   1 job(s) in 63.6 s, GPU memory peak 6847 MiB
+   call local/qwen3-tts [local] success 42.4 s audio=0.88s
+   call local/qwen3-tts [local] success 5.9 s audio=3.2s
+   call local/qwen3-tts [local] success 1.9 s audio=1.04s
+   call local/qwen3-tts [local] success 5.1 s audio=2.24s
+   call local/qwen3-tts [local] success 3.7 s audio=1.68s
+   call local/qwen3-tts [local] success 3.4 s audio=1.92s
+== voice-final: 林晚本地终版 · IndexTTS-2.5，锁定
+   1 job(s) in 80.2 s, GPU memory peak 9197 MiB
+   call local/indextts2 [local] success 66.0 s audio=0.8707482993197279s
+   call local/indextts2 [local] success 3.2 s audio=1.2770975056689342s
+   call local/indextts2 [local] success 3.4 s audio=1.509297052154195s
+   call local/indextts2 [local] success 3.1 s audio=1.1493877551020408s
+   call local/indextts2 [local] success 3.3 s audio=1.195827664399093s
+   lock: locked
+== dub: 全部配音 · 林晚的本地音色走 IndexTTS-2.5
+   2 job(s) in 3.1 s, GPU memory peak 9250 MiB
+   call local/indextts2 [local] success 1.0 s audio=0.9984580498866213s
+   call local/indextts2 [local] success 2.5 s audio=1.8692063492063493s
+== pictures: 第 1 集用到的素材全部本机重画（linwan、hall、room、umbrella、note、band、phone、txt1、txt2），锁定
+   9 job(s) in 132.6 s, GPU memory peak 31173 MiB
+   call comfy/qwen-image [local] success 31.4 s images=4
+   call comfy/qwen-image [local] success 11.1 s images=4
+   call comfy/qwen-image [local] success 11.2 s images=4
+   call comfy/qwen-image [local] success 11.3 s images=4
+   call comfy/qwen-image [local] success 11.1 s images=4
+   call comfy/qwen-image [local] success 11.3 s images=4
+   call comfy/qwen-image [local] success 11.2 s images=4
+   call comfy/qwen-image [local] success 11.2 s images=4
+   call local/rapidocr [local] success 2.5 s images=1
+   call local/rapidocr [local] success 0.8 s images=1
+   call local/rapidocr [local] success 1.4 s images=1
+   call local/rapidocr [local] success 1.0 s images=1
+   call comfy/qwen-image [local] success 11.9 s images=4
+   call local/rapidocr [local] success 1.0 s images=1
+   call local/rapidocr [local] success 0.9 s images=1
+   call local/rapidocr [local] success 1.0 s images=1
+   call local/rapidocr [local] success 1.1 s images=1
+   model comfy/qwen-image [local], files: linwan-candidate-0.png (928x1664), linwan-candidate-1.png (928x1664), linwan-candidate-2.png (928x1664), linwan-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: hall-candidate-0.png (1664x928), hall-candidate-1.png (1664x928), hall-candidate-2.png (1664x928), hall-candidate-3.png (1664x928)
+   model comfy/qwen-image [local], files: room-candidate-0.png (1664x928), room-candidate-1.png (1664x928), room-candidate-2.png (1664x928), room-candidate-3.png (1664x928)
+   model comfy/qwen-image [local], files: umbrella-candidate-0.png (928x1664), umbrella-candidate-1.png (928x1664), umbrella-candidate-2.png (928x1664), umbrella-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: note-candidate-0.png (928x1664), note-candidate-1.png (928x1664), note-candidate-2.png (928x1664), note-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: band-candidate-0.png (928x1664), band-candidate-1.png (928x1664), band-candidate-2.png (928x1664), band-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: phone-candidate-0.png (928x1664), phone-candidate-1.png (928x1664), phone-candidate-2.png (928x1664), phone-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: txt1-candidate-0.png (928x1664), txt1-candidate-1.png (928x1664), txt1-candidate-2.png (928x1664), txt1-candidate-3.png (928x1664)
+   OCR #0: '楼下便利店，等你到十二点。' ok=True
+   OCR #1: '楼下便利店，等你到十二点。' ok=True
+   OCR #2: '楼下便利店，等你到十二点。' ok=True
+   OCR #3: '楼下便利店，等你到十二点。' ok=True
+   txt1: locked candidate 0 (OCR '楼下便利店，等你到十二点。')
+   model comfy/qwen-image [local], files: txt2-candidate-0.png (928x1664), txt2-candidate-1.png (928x1664), txt2-candidate-2.png (928x1664), txt2-candidate-3.png (928x1664)
+   OCR #0: '288811后期会把盾层子贼。23:52字不抓0' ok=False
+   OCR #1: '后期主会把后期贴字23:52' ok=False
+   OCR #2: '2823:52' ok=False
+   OCR #3: '后期会把包允员23:52历宇不感胺削IB' ok=False
+   txt2: locked candidate 0 (OCR '288811后期会把盾层子贼。23:52字不抓0')
+== kf: 关键帧草稿（本地）1-01、1-02、1-03、1-04、1-05、1-06、1-07，各确认第 1 张
+   7 job(s) in 212.6 s, GPU memory peak 24876 MiB
+   call comfy/flux3-klein [local] success 31.8 s images=3
+   call comfy/flux3-klein [local] success 32.6 s images=3
+   call comfy/flux3-klein [local] success 24.3 s images=3
+   call comfy/flux3-klein [local] success 32.8 s images=3
+   call comfy/flux3-klein [local] success 32.7 s images=3
+   call comfy/flux3-klein [local] success 32.8 s images=3
+   call comfy/flux3-klein [local] success 24.6 s images=3
+   model comfy/flux3-klein [local], files: kf-1-01-candidate-0.png (928x1664), kf-1-01-candidate-1.png (928x1664), kf-1-01-candidate-2.png (928x1664)
+   1-01: refs sent ['林晚', '老小区楼道 · 夜']
+   model comfy/flux3-klein [local], files: kf-1-02-candidate-0.png (928x1664), kf-1-02-candidate-1.png (928x1664), kf-1-02-candidate-2.png (928x1664)
+   1-02: refs sent ['老小区楼道 · 夜', '红色长柄伞', '黄色便利贴']
+   model comfy/flux3-klein [local], files: kf-1-03-candidate-0.png (928x1664), kf-1-03-candidate-1.png (928x1664), kf-1-03-candidate-2.png (928x1664)
+   1-03: refs sent ['黄色便利贴', '便利贴手写']
+   model comfy/flux3-klein [local], files: kf-1-04-candidate-0.png (928x1664), kf-1-04-candidate-1.png (928x1664), kf-1-04-candidate-2.png (928x1664)
+   1-04: refs sent ['林晚', '老小区楼道 · 夜', '黄色便利贴']
+   model comfy/flux3-klein [local], files: kf-1-05-candidate-0.png (928x1664), kf-1-05-candidate-1.png (928x1664), kf-1-05-candidate-2.png (928x1664)
+   1-05: refs sent ['林晚', '黄色便利贴', '旧黑发圈']
+   model comfy/flux3-klein [local], files: kf-1-06-candidate-0.png (928x1664), kf-1-06-candidate-1.png (928x1664), kf-1-06-candidate-2.png (928x1664)
+   1-06: refs sent ['林晚', '林晚出租屋 · 夜', '红色长柄伞']
+   model comfy/flux3-klein [local], files: kf-1-07-candidate-0.png (928x1664), kf-1-07-candidate-1.png (928x1664), kf-1-07-candidate-2.png (928x1664)
+   1-07: refs sent ['手机', '手机锁屏时间']
+   分镜 confirmed 9/9
+   deepseek/v4.1-flash in this data dir: 0 call(s), $0.0000
+   google/gemini-3.1-flash-lite in this data dir: 0 call(s), $0.0000
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run11-episode
+data: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-oe54cqmf\home

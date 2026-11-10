@@ -1,7 +1,7 @@
 import { useMutation, useQueries, useQuery, useQueryClient } from "@tanstack/react-query";
 import { z } from "zod";
 
-import { api, del, post, put } from "@/api/client";
+import { api, del, patch, post, put } from "@/api/client";
 import { productKeys } from "@/api/hooks/products";
 import { useHealth } from "@/api/hooks/useJobs";
 import {
@@ -14,7 +14,12 @@ import {
   type ResolvedConfig,
 } from "@/api/schemas/config";
 import type { ModelOption } from "@/api/schemas/models";
-import { ProviderSchema, ProvidersSchema } from "@/api/schemas/providers";
+import {
+  ModelSettingSchema,
+  ProviderSchema,
+  ProvidersSchema,
+  type TokenPrice,
+} from "@/api/schemas/providers";
 
 export const configKeys = {
   catalog: ["config", "components"] as const,
@@ -154,12 +159,21 @@ export function useComponentModels(component: string, item: string | null = null
   return componentModels(catalog.data, component, resolved.data);
 }
 
-function useProviderMutation<V>(fn: (vars: V) => Promise<z.infer<typeof ProviderSchema>>) {
+/** A site, a pick or a price changes which models can be picked and what runs cost: the
+ * providers, the pickers' catalog and the products' estimates are read again. */
+function useAccountRefresh() {
   const client = useQueryClient();
-  return useMutation({
-    mutationFn: fn,
-    onSuccess: () => void client.invalidateQueries({ queryKey: configKeys.providers }),
-  });
+  return () =>
+    Promise.all([
+      client.invalidateQueries({ queryKey: configKeys.providers }),
+      client.invalidateQueries({ queryKey: configKeys.all }),
+      client.invalidateQueries({ queryKey: productKeys.all }),
+    ]);
+}
+
+function useProviderMutation<V, R>(fn: (vars: V) => Promise<R>) {
+  const refresh = useAccountRefresh();
+  return useMutation({ mutationFn: fn, onSuccess: () => void refresh() });
 }
 
 /** Keys are write-only: the response only says whether one is set (M0 `/providers`). */
@@ -170,6 +184,26 @@ export const useSaveProviderKey = (id: string) =>
 
 export const useDeleteProviderKey = (id: string) =>
   useProviderMutation(() => del(`/providers/${enc(id)}/key`, ProviderSchema));
+
+/** Switch the provider to another site: its list and picks start over there. */
+export const useSetProviderSite = (id: string) =>
+  useProviderMutation((site: string) => patch(`/providers/${enc(id)}`, ProviderSchema, { site }));
+
+/** Which of the listed models can be picked in the studio. */
+export const usePickProviderModels = (id: string) =>
+  useProviderMutation((enabled: string[]) =>
+    put(`/providers/${enc(id)}/models`, ProviderSchema, { enabled }),
+  );
+
+/** The user's price for a writing model, or another model id for a media model; `null`
+ * goes back to the config's. */
+export const useSetModelSetting = () =>
+  useProviderMutation(
+    ({ key, ...body }: { key: string; price?: TokenPrice | null; model_id?: string | null }) =>
+      !body.price && !body.model_id
+        ? del(`/providers/settings/${key}`, ModelSettingSchema)
+        : put(`/providers/settings/${key}`, ModelSettingSchema, body),
+  );
 
 export const ProviderTestSchema = z.object({
   ok: z.boolean(),
@@ -190,4 +224,4 @@ export const ProviderTestSchema = z.object({
 /** 「测试连接」: lists the provider's models with the stored key, then checks each media model
  * on that key (free calls, nothing is generated). */
 export const useTestProvider = (id: string) =>
-  useMutation({ mutationFn: () => post(`/providers/${enc(id)}/test`, ProviderTestSchema) });
+  useProviderMutation(() => post(`/providers/${enc(id)}/test`, ProviderTestSchema));

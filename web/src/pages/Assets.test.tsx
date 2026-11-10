@@ -144,7 +144,7 @@ describe("AssetsPage", () => {
     await user.click(screen.getByRole("button", { name: "解锁" }));
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog).toHaveTextContent("解锁「红色长柄伞」会影响用到它的镜头");
-    expect(dialog).toHaveTextContent("分镜 · 1-02、1-09，共 2 个镜头用它做参考");
+    expect(dialog).toHaveTextContent("分镜 · 1-02、1-06、1-09，共 3 个镜头用它做参考");
     expect(dialog).toHaveTextContent("其中镜头 1-02 已确认");
     await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
     expect(await screen.findByText("已锁定 6 / 10")).toBeInTheDocument();

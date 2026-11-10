@@ -31,6 +31,7 @@ import { Button } from "@/components/ui/button";
 import { modelName } from "@/lib/versions";
 import { primaryModelKey } from "@/lib/config";
 import { cn } from "@/lib/utils";
+import { tierTone } from "@/pages/models/workflowStatus";
 
 /** API services shown before 「更多供应商」 (prototype: the first 6). */
 const API_VISIBLE = 6;
@@ -84,6 +85,34 @@ function RoleBadge({ role }: { role: Role }) {
   );
 }
 
+function ModelCard({ m, missingKeys }: { m: ModelOption; missingKeys: ReadonlySet<string> }) {
+  const { t } = useTranslation("components");
+  const { t: tw } = useTranslation("workflows");
+  return (
+    <RadioCard value={m.key}>
+      <span className="flex items-center gap-2">
+        <span className="text-sm">{m.display}</span>
+        {m.tier ? (
+          <StatusBadge tone={tierTone[m.tier]} icon={null}>
+            {tw(`tier.${m.tier}`)}
+          </StatusBadge>
+        ) : null}
+        {missingKeys.has(m.key) ? (
+          <StatusBadge tone="warn">{t("picker.keyMissing")}</StatusBadge>
+        ) : null}
+      </span>
+      {m.where === "api" && m.priced === false ? (
+        <StatusBadge tone="warn" icon={null} className="self-start">
+          {t("picker.unpriced")}
+        </StatusBadge>
+      ) : (
+        <CostBadge where={m.where} price={m.price} className="block" />
+      )}
+    </RadioCard>
+  );
+}
+
+/** Unverified workflows sit in a group of their own after the rest: picked by hand only. */
 function ModelRadios({
   label,
   models,
@@ -98,19 +127,31 @@ function ModelRadios({
   missingKeys: ReadonlySet<string>;
 }) {
   const { t } = useTranslation("components");
+  const unverified = models.filter((m) => m.tier === "unverified");
   return (
     <RadioGroup aria-label={label} value={value ?? ""} onValueChange={onChange} className="gap-1.5">
-      {models.map((m) => (
-        <RadioCard key={m.key} value={m.key}>
-          <span className="flex items-center gap-2">
-            <span className="text-sm">{m.display}</span>
-            {missingKeys.has(m.key) ? (
-              <StatusBadge tone="warn">{t("picker.keyMissing")}</StatusBadge>
-            ) : null}
-          </span>
-          <CostBadge where={m.where} price={m.price} className="block" />
-        </RadioCard>
-      ))}
+      {models
+        .filter((m) => m.tier !== "unverified")
+        .map((m) => (
+          <ModelCard key={m.key} m={m} missingKeys={missingKeys} />
+        ))}
+      {unverified.length > 0 ? (
+        <div
+          role="group"
+          aria-label={t("picker.unverifiedGroup")}
+          className="mt-1.5 flex flex-col gap-1.5"
+        >
+          <div className="text-xs font-medium text-muted-foreground">
+            {t("picker.unverifiedGroup")}
+          </div>
+          {unverified.map((m) => (
+            <ModelCard key={m.key} m={m} missingKeys={missingKeys} />
+          ))}
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            {t("picker.unverifiedHint")}
+          </p>
+        </div>
+      ) : null}
     </RadioGroup>
   );
 }
@@ -183,6 +224,8 @@ function PickerForm({
   const override = useSetOverride(componentId, item);
   const missingKeys = useMissingKeys();
   const selectedApi = apiModels.findIndex((m) => m.key === values.api_model);
+  // The route names a model that is no longer picked (or not on the provider's current site).
+  const goneApi = values.api_model && selectedApi < 0 ? values.api_model : null;
   const [showAll, setShowAll] = useState(selectedApi >= API_VISIBLE);
   const [cap, setCap] = useState(values.per_call_cap_usd?.toString() ?? "");
 
@@ -208,7 +251,8 @@ function PickerForm({
 
   const all = [...localModels, ...apiModels];
   const primary = primaryModelKey(values);
-  const others = all.filter((m) => m.key !== primary);
+  // Never a fallback target: an unverified workflow runs only where it was picked by hand.
+  const others = all.filter((m) => m.key !== primary && m.tier !== "unverified");
   const fb = values.fallback;
   const target = fb.to && fb.to !== primary ? modelName(all, fb.to) : t("picker.fallbackNext");
   const visibleApi = showAll ? apiModels : apiModels.slice(0, API_VISIBLE);
@@ -262,6 +306,11 @@ function PickerForm({
         >
           {t("picker.api")}
         </FieldHead>
+        {goneApi ? (
+          <p role="alert" className="text-xs leading-relaxed text-tone-fail-fg">
+            {t("picker.gone", { model: goneApi })}
+          </p>
+        ) : null}
         {hasApi ? (
           <>
             <ModelRadios

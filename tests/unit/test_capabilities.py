@@ -14,7 +14,7 @@ PC_READY = Capabilities.of(
     found=[
         "os", "gpu", "driver", "python", "uv", "torch", "ffmpeg", "git", "comfy", "node_h3",
         "node_vhs", "node_seedvr2", "node_flashvsr", "node_ctrl", "node_dramastudio", "w_h3",
-        "w_te", "w_img", "w_img_t2i", "w_flux3", "w_sr", "w_tts", "w_llm", "llmsrv",
+        "w_te", "w_img", "w_img_t2i", "w_flux3", "w_sr", "w_flashvsr", "w_tts", "w_llm", "llmsrv",
         "rt_qwentts", "rt_indextts", "rt_ocr",
     ],
 )  # fmt: skip
@@ -108,7 +108,7 @@ def test_a_hand_picked_local_model_is_dropped_too() -> None:
     res = resolve("vid", picked, caps=MAC)
     assert res.values["mode"] == "api" and res.values["local_model"] is None
     assert res.unavailable["comfy/wan-2.2"] == ["cuda", "comfy"]
-    assert set(res.unavailable) == {"comfy/wan-2.2", "comfy/h3", "comfy/ltx"}
+    assert set(res.unavailable) == {"comfy/wan-2.2", "comfy/h3", "comfy/h3-r2v", "comfy/ltx"}
     assert res.sources["mode"] == "component"
     # On a machine that has it, the user's choice stands.
     assert resolve("vid", picked, caps=PC_READY).values["local_model"] == "comfy/wan-2.2"

@@ -20,12 +20,15 @@ The rules (M4 plan):
 - a continuous shot follows the last shot before it in the scene that is not an insert (a
   close-up without anyone in it: the note, the phone), so 1-08 follows 1-06 over the insert 1-07;
 - references are the episode's assets only; without any, the ones the asset analysis found on
-  its lines and the scene's place;
+  its lines and the scene's place; **and every character or prop its picture or action lines
+  name** (``mentioned_assets``, M5 step 15f: 1-06's 「把伞靠回墙边」 had no umbrella, so its
+  keyframe drew a black one that the next shots carried on);
 - no blocking from the model: the characters and props of its references, the camera by framing.
 """
 
 from __future__ import annotations
 
+import re
 import uuid
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass, field
@@ -44,6 +47,11 @@ CAMERA = {"wide": (0.5, 0.92), "medium": (0.5, 0.8), "close": (0.38, 0.7), "clos
 SHORTEST_S = 1.0  # the plan's seconds are kept within these
 LONGEST_S = 15.0
 REACTION_S = 2.0  # the second half of a split one-line shot (a reaction, no lines)
+# What a shot's picture or action lines add to its references when they name it.
+MENTIONED_KINDS = ("character", "prop")
+# A prop named by the last character of its name alone (「红色长柄伞」 by 「那把伞」) only after a
+# measure word or 这 / 那, so 「贴着」 is not 「黄色便利贴」 nor 「机位」 a 「手机」.
+_COUNTED = "把张个只支条件部台本块顶副双根枚这那"
 PATCHABLE = (
     "shot_type",
     "framing",
@@ -92,6 +100,8 @@ class PlanContext:
     # The asset analysis: assets on each line, and those over a whole scene (its place).
     line_assets: dict[str, list[str]] = field(default_factory=dict)
     scene_assets: dict[str, list[str]] = field(default_factory=dict)
+    # Other names of an asset (its bible entry's name and aliases: 「红伞」 for 「红色长柄伞」).
+    asset_aliases: dict[str, list[str]] = field(default_factory=dict)
 
     @property
     def characters(self) -> set[str]:
@@ -231,6 +241,7 @@ def _shot(d: Mapping[str, Any], ctx: PlanContext) -> dict[str, Any]:
     refs = [a for a in _strs(raw.get("refs")) if a in ctx.asset_kinds]
     if not refs:
         refs = _rule_refs(d["scene_id"], d["line_ids"], ctx)
+    refs += [a for a in mentioned_assets([intent, *texts], ctx) if a not in refs]
     has_vo = any(lines[x].type == "vo" for x in d["line_ids"])
     has_dialogue = any(lines[x].type == "dialogue" for x in d["line_ids"])
     audio_default = "tts" if has_vo and not has_dialogue else "native"
@@ -255,6 +266,28 @@ def _shot(d: Mapping[str, Any], ctx: PlanContext) -> dict[str, Any]:
         ),
         "difficulty": min(6, max(1, _int(raw.get("difficulty")) or 1)),
     }
+
+
+def mentioned_assets(texts: Sequence[str], ctx: PlanContext) -> list[str]:
+    """The characters and props ``texts`` name, in the order they first appear: by the asset's
+    name or another name of it, a prop also by the end of its name (「便利贴」 for 「黄色便利贴」;
+    one character only after a measure word, ``_COUNTED``)."""
+    text = "\n".join(t for t in texts if t)
+    found: list[tuple[int, str]] = []
+    for asset_id, kind in ctx.asset_kinds.items():
+        if kind not in MENTIONED_KINDS:
+            continue
+        name = ctx.asset_names.get(asset_id, "")
+        keys = [k for k in [name, *ctx.asset_aliases.get(asset_id, [])] if k]
+        if kind == "prop":
+            keys += [name[-n:] for n in range(2, len(name))]
+        at = [i for k in keys if (i := text.find(k)) >= 0]
+        if kind == "prop" and len(name) > 1:
+            counted = re.search(f"[{_COUNTED}]{re.escape(name[-1])}", text)
+            at += [counted.start() + 1] if counted else []
+        if at:
+            found.append((min(at), asset_id))
+    return [a for _, a in sorted(found)]
 
 
 def _rule_refs(scene_id: str, line_ids: Sequence[str], ctx: PlanContext) -> list[str]:

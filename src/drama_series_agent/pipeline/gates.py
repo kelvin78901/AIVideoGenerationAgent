@@ -16,6 +16,10 @@ unlocks none. Unlocking an asset reopens the confirmed episodes that use it.
 The storyboard gate (M4) locks an episode's 分镜规划, once every shot in it is confirmed and
 none is 「待更新」: a service that knows the shots says so (``precondition``; 409
 ``shots_not_confirmed``).
+
+The takes gate (生成确认, M5) covers the episode's video products, listed like the assets gate's,
+but registered ``lock=True``: confirming needs each to have an adopted take (409
+``takes_not_adopted``) and locks it, reopening unlocks them.
 """
 
 from __future__ import annotations
@@ -40,7 +44,7 @@ from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.suggestions.service import ADOPTED_SLICE, SUGGESTIONS_SLOT
 
-GateId = Literal["novel", "script", "assets", "storyboard"]
+GateId = Literal["novel", "script", "assets", "storyboard", "takes"]
 
 # What each gate is about (the owner of its products) and the slots it locks; the first one
 # must have something adopted. A gate without slots has its products listed by ``members``.
@@ -49,6 +53,7 @@ GATES: dict[str, tuple[str, tuple[str, ...]]] = {
     "script": ("episode", (SCRIPT_SLOT,)),
     "assets": ("episode", ()),
     "storyboard": ("episode", (SHOT_PLAN_SLOT,)),
+    "takes": ("episode", ()),
 }
 # (session, scope id) → each product the gate covers, with the name the user knows it by.
 Members = Callable[[AsyncSession, str], Awaitable[list[tuple[str, Product]]]]
@@ -100,10 +105,15 @@ class GateService:
         self._products = products
         self._invalidation = invalidation
         self._members: dict[str, Members] = {}
+        self._locking: set[str] = set()
         self._preconditions: dict[str, Precondition] = {}
 
-    def members(self, gate: str, fn: Members) -> None:
+    def members(self, gate: str, fn: Members, *, lock: bool = False) -> None:
+        """``lock``: confirming locks each member's adopted version (it needs one), reopening
+        unlocks them; otherwise they are locked on their own beforehand."""
         self._members[gate] = fn
+        if lock:
+            self._locking.add(gate)
 
     def precondition(self, gate: str, fn: Precondition) -> None:
         self._preconditions[gate] = fn
@@ -145,6 +155,13 @@ class GateService:
         async with self._db.session() as session:
             series_id, scope = await self._scope(session, gate, scope_id)
             products = await self._products_of(session, gate, scope)
+        if gate in self._locking:
+            async with self._db.session() as session:
+                members = await self._members[gate](session, scope)
+            for _, p in members:
+                if p.locked_hash:
+                    await self._products.unlock(p.id)
+            return await self._record(series_id, gate, scope, "reopen", {})
         if gate in self._members:  # locked on their own: only the decision changes
             return await self._record(series_id, gate, scope, "reopen", {})
         for p in products.values():
@@ -192,6 +209,8 @@ class GateService:
             members = await self._members[gate](session, scope)
             if not members:
                 raise PipelineError(409, "nothing_adopted", gate=gate, scope_id=scope)
+            if gate in self._locking:
+                return await self._confirm_locking(session, series_id, gate, scope, members)
             unlocked = [name for name, p in members if not p.locked_hash]
             if unlocked:
                 raise PipelineError(
@@ -207,6 +226,36 @@ class GateService:
                 for _, p in members
                 if (h := await self._invalidation.current_hash(session, p.id, ""))
             }
+        return await self._record(series_id, gate, scope, "confirm", hashes)
+
+    async def _confirm_locking(
+        self,
+        session: AsyncSession,
+        series_id: str,
+        gate: str,
+        scope: str,
+        members: list[tuple[str, Product]],
+    ) -> GateDecisionOut:
+        """Every member has an adopted version, none is running: lock them all."""
+        waiting = [name for name, p in members if not p.adopted_version_id]
+        if waiting:
+            raise PipelineError(
+                409, f"{gate}_not_adopted", count=len(waiting), labels="、".join(waiting)
+            )
+        for _, p in members:
+            if p.running_job_id:
+                job = await session.get(Job, p.running_job_id)
+                if job is not None and job.state in ACTIVE_JOB_STATES:
+                    raise PipelineError(409, "product_busy", id=p.id)
+        hashes = {
+            p.id: h
+            for _, p in members
+            if (h := await self._invalidation.current_hash(session, p.id, ""))
+        }
+        await session.close()
+        for _, p in members:
+            if not p.locked_hash:
+                await self._products.lock(p.id)
         return await self._record(series_id, gate, scope, "confirm", hashes)
 
     @staticmethod

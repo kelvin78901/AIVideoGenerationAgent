@@ -19,8 +19,10 @@
  * PATCH /shots/{id}, POST /shots/{id}/split|merge, the 分镜规划 and keyframe products, the
  * storyboard gate, `spec_aspect` and `shot_edit` (M4).
  * GET /episodes/{id}/progress and GET /episodes/{id}/shots are the backend's too; the demo lays
- * episode 1's 生成 and 后期 over the badges and its takes over the shots (`video_product_id`)
- * until those steps are real.
+ * episode 1's 后期 over the badges until M7. The video takes and 生成确认, GET / PUT
+ * /series/{id}/generate-rules, GET /episodes/{id}/generate-log, POST /products/{id}/unadopt,
+ * PATCH /versions/{id} and the impact previews' videos (M5). GET /metrics/summary is the
+ * backend's with the demo's dashboard numbers on top until M8.
  * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
  *
  * Handlers that take a series answer only for the demo series; any other series passes through
@@ -39,42 +41,28 @@
  * | POST /products/{id}/lock, unlock | M2             |
  * | PUT /products/{id}/prompt        | M2             |
  * | POST /products/{id}/compile      | M2             |
- * | POST /impact/preview, apply      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | POST /products/{id}/unadopt, PATCH /versions/{id} | M5 |
- * | GET, PUT /series/{id}/generate-rules | M5        |
- * | GET /episodes/{id}/generate-log  | M5             |
  * | POST /versions/{id}/upscale      | M6             |
  * | GET /episodes/{id}/timeline      | M7             |
  * | PATCH /clips/{id}, /subtitles/{id} | M7           |
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
  * | GET, PUT /sync/targets, POST /sync/targets/{id}/detect | M9 |
  * | POST /sync/run, GET /sync/log, GET /sync/board | M9 |
- * | GET /workflows, GET / PATCH /workflows/{id}, POST /workflows/import | M5 |
- * | PUT /workflows/{id}/bindings, POST /workflows/{id}/check, /trial | M5 |
- * | POST /workflows/check-all, /workflows/{id}/deps, /deps/install | M5 |
- * | GET /comfy/workflows (ComfyUI's own workflow list) | M5 |
  */
 import { gateHandlers } from "@/mocks/handlers/gates";
 import { generateHandlers } from "@/mocks/handlers/generate";
-import { impactHandlers } from "@/mocks/handlers/impact";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
-import { shotHandlers } from "@/mocks/handlers/shots";
 import { syncHandlers } from "@/mocks/handlers/sync";
-import { workflowHandlers } from "@/mocks/handlers/workflows";
 import { seriesHandlers } from "@/mocks/handlers/series";
 
 export const handlers = [
   ...seriesHandlers,
   ...metricsHandlers,
   ...productHandlers,
-  ...impactHandlers,
   ...gateHandlers,
-  ...shotHandlers,
   ...generateHandlers,
   ...postHandlers,
   ...syncHandlers,
-  ...workflowHandlers,
 ];
