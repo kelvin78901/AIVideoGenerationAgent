@@ -62,6 +62,17 @@ STYLE_GUIDE = {
     "printed": "印刷：清楚的黑体或宋体，排得整齐。",
     "screen": "屏幕界面：手机或电脑的系统字体，清晰、发光，界面简洁。",
 }
+PEN = {"ballpoint": "圆珠笔", "marker": "马克笔", "pencil": "铅笔"}  # 用什么写 (M5.5)
+
+
+def lettering(text: dict[str, str]) -> str:
+    """The 字迹 / 字体 line: handwriting with the pen it was written with (ballpoint by
+    default, which reads as before)."""
+    guide = STYLE_GUIDE.get(text.get("style", ""), "")
+    pen = PEN.get(text.get("pen") or "", "")
+    return guide.replace("圆珠笔", pen) if text.get("style") == "handwritten" and pen else guide
+
+
 # 有字的道具 (M5.5): the writing is part of the prop, drawn on its own picture.
 PROP_TEXT = "道具上的字，必须逐字一致"
 
@@ -86,8 +97,10 @@ def prop_text(asset: Asset, product: Product | None) -> dict[str, str] | None:
 def prop_physical(asset: Asset, product: Product | None) -> dict[str, str] | None:
     """A prop's size, material and wear: what the user set on its picture (``settings``),
     else what the analysis found (M5.5)."""
-    given = physical_from(((product.settings_json if product else None) or {}).get("physical"))
-    return given or physical_from((asset.seed_json or {}).get("physical"))
+    mine = ((product.settings_json if product else None) or {}).get("physical")
+    if isinstance(mine, dict):  # set on the assets page, even emptied
+        return physical_from(mine)
+    return physical_from((asset.seed_json or {}).get("physical"))
 
 
 def asset_aspect(kind: str, spec_aspect: str) -> str:
@@ -147,7 +160,7 @@ class ImgComponent(MediaComponent):
         if (text := prop_text(asset, product)) is not None:
             blocks += [
                 Block(PROP_TEXT, f"「{text['exact']}」"),
-                Block("字迹", STYLE_GUIDE.get(text["style"], "")),
+                Block("字迹", lettering(text)),
             ]
             context["text"] = text
         return Inputs(blocks=blocks, context=context)

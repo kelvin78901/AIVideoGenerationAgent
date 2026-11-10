@@ -51,13 +51,19 @@
     },
     "hint": {
       "composite": "先生成没有字的底图，字在后期合成贴上去。字一定对，适合手机屏幕、招牌、字幕。",
-      "model": "字是画面的一部分，透视和笔迹更自然，适合手写纸条。每张都过 OCR，不一致的不能直接采纳。"
+      "model": "字是画面的一部分，透视和笔迹更自然，适合手写纸条。每张都过 OCR，不一致会标出来提醒你。"
     },
     "style": "字体风格",
     "styles": {
       "handwritten": "手写",
       "printed": "印刷",
       "screen": "屏幕界面"
+    },
+    "pen": "用什么写",
+    "pens": {
+      "ballpoint": "圆珠笔",
+      "marker": "马克笔",
+      "pencil": "铅笔"
     }
   },
   "cands": {
@@ -81,7 +87,8 @@
     "ocrHasText": "OCR 在底图上读到了字：「{{read}}」",
     "ocrUnchecked": "OCR 未检查：这台电脑上没有可用的 OCR",
     "emptyImage": "还没生成。点上方或右侧的「重跑」出 4 张候选。",
-    "emptyVoice": "还没生成。点上方或右侧的「重跑」出 3 个音色候选。"
+    "emptyVoice": "还没生成。点上方或右侧的「重跑」出 3 个音色候选。",
+    "noteProp": "实拍质感，放在环境里，不是白底产品照"
   },
   "voice": {
     "source": "音色来源",
@@ -115,15 +122,6 @@
     "anchor": "样音",
     "variants": "情绪变体",
     "variantsHint": "台词配音按每句的语气选用对应的情绪。"
-  },
-  "lockMismatch": {
-    "title": "候选 {{letter}} 的字和要求不一致",
-    "read": "OCR 读出来是「{{read}}」",
-    "nothing": "OCR 在这张上没读出字",
-    "exact": "要求是「{{exact}}」",
-    "hint": "锁定后，后面的镜头都按这张来。确认字没问题再锁定。",
-    "confirm": "仍然锁定",
-    "cancel": "取消"
   },
   "reanalyzing": "已开始重新分析剧本，分析完清单会自动更新；新增的素材会出现在清单里。",
   "view": {
@@ -179,5 +177,27 @@
     "emotion": "情绪",
     "emotionAuto": "按语气（{{emotion}}）",
     "emotionSaved": "情绪改成「{{emotion}}」，重配后生效。"
+  },
+  "prop": {
+    "size": "真实尺寸",
+    "material": "材质",
+    "wear": "新旧",
+    "sizePlaceholder": "全长约 90 cm",
+    "materialPlaceholder": "尼龙伞面、木柄",
+    "wearPlaceholder": "用了几年，伞面有点褪色",
+    "hint": "从设定里来，可以改；关键帧按尺寸写它和人物的比例（「伞柄到她的胯部」）。",
+    "saved": "尺寸材质已保存，下次重跑生效。",
+    "text": "道具上的字（逐字核对）",
+    "textHint": "字是道具的一部分：画在这个道具的图上，镜头用到它就带着字。屏幕、招牌这类独立的字仍是「画面文字」。"
+  },
+  "scale": {
+    "title": "比例参考",
+    "note": "和{{name}}同框，看大小对不对",
+    "none": "锁定后自动出一张：和一个锁定的角色同框，看大小对不对（没有锁定的角色就不出）。",
+    "running": "正在画比例参考……",
+    "caption": "{{name}}和它同框",
+    "redraw": "重画这张",
+    "redrawing": "已开始重画比例参考。",
+    "order": "关键帧取参考时紧跟在道具图后面。"
   }
 }

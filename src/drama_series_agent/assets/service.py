@@ -396,7 +396,9 @@ class AssetService:
             product = await asset_product(session, asset_id)
             if product is None:
                 raise PipelineError(409, "product_missing", id=asset_id)
-            if product.locked_hash and (body.intent is not None or body.text or body.voice):
+            if product.locked_hash and (
+                body.intent is not None or body.text or body.voice or body.physical
+            ):
                 raise PipelineError(409, "product_locked", id=product.id)
         await self._write_patch(asset_id, body)
         return await self.get(asset_id)
@@ -412,6 +414,9 @@ class AssetService:
                 if asset.kind in ("text", "prop")
                 else {}
             )
+            if body.physical is not None and asset.kind != "prop":
+                raise PipelineError(422, "invalid_patch", kind="asset", issues="physical")
+            physical_now = prop_physical(asset, product) or {}
         if body.intent is not None:
             await self._runs.save_prompt(product.id, body.intent, None)
             async with self._db.session() as session:
@@ -429,6 +434,13 @@ class AssetService:
             await self._products.update_settings(product.id, {"text": {**text_now, **changes}})
         if body.voice is not None:
             await self._products.update_settings(product.id, {"voice": body.voice.model_dump()})
+        if body.physical is not None:
+            # All three are written, so clearing one does not bring the analysis's back.
+            physical = {k: physical_now.get(k, "") for k in ops.PHYSICAL_KEYS}
+            physical |= {
+                k: v.strip() for k, v in body.physical.model_dump(exclude_none=True).items()
+            }
+            await self._products.update_settings(product.id, {"physical": physical})
 
     async def analyze(self, episode_id: str) -> Job:
         """「重新分析剧本」: run the episode's 素材分析 (every run is adopted; the list only

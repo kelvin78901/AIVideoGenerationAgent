@@ -24,11 +24,14 @@ export type AssetStatus = z.infer<typeof AssetStatusSchema>;
 
 export const TextMethodSchema = z.enum(["composite", "model"]);
 export const TextStyleSchema = z.enum(["handwritten", "printed", "screen"]);
+/** What handwriting is written with (M5.5; 用什么写). */
+export const TextPenSchema = z.enum(["ballpoint", "marker", "pencil"]);
 /** On-screen text: the exact characters, how they are made, and the lettering. */
 export const TextSettingsSchema = z.object({
   exact: z.string(),
   method: TextMethodSchema,
   style: TextStyleSchema,
+  pen: TextPenSchema.optional(),
 });
 export type TextSettings = z.infer<typeof TextSettingsSchema>;
 /** Why OCR does not match: characters or punctuation left out, some read as others, or text
@@ -95,6 +98,8 @@ export const AssetPatchSchema = z.object({
   pick: z.number().int().nonnegative().optional(),
   text: TextSettingsSchema.partial().optional(),
   voice: z.object({ method: VoiceMethodSchema }).optional(),
+  /** A prop's 真实尺寸 / 材质 / 新旧; an empty string clears one. */
+  physical: PhysicalSchema.partial().optional(),
 });
 export type AssetPatch = z.infer<typeof AssetPatchSchema>;
 
@@ -141,7 +146,7 @@ export const VoiceFinalSchema = z.object({
 });
 
 /** `POST /assets/{id}/lock`: by default the picked candidate of the version on screen.
- * On-screen text OCR read differently is refused (409 `ocr_mismatch`) unless `force`. */
+ * An OCR mismatch only warns (M5.5). */
 export const AssetLockSchema = z.object({
   version_id: z.string().optional(),
   idx: z.number().int().nonnegative().optional(),

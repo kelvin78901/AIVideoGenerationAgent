@@ -26,7 +26,10 @@ from drama_series_agent.pipeline.component import Inputs
 from drama_series_agent.pipeline.components.img import (  # re-exported
     STYLE_GUIDE as STYLE_GUIDE,
 )
-from drama_series_agent.pipeline.components.img import ImgComponent
+from drama_series_agent.pipeline.components.img import (
+    ImgComponent,
+    lettering,
+)
 from drama_series_agent.pipeline.components.img import text_settings as text_settings
 from drama_series_agent.pipeline.components.media import output_frame
 from drama_series_agent.pipeline.errors import PipelineError
@@ -53,7 +56,7 @@ class TextComponent(ImgComponent):
         if text["method"] == "model":
             blocks = [
                 Block("文字，必须逐字一致", text["exact"]),
-                Block("字体", STYLE_GUIDE.get(text["style"], "")),
+                Block("字体", lettering(text)),
             ]
         else:
             place = STYLE_PLACE.get(text["style"], "贴上去")

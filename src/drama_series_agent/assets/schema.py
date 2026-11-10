@@ -10,6 +10,7 @@ AssetKind = Literal["character", "scene", "prop", "text", "voice"]
 AssetStatus = Literal["locked", "choosing", "not_generated"]
 TextMethod = Literal["composite", "model"]
 TextStyle = Literal["handwritten", "printed", "screen"]
+TextPen = Literal["ballpoint", "marker", "pencil"]  # what handwriting is written with (M5.5)
 VoiceMethod = Literal["design", "clone", "local"]
 
 
@@ -24,6 +25,7 @@ class TextOut(BaseModel):
     exact: str
     method: TextMethod
     style: TextStyle
+    pen: TextPen = "ballpoint"
 
 
 class PhysicalOut(BaseModel):
@@ -79,6 +81,17 @@ class TextPatch(BaseModel):
     exact: str | None = Field(default=None, max_length=200)
     method: TextMethod | None = None
     style: TextStyle | None = None
+    pen: TextPen | None = None
+
+
+class PhysicalPatch(BaseModel):
+    """A prop's 真实尺寸 / 材质 / 新旧 (M5.5); an empty string clears one."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    size: str | None = Field(default=None, max_length=200)
+    material: str | None = Field(default=None, max_length=200)
+    wear: str | None = Field(default=None, max_length=200)
 
 
 class VoicePatch(BaseModel):
@@ -94,6 +107,7 @@ class AssetPatch(BaseModel):
     pick: int | None = Field(default=None, ge=0)
     text: TextPatch | None = None
     voice: VoicePatch | None = None
+    physical: PhysicalPatch | None = None  # a prop's (M5.5)
 
 
 class AssetLockIn(BaseModel):

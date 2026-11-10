@@ -11,6 +11,7 @@ import { useProduct } from "@/api/hooks/products";
 import {
   CandidatesPayloadSchema,
   TextMethodSchema,
+  TextPenSchema,
   TextStyleSchema,
   VoiceMethodSchema,
   type Asset,
@@ -30,9 +31,12 @@ import { AssetViews } from "@/pages/assets/AssetViews";
 import { ImageCandidates } from "@/pages/assets/Candidates";
 import { VoiceDubLines } from "@/pages/assets/Dub";
 import { isVoiceDraft, STATUS_TONE } from "@/pages/assets/status";
+import { PropPhysical, ScaleReference } from "@/pages/assets/Prop";
 import { VoicePanel } from "@/pages/assets/Voice";
 
 const LETTERS = "ABCD";
+// The writing on a prop is drawn by the model, handwritten or printed (M5.5, sketch A2).
+const PROP_STYLES = ["handwritten", "printed"] as const;
 // Pictures a reference can be uploaded as (the backend reads their size from the header).
 const UPLOAD_TYPES = "image/png,image/jpeg,image/webp";
 
@@ -76,6 +80,8 @@ export function AssetDetail({
   const preview = useImpactPreview();
   // A change to the locked asset, waiting in the impact dialog.
   const [editing, setEditing] = useState<AssetPatch | null>(null);
+  // Bumped when a locked prop's edit is cancelled: its size fields show what is saved again.
+  const [reset, setReset] = useState(0);
 
   const version = product.data ? currentVersion(product.data) : undefined;
   const payload = CandidatesPayloadSchema.safeParse(version?.payload);
@@ -95,6 +101,7 @@ export function AssetDetail({
   // A voice's auditions are not a voice yet: its final is what gets locked.
   const needsFinal = asset.kind === "voice" && isVoiceDraft(version);
   const componentId = asset.kind === "text" ? "text" : "img";
+  const prop = asset.kind === "prop";
   const save = (p: AssetPatch, done?: string) =>
     patchAsset.mutate(
       { id: asset.id, patch: p },
@@ -123,6 +130,7 @@ export function AssetDetail({
     if (!keep) {
       setIntent(asset.intent);
       setExact(asset.text?.exact ?? "");
+      setReset((n) => n + 1);
     }
     setEditing(null);
     preview.reset();
@@ -240,10 +248,18 @@ export function AssetDetail({
         <p className="text-xs text-muted-foreground">{t("detail.descHint")}</p>
       </div>
 
+      {prop ? (
+        <PropPhysical
+          key={`${asset.id}-${reset}-${JSON.stringify(asset.physical)}`}
+          asset={asset}
+          change={change}
+        />
+      ) : null}
+
       {asset.text ? (
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${ids}-exact`}>{t("text.exact")}</Label>
+            <Label htmlFor={`${ids}-exact`}>{t(prop ? "prop.text" : "text.exact")}</Label>
             <Input
               id={`${ids}-exact`}
               value={exact}
@@ -252,27 +268,30 @@ export function AssetDetail({
                 if (exact !== asset.text?.exact) change({ text: { exact } });
               }}
             />
+            {prop ? <p className="text-xs text-muted-foreground">{t("prop.textHint")}</p> : null}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="text-sm font-medium">{t("text.method")}</div>
-            <SegmentedControl
-              label={t("text.method")}
-              value={asset.text.method}
-              onChange={(method) => change({ text: { method } })}
-              options={TextMethodSchema.options.map((m) => ({
-                value: m,
-                label: t(`text.methods.${m}`),
-              }))}
-            />
-            <p className="text-xs text-muted-foreground">{t(`text.hint.${asset.text.method}`)}</p>
-          </div>
+          {prop ? null : (
+            <div className="flex flex-col gap-1.5">
+              <div className="text-sm font-medium">{t("text.method")}</div>
+              <SegmentedControl
+                label={t("text.method")}
+                value={asset.text.method}
+                onChange={(method) => change({ text: { method } })}
+                options={TextMethodSchema.options.map((m) => ({
+                  value: m,
+                  label: t(`text.methods.${m}`),
+                }))}
+              />
+              <p className="text-xs text-muted-foreground">{t(`text.hint.${asset.text.method}`)}</p>
+            </div>
+          )}
           <div
             className="flex flex-wrap items-center gap-1.5"
             role="radiogroup"
             aria-label={t("text.style")}
           >
             <span className="mr-1 text-sm font-medium">{t("text.style")}</span>
-            {TextStyleSchema.options.map((s) => (
+            {(prop ? PROP_STYLES : TextStyleSchema.options).map((s) => (
               <Chip
                 key={s}
                 role="radio"
@@ -283,6 +302,25 @@ export function AssetDetail({
               </Chip>
             ))}
           </div>
+          {asset.text.style === "handwritten" ? (
+            <div
+              className="flex flex-wrap items-center gap-1.5"
+              role="radiogroup"
+              aria-label={t("text.pen")}
+            >
+              <span className="mr-1 text-sm font-medium">{t("text.pen")}</span>
+              {TextPenSchema.options.map((pen) => (
+                <Chip
+                  key={pen}
+                  role="radio"
+                  selected={(asset.text?.pen ?? "ballpoint") === pen}
+                  onClick={() => change({ text: { pen } })}
+                >
+                  {t(`text.pens.${pen}`)}
+                </Chip>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -332,7 +370,9 @@ export function AssetDetail({
                   )
                 : asset.kind === "character"
                   ? t("cands.noteCharacter")
-                  : t("cands.noteOther")}
+                  : prop
+                    ? t("cands.noteProp")
+                    : t("cands.noteOther")}
             </span>
             {product.data && version ? (
               <span className="ml-auto">
@@ -372,6 +412,7 @@ export function AssetDetail({
       )}
 
       {asset.kind === "character" ? <AssetViews asset={asset} aspect={aspect} /> : null}
+      {prop ? <ScaleReference asset={asset} aspect={aspect} /> : null}
 
       {editing && preview.data ? (
         <ImpactDialog

@@ -5,8 +5,7 @@
  * as the page needs them:
  * - 选这个 / 改描述 / 画面文字 / 音色来源 on the asset (refused once locked);
  * - 锁定为参考 turns the picked candidate of the version on screen into an adopted, locked
- *   `pick` version (the version on screen stays); on-screen text OCR read differently is
- *   refused (409 `ocr_mismatch`) unless `force`;
+ *   `pick` version (the version on screen stays); OCR read differently only warns (M5.5);
  * - 重跑 adds a version with fresh candidates (on-screen text: every one OCR-checked and
  *   matching; a voice: three auditions reading its lines); 「用 API 出终版」 one picture from
  *   the draft, or a voice's final (its sample and five emotions), which is locked whole while
@@ -23,13 +22,11 @@ import { http, HttpResponse } from "msw";
 
 import { injectEvent } from "@/api/events";
 import {
-  AssetLockSchema,
   AssetMatrixSchema,
   AssetPatchSchema,
   AssetSchema,
-  CandidatesPayloadSchema,
   type Asset,
-  type AssetLock,
+  type Physical,
 } from "@/api/schemas/assets";
 import type { Impact } from "@/api/schemas/impact";
 import type { Job } from "@/api/schemas/jobs";
@@ -149,8 +146,16 @@ export function editFakeAsset(assetId: string, patch: Record<string, unknown>, r
   }
   if (body.text && a.text) a.text = { ...a.text, ...body.text };
   if (body.voice && a.voice) a.voice = { ...a.voice, ...body.voice };
+  if (body.physical) a.physical = setPhysical(a, body.physical);
   if (redraw) run(p, { mode: "rerun" });
 }
+
+/** 真实尺寸 / 材质 / 新旧 as typed (trimmed; an emptied one stays empty). */
+const setPhysical = (a: Asset, given: Partial<Physical>): Physical => {
+  const now: Physical = { size: "", material: "", wear: "", ...a.physical };
+  const typed = Object.fromEntries(Object.entries(given).map(([k, v]) => [k, v.trim()]));
+  return { ...now, ...typed };
+};
 
 const error = (status: number, code: string, params: Record<string, unknown> = {}) =>
   HttpResponse.json({ detail: { code, params } }, { status });
@@ -173,7 +178,7 @@ function announce(p: Product) {
 }
 
 /** 锁定为参考: the picked candidate of the version on screen, as a locked `pick` version. */
-function lock(a: Asset, p: Product, body: AssetLock): Response {
+function lock(a: Asset, p: Product): Response {
   if (p.locked_hash) return error(409, "product_locked", { id: p.id });
   const source = current(p);
   if (!source) return error(409, "nothing_to_lock", { id: a.id });
@@ -189,17 +194,6 @@ function lock(a: Asset, p: Product, body: AssetLock): Response {
   if (a.kind === "voice") return error(409, "voice_needs_final", { id: a.id });
   const file = source.files.find((f) => f.role === "candidate" && f.idx === a.pick);
   if (!file) return error(422, "no_such_candidate", { id: source.id, idx: a.pick });
-  const parsed = CandidatesPayloadSchema.safeParse(source.payload);
-  const made = parsed.success ? parsed.data : null;
-  const cand = made?.candidates[a.pick];
-  if (cand?.ocr_ok === false && !body.force)
-    return error(409, "ocr_mismatch", {
-      id: a.id,
-      idx: a.pick,
-      read: cand.ocr ?? "",
-      exact: made?.text?.exact ?? "",
-      issue: cand.ocr_issue ?? "",
-    });
   const n = p.versions.length + 1;
   const pick: ProductVersion = {
     ...structuredClone(source),
@@ -422,8 +416,9 @@ export function assetHandlers() {
       if (!a || !p) return error(404, "asset_not_found", { id: params.id });
       const body = AssetPatchSchema.safeParse(await request.json());
       if (!body.success) return error(422, "invalid_request");
-      const { intent, pick, text, voice } = body.data;
-      if (p.locked_hash && (intent !== undefined || text || voice))
+      const { intent, pick, text, voice, physical } = body.data;
+      if (physical && a.kind !== "prop") return error(422, "invalid_patch", { issues: "physical" });
+      if (p.locked_hash && (intent !== undefined || text || voice || physical))
         return error(409, "product_locked", { id: p.id });
       if (intent !== undefined) {
         a.intent = intent;
@@ -442,15 +437,15 @@ export function assetHandlers() {
       }
       if (text && a.text) a.text = { ...a.text, ...text };
       if (voice && a.voice) a.voice = { ...a.voice, ...voice };
+      if (physical) a.physical = setPhysical(a, physical);
       return HttpResponse.json(withStatus(a));
     }),
 
-    http.post("*/api/v1/assets/:id/lock", async ({ params, request }) => {
+    http.post("*/api/v1/assets/:id/lock", ({ params }) => {
       const a = findAsset(params.id);
       const p = a && productOf(a);
       if (!a || !p) return error(404, "asset_not_found", { id: params.id });
-      const body = AssetLockSchema.safeParse(await request.json().catch(() => ({})));
-      return lock(a, p, body.success ? body.data : {});
+      return lock(a, p);
     }),
 
     http.post("*/api/v1/assets/:id/upload", async ({ params, request }) => {

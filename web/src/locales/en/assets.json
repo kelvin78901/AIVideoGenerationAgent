@@ -51,13 +51,19 @@
     },
     "hint": {
       "composite": "Generate the plate without text and composite the text in post. The text is always right; best for screens, signs and captions.",
-      "model": "The text is part of the image, with natural perspective and strokes; best for handwritten notes. Every candidate is OCR-checked and mismatches cannot be adopted directly."
+      "model": "The text is part of the image, with natural perspective and strokes; best for handwritten notes. Every candidate is OCR-checked and a mismatch is flagged."
     },
     "style": "Lettering",
     "styles": {
       "handwritten": "Handwritten",
       "printed": "Printed",
       "screen": "Screen UI"
+    },
+    "pen": "Written with",
+    "pens": {
+      "ballpoint": "Ballpoint",
+      "marker": "Marker",
+      "pencil": "Pencil"
     }
   },
   "cands": {
@@ -81,7 +87,8 @@
     "ocrHasText": "OCR found text on the plate: “{{read}}”",
     "ocrUnchecked": "Not OCR-checked: no OCR available on this computer",
     "emptyImage": "Not generated yet. Click Rerun above or on the right for 4 candidates.",
-    "emptyVoice": "Not generated yet. Click Rerun above or on the right for 3 voice candidates."
+    "emptyVoice": "Not generated yet. Click Rerun above or on the right for 3 voice candidates.",
+    "noteProp": "Photographed, in a real place, not a product shot on white"
   },
   "voice": {
     "source": "Voice source",
@@ -115,15 +122,6 @@
     "anchor": "Sample",
     "variants": "Emotion variants",
     "variantsHint": "Dialogue audio uses the emotion that matches each line's delivery."
-  },
-  "lockMismatch": {
-    "title": "Candidate {{letter}} does not show the required text",
-    "read": "OCR reads “{{read}}”",
-    "nothing": "OCR reads no text here",
-    "exact": "It should say “{{exact}}”",
-    "hint": "Once locked, every later shot follows this picture. Lock it only if the text is right.",
-    "confirm": "Lock anyway",
-    "cancel": "Cancel"
   },
   "reanalyzing": "Analysing the script again; the list updates when it is done and new assets show up in it.",
   "view": {
@@ -179,5 +177,27 @@
     "emotion": "Emotion",
     "emotionAuto": "From the tone ({{emotion}})",
     "emotionSaved": "Emotion set to {{emotion}}; redub to hear it."
+  },
+  "prop": {
+    "size": "Real size",
+    "material": "Material",
+    "wear": "Wear",
+    "sizePlaceholder": "About 90 cm long",
+    "materialPlaceholder": "Nylon canopy, wooden handle",
+    "wearPlaceholder": "A few years old, the canopy a little faded",
+    "hint": "From the story bible, and yours to change; keyframes write its size against the people (“the handle reaches her hip”).",
+    "saved": "Size and material saved; the next run uses them.",
+    "text": "Writing on the prop (checked character by character)",
+    "textHint": "The writing is part of the prop: it is drawn on this prop's picture and comes along in every shot that uses it. Screens and signs stay on-screen text."
+  },
+  "scale": {
+    "title": "Scale reference",
+    "note": "Drawn next to {{name}} to check its size",
+    "none": "Drawn once the prop is locked: next to a locked character, to check its size (none without a locked character).",
+    "running": "Drawing the scale reference…",
+    "caption": "{{name}} with it",
+    "redraw": "Redraw",
+    "redrawing": "Redrawing the scale reference.",
+    "order": "Keyframes take it right after the prop's picture."
   }
 }

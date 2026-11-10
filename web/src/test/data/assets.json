@@ -245,7 +245,8 @@
       "text": {
         "exact": "楼下便利店，等你到十二点。",
         "method": "model",
-        "style": "handwritten"
+        "style": "handwritten",
+        "pen": "ballpoint"
       },
       "voice": null,
       "note": null,
@@ -366,7 +367,8 @@
       "text": {
         "exact": "23:52",
         "method": "composite",
-        "style": "screen"
+        "style": "screen",
+        "pen": "ballpoint"
       },
       "voice": null,
       "note": null,

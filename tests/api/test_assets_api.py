@@ -87,7 +87,8 @@ def test_the_demo_has_the_prototypes_thirteen_assets(client: TestClient) -> None
     assert assets["note"]["name"] == "黄色便利贴" and assets["band"]["name"] == "旧黑发圈"
     # M5.5: the note's handwriting is the note's (it was the text asset 便利贴手写).
     assert assets["note"]["text"] == {
-        "exact": "楼下便利店，等你到十二点。", "method": "model", "style": "handwritten"
+        "exact": "楼下便利店，等你到十二点。", "method": "model", "style": "handwritten",
+        "pen": "ballpoint",
     }  # fmt: skip
     assert assets["umbrella"]["text"] is None
     assert assets["txt2"]["text"]["method"] == "composite"
@@ -147,7 +148,9 @@ def test_edits_live_on_the_assets_product(client: TestClient) -> None:
     body = {"impact_id": preview["id"], "action": "mark"}
     assert client.post(f"{V1}/impact/apply", json=body).status_code == 200
     resp = client.patch(f"{V1}/assets/txt2", json={"text": {"method": "model"}})
-    assert resp.json()["text"] == {"exact": "23:52", "method": "model", "style": "screen"}
+    assert resp.json()["text"] == {
+        "exact": "23:52", "method": "model", "style": "screen", "pen": "ballpoint"
+    }  # fmt: skip
     assert client.get(f"{V1}/products/demo-p-asset-txt2").json()["settings"]["text"]["method"] == (
         "model"
     )
@@ -227,3 +230,41 @@ def test_a_prop_is_drawn_at_its_real_size(client: TestClient) -> None:
     got = client.portal.call(blocks)  # type: ignore[union-attr]
     assert got["真实尺寸和材质"].startswith("全长约 90 cm")
     assert "尼龙伞面" in got["真实尺寸和材质"]
+
+
+def test_a_props_size_and_pen_are_set_on_the_assets_page(client: TestClient) -> None:
+    """M5.5 step 8b: 真实尺寸 / 材质 / 新旧 and 用什么写 are the prop's settings; an emptied
+    field stays empty (the analysis's does not come back); a locked prop goes through the
+    impact preview."""
+    note = _assets(client)["note"]
+    url = f"{V1}/assets/note"
+    if note["status"] == "locked":
+        assert _code(client.patch(url, json={"physical": {"size": "x"}})) == "product_locked"
+        preview = client.post(
+            f"{V1}/impact/preview", json={"kind": "asset_unlock", "target_id": "note", "patch": {}}
+        ).json()
+        body = {"impact_id": preview["id"], "action": "mark"}
+        assert client.post(f"{V1}/impact/apply", json=body).status_code == 200
+    resp = client.patch(url, json={"physical": {"size": " 7.6 cm 见方 ", "wear": ""}})
+    assert resp.status_code == 200, resp.text
+    physical = resp.json()["physical"]
+    assert physical["size"] == "7.6 cm 见方" and physical["wear"] == ""
+    assert physical["material"] == (note["physical"] or {}).get("material", "")
+    resp = client.patch(url, json={"text": {"pen": "marker"}})
+    assert resp.json()["text"]["pen"] == "marker"
+    # Only a prop has a size (room is an unlocked scene).
+    assert client.patch(f"{V1}/assets/room", json={"physical": {"size": "1"}}).status_code == 422
+
+    async def blocks() -> dict[str, str]:
+        state = _state(client)
+        component = state.components.get("img")
+        assert component is not None
+        async with state.db.session() as session:
+            product = await session.get(Product, note["product_id"])
+            assert product is not None
+            inputs = await component.inputs(session, product)
+        return {b.title: b.text for b in inputs.blocks}
+
+    got = client.portal.call(blocks)  # type: ignore[union-attr]
+    assert got["真实尺寸和材质"].startswith("7.6 cm 见方")
+    assert got["字迹"].startswith("手写：马克笔")

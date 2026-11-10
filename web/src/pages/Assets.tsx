@@ -6,7 +6,7 @@ import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
 import { toast } from "sonner";
 
-import { ApiError, errorMessage } from "@/api/client";
+import { errorMessage } from "@/api/client";
 import {
   assetKeys,
   useAnalyzeAssets,
@@ -29,13 +29,6 @@ import { RunBar } from "@/components/RunBar";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StepLayout } from "@/components/StepLayout";
 import { Button } from "@/components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogTitle,
-} from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
 import { AssetDetail } from "@/pages/assets/AssetDetail";
 import { AssetList } from "@/pages/assets/AssetList";
@@ -67,10 +60,6 @@ export default function AssetsPage() {
   const [filter, setFilter] = useState<AssetKind | "all">("all");
   const [selectedId, setSelectedId] = useState("linwan");
   const [unlocking, setUnlocking] = useState<Asset | null>(null);
-  // On-screen text OCR read differently: what it read, until the user confirms or cancels.
-  const [mismatch, setMismatch] = useState<{ asset: Asset; read: string; exact: string } | null>(
-    null,
-  );
   const [view, setView] = useState<View>("list");
   const matrix = useAssetMatrix(episode?.id, view === "matrix");
 
@@ -109,12 +98,12 @@ export default function AssetsPage() {
     preview.reset();
   };
 
-  const lockAsset = (a: Asset, force = false) =>
+  // An OCR mismatch only warns, on the candidate (Kelvin 2026-11-10, M5.5).
+  const lockAsset = (a: Asset) =>
     lock.mutate(
-      { id: a.id, body: force ? { force } : undefined },
+      { id: a.id },
       {
         onSuccess: (locked) => {
-          setMismatch(null);
           toast.success(
             t(locked.kind === "character" ? "detail.lockedCharacter" : "detail.locked", {
               name: locked.name,
@@ -122,15 +111,7 @@ export default function AssetsPage() {
             }),
           );
         },
-        onError: (err) => {
-          if (err instanceof ApiError && err.code === "ocr_mismatch")
-            setMismatch({
-              asset: a,
-              read: String(err.params.read ?? ""),
-              exact: String(err.params.exact ?? ""),
-            });
-          else onError(err);
-        },
+        onError,
       },
     );
 
@@ -284,35 +265,6 @@ export default function AssetsPage() {
           ) : null
         }
       </QueryState>
-
-      <Dialog open={mismatch !== null} onOpenChange={(open) => !open && setMismatch(null)}>
-        {mismatch ? (
-          <DialogContent role="alertdialog" className="gap-3">
-            <DialogTitle>
-              {t("lockMismatch.title", { letter: letter(mismatch.asset.pick) })}
-            </DialogTitle>
-            <DialogDescription asChild>
-              <div className="flex flex-col gap-1">
-                <span>
-                  {mismatch.read
-                    ? t("lockMismatch.read", { read: mismatch.read })
-                    : t("lockMismatch.nothing")}
-                </span>
-                <span>{t("lockMismatch.exact", { exact: mismatch.exact })}</span>
-                <span className="mt-1">{t("lockMismatch.hint")}</span>
-              </div>
-            </DialogDescription>
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setMismatch(null)}>
-                {t("lockMismatch.cancel")}
-              </Button>
-              <Button disabled={lock.isPending} onClick={() => lockAsset(mismatch.asset, true)}>
-                {t("lockMismatch.confirm")}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        ) : null}
-      </Dialog>
 
       {unlocking && preview.data ? (
         <ImpactDialog

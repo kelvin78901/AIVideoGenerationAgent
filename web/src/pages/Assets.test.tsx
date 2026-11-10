@@ -80,6 +80,60 @@ describe("AssetsPage", () => {
     expect(cand("v1 · D")).toHaveTextContent("OCR 不一致：缺字或缺标点");
   });
 
+  it("a locked prop's size and pen go through the impact; its writing has no method", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/黄色便利贴/));
+    const keep = async () => {
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("「黄色便利贴」已锁定，改动会影响下游");
+      await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+    };
+    const size = screen.getByLabelText("真实尺寸");
+    await user.clear(size);
+    await user.type(size, "7.5 cm 见方");
+    await user.tab();
+    await keep();
+    await waitFor(() => expect(asset("note")?.physical?.size).toBe("7.5 cm 见方"));
+    expect(asset("note")?.physical?.material).toBe("黄色便利贴纸");
+    expect(screen.getByLabelText("道具上的字（逐字核对）")).toHaveValue(
+      "楼下便利店，等你到十二点。",
+    );
+    expect(screen.queryByRole("radiogroup", { name: "做法" })).not.toBeInTheDocument();
+    const styles = screen.getByRole("radiogroup", { name: "字体风格" });
+    expect(within(styles).queryByRole("radio", { name: "屏幕界面" })).not.toBeInTheDocument();
+    const pens = screen.getByRole("radiogroup", { name: "用什么写" });
+    expect(within(pens).getByRole("radio", { name: "圆珠笔" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await user.click(within(pens).getByRole("radio", { name: "马克笔" }));
+    await keep();
+    await waitFor(() => expect(asset("note")?.text?.pen).toBe("marker"));
+  });
+
+  it("a prop shows its scale reference next to a character; 重画这张 redraws it", async () => {
+    const views = fakeAssets.views[0];
+    if (!views) throw new Error("no views product");
+    const scale = structuredClone(views);
+    Object.assign(scale, { id: "demo-p-scale-umbrella", owner_id: "umbrella", slot: "ref_scale" });
+    const v = scale.versions.find((x) => x.id === scale.adopted_version_id);
+    const file = v?.files[0];
+    if (!v || !file) throw new Error("no adopted views picture");
+    v.payload = { character: "林晚" };
+    v.files = [{ ...file, role: "scale", idx: 0 }];
+    fakeAssets.views.push(scale);
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/红色长柄伞/));
+    const region = await screen.findByRole("region", { name: "比例参考" });
+    expect(within(region).getByText("和林晚同框，看大小对不对")).toBeInTheDocument();
+    expect(await within(region).findByRole("img", { name: "林晚和它同框" })).toBeInTheDocument();
+    expect(screen.getByLabelText("真实尺寸")).toHaveValue(asset("umbrella")?.physical?.size);
+  });
+
   it("picks a candidate and locks it; the count goes to 8 / 9", async () => {
     const user = userEvent.setup();
     renderAssets();
