@@ -19,6 +19,13 @@ its check before any take, as a user would on the storyboard page): ``REVISIONS`
 ``PATCH /shots/{id}``, the check again, the changed shots' keyframes drawn and checked again,
 分镜确认.
 
+``local_video.py --only fresh`` calls ``fresh`` (M5.5 step 9e-6, run 20, on a new copy of run
+17's directory): what ``prepare`` does with the 9e fixes and nothing edited by hand: the flat's
+door written into its scene as 素材分析 now finds it (``ADJOINS``; no page edits it yet), the
+props drawn again, 分镜规划 and its check, 分镜规划 again told what the check found, its check,
+every keyframe drawn and checked (drawn again when every candidate fails). The takes follow
+shot by shot with ``--only episode`` as before.
+
 ``local_video.py --only redo`` calls ``redo`` (M5.5 step 9d, Kelvin 2026-11-10: the pipeline
 constrains the details, no shot is edited by hand): the props' scale references drawn again
 (only the prop and the person), the storyboard check, then 1-04, 1-06 and 1-09's keyframes drawn
@@ -28,7 +35,10 @@ name, the light of the night, the camera inside the scene's place).
 
 from __future__ import annotations
 
-import time
+import json
+import os
+import sqlite3
+from pathlib import Path
 from typing import Any
 
 from local_assets import Smoke
@@ -106,7 +116,17 @@ REVISIONS: dict[str, dict[str, Any]] = {
         },
     },
 }
-SCALE_WAIT_S = 900
+# What the flat's 素材分析 finds now (M5.5 9e-3; the demo's words), for a directory older than it.
+ADJOINS = {
+    "room": [
+        {
+            "via": "门",
+            "to": "scene:l-stairs:night",
+            "note": "门外是六楼楼道：水泥地，楼梯口在门的左边，声控灯昏黄；"
+            "红伞靠在门外右手边的墙上",
+        }
+    ]
+}
 # Run 19's new problems (README): 1-04 two notes and a black umbrella, 1-06 shut out, 1-09 daylight.
 # 1-03 and 1-05 use the note too: its new picture makes them stale.
 REDO = ("1-03", "1-04", "1-05", "1-06", "1-09")
@@ -160,13 +180,6 @@ def _props(smoke: Smoke, which: tuple[str, ...] = REDRAWN) -> bool:
         "props", f"道具本机重画：{names}（实拍质感、真实尺寸、带字、只画道具）", draw
     ):
         return False
-    # The scale reference adopted before the lock: the one the lock draws replaces it.
-    before = {
-        a: smoke.get(f"/products/{smoke.product_of(f'asset:{a}', 'ref_scale')}")[
-            "adopted_version_id"
-        ]
-        for a in which
-    }
     for a in which:
         version = smoke.latest(f"demo-p-asset-{a}")
         smoke.keep_files(f"prop-{a}", version)
@@ -174,25 +187,7 @@ def _props(smoke: Smoke, which: tuple[str, ...] = REDRAWN) -> bool:
         idx = next((i for i, c in enumerate(cands) if c.get("ocr_ok")), 0)
         smoke.post(f"/assets/{a}/lock", {"idx": idx})
         smoke.say(f"   {a}: locked candidate {idx}")
-    # Locking a prop draws its 比例参考 (``scale``) on its own.
-    deadline = time.monotonic() + SCALE_WAIT_S
-    for a in which:
-        pid = smoke.product_of(f"asset:{a}", "ref_scale")
-        while True:
-            p = smoke.get(f"/products/{pid}")
-            if p["adopted_version_id"] not in (None, before[a]) or p["status"] == "failed":
-                break
-            if time.monotonic() > deadline:
-                smoke.say(f"   {a}: no scale reference after {SCALE_WAIT_S} s")
-                smoke.ok = False
-                break
-            time.sleep(2)
-        if p["adopted_version_id"]:
-            version = next(v for v in p["versions"] if v["id"] == p["adopted_version_id"])
-            smoke.keep_files(f"scale-{a}", version)
-            smoke.say(f"   {a}: scale reference with {version['payload'].get('character')}")
-        else:
-            smoke.say(f"   {a}: scale reference {p['status']}")
+    # Locking no longer draws its 比例参考 (M5.5 9e-1): sizes are said against a person.
     return True
 
 
@@ -290,6 +285,36 @@ def _keyframes(smoke: Smoke, labels: set[str] | None = None, tag: str = "kf") ->
 def prepare(smoke: Smoke) -> bool:
     _settings(smoke)
     return _props(smoke) and _plan(smoke) and _keyframes(smoke)
+
+
+def _adjoins(smoke: Smoke) -> None:
+    """``ADJOINS`` into the scenes' ``seed_json`` (where 素材分析 puts it), straight in the copy's
+    database: no API edits it yet (DECISIONS 2026-11-11 第 9e 步)."""
+    db = sqlite3.connect(Path(os.environ["DRAMA_HOME"]) / "studio.db")
+    try:
+        for asset_id, near in ADJOINS.items():
+            row = db.execute("SELECT seed_json FROM asset WHERE id = ?", (asset_id,)).fetchone()
+            seed = json.loads(row[0] or "{}") if row else {}
+            seed["adjoins"] = near
+            db.execute(
+                "UPDATE asset SET seed_json = ? WHERE id = ?",
+                (json.dumps(seed, ensure_ascii=False), asset_id),
+            )
+            smoke.say(f"   {asset_id}: adjoins {near[0]['via']} → {near[0]['to']}")
+        db.commit()
+    finally:
+        db.close()
+
+
+def fresh(smoke: Smoke) -> bool:
+    """M5.5 step 9e-6 (run 20): see the module's docstring."""
+    smoke.say("== fresh: 第十七轮副本整集重出，只靠流程（9e）")
+    _settings(smoke)
+    _adjoins(smoke)
+    if not (_props(smoke) and _plan(smoke)):
+        return False
+    smoke.say("== 分镜规划再出一次：带着上一版的分镜检查")
+    return _plan(smoke) and _keyframes(smoke)
 
 
 def revise(smoke: Smoke, only: str | None = None) -> bool:

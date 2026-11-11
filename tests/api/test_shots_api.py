@@ -188,6 +188,38 @@ def test_the_storyboard_check(client: TestClient) -> None:
     assert len(_rows(client, ModelCall, ModelCall.component_id == "plancheck")) == 2
 
 
+def test_a_new_plans_picture_replaces_the_one_a_keyframe_ran_with(client: TestClient) -> None:
+    """Run 20: every keyframe run saves the picture it ran with, and a plan made again read it
+    as the user's own (run 17's 「她进门、关门，后背抵着门」 stayed). The plan's picture follows
+    the new plan; one the user wrote stays."""
+    shots = {s["label"]: s for s in _shots(client)}
+    door = shots["1-06"]["keyframe_product_id"]
+    resp = client.post(f"{V1}/products/{door}/run", json={"mode": "rerun"})
+    _wait(client, resp.json()["id"])  # saves the plan's picture as its prompt
+    assert client.get(f"{V1}/products/{door}").json()["prompt"]["intent"].startswith("出租屋内")
+    mine = "林晚低头看着便利贴，一动不动。"
+    client.patch(f"{V1}/shots/{shots['1-04']['id']}", json={"intent": mine}).raise_for_status()
+    plan = _plan(client)
+    new = {"demo-shot-1-06": "出租屋内，她推门进来。", "demo-shot-1-04": "林晚抬头。"}
+
+    async def replan() -> None:
+        state = _state(client)
+        async with state.db.session() as session:
+            base = await session.get(ProductVersion, plan["adopted_version_id"])
+            assert base is not None
+        payload = json.loads(json.dumps(base.payload_json))
+        for shot in payload["shots"]:
+            shot["intent"] = new.get(shot["id"], shot["intent"])
+        await state.products.append_edit(plan["id"], base, payload)
+
+    client.portal.call(replan)  # type: ignore[union-attr]
+    after = {s["label"]: s for s in _shots(client)}
+    assert after["1-06"]["intent"] == "出租屋内，她推门进来。"
+    prompt = client.get(f"{V1}/products/{door}").json()["prompt"]
+    assert prompt is None or prompt["intent"] == "出租屋内，她推门进来。"
+    assert after["1-04"]["intent"] == mine  # the user's stays
+
+
 def test_a_dialogue_shot_is_never_shorter_than_its_audio(client: TestClient) -> None:
     r = client.patch(f"{V1}/shots/demo-shot-1-04", json={"duration_s": 2})
     assert r.status_code == 422

@@ -1,0 +1,252 @@
+M5 local smoke · 2026-11-11 06:13
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 28318 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== fresh: 第十七轮副本整集重出，只靠流程（9e）
+== data: 道具尺寸材质新旧、便利贴上的字写进设置；便利贴手写（txt1）退场
+   room: adjoins 门 → scene:l-stairs:night
+== props: 道具本机重画：umbrella、note（实拍质感、真实尺寸、带字、只画道具）
+   2 job(s) in 49.5 s, GPU memory peak 31469 MiB
+   call comfy/qwen-image [local] success 31.8 s images=4
+   call comfy/qwen-image [local] success 11.5 s images=4
+   call local/rapidocr [local] success 2.1 s images=1
+   call local/rapidocr [local] success 1.1 s images=1
+   call local/rapidocr [local] success 1.0 s images=1
+   call local/rapidocr [local] success 1.2 s images=1
+   model comfy/qwen-image [local], files: prop-umbrella-candidate-0.png (928x1664), prop-umbrella-candidate-1.png (928x1664), prop-umbrella-candidate-2.png (928x1664), prop-umbrella-candidate-3.png (928x1664)
+   umbrella: locked candidate 0
+   model comfy/qwen-image [local], files: prop-note-candidate-0.png (928x1664), prop-note-candidate-1.png (928x1664), prop-note-candidate-2.png (928x1664), prop-note-candidate-3.png (928x1664)
+   OCR #0: '楼下便利店，等你到十二点。' ok=True
+   OCR #1: '楼下便利店，等你到十二点。' ok=True
+   OCR #2: '楼下便利店，等你到十二点。' ok=True
+   OCR #3: '楼下便利店，等你到十二点。' ok=True
+   note: locked candidate 0
+== plan: 分镜规划重跑（DeepSeek，带镜头契约）
+   1 job(s) in 27.7 s, GPU memory peak 29167 MiB
+   call deepseek/v4-pro [api] success 27.6 s audio=Nones
+   1-01 scene_change wide performance/2 | 开始 林晚在楼道，正在上楼 | 结束 林晚到达六楼门口 | 道具 — | 台词 —
+      画面：楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。
+   1-02 same_scene_cut medium performance/1 | 开始 林晚在门口，看着伞 | 结束 林晚看着伞，愣住 | 道具 umbrella:靠在门边，红色，伞柄贴有黄色便利贴 | 台词 —
+      画面：门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。
+   1-03 same_scene_cut closeup insert/0 | 开始 便利贴贴在伞柄上，字迹清晰 | 结束 便利贴贴在伞柄上 | 道具 note:黄色便利贴，贴在伞柄上，字迹歪扭；umbrella:靠在门边，红色，伞柄贴有黄色便利贴（沿用） | 台词 —
+      画面：便利贴特写，歪扭的手写字，边角被雨打湿。
+   1-04 continuous close dialogue/1 | 开始 林晚看着伞，愣住 | 结束 林晚低声说出周屿 | 道具 — | 台词 {'demo-b5': 'dialogue'}
+      画面：林晚特写，脸在光影中，眼神震惊，嘴唇微动，低声说“周屿？”，背景虚化
+   1-05 continuous closeup performance/2 | 开始 林晚手伸向便利贴 | 结束 林晚指尖停在便利贴上，另一手摸发圈 | 道具 note:被指尖轻触 | 台词 —
+      画面：特写：林晚的手指尖停在黄色便利贴上，另一只手抚摸左手腕的旧黑发圈，手部动作缓慢，光线昏暗
+   1-06 scene_change medium performance/2 | 开始 林晚在门内，靠着门 | 结束 林晚靠着门，拿着伞 | 道具 umbrella:被林晚拿在手中 | 台词 —
+      画面：出租屋内，她进门、关门，后背抵着门，台灯暖光。
+   1-07 same_scene_cut closeup insert/0 | 开始 手机屏幕亮起，显示23:52 | 结束 手机屏幕显示23:52 | 道具 phone:亮屏，显示时间23:52 | 台词 —
+      画面：手机亮屏，锁屏时间 23:52，没有新消息。
+   1-08 continuous close dialogue/1 | 开始 林晚靠着门，神情复杂 | 结束 林晚内心独白结束 | 道具 umbrella:在手中 | 台词 {'demo-b10': 'inner'}
+      画面：林晚特写，脸在昏暗中，眼神痛苦，嘴唇未动，内心独白的声音，头发微湿，红伞在手中
+   1-09 same_scene_cut medium performance/2 | 开始 林晚站在门前，手放在把手上 | 结束 林晚手放在把手上，犹豫 | 道具 umbrella:靠在墙边 | 台词 —
+      画面：林晚站在门口，手放在门把手上，准备拉开门，表情犹豫，红伞靠在墙边，室内昏暗
+   1-10 same_scene_cut medium performance/2 | 开始 — | 结束 — | 道具 umbrella:靠在墙边（沿用） | 台词 —
+      画面：门外，她拿起了那把伞。
+   1-11 scene_change medium action/3 | 开始 林晚站在门外 | 结束 林晚拿起红伞 | 道具 umbrella:被林晚拿起 | 台词 —
+      画面：门外楼道，门开着，林晚站在门口，弯腰拿起靠在墙边的红伞，灯光昏暗，楼道空无一人
+== plancheck: 分镜检查（规则 + DeepSeek）
+   1 job(s) in 2.5 s, GPU memory peak 29165 MiB
+   call deepseek/v4.1-flash [api] success 2.2 s audio=Nones
+   模型检查 ready，10 处提示
+   1-02 state_jump [llm] 1-01 结束是林晚到达门口，1-02 开始却已经是看着伞，视线落点跳了一步；改成开始她刚看到门口的伞，再结束在愣住。
+   1-04 state_jump [llm] 1-04 是连续镜接 1-02，但 1-03 是便利贴特写插在中间，观众会以为她还在看伞柄；改成 1-04 开始她抬眼看便利贴。
+   1-05 state_jump [rule] {'other': '1-04', 'subject': '林晚'}
+   1-06 crowded [rule] {'actions': '她进门、关门、后背抵着门'}
+   1-06 other [llm] 1-06 结束拿着伞、1-07 手机特写、1-08 手里还有红伞，但 1-09 伞又靠在墙边、1-10/1-11 她再拿起——道具凭空消失又出现；改成 1-09 起伞一直靠在墙边，1-06 她空手关门即可。
+   1-08 state_jump [rule] {'other': '1-06', 'subject': '林晚'}
+   1-09 undone [rule] {'steps': '拉开 → 关上 → 拉开'}
+   1-10 replay [rule] {'other': '1-09', 'framing': 'medium'}
+   1-11 replay [rule] {'other': '1-10', 'framing': 'medium'}
+   1-11 cross_space [rule] {'words': '门外', 'place': '林晚出租屋'}
+== 分镜规划再出一次：带着上一版的分镜检查
+== plan: 分镜规划重跑（DeepSeek，带镜头契约）
+   1 job(s) in 31.8 s, GPU memory peak 29165 MiB
+   call deepseek/v4-pro [api] success 31.3 s audio=Nones
+   1-01 scene_change medium action/2 | 开始 林晚在楼梯上，走到六楼门口 | 结束 林晚站在门口，看着门边，愣住 | 道具 — | 台词 —
+      画面：楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼。
+   1-02 same_scene_cut medium performance/1 | 开始 林晚刚到家门口，视线落在红伞上 | 结束 林晚看着红伞，神情疑惑 | 道具 umbrella:靠在墙边，伞柄贴有便利贴；note:贴于伞柄，黄色，有字 | 台词 —
+      画面：门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。
+   1-03 same_scene_cut closeup insert/0 | 开始 便利贴贴在伞柄上，字迹清晰 | 结束 便利贴贴在伞柄上，字迹清晰 | 道具 note:黄色，有字，边角微湿；umbrella:靠在墙边，伞柄贴有便利贴（沿用） | 台词 —
+      画面：便利贴特写，歪扭的手写字，边角被雨打湿。
+   1-04 same_scene_cut close dialogue/1 | 开始 林晚抬眼，看着前方，嘴唇微启 | 结束 林晚念出名字，神情愕然 | 道具 note:黄色，有字，边角微湿（沿用） | 台词 {'demo-b5': 'dialogue'}
+      画面：林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。
+   1-05 continuous close performance/2 (接上一镜) | 开始 林晚念出名字，神情愕然 | 结束 林晚左手搭在右手腕上，摸着发圈，低头看便条 | 道具 note:贴在伞柄上，有字；band:戴在林晚左手腕上；umbrella:靠在墙边，伞柄贴有便利贴（带进来） | 台词 —
+      画面：林晚的近景，她缓缓伸出手，指尖碰到便利贴，轻轻抚过字迹，然后停住。接着她下意识用拇指摸了摸左手腕上的旧发圈，眼神复杂。
+   1-06 scene_change medium action/3 | 开始 林晚站在门内，手扶门把 | 结束 林晚背靠门，面朝室内，神情恍惚 | 道具 — | 台词 —
+      画面：出租屋内，她进门、关门，后背抵着门，台灯暖光。
+   1-07 same_scene_cut closeup performance/1 | 开始 手机屏幕亮着，显示23:52 | 结束 手机屏幕亮着，显示23:52 | 道具 phone:亮屏，锁屏界面 | 台词 —
+      画面：手机亮屏，锁屏时间 23:52，没有新消息。
+   1-08 same_scene_cut close performance/1 | 开始 林晚背靠门，目光失神 | 结束 林晚表情变为讥诮，眼中有痛楚 | 道具 — | 台词 {'demo-b10': 'inner'}
+      画面：林晚靠着门，姿势未变，目光落在前方，嘴唇不动，画外音内心独白：“三年了。他凭什么。”她的表情从恍惚转为带着一丝讥诮和痛楚。
+   1-09 continuous medium action/2 | 开始 林晚背靠门，面朝室内 | 结束 林晚门半开，她站在门内，手还握着门把，看着门外 | 道具 — | 台词 —
+      画面：林晚转过身，面对门，手搭在门把上，停住，深吸一口气，然后拉开门。门开到一半，她定住，看着门外，眼神犹豫。
+   1-10 same_scene_cut medium action/2 | 开始 林晚在门内，手搭门把 | 结束 林晚跨出门外，站在门口 | 道具 — | 台词 —
+      画面：林晚站在门内，门半开，她看着门外，目光犹豫，缓缓松开门把，又停了两秒，然后跨出门外。
+   1-11 same_scene_cut medium action/2 | 开始 林晚站在门口，红伞靠在墙边 | 结束 林晚握着红伞，伞尖朝下 | 道具 umbrella:靠在墙边，伞柄上有便利贴 | 台词 —
+      画面：门外楼道，林晚站在门口，弯腰拿起靠在墙边的红伞，动作稍缓，然后直起身，握着伞。
+== plancheck: 分镜检查（规则 + DeepSeek）
+   1 job(s) in 3.0 s, GPU memory peak 29165 MiB
+   call deepseek/v4.1-flash [api] success 2.7 s audio=Nones
+   模型检查 ready，11 处提示
+   1-02 replay [rule] {'other': '1-01', 'framing': 'medium'}
+   1-05 state_jump [llm] 开始写「念出名字、神情愕然」接1-04结束没问题，但结束写「左手搭在右手腕上」和台词里「摸左手腕」对不上，且1-04是低头看便条、1-05又低头，改成本镜头结束为「指尖仍停在便利贴上，右手下意识摸左手腕发圈」。
+   1-06 crowded [rule] {'actions': '她进门、关门、后背抵着门'}
+   1-09 undone [rule] {'steps': '拉开 → 关上 → 拉开'}
+   1-09 state_jump [rule] {'other': '1-08', 'subject': '林晚'}
+   1-10 undone [rule] {'steps': '开门 → 关上 → 拉开'}
+   1-10 replay [rule] {'other': '1-09', 'framing': 'medium'}
+   1-10 cross_space [rule] {'words': '门外', 'place': '林晚出租屋'}
+   1-10 state_jump [llm] 开始写「手搭门把」，但1-09结束已是「手还握着门把、门半开」，这里又写「手搭门把」像是重新搭上去，改成开始为「林晚在门内，手仍握着门把，门半开」。
+   1-11 replay [rule] {'other': '1-10', 'framing': 'medium'}
+   1-11 state_jump [llm] 1-10结束林晚已「跨出门外站在门口」，1-11开始又写「站在门口」，位置能接上，但1-10结束没提伞已在手边；改为开始补一句「红伞仍靠在墙边」避免伞凭空出现。
+== kf: 关键帧重画（本地草稿）并检查（Gemini + OCR）：1-01、1-02、1-03、1-04、1-06、1-07、1-08、1-10、1-11
+   9 job(s) in 751.1 s, GPU memory peak 25001 MiB
+   call comfy/flux3-klein [local] success 38.8 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.4 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.4 s audio=Nones
+   call comfy/flux3-klein [local] success 41.5 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.3 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.4 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.4 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call comfy/flux3-klein [local] success 42.6 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.4 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.6 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.4 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call comfy/flux3-klein [local] success 42.5 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.5 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call comfy/flux3-klein [local] success 25.1 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call comfy/flux3-klein [local] success 33.3 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.0 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.4 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.7 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call comfy/flux3-klein [local] success 33.5 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.6 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.6 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.5 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call comfy/flux3-klein [local] success 33.5 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.8 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call comfy/flux3-klein [local] success 42.7 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call comfy/flux3-klein [local] success 42.2 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.8 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call comfy/flux3-klein [local] success 24.8 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call comfy/flux3-klein [local] success 24.7 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.3 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call comfy/flux3-klein [local] success 24.7 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.0 s audio=Nones
+   call comfy/flux3-klein [local] success 24.4 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call comfy/flux3-klein [local] success 32.9 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.1 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.8 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call comfy/flux3-klein [local] success 32.8 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.0 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call comfy/flux3-klein [local] success 32.6 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.3 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.0 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.2 s audio=Nones
+   call comfy/flux3-klein [local] success 42.3 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   model comfy/flux3-klein [local], files: kf-1-01-candidate-0.png (928x1664), kf-1-01-candidate-1.png (928x1664), kf-1-01-candidate-2.png (928x1664)
+   1-01 #0: start ✓，light ✓，place ✓
+   1-01 #1: start ✓，light ✗ 画面整体亮度过高，墙面有明显的平光，缺乏夜间楼道应有的强对比和暗部细节。，place ✓
+   1-01 #2: start ✓，light ✗ 整体亮度过高，缺乏夜间暗部对比，光线不像是由声控灯照射产生的，place ✓
+   1-01: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-02-candidate-0.png (928x1664), kf-1-02-candidate-1.png (928x1664), kf-1-02-candidate-2.png (928x1664)
+   1-02 #0: start ✓，scale ✓，text ✓，light ✓，place ✓，facing ✓，ocr ✗ 据下度用后导你到二点
+   1-02 #1: start ✓，scale ✗ 伞的比例过大，长度几乎达到人物肩膀高度，不符合胯部高度的要求，text ✗ 便利贴上的文字不完整，且字迹接近打印字体而非手写，light ✓，place ✓，facing ✓，ocr ✗ 装下建动屋帮你到十二点，
+   1-02 #2: start ✓，scale ✗ 伞的高度超过了腰部，显得过长；便利贴相对于伞把手显得较大，text ✗ 文字书写潦草难以辨认，且字迹与要求不完全一致，light ✓，place ✓，facing ✓，ocr ✗ 撇下便压，华休到二点，
+   1-02: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-03-candidate-0.png (928x1664), kf-1-03-candidate-1.png (928x1664), kf-1-03-candidate-2.png (928x1664)
+   1-03 #0: start ✓，scale ✓，text ✗ 字体看起来过于规范，像打印字体，而非手写，people ✓，light ✓，place ✓，ocr ✓
+   1-03 #1: start ✓，scale ✓，text ✓，people ✓，light ✓，place ✓，ocr ✓
+   1-03 #2: start ✓，scale ✓，text ✗ 字体看起来过于规范整齐，缺乏手写感，people ✓，light ✓，place ✓，ocr ✓
+   1-03: 确认第 2 张（200）
+   model comfy/flux3-klein [local], files: kf-1-04-candidate-0.png (928x1664), kf-1-04-candidate-1.png (928x1664), kf-1-04-candidate-2.png (928x1664)
+   1-04 #0: start ✗ 林晚的目光向下看着便利贴，而不是抬头看着前方，scale ✓，text ✓，light ✓，place ✓，facing ✓，ocr ✓
+   1-04 #1: start ✓，scale ✓，text ✗ 字体显得过于标准和印刷体，不够像手写，light ✓，place ✓，facing ✓，ocr ✓
+   1-04 #2: start ✗ 林晚正在向下看便利贴，并非看着前方，scale ✓，text ✗ 文字为电脑印刷体，非手写，且多了一个字（“楼下便利店，等你到十二点。”，图中有额外字符），light ✓，place ✓，facing ✓，ocr ✓
+   1-04: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-06-candidate-0.png (928x1664), kf-1-06-candidate-1.png (928x1664), kf-1-06-candidate-2.png (928x1664)
+   1-06 #0: start ✓，scale ✓，light ✓，place ✓
+   1-06 #1: start ✓，scale ✓，light ✓，place ✓
+   1-06 #2: start ✓，scale ✗ 伞的高度过高，几乎到达门把手位置，明显超过了胯部高度，light ✓，place ✓
+   1-06: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-07-candidate-0.png (928x1664), kf-1-07-candidate-1.png (928x1664), kf-1-07-candidate-2.png (928x1664)
+   1-07 #0: start ✓，scale ✓，light ✓，place ✓，hands ✓，facing ✓
+   1-07 #1: start ✓，scale ✓，light ✓，place ✓，hands ✓，facing ✓
+   1-07 #2: start ✓，scale ✓，light ✓，place ✓，hands ✓，facing ✓
+   1-07: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-08-candidate-0.png (928x1664), kf-1-08-candidate-1.png (928x1664), kf-1-08-candidate-2.png (928x1664)
+   1-08 #0: start ✓，mouth ✓，light ✗ 光线看起来像白天，缺乏夜间的暗部与对比度，place ✓
+   1-08 #1: start ✓，mouth ✓，light ✓，place ✓
+   1-08 #2: start ✗ 林晚目光聚焦，不够失神，mouth ✓，light ✗ 光线均匀，缺乏夜间室内灯光带来的高对比度，place ✗ 背景看起来像是室外防盗门，不像是在出租屋内部
+   1-08: 确认第 2 张（200）
+   model comfy/flux3-klein [local], files: kf-1-10-candidate-0.png (928x1664), kf-1-10-candidate-1.png (928x1664), kf-1-10-candidate-2.png (928x1664)
+   1-10 #0: start ✓，light ✓，place ✗ 人物站在门外，不是在出租屋内向外看
+   1-10 #1: start ✗ 林晚站在门外，而非门内；手未搭在门把手上，light ✗ 光线较亮且均匀，更像白天或有强环境光，缺乏夜里对比强烈的质感，place ✗ 拍摄角度是在门外楼道，而非出租屋内
+   1-10 #2: start ✓，light ✓，place ✓
+   1-10: 确认第 3 张（200）
+   model comfy/flux3-klein [local], files: kf-1-11-candidate-0.png (928x1664), kf-1-11-candidate-1.png (928x1664), kf-1-11-candidate-2.png (928x1664)
+   1-11 #0: start ✓，scale ✓，light ✓，place ✓
+   1-11 #1: start ✓，scale ✓，light ✓，place ✓
+   1-11 #2: start ✓，scale ✓，light ✓，place ✓
+   1-11: 确认第 1 张（200）
+   分镜 confirmed 11/11
+   deepseek/v4-pro in this data dir: 2 call(s), $0.0329
+   deepseek/v4.1-flash in this data dir: 24 call(s), $0.0388
+   google/gemini-3.1-flash-lite in this data dir: 66 call(s), $0.0366
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh
+data: C:\Users\kelvin\AppData\Local\Temp\drama-ep20-fresh\home

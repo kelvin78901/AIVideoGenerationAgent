@@ -163,6 +163,11 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
     now = utcnow()
     shots = ops.shots_of(version.payload_json)
     kept: set[str] = set()
+    pictures = await keyframe_products(session, list(rows))
+    for s in shots:
+        if (old := rows.get(s["id"])) is not None and (kf := pictures.get(s["id"])) is not None:
+            _follow_plan(kf, old.intent, str(s.get("intent") or ""), now)
+            session.add(kf)
     for n, s in enumerate(shots, 1):
         row = rows.get(s["id"]) or Shot(
             id=s["id"],
@@ -224,6 +229,21 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
                 p.retired = retired
                 p.updated_at = now
                 session.add(p)
+
+
+def _follow_plan(kf: Product, was: str, now_said: str, now: datetime) -> None:
+    """A new plan's picture for a shot whose keyframe prompt still holds the old plan's (every
+    run saves the intent it ran with): that prompt is the plan's, not the user's, so it goes
+    and the keyframe takes the new picture (run 20: run 17's pictures read as the user's own,
+    so a plan made again changed nothing). A picture the user wrote differs and is kept; a
+    hand-edited compiled layer keeps its layer with the new intent."""
+    saved = dict(kf.prompt_json or {})
+    if not saved or was.strip() == now_said.strip():
+        return
+    if str(saved.get("intent") or "").strip() != was.strip():
+        return
+    kf.prompt_json = {**saved, "intent": now_said} if saved.get("compiled_overridden") else None
+    kf.updated_at = now
 
 
 async def ensure_plan(session: AsyncSession, product: Product, version: ProductVersion) -> None:
