@@ -438,6 +438,17 @@ def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None, stop: str
             f"select {(made[0]['params'].get('select') or {}).get('by')}, "
             f"rewritten by {made[0]['payload'].get('prompt_rewrite')}"
         )
+        for n, v in enumerate(made, 1):  # take 检查 and its redraws (M5.5 9e-5)
+            check = v["payload"].get("check") or {}
+            said = "，".join(
+                f"{x['check']} {'✓' if x['ok'] else '✗ ' + x['note']}"
+                for x in check.get("items") or []
+            )
+            redone = v["payload"].get("redraws")
+            smoke.say(
+                f"   {label}-{n} 检查 {'过' if check.get('ok') else '没过'}"
+                f"{f'（重出 {redone} 次）' if redone else ''}：{said or '没有检查'}"
+            )
         path.write_text(json.dumps(record, ensure_ascii=False, indent=1), "utf-8")
 
 

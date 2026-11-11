@@ -1,0 +1,55 @@
+M5 local smoke · 2026-11-11 10:50
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 21088 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+   1-01 scene_change wide action/2 | 开始 林晚在楼梯上，往家门口走 | 结束 林晚站在家门口，面对门 | 道具 — | 台词 —
+      画面：老小区楼道六楼，声控灯忽明忽暗，林晚（米色风衣湿了半边，挎帆布画板袋）走上最后一级台阶，站在家门口，略显疲惫。
+   1-02 same_scene_cut medium performance/1 | 开始 林晚低头看伞；红伞靠墙 | 结束 林晚抬头看向便签 | 道具 umbrella:靠在墙边；note:贴在伞柄上 | 台词 —
+      画面：门口墙边靠着一把红色长柄伞，伞柄上贴着一张黄色便利贴，林晚低头看向伞，神情疑惑。
+   1-03 same_scene_cut closeup insert/0 | 开始 便利贴贴在伞柄上，字迹清晰 | 结束 便利贴贴在伞柄上，字迹清晰 | 道具 note:贴在伞柄上，字迹歪扭；umbrella:靠在墙边（沿用） | 台词 —
+      画面：特写伞柄上的黄色便利贴，字迹歪扭：“楼下便利店，等你到十二点。”
+   1-04 same_scene_cut close dialogue/1 | 开始 林晚看着便利贴，表情凝固 | 结束 林晚嘴唇轻启，念出周屿 | 道具 — | 台词 {'demo-b5': 'dialogue'}
+      画面：林晚近景，她愣住，低声念出：“……周屿？” 眼神复杂，带着惊讶和不确定。
+   1-05 same_scene_cut closeup action/2 | 开始 林晚手指触着便利贴；旧黑发圈戴在左手腕 | 结束 林晚左手摸发圈，神情犹豫 | 道具 band:戴在左手腕上；note:贴在伞柄上；umbrella:靠在墙边（带进来） | 台词 —
+      画面：特写林晚的手，指尖停在黄色便利贴上，随后她下意识抬起左手，轻轻摸了摸手腕上的旧黑色发圈，动作迟疑。
+   1-06 scene_change medium action/2 | 开始 林晚站在门外，手扶门把 | 结束 林晚跨过门槛，进入屋内 | 道具 — | 台词 —
+      画面：林晚站在出租屋门外，一只手握着门把，门开着，身后是昏暗楼道，她准备迈步进门。
+   1-07 continuous medium action/2 | 开始 门正被林晚关上 | 结束 林晚背靠门，手里拿着手机 | 道具 phone:握在手中，屏幕灭 | 台词 —
+      画面：林晚已进入出租屋，背对门，门正缓缓关上，她转身背靠门，面色疲惫，随后从口袋里掏出手机。
+   1-08 same_scene_cut closeup insert/0 | 开始 手机屏幕显示23:52 | 结束 手机屏幕显示23:52 | 道具 phone:屏幕亮，显示23:52 | 台词 —
+      画面：特写手机屏幕亮起，显示锁屏时间：23:52。
+   1-09 same_scene_cut close dialogue/1 | 开始 林晚看着手机，神情黯然 | 结束 林晚眉头微蹙，眼神决然 | 道具 phone:屏幕亮，显示23:52（沿用） | 台词 {'demo-b10': 'inner'}
+      画面：林晚近景，她低头看着手机，内心独白：“三年了。他凭什么。” 眼神复杂，嘴唇未动。
+   1-10 continuous medium action/2 | 开始 林晚背靠门，手握手机 | 结束 林晚走到门口，手搭门把 | 道具 — | 台词 —
+      画面：林晚从门边走向门口，手伸向门把手，准备拉开门。
+   1-11 continuous medium performance/1 | 开始 门打开一条缝；林晚手在门把上 | 结束 林晚手停在门把上，眼神犹豫 | 道具 — | 台词 —
+      画面：林晚站在门口，门已打开一条缝，她手停在门把上，犹豫着没有继续动作，表情挣扎。
+   1-12 same_scene_cut medium action/2 | 开始 门开一条缝；林晚站在门内，手扶门把 | 结束 林晚跨出门口，站在门外 | 道具 — | 台词 —
+      画面：林晚深吸一口气，用力推开门，跨出门口。
+   1-13 continuous medium action/2 | 开始 林晚站在门外，看向红伞 | 结束 林晚拿起红伞，握在手中 | 道具 umbrella:靠墙 | 台词 —
+      画面：门外楼道，林晚站在门口，弯腰伸手去拿靠在墙边的红伞。
+== plancheck: 分镜检查（规则 + DeepSeek）
+   1 job(s) in 3.0 s, GPU memory peak 21088 MiB
+   call deepseek/v4.1-flash [api] success 2.7 s audio=Nones
+   模型检查 ready，16 处提示
+   1-02 state_jump [llm] 开始写林晚低头看伞，但 1-01 结束时她面对门、并未看到伞；改成 1-01 结束即眼神扫到墙边伞，或 1-02 开始从她转头看向伞起。
+   1-05 other [llm] 1-02 红伞在墙边、林晚站着，1-05 特写她的手指已触着伞柄上的便利贴，中间缺了弯腰靠近的动作，位置对不上；改成手停在便利贴上时镜头里能看到伞柄和她的手同框。
+   1-06 lines_dropped [rule] {'words': '林晚把伞靠回墙边、进屋、关门'}
+   1-06 cross_space [rule] {'words': '门外', 'place': '林晚出租屋'}
+   1-06 state_jump [llm] 1-05 结束时林晚还在楼道伞旁，1-06 开始她已站在出租屋门外手扶门把，伞也不见了；补一个她起身上楼/开门的过渡，或在 1-06 开始即让她手里拿着伞。
+   1-07 lines_dropped [rule] {'words': '林晚把伞靠回墙边、进屋、关门'}
+   1-07 crowded [rule] {'actions': '林晚已进入出租屋、门正缓缓关上、她转身背靠门、随后从口袋里掏出手机'}
+   1-10 lines_dropped [rule] {'words': '拉开 → 关上 → 拉开'}
+   1-10 state_jump [rule] {'other': '1-09', 'subject': '林晚'}
+   1-11 lines_dropped [rule] {'words': '拉开 → 关上 → 拉开'}
+   1-11 state_jump [rule] {'other': '1-10', 'subject': '林晚'}
+   1-12 replay [rule] {'other': '1-11', 'framing': 'medium'}
+   1-12 cross_space [rule] {'words': '门外', 'place': '林晚出租屋'}
+   1-13 cross_space [rule] {'words': '门外', 'place': '林晚出租屋'}
+   1-13 state_jump [rule] {'other': '1-12', 'subject': '林晚'}
+   1-13 other [llm] 1-10 至 1-12 她空手出门，红伞若一直靠在屋内墙边，1-13 门外靠墙的红伞来源不明；让伞始终留在楼道原处，1-06 进屋前不拿伞，1-13 才能合理取伞。
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh
+data: C:\Users\kelvin\AppData\Local\Temp\drama-ep20b\home
