@@ -620,15 +620,7 @@ class ShotService:
             if episode is None or episode.retired:
                 raise PipelineError(404, "episode_not_found", id=episode_id)
             v = await _current(session, await plan_product(session, episode_id))
-            shots = await pictured(session, ops.shots_of(v.payload_json) if v else [])
-            rows = await _lines(session, episode_id)
-            assets, _ = await episode_assets(session, episode_id)
-            places = {
-                x.id: scene_place(x.heading)
-                for x in (
-                    await session.exec(select(Scene).where(Scene.episode_id == episode_id))
-                ).all()
-            }
+            labels, found = await plan_issues(session, episode, v)
             mine = await check_product(session, episode_id)
             last = (
                 await session.get(ProductVersion, mine.adopted_version_id)
@@ -638,14 +630,6 @@ class ShotService:
             stale = mine is not None and mine.id in await self._invalidation.stale_ids(
                 session, [mine]
             )
-        lines = {x.id: shot_check.LineInfo(x.type, x.text, x.tone or "") for x in rows.values()}
-        labels = shot_check.labels(episode.idx, shots)
-        contracts = shot_check.contracts_of(shots, lines, {a.id: a.kind for a in assets.values()})
-        found = [i.as_json() for i in shot_check.check(shots, labels, lines, contracts, places)]
-        if last is not None:
-            found += [i for i in last.payload_json.get("issues") or [] if i["shot_id"] in labels]
-        order = {sid: n for n, sid in enumerate(labels)}
-        found.sort(key=lambda i: (order[i["shot_id"]], i["source"] != "rule"))
         state = (
             "none"
             if mine is None
@@ -1209,6 +1193,36 @@ async def _scene_refs_drawn_for(session: AsyncSession, series_id: str, aspect: s
         if v is not None and (v.payload_json or {}).get("aspect") == aspect:
             n += 1
     return n
+
+
+async def plan_issues(
+    session: AsyncSession, episode: Episode, plan: ProductVersion | None
+) -> tuple[dict[str, str], list[dict[str, Any]]]:
+    """分镜检查 of ``plan`` (a version of ``episode``'s shot plan): the shot labels, and every
+    finding in shot order, the rules' worked out now over the pictures on screen, then the
+    model's last check (``plancheck``). What the page shows and a plan made again fixes."""
+    shots = await pictured(session, ops.shots_of(plan.payload_json) if plan else [])
+    rows = await _lines(session, episode.id)
+    assets, _ = await episode_assets(session, episode.id)
+    places = {
+        x.id: scene_place(x.heading)
+        for x in (await session.exec(select(Scene).where(Scene.episode_id == episode.id))).all()
+    }
+    mine = await check_product(session, episode.id)
+    last = (
+        await session.get(ProductVersion, mine.adopted_version_id)
+        if mine is not None and mine.adopted_version_id
+        else None
+    )
+    lines = {x.id: shot_check.LineInfo(x.type, x.text, x.tone or "") for x in rows.values()}
+    labels = shot_check.labels(episode.idx, shots)
+    contracts = shot_check.contracts_of(shots, lines, {a.id: a.kind for a in assets.values()})
+    found = [i.as_json() for i in shot_check.check(shots, labels, lines, contracts, places)]
+    if last is not None:
+        found += [i for i in last.payload_json.get("issues") or [] if i["shot_id"] in labels]
+    order = {sid: n for n, sid in enumerate(labels)}
+    found.sort(key=lambda i: (order[i["shot_id"]], i["source"] != "rule"))
+    return labels, found
 
 
 async def check_product(session: AsyncSession, episode_id: str) -> Product | None:

@@ -51,8 +51,8 @@ from drama_series_agent.pipeline.components.media import output_frame
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.prompts.compiler import Block
+from drama_series_agent.shots import check, ops
 from drama_series_agent.shots import contract as shot_contract
-from drama_series_agent.shots import ops
 
 DEMO_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "demo" / "plan.json"
 SHOT_PLAN_SLOT = "shot_plan"
@@ -289,11 +289,27 @@ async def gather(
         Block("素材", assets_text(ctx) or "（还没做素材分析）"),
         Block("剧本", script_text(adopted.payload_json)),
     ]
+    if base is not None and episode is not None:
+        # Made again: what the check found in the plan it replaces, to be fixed this time.
+        from drama_series_agent.shots.service import plan_issues  # it imports this module
+
+        labels, found = await plan_issues(session, episode, base)
+        if found:
+            blocks.append(Block("上一版的分镜检查", issues_text(labels, found)))
     return Inputs(
         blocks=blocks,
         deps=deps,
         episode_id=episode_id,
         context={"plan": ctx, "base": base.payload_json if base is not None else None},
+    )
+
+
+def issues_text(labels: dict[str, str], found: list[dict[str, Any]]) -> str:
+    """分镜检查 findings, one line each: 「1-06（规则）一个镜头里动作太多：……」."""
+    return "\n".join(
+        f"{labels.get(i['shot_id'], '')}（{'规则' if i['source'] == 'rule' else '模型'}）"
+        f"{check.describe(i)}"
+        for i in found
     )
 
 

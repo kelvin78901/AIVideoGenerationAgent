@@ -156,11 +156,13 @@ def test_the_storyboard_check(client: TestClient) -> None:
     url = f"{V1}/episodes/{EP1}/shot-checks"
     first = client.get(url).json()
     assert [(i["label"], i["code"], i["source"]) for i in first["issues"]] == [
+        ("1-06", "crowded", "rule"),
         ("1-08", "undone", "rule"),
         ("1-08", "replay", "rule"),
     ]
-    assert first["issues"][0]["params"]["steps"].startswith("拉开 → 关上")
-    assert first["issues"][1]["params"]["other"] == "1-06"
+    assert first["issues"][0]["params"]["actions"] == "她进门、关门、后背抵着门"
+    assert first["issues"][1]["params"]["steps"].startswith("拉开 → 关上")
+    assert first["issues"][2]["params"]["other"] == "1-06"
     assert first["llm_state"] == "none"  # its product is made with the episode
     resp = client.post(url)
     assert resp.status_code == 200, resp.text
@@ -227,6 +229,32 @@ def test_a_rerun_keeps_the_shots_and_waits_to_be_adopted(client: TestClient) -> 
     plan = _plan(client)
     assert plan["current_version_id"] != plan["adopted_version_id"]
     assert [s["id"] for s in _shots(client)] == [f"demo-shot-1-0{n}" for n in range(1, 10)]
+
+
+def test_a_plan_made_again_is_told_what_the_check_found(client: TestClient) -> None:
+    """M5.5 9e-4: the check's findings in the plan it replaces go into the prompt, to be fixed
+    (run 19's 1-06 crossed the doorway and did four more things; the demo's 1-06 too)."""
+    url = f"{V1}/episodes/{EP1}/shot-checks"
+    found = [(i["label"], i["code"]) for i in client.get(url).json()["issues"]]
+    assert ("1-06", "crowded") in found
+    _wait(client, client.post(url).json()["id"])  # the model's (Mock: 1-03)
+    pid = _plan(client)["id"]
+
+    async def blocks() -> dict[str, str]:
+        state = _state(client)
+        component = state.components.get("plan")
+        assert component is not None
+        async with state.db.session() as session:
+            product = await session.get(Product, pid)
+            assert product is not None
+            inputs = await component.inputs(session, product)
+        return {b.title: b.text for b in inputs.blocks}
+
+    told = client.portal.call(blocks)["上一版的分镜检查"]  # type: ignore[union-attr]
+    assert "1-06（规则）一个镜头里动作太多：她进门、关门、后背抵着门。" in told
+    assert "1-08（规则）同一个变化做了又撤销再做" in told
+    assert "1-03（模型）插入镜头写了「雨水把字一点点泡开」" in told
+    assert "进门、出门）单独一个镜头" in _plan(client)["prompt"]["compiled"]  # how plans are made
 
 
 def test_only_a_new_structure_makes_the_plan_stale(client: TestClient) -> None:

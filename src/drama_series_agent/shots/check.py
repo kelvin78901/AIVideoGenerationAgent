@@ -9,7 +9,9 @@ plan and the script, free and at once. Only a warning: confirming goes on (Kelvi
 - ``inner_mouth``: an inner voice in a shot whose picture or action has the speaker talk;
 - ``state_jump``: a continuous shot that starts unlike the shot it follows ends;
 - ``cross_space``: someone starts or ends outside the place the shot is in (1-06 in 林晚出租屋
-  starting 「站在门外」: the keyframe put the camera in the stairwell, she shut herself out).
+  starting 「站在门外」: the keyframe put the camera in the stairwell, she shut herself out);
+- ``crowded``: going through a doorway and doing something else, or more than three actions
+  (run 19's 1-06: 推门、进门、转身、关门、靠门 in six seconds, the door went through her).
 
 The plan check by a model (``pipeline/components/plancheck.py``) adds what rules cannot see.
 """
@@ -41,6 +43,47 @@ OUT_OF_ROOM = re.compile(r"(?<![向着朝往])(?:门外|窗外|屋外|楼道|走
 IN_ROOM = re.compile(r"(?<![向着朝往])(?:屋里|屋内|房间里|房里|进屋)")
 PASSAGE = re.compile(r"楼道|走廊|门口|楼梯|街|院子|天台")
 TALKING = re.compile(r"开口|说话|张嘴|嘴唇(?:在)?动|低声说|喃喃|念叨|自言自语")
+# ``crowded``: going through a doorway, a door opened to go through, and what counts as one
+# action in a clause (「靠在」「坐在」 is where someone is, not something done).
+THROUGH = re.compile(
+    r"进门|进屋|进了门|进了屋|走进|走出|跨进|跨出|迈进|迈出|跨过门槛|迈过门槛|推门而入|夺门而出"
+    r"|出门|出了门|进来|出去"
+)
+DOOR_OPEN = re.compile(r"推开门|推门|拉开门|打开门|开门")
+ACTS = re.compile(
+    r"(?:推|拉开|拉上|打开|关上|关门|开门|合上|带上|掩上|走|跑|迈|跨|进|出门|出去|转身|回头|抬头"
+    r"|低头|抬起|弯腰|蹲|坐|站起|起身|拿|捡|提起|放下|放回|搁|扔|靠|抵|倚|撕|摸|握|抓|捏|擦|掏"
+    r"|递|接过|抱起|伸手|挥|按|敲|翻|拨|捂|扶|攥|脱|穿上|戴上|喝)(?!在)"
+)
+CLAUSES = re.compile(r"[，,。；;！!？?、]")
+MAX_ACTIONS = 3  # more than this in one shot is crowded even without a doorway
+
+
+# A rule's finding in words, for a prompt (the page words it from ``checks.code.*``, zh-CN).
+RULE_WORDS = {
+    "undone": "同一个变化做了又撤销再做：{steps}。犹豫可以演成停住、吸气。",
+    "insert_event": "插入镜头里东西发生了变化（「{words}」）：状态应该摆好，不在镜头里发生。",
+    "replay": "和 {other} 同一场、同景别、都是固定机位，接起来像回放。",
+    "inner_mouth": "内心独白的镜头写了「{words}」：内心独白时嘴闭着。",
+    "state_jump": "开始时和 {other} 的结束时对不上（{subject}）。",
+    "cross_space": (
+        "开始或结束时写了「{words}」，可镜头在「{place}」里拍：要拍那一侧，就分成两个镜头或换场景。"
+    ),
+    "crowded": "一个镜头里动作太多：{actions}。进门 / 出门单独一个镜头，其余的拆到下一个镜头。",
+}
+
+
+def describe(issue: Mapping[str, Any]) -> str:
+    """A finding (``Issue.as_json()``) in words: the model's as it said it, a rule's from
+    ``RULE_WORDS``."""
+    if issue.get("source") != "rule":
+        return str(issue.get("text") or "")
+    words = RULE_WORDS.get(str(issue.get("code")))
+    params = issue.get("params") or {}
+    try:
+        return words.format(**params) if words else str(issue.get("code"))
+    except KeyError:
+        return str(issue.get("code"))
 
 
 @dataclass(frozen=True)
@@ -124,6 +167,11 @@ def check(
             else [lines[x].text for x in s.get("line_ids") or [] if x in lines and _acted(lines[x])]
         )
         words = "；".join([str(s.get("intent") or ""), *action])
+        # The picture and the script's lines tell the same actions: each is counted alone.
+        for told in (str(s.get("intent") or ""), "；".join(action)):
+            if (acts := crowded(told, c)) is not None:
+                out.append(Issue(sid, "crowded", {"actions": "、".join(acts)}))
+                break
         if (steps := undone(words)) is not None:
             out.append(Issue(sid, "undone", {"steps": " → ".join(steps)}))
         if c.get("kind") == "insert" and (m := EVENTS.search(words)):
@@ -164,6 +212,31 @@ def cross_space(place: str, states: Sequence[Mapping[str, Any]]) -> str | None:
         if m := outside.search(str(st.get("state") or "")):
             return m.group(0)
     return None
+
+
+def crowded(text: str, contract: Mapping[str, Any] | None = None) -> list[str] | None:
+    """The clauses of ``text`` that are actions when there are too many for one shot, else None:
+    going through a doorway and doing anything else (run 19's 1-06: 推门、进门、转身、关门、靠门 in
+    six seconds, the door went through her), or more than ``MAX_ACTIONS``. A door opened to go
+    through is part of going through; ``contract``'s start on one side and end on the other is a
+    doorway gone through as well."""
+    acts = [x.strip() for x in CLAUSES.split(text) if ACTS.search(x)]
+    through = any(THROUGH.search(x) for x in acts) or _crosses(contract or {})
+    others = [x for x in acts if not THROUGH.search(x) and not DOOR_OPEN.search(x)]
+    if (through and others) or len(acts) > MAX_ACTIONS:
+        return acts
+    return None
+
+
+def _crosses(contract: Mapping[str, Any]) -> bool:
+    """Someone starts outside a room and ends in it, or the other way round."""
+
+    def said(key: str, where: re.Pattern[str]) -> bool:
+        return any(where.search(str(x.get("state") or "")) for x in contract.get(key) or [])
+
+    return (said("start", OUT_OF_ROOM) and said("end", IN_ROOM)) or (
+        said("start", IN_ROOM) and said("end", OUT_OF_ROOM)
+    )
 
 
 def undone(text: str) -> list[str] | None:

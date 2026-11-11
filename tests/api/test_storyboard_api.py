@@ -193,7 +193,7 @@ def test_editing_a_locked_character_lists_her_shots(client: TestClient) -> None:
     lines = _lines(impact)
     assert lines["shot_refs"]["params"] == {"ids": "1-01、1-04、1-05、1-06、1-08、1-09", "count": 6}
     assert lines["shots_confirmed_redraw"]["params"] == {"shots": "1-01", "count": 1}
-    assert lines["uses_keyframe"]["params"] == {"count": 4, "names": "1-01、1-04、1-05、1-06"}
+    assert lines["uses_keyframe"]["params"] == {"count": 3, "names": "1-01、1-04、1-06"}
 
 
 def test_an_action_line_makes_one_keyframe_stale(client: TestClient) -> None:

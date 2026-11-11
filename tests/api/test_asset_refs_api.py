@@ -303,7 +303,8 @@ def test_a_prop_takes_the_locked_characters_it_names(client: TestClient) -> None
     call = [c for c in _rows(client, ModelCall) if c.product_id == band["id"]][-1]
     assert call.component_id == "img"
 
-    # Unlocking 林晚 lists the prop, her views, her shots and their keyframes (M4).
+    # Unlocking 林晚 lists the prop, her views, her shots and their keyframes (M4);
+    # 1-05 is a close-up of her hand, drawn without her reference (M5.5 9e-2).
     preview = client.post(
         f"{V1}/impact/preview", json={"kind": "asset_unlock", "target_id": "linwan", "patch": {}}
     ).json()
@@ -311,7 +312,7 @@ def test_a_prop_takes_the_locked_characters_it_names(client: TestClient) -> None
     assert lines == {
         "uses_ref_image": {"count": 1, "names": "旧黑发圈"},
         "uses_ref_views": {"name": "林晚"},
-        "uses_keyframe": {"count": 4, "names": "1-01、1-04、1-05、1-06"},
+        "uses_keyframe": {"count": 3, "names": "1-01、1-04、1-06"},
         "shot_refs": {"ids": "1-01、1-04、1-05、1-06、1-08、1-09", "count": 6},
         "shots_confirmed_redraw": {"shots": "1-01", "count": 1},
     }

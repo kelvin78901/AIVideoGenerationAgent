@@ -31,7 +31,7 @@ def _found(shots: list[dict[str, Any]]) -> list[tuple[str, str]]:
 
 def test_run17s_door_and_replay_are_found_in_the_demo_plan() -> None:
     shots = ops.normalize(_demo_answer(), _ctx())["shots"]
-    assert _found(shots) == [("1-08", "undone"), ("1-08", "replay")]
+    assert ("1-08", "undone") in _found(shots) and ("1-08", "replay") in _found(shots)
 
 
 def test_a_picture_the_user_wrote_is_read_without_the_scripts_action_lines() -> None:
@@ -104,3 +104,21 @@ def test_someone_outside_the_shots_place_is_found() -> None:
     # Her back to the door, or looking out (1-08: 「望向门外地上」), is not being outside.
     for state in ("背靠着门", "站在门口，望向门外地上"):
         assert check.cross_space("林晚出租屋", [{"subject": "林晚", "state": state}]) is None
+
+
+def test_a_doorway_and_more_in_one_shot_is_crowded() -> None:
+    """Run 19's 1-06 pushed the door, came in, turned, shut it and leant on it in six seconds:
+    the door went through her. The demo's 1-06 is the same shot."""
+    shots = ops.normalize(_demo_answer(), _ctx())["shots"]
+    assert _found(shots) == [("1-06", "crowded"), ("1-08", "undone"), ("1-08", "replay")]
+    run19 = ["她推门", "进门", "转身", "关门", "靠门"]
+    assert check.crowded("、".join(run19)) == run19
+    assert check.crowded("她放下包，脱下外套，坐下，拿起手机") is not None  # four, no door
+    # Going through alone, the door opened for it, or a place someone is in: fine.
+    fine = ("她推门进来", "她推开门，走进屋", "伞斜靠在墙边", "她拉开门，又关上；停两秒，再拉开")
+    for text in fine:
+        assert check.crowded(text) is None
+    # Start outside, end inside: through the doorway even when the words do not say it.
+    crossing = {"start": [{"state": "站在门外"}], "end": [{"state": "在屋里，背靠着门"}]}
+    assert check.crowded("她反手关上门", crossing) == ["她反手关上门"]
+    assert check.crowded("她反手关上门") is None
