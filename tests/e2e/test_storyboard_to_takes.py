@@ -94,9 +94,9 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
         assert c["select_json"]["by"] in ("rule", "default"), c
     assert takes[0]["params"]["select"] == clips[0]["select_json"]
     # The first frame is looked at and the prompt rewritten into H3's official layout once for
-    # both takes (M5 steps 14b, 15g).
+    # both takes (M5 steps 14b, 15g); each take is checked from its contact sheet (M5.5 step 7).
     others = [c["component_id"] for c in calls if c["model_key"] != takes[0]["model_key"]]
-    assert sorted(others) == ["vlook", "vprompt"]
+    assert sorted(others) == ["takecheck", "takecheck", "vlook", "vprompt"]
     assert _spent(api) == pytest.approx(spent + sum(c["cost_usd"] for c in calls), abs=1e-4)
 
     # Adopt A, drop it, adopt B.
@@ -117,9 +117,10 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
         takes[1]["id"],
     )
     assert (final["files"][0]["w"], final["files"][0]["h"]) == (1440, 2560)
-    (call,) = [c for c in api.calls(job["id"]) if c["status"] == "success"]
+    done = [c for c in api.calls(job["id"]) if c["status"] == "success"]
+    (call,) = [c for c in done if c["component_id"] != "takecheck"]  # the final is checked too
     assert call["cost_usd"] == pytest.approx(price, abs=0.001)
-    assert _spent(api) == pytest.approx(spent + call["cost_usd"], abs=1e-4)
+    assert _spent(api) == pytest.approx(spent + sum(c["cost_usd"] for c in done), abs=1e-4)
     _adopt(api, final)
 
     # 生成确认 before every shot has a take: refused, with the shots still open.
