@@ -65,6 +65,8 @@ class FoundAsset(BaseModel):
     # M5.5: text written on a prop (its key or name) is the prop's; a new prop's real size.
     on: str | None = None
     physical: dict[str, str] | None = None
+    # M5.5 step 9e-3: a scene's neighbours through a door or window ([{via, to, note}]).
+    adjoins: list[dict[str, str]] | None = None
 
 
 class AssetsAnswer(BaseModel):

@@ -268,6 +268,20 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert shot["contract"]["props_linked"] == ["umbrella"]
 
 
+def test_the_other_side_of_the_door_is_its_scene(client: TestClient) -> None:
+    """M5.5 step 9e-3: the flat's ``adjoins`` says its door opens onto the stairwell; 1-06 (she
+    comes in and shuts the door) sends the stairwell's picture as the other side and says so
+    (run 19 1-09: the door opened onto a street). 1-01, on the stairs, sees no door open."""
+    door = _run(client, "1-06")["versions"][-1]
+    sent = _prompt(client, door)
+    assert "门那边：老小区楼道 · 夜（场景）" in sent
+    assert "[另一边]\n门那边是「老小区楼道 · 夜」，照参考图里的它画，不另编：门外是六楼楼道" in sent
+    asked = door["payload"]["candidates"][0]["check"]["items"]
+    assert "place" in {x["check"] for x in asked}
+    stairs = _prompt(client, _run(client, "1-01")["versions"][-1])
+    assert "[另一边]" not in stairs and "门那边" not in stairs
+
+
 def test_a_locked_prop_draws_no_scale_reference(client: TestClient) -> None:
     """M5.5 step 9e-1: locking 旧黑发圈 no longer draws its 比例参考 (run 19's put the umbrella at
     her head and the note as big as her chest, and the keyframes copied it); the keyframe says

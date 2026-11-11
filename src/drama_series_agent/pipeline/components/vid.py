@@ -107,7 +107,9 @@ from drama_series_agent.pipeline.components.kf import (
     pick_refs,
     props_text,
     ref_limit,
+    said_of,
     scene_light,
+    shot_space,
     states_text,
 )
 from drama_series_agent.pipeline.components.media import (
@@ -162,6 +164,7 @@ def take_asks(context: dict[str, Any]) -> dict[str, Any]:
         "beats": int(context.get("beats", 2)),
         "light": context.get("light"),
         "place": context.get("place"),
+        "across": list(context.get("across") or []),
         "part": context.get("part"),
         "facing": context.get("facing"),
         "end": list(context.get("end") or []),
@@ -415,6 +418,10 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
         in_shot = set(ids) | named
         look.append(blocking_text(list(shot["blocking"]), in_shot))
+    here, across = await shot_space(
+        session, product.series_id, ids, said_of(shot, contract, list(action))
+    )
+    look += [a.text() for a in across]  # what is through the door (M5.5 step 9e-3)
     if part:
         look.append(PART_VIEW.format(who=part))
     if looked_at:
@@ -461,7 +468,9 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             # 镜头契约 (M5.5; before it, 15o's 插入镜头: nobody in it and nothing said)
             "kind": kind,
             "light": light,
-            "place": scene_place(str(scene["heading"])) if scene and scene.get("heading") else None,
+            "place": here
+            or (scene_place(str(scene["heading"])) if scene and scene.get("heading") else None),
+            "across": [f"{a.via}那边是{a.name}" for a in across],
             "part": part,
             "facing": looked_at,
             "beats": beats,

@@ -71,6 +71,9 @@ class Found:
     # A prop's real size, material and wear (M5.5): from its bible entry's details, or the
     # answer's ``physical``; the keyframe draws it to scale.
     physical: dict[str, str] | None = None
+    # A scene's neighbours through a door or window (M5.5 step 9e-3): [{via, to, note}], ``to``
+    # another scene's key or name; the keyframe shows that scene's picture through the door.
+    adjoins: list[dict[str, str]] | None = None
     # scene id → line ids ([] = the whole scene)
     uses: dict[str, list[str]] = field(default_factory=dict)
 
@@ -145,6 +148,16 @@ def appearance_only(text: str, keep: Iterable[str] = ()) -> str:
     ]
     out = "".join(c + m for c, m in parts).strip("，,；; ")
     return out if out.endswith(("。", ".")) or not out else out + "。"
+
+
+def adjoins_from(data: Any) -> list[dict[str, str]] | None:
+    """The answer's ``adjoins`` with a ``to``, as strings (anything else dropped)."""
+    out = [
+        {"via": str(x.get("via") or "门"), "to": str(x["to"]), "note": str(x.get("note") or "")}
+        for x in data or []
+        if isinstance(x, dict) and x.get("to")
+    ]
+    return out or None
 
 
 def physical_text(physical: Mapping[str, str] | None) -> str:
@@ -262,6 +275,8 @@ def merge(
             target.name = name
         if item.get("note"):
             target.note = str(item["note"])
+        if target.kind == "scene" and (near := adjoins_from(item.get("adjoins"))):
+            target.adjoins = near
         if target.kind == "prop" and (given := physical_from(item.get("physical"))):
             target.physical = {**(target.physical or {}), **given}
         text = item.get("text")
@@ -347,6 +362,7 @@ def reconcile(found: Sequence[Found], known: Iterable[Mapping[str, Any]]) -> lis
                 "text": f.text,
                 "note": f.note,
                 "physical": f.physical,
+                "adjoins": f.adjoins,
                 "uses": [{"scene_id": s, "line_ids": ids} for s, ids in f.uses.items()],
             }
         )

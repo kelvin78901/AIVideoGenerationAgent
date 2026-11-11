@@ -1766,8 +1766,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/6f/6f7f225df1db30a965dc5d834a84557bca4219f8159d241db272265b760250e0",
-              "sha256": "6f7f225df1db30a965dc5d834a84557bca4219f8159d241db272265b760250e0",
+              "path": "blobs/sha256/5b/5b79152c7dbe7b2f63d5fdd96dde11463f6b23d91b4989854b14b99d4cda9788",
+              "sha256": "5b79152c7dbe7b2f63d5fdd96dde11463f6b23d91b4989854b14b99d4cda9788",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1833,8 +1833,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/03/036e6b9ecd3bdea33eabc96f118aab35cb0e4486cec655e90fbd68c4b1be6194",
-              "sha256": "036e6b9ecd3bdea33eabc96f118aab35cb0e4486cec655e90fbd68c4b1be6194",
+              "path": "blobs/sha256/1b/1b5e3775e5469a761c3e3bcdb5d5f9caca76e8701e9ad89bb9af719e921c2069",
+              "sha256": "1b5e3775e5469a761c3e3bcdb5d5f9caca76e8701e9ad89bb9af719e921c2069",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1970,8 +1970,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/00/00aa11ce3aaa56a01b375eb0344cd3d8c30ae77eba27c7889b49f58e5c7c4a71",
-              "sha256": "00aa11ce3aaa56a01b375eb0344cd3d8c30ae77eba27c7889b49f58e5c7c4a71",
+              "path": "blobs/sha256/f5/f5572245d49341c2e69bdd8aca4fe31e1aa8da5abcf4ebbe6872e35344575824",
+              "sha256": "f5572245d49341c2e69bdd8aca4fe31e1aa8da5abcf4ebbe6872e35344575824",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2038,8 +2038,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/84/840fd29f8d34149f701c5477a08080408ba43c687c65f4971eb5a8d6d33f922e",
-              "sha256": "840fd29f8d34149f701c5477a08080408ba43c687c65f4971eb5a8d6d33f922e",
+              "path": "blobs/sha256/2d/2def49688c4dddb51b19aecee53cbea8b15a0e92192921aa04b774256b6116d2",
+              "sha256": "2def49688c4dddb51b19aecee53cbea8b15a0e92192921aa04b774256b6116d2",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2086,7 +2086,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0038,
+        "cost_usd": 0.0039,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2377,8 +2377,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/eb/ebdc0ee69ce3292ffab54d92d37a98e20a8d5a7f06b28f923b8729c8703744d4",
-              "sha256": "ebdc0ee69ce3292ffab54d92d37a98e20a8d5a7f06b28f923b8729c8703744d4",
+              "path": "blobs/sha256/cd/cd680da560f632d750dd148b72f5abf01775b36cd00f8d94f2d92b3abf240b5b",
+              "sha256": "cd680da560f632d750dd148b72f5abf01775b36cd00f8d94f2d92b3abf240b5b",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2587,6 +2587,7 @@
             "aspect": "9:16",
             "refs": [
               "林晚",
+              "门那边：老小区楼道 · 夜",
               "红色长柄伞"
             ]
           },
@@ -2635,8 +2636,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/cc/cc13b4c52f6717b0d83f0b35b1e64fe3cec4b1150f778e96f966e25336061c4b",
-              "sha256": "cc13b4c52f6717b0d83f0b35b1e64fe3cec4b1150f778e96f966e25336061c4b",
+              "path": "blobs/sha256/84/84b33cbf637657385b9a75dbb4c56cb8f1f337f56a32d104e46450d36b4c5edd",
+              "sha256": "84b33cbf637657385b9a75dbb4c56cb8f1f337f56a32d104e46450d36b4c5edd",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2648,7 +2649,7 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:9e2e1f7f232e25b3eb2bbf98c897437ed7bc4afd2e150fdccf4357463dde79ac",
+          "content_hash": "sha256:8eac68f14bfb7c8f0de0a44a4715f08182c7cfd708a38d526c86e478a308c24c",
           "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
           "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,

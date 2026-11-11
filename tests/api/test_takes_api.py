@@ -297,6 +297,8 @@ def test_an_h3_api_take_goes_through_context_ir(client: TestClient) -> None:
     text = _prompt(client, take)
     assert "<Audio 1>: fully_copy - <Audio 1> is reused 1:1" in text
     assert "overall_soundscape: <Audio 1> as it is, with no other sound." in text
+    # The other side of the flat's door is the stairwell (M5.5 step 9e-3).
+    assert "门那边是「老小区楼道 · 夜」，照参考图里的它画，不另编：门外是六楼楼道" in text
 
 
 def _seconds(client: TestClient, sha: str) -> float:

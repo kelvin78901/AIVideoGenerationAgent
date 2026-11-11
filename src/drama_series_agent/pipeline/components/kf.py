@@ -25,6 +25,7 @@ blocking, references and lines, not its length or sound), the action lines it fi
 from __future__ import annotations
 
 import re
+from dataclasses import dataclass
 from typing import Any
 
 from sqlmodel import col, select
@@ -126,6 +127,83 @@ FACING_NOTE = (
     "的肩后或身侧看过去，不要让{who}把它举起来对着镜头。"
 )
 _LOOKS = ("看", "盯", "读", "望", "瞥")
+# The other side of a door or window (M5.5 step 9e-3; run 19 1-09: the door opened onto a street
+# and the room behind her looked like a restaurant): the scene there, from the scenes' ``adjoins``,
+# its picture sent too, when the shot says it is seen.
+ACROSS = re.compile(r"门外|门口|开门|拉开|推开|推门|出门|进门|进屋|屋里|屋内|窗外|门后|门内")
+ACROSS_NOTE = "{via}那边是「{name}」，照参考图里的它画，不另编{note}"
+
+
+@dataclass(frozen=True)
+class Across:
+    """A scene seen through one of the shot's doors or windows."""
+
+    asset_id: str
+    name: str
+    via: str
+    note: str
+
+    @property
+    def label(self) -> str:
+        return f"{self.via}那边：{self.name}"
+
+    def text(self) -> str:
+        return ACROSS_NOTE.format(
+            via=self.via, name=self.name, note=f"：{self.note}" if self.note else "。"
+        )
+
+
+async def shot_space(
+    session: AsyncSession, series_id: str, ids: list[str], said: str
+) -> tuple[str | None, list[Across]]:
+    """The shot's place (its one scene reference, else None: the scene heading's) and, when the
+    shot says the other side is seen (``ACROSS``), the scenes through its doors and windows, either
+    way round (the stairwell's ``adjoins`` names the flat, or the flat's the stairwell)."""
+    assets = await asset_rows(session, ids)
+    scenes = [a for a in (assets.get(i) for i in ids) if a is not None and a.kind == "scene"]
+    if len(scenes) != 1:
+        return None, []
+    here = scenes[0]
+    place = here.name.partition(" · ")[0].strip() or here.name
+    if not ACROSS.search(said):
+        return place, []
+    others = (
+        await session.exec(
+            select(Asset).where(
+                Asset.series_id == series_id,
+                Asset.kind == "scene",
+                Asset.id != here.id,
+                col(Asset.retired).is_(False),
+            )
+        )
+    ).all()
+
+    def known(a: Asset) -> set[str]:
+        return {a.id, a.name, str((a.seed_json or {}).get("key") or "")} - {""}
+
+    out: list[Across] = []
+    for x in (here.seed_json or {}).get("adjoins") or []:
+        other = next((o for o in others if str(x.get("to") or "") in known(o)), None)
+        if other is not None and other.id not in {a.asset_id for a in out}:
+            via, note = str(x.get("via") or "门"), str(x.get("note") or "")
+            out.append(Across(other.id, other.name, via, note))
+    for o in others:
+        for x in (o.seed_json or {}).get("adjoins") or []:
+            if str(x.get("to") or "") in known(here) and o.id not in {a.asset_id for a in out}:
+                out.append(Across(o.id, o.name, str(x.get("via") or "门"), ""))
+    return place, out
+
+
+def said_of(shot: dict[str, Any], contract: dict[str, Any] | None, lines: list[Any]) -> str:
+    """What the shot says happens: its picture, its states and the script's action lines."""
+    c = contract or {}
+    return " ".join(
+        [str(shot.get("intent") or "")]
+        + [str(x.get("state") or "") for x in [*c.get("start", []), *c.get("end", [])]]
+        + [str(x.get("text") if isinstance(x, dict) else getattr(x, "text", "")) for x in lines]
+    )
+
+
 _SMALL = ((3, "指尖大小"), (12, "手掌大小，比脸小"), (25, "和脸差不多大"), (45, "到前臂长"))
 _TALL = (
     (60, "立着到人的膝盖"),
@@ -243,7 +321,14 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     ids = in_frame(shot, c)
     for source in sorted(set((c or {}).get("props_from", {}).values())):
         deps.append(await invalidation.dependency(session, plan.id, shot_slice(source)))
-    refs, unlocked, texts = await _references(session, invalidation, ids)
+    here, across = await shot_space(session, product.series_id, ids, said_of(shot, c, action))
+    refs, unlocked, texts = await _references(
+        session, invalidation, ids + [a.asset_id for a in across if a.asset_id not in ids]
+    )
+    for a in across:  # labelled as the other side, not the shot's own place
+        for r in refs:
+            if r["kind"] == "scene" and r["name"] == a.name:
+                r["name"] = a.label
     people = [str(r["name"]) for r in refs if r["kind"] == "character"]
     part = part_of(shot, c, people)
     part_desc = next((str(r["desc"]) for r in refs if part and r["name"] == part), "")
@@ -261,9 +346,13 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         blocks.append(Block("场景", str(scene["heading"])))
     if light := scene_light(scene):
         blocks.append(Block("光线", light))
-    place = scene_place(str(scene["heading"])) if scene and scene.get("heading") else None
+    # Its own scene picture is where the camera is (run 19 1-10: the heading said the flat, the
+    # shot was in the stairwell); else the heading's place.
+    place = here or (scene_place(str(scene["heading"])) if scene and scene.get("heading") else None)
     if place:
         blocks.append(Block("机位", PLACE_NOTE.format(place=place)))
+    if across:
+        blocks.append(Block("另一边", "\n".join(a.text() for a in across)))
     if shot.get("blocking"):
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
         in_shot = set(ids) | named
@@ -292,6 +381,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         "no_people": False,
         "light": light,
         "place": place,
+        "across": [f"{a.via}那边是{a.name}" for a in across],
         "part": part,
         "facing": seen,
     }

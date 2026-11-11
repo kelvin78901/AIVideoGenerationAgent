@@ -137,6 +137,7 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
             "text": item.get("text"),
             "note": item.get("note"),
             "physical": item.get("physical"),
+            "adjoins": item.get("adjoins"),
             "order": old.get("order", order) if row.id in rows else order,
         }
         # Already made from another description: say so, never overwrite what the user has.

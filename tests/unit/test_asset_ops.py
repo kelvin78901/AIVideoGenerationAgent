@@ -133,3 +133,20 @@ def test_a_props_picture_is_of_the_prop_alone() -> None:
         == "挂在林晚包上的钥匙扣，铜的。"
     )
     assert ops.appearance_only("放在桌上") == ""
+
+
+def test_a_scene_names_what_is_through_its_door() -> None:
+    """M5.5 step 9e-3: a scene's ``adjoins`` (through which door or window, to which scene, how it
+    looks from here); one without a ``to`` is dropped."""
+    lines = ops.numbered_lines(SCRIPT)
+    near = [
+        {"via": "门", "to": "scene:l-2:night", "note": "门外是茶馆后院"},
+        {"via": "窗", "note": "没写是哪个场景"},
+    ]
+    answer = {"assets": [{"kind": "scene", "name": "茶馆 · 夜", "adjoins": near}]}
+    merged = {f.key: f for f in ops.merge(ops.collect(SCRIPT, BIBLE), answer, lines, BIBLE)}
+    assert merged["scene:l-2:night"].adjoins == [
+        {"via": "门", "to": "scene:l-2:night", "note": "门外是茶馆后院"}
+    ]
+    assert ops.adjoins_from([{"to": "x"}, "y", None]) == [{"via": "门", "to": "x", "note": ""}]
+    assert ops.adjoins_from(None) is None
