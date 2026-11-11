@@ -75,7 +75,7 @@ EP_TAKES = 2
 EP_RECORD = "episode-takes.json"  # in the data directory: each shot's takes, for ``cut``
 STEPS = [
     "frames", "vid", "chain", "tts104", "ab", "rewrite", "episode", "cut", "contract", "revise",
-    "recheck",
+    "recheck", "redo",
 ]  # fmt: skip
 PLAN_MODEL = "deepseek/v4-pro"  # the plan route's (M5.5 run 19: ``contract``)
 TTS104_SEED = 191503631  # 1-04's first seed of 14c
@@ -570,20 +570,24 @@ def main() -> int:
     unknown = set(only) - set(STEPS)
     if unknown:
         raise SystemExit(f"unknown steps: {', '.join(sorted(unknown))}")
-    if {"rewrite", "episode", "contract", "revise", "recheck"} & set(only):
+    if {"rewrite", "episode", "contract", "revise", "recheck", "redo"} & set(only):
         if os.environ.get("DRAMA_LIVE") != "1":
             raise SystemExit("rewrite / episode call DeepSeek for real (money): set DRAMA_LIVE=1")
         real = [REWRITE_MODEL, LOOK_MODEL] if "episode" in only else [REWRITE_MODEL]
         if "contract" in only:  # M5.5 run 19: the plan, its check, the keyframe check
             real = [PLAN_MODEL, REWRITE_MODEL, LOOK_MODEL]
-        if "revise" in only or "recheck" in only:  # the check again, the keyframe check
+        if {"revise", "recheck", "redo"} & set(only):  # the check again, the keyframe check
             real = [REWRITE_MODEL, LOOK_MODEL]
         os.environ["DRAMA_REAL_MODELS"] = ",".join(real)
     picks = {k: int(v) for k, v in (p.split("=") for p in args.picks.split(",") if p)}
 
     facts = studio_facts(args.studio.rstrip("/"))
     tmp = Path(tempfile.mkdtemp(prefix="drama-local-video-"))
-    out = EP_OUT if {"episode", "cut", "contract", "revise", "recheck"} & set(only) else tmp / "out"
+    out = (
+        EP_OUT
+        if {"episode", "cut", "contract", "revise", "recheck", "redo"} & set(only)
+        else tmp / "out"
+    )
     out.mkdir(parents=True, exist_ok=True)
     home = Path(args.home) if args.home else tmp / "home"
     os.environ.update({"DRAMA_HOME": str(home), "DRAMA_MOCK": "1", "DRAMA_REAL_LOCAL": "1"})
@@ -814,6 +818,11 @@ def main() -> int:
                 )
                 n = sum(1 for c in calls if c.get("model_key") == key)
                 smoke.say(f"   {key} in this data dir: {n} call(s), ${paid:.4f}")
+        if "redo" in only:
+            from contract_prep import redo
+
+            smoke.expected_api = {REWRITE_MODEL, LOOK_MODEL}
+            redo(smoke, args.start)
         if "recheck" in only:
             from contract_prep import recheck
 
@@ -843,12 +852,14 @@ def main() -> int:
     meter.stop()
     # Only a run of every step replaces the report; a partial run writes next to its files.
     report = REPORT if set(only) == set(DEFAULT_STEPS) else out / "report.txt"
-    if {"contract", "revise", "recheck"} & set(only):
+    if {"contract", "revise", "recheck", "redo"} & set(only):
         EP_SHEETS.mkdir(parents=True, exist_ok=True)
         name = "report-contract.txt" if "contract" in only else "report-revise.txt"
         name = "report-recheck.txt" if only == ["recheck"] else name
         if "revise" in only and args.start:
             name = f"report-revise-{args.start}.txt"
+        if "redo" in only:
+            name = f"report-redo-{args.start}.txt" if args.start else "report-redo.txt"
         report = EP_SHEETS / name
     elif {"episode", "cut"} & set(only):
         name = f"report-from-{args.start}.txt" if args.start else "report.txt"

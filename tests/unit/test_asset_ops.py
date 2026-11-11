@@ -119,3 +119,17 @@ def test_writing_on_a_prop_is_the_props() -> None:
     assert "text:name:船票上的字" not in merged
     assert merged["text:name:门上的字"].text is not None  # 门板 is not a prop it knows
     assert merged["prop:p-1"].physical == {"size": "直径约 5 cm"}  # from the answer
+
+
+def test_a_props_picture_is_of_the_prop_alone() -> None:
+    """Run 19: the note's 「贴在伞柄上」 drew a black umbrella on its picture; where a prop is put
+    is the shot's. A clause that names a character stays (the hair tie on 林晚's wrist)."""
+    note = "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。"
+    assert ops.appearance_only(note) == "方形黄色便利贴，边角被雨打湿卷起。"
+    band = "洗旧了的黑色布发圈，戴在林晚左手腕上。"
+    assert ops.appearance_only(band, ["林晚"]) == band
+    assert (
+        ops.appearance_only("挂在林晚包上的钥匙扣，铜的", ["林晚"])
+        == "挂在林晚包上的钥匙扣，铜的。"
+    )
+    assert ops.appearance_only("放在桌上") == ""

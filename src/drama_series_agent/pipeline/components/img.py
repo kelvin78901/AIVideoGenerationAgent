@@ -25,7 +25,7 @@ from typing import Any
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from drama_series_agent.assets.ops import physical_from, physical_text
+from drama_series_agent.assets.ops import appearance_only, physical_from, physical_text
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.models_db import Asset, Product, ProductVersion
 from drama_series_agent.modelhub.adapters.base import CallContext, Estimate
@@ -56,6 +56,13 @@ KIND_GUIDE = {
         "（手、门框、桌面）看得出它的真实尺寸；看得清材质和细节。"
     ),
 }
+# Run 19: the note's description says 「贴在伞柄上」 and its picture drew a black umbrella;
+# every scale reference and keyframe after took it from there. Where a prop is put is the
+# shot's (its contract's props), not its picture's.
+# A picture model draws what the prompt names, told not to or not: the description's clauses
+# that put it on something are left out of what is sent (``appearance_only``), and this names
+# nothing.
+PROP_ALONE = "只画这件道具本身，和衬托大小的手或桌面；不画它贴着、挂着或放着的别的物件。"
 FINAL_NOTE = "以参考图里的草稿为准，画得更精细：构图、样子和颜色都不要改。"
 STYLE_GUIDE = {
     "handwritten": "手写：圆珠笔写在纸上，笔画自然，有一点倾斜和深浅变化。",
@@ -154,6 +161,8 @@ class ImgComponent(MediaComponent):
                 )
                 characters.append(c)
         blocks = [Block("类别", KIND_GUIDE.get(asset.kind, "")), Block("画幅", frame["aspect"])]
+        if asset.kind == "prop":
+            blocks.append(Block("只有道具", PROP_ALONE))
         if asset.kind == "prop" and (size := physical_text(prop_physical(asset, product))):
             blocks.append(Block("真实尺寸和材质", size))
         context: dict[str, Any] = {"kind": asset.kind, "frame": frame, "characters": characters}
@@ -172,7 +181,11 @@ class ImgComponent(MediaComponent):
         refs, deps, blocks = self._refs(ctx.intent, inputs, source)
         frame = inputs.context["frame"]
         where = self.where_of(ctx.model_key)
-        prompt = prompt_text(ctx.compiled, blocks)
+        compiled = ctx.compiled
+        if inputs.context.get("kind") == "prop" and not ctx.compiled_overridden and ctx.intent:
+            names = [str(c["name"]) for c in inputs.context.get("characters") or []]
+            compiled = compiled.replace(ctx.intent, appearance_only(ctx.intent, names))
+        prompt = prompt_text(compiled, blocks)
         req = self.image_request(
             prompt,
             n=1 if source else self.candidates(),

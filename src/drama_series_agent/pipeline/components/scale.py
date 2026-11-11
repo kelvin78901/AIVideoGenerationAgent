@@ -21,7 +21,7 @@ from typing import Any
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from drama_series_agent.assets.ops import physical_text
+from drama_series_agent.assets.ops import appearance_only, physical_text
 from drama_series_agent.core.models_db import Asset, AssetUse, Product
 from drama_series_agent.modelhub.adapters.base import Estimate
 from drama_series_agent.pipeline.component import Inputs, RunContext
@@ -130,7 +130,12 @@ class ScaleComponent(MediaComponent):
             Block("比例参考", SCALE_GUIDE),
             Block("只有道具", ONLY_PROP),
             Block("人物", character.name),
-            Block("道具", f"{prop.name}：{description}" if description else prop.name),
+            Block(
+                "道具",
+                f"{prop.name}：{appearance_only(description, [character.name])}"
+                if description
+                else prop.name,
+            ),
         ]
         if size := physical_text(prop_physical(prop, prop_product)):
             blocks.append(Block("真实尺寸和材质", size))

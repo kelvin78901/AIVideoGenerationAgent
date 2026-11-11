@@ -128,6 +128,25 @@ def physical_from(data: Any) -> dict[str, str] | None:
     return out or None
 
 
+# A clause that puts a prop somewhere (「贴在伞柄上」): where it is is the shot's (its contract's
+# props), not the prop's look. Run 19: the note's picture drew a black umbrella from it.
+_PLACED = re.compile(r"(?:贴|挂|插|放|靠|夹|别|系|绑|摆|搁|躺)(?:在|于)")
+_CLAUSES = re.compile(r"([^，。；,;]+)([，。；,;]?)")
+
+
+def appearance_only(text: str, keep: Iterable[str] = ()) -> str:
+    """A prop's description without the clauses that put it on or in something else; a clause
+    naming one of ``keep`` (a character: 「戴在林晚左手腕上」) stays."""
+    names = [k for k in keep if k]
+    parts = [
+        (clause, mark)
+        for clause, mark in _CLAUSES.findall(text)
+        if not _PLACED.search(clause) or any(n in clause for n in names)
+    ]
+    out = "".join(c + m for c, m in parts).strip("，,；; ")
+    return out if out.endswith(("。", ".")) or not out else out + "。"
+
+
 def physical_text(physical: Mapping[str, str] | None) -> str:
     """「全长约 90 cm；尼龙伞面、木柄；用了几年」."""
     given = physical or {}

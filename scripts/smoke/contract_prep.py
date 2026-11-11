@@ -18,6 +18,12 @@ the keyframe check; nothing else):
 its check before any take, as a user would on the storyboard page): ``REVISIONS`` through
 ``PATCH /shots/{id}``, the check again, the changed shots' keyframes drawn and checked again,
 分镜确认.
+
+``local_video.py --only redo`` calls ``redo`` (M5.5 step 9d, Kelvin 2026-11-10: the pipeline
+constrains the details, no shot is edited by hand): the props' scale references drawn again
+(only the prop and the person), the storyboard check, then 1-04, 1-06 and 1-09's keyframes drawn
+and checked again as the pipeline now asks for them (the scene's prop states and the props they
+name, the light of the night, the camera inside the scene's place).
 """
 
 from __future__ import annotations
@@ -101,6 +107,8 @@ REVISIONS: dict[str, dict[str, Any]] = {
     },
 }
 SCALE_WAIT_S = 900
+# Run 19's new problems (README): 1-04 two notes and a black umbrella, 1-06 shut out, 1-09 daylight.
+REDO = ("1-04", "1-06", "1-09")
 
 
 def _settings(smoke: Smoke) -> None:
@@ -136,19 +144,22 @@ def _settings(smoke: Smoke) -> None:
     smoke.say("== data: 道具尺寸材质新旧、便利贴上的字写进设置；便利贴手写（txt1）退场")
 
 
-def _props(smoke: Smoke) -> bool:
+def _props(smoke: Smoke, which: tuple[str, ...] = REDRAWN) -> bool:
     def draw() -> list[str]:
-        for a in REDRAWN:
+        for a in which:
             try:
                 unlock(smoke, a)
             except RuntimeError as exc:
                 if "not_locked" not in str(exc):
                     raise
-        return [smoke.run(f"demo-p-asset-{a}")["id"] for a in REDRAWN]
+        return [smoke.run(f"demo-p-asset-{a}")["id"] for a in which]
 
-    if not smoke.step("props", "红伞、便利贴本机重画（实拍质感、真实尺寸、便利贴带字）", draw):
+    names = "、".join(which)
+    if not smoke.step(
+        "props", f"道具本机重画：{names}（实拍质感、真实尺寸、带字、只画道具）", draw
+    ):
         return False
-    for a in REDRAWN:
+    for a in which:
         version = smoke.latest(f"demo-p-asset-{a}")
         smoke.keep_files(f"prop-{a}", version)
         cands = version["payload"].get("candidates") or []
@@ -157,7 +168,7 @@ def _props(smoke: Smoke) -> bool:
         smoke.say(f"   {a}: locked candidate {idx}")
     # Locking a prop draws its 比例参考 (``scale``) on its own.
     deadline = time.monotonic() + SCALE_WAIT_S
-    for a in REDRAWN:
+    for a in which:
         pid = smoke.product_of(f"asset:{a}", "ref_scale")
         while True:
             p = smoke.get(f"/products/{pid}")
@@ -199,7 +210,12 @@ def _say_shots(smoke: Smoke) -> None:
         c = s["contract"]
         start = "；".join(f"{x['subject']}{x['state']}" for x in c["start"])
         end = "；".join(f"{x['subject']}{x['state']}" for x in c["end"])
-        props = "；".join(f"{x['asset_id']}:{x['state']}" for x in c["props"])
+        props = "；".join(
+            f"{x['asset_id']}:{x['state']}"
+            + ("（沿用）" if x["asset_id"] in c.get("props_inherited", []) else "")
+            + ("（带进来）" if x["asset_id"] in c.get("props_linked", []) else "")
+            for x in c["props"]
+        )
         smoke.say(
             f"   {s['label']} {s['shot_type']} {s['framing']} {c['kind']}/{c['beats']}"
             f"{' (接上一镜)' if c['start_inherited'] else ''} | 开始 {start or '—'} | "
@@ -221,7 +237,7 @@ def _check(smoke: Smoke) -> bool:
     return True
 
 
-def _keyframes(smoke: Smoke, labels: set[str] | None = None) -> bool:
+def _keyframes(smoke: Smoke, labels: set[str] | None = None, tag: str = "kf") -> bool:
     by_label = shots(smoke)
     drawn = [
         s
@@ -237,7 +253,7 @@ def _keyframes(smoke: Smoke, labels: set[str] | None = None) -> bool:
         return False
     for s in drawn:
         version = smoke.latest(s["keyframe_product_id"])
-        smoke.keep_files(f"kf-{s['label']}", version)
+        smoke.keep_files(f"{tag}-{s['label']}", version)
         cands: list[dict[str, Any]] = version["payload"].get("candidates") or []
         scores = []
         for i, c in enumerate(cands):
@@ -290,6 +306,33 @@ def revise(smoke: Smoke, only: str | None = None) -> bool:
     if not _check(smoke):
         return False
     return _keyframes(smoke, set(todo))
+
+
+def redo(smoke: Smoke, only: str | None = None) -> bool:
+    """M5.5 step 9d: the pipeline's fixes only (see the module's docstring). ``only``: ``scale``
+    for the scale references alone, or one shot's keyframe alone (each run under 10 minutes)."""
+    smoke.say("== redo: 只靠流程（9d），不改分镜")
+
+    def scales() -> list[str]:
+        return [smoke.run(smoke.product_of(f"asset:{a}", "ref_scale"))["id"] for a in REDRAWN]
+
+    if only == "props":  # the note's own picture drew a black umbrella (9d-1)
+        return _props(smoke, ("note",))
+    if only in (None, "scale"):
+        if not smoke.step("scale", "比例参考重画（只画道具和人物，素净背景）", scales):
+            return False
+        for a in REDRAWN:
+            pid = smoke.product_of(f"asset:{a}", "ref_scale")
+            smoke.keep_files(f"scale-{a}", smoke.latest(pid))
+        if only == "scale":
+            return True
+    labels = {only} if only else set(REDO)
+    for label in sorted(labels):
+        unconfirm(smoke, label)
+    _say_shots(smoke)
+    if not _check(smoke):
+        return False
+    return _keyframes(smoke, labels)
 
 
 def recheck(smoke: Smoke) -> bool:

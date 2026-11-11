@@ -18,6 +18,7 @@ from sqlmodel import select
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import Asset, AssetUse, ModelCall, Product
+from drama_series_agent.pipeline.components import img
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -268,3 +269,5 @@ def test_a_props_size_and_pen_are_set_on_the_assets_page(client: TestClient) -> 
     got = client.portal.call(blocks)  # type: ignore[union-attr]
     assert got["真实尺寸和材质"].startswith("7.6 cm 见方")
     assert got["字迹"].startswith("手写：马克笔")
+    # The note alone, not the umbrella its description sticks it on (run 19: a black one).
+    assert got["只有道具"] == img.PROP_ALONE and "伞" not in got["只有道具"]
