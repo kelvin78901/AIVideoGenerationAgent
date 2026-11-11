@@ -1,0 +1,16 @@
+M5 local smoke · 2026-11-11 00:10
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 2256 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== redo: 只靠流程（9d），不改分镜
+== scale: 比例参考重画（只画道具和人物，素净背景）
+   2 job(s) in 235.0 s, GPU memory peak 31536 MiB
+   call comfy/qwen-image-edit-hq [local] success 73.5 s images=1
+   call comfy/qwen-image-edit-hq [local] success 73.0 s images=1
+   model comfy/qwen-image-edit-hq [local], files: scale-umbrella-scale-0.png (928x1664)
+   model comfy/qwen-image-edit-hq [local], files: scale-note-scale-0.png (928x1664)
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run19-redo
+data: C:\Users\kelvin\AppData\Local\Temp\drama-ep19-5Oilw8\home

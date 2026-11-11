@@ -108,7 +108,8 @@ REVISIONS: dict[str, dict[str, Any]] = {
 }
 SCALE_WAIT_S = 900
 # Run 19's new problems (README): 1-04 two notes and a black umbrella, 1-06 shut out, 1-09 daylight.
-REDO = ("1-04", "1-06", "1-09")
+# 1-03 and 1-05 use the note too: its new picture makes them stale.
+REDO = ("1-03", "1-04", "1-05", "1-06", "1-09")
 
 
 def _settings(smoke: Smoke) -> None:
@@ -159,6 +160,13 @@ def _props(smoke: Smoke, which: tuple[str, ...] = REDRAWN) -> bool:
         "props", f"道具本机重画：{names}（实拍质感、真实尺寸、带字、只画道具）", draw
     ):
         return False
+    # The scale reference adopted before the lock: the one the lock draws replaces it.
+    before = {
+        a: smoke.get(f"/products/{smoke.product_of(f'asset:{a}', 'ref_scale')}")[
+            "adopted_version_id"
+        ]
+        for a in which
+    }
     for a in which:
         version = smoke.latest(f"demo-p-asset-{a}")
         smoke.keep_files(f"prop-{a}", version)
@@ -172,7 +180,7 @@ def _props(smoke: Smoke, which: tuple[str, ...] = REDRAWN) -> bool:
         pid = smoke.product_of(f"asset:{a}", "ref_scale")
         while True:
             p = smoke.get(f"/products/{pid}")
-            if p["adopted_version_id"] or p["status"] == "failed":
+            if p["adopted_version_id"] not in (None, before[a]) or p["status"] == "failed":
                 break
             if time.monotonic() > deadline:
                 smoke.say(f"   {a}: no scale reference after {SCALE_WAIT_S} s")
@@ -270,7 +278,10 @@ def _keyframes(smoke: Smoke, labels: set[str] | None = None, tag: str = "kf") ->
     for s in by_label.values():
         if not s["keyframe_product_id"] or not s["confirmed"]:
             smoke.client.patch(f"/api/v1/shots/{s['id']}", json={"confirmed": True})
-    smoke.post("/gates/storyboard/confirm", {"scope_id": "demo-e1"})
+    try:
+        smoke.post("/gates/storyboard/confirm", {"scope_id": "demo-e1"})
+    except RuntimeError as exc:  # other shots went stale (a new prop picture): said, not fatal
+        smoke.say(f"   分镜确认：{exc}")
     board = smoke.get("/episodes/demo-e1/progress")["steps"]["storyboard"]
     smoke.say(f"   分镜 {board['state']} {board['done']}/{board['total']}")
     return True
