@@ -244,6 +244,8 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert "林晚在心里说话（内心独白），嘴闭着" in door
     note = _prompt(client, _run(client, "1-02")["versions"][-1])
     assert kf.PROPS_NOTE + "红色长柄伞：斜靠在门边墙上，伞面湿" in note
+    # The scene's time of day (夜): its light, said outright (run 19: lit like day).
+    assert "[光线]\n" + kf.LIGHT["night"] in note
     # 道具的真实尺寸 (M5.5 step 5): drawn to scale against the people.
     assert "道具按真实尺寸画，和人物的比例要对：红色长柄伞：全长约 90 cm" in note
     # 1-05 has no umbrella of its own, but its note is 「贴在伞柄上」: the umbrella is in the
@@ -293,7 +295,14 @@ def test_each_keyframe_candidate_is_checked(client: TestClient) -> None:
     assert len(cands) == 3
     for c in cands:
         checks = {x["check"]: x["ok"] for x in c["check"]["items"]}
-        assert checks == {"start": True, "scale": True, "text": True, "people": True, "ocr": True}
+        assert checks == {
+            "start": True,
+            "scale": True,
+            "text": True,
+            "people": True,
+            "light": True,
+            "ocr": True,
+        }
         assert c["check"]["ok"] is True and c["check"]["model"] == "google/gemini-3.1-flash-lite"
     calls = _rows(client, ModelCall, ModelCall.component_id == "kfcheck")
     assert len(calls) == 3 and {c.product_id for c in calls} == {_kf(client, "1-02")["id"]}

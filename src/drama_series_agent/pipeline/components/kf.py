@@ -93,6 +93,15 @@ START_NOTE = "首帧画的是镜头开始的这一刻（不是整个镜头的概
 PROPS_NOTE = "道具的状态是摆好的（每样道具画面里只有一件）："
 SIZE_NOTE = "道具按真实尺寸画，和人物的比例要对："
 INNER_NOTE = "{who}在心里说话（内心独白），嘴闭着，不是在开口说话。"
+# The light of the scene's time (run 19: 1-04 and 1-09 lit like day in a night scene; 「夜」 was
+# only one character of the heading, and the references were lit by day).
+LIGHT = {
+    "night": "夜里：窗外和门外是黑的（最多有远处的路灯），没有天光；光只来自画面里的灯"
+    "（声控灯、台灯、手机屏幕），暗部多、对比强。",
+    "day": "白天：天光从窗外或门外进来，室内比室外暗。",
+    "dawn": "清晨：天刚亮，冷蓝色的天光，光线很弱。",
+    "dusk": "黄昏：低角度的暖橙色天光，影子长。",
+}
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
 # A prop's 比例参考 is for its size only (run 19: 1-04 copied its black umbrella and background).
@@ -217,6 +226,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     ]
     if scene is not None and scene.get("heading"):
         blocks.append(Block("场景", str(scene["heading"])))
+    if light := scene_light(scene):
+        blocks.append(Block("光线", light))
     if shot.get("blocking"):
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
         in_shot = set(ids) | named
@@ -235,6 +246,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         "texts": [t for t in texts if t["method"] == "model"],
         "inner": [],
         "no_people": False,
+        "light": light,
     }
     if c is not None:
         blocks += await contract_blocks(session, c, ids, filmed_lines)
@@ -259,6 +271,11 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "checks": asks,
         },
     )
+
+
+def scene_light(scene: dict[str, Any] | None) -> str | None:
+    """How the scene is lit, from its time of day in the script (``LIGHT``)."""
+    return LIGHT.get(str((scene or {}).get("time_of_day") or ""))
 
 
 async def asset_rows(session: AsyncSession, ids: list[str]) -> dict[str, Asset]:

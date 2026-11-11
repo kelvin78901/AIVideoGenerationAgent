@@ -650,7 +650,8 @@ def test_each_take_is_checked(client: TestClient) -> None:
     take = _run(client, shots["1-03"]["video_product_id"], count=1)["versions"][-1]
     check = take["payload"]["check"]
     found = {x["check"]: x["ok"] for x in check["items"]}
-    assert set(found) == {"repeat", "event", "text", "cut", "hold"}  # 1-03: the note's words
+    # 1-03: the note's words; a night scene, so its light (run 19: 1-09 lit like day).
+    assert set(found) == {"repeat", "event", "text", "light", "cut", "hold"}
     assert found["cut"] is True and check["model"] == "google/gemini-3.1-flash-lite"
     assert len(take["payload"]["sheet_times"]) == 6
     assert "sheet" in {f["role"] for f in take["files"]}

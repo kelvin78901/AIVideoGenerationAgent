@@ -38,7 +38,7 @@ TAKECHECK = "takecheck"  # the route (config/components.yaml)
 TASK = "take_check"
 TEMPLATE = "vid/take_check.j2"
 MAX_TOKENS = 700
-CHECKS = ("repeat", "event", "text", "mouth", "end")
+CHECKS = ("repeat", "event", "text", "mouth", "end", "light")
 HOLD_S = 1.0  # a still opening longer than this is flagged
 
 

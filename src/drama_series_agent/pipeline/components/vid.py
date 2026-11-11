@@ -103,6 +103,7 @@ from drama_series_agent.pipeline.components.kf import (
     pick_refs,
     props_text,
     ref_limit,
+    scene_light,
     states_text,
 )
 from drama_series_agent.pipeline.components.media import (
@@ -154,6 +155,7 @@ def take_asks(context: dict[str, Any]) -> dict[str, Any]:
     return {
         "kind": context.get("kind") or "performance",
         "beats": int(context.get("beats", 2)),
+        "light": context.get("light"),
         "end": list(context.get("end") or []),
         "texts": [t for t in context.get("texts") or [] if t.get("method") == "model"],
         "inner": list(
@@ -392,6 +394,9 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     look: list[str] = [f"{framing}，{move}"]
     if scene is not None and scene.get("heading"):
         look.append(str(scene["heading"]))
+    light = scene_light(scene)
+    if light:
+        look.append(light)
     if shot.get("blocking"):
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
         in_shot = set(ids) | named
@@ -437,6 +442,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "tail_clip": tail,
             # 镜头契约 (M5.5; before it, 15o's 插入镜头: nobody in it and nothing said)
             "kind": kind,
+            "light": light,
             "beats": beats,
             "start": [f"{i['subject']}：{i['state']}" for i in contract["start"]],
             "end": [f"{i['subject']}：{i['state']}" for i in contract["end"]],

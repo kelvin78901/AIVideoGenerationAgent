@@ -7,6 +7,7 @@ You check one keyframe of a short drama against what its shot asks for. Look onl
 {% endif %}{% if texts %}[text] Words that must be visible (Chinese, exact): {% for t in texts %}"{{ t.exact }}" on {{ t.name }}{% if t.style == "handwritten" %} (handwritten: uneven pen strokes, not a printed font){% endif %}{% if not loop.last %}; {% endif %}{% endfor %}. Are the words there, readable and in the right lettering?
 {% endif %}{% if inner %}[mouth] {{ inner | join(", ") }} only speak in their head here: are their lips closed?
 {% endif %}{% if no_people %}[people] Nobody should be in this picture: is it empty of people?
+{% endif %}{% if light %}[light] The time of day and its light (Chinese): {{ light }} Is the picture lit like this (no daylight in a night scene)?
 {% endif %}
 Answer with JSON only, one item per check above, a short note in Chinese when it fails:
 {"items": [{"check": "start", "ok": true, "note": ""}, {"check": "scale", "ok": false, "note": "伞立起来到门把手高，太大了"}]}
