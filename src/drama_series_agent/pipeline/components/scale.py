@@ -42,7 +42,14 @@ REF_SCALE_SLOT = "ref_scale"
 SCALE_GUIDE = (
     "实拍照片，一张完整的画面：参考图 1 的人物自然地拿着、或站在参考图 2 的道具旁边，人物全身入画，"
     "看得出道具和人的真实比例；道具的样子、颜色、材质、上面的字和参考图 2 一模一样，人物的长相、"
-    "发型、衣着和参考图 1 一样；简单真实的环境，自然光，不是棚拍产品图。"
+    "发型、衣着和参考图 1 一样。"
+)
+# Run 19: the note's description says it is stuck on the umbrella's handle, and this picture drew
+# a black umbrella for it, which 1-04's keyframe copied (a black umbrella, a second note). The
+# picture is only for the size: the prop alone, nothing the scene would have.
+ONLY_PROP = (
+    "画面里只有这个人和这件道具，不要画任何别的物件（道具的描述里说它贴在、放在、挂在别的东西上，"
+    "也只画道具本身）；背景是素净的浅色墙面，光线均匀柔和，没有窗户、灯具和家具，不是棚拍产品图。"
 )
 
 
@@ -121,6 +128,7 @@ class ScaleComponent(MediaComponent):
         ]
         blocks = [
             Block("比例参考", SCALE_GUIDE),
+            Block("只有道具", ONLY_PROP),
             Block("人物", character.name),
             Block("道具", f"{prop.name}：{description}" if description else prop.name),
         ]

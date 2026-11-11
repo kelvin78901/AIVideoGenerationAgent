@@ -88,6 +88,8 @@ SIZE_NOTE = "道具按真实尺寸画，和人物的比例要对："
 INNER_NOTE = "{who}在心里说话（内心独白），嘴闭着，不是在开口说话。"
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
+# A prop's 比例参考 is for its size only (run 19: 1-04 copied its black umbrella and background).
+SCALE_ONLY = "比例参考：只看道具和人的大小，不照搬它的构图、光线、背景和动作"
 
 
 def blocking_text(items: list[dict[str, Any]], in_shot: set[str] | None = None) -> str:
@@ -386,7 +388,7 @@ async def _references(
             sp, sha = scale
             refs.append(
                 {
-                    "name": f"{a.name}（和人物同框，看大小）",
+                    "name": f"{a.name}（{SCALE_ONLY}）",
                     "kind": "prop",
                     "product_id": sp.id,
                     "sha256": sha,

@@ -19,6 +19,7 @@ from sqlmodel import select
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import GateDecision, ModelCall, OutputSpecRow
+from drama_series_agent.pipeline.components import kf
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -262,13 +263,16 @@ def test_a_locked_prop_gets_its_scale_reference(client: TestClient) -> None:
     assert version["payload"]["character"] == "林晚"
     assert [f["role"] for f in version["files"]] == ["scale", "prompt"]
     assert len(version["payload"]["from"]) == 2  # 林晚's locked picture, then the band's
+    # The prop alone with her, nothing else (run 19: the note's drew a black umbrella).
+    drawn = _prompt(client, version)
+    assert "不要画任何别的物件" in drawn and "背景是素净的浅色墙面" in drawn
     calls = _rows(client, ModelCall, ModelCall.component_id == "scale")
     assert len(calls) == 1
 
     prompt = _prompt(client, _run(client, "1-05", model="google/nano-banana-pro")["versions"][-1])
     named = prompt.split("参考图 ", 1)[1]
     assert "旧黑发圈（道具）；参考图" in named
-    assert named.index("旧黑发圈（道具）") < named.index("旧黑发圈（和人物同框，看大小）")
+    assert named.index("旧黑发圈（道具）") < named.index(f"旧黑发圈（{kf.SCALE_ONLY}）")
 
 
 def test_each_keyframe_candidate_is_checked(client: TestClient) -> None:
