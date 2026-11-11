@@ -156,13 +156,17 @@ def test_the_storyboard_check(client: TestClient) -> None:
     url = f"{V1}/episodes/{EP1}/shot-checks"
     first = client.get(url).json()
     assert [(i["label"], i["code"], i["source"]) for i in first["issues"]] == [
+        # The script's lines for 1-06 and 1-08 cannot be filmed as written: the pictures are.
+        ("1-06", "lines_dropped", "rule"),
         ("1-06", "crowded", "rule"),
+        ("1-08", "lines_dropped", "rule"),
         ("1-08", "undone", "rule"),
         ("1-08", "replay", "rule"),
     ]
-    assert first["issues"][0]["params"]["actions"] == "她进门、关门、后背抵着门"
-    assert first["issues"][1]["params"]["steps"].startswith("拉开 → 关上")
-    assert first["issues"][2]["params"]["other"] == "1-06"
+    assert first["issues"][1]["params"]["actions"] == "她进门、关门"
+    assert first["issues"][2]["params"]["words"].startswith("拉开 → 关上")
+    assert first["issues"][3]["params"]["steps"].startswith("拉开 → 关上")
+    assert first["issues"][4]["params"]["other"] == "1-06"
     assert first["llm_state"] == "none"  # its product is made with the episode
     resp = client.post(url)
     assert resp.status_code == 200, resp.text
@@ -283,7 +287,8 @@ def test_a_plan_made_again_is_told_what_the_check_found(client: TestClient) -> N
         return {b.title: b.text for b in inputs.blocks}
 
     told = client.portal.call(blocks)["上一版的分镜检查"]  # type: ignore[union-attr]
-    assert "1-06（规则）一个镜头里动作太多：她进门、关门、后背抵着门。" in told
+    assert "1-06（规则）一个镜头里动作太多：她进门、关门。" in told
+    assert "1-06（规则）剧本这几行动作拍不了" in told
     assert "1-08（规则）同一个变化做了又撤销再做" in told
     assert "1-03（模型）插入镜头写了「雨水把字一点点泡开」" in told
     assert "进门、出门）单独一个镜头" in _plan(client)["prompt"]["compiled"]  # how plans are made

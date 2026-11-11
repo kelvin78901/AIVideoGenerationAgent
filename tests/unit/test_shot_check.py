@@ -39,8 +39,10 @@ def test_a_picture_the_user_wrote_is_read_without_the_scripts_action_lines() -> 
     shots = ops.normalize(_demo_answer(), _ctx())["shots"]
     shots[7] = {**shots[7], "intent": "她握着门把，停了两秒，拉开门。", "picture_edited": True}
     assert ("1-08", "undone") not in _found(shots)
-    shots[7] = {**shots[7], "picture_edited": False}  # as planned: the script's line counts
-    assert ("1-08", "undone") in _found(shots)
+    shots[7] = {**shots[7], "picture_edited": False}  # as planned: the script's line is read
+    found = _found(shots)
+    # … and undoes itself, so the shot is filmed from its picture (Kelvin 2026-11-11, run 20).
+    assert ("1-08", "lines_dropped") in found and ("1-08", "undone") not in found
 
 
 def test_undone_reads_a_change_made_undone_and_made_again() -> None:
@@ -110,7 +112,12 @@ def test_a_doorway_and_more_in_one_shot_is_crowded() -> None:
     """Run 19's 1-06 pushed the door, came in, turned, shut it and leant on it in six seconds:
     the door went through her. The demo's 1-06 is the same shot."""
     shots = ops.normalize(_demo_answer(), _ctx())["shots"]
-    assert _found(shots) == [("1-06", "crowded"), ("1-08", "undone"), ("1-08", "replay")]
+    assert _found(shots) == [
+        ("1-06", "crowded"),
+        ("1-08", "lines_dropped"),  # the script's 「拉开门，又关上……再拉开」
+        ("1-08", "undone"),  # and the plan's picture says it too
+        ("1-08", "replay"),
+    ]
     run19 = ["她推门", "进门", "转身", "关门", "靠门"]
     assert check.crowded("、".join(run19)) == run19
     assert check.crowded("她放下包，脱下外套，坐下，拿起手机") is not None  # four, no door
@@ -122,3 +129,15 @@ def test_a_doorway_and_more_in_one_shot_is_crowded() -> None:
     crossing = {"start": [{"state": "站在门外"}], "end": [{"state": "在屋里，背靠着门"}]}
     assert check.crowded("她反手关上门", crossing) == ["她反手关上门"]
     assert check.crowded("她反手关上门") is None
+
+
+def test_script_lines_that_cannot_be_filmed_give_way_to_the_picture() -> None:
+    """Run 20: the plan split the door into shots, the script's line still opened it twice in
+    each; the line goes, the picture is filmed."""
+    door = "她拉开门，又关上。停两秒，再拉开。"
+    assert check.lines_fault([door]) == "拉开 → 关上 → 拉开"
+    assert check.lines_fault(["她推门、进门、转身、关门、靠门"]) is not None
+    assert check.lines_fault(["她拉开门，望向门外"]) is None
+    assert check.lines_fault([]) is None
+    # Holding the handle is how she is, not a second action beside going in.
+    assert check.crowded("一只手握着门把、她准备迈步进门") is None

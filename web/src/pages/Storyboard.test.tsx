@@ -539,14 +539,17 @@ describe("StoryboardPage", () => {
     renderBoard();
     await ready();
     const banner = await screen.findByRole("region", { name: "分镜检查" });
-    expect(banner).toHaveTextContent("分镜检查 · 3 处提示");
-    expect(banner).toHaveTextContent("一个镜头里动作太多：她进门、关门、后背抵着门。");
-    expect(card("1-06")).toHaveTextContent("1 处提示");
+    expect(banner).toHaveTextContent("分镜检查 · 5 处提示");
+    expect(banner).toHaveTextContent("一个镜头里动作太多：她进门、关门。");
+    expect(banner).toHaveTextContent(
+      "剧本这几行动作拍不了（拉开 → 关上 → 拉开），视频只按画面描述拍",
+    );
+    expect(card("1-06")).toHaveTextContent("2 处提示");
     expect(banner).toHaveTextContent("同一个变化做了又撤销再做：拉开 → 关上 → 拉开");
     expect(banner).toHaveTextContent("和 1-06 同一场、同景别、都是固定机位，接起来像回放");
-    expect(card("1-08")).toHaveTextContent("2 处提示");
+    expect(card("1-08")).toHaveTextContent("3 处提示");
     await user.click(within(banner).getByRole("button", { name: "检查" }));
-    await waitFor(() => expect(banner).toHaveTextContent("分镜检查 · 4 处提示"));
+    await waitFor(() => expect(banner).toHaveTextContent("分镜检查 · 6 处提示"));
     expect(banner).toHaveTextContent("雨水把字一点点泡开");
     expect(within(banner).getAllByText("模型")).toHaveLength(1);
   });
@@ -576,7 +579,7 @@ describe("StoryboardPage", () => {
     await user.click(card("1-08"));
     expect(await screen.findByText("接 1-06 的结束时；改了就是这个镜头自己的")).toBeInTheDocument();
     expect(screen.getByRole("note", { name: "这个镜头的检查提示" })).toHaveTextContent(
-      "这个镜头 2 处提示",
+      "这个镜头 3 处提示",
     );
   });
 });

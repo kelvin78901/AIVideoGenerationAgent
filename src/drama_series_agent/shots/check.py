@@ -11,7 +11,10 @@ plan and the script, free and at once. Only a warning: confirming goes on (Kelvi
 - ``cross_space``: someone starts or ends outside the place the shot is in (1-06 in 林晚出租屋
   starting 「站在门外」: the keyframe put the camera in the stairwell, she shut herself out);
 - ``crowded``: going through a doorway and doing something else, or more than three actions
-  (run 19's 1-06: 推门、进门、转身、关门、靠门 in six seconds, the door went through her).
+  (run 19's 1-06: 推门、进门、转身、关门、靠门 in six seconds, the door went through her);
+- ``lines_dropped``: the script's action lines a shot films do either (``lines_fault``), so the
+  shot is filmed from its picture alone and the rules read the picture (run 20's 1-10 / 1-11:
+  「拉开门，又关上……再拉开」 against a plan that split the door into shots).
 
 The plan check by a model (``pipeline/components/plancheck.py``) adds what rules cannot see.
 """
@@ -44,7 +47,7 @@ IN_ROOM = re.compile(r"(?<![向着朝往])(?:屋里|屋内|房间里|房里|进�
 PASSAGE = re.compile(r"楼道|走廊|门口|楼梯|街|院子|天台")
 TALKING = re.compile(r"开口|说话|张嘴|嘴唇(?:在)?动|低声说|喃喃|念叨|自言自语")
 # ``crowded``: going through a doorway, a door opened to go through, and what counts as one
-# action in a clause (「靠在」「坐在」 is where someone is, not something done).
+# action in a clause (「靠在」「坐在」「握着」 is how someone is, not something done).
 THROUGH = re.compile(
     r"进门|进屋|进了门|进了屋|走进|走出|跨进|跨出|迈进|迈出|跨过门槛|迈过门槛|推门而入|夺门而出"
     r"|出门|出了门|进来|出去"
@@ -53,7 +56,7 @@ DOOR_OPEN = re.compile(r"推开门|推门|拉开门|打开门|开门")
 ACTS = re.compile(
     r"(?:推|拉开|拉上|打开|关上|关门|开门|合上|带上|掩上|走|跑|迈|跨|进|出门|出去|转身|回头|抬头"
     r"|低头|抬起|弯腰|蹲|坐|站起|起身|拿|捡|提起|放下|放回|搁|扔|靠|抵|倚|撕|摸|握|抓|捏|擦|掏"
-    r"|递|接过|抱起|伸手|挥|按|敲|翻|拨|捂|扶|攥|脱|穿上|戴上|喝)(?!在)"
+    r"|递|接过|抱起|伸手|挥|按|敲|翻|拨|捂|扶|攥|脱|穿上|戴上|喝)(?![在着])"
 )
 CLAUSES = re.compile(r"[，,。；;！!？?、]")
 MAX_ACTIONS = 3  # more than this in one shot is crowded even without a doorway
@@ -70,6 +73,7 @@ RULE_WORDS = {
         "开始或结束时写了「{words}」，可镜头在「{place}」里拍：要拍那一侧，就分成两个镜头或换场景。"
     ),
     "crowded": "一个镜头里动作太多：{actions}。进门 / 出门单独一个镜头，其余的拆到下一个镜头。",
+    "lines_dropped": "剧本这几行动作拍不了（{words}），视频只按画面描述拍，不读这几行。",
 }
 
 
@@ -166,6 +170,11 @@ def check(
             if s.get("picture_edited")
             else [lines[x].text for x in s.get("line_ids") or [] if x in lines and _acted(lines[x])]
         )
+        # So does the plan's picture when the script's lines undo themselves or crowd the shot
+        # (Kelvin 2026-11-11, run 20): said once, then read no more.
+        if (fault := lines_fault(action, c)) is not None:
+            out.append(Issue(sid, "lines_dropped", {"words": fault}))
+            action = []
         words = "；".join([str(s.get("intent") or ""), *action])
         # The picture and the script's lines tell the same actions: each is counted alone.
         for told in (str(s.get("intent") or ""), "；".join(action)):
@@ -211,6 +220,20 @@ def cross_space(place: str, states: Sequence[Mapping[str, Any]]) -> str | None:
     for st in states:
         if m := outside.search(str(st.get("state") or "")):
             return m.group(0)
+    return None
+
+
+def lines_fault(lines: Sequence[str], contract: Mapping[str, Any] | None = None) -> str | None:
+    """What is wrong with the script's action lines a shot films, when they cannot be filmed as
+    they are (a change undone and made again, or too much for one shot: ``undone``,
+    ``crowded``), else None. Then the shot is filmed from its picture alone (``vid.gather``)."""
+    told = "；".join(x for x in lines if x)
+    if not told:
+        return None
+    if (steps := undone(told)) is not None:
+        return " → ".join(steps)
+    if (acts := crowded(told, contract)) is not None:
+        return "、".join(acts)
     return None
 
 

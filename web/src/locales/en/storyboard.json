@@ -205,6 +205,7 @@
       "state_jump": "Its start does not match how {{other}} ends ({{subject}}).",
       "cross_space": "The start or end says 「{{words}}」 but the shot is in 「{{place}}」: is that seen from here? To film that side, split the shot or change its scene.",
       "crowded": "Too much for one shot: {{actions}}. Going through a door is a shot of its own; split the rest into the next shot.",
+      "lines_dropped": "The script's action lines cannot be filmed as written ({{words}}): the video follows the picture description alone.",
       "repeat": "A repeated action",
       "over_budget": "More actions than the shot allows",
       "other": "Other"

@@ -2825,9 +2825,29 @@
       {
         "shot_id": "demo-shot-1-06",
         "label": "1-06",
+        "code": "lines_dropped",
+        "params": {
+          "words": "林晚把伞靠回墙边、进屋、关门"
+        },
+        "source": "rule",
+        "text": ""
+      },
+      {
+        "shot_id": "demo-shot-1-06",
+        "label": "1-06",
         "code": "crowded",
         "params": {
-          "actions": "她进门、关门、后背抵着门"
+          "actions": "她进门、关门"
+        },
+        "source": "rule",
+        "text": ""
+      },
+      {
+        "shot_id": "demo-shot-1-08",
+        "label": "1-08",
+        "code": "lines_dropped",
+        "params": {
+          "words": "拉开 → 关上 → 拉开"
         },
         "source": "rule",
         "text": ""

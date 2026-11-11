@@ -745,3 +745,26 @@ def test_a_picture_the_user_wrote_replaces_the_scripts_action_lines(client: Test
     planned = client.portal.call(look, "1-01")  # type: ignore[union-attr]
     assert "门口靠着一把红色长柄伞" not in edited, edited
     assert "画板" in planned, planned
+
+
+def test_script_lines_that_undo_themselves_are_not_filmed(client: TestClient) -> None:
+    """Kelvin 2026-11-11 (run 20): 1-08 films the script's 「她拉开门，又关上。停了两秒，再拉开。」;
+    the rules say it undoes itself, so the take follows the shot's picture alone."""
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    _adopt(client, _run(client, shots["1-06"]["video_product_id"], count=1)["versions"][-1])
+
+    async def look(label: str) -> str:
+        state = _state(client)
+        component = state.components.get("vid")
+        assert component is not None
+        async with state.db.session() as session:
+            product = await session.get(Product, shots[label]["video_product_id"])
+            assert product is not None
+            inputs = await component.inputs(session, product)
+        return next(b.text for b in inputs.blocks if b.title == "镜头")
+
+    door = client.portal.call(look, "1-08")  # type: ignore[union-attr]
+    assert "停了两秒，再拉开" not in door, door
+    planned = client.portal.call(look, "1-01")  # type: ignore[union-attr]
+    assert "画板" in planned, planned  # lines that can be filmed are still read

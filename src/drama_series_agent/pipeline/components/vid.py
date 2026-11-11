@@ -132,6 +132,7 @@ from drama_series_agent.pipeline.timing import PRE_ROLL_S, line_seconds, shot_du
 from drama_series_agent.prompts import h3_format
 from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.script import ops as script_ops
+from drama_series_agent.shots import check as shot_check
 from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
 from drama_series_agent.shots.service import (
@@ -427,8 +428,11 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         look.append(PART_VIEW.format(who=part))
     if looked_at:
         look.append(FACING_NOTE.format(who=looked_at["who"], things="、".join(looked_at["things"])))
-    if own is None:  # the script's action lines; a picture the user wrote replaces them
-        look += [str(x.text) for x in action]
+    # The script's action lines; a picture the user wrote replaces them, and so does the plan's
+    # when they undo themselves or crowd the shot (``check.lines_fault``, Kelvin 2026-11-11).
+    acted = [str(x.text) for x in action]
+    if own is None and shot_check.lines_fault(acted, contract) is None:
+        look += acted
     blocks = [Block("画幅", f"{frame_['aspect']}，{seconds:g} 秒"), Block("镜头", "；".join(look))]
     if dialogue:
         blocks.append(
