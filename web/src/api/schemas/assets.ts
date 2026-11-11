@@ -132,6 +132,9 @@ export const CandidatesPayloadSchema = z.object({
   ),
   /** On-screen text: the settings the candidates were made with. */
   text: TextSettingsSchema.nullable().optional(),
+  /** Keyframes (M5.5 9e-5): how many times every candidate failed its check and was drawn
+   * again with what failed; absent when the first try passed. */
+  redraws: z.number().int().optional(),
 });
 export type CandidatesPayload = z.infer<typeof CandidatesPayloadSchema>;
 

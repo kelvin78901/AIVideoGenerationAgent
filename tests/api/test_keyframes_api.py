@@ -19,6 +19,7 @@ from sqlmodel import select
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import GateDecision, ModelCall, OutputSpecRow
+from drama_series_agent.pipeline import kfcheck
 from drama_series_agent.pipeline.components import kf
 
 LOCAL = "http://127.0.0.1"
@@ -326,3 +327,55 @@ def test_each_keyframe_candidate_is_checked(client: TestClient) -> None:
     for c in unchecked:
         assert c["check"]["model"] is None
         assert {x["check"] for x in c["check"]["items"]} == {"ocr"}
+
+
+def _failing_looks(monkeypatch: pytest.MonkeyPatch, fail: int) -> list[str]:
+    """The vision check fails its first ``fail`` looks (「机位在楼道里」); the pictures seen."""
+    seen: list[str] = []
+
+    async def look(*args: Any) -> tuple[list[dict[str, Any]], str]:
+        seen.append(args[1])
+        ok = len(seen) > fail
+        item = {"check": "place", "ok": ok, "note": "" if ok else "机位在楼道里"}
+        return [item], "google/gemini-3.1-flash-lite"
+
+    monkeypatch.setattr(kfcheck, "look", look)
+    return seen
+
+
+def _prompt(client: TestClient, version: dict[str, Any]) -> str:
+    sha = next(f["sha256"] for f in version["files"] if f["role"] == "prompt")
+    return _state(client).store.path_for(sha).read_text(encoding="utf-8")
+
+
+def test_a_keyframe_whose_check_fails_is_drawn_again(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """M5.5 9e-5 (Kelvin 2026-11-11): every candidate failed, so the keyframe is drawn again
+    with what failed, up to ``redraw`` (2) more times; the first run that passes is kept."""
+    seen = _failing_looks(monkeypatch, fail=3)  # the first run's three candidates
+    product = _run(client, "1-06")
+    version = product["versions"][-1]
+    assert version["payload"]["redraws"] == 1
+    assert all(c["check"]["ok"] for c in version["payload"]["candidates"])
+    assert len(seen) == 6
+    told = _prompt(client, version).split("上一张没过的检查（这次要改掉）")[1]
+    assert told.lstrip("]】\n：: ").startswith("- 机位在场景里：机位在楼道里")
+    draws = _rows(client, ModelCall, ModelCall.product_id == product["id"])
+    assert [c.component_id for c in draws].count("kf") == 2  # both draws recorded
+
+
+def test_a_keyframe_that_never_passes_keeps_the_last_try_as_a_warning(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen = _failing_looks(monkeypatch, fail=99)
+    product = _run(client, "1-06")
+    draft = product["versions"][-1]
+    assert draft["payload"]["redraws"] == 2 and len(seen) == 9  # 1 + 2 tries of 3
+    assert not any(c["check"]["ok"] for c in draft["payload"]["candidates"])
+    assert draft["stage"] == "draft"  # confirming goes on: only a warning
+    # An API final is never drawn again by itself (it costs): one look, kept as it is.
+    seen.clear()
+    pick = {"source_version_id": draft["id"], "source_idx": 0}
+    final = _run(client, "1-06", mode="run", where="api", params=pick)["versions"][-1]
+    assert final["stage"] == "final" and "redraws" not in final["payload"] and len(seen) == 1

@@ -221,6 +221,7 @@ components:
     per_call_cap_usd: 1
     cheap_api: volc/seedream-5.0
     candidates: 3
+    redraw: 2   # 关键帧检查每张候选都没过：带着没过的几条再画，最多 2 次（只在本地出图时；M5.5 第 9e 步，Kelvin 2026-11-11 同意）
     note: 本地按锁定的参考图编辑（FLUX 3 Klein，没装时换 Qwen-Image-Edit）；镜头没有锁定的参考图时草稿改用同家的文生图（两家的编辑版都只能按参考图编辑）
     follows_output_spec: true
     gate: storyboard
@@ -245,6 +246,7 @@ components:
     per_call_cap_usd: 2
     alt_order: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1]
     candidates: 2
+    redraw: 2   # take 检查没过：带着没过的几条再出，最多 2 次（只在本地出片时；M5.5 第 9e 步）
     final_api: minimax/h3-regenerate-2k   # 「用 API 出终版」：本地 H3 草稿重生成到 2K
     follows_output_spec: true
     gate: takes

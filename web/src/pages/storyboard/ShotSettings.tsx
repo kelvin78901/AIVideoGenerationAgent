@@ -62,6 +62,7 @@ function FirstFrame({
   const version = product.data ? currentVersion(product.data) : undefined;
   const parsed = CandidatesPayloadSchema.safeParse(version?.payload);
   const cands = parsed.success ? parsed.data.candidates : [];
+  const redraws = parsed.success ? (parsed.data.redraws ?? 0) : 0;
 
   if (shot.shot_type === "continuous") {
     const from = shot.tail_from ?? "";
@@ -108,6 +109,18 @@ function FirstFrame({
         disabled={shot.confirmed}
         onPick={onPick}
       />
+      {redraws ? (
+        <p className="text-xs text-muted-foreground">
+          {t(
+            cands.every((c) => c.check?.items.length && !c.check.ok)
+              ? "shot.redrawnStill"
+              : "shot.redrawn",
+            {
+              count: redraws,
+            },
+          )}
+        </p>
+      ) : null}
       {shot.confirmed ? null : (
         <div>
           <FinalButton

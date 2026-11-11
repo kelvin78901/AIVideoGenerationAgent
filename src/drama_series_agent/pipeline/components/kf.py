@@ -727,35 +727,68 @@ class KfComponent(MediaComponent):
         refs, deps, blocks = pick_refs(inputs, draft_file(source), limit)
         frame = inputs.context["frame"]
         where = self.where_of(ctx.model_key)
-        prompt = prompt_text(ctx.compiled, blocks)
-        req = self.image_request(
-            prompt,
-            n=1 if source else self.candidates(),
-            size=frame_size(frame, where),
-            aspect=frame["aspect"],
-            seed=ctx.seed,
-            task="final" if source else "keyframe",
-            refs=[r["sha256"] for r in refs],
-            extra=self._text_params(inputs),
-        )
-        call = await self.media_call(
-            ctx, req, inputs.episode_id, model=ctx.model_key, fallback_reason=ctx.fallback_reason
-        )
-        if not call.files:
-            raise ComponentError("no_images")
-        files = candidate_files(call)
+        # 检查没过自动重画 (9e-5): every candidate failed its check, so draw again with what
+        # failed, up to ``redraw`` more times on this machine (an API picture costs: a warning).
+        redraws = self.redraws() if where == "local" else 0
+        calls: list[Any] = []
+        best: tuple[int, int, str, list[dict[str, Any]], list[dict[str, Any]]] | None = None
+        fixes: list[Block] = []
+        for attempt in range(1 + redraws):
+            prompt = prompt_text(ctx.compiled, [*blocks, *fixes])
+            seed = ctx.seed + 100 * attempt if ctx.seed is not None and attempt else ctx.seed
+            req = self.image_request(
+                prompt,
+                n=1 if source else self.candidates(),
+                size=frame_size(frame, where),
+                aspect=frame["aspect"],
+                seed=seed,
+                task="final" if source else "keyframe",
+                refs=[r["sha256"] for r in refs],
+                extra=self._text_params(inputs),
+            )
+            call = await self.media_call(
+                ctx,
+                req,
+                inputs.episode_id,
+                model=ctx.model_key,
+                fallback_reason=ctx.fallback_reason,
+            )
+            calls.append(call)
+            if not call.files:
+                raise ComponentError("no_images")
+            files = candidate_files(call)
+            checked = await self._check(ctx, inputs, files, [{} for _ in files])
+            top = max(checked, key=kfcheck.score)
+            if best is None or kfcheck.score(top) > best[0]:
+                best = (kfcheck.score(top), attempt, prompt, files, checked)
+            if kfcheck.passed(checked):
+                best = (kfcheck.score(top), attempt, prompt, files, checked)
+                break
+            fixes = [Block("上一张没过的检查（这次要改掉）", kfcheck.failed_text(top))]
+        assert best is not None
+        _, kept, prompt, files, checked = best
         payload: dict[str, Any] = {
-            "candidates": [{} for _ in files],
+            "candidates": checked,
             "aspect": frame["aspect"],
             "refs": [r["name"] for r in refs if r["name"] != "草稿"],
         }
-        stage = "final" if source else "draft" if call.where == "local" else None
-        draft = self.media_draft(ctx, inputs, payload, files, [call], prompt, stage=stage)
+        if len(calls) > 1:
+            payload["redraws"] = len(calls) - 1  # tries after the first; ``kept``: the one shown
+        stage = "final" if source else "draft" if calls[kept].where == "local" else None
+        draft = self.media_draft(ctx, inputs, payload, files, calls, prompt, stage=stage)
         draft.dependencies = [*draft.dependencies, *deps]
+        if kept:
+            draft.seed = ctx.seed + 100 * kept if ctx.seed is not None else None
         if source:
             draft.params["source"] = {"version_id": source[0].id, "idx": source[1]}
-        await self._check(ctx, inputs, draft)
         return draft
+
+    def redraws(self) -> int:
+        """``redraw`` of this component in ``config/components.yaml``."""
+        try:
+            return max(0, get_config().components.component(self.id).redraw)
+        except KeyError:
+            return 0
 
     def estimate(self, inputs: Inputs, compiled: str, model: str) -> Estimate:
         source = bool(inputs.params.get("source_version_id"))
@@ -774,7 +807,9 @@ class KfComponent(MediaComponent):
         asks: dict[str, Any] = inputs.context.get("checks") or {}
         look = kfcheck.estimate(self.services, route_model(self.services, kfcheck.KFCHECK), asks)
         if kfcheck.has_asks(asks) and look is not None:  # 关键帧检查: one look a candidate
-            parts += [look] * n
+            # … and as many again for each redraw it may take (on this machine only: 9e-5)
+            tries = 1 + (self.redraws() if self.where_of(model) == "local" else 0)
+            parts += [look] * n * tries
         return Estimate(
             cost_usd=sum(e.cost_usd for e in parts),
             seconds=sum(e.seconds for e in parts),
@@ -784,16 +819,22 @@ class KfComponent(MediaComponent):
     def mock_responders(self) -> dict[str, Responder]:
         return {kfcheck.TASK: kfcheck.mock_check}
 
-    async def _check(self, ctx: RunContext, inputs: Inputs, draft: VersionDraft) -> None:
+    async def _check(
+        self,
+        ctx: RunContext,
+        inputs: Inputs,
+        files: list[dict[str, Any]],
+        candidates: list[dict[str, Any]],
+    ) -> list[dict[str, Any]]:
         """关键帧检查 (M5.5): each candidate looked at against its shot and its drawn words
-        read back by OCR, into ``payload.candidates[i].check`` (only a warning)."""
+        read back by OCR, into ``candidates[i].check``."""
         asks = inputs.context.get("checks") or {}
         if not kfcheck.has_asks(asks):
-            return
+            return candidates
         call_ctx = self._call_ctx(ctx, inputs.episode_id)
         item = item_of(ctx.product)
-        candidates = list(draft.payload.get("candidates") or [])
-        for f in draft.files:
+        candidates = list(candidates)
+        for f in files:
             i = int(f.get("idx") or 0)
             if f.get("role") != "candidate" or i >= len(candidates):
                 continue
@@ -820,7 +861,7 @@ class KfComponent(MediaComponent):
                     **candidates[i],
                     "check": {"items": items, "ok": all(x["ok"] for x in items), "model": model},
                 }
-        draft.payload = {**draft.payload, "candidates": candidates}
+        return candidates
 
     # ------------------------------------------------------------------ internals
 

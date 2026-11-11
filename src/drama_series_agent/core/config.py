@@ -257,6 +257,9 @@ class ComponentDefault(_Loose):
     cheap_api: str | None = None
     per_call_cap_usd: float | None = None  # 单次花费上限; default: ComponentsConfig's
     candidates: int | None = None
+    # 检查没过自动重画 (M5.5 9e-5, kf and vid): how many more tries, with what failed, when the
+    # check fails every candidate of a local run; 0: only a warning.
+    redraw: int = 0
     # 「用 API 出终版」 of a local draft goes to this model, not the route's API model (vid: H3
     # Regenerate-2K).
     final_api: str | None = None

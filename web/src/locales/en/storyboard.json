@@ -86,6 +86,8 @@
     "picked": "Picked",
     "kfDraft": "Local draft",
     "kfFinal": "API final",
+    "redrawn": "The keyframe check failed; drawn again with what failed, it passed after {{count}} more tries.",
+    "redrawnStill": "The keyframe check failed and still fails after {{count}} more tries: only a warning, confirming goes on.",
     "noKeyframe": "No keyframe yet. Pick the Keyframes component on the right and click Rerun.",
     "tailTitle": "Last frame of {{id}}",
     "tailText": "No keyframe of its own: video generation starts from the last frame of {{id}}, so action and light carry over.",

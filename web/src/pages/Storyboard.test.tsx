@@ -75,6 +75,36 @@ describe("StoryboardPage", () => {
     ).toBeInTheDocument();
   });
 
+  it("says when a keyframe was drawn again after its check failed (M5.5 9e-5)", async () => {
+    const product = keyframe("1-04");
+    const v = product?.versions.find((x) => x.id === product.current_version_id);
+    if (!v) throw new Error("1-04 has no keyframe");
+    v.payload = { ...v.payload, redraws: 2 };
+    renderBoard();
+    await ready();
+    expect(
+      await screen.findByText("关键帧检查没过，带着没过的几条自动重画了 2 次，这次过了。"),
+    ).toBeInTheDocument();
+  });
+
+  it("says when a keyframe still fails after its redraws: only a warning (M5.5 9e-5)", async () => {
+    const product = keyframe("1-04");
+    const v = product?.versions.find((x) => x.id === product.current_version_id);
+    if (!v) throw new Error("1-04 has no keyframe");
+    const failed = { items: [{ check: "place", ok: false, note: "机位在楼道里" }], ok: false };
+    const cands = (v.payload as { candidates: object[] }).candidates;
+    v.payload = {
+      ...v.payload,
+      redraws: 2,
+      candidates: cands.map((c) => ({ ...c, check: { ...failed, model: "m" } })),
+    };
+    renderBoard();
+    await ready();
+    expect(
+      await screen.findByText("关键帧检查没过，自动重画了 2 次仍没过：只是提示，可以照常确认。"),
+    ).toBeInTheDocument();
+  });
+
   it("lists the script lines the shot films, each a link to the script and the novel", async () => {
     renderBoard();
     await ready();
