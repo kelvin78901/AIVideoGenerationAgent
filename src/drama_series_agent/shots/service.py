@@ -32,7 +32,7 @@ draws the keyframes again (local drafts).
 from __future__ import annotations
 
 import re
-from collections.abc import Awaitable, Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -113,15 +113,23 @@ async def keyframe_products(session: AsyncSession, shot_ids: Iterable[str]) -> d
     return await shot_products(session, shot_ids, KEYFRAME_SLOT)
 
 
+def own_picture(keyframe: Product | None, shot: Mapping[str, Any]) -> str | None:
+    """The picture description the user wrote for a shot (storyboard page or prompt panel: the
+    keyframe prompt's intent), when it is not the plan's. Then it says what the shot shows, and
+    the script's action lines it films are not read beside it (Kelvin 2026-11-10, run 19: the
+    script's 「拉开门，又关上……再拉开」 against a picture that opens the door once)."""
+    mine = str(((keyframe.prompt_json if keyframe else None) or {}).get("intent") or "").strip()
+    return mine if mine and mine != str(shot.get("intent") or "").strip() else None
+
+
 async def pictured(session: AsyncSession, shots: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    """The plan's shots with the picture description on screen: the keyframe prompt's intent
-    (where the storyboard page writes it) over the plan's seed. What the checks read."""
+    """The plan's shots with the picture description on screen: the user's own
+    (``own_picture``, marked ``picture_edited``) over the plan's. What the checks read."""
     keyframes = await keyframe_products(session, [str(s["id"]) for s in shots])
     out = []
     for s in shots:
-        kf = keyframes.get(str(s["id"]))
-        mine = ((kf.prompt_json if kf else None) or {}).get("intent")
-        out.append({**s, "intent": mine} if mine else s)
+        mine = own_picture(keyframes.get(str(s["id"])), s)
+        out.append({**s, "intent": mine, "picture_edited": True} if mine else s)
     return out
 
 

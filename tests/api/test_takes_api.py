@@ -656,3 +656,30 @@ def test_each_take_is_checked(client: TestClient) -> None:
     assert "sheet" in {f["role"] for f in take["files"]}
     calls = [c for c in _rows(client, ModelCall) if c.component_id == "takecheck"]
     assert len(calls) == 1
+
+
+def test_a_picture_the_user_wrote_replaces_the_scripts_action_lines(client: TestClient) -> None:
+    """Kelvin 2026-11-10 (run 19): the script's 「拉开门，又关上……再拉开」 is not read beside a
+    picture description the user wrote; a shot left as planned still gets its action lines."""
+    shots = _shots(client)
+    client.patch(f"{V1}/shots/{shots['1-02']['id']}", json={"confirmed": False})
+    resp = client.patch(
+        f"{V1}/shots/{shots['1-02']['id']}", json={"intent": "门口：伞柄上的便利贴，近一点。"}
+    )
+    assert resp.status_code == 200, resp.text
+    _confirm_storyboard(client)
+
+    async def look(label: str) -> str:
+        state = _state(client)
+        component = state.components.get("vid")
+        assert component is not None
+        async with state.db.session() as session:
+            product = await session.get(Product, shots[label]["video_product_id"])
+            assert product is not None
+            inputs = await component.inputs(session, product)
+        return next(b.text for b in inputs.blocks if b.title == "镜头")
+
+    edited = client.portal.call(look, "1-02")  # type: ignore[union-attr]
+    planned = client.portal.call(look, "1-01")  # type: ignore[union-attr]
+    assert "门口靠着一把红色长柄伞" not in edited, edited
+    assert "画板" in planned, planned

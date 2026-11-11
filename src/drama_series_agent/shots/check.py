@@ -107,7 +107,12 @@ def check(
     for i, s in enumerate(shots):
         sid = str(s["id"])
         c = contracts.get(sid) or {}
-        action = [lines[x].text for x in s.get("line_ids") or [] if x in lines and _acted(lines[x])]
+        # A picture the user wrote says what is filmed; the video reads it alone (``vid``).
+        action = (
+            []
+            if s.get("picture_edited")
+            else [lines[x].text for x in s.get("line_ids") or [] if x in lines and _acted(lines[x])]
+        )
         words = "；".join([str(s.get("intent") or ""), *action])
         if (steps := undone(words)) is not None:
             out.append(Issue(sid, "undone", {"steps": " → ".join(steps)}))

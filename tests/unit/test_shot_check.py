@@ -34,6 +34,15 @@ def test_run17s_door_and_replay_are_found_in_the_demo_plan() -> None:
     assert _found(shots) == [("1-08", "undone"), ("1-08", "replay")]
 
 
+def test_a_picture_the_user_wrote_is_read_without_the_scripts_action_lines() -> None:
+    """Kelvin 2026-11-10 (run 19): the video reads the user's picture alone, so does the rule."""
+    shots = ops.normalize(_demo_answer(), _ctx())["shots"]
+    shots[7] = {**shots[7], "intent": "她握着门把，停了两秒，拉开门。", "picture_edited": True}
+    assert ("1-08", "undone") not in _found(shots)
+    shots[7] = {**shots[7], "picture_edited": False}  # as planned: the script's line counts
+    assert ("1-08", "undone") in _found(shots)
+
+
 def test_undone_reads_a_change_made_undone_and_made_again() -> None:
     assert check.undone("她拉开门，又关上。停两秒，再拉开。") == ["拉开", "关上", "拉开"]
     assert check.undone("她拿起伞，放下，又拿起来") == ["拿起", "放下", "拿起"]

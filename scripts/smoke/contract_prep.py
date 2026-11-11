@@ -66,13 +66,14 @@ REVISIONS: dict[str, dict[str, Any]] = {
     # The model: she held no umbrella after 1-05, and 1-10 picks it up outside the door.
     "1-06": {
         "intent": "出租屋内，林晚空着手进门、反手关上门，后背抵着门，台灯暖光。",
-        "asset_ids": None,  # without the umbrella: it stays outside (filled in by ``revise``)
+        # With the umbrella's picture: without it the keyframe drew a black one by the door.
+        "asset_ids": ["umbrella"],  # added to the shot's (``revise``)
         "contract": {
             "kind": "action",
             "beats": 2,
             "start": [{"subject": LINWAN, "state": "站在门外，伞仍靠在门边墙上"}],
             "end": [{"subject": LINWAN, "state": "在屋里，背靠着关上的门"}],
-            "props": [],
+            "props": [{"asset_id": "umbrella", "state": "靠在门外墙边，没有拿进屋"}],
         },
     },
     # The rule: 拉开 → 关上 → 拉开 (undone and done again). The hesitation is acted, once.
@@ -264,17 +265,21 @@ def prepare(smoke: Smoke) -> bool:
     return _props(smoke) and _plan(smoke) and _keyframes(smoke)
 
 
-def revise(smoke: Smoke) -> bool:
-    """The storyboard fixed by its check (``REVISIONS``), checked again, the changed shots'
-    keyframes drawn again; then 分镜确认."""
+def revise(smoke: Smoke, only: str | None = None) -> bool:
+    """The storyboard fixed by its check (``REVISIONS``; ``only`` one of them, ``--from``),
+    checked again, the changed shots' keyframes drawn again; then 分镜确认."""
     smoke.say("== revise: 按分镜检查改分镜（PATCH /shots，和分镜页一样）")
     by_label = shots(smoke)
-    for label, patch in REVISIONS.items():
+    todo = {k: v for k, v in REVISIONS.items() if only is None or k == only}
+    for label, patch in todo.items():
         shot = by_label[label]
         unconfirm(smoke, label)
         body = dict(patch)
         if "asset_ids" in body:
-            body["asset_ids"] = [a for a in shot["asset_ids"] if a != "umbrella"]
+            body["asset_ids"] = [
+                *shot["asset_ids"],
+                *(a for a in body["asset_ids"] if a not in shot["asset_ids"]),
+            ]
         resp = smoke.client.patch(f"/api/v1/shots/{shot['id']}", json=body)
         smoke.say(f"   {label}: {', '.join(body)}（{resp.status_code}）")
         if resp.status_code != 200:
@@ -284,7 +289,7 @@ def revise(smoke: Smoke) -> bool:
     _say_shots(smoke)
     if not _check(smoke):
         return False
-    return _keyframes(smoke, set(REVISIONS))
+    return _keyframes(smoke, set(todo))
 
 
 def recheck(smoke: Smoke) -> bool:

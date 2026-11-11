@@ -124,7 +124,12 @@ from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
-from drama_series_agent.shots.service import KEYFRAME_SLOT, STORYBOARD_GATE, VIDEO_SLOT
+from drama_series_agent.shots.service import (
+    KEYFRAME_SLOT,
+    STORYBOARD_GATE,
+    VIDEO_SLOT,
+    own_picture,
+)
 from drama_series_agent.spec.dims import dims
 
 LANGUAGE = {"zh-CN": "Chinese", "en": "English"}
@@ -215,6 +220,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     deps = [await invalidation.dependency(session, plan.id, shot_slice(row.id))]
 
     # The first frame.
+    own = None  # the user's picture description (``own_picture``): then no action lines
     if shot["shot_type"] == "continuous" and shot.get("tail_from"):
         upstream = await _shot_product(session, str(shot["tail_from"]), VIDEO_SLOT)
         take = (
@@ -243,6 +249,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         first = str(ref["sha256"])
         # What the keyframe was asked to show; a look at the picture replaces it (``vlook``).
         first_desc = str((keyframe.prompt_json or {}).get("intent") or shot.get("intent") or "")
+        own = own_picture(keyframe, shot)
 
     # The lines it films, in script order.
     script = await script_product(session, episode_id)
@@ -379,7 +386,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
         in_shot = set(shot.get("asset_ids") or []) | named
         look.append(blocking_text(list(shot["blocking"]), in_shot))
-    look += [str(x.text) for x in action]
+    if own is None:  # the script's action lines; a picture the user wrote replaces them
+        look += [str(x.text) for x in action]
     blocks = [Block("画幅", f"{frame_['aspect']}，{seconds:g} 秒"), Block("镜头", "；".join(look))]
     if dialogue:
         blocks.append(

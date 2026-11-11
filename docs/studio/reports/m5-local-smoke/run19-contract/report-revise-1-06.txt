@@ -1,0 +1,53 @@
+M5 local smoke · 2026-11-10 17:44
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 20998 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== revise: 按分镜检查改分镜（PATCH /shots，和分镜页一样）
+   1-06: intent, asset_ids, contract（200）
+   1-01 scene_change wide action/2 | 开始 林晚在楼梯口，抱着画板袋，湿了半边 | 结束 林晚停在六楼楼梯口，抬头看见门边的伞，愣住 | 道具 — | 台词 —
+      画面：楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼，在楼梯口停步，抬头看见门边靠着一把红伞，愣住。
+   1-02 same_scene_cut medium performance/1 | 开始 林晚走到门口，停下看着伞 | 结束 林晚盯着伞，表情疑惑 | 道具 umbrella:靠墙，伞柄贴便利贴；note:贴在伞柄上 | 台词 —
+      画面：门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。
+   1-03 same_scene_cut closeup insert/0 | 开始 便利贴贴在伞柄上，字迹清晰 | 结束 便利贴不变 | 道具 note:贴在伞柄上，字迹歪扭 | 台词 —
+      画面：便利贴特写，歪扭的手写字，边角被雨打湿。
+   1-04 same_scene_cut close dialogue/1 | 开始 林晚看着便利贴，愣住 | 结束 林晚低声说出名字，表情复杂 | 道具 — | 台词 {'demo-b5': 'dialogue'}
+      画面：林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。
+   1-05 same_scene_cut closeup action/2 | 开始 林晚的手停在便利贴上方，尚未触碰 | 结束 林晚的手摸到左手腕旧发圈 | 道具 note:贴在伞柄上；band:戴在林晚左手腕 | 台词 —
+      画面：她的指尖停在便利贴上，下意识摸左手腕的旧发圈。
+   1-06 scene_change wide action/2 | 开始 林晚站在门外，伞仍靠在门边墙上 | 结束 林晚在屋里，背靠着关上的门 | 道具 umbrella:靠在门外墙边，没有拿进屋 | 台词 —
+      画面：出租屋内，林晚空着手进门、反手关上门，后背抵着门，台灯暖光。
+   1-07 same_scene_cut closeup performance/1 | 开始 手机屏幕亮着，显示 23:52 | 结束 手机屏幕仍亮着 | 道具 phone:屏幕显示 23:52 | 台词 —
+      画面：手机亮屏，锁屏时间 23:52，没有新消息。
+   1-08 continuous medium dialogue/1 (接上一镜) | 开始 林晚在屋里，背靠着关上的门 | 结束 林晚仍靠着门，表情复杂 | 道具 phone:屏幕亮着，握在手中 | 台词 {'demo-b10': 'inner'}
+      画面：林晚背靠着门，手机屏幕光照亮她的脸，她看着手机，表情复杂，内心独白。画面中景，光线微弱。
+   1-09 same_scene_cut wide action/2 | 开始 林晚站在门后，手握着门把 | 结束 林晚拉开门，站在门口；家门开着 | 道具 — | 台词 —
+      画面：林晚从门边站直，转身握住门把，停了两秒，拉开门。画面中景，她表情纠结。
+   1-10 same_scene_cut medium action/2 | 开始 林晚站在门口；红伞靠在门外墙边 | 结束 林晚拿着伞，直起身 | 道具 umbrella:靠在门外墙边，被林晚拿起 | 台词 —
+      画面：门外，林晚站在门口，弯腰拿起靠在门外墙边的红色长柄伞，直起身，表情坚定。画面中景，光线从屋内照出。
+== plancheck: 分镜检查（规则 + DeepSeek）
+   1 job(s) in 3.5 s, GPU memory peak 20998 MiB
+   call deepseek/v4.1-flash [api] success 3.4 s audio=Nones
+   模型检查 ready，4 处提示
+   1-01 state_jump [llm] 开始写的是“在楼梯口”，画面却拍她“走上六楼”，1-01 的首帧就已经在六楼楼梯口了；把开始改成“林晚刚踏上六楼最后一级台阶”，别让首帧和画面矛盾。
+   1-06 state_jump [llm] 1-05 结束时她手还在便利贴和发圈上、伞就在手边，1-06 开始却“站在门外”且要把伞留在门外；中间没有任何收手、转身离开的动作，接不上。把 1-06 的开始改为“林晚直起身，退后一步准备进屋，伞靠在墙边”。
+   1-08 inner_mouth [llm] 内心独白镜头里写“她看着手机、表情复杂”，再加上对白台词，生成时容易让她张嘴说出声音；台词标注清楚是画外内心独白，画面只保留抿嘴、垂眼，不要有说话口型。
+   1-08 state_jump [llm] 1-07 只拍了手机特写，没交代手机从哪来、谁拿着；1-08 开始她“背靠着门”、手里有手机，但 1-06 结束时她是空手进门的，手机凭空出现。在 1-06 结束或 1-07 开始补一句“她从风衣口袋掏出手机”。
+== kf: 关键帧重画（本地草稿）并检查（Gemini + OCR）：1-06
+   1 job(s) in 46.5 s, GPU memory peak 24934 MiB
+   call comfy/flux3-klein [local] success 41.4 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   model comfy/flux3-klein [local], files: kf-1-06-candidate-0.png (928x1664), kf-1-06-candidate-1.png (928x1664), kf-1-06-candidate-2.png (928x1664)
+   1-06 #0: start ✓，scale ✓
+   1-06 #1: start ✓，scale ✗ 伞的比例过大，长度几乎达到了人物腰部以上，且握柄位置过高
+   1-06 #2: start ✓，scale ✗ 伞的比例过大，几乎达到门把手高度，且伞柄形状夸张
+   1-06: 确认第 1 张（200）
+   分镜 confirmed 10/10
+   deepseek/v4.1-flash in this data dir: 27 call(s), $0.0408
+   google/gemini-3.1-flash-lite in this data dir: 78 call(s), $0.0328
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run19-contract
+data: C:\Users\kelvin\AppData\Local\Temp\drama-ep19-5Oilw8\home

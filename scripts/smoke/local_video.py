@@ -806,7 +806,7 @@ def main() -> int:
             from contract_prep import revise
 
             smoke.expected_api = {REWRITE_MODEL, LOOK_MODEL}
-            revise(smoke)
+            revise(smoke, args.start)
             calls = smoke.get("/dev/model-calls", limit=500)
             for key in (REWRITE_MODEL, LOOK_MODEL):
                 paid = sum(
@@ -847,6 +847,8 @@ def main() -> int:
         EP_SHEETS.mkdir(parents=True, exist_ok=True)
         name = "report-contract.txt" if "contract" in only else "report-revise.txt"
         name = "report-recheck.txt" if only == ["recheck"] else name
+        if "revise" in only and args.start:
+            name = f"report-revise-{args.start}.txt"
         report = EP_SHEETS / name
     elif {"episode", "cut"} & set(only):
         name = f"report-from-{args.start}.txt" if args.start else "report.txt"
