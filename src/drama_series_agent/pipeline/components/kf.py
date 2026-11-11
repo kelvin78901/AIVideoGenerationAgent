@@ -30,7 +30,13 @@ from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.core.config import Resolved, get_config
-from drama_series_agent.core.models_db import Asset, OutputSpecRow, Product, ProductVersion, Shot
+from drama_series_agent.core.models_db import (
+    Asset,
+    OutputSpecRow,
+    Product,
+    ProductVersion,
+    Shot,
+)
 from drama_series_agent.episodes.service import script_product
 from drama_series_agent.modelhub.adapters.base import Estimate, ModelError
 from drama_series_agent.modelhub.adapters.mock import Responder
@@ -65,7 +71,7 @@ from drama_series_agent.qa import ocr
 from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
-from drama_series_agent.shots.service import KEYFRAME_SLOT
+from drama_series_agent.shots.service import KEYFRAME_SLOT, prop_names
 
 REF_ORDER = ops.REF_KINDS
 REF_SLOTS = ("ref_image", "text_image")
@@ -83,7 +89,8 @@ REAL_WORLD = (
 )
 # 镜头契约 (M5.5): the keyframe is the shot's first moment, not a summary of it.
 START_NOTE = "首帧画的是镜头开始的这一刻（不是整个镜头的概括）："
-PROPS_NOTE = "道具的状态是摆好的："
+# Run 19 1-04: a second note in her hand beside the one on the umbrella.
+PROPS_NOTE = "道具的状态是摆好的（每样道具画面里只有一件）："
 SIZE_NOTE = "道具按真实尺寸画，和人物的比例要对："
 INNER_NOTE = "{who}在心里说话（内心独白），嘴闭着，不是在开口说话。"
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
@@ -188,7 +195,19 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     if script is not None:
         for x in action:
             deps.append(await invalidation.dependency(session, script.id, f"line:{x['id']}"))
-    refs, unlocked, texts = await _references(session, invalidation, shot.get("asset_ids") or [])
+    filmed_lines = [x for x in (scene or {}).get("lines") or [] if x.get("id") in filmed]
+    by_id = {str(s["id"]): s for s in ops.shots_of(adopted.payload_json if adopted else None)}
+    c = (
+        await shot_contract(session, product.series_id, shot, filmed_lines, by_id)
+        if shot.get("contract")
+        else None
+    )
+    # The props the scene puts in the picture (``props_linked``) are drawn from their pictures
+    # too; the shots that gave a prop its state are read.
+    ids = in_frame(shot, c)
+    for source in sorted(set((c or {}).get("props_from", {}).values())):
+        deps.append(await invalidation.dependency(session, plan.id, shot_slice(source)))
+    refs, unlocked, texts = await _references(session, invalidation, ids)
     orientation = "竖屏" if _vertical(frame["aspect"]) else "横屏"
     framing = FRAMING.get(shot["framing"], shot["framing"])
     move = MOVE.get(shot["camera_move"], shot["camera_move"])
@@ -200,7 +219,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         blocks.append(Block("场景", str(scene["heading"])))
     if shot.get("blocking"):
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
-        in_shot = set(shot.get("asset_ids") or []) | named
+        in_shot = set(ids) | named
         blocks.append(Block("站位", blocking_text(list(shot["blocking"]), in_shot)))
     if action:
         blocks.append(Block("剧本", "\n".join(str(x.get("text") or "") for x in action)))
@@ -217,13 +236,11 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         "inner": [],
         "no_people": False,
     }
-    if shot.get("contract"):
-        filmed_lines = [x for x in (scene or {}).get("lines") or [] if x.get("id") in filmed]
-        more, c = await contract_blocks(session, shot, filmed_lines)
-        blocks += more
+    if c is not None:
+        blocks += await contract_blocks(session, c, ids, filmed_lines)
         asks["start"] = [f"{x['subject']}：{x['state']}" for x in c["start"]]
         asks["inner"] = inner_speakers(c, filmed_lines)
-    if sizes := await prop_sizes(session, list(shot.get("asset_ids") or [])):
+    if sizes := await prop_sizes(session, ids):
         blocks.append(Block("尺寸", SIZE_NOTE + sizes))
         asks["scale"] = sizes.split("；")
     if not await _has_character(session, shot.get("asset_ids") or []):
@@ -295,17 +312,37 @@ def inner_speakers(c: dict[str, Any], lines: list[dict[str, Any]]) -> list[str]:
     return list(dict.fromkeys(n for n in names if n))
 
 
-async def contract_blocks(
-    session: AsyncSession, shot: dict[str, Any], lines: list[dict[str, Any]]
-) -> tuple[list[Block], dict[str, Any]]:
-    """The keyframe's part of the shot's contract (M5.5): the start, the props' states, who
-    speaks only in their head. ``lines``: the script lines it films (payload dicts)."""
+def in_frame(shot: dict[str, Any], contract: dict[str, Any] | None) -> list[str]:
+    """The shot's references and the props its scene puts in the picture (``props_linked``)."""
+    ids = list(shot.get("asset_ids") or [])
+    return ids + [a for a in (contract or {}).get("props_linked") or [] if a not in ids]
+
+
+async def shot_contract(
+    session: AsyncSession,
+    series_id: str,
+    shot: dict[str, Any],
+    lines: list[dict[str, Any]],
+    shots_by_id: dict[str, dict[str, Any]],
+) -> dict[str, Any]:
+    """The shot's effective contract (``contracts.effective``) with its scene's props.
+    ``lines``: the script lines it films (payload dicts)."""
     assets = await asset_rows(session, list(shot.get("asset_ids") or []))
     spoken = [
         contracts.SpokenLine(str(x["id"]), n, str(x.get("type") or ""), str(x.get("tone") or ""))
         for n, x in enumerate(lines, 1)
     ]
-    c = contracts.effective(shot, spoken, {a.id: a.kind for a in assets.values()})
+    names = await prop_names(session, series_id)
+    kinds = {a.id: a.kind for a in assets.values()}
+    return contracts.effective(shot, spoken, kinds, shots_by_id, names)
+
+
+async def contract_blocks(
+    session: AsyncSession, c: dict[str, Any], ids: list[str], lines: list[dict[str, Any]]
+) -> list[Block]:
+    """The keyframe's part of the shot's contract (M5.5): the start, the props' states, who
+    speaks only in their head. ``ids``: what is in the picture (``in_frame``)."""
+    assets = await asset_rows(session, ids)
     out: list[Block] = []
     if c["start"]:
         out.append(Block("开始时", START_NOTE + states_text(c["start"])))
@@ -313,7 +350,7 @@ async def contract_blocks(
         out.append(Block("道具", PROPS_NOTE + props_text(c["props"], assets)))
     for who in inner_speakers(c, lines):
         out.append(Block("嘴", INNER_NOTE.format(who=who)))
-    return out, c
+    return out
 
 
 async def _references(

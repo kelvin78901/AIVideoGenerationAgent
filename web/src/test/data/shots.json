@@ -97,7 +97,9 @@
         ],
         "props": [],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -198,7 +200,9 @@
           }
         ],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -288,7 +292,9 @@
           }
         ],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -388,12 +394,20 @@
           {
             "asset_id": "note",
             "state": "贴在伞柄上，有字"
+          },
+          {
+            "asset_id": "umbrella",
+            "state": "斜靠在门边墙上，伞面湿"
           }
         ],
         "delivery": {
           "demo-b5": "dialogue"
         },
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": [
+          "umbrella"
+        ]
       }
     },
     {
@@ -492,10 +506,18 @@
           {
             "asset_id": "note",
             "state": "贴在伞柄上，有字"
+          },
+          {
+            "asset_id": "umbrella",
+            "state": "斜靠在门边墙上，伞面湿"
           }
         ],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": [
+          "umbrella"
+        ]
       }
     },
     {
@@ -597,7 +619,9 @@
         "delivery": {
           "demo-b10": "inner"
         },
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -681,7 +705,9 @@
           }
         ],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -778,7 +804,9 @@
         ],
         "props": [],
         "delivery": {},
-        "start_inherited": true
+        "start_inherited": true,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -884,7 +912,9 @@
           }
         ],
         "delivery": {},
-        "start_inherited": true
+        "start_inherited": true,
+        "props_inherited": [],
+        "props_linked": []
       }
     }
   ],
@@ -1940,8 +1970,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/e0/e0d8baf742772e6cf50f615fec2c7cac7f8343e8fea09435aca8a23462315c0b",
-              "sha256": "e0d8baf742772e6cf50f615fec2c7cac7f8343e8fea09435aca8a23462315c0b",
+              "path": "blobs/sha256/9a/9ac0da101977ca96842eb526a07b5b28d2113987d9b1500ef2501dbe0accdb9c",
+              "sha256": "9ac0da101977ca96842eb526a07b5b28d2113987d9b1500ef2501dbe0accdb9c",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2008,8 +2038,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/e9/e954b52789bd43ec54e197598015d9e8f084a00dfa7490e943aa7bf287bccd1a",
-              "sha256": "e954b52789bd43ec54e197598015d9e8f084a00dfa7490e943aa7bf287bccd1a",
+              "path": "blobs/sha256/29/293b46af000427e01fb9f7438ea0e155055220510ffa9f5d224141d08f135a21",
+              "sha256": "293b46af000427e01fb9f7438ea0e155055220510ffa9f5d224141d08f135a21",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2143,8 +2173,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/7d/7d235bbe0962aaf2f629ab244b00ce3f91da377e809d520c7dc75be2f8faeeee",
-              "sha256": "7d235bbe0962aaf2f629ab244b00ce3f91da377e809d520c7dc75be2f8faeeee",
+              "path": "blobs/sha256/d6/d6e27d0dcbeeb446e87dd6911884c1e2b1b9efa7e0fd27d3f9cb5bd98a68f302",
+              "sha256": "d6e27d0dcbeeb446e87dd6911884c1e2b1b9efa7e0fd27d3f9cb5bd98a68f302",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2209,8 +2239,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/eb/ebd68538b081f14d5243416256a384e53df0fc28501a62553352c811c9233515",
-              "sha256": "ebd68538b081f14d5243416256a384e53df0fc28501a62553352c811c9233515",
+              "path": "blobs/sha256/6f/6fcea9083e3a33bba86941e7db6ccafa1de5a19bf9f00ff1b9ab4eca5e6b50a4",
+              "sha256": "6fcea9083e3a33bba86941e7db6ccafa1de5a19bf9f00ff1b9ab4eca5e6b50a4",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2298,7 +2328,8 @@
             "refs": [
               "林晚",
               "老小区楼道 · 夜",
-              "黄色便利贴"
+              "黄色便利贴",
+              "红色长柄伞"
             ]
           },
           "files": [
@@ -2346,8 +2377,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/d7/d7b45ff52a2ffde72505b751e19addf609924c38242b26276ec781cf581b544f",
-              "sha256": "d7b45ff52a2ffde72505b751e19addf609924c38242b26276ec781cf581b544f",
+              "path": "blobs/sha256/59/593a95024e366f77ffe17b57439fc9d6e65e2d35b5dbf64496ed5258f90109ea",
+              "sha256": "593a95024e366f77ffe17b57439fc9d6e65e2d35b5dbf64496ed5258f90109ea",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2359,7 +2390,7 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:9107280f7b49247ee249741b6b96146ca081f421ba84e07196a1608a478e96a1",
+          "content_hash": "sha256:7a9c936974042ed9d8a2f6af2285ffb991792ab68a777952eec88c83417ae7b8",
           "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
           "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
@@ -2427,7 +2458,8 @@
             "aspect": "9:16",
             "refs": [
               "林晚",
-              "黄色便利贴"
+              "黄色便利贴",
+              "红色长柄伞"
             ]
           },
           "files": [
@@ -2475,8 +2507,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/8c/8c67fd8bcadb6b3fe58bf12039c762713d8abcb1b15e98a42eb689416586f905",
-              "sha256": "8c67fd8bcadb6b3fe58bf12039c762713d8abcb1b15e98a42eb689416586f905",
+              "path": "blobs/sha256/ce/ce0d0ce09c301246da661a8e85677c4fc2e0144e3294f5fbc16bdb8bfd2487d7",
+              "sha256": "ce0d0ce09c301246da661a8e85677c4fc2e0144e3294f5fbc16bdb8bfd2487d7",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2488,7 +2520,7 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:8d2b25e01a5560f5b766f90e6a12c5a1eaddf2f744b5ef8f82365ebcd25b99d1",
+          "content_hash": "sha256:bdbf9dbba9f2d47473f568da8e47f370a395fab37a5fbba818233342eb7660f3",
           "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
           "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
@@ -2519,7 +2551,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0037,
+        "cost_usd": 0.0038,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2733,8 +2765,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/5d/5df51147c19841c7795a8a34a3bb7ec938603e6b2a8bb88e8f38049527d31ea8",
-              "sha256": "5df51147c19841c7795a8a34a3bb7ec938603e6b2a8bb88e8f38049527d31ea8",
+              "path": "blobs/sha256/fa/fab38b485edda9f732fc93de57e6d0945ce72ccdb1bc9c141318ed2e4d2ff5fb",
+              "sha256": "fab38b485edda9f732fc93de57e6d0945ce72ccdb1bc9c141318ed2e4d2ff5fb",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,

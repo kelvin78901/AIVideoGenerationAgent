@@ -94,9 +94,11 @@ from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, voice_of
 from drama_series_agent.pipeline.components.kf import (
     FRAMING,
     MOVE,
+    PROPS_NOTE,
     _references,
     asset_rows,
     blocking_text,
+    in_frame,
     local_workflow,
     pick_refs,
     props_text,
@@ -129,6 +131,7 @@ from drama_series_agent.shots.service import (
     STORYBOARD_GATE,
     VIDEO_SLOT,
     own_picture,
+    prop_names,
 )
 from drama_series_agent.spec.dims import dims
 
@@ -278,7 +281,14 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         [contracts.SpokenLine(x.id, n, x.type, x.tone or "") for n, x in enumerate(lines, 1)],
         {a.id: a.kind for a in assets.values()},
         {s["id"]: s for s in shots},
+        await prop_names(session, product.series_id),
     )
+    # The props the scene puts in the picture too (``props_linked``), and the shots that gave
+    # the props their states.
+    ids = in_frame(shot, contract)
+    assets = await asset_rows(session, ids)
+    for source in sorted(set(contract["props_from"].values())):
+        deps.append(await invalidation.dependency(session, plan.id, shot_slice(source)))
     if contract["start_inherited"] and shot.get("tail_from"):
         tail_slice = shot_slice(str(shot["tail_from"]))
         deps.append(await invalidation.dependency(session, plan.id, tail_slice))
@@ -372,7 +382,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         shot.get("manual_s"),
     ).seconds
 
-    refs, unlocked, texts = await _references(session, invalidation, shot.get("asset_ids") or [])
+    refs, unlocked, texts = await _references(session, invalidation, ids)
     refs = [r for r in refs if not r.get("scale")]  # 比例参考 is for the keyframe (M5.5)
     frame_ = await output_frame(session, product.series_id)
     spec = await session.get(OutputSpecRow, product.series_id)
@@ -384,7 +394,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         look.append(str(scene["heading"]))
     if shot.get("blocking"):
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
-        in_shot = set(shot.get("asset_ids") or []) | named
+        in_shot = set(ids) | named
         look.append(blocking_text(list(shot["blocking"]), in_shot))
     if own is None:  # the script's action lines; a picture the user wrote replaces them
         look += [str(x.text) for x in action]
@@ -412,7 +422,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     if contract["end"]:
         blocks.append(Block("结束时", states_text(contract["end"])))
     if contract["props"] and props_text(contract["props"], assets):
-        blocks.append(Block("道具", "状态是摆好的：" + props_text(contract["props"], assets)))
+        blocks.append(Block("道具", PROPS_NOTE + props_text(contract["props"], assets)))
     sound = shot.get("sound")
     if sound:
         blocks.append(Block("声音", str(sound)))
@@ -1208,7 +1218,7 @@ class VidComponent(MediaComponent):
         for label, key in (
             ("开始时", "start"),
             ("结束时", "end"),
-            ("道具（状态是摆好的）", "props"),
+            ("道具（状态是摆好的，每样只有一件）", "props"),
         ):
             if context.get(key):
                 description += f" {label}：" + "；".join(context[key]) + "。"

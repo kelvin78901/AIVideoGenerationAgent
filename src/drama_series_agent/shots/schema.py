@@ -87,7 +87,8 @@ class PropState(BaseModel):
 class ShotContractOut(BaseModel):
     """镜头契约 (M5.5, ``shots/contract.py``). ``delivery``: line id → how it is said.
     ``start_inherited``: a continuous shot without a start of its own begins where the shot it
-    follows ends."""
+    follows ends. ``props_inherited``: props the shot uses without a state, in the last state its
+    scene gave them; ``props_linked``: props a state puts another on or by, in the shot too."""
 
     kind: ContractKind
     beats: int
@@ -96,6 +97,8 @@ class ShotContractOut(BaseModel):
     props: list[PropState]
     delivery: dict[str, Delivery]
     start_inherited: bool = False
+    props_inherited: list[str] = []
+    props_linked: list[str] = []
 
 
 class ContractPatch(BaseModel):

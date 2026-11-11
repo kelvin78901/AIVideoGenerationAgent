@@ -12,7 +12,11 @@ sounded like speech. The contract carries:
   (``[{subject, state}]``). The keyframe draws ``start``; a continuous shot with no ``start`` of
   its own begins where the shot it follows ``end``\\s (``effective``);
 - ``props``: ``[{asset_id, state}]``, the state each prop is *in* (the note has writing on it, its
-  corner is wet); a state is set, not acted, unless the shot's action is that change;
+  corner is wet); a state is set, not acted, unless the shot's action is that change. A prop the
+  shot uses without a state keeps the last one the scene gave it (``props_inherited``); a prop of
+  the scene that a state puts another one on or by (the note 「贴在伞柄上」) is in the shot too,
+  in its last state (``props_linked``; run 19: 1-04 drew the note with no umbrella, and a black
+  one from another reference);
 - ``delivery``: each spoken line, ``dialogue`` (lips move), ``offscreen`` (the speaker is not in
   the picture) or ``inner`` (内心独白: the mouth stays shut). Neither of the last two is in the take
   (M5 step 15p); the edit lays them.
@@ -23,6 +27,7 @@ edits it (``patch``). Plain functions over JSON, like ``shots/ops.py``.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any
@@ -32,6 +37,8 @@ DELIVERIES = ("dialogue", "offscreen", "inner")
 MAX_BEATS = {"insert": 0, "performance": 2, "dialogue": 2, "action": 4}
 MAX_STATES = 8  # rows of start / end / props kept
 _INNER_TONES = ("OS", "内心", "心声", "独白")
+# Where a state puts a prop: 「贴在伞柄上」, 「靠在门边墙上」 (the place, up to the punctuation).
+_PLACE = re.compile(r"在([^，。；、,;：:]{1,12})")
 
 
 class ContractError(Exception):
@@ -147,10 +154,16 @@ def effective(
     lines: Sequence[SpokenLine],
     asset_kinds: Mapping[str, str],
     shots_by_id: Mapping[str, Mapping[str, Any]] | None = None,
+    prop_names: Mapping[str, Sequence[str]] | None = None,
 ) -> dict[str, Any]:
     """The contract a shot is held to: its own, or the default for an old plan; spoken lines it
     no longer films dropped and new ones given their default; a continuous shot without a
-    ``start`` begins at the ``end`` of the shot it follows (``start_inherited``)."""
+    ``start`` begins at the ``end`` of the shot it follows (``start_inherited``).
+
+    ``shots_by_id``: the episode's shots in plan order (the scene's earlier shots give the props
+    their states, see the module's docstring); ``prop_names``: the series' props, id → name and
+    aliases, to find a prop a state names (``props_linked``; without it, none are). The props
+    that come from another shot say which one in ``props_from``."""
     refs = list(shot.get("asset_ids") or [])
     stored = shot.get("contract")
     out = dict(stored) if isinstance(stored, Mapping) else default(lines, refs, asset_kinds)
@@ -167,7 +180,62 @@ def effective(
         if before and before.get("end"):
             out["start"] = list(before["end"])
             out["start_inherited"] = True
+    out["props"], out["props_inherited"], out["props_linked"], out["props_from"] = _scene_props(
+        shot, list(out.get("props") or []), refs, asset_kinds, shots_by_id, prop_names
+    )
     return out
+
+
+def _scene_props(
+    shot: Mapping[str, Any],
+    props: list[dict[str, str]],
+    refs: Sequence[str],
+    asset_kinds: Mapping[str, str],
+    shots_by_id: Mapping[str, Mapping[str, Any]] | None,
+    prop_names: Mapping[str, Sequence[str]] | None,
+) -> tuple[list[dict[str, str]], list[str], list[str], dict[str, str]]:
+    """The shot's props with what its scene said before (``effective``)."""
+    last: dict[str, tuple[str, str]] = {}  # prop → (its last state, the shot that said it)
+    for s in shots_by_id.values() if shots_by_id else ():
+        if s.get("id") == shot.get("id"):
+            break
+        if s.get("scene_id") != shot.get("scene_id"):
+            continue
+        stored = s.get("contract")
+        c: Mapping[str, Any] = stored if isinstance(stored, Mapping) else {}
+        for p in c.get("props") or []:
+            if p.get("asset_id") and p.get("state"):
+                last[str(p["asset_id"])] = (str(p["state"]), str(s["id"]))
+    out = list(props)
+    inherited: list[str] = []
+    linked: list[str] = []
+    origin: dict[str, str] = {}
+    have = {p["asset_id"] for p in out}
+    for a in refs:
+        if asset_kinds.get(a) == "prop" and a not in have and a in last:
+            out.append({"asset_id": a, "state": last[a][0]})
+            inherited.append(a)
+            origin[a] = last[a][1]
+            have.add(a)
+    for a, (state, source) in last.items():
+        if a in have or a in refs or not prop_names:
+            continue
+        if any(names_in(p["state"], prop_names.get(a) or ()) for p in out):
+            out.append({"asset_id": a, "state": state})
+            linked.append(a)
+            origin[a] = source
+            have.add(a)
+    return out, inherited, linked, origin
+
+
+def names_in(text: str, names: Iterable[str]) -> bool:
+    """Whether ``text`` names a prop: one of its names, or its last character in the place a
+    state puts something (「贴在伞柄上」 names 红色长柄伞 by 伞)."""
+    full = [n for n in names if n]
+    if any(n in text for n in full):
+        return True
+    heads = {n[-1] for n in full}
+    return any(h in place for place in _PLACE.findall(text) for h in heads)
 
 
 def speaks_on_screen(contract: Mapping[str, Any], line_id: str) -> bool:

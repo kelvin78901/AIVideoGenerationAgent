@@ -44,6 +44,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import (
     Asset,
+    BibleEntity,
     Episode,
     GateDecision,
     Job,
@@ -338,6 +339,34 @@ def dialogue_text(lines: Iterable[ScriptLine]) -> str | None:
     return "\n".join(rows) or None
 
 
+async def prop_names(session: AsyncSession, series_id: str) -> dict[str, list[str]]:
+    """The series' props, id → its name, its bible entry's name and aliases (``红伞``)."""
+    props = (
+        await session.exec(
+            select(Asset).where(
+                Asset.series_id == series_id, Asset.kind == "prop", col(Asset.retired).is_(False)
+            )
+        )
+    ).all()
+    entries = {
+        e.id: e
+        for e in (
+            await session.exec(
+                select(BibleEntity).where(
+                    BibleEntity.series_id == series_id, BibleEntity.kind == "prop"
+                )
+            )
+        ).all()
+    }
+    out: dict[str, list[str]] = {}
+    for a in props:
+        key = str((a.seed_json or {}).get("key") or "")
+        e = entries.get(key.split(":", 1)[1]) if key.startswith("prop:") else None
+        names = [a.name, *([e.name, *e.aliases_json] if e is not None else [])]
+        out[a.id] = list(dict.fromkeys(n for n in names if n))
+    return out
+
+
 @dataclass(frozen=True)
 class ShotState:
     confirmed: bool  # its last decision is a confirm
@@ -494,6 +523,7 @@ class ShotService:
             )
             numbers = await scene_numbers(session, episode.series_id)
             kinds = {a.id: a.kind for a in (await episode_assets(session, episode_id))[0].values()}
+            names = await prop_names(session, episode.series_id)
             scenes = {
                 s.id: s
                 for s in (
@@ -576,7 +606,7 @@ class ShotService:
                     confirmed=state.confirmed,
                     confirm_stale=state.stale,
                     contract=ShotContractOut.model_validate(
-                        contracts.effective(s, _spoken(s, lines), kinds, by_id)
+                        contracts.effective(s, _spoken(s, lines), kinds, by_id, names)
                     ),
                 )
             )

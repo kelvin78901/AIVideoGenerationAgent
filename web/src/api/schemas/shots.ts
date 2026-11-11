@@ -44,6 +44,10 @@ export const ShotContractSchema = z.object({
   delivery: z.record(z.string(), DeliverySchema),
   /** A continuous shot without a start of its own: it begins where the shot it follows ends. */
   start_inherited: z.boolean(),
+  /** Props it uses without a state: in `props` with the last state their scene gave them. */
+  props_inherited: z.array(z.string()).default([]),
+  /** Props a state puts another one on or by (the note on the umbrella): in `props` too. */
+  props_linked: z.array(z.string()).default([]),
 });
 export type ShotContract = z.infer<typeof ShotContractSchema>;
 
@@ -152,7 +156,11 @@ export const ShotPatchSchema = ShotSchema.pick({
   .extend({
     duration_s: z.number().positive().nullable(),
     /** Only the contract fields that change (`delivery`: only the lines that change). */
-    contract: ShotContractSchema.omit({ start_inherited: true }).partial(),
+    contract: ShotContractSchema.omit({
+      start_inherited: true,
+      props_inherited: true,
+      props_linked: true,
+    }).partial(),
   })
   .partial();
 export type ShotPatch = z.infer<typeof ShotPatchSchema>;

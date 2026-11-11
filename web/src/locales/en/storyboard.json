@@ -167,6 +167,8 @@
     "inherited": "Starts where {{id}} ends; a change makes it this shot's own",
     "props": "Props in this shot",
     "propsHint": "a state is set, not acted",
+    "propInherited": "As this scene had it: {{state}}",
+    "propLinked": "In the picture from this scene: {{state}}",
     "propState": "State of {{name}}",
     "delivery": "How lines are said",
     "deliveryOf": "How “{{text}}” is said",

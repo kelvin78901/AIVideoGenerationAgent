@@ -167,6 +167,8 @@
     "inherited": "接 {{id}} 的结束时；改了就是这个镜头自己的",
     "props": "道具在这个镜头里",
     "propsHint": "状态是摆好的，不在镜头里发生",
+    "propInherited": "沿用这一场前面写的：{{state}}",
+    "propLinked": "同场带进来：{{state}}（在这个镜头里画出来）",
     "propState": "{{name}}的状态",
     "delivery": "台词说法",
     "deliveryOf": "「{{text}}」怎么说",

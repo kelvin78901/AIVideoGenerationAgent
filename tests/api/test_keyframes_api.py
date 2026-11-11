@@ -94,11 +94,12 @@ def test_the_demo_keyframes(client: TestClient) -> None:
 
 
 def test_only_locked_references_are_sent(client: TestClient) -> None:
-    """1-05 uses 林晚, the note (both locked) and the hair tie (not locked yet)."""
+    """1-05 uses 林晚, the note (both locked) and the hair tie (not locked yet); the umbrella the
+    note is stuck on comes with it (locked, ``props_linked``)."""
     product = _run(client, "1-05")
     version = product["versions"][-1]
     assert version["stage"] == "draft" and version["where"] == "local"
-    assert version["payload"]["refs"] == ["林晚", "黄色便利贴"]
+    assert version["payload"]["refs"] == ["林晚", "黄色便利贴", "红色长柄伞"]
     assert version["payload"]["aspect"] == "9:16"
     sent = _prompt(client, version)
     assert "参考图 1：林晚（角色）" in sent and "旧黑发圈（未锁定" in sent
@@ -242,9 +243,17 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert "首帧画的是镜头开始的这一刻" in door and "家门：开着" in door
     assert "林晚在心里说话（内心独白），嘴闭着" in door
     note = _prompt(client, _run(client, "1-02")["versions"][-1])
-    assert "道具的状态是摆好的：红色长柄伞：斜靠在门边墙上，伞面湿" in note
+    assert kf.PROPS_NOTE + "红色长柄伞：斜靠在门边墙上，伞面湿" in note
     # 道具的真实尺寸 (M5.5 step 5): drawn to scale against the people.
     assert "道具按真实尺寸画，和人物的比例要对：红色长柄伞：全长约 90 cm" in note
+    # 1-05 has no umbrella of its own, but its note is 「贴在伞柄上」: the umbrella is in the
+    # picture, in the state 1-02 gave it, from its own picture (run 19: a black one was drawn).
+    hand = _prompt(client, _run(client, "1-05")["versions"][-1])
+    assert "红色长柄伞：斜靠在门边墙上，伞面湿" in hand
+    assert "红色长柄伞（道具）" in hand.split("[参考图]", 1)[1]
+    shots = client.get(f"{V1}/episodes/{EP1}/shots").json()
+    shot = next(s for s in shots if s["label"] == "1-05")
+    assert shot["contract"]["props_linked"] == ["umbrella"]
 
 
 def test_a_locked_prop_gets_its_scale_reference(client: TestClient) -> None:

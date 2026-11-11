@@ -113,6 +113,55 @@ def test_a_continuous_shot_starts_where_the_one_it_follows_ends() -> None:
     assert contract.effective(shots[5], [], KINDS, by_id)["start_inherited"] is False
 
 
+def _shot(sid: str, scene: str, refs: list[str], props: list[tuple[str, str]]) -> dict[str, object]:
+    return {
+        "id": sid,
+        "scene_id": scene,
+        "shot_type": "same_scene_cut",
+        "asset_ids": refs,
+        "contract": {"kind": "performance", "beats": 1, "start": [], "end": [], "delivery": {}}
+        | {"props": [{"asset_id": a, "state": s} for a, s in props]},
+    }
+
+
+def test_a_prop_keeps_the_state_its_scene_gave_it() -> None:
+    """Run 19's door (scene b1): 1-04 uses the note without a state, so the model drew one in her
+    hand and one on a black umbrella; it now keeps 1-03's state, and the umbrella that state puts
+    it on is in the shot too (named by 伞 in 「伞柄」). Another scene's states do not carry."""
+    kinds = {**KINDS, "umbrella": "prop", "note": "prop", "phone": "prop"}
+    names = {
+        "umbrella": ["红色长柄伞", "红伞"],
+        "note": ["黄色便利贴", "便利贴"],
+        "phone": ["手机"],
+    }
+    shots = [
+        _shot("s2", "b1", ["linwan", "umbrella", "note"], [("umbrella", "斜靠在门边墙上")]),
+        _shot("s3", "b1", ["note"], [("note", "贴在伞柄上，字迹歪扭")]),
+        _shot("s4", "b1", ["linwan", "note"], []),
+        _shot("s5", "b7", ["linwan", "note"], []),
+    ]
+    by_id = {str(s["id"]): s for s in shots}
+    c = contract.effective(shots[2], [], kinds, by_id, names)
+    assert c["props"] == [
+        {"asset_id": "note", "state": "贴在伞柄上，字迹歪扭"},
+        {"asset_id": "umbrella", "state": "斜靠在门边墙上"},
+    ]
+    assert c["props_inherited"] == ["note"] and c["props_linked"] == ["umbrella"]
+    assert c["props_from"] == {"note": "s3", "umbrella": "s2"}
+    # Without the names, the state is kept and nothing is linked.
+    assert contract.effective(shots[2], [], kinds, by_id)["props_linked"] == []
+    # A shot's own state wins; another scene starts afresh.
+    assert contract.effective(shots[1], [], kinds, by_id, names)["props_inherited"] == []
+    assert contract.effective(shots[3], [], kinds, by_id, names)["props"] == []
+
+
+def test_a_state_names_a_prop_by_its_place() -> None:
+    assert contract.names_in("贴在伞柄上", ["红色长柄伞"])
+    assert contract.names_in("被红伞挡着", ["红色长柄伞", "红伞"])
+    assert not contract.names_in("后背贴着门", ["黄色便利贴"])  # 贴 is not in a place
+    assert not contract.names_in("靠在门边墙上", ["黄色便利贴", "手机"])
+
+
 def test_an_old_plan_gets_the_default_contract() -> None:
     shot = {"asset_ids": ["linwan"], "shot_type": "same_scene_cut"}
     lines = _spoken(("a", "vo", "OS"))

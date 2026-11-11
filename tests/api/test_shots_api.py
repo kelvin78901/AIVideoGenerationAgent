@@ -133,9 +133,12 @@ def test_a_contract_edit_is_checked_and_kept(client: TestClient) -> None:
     assert r.status_code == 200, r.text
     got = r.json()["contract"]
     assert (got["kind"], got["beats"], got["start"]) == ("insert", 0, start)
-    assert got["props"] == [{"asset_id": "note", "state": "贴在伞柄上，有字"}]  # untouched
+    assert got["props"][0] == {"asset_id": "note", "state": "贴在伞柄上，有字"}  # untouched
+    # The umbrella the note is stuck on is in the shot (1-02's state), not written into it.
+    assert got["props_linked"] == ["umbrella"]
     (row,) = _rows(client, Shot, Shot.id == "demo-shot-1-05")
     assert row.contract_json["kind"] == "insert"
+    assert [p["asset_id"] for p in row.contract_json["props"]] == ["note"]
     for bad in (
         {"beats": 3},  # an insert's budget is 0
         {"delivery": {"demo-b2": "inner"}},  # not a line it films

@@ -526,6 +526,11 @@ describe("StoryboardPage", () => {
     await user.click(card("1-05"));
     const contract = await screen.findByRole("region", { name: "镜头契约" });
     expect(within(contract).getByText(/表演：最多 1 个动作/)).toBeInTheDocument();
+    // The umbrella its note is stuck on is in the picture (1-02's state), not one to edit here.
+    expect(
+      within(contract).getByText("同场带进来：斜靠在门边墙上，伞面湿（在这个镜头里画出来）"),
+    ).toBeInTheDocument();
+    expect(within(contract).queryByRole("textbox", { name: "红色长柄伞的状态" })).toBeNull();
     await user.click(within(contract).getByRole("radio", { name: "插入（空镜、静物）" }));
     await waitFor(() =>
       expect(fakeShots.patches.at(-1)).toEqual({

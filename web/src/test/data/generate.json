@@ -97,7 +97,9 @@
         ],
         "props": [],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -198,7 +200,9 @@
           }
         ],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -288,7 +292,9 @@
           }
         ],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -388,12 +394,20 @@
           {
             "asset_id": "note",
             "state": "贴在伞柄上，有字"
+          },
+          {
+            "asset_id": "umbrella",
+            "state": "斜靠在门边墙上，伞面湿"
           }
         ],
         "delivery": {
           "demo-b5": "dialogue"
         },
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": [
+          "umbrella"
+        ]
       }
     },
     {
@@ -492,10 +506,18 @@
           {
             "asset_id": "note",
             "state": "贴在伞柄上，有字"
+          },
+          {
+            "asset_id": "umbrella",
+            "state": "斜靠在门边墙上，伞面湿"
           }
         ],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": [
+          "umbrella"
+        ]
       }
     },
     {
@@ -597,7 +619,9 @@
         "delivery": {
           "demo-b10": "inner"
         },
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -681,7 +705,9 @@
           }
         ],
         "delivery": {},
-        "start_inherited": false
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -778,7 +804,9 @@
         ],
         "props": [],
         "delivery": {},
-        "start_inherited": true
+        "start_inherited": true,
+        "props_inherited": [],
+        "props_linked": []
       }
     },
     {
@@ -884,7 +912,9 @@
           }
         ],
         "delivery": {},
-        "start_inherited": true
+        "start_inherited": true,
+        "props_inherited": [],
+        "props_linked": []
       }
     }
   ],
@@ -1222,8 +1252,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/6c/6c590598d25e16c0923ad737d9b2e0768e3ff17b414d4b15de007861044df470",
-              "sha256": "6c590598d25e16c0923ad737d9b2e0768e3ff17b414d4b15de007861044df470",
+              "path": "blobs/sha256/40/40bfa1f57df061d151bbace4a35b1fd7b571c50075edf391b612b718ff206014",
+              "sha256": "40bfa1f57df061d151bbace4a35b1fd7b571c50075edf391b612b718ff206014",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1326,8 +1356,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/6c/6c590598d25e16c0923ad737d9b2e0768e3ff17b414d4b15de007861044df470",
-              "sha256": "6c590598d25e16c0923ad737d9b2e0768e3ff17b414d4b15de007861044df470",
+              "path": "blobs/sha256/40/40bfa1f57df061d151bbace4a35b1fd7b571c50075edf391b612b718ff206014",
+              "sha256": "40bfa1f57df061d151bbace4a35b1fd7b571c50075edf391b612b718ff206014",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1469,8 +1499,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/f4/f4672b767b8d7c7829c4b2ac046b70f2dbf3d3ef790b695c0bed4849bcb6d0ba",
-              "sha256": "f4672b767b8d7c7829c4b2ac046b70f2dbf3d3ef790b695c0bed4849bcb6d0ba",
+              "path": "blobs/sha256/a5/a539880cc7b7eb39693db28bcccd7d13aa3dbff1525db9087a2f48be14f7c026",
+              "sha256": "a539880cc7b7eb39693db28bcccd7d13aa3dbff1525db9087a2f48be14f7c026",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1573,8 +1603,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/f4/f4672b767b8d7c7829c4b2ac046b70f2dbf3d3ef790b695c0bed4849bcb6d0ba",
-              "sha256": "f4672b767b8d7c7829c4b2ac046b70f2dbf3d3ef790b695c0bed4849bcb6d0ba",
+              "path": "blobs/sha256/a5/a539880cc7b7eb39693db28bcccd7d13aa3dbff1525db9087a2f48be14f7c026",
+              "sha256": "a539880cc7b7eb39693db28bcccd7d13aa3dbff1525db9087a2f48be14f7c026",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1657,7 +1687,8 @@
             "refs": [
               "林晚",
               "老小区楼道 · 夜",
-              "黄色便利贴"
+              "黄色便利贴",
+              "红色长柄伞"
             ],
             "voices": [
               "林晚"
@@ -1722,8 +1753,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/36/366d52dce7a23ee5a33e2dbd87893d4cb5d866b65bd99ee5ff775d337533b5e3",
-              "sha256": "366d52dce7a23ee5a33e2dbd87893d4cb5d866b65bd99ee5ff775d337533b5e3",
+              "path": "blobs/sha256/fb/fb0fc0d2f970f82e7b5d57d98ccbf4285268817315be03d5ec716e3167b25480",
+              "sha256": "fb0fc0d2f970f82e7b5d57d98ccbf4285268817315be03d5ec716e3167b25480",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1754,7 +1785,8 @@
               "refs": [
                 "b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
                 "79e8df2bb33fd96879c578f0d29506683af125a542a0e8c48d9741520810a5bd",
-                "c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1"
+                "c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1",
+                "fed6f377107156e5585df66831a4ef11c93d0eb1ce8b5901bdd2c9605d5cce5c"
               ],
               "ref_audio": [
                 "a7c1d3e5f585a7392e859e9bca5706397c5eba71eab602c445c42545d951389f"
@@ -1794,7 +1826,8 @@
             "refs": [
               "林晚",
               "老小区楼道 · 夜",
-              "黄色便利贴"
+              "黄色便利贴",
+              "红色长柄伞"
             ],
             "voices": [
               "林晚"
@@ -1859,8 +1892,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/36/366d52dce7a23ee5a33e2dbd87893d4cb5d866b65bd99ee5ff775d337533b5e3",
-              "sha256": "366d52dce7a23ee5a33e2dbd87893d4cb5d866b65bd99ee5ff775d337533b5e3",
+              "path": "blobs/sha256/fb/fb0fc0d2f970f82e7b5d57d98ccbf4285268817315be03d5ec716e3167b25480",
+              "sha256": "fb0fc0d2f970f82e7b5d57d98ccbf4285268817315be03d5ec716e3167b25480",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1891,7 +1924,8 @@
               "refs": [
                 "b0449a052f7cd718e6b945a4a516918391e45dd36e66b0d7a393fd2f0972a1d1",
                 "79e8df2bb33fd96879c578f0d29506683af125a542a0e8c48d9741520810a5bd",
-                "c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1"
+                "c95b55a05d3776dac899c86a092c8ce75cc93c06d886db793b39ba4e48ca0be1",
+                "fed6f377107156e5585df66831a4ef11c93d0eb1ce8b5901bdd2c9605d5cce5c"
               ],
               "ref_audio": [
                 "a7c1d3e5f585a7392e859e9bca5706397c5eba71eab602c445c42545d951389f"
@@ -1931,7 +1965,8 @@
             "refs": [
               "林晚",
               "老小区楼道 · 夜",
-              "黄色便利贴"
+              "黄色便利贴",
+              "红色长柄伞"
             ],
             "voices": []
           },
@@ -1980,8 +2015,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/55/55788cd2a7c152e9b247e7815c90a57a2c367eb7528dd2096430def0d233d986",
-              "sha256": "55788cd2a7c152e9b247e7815c90a57a2c367eb7528dd2096430def0d233d986",
+              "path": "blobs/sha256/77/77ddc668f62e30a3c33dc2d3aca26841bc37093e79b5214ae8f35d8cbe39138e",
+              "sha256": "77ddc668f62e30a3c33dc2d3aca26841bc37093e79b5214ae8f35d8cbe39138e",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2074,8 +2109,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/ea/eab7ac3bd5bae0426bdcbec3cb7948318f0a265e83dd7c549f151aee6f8c7793",
-              "sha256": "eab7ac3bd5bae0426bdcbec3cb7948318f0a265e83dd7c549f151aee6f8c7793",
+              "path": "blobs/sha256/aa/aaceff92eede19b1adbd561f163a064f9ac70942e3af853fa07be2702c6184f5",
+              "sha256": "aaceff92eede19b1adbd561f163a064f9ac70942e3af853fa07be2702c6184f5",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,

@@ -118,14 +118,19 @@ export function ContractSection({
   const props = shot.asset_ids.flatMap(
     (id) => assets.find((a) => a.id === id && (a.kind === "prop" || a.kind === "text")) ?? [],
   );
+  // The scene's states (`props_inherited`, `props_linked`) are shown, not this shot's own.
+  const fromScene = new Set([...c.props_inherited, ...c.props_linked]);
+  const own = c.props.filter((p) => !fromScene.has(p.asset_id));
+  const sceneState = Object.fromEntries(c.props.map((p) => [p.asset_id, p.state]));
+  const linked = c.props_linked.flatMap((id) => assets.find((a) => a.id === id) ?? []);
   const [states, setStates] = useState<Record<string, string>>(
-    Object.fromEntries(c.props.map((p) => [p.asset_id, p.state])),
+    Object.fromEntries(own.map((p) => [p.asset_id, p.state])),
   );
   const saveProps = () => {
     const next = props
       .map((a) => ({ asset_id: a.id, state: (states[a.id] ?? "").trim() }))
       .filter((p) => p.state);
-    if (JSON.stringify(next) !== JSON.stringify(c.props)) onPatch({ contract: { props: next } });
+    if (JSON.stringify(next) !== JSON.stringify(own)) onPatch({ contract: { props: next } });
   };
   const spoken = Object.keys(c.delivery).flatMap((id) => lines.find((l) => l.id === id) ?? []);
   return (
@@ -166,7 +171,7 @@ export function ContractSection({
           onSave={(end) => onPatch({ contract: { end } })}
         />
       </div>
-      {props.length ? (
+      {props.length || linked.length ? (
         <div className="flex flex-col gap-1.5">
           <div className="text-sm font-medium">
             {t("contract.props")}{" "}
@@ -179,11 +184,24 @@ export function ContractSection({
                 aria-label={t("contract.propState", { name: a.name })}
                 className="min-w-0 flex-1"
                 value={states[a.id] ?? ""}
+                placeholder={
+                  c.props_inherited.includes(a.id)
+                    ? t("contract.propInherited", { state: sceneState[a.id] })
+                    : undefined
+                }
                 disabled={disabled}
                 onChange={(e) => setStates({ ...states, [a.id]: e.target.value })}
                 onBlur={saveProps}
               />
             </label>
+          ))}
+          {linked.map((a) => (
+            <div key={a.id} className="flex items-center gap-2 text-sm">
+              <span className="w-28 shrink-0 truncate">{a.name}</span>
+              <span className="min-w-0 flex-1 text-muted-foreground">
+                {t("contract.propLinked", { state: sceneState[a.id] })}
+              </span>
+            </div>
           ))}
         </div>
       ) : null}
