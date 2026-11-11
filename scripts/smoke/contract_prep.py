@@ -13,6 +13,11 @@ the keyframe check; nothing else):
 3. 分镜规划 again on DeepSeek (the contract), adopted; 分镜检查 on DeepSeek;
 4. every keyframe drawn again (local draft) and checked (Gemini + OCR); each shot confirmed on
    the candidate with the most checks passed; 分镜确认.
+
+``local_video.py --only revise`` calls ``revise`` (Kelvin 2026-11-10: the storyboard is fixed by
+its check before any take, as a user would on the storyboard page): ``REVISIONS`` through
+``PATCH /shots/{id}``, the check again, the changed shots' keyframes drawn and checked again,
+分镜确认.
 """
 
 from __future__ import annotations
@@ -44,6 +49,56 @@ PHYSICAL = {
 NOTE_TEXT = {"exact": "楼下便利店，等你到十二点。", "style": "handwritten", "method": "model"}
 REDRAWN = ("umbrella", "note")
 PLAN = "demo-p-plan-e1"
+LINWAN = "林晚"
+# What run 19's 分镜检查 found, fixed as its notes say (content; ``PATCH /shots/{id}``).
+REVISIONS: dict[str, dict[str, Any]] = {
+    # The model: walking up and to the door in two beats is a jump; stop at the stairs.
+    "1-01": {
+        "intent": "楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼，在楼梯口停步，"
+        "抬头看见门边靠着一把红伞，愣住。",
+        "contract": {
+            "end": [{"subject": LINWAN, "state": "停在六楼楼梯口，抬头看见门边的伞，愣住"}]
+        },
+    },
+    "1-02": {"contract": {"start": [{"subject": LINWAN, "state": "走到门口，停下看着伞"}]}},
+    # The rule: 1-04 looked like a replay of 1-02 (same scene, camera and framing).
+    "1-04": {"framing": "close"},
+    # The model: she held no umbrella after 1-05, and 1-10 picks it up outside the door.
+    "1-06": {
+        "intent": "出租屋内，林晚空着手进门、反手关上门，后背抵着门，台灯暖光。",
+        "asset_ids": None,  # without the umbrella: it stays outside (filled in by ``revise``)
+        "contract": {
+            "kind": "action",
+            "beats": 2,
+            "start": [{"subject": LINWAN, "state": "站在门外，伞仍靠在门边墙上"}],
+            "end": [{"subject": LINWAN, "state": "在屋里，背靠着关上的门"}],
+            "props": [],
+        },
+    },
+    # The rule: 拉开 → 关上 → 拉开 (undone and done again). The hesitation is acted, once.
+    "1-09": {
+        "intent": "林晚从门边站直，转身握住门把，停了两秒，拉开门。画面中景，她表情纠结。",
+        "contract": {
+            "beats": 2,
+            "start": [{"subject": LINWAN, "state": "站在门后，手握着门把"}],
+            "end": [
+                {"subject": LINWAN, "state": "拉开门，站在门口"},
+                {"subject": "家门", "state": "开着"},
+            ],
+        },
+    },
+    "1-10": {
+        "intent": "门外，林晚站在门口，弯腰拿起靠在门外墙边的红色长柄伞，直起身，表情坚定。"
+        "画面中景，光线从屋内照出。",
+        "contract": {
+            "start": [
+                {"subject": LINWAN, "state": "站在门口"},
+                {"subject": "红伞", "state": "靠在门外墙边"},
+            ],
+            "props": [{"asset_id": "umbrella", "state": "靠在门外墙边，被林晚拿起"}],
+        },
+    },
+}
 SCALE_WAIT_S = 900
 
 
@@ -134,6 +189,11 @@ def _plan(smoke: Smoke) -> bool:
     product = smoke.get(f"/products/{PLAN}")
     if product["adopted_version_id"] != latest["id"]:
         smoke.post(f"/versions/{latest['id']}/adopt")
+    _say_shots(smoke)
+    return _check(smoke)
+
+
+def _say_shots(smoke: Smoke) -> None:
     for s in smoke.get("/episodes/demo-e1/shots"):
         c = s["contract"]
         start = "；".join(f"{x['subject']}{x['state']}" for x in c["start"])
@@ -146,6 +206,8 @@ def _plan(smoke: Smoke) -> bool:
         )
         smoke.say(f"      画面：{s['intent']}")
 
+
+def _check(smoke: Smoke) -> bool:
     def check() -> list[str]:
         return [smoke.post("/episodes/demo-e1/shot-checks")["id"]]
 
@@ -158,9 +220,13 @@ def _plan(smoke: Smoke) -> bool:
     return True
 
 
-def _keyframes(smoke: Smoke) -> bool:
+def _keyframes(smoke: Smoke, labels: set[str] | None = None) -> bool:
     by_label = shots(smoke)
-    drawn = [s for s in by_label.values() if s["keyframe_product_id"]]
+    drawn = [
+        s
+        for s in by_label.values()
+        if s["keyframe_product_id"] and (labels is None or s["label"] in labels)
+    ]
 
     def keyframes() -> list[str]:
         return [smoke.run(s["keyframe_product_id"])["id"] for s in drawn]
@@ -177,9 +243,7 @@ def _keyframes(smoke: Smoke) -> bool:
             items = (c.get("check") or {}).get("items") or []
             passed = sum(1 for x in items if x["ok"])
             scores.append(passed)
-            said = "，".join(
-                f"{x['check']} {'✓' if x['ok'] else '✗ ' + x['note']}" for x in items
-            )
+            said = "，".join(f"{x['check']} {'✓' if x['ok'] else '✗ ' + x['note']}" for x in items)
             smoke.say(f"   {s['label']} #{i}: {said or '没有检查'}")
         best = max(range(len(scores)), key=lambda i: scores[i]) if scores else 0
         resp = smoke.client.patch(
@@ -187,7 +251,7 @@ def _keyframes(smoke: Smoke) -> bool:
         )
         smoke.say(f"   {s['label']}: 确认第 {best + 1} 张（{resp.status_code}）")
     for s in by_label.values():
-        if not s["keyframe_product_id"]:
+        if not s["keyframe_product_id"] or not s["confirmed"]:
             smoke.client.patch(f"/api/v1/shots/{s['id']}", json={"confirmed": True})
     smoke.post("/gates/storyboard/confirm", {"scope_id": "demo-e1"})
     board = smoke.get("/episodes/demo-e1/progress")["steps"]["storyboard"]
@@ -198,3 +262,32 @@ def _keyframes(smoke: Smoke) -> bool:
 def prepare(smoke: Smoke) -> bool:
     _settings(smoke)
     return _props(smoke) and _plan(smoke) and _keyframes(smoke)
+
+
+def revise(smoke: Smoke) -> bool:
+    """The storyboard fixed by its check (``REVISIONS``), checked again, the changed shots'
+    keyframes drawn again; then 分镜确认."""
+    smoke.say("== revise: 按分镜检查改分镜（PATCH /shots，和分镜页一样）")
+    by_label = shots(smoke)
+    for label, patch in REVISIONS.items():
+        shot = by_label[label]
+        unconfirm(smoke, label)
+        body = dict(patch)
+        if "asset_ids" in body:
+            body["asset_ids"] = [a for a in shot["asset_ids"] if a != "umbrella"]
+        resp = smoke.client.patch(f"/api/v1/shots/{shot['id']}", json=body)
+        smoke.say(f"   {label}: {', '.join(body)}（{resp.status_code}）")
+        if resp.status_code != 200:
+            smoke.say(f"      {resp.text}")
+            smoke.ok = False
+    # A shot that starts where the one before ended (1-08) follows 1-06's new end.
+    _say_shots(smoke)
+    if not _check(smoke):
+        return False
+    return _keyframes(smoke, set(REVISIONS))
+
+
+def recheck(smoke: Smoke) -> bool:
+    """分镜检查 again on the storyboard as it is (``--only recheck``)."""
+    _say_shots(smoke)
+    return _check(smoke)

@@ -87,8 +87,10 @@ async def gather(session: AsyncSession, product: Product, invalidation: Any) -> 
     )
     if episode is None or plan is None or adopted is None or written is None:
         raise PipelineError(409, "upstream_not_ready", slot="shot_plan")
+    from drama_series_agent.shots.service import pictured  # the service imports this module
+
     deps = [await invalidation.dependency(session, plan.id, "")]
-    shots = ops.shots_of(adopted.payload_json)
+    shots = await pictured(session, ops.shots_of(adopted.payload_json))
     labels = check.labels(episode.idx, shots)
     assets, _ = await episode_assets(session, episode_id)
     lines = check.script_lines(written.payload_json)
@@ -154,6 +156,7 @@ class PlanCheckComponent(Component):
     owner_type = "episode"
     max_tokens = 2000
     cascade_rerun = False  # a check is asked for; 确认并同步 only marks it stale
+    adopt_every_run = True  # the last check is the one shown (run 19: the second stayed unadopted)
 
     async def inputs(self, session: AsyncSession, product: Product) -> Inputs:
         return await gather(session, product, self.services.invalidation)

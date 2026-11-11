@@ -172,6 +172,15 @@ def test_the_storyboard_check(client: TestClient) -> None:
     client.patch(f"{V1}/shots/demo-shot-1-05", json={"framing": "wide"})
     assert client.get(url).json()["llm_state"] == "stale"
     assert client.get(f"{V1}/episodes/nope/shot-checks").status_code == 404
+    # The picture description on screen is what is checked (run 19: an edited 1-09 was not).
+    resp = client.patch(f"{V1}/shots/demo-shot-1-06", json={"intent": "她拉开门，又关上，再拉开。"})
+    assert resp.status_code == 200, resp.text
+    again = client.get(url).json()["issues"]
+    assert ("1-06", "undone") in [(i["label"], i["code"]) for i in again]
+    # Each run of the model's check is the one shown (run 19: the second stayed unadopted).
+    _wait(client, client.post(url).json()["id"])
+    assert client.get(url).json()["llm_state"] == "ready"
+    assert len(_rows(client, ModelCall, ModelCall.component_id == "plancheck")) == 2
 
 
 def test_a_dialogue_shot_is_never_shorter_than_its_audio(client: TestClient) -> None:

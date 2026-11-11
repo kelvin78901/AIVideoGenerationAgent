@@ -113,6 +113,18 @@ async def keyframe_products(session: AsyncSession, shot_ids: Iterable[str]) -> d
     return await shot_products(session, shot_ids, KEYFRAME_SLOT)
 
 
+async def pictured(session: AsyncSession, shots: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The plan's shots with the picture description on screen: the keyframe prompt's intent
+    (where the storyboard page writes it) over the plan's seed. What the checks read."""
+    keyframes = await keyframe_products(session, [str(s["id"]) for s in shots])
+    out = []
+    for s in shots:
+        kf = keyframes.get(str(s["id"]))
+        mine = ((kf.prompt_json if kf else None) or {}).get("intent")
+        out.append({**s, "intent": mine} if mine else s)
+    return out
+
+
 async def video_products(session: AsyncSession, shot_ids: Iterable[str]) -> dict[str, Product]:
     return await shot_products(session, shot_ids, VIDEO_SLOT)
 
@@ -570,7 +582,7 @@ class ShotService:
             if episode is None or episode.retired:
                 raise PipelineError(404, "episode_not_found", id=episode_id)
             v = await _current(session, await plan_product(session, episode_id))
-            shots = ops.shots_of(v.payload_json) if v is not None else []
+            shots = await pictured(session, ops.shots_of(v.payload_json) if v else [])
             rows = await _lines(session, episode_id)
             assets, _ = await episode_assets(session, episode_id)
             mine = await check_product(session, episode_id)
