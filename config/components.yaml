@@ -118,8 +118,8 @@ components:
     cheap_api: volc/seedream-5.0
     note: 角色锁定后自动补侧面、背面和表情（以锁定的参考图为准，本地用编辑模型的官方 40 步，不用 4 步加速）；自动采纳
 
-  # 比例参考（M5.5 第 5c 步）：道具锁定后自动出一张和一个锁定角色同框的实拍照，关键帧紧跟在道具图后面传，
-  # 看得出道具多大（第十七轮红伞画到门把高）。和补视图一样用编辑模型、自动采纳。
+  # 比例参考（M5.5 第 5c 步）：道具和一个锁定角色同框的实拍照。第 9e-1 步起锁定道具不再自动出、关键帧不再带：
+  # 第十九轮它自己把伞画到人头顶、便利贴和上半身一样大，关键帧照着画；大小改成关键帧里的文字（和人比）。
   - id: scale
     stage: assets
     name: { zh: 比例参考, en: Scale reference }
@@ -129,7 +129,7 @@ components:
     balanced: { mode: local, local: comfy/qwen-image-edit-hq, api: google/nano-banana-pro, fallback_to: google/nano-banana-pro }
     per_call_cap_usd: 0.5
     cheap_api: volc/seedream-5.0
-    note: 道具锁定后自动出（人物按道具描述里提到的、否则同场最多的）；自动采纳；没有锁定的角色就不出
+    note: 手动出（人物按道具描述里提到的、否则同场最多的）；不进关键帧，只供对照
 
   - id: text
     stage: assets

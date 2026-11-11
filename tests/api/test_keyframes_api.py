@@ -250,6 +250,7 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert "[机位]\n" + kf.PLACE_NOTE.format(place="林晚出租屋") in door
     # 道具的真实尺寸 (M5.5 step 5): drawn to scale against the people.
     assert "道具按真实尺寸画，和人物的比例要对：红色长柄伞：全长约 90 cm" in note
+    assert "收拢时粗约 6 cm（立着到人的胯部）；" in note
     # 1-05 has no umbrella of its own, but its note is 「贴在伞柄上」: the umbrella is in the
     # picture, in the state 1-02 gave it, from its own picture (run 19: a black one was drawn).
     hand = _prompt(client, _run(client, "1-05")["versions"][-1])
@@ -260,32 +261,18 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert shot["contract"]["props_linked"] == ["umbrella"]
 
 
-def test_a_locked_prop_gets_its_scale_reference(client: TestClient) -> None:
-    """比例参考 (M5.5 step 5c): locking 旧黑发圈 draws it with 林晚 (its description names her),
-    adopted by itself; 1-05's keyframe sends it right after the prop's own picture."""
+def test_a_locked_prop_draws_no_scale_reference(client: TestClient) -> None:
+    """M5.5 step 9e-1: locking 旧黑发圈 no longer draws its 比例参考 (run 19's put the umbrella at
+    her head and the note as big as her chest, and the keyframes copied it); the keyframe says
+    the size in words, against a person."""
     resp = client.post(f"{V1}/assets/band/lock", json={"idx": 0})
     assert resp.status_code == 200, resp.text
-    products = client.get(f"{V1}/products", params={"owner": "asset:band"}).json()
-    scale = next(p for p in products if p["slot"] == "ref_scale")
-    deadline = time.monotonic() + 30
-    while not scale["adopted_version_id"]:
-        assert time.monotonic() < deadline, "the scale reference was not drawn"
-        time.sleep(0.05)
-        scale = client.get(f"{V1}/products/{scale['id']}").json()
-    version = scale["versions"][-1]
-    assert version["payload"]["character"] == "林晚"
-    assert [f["role"] for f in version["files"]] == ["scale", "prompt"]
-    assert len(version["payload"]["from"]) == 2  # 林晚's locked picture, then the band's
-    # The prop alone with her, nothing else (run 19: the note's drew a black umbrella).
-    drawn = _prompt(client, version)
-    assert "不要画任何别的物件" in drawn and "背景是素净的浅色墙面" in drawn
-    calls = _rows(client, ModelCall, ModelCall.component_id == "scale")
-    assert len(calls) == 1
-
     prompt = _prompt(client, _run(client, "1-05", model="google/nano-banana-pro")["versions"][-1])
-    named = prompt.split("参考图 ", 1)[1]
-    assert "旧黑发圈（道具）；参考图" in named
-    assert named.index("旧黑发圈（道具）") < named.index(f"旧黑发圈（{kf.SCALE_ONLY}）")
+    assert "比例参考" not in prompt
+    assert not _rows(client, ModelCall, ModelCall.component_id == "scale")
+    note = _prompt(client, _run(client, "1-02")["versions"][-1])
+    assert "（立着到人的胯部）；黄色便利贴：约 7.6 cm 见方" in note
+    assert "（手掌大小，比脸小）" in note
 
 
 def test_each_keyframe_candidate_is_checked(client: TestClient) -> None:

@@ -1970,8 +1970,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/7b/7b61e9178c8bf538a5399c68494301a6c5ece70a7cee18d6971e93f02dd3d75b",
-              "sha256": "7b61e9178c8bf538a5399c68494301a6c5ece70a7cee18d6971e93f02dd3d75b",
+              "path": "blobs/sha256/00/00aa11ce3aaa56a01b375eb0344cd3d8c30ae77eba27c7889b49f58e5c7c4a71",
+              "sha256": "00aa11ce3aaa56a01b375eb0344cd3d8c30ae77eba27c7889b49f58e5c7c4a71",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2038,8 +2038,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/40/4007f63667450baa7cf9d3bd53d7577f87861bf5c83ed2ed8567a41c42cdb031",
-              "sha256": "4007f63667450baa7cf9d3bd53d7577f87861bf5c83ed2ed8567a41c42cdb031",
+              "path": "blobs/sha256/84/840fd29f8d34149f701c5477a08080408ba43c687c65f4971eb5a8d6d33f922e",
+              "sha256": "840fd29f8d34149f701c5477a08080408ba43c687c65f4971eb5a8d6d33f922e",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2173,8 +2173,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/9e/9ec28fe99e9aa815d4820960780a60adc17fd2fcbb8c996a2524ba5351d4d49f",
-              "sha256": "9ec28fe99e9aa815d4820960780a60adc17fd2fcbb8c996a2524ba5351d4d49f",
+              "path": "blobs/sha256/b4/b4f8f0ade3f746e48eee4e18cbce3d66500a5971d00e046b72eb1f699c0e85db",
+              "sha256": "b4f8f0ade3f746e48eee4e18cbce3d66500a5971d00e046b72eb1f699c0e85db",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2239,8 +2239,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/78/78521fa37b85f9f6b3483ddf958ab970f401e266bb69255714c142a9f18d7c7a",
-              "sha256": "78521fa37b85f9f6b3483ddf958ab970f401e266bb69255714c142a9f18d7c7a",
+              "path": "blobs/sha256/4d/4d0fedde7750959a76fc74996b593a890b7dc4572f7b9bef72953cf2c1f77a2d",
+              "sha256": "4d0fedde7750959a76fc74996b593a890b7dc4572f7b9bef72953cf2c1f77a2d",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2377,8 +2377,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/73/734988f8dfeeb17e5fe0ad67559c5b8e798b280c721abab5d0beccaf928361ed",
-              "sha256": "734988f8dfeeb17e5fe0ad67559c5b8e798b280c721abab5d0beccaf928361ed",
+              "path": "blobs/sha256/9b/9b561f3739a9dcb658b6d9202ccaefe873d223c6fe7c825fc54fc7e87d80e6b1",
+              "sha256": "9b561f3739a9dcb658b6d9202ccaefe873d223c6fe7c825fc54fc7e87d80e6b1",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2507,8 +2507,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/c9/c9578cfee7ca683be13e3c2157736bf5add4532b5bd5ec1fb209a50d2d4ee5f1",
-              "sha256": "c9578cfee7ca683be13e3c2157736bf5add4532b5bd5ec1fb209a50d2d4ee5f1",
+              "path": "blobs/sha256/d5/d5d8ee620773853be82e144b937e6909acc14128bddf72de1db9afbb59494289",
+              "sha256": "d5d8ee620773853be82e144b937e6909acc14128bddf72de1db9afbb59494289",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2551,7 +2551,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0038,
+        "cost_usd": 0.0039,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2636,8 +2636,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/e4/e4d11748c38ad26f95d018d5e168ad5ed2b4178b30eff03dba4d416e3ea3c690",
-              "sha256": "e4d11748c38ad26f95d018d5e168ad5ed2b4178b30eff03dba4d416e3ea3c690",
+              "path": "blobs/sha256/cc/cc13b4c52f6717b0d83f0b35b1e64fe3cec4b1150f778e96f966e25336061c4b",
+              "sha256": "cc13b4c52f6717b0d83f0b35b1e64fe3cec4b1150f778e96f966e25336061c4b",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2765,8 +2765,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/d0/d06700dface6cfe71561d21ee6617df8abad1892f13de0ec4c0c384846c66716",
-              "sha256": "d06700dface6cfe71561d21ee6617df8abad1892f13de0ec4c0c384846c66716",
+              "path": "blobs/sha256/fc/fcb35d54958494aa9f9584f3c3569d9d53b1380e9b0d9874a2c31be0cf4ea53f",
+              "sha256": "fcb35d54958494aa9f9584f3c3569d9d53b1380e9b0d9874a2c31be0cf4ea53f",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,

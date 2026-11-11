@@ -56,8 +56,8 @@ export function PropPhysical({
 }
 
 /** 比例参考 of a locked prop (M5.5, backend component `scale`, slot `ref_scale`): the prop
- * next to a locked character, drawn once the prop is locked; the keyframe takes it right after
- * the prop's picture. */
+ * next to a locked character. Since step 9e-1 not drawn on lock and not sent to keyframes
+ * (they copied the sizes it got wrong); shown for comparison when one exists. */
 export function ScaleReference({ asset, aspect }: { asset: Asset; aspect: Aspect }) {
   const { t } = useTranslation("assets");
   const { t: tc } = useTranslation();

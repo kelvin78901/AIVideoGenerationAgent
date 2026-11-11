@@ -193,11 +193,11 @@
   "scale": {
     "title": "Scale reference",
     "note": "Drawn next to {{name}} to check its size",
-    "none": "Drawn once the prop is locked: next to a locked character, to check its size (none without a locked character).",
+    "none": "No longer drawn by itself: keyframes say the prop's size in words, against a person.",
     "running": "Drawing the scale reference…",
     "caption": "{{name}} with it",
     "redraw": "Redraw",
     "redrawing": "Redrawing the scale reference.",
-    "order": "Keyframes take it right after the prop's picture."
+    "order": "For comparison only; keyframes do not use it (they copied the sizes it got wrong)."
   }
 }

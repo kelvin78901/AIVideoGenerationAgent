@@ -24,6 +24,7 @@ blocking, references and lines, not its length or sound), the action lines it fi
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 from sqlmodel import col, select
@@ -60,7 +61,6 @@ from drama_series_agent.pipeline.components.media import (
     ref_file,
 )
 from drama_series_agent.pipeline.components.plan import plan_product, shot_slice
-from drama_series_agent.pipeline.components.scale import REF_SCALE_SLOT
 from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
@@ -107,8 +107,18 @@ LIGHT = {
 PLACE_NOTE = "镜头在「{place}」里拍：机位在这个地方里面；有人在门外、窗外时，是从这里看过去的。"
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
-# A prop's 比例参考 is for its size only (run 19: 1-04 copied its black umbrella and background).
-SCALE_ONLY = "比例参考：只看道具和人的大小，不照搬它的构图、光线、背景和动作"
+# How big a prop is next to a person, in words (M5.5 step 9e-1): the 比例参考 picture drew the
+# umbrella to her head and the note as big as her chest, and every keyframe copied it. Lengths
+# in cm, the person about 165 cm tall.
+_LENGTH = re.compile(r"(\d+(?:\.\d+)?)\s*(cm|厘米|公分|mm|毫米|m|米)(?![a-z])")
+_UNIT_CM = {"cm": 1.0, "厘米": 1.0, "公分": 1.0, "mm": 0.1, "毫米": 0.1, "m": 100.0, "米": 100.0}
+_SMALL = ((3, "指尖大小"), (12, "手掌大小，比脸小"), (25, "和脸差不多大"), (45, "到前臂长"))
+_TALL = (
+    (60, "立着到人的膝盖"),
+    (92, "立着到人的胯部"),
+    (110, "立着到人的腰"),
+    (130, "立着到人的胸口"),
+)
 
 
 def blocking_text(items: list[dict[str, Any]], in_shot: set[str] | None = None) -> str:
@@ -302,8 +312,22 @@ def props_text(props: list[dict[str, str]], assets: dict[str, Asset]) -> str:
     )
 
 
+def size_words(size: str) -> str | None:
+    """「全长约 90 cm」 → 「立着到人的胯部」: the first length the size names (its overall one;
+    「伞面直径约 100 cm」 after it is the open canopy), against a person."""
+    found = _LENGTH.search(size)
+    if found is None:
+        return None
+    cm = float(found.group(1)) * _UNIT_CM[found.group(2)]
+    for limit, words in _SMALL + _TALL:
+        if cm <= limit:
+            return words
+    return "比人的肩还高"
+
+
 async def prop_sizes(session: AsyncSession, ids: list[str]) -> str:
-    """「红色长柄伞：全长约 90 cm；黄色便利贴：7.6 cm 见方」 for the shot's props that say."""
+    """「红色长柄伞：全长约 90 cm（立着到人的胯部）；黄色便利贴：7.6 cm 见方（手掌大小，比脸小）」
+    for the shot's props that say."""
     assets = await asset_rows(session, ids)
     products = {
         p.owner_id: p
@@ -322,7 +346,8 @@ async def prop_sizes(session: AsyncSession, ids: list[str]) -> str:
         a = assets.get(i)
         size = (prop_physical(a, products.get(i)) or {}).get("size") if a else None
         if a is not None and a.kind == "prop" and size:
-            rows.append(f"{a.name}：{size}")
+            words = size_words(size)
+            rows.append(f"{a.name}：{size}" + (f"（{words}）" if words else ""))
     return "；".join(rows)
 
 
@@ -430,7 +455,6 @@ async def _references(
             unlocked.append(a.name)
             continue
         h = await invalidation.current_hash(session, p.id, "")
-        scale = await scale_ref(session, a.id) if a.kind == "prop" else None
         refs.append(
             {
                 "name": a.name,
@@ -445,40 +469,7 @@ async def _references(
                 ),
             }
         )
-        if scale is not None:  # 比例参考 (M5.5): right after the prop's own picture
-            sp, sha = scale
-            refs.append(
-                {
-                    "name": f"{a.name}（{SCALE_ONLY}）",
-                    "kind": "prop",
-                    "product_id": sp.id,
-                    "sha256": sha,
-                    "hash": await invalidation.current_hash(session, sp.id, ""),
-                    "desc": "",
-                    "scale": True,  # the keyframe's alone: a take does not get it (vid)
-                }
-            )
     return refs, unlocked, texts
-
-
-async def scale_ref(session: AsyncSession, asset_id: str) -> tuple[Product, str] | None:
-    """A prop's adopted 比例参考 (``scale``): its product and picture."""
-    p = (
-        await session.exec(
-            select(Product).where(
-                Product.owner_type == "asset",
-                Product.owner_id == asset_id,
-                Product.slot == REF_SCALE_SLOT,
-            )
-        )
-    ).first()
-    v = (
-        await session.get(ProductVersion, p.adopted_version_id)
-        if p and p.adopted_version_id
-        else None
-    )
-    f = next((x for x in (v.files_json if v else []) if x.get("role") == "scale"), None)
-    return (p, str(f["sha256"])) if p is not None and f is not None else None
 
 
 async def _has_character(session: AsyncSession, ids: list[str]) -> bool:

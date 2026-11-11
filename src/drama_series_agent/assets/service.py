@@ -499,8 +499,8 @@ class AssetService:
         await self._gate_updated(product, "confirm")
         if kind == "character":
             await self.draw_views(asset_id)
-        elif kind == "prop":
-            await self.draw_scale(asset_id)
+        # A locked prop no longer draws its 比例参考 by itself (M5.5 step 9e-1): the picture got
+        # the size wrong and every keyframe copied it; the keyframe says the size in words.
         return await self.get(asset_id)
 
     async def upload(self, asset_id: str, filename: str, data: bytes) -> AssetOut:
@@ -539,7 +539,8 @@ class AssetService:
 
     async def draw_scale(self, asset_id: str) -> Job | None:
         """比例参考 of a locked prop (M5.5), unless it already follows the locked pictures; none
-        when no character is locked yet."""
+        when no character is locked yet. Not drawn on lock since step 9e-1, and no keyframe
+        sends it."""
         async with self._db.session() as session:
             asset = await self._require(session, asset_id)
         p = await self._products.ensure(

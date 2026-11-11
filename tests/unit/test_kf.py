@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from drama_series_agent.modelhub.workflows import load_workflow
 from drama_series_agent.pipeline.component import Inputs
-from drama_series_agent.pipeline.components.kf import blocking_text, pick_refs, ref_limit
+from drama_series_agent.pipeline.components.kf import (
+    blocking_text,
+    pick_refs,
+    ref_limit,
+    size_words,
+)
 
 
 def _ref(name: str, kind: str) -> dict[str, str]:
@@ -80,3 +85,12 @@ def test_the_top_view_leaves_out_who_is_not_in_the_shot() -> None:
         "家门在画面右侧，远处；红伞在画面右侧；机位在正前方"
     )
     assert "林晚" in blocking_text(marks, {"林晚"})  # a model's own ids: matched by name
+
+
+def test_a_props_size_against_a_person() -> None:
+    """M5.5 step 9e-1: the size in words a picture model can see, from the first length named."""
+    assert size_words("全长约 90 cm，伞面直径约 100 cm") == "立着到人的胯部"
+    assert size_words("7.6 cm 见方") == "手掌大小，比脸小"
+    assert size_words("长 15 厘米") == "和脸差不多大"
+    assert size_words("1.8 m") == "比人的肩还高"
+    assert size_words("一张便签纸") is None
