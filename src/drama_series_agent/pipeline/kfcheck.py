@@ -10,7 +10,8 @@ What is asked comes from the shot (``kf.gather`` puts it in ``context["checks"]`
   handwritten; OCR (``qa/ocr.py``) checks the characters themselves;
 - ``mouth``: who speaks only in their head (内心独白: lips closed);
 - ``people``: an insert with nobody in it;
-- ``light``: the light of the scene's time (no daylight at night; ``kf.LIGHT``).
+- ``light``: the light of the scene's time (no daylight at night; ``kf.LIGHT``);
+- ``place``: the camera inside the scene's place (not on the other side of its door).
 
 The answer is JSON (``{"items": [{"check", "ok", "note"}]}``); a picture is asked once per model and
 question (``LlmCache``), and a call that fails is not the keyframe's failure (budget and
@@ -42,12 +43,14 @@ KFCHECK = "kfcheck"  # the route (config/components.yaml)
 TASK = "keyframe_check"
 TEMPLATE = "kf/check.j2"
 MAX_TOKENS = 600
-CHECKS = ("start", "scale", "text", "mouth", "people", "light")
+CHECKS = ("start", "scale", "text", "mouth", "people", "light", "place")
 
 
 def has_asks(asks: dict[str, Any] | None) -> bool:
     given = asks or {}
-    return any(given.get(k) for k in ("start", "scale", "texts", "inner", "no_people", "light"))
+    return any(
+        given.get(k) for k in ("start", "scale", "texts", "inner", "no_people", "light", "place")
+    )
 
 
 def request(services: Services, sha256: str, asks: dict[str, Any]) -> ModelRequest:

@@ -623,6 +623,12 @@ class ShotService:
             shots = await pictured(session, ops.shots_of(v.payload_json) if v else [])
             rows = await _lines(session, episode_id)
             assets, _ = await episode_assets(session, episode_id)
+            places = {
+                x.id: scene_place(x.heading)
+                for x in (
+                    await session.exec(select(Scene).where(Scene.episode_id == episode_id))
+                ).all()
+            }
             mine = await check_product(session, episode_id)
             last = (
                 await session.get(ProductVersion, mine.adopted_version_id)
@@ -635,7 +641,7 @@ class ShotService:
         lines = {x.id: shot_check.LineInfo(x.type, x.text, x.tone or "") for x in rows.values()}
         labels = shot_check.labels(episode.idx, shots)
         contracts = shot_check.contracts_of(shots, lines, {a.id: a.kind for a in assets.values()})
-        found = [i.as_json() for i in shot_check.check(shots, labels, lines, contracts)]
+        found = [i.as_json() for i in shot_check.check(shots, labels, lines, contracts, places)]
         if last is not None:
             found += [i for i in last.payload_json.get("issues") or [] if i["shot_id"] in labels]
         order = {sid: n for n, sid in enumerate(labels)}

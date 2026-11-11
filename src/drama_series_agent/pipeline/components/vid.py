@@ -133,6 +133,7 @@ from drama_series_agent.shots.service import (
     VIDEO_SLOT,
     own_picture,
     prop_names,
+    scene_place,
 )
 from drama_series_agent.spec.dims import dims
 
@@ -156,6 +157,7 @@ def take_asks(context: dict[str, Any]) -> dict[str, Any]:
         "kind": context.get("kind") or "performance",
         "beats": int(context.get("beats", 2)),
         "light": context.get("light"),
+        "place": context.get("place"),
         "end": list(context.get("end") or []),
         "texts": [t for t in context.get("texts") or [] if t.get("method") == "model"],
         "inner": list(
@@ -443,6 +445,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             # 镜头契约 (M5.5; before it, 15o's 插入镜头: nobody in it and nothing said)
             "kind": kind,
             "light": light,
+            "place": scene_place(str(scene["heading"])) if scene and scene.get("heading") else None,
             "beats": beats,
             "start": [f"{i['subject']}：{i['state']}" for i in contract["start"]],
             "end": [f"{i['subject']}：{i['state']}" for i in contract["end"]],

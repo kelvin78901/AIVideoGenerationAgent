@@ -71,7 +71,7 @@ from drama_series_agent.qa import ocr
 from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
-from drama_series_agent.shots.service import KEYFRAME_SLOT, prop_names
+from drama_series_agent.shots.service import KEYFRAME_SLOT, prop_names, scene_place
 
 REF_ORDER = ops.REF_KINDS
 REF_SLOTS = ("ref_image", "text_image")
@@ -102,6 +102,9 @@ LIGHT = {
     "dawn": "清晨：天刚亮，冷蓝色的天光，光线很弱。",
     "dusk": "黄昏：低角度的暖橙色天光，影子长。",
 }
+# The camera's side (run 19: 1-06 in 林晚出租屋 started with her outside the door; the keyframe
+# put the camera in the stairwell, and the take shut her out).
+PLACE_NOTE = "镜头在「{place}」里拍：机位在这个地方里面；有人在门外、窗外时，是从这里看过去的。"
 FINAL_NOTE = "以参考图 1 的草稿为准，画得更精细：构图、人物、光线和颜色都不要改。"
 LOCAL_REFS = 3  # a local workflow that does not say
 # A prop's 比例参考 is for its size only (run 19: 1-04 copied its black umbrella and background).
@@ -228,6 +231,9 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         blocks.append(Block("场景", str(scene["heading"])))
     if light := scene_light(scene):
         blocks.append(Block("光线", light))
+    place = scene_place(str(scene["heading"])) if scene and scene.get("heading") else None
+    if place:
+        blocks.append(Block("机位", PLACE_NOTE.format(place=place)))
     if shot.get("blocking"):
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
         in_shot = set(ids) | named
@@ -247,6 +253,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         "inner": [],
         "no_people": False,
         "light": light,
+        "place": place,
     }
     if c is not None:
         blocks += await contract_blocks(session, c, ids, filmed_lines)

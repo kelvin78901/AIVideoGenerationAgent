@@ -1766,8 +1766,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/ab/aba6daf8a04840bcbc39930c1265e0f97747f814c3dc94b801f922fe4eb5ee88",
-              "sha256": "aba6daf8a04840bcbc39930c1265e0f97747f814c3dc94b801f922fe4eb5ee88",
+              "path": "blobs/sha256/6f/6f7f225df1db30a965dc5d834a84557bca4219f8159d241db272265b760250e0",
+              "sha256": "6f7f225df1db30a965dc5d834a84557bca4219f8159d241db272265b760250e0",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1833,8 +1833,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/c4/c46d4ed42e44c0dfdd321dd530c206f4a41a834e1a22f655fc34141aad993171",
-              "sha256": "c46d4ed42e44c0dfdd321dd530c206f4a41a834e1a22f655fc34141aad993171",
+              "path": "blobs/sha256/03/036e6b9ecd3bdea33eabc96f118aab35cb0e4486cec655e90fbd68c4b1be6194",
+              "sha256": "036e6b9ecd3bdea33eabc96f118aab35cb0e4486cec655e90fbd68c4b1be6194",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1970,8 +1970,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/e9/e9c619a83bdd51e28d586f0d1fdf95c13a8514ab03646ab00e73b8d3cbc890cf",
-              "sha256": "e9c619a83bdd51e28d586f0d1fdf95c13a8514ab03646ab00e73b8d3cbc890cf",
+              "path": "blobs/sha256/7b/7b61e9178c8bf538a5399c68494301a6c5ece70a7cee18d6971e93f02dd3d75b",
+              "sha256": "7b61e9178c8bf538a5399c68494301a6c5ece70a7cee18d6971e93f02dd3d75b",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2038,8 +2038,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/3f/3f6bf610959425ab8135a5f6a920a5c826b1610434bd28bf3c59efec00276779",
-              "sha256": "3f6bf610959425ab8135a5f6a920a5c826b1610434bd28bf3c59efec00276779",
+              "path": "blobs/sha256/40/4007f63667450baa7cf9d3bd53d7577f87861bf5c83ed2ed8567a41c42cdb031",
+              "sha256": "4007f63667450baa7cf9d3bd53d7577f87861bf5c83ed2ed8567a41c42cdb031",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2173,8 +2173,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/e6/e6f930651ccfa84e4007389db1140fe4175c309e1b96343dad21a535d7152f7e",
-              "sha256": "e6f930651ccfa84e4007389db1140fe4175c309e1b96343dad21a535d7152f7e",
+              "path": "blobs/sha256/9e/9ec28fe99e9aa815d4820960780a60adc17fd2fcbb8c996a2524ba5351d4d49f",
+              "sha256": "9ec28fe99e9aa815d4820960780a60adc17fd2fcbb8c996a2524ba5351d4d49f",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2239,8 +2239,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/19/1960db72d94f73b8b7b80499133104be64f566df817cbb2502eef748d240846a",
-              "sha256": "1960db72d94f73b8b7b80499133104be64f566df817cbb2502eef748d240846a",
+              "path": "blobs/sha256/78/78521fa37b85f9f6b3483ddf958ab970f401e266bb69255714c142a9f18d7c7a",
+              "sha256": "78521fa37b85f9f6b3483ddf958ab970f401e266bb69255714c142a9f18d7c7a",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2377,8 +2377,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/70/701c80434e2c831910dd54fd958d9710cbd5cfe6ed502139cd3fa22b478dfad7",
-              "sha256": "701c80434e2c831910dd54fd958d9710cbd5cfe6ed502139cd3fa22b478dfad7",
+              "path": "blobs/sha256/73/734988f8dfeeb17e5fe0ad67559c5b8e798b280c721abab5d0beccaf928361ed",
+              "sha256": "734988f8dfeeb17e5fe0ad67559c5b8e798b280c721abab5d0beccaf928361ed",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2507,8 +2507,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/56/562fcd0747f787f909be2b41a6cbab470cf00afd6acbe0523600b0d7798d1fa9",
-              "sha256": "562fcd0747f787f909be2b41a6cbab470cf00afd6acbe0523600b0d7798d1fa9",
+              "path": "blobs/sha256/c9/c9578cfee7ca683be13e3c2157736bf5add4532b5bd5ec1fb209a50d2d4ee5f1",
+              "sha256": "c9578cfee7ca683be13e3c2157736bf5add4532b5bd5ec1fb209a50d2d4ee5f1",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2636,8 +2636,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/55/55c22a0039a01ea87bc981dc0393450f887ef7cd1e7e02b8ecec2a1aa75a4d30",
-              "sha256": "55c22a0039a01ea87bc981dc0393450f887ef7cd1e7e02b8ecec2a1aa75a4d30",
+              "path": "blobs/sha256/e4/e4d11748c38ad26f95d018d5e168ad5ed2b4178b30eff03dba4d416e3ea3c690",
+              "sha256": "e4d11748c38ad26f95d018d5e168ad5ed2b4178b30eff03dba4d416e3ea3c690",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2765,8 +2765,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/fd/fde6ef696bb19008ce307f99b7340b28f49087e87d6a758525724b7c98d7d3a8",
-              "sha256": "fde6ef696bb19008ce307f99b7340b28f49087e87d6a758525724b7c98d7d3a8",
+              "path": "blobs/sha256/d0/d06700dface6cfe71561d21ee6617df8abad1892f13de0ec4c0c384846c66716",
+              "sha256": "d06700dface6cfe71561d21ee6617df8abad1892f13de0ec4c0c384846c66716",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2809,7 +2809,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0037,
+        "cost_usd": 0.0038,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null

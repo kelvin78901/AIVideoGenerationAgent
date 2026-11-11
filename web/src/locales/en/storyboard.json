@@ -201,6 +201,7 @@
       "replay": "Same scene, framing and still camera as {{other}}: cut together it looks like a replay.",
       "inner_mouth": "An inner-voice shot says “{{words}}”: lips stay closed on an inner voice.",
       "state_jump": "Its start does not match how {{other}} ends ({{subject}}).",
+      "cross_space": "The start or end says 「{{words}}」 but the shot is in 「{{place}}」: is that seen from here? To film that side, split the shot or change its scene.",
       "repeat": "A repeated action",
       "over_budget": "More actions than the shot allows",
       "other": "Other"
@@ -212,6 +213,7 @@
       "mouth": "lips closed",
       "people": "nobody in it",
       "light": "light fits the time of day",
+      "place": "camera inside the place",
       "ocr": "OCR reads the words",
       "repeat": "no repeated action",
       "event": "nothing happens by itself",

@@ -246,6 +246,8 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert kf.PROPS_NOTE + "红色长柄伞：斜靠在门边墙上，伞面湿" in note
     # The scene's time of day (夜): its light, said outright (run 19: lit like day).
     assert "[光线]\n" + kf.LIGHT["night"] in note
+    # The camera is in the scene's place (run 19: 1-06 shot from the stairwell, shut out).
+    assert "[机位]\n" + kf.PLACE_NOTE.format(place="林晚出租屋") in door
     # 道具的真实尺寸 (M5.5 step 5): drawn to scale against the people.
     assert "道具按真实尺寸画，和人物的比例要对：红色长柄伞：全长约 90 cm" in note
     # 1-05 has no umbrella of its own, but its note is 「贴在伞柄上」: the umbrella is in the
@@ -301,6 +303,7 @@ def test_each_keyframe_candidate_is_checked(client: TestClient) -> None:
             "text": True,
             "people": True,
             "light": True,
+            "place": True,
             "ocr": True,
         }
         assert c["check"]["ok"] is True and c["check"]["model"] == "google/gemini-3.1-flash-lite"

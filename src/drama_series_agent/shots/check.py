@@ -7,7 +7,9 @@ plan and the script, free and at once. Only a warning: confirming goes on (Kelvi
 - ``replay``: the shot looks like a replay of the last one with someone in it in the same scene,
   same framing, both static, an insert between them or a cut (1-06 → 1-08);
 - ``inner_mouth``: an inner voice in a shot whose picture or action has the speaker talk;
-- ``state_jump``: a continuous shot that starts unlike the shot it follows ends.
+- ``state_jump``: a continuous shot that starts unlike the shot it follows ends;
+- ``cross_space``: someone starts or ends outside the place the shot is in (1-06 in 林晚出租屋
+  starting 「站在门外」: the keyframe put the camera in the stairwell, she shut herself out).
 
 The plan check by a model (``pipeline/components/plancheck.py``) adds what rules cannot see.
 """
@@ -32,6 +34,12 @@ OPPOSITES: tuple[tuple[tuple[str, ...], tuple[str, ...]], ...] = (
 EVENTS = re.compile(
     r"泡开|晕开|流下|淌下|倒水|倒出|溅|掉落|掉下|炸开|破碎|碎了|燃起|融化|被风吹|吹走|飞走"
 )
+# Where a state puts someone, against the place the shot is in (``cross_space``): out of a
+# room, or into one from a passage. Looking or heading there is not being there (1-08's
+# 「望向门外地上」).
+OUT_OF_ROOM = re.compile(r"(?<![向着朝往])(?:门外|窗外|屋外|楼道|走廊|街上)")
+IN_ROOM = re.compile(r"(?<![向着朝往])(?:屋里|屋内|房间里|房里|进屋)")
+PASSAGE = re.compile(r"楼道|走廊|门口|楼梯|街|院子|天台")
 TALKING = re.compile(r"开口|说话|张嘴|嘴唇(?:在)?动|低声说|喃喃|念叨|自言自语")
 
 
@@ -99,9 +107,11 @@ def check(
     labels: Mapping[str, str],
     lines: Mapping[str, LineInfo],
     contracts: Mapping[str, Mapping[str, Any]],
+    places: Mapping[str, str] | None = None,
 ) -> list[Issue]:
     """Every rule over the plan's shots in order; ``contracts``: each shot's effective contract
-    (``shots.contract.effective``)."""
+    (``shots.contract.effective``); ``places``: scene id → where it is (``scene_place``), for
+    ``cross_space``."""
     out: list[Issue] = []
     by_id = {str(s["id"]): s for s in shots}
     for i, s in enumerate(shots):
@@ -130,6 +140,9 @@ def check(
                     {"other": labels.get(str(before["id"]), ""), "framing": str(s["framing"])},
                 )
             )
+        place = (places or {}).get(str(s.get("scene_id") or ""))
+        if place and (outside := cross_space(place, [*c.get("start", []), *c.get("end", [])])):
+            out.append(Issue(sid, "cross_space", {"words": outside, "place": place}))
         source = by_id.get(str(s.get("tail_from") or ""))
         if source is not None and not c.get("start_inherited"):
             jump = state_jump((contracts.get(str(source["id"])) or {}).get("end"), c.get("start"))
@@ -142,6 +155,15 @@ def check(
                     )
                 )
     return out
+
+
+def cross_space(place: str, states: Sequence[Mapping[str, Any]]) -> str | None:
+    """The words that put someone outside ``place`` (a room: 门外, 楼道…; a passage: 屋里…)."""
+    outside = IN_ROOM if PASSAGE.search(place) else OUT_OF_ROOM
+    for st in states:
+        if m := outside.search(str(st.get("state") or "")):
+            return m.group(0)
+    return None
 
 
 def undone(text: str) -> list[str] | None:

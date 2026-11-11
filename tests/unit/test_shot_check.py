@@ -79,3 +79,28 @@ def test_a_moving_camera_or_another_framing_is_no_replay() -> None:
     assert ("1-08", "replay") not in _found(shots)
     shots[7] = {**shots[7], "camera_move": "static", "framing": "close"}
     assert ("1-08", "replay") not in _found(shots)
+
+
+def test_someone_outside_the_shots_place_is_found() -> None:
+    """Run 19's 1-06, in 林晚出租屋, started 「站在门外」: the keyframe put the camera in the
+    stairwell and the take shut her out. A passage the other way round: 屋里 from the stairwell."""
+    shots = ops.normalize(_demo_answer(), _ctx())["shots"]
+    door = shots[5]
+    door["contract"]["start"] = [{"subject": "林晚", "state": "站在门外，伞靠在墙边"}]
+    places = {door["scene_id"]: "林晚出租屋", shots[0]["scene_id"]: "老小区楼道 · 六楼林晚家门口"}
+    shots[0]["contract"]["end"] = [{"subject": "林晚", "state": "已经进了屋里"}]
+    labels = check.labels(1, shots)
+    lines = _lines()
+    contracts = check.contracts_of(shots, lines, KINDS)
+    found = [
+        (labels[i.shot_id], i.params)
+        for i in check.check(shots, labels, lines, contracts, places)
+        if i.code == "cross_space"
+    ]
+    assert found == [
+        ("1-01", {"words": "屋里", "place": "老小区楼道 · 六楼林晚家门口"}),
+        ("1-06", {"words": "门外", "place": "林晚出租屋"}),
+    ]
+    # Her back to the door, or looking out (1-08: 「望向门外地上」), is not being outside.
+    for state in ("背靠着门", "站在门口，望向门外地上"):
+        assert check.cross_space("林晚出租屋", [{"subject": "林晚", "state": state}]) is None

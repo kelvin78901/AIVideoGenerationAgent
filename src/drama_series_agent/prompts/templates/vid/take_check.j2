@@ -9,7 +9,8 @@ You check one video take of a short drama. The picture shows six frames of it in
 {% if texts %}[text] These words stay exactly the same in every frame they are seen in: {% for t in texts %}"{{ t.exact }}" ({{ t.name }}){% if not loop.last %}; {% endif %}{% endfor %}.
 {% endif %}{% if inner %}[mouth] {{ inner | join(", ") }} only speak in their head here: do their lips stay closed?
 {% endif %}{% if light %}[light] The time of day and its light (Chinese): {{ light }} Is every frame lit like this (no daylight in a night scene, outside a door or window included)?
-{% endif %}{% if end %}[end] At the end of the take (Chinese): {{ end | join("; ") }}. Does the last frame look like this?
+{% endif %}{% if place %}[place] The camera is inside {{ place }} (Chinese) for the whole take. Is every frame seen from inside it, and is everyone who should end up there (see the end) on this side of its door?
+{% endif %}{% if end %}[end] At the end of the take (Chinese): {{ end | join("; ") }}. Does the last frame look like this{% if place %}, inside {{ place }}{% endif %}?
 {% endif %}
 Answer with JSON only, one item per check in square brackets above, a short note in Chinese when it fails:
 {"items": [{"check": "repeat", "ok": false, "frame": 4, "note": "门关上后又拉开了一次"}, {"check": "event", "ok": true, "note": ""}]}
