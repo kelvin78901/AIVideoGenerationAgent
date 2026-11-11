@@ -72,6 +72,8 @@
     "keys": "← → switch takes · Space play · 1–5 rate · A adopt",
     "check": "Contract check",
     "checkOk": "All clear",
+    "redrawn": "The check failed; made again with what failed, this one passed after {{count}} more tries.",
+    "redrawnStill": "The check failed and still fails after {{count}} more tries; this is the try with the fewest problems: only a warning, it can be adopted.",
     "checkFails": "{{count}} to look at",
     "checkLater": "Face, lip sync, word errors: M6",
     "sheet": "The 6 frames checked"

@@ -29,7 +29,8 @@ from drama_series_agent.core.models_db import (
 )
 from drama_series_agent.media.video import probe
 from drama_series_agent.modelhub.adapters.base import ModelRequest
-from drama_series_agent.pipeline import vlook
+from drama_series_agent.pipeline import takecheck, vlook
+from drama_series_agent.pipeline.components.vid import VidComponent
 from drama_series_agent.prompts import h3_format
 
 LOCAL = "http://127.0.0.1"
@@ -660,6 +661,63 @@ def test_each_take_is_checked(client: TestClient) -> None:
     assert "sheet" in {f["role"] for f in take["files"]}
     calls = [c for c in _rows(client, ModelCall) if c.component_id == "takecheck"]
     assert len(calls) == 1
+
+
+def _failing_take_looks(monkeypatch: pytest.MonkeyPatch, fail: int) -> list[list[str]]:
+    """The take check fails its first ``fail`` looks (something passes through her); the fixes
+    each take's prompt writer was told."""
+    told: list[list[str]] = []
+    seen: list[str] = []
+
+    async def look(*args: Any) -> tuple[list[dict[str, Any]], str]:
+        seen.append(args[1])
+        ok = len(seen) > fail
+        item = {"check": "solid", "ok": ok, "note": "" if ok else "门板穿过了她的肩膀", "frame": 3}
+        return [item], "google/gemini-3.1-flash-lite"
+
+    real = VidComponent._rewrite_messages
+
+    def messages(self: VidComponent, facts: h3_format.Facts) -> list[dict[str, Any]]:
+        told.append(list(facts.fixes))
+        return real(self, facts)
+
+    monkeypatch.setattr(takecheck, "look", look)
+    monkeypatch.setattr(VidComponent, "_rewrite_messages", messages)
+    return told
+
+
+def test_a_take_that_fails_its_check_is_made_again(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """M5.5 9e-5 (Kelvin 2026-11-11): a local take that fails its check is made again, its
+    prompt writer told what failed, up to ``redraw`` (2) more times; the first that passes is
+    kept, every try's calls are recorded."""
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    told = _failing_take_looks(monkeypatch, fail=1)
+    product = _run(client, shots["1-03"]["video_product_id"], count=1)
+    take = product["versions"][-1]
+    assert take["payload"]["redraws"] == 1 and take["payload"]["check"]["ok"] is True
+    assert told == [[], ["- 穿模（东西穿过人或别的东西）：门板穿过了她的肩膀"]]
+    videos = [
+        c
+        for c in _rows(client, ModelCall)
+        if c.product_id == product["id"]
+        and c.component_id == "vid"
+        and c.model_key == take["model_key"]
+    ]
+    assert len(videos) == 2  # both takes made, one kept
+
+
+def test_a_take_that_never_passes_keeps_the_best_try_as_a_warning(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    told = _failing_take_looks(monkeypatch, fail=99)
+    take = _run(client, shots["1-03"]["video_product_id"], count=1)["versions"][-1]
+    assert take["payload"]["redraws"] == 2 and take["payload"]["check"]["ok"] is False
+    assert len(told) == 3 and take["stage"] == "draft"  # only a warning: it can be adopted
 
 
 def test_a_picture_the_user_wrote_replaces_the_scripts_action_lines(client: TestClient) -> None:

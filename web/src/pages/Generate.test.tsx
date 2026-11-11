@@ -160,6 +160,7 @@ describe("GeneratePage", () => {
         ok: false,
         model: "google/gemini-3.1-flash-lite",
       },
+      redraws: 2, // made again twice with what failed, still failing (9e-5)
     };
     const poster = v.files[0];
     if (poster) v.files = [...v.files, { ...poster, role: "sheet", mime: "image/png" }];
@@ -169,6 +170,7 @@ describe("GeneratePage", () => {
     expect(check).toHaveTextContent("1 处提示");
     expect(check).toHaveTextContent("✗ 没有重复动作 · 第 4 帧：门关上后又拉开了一次");
     expect(check).toHaveTextContent("✓ 一镜到底");
+    expect(check).toHaveTextContent("自动重出了 2 次仍没过，留下的是问题最少的一条");
     expect(within(check).getByRole("img", { name: "检查看的 6 帧" })).toBeInTheDocument();
   });
 

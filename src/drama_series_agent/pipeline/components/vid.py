@@ -42,6 +42,7 @@ import hashlib
 import json
 import math
 from dataclasses import dataclass, replace
+from functools import partial
 from typing import Any
 
 from loguru import logger
@@ -83,7 +84,7 @@ from drama_series_agent.modelhub.adapters.base import (
 )
 from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm
-from drama_series_agent.pipeline import takecheck, vlook, vselect
+from drama_series_agent.pipeline import redraw, takecheck, vlook, vselect
 from drama_series_agent.pipeline.component import (
     ComponentError,
     Inputs,
@@ -667,12 +668,53 @@ class VidComponent(MediaComponent):
         if source is not None:
             return await self._final(ctx, inputs, source)
 
-        async def flow(model: str, reason: str | None) -> Take:
-            return await self._take(ctx, inputs, model, reason)
-
         # A local take that fails or times out is made again on the fallback (the H3 API), its
-        # request built for that model (SPEC 7.3).
-        take, reason = await self.run_flow(ctx, flow)
+        # request built for that model (SPEC 7.3). 检查没过自动重画 (9e-5, ``pipeline/redraw.py``):
+        # a local take that fails its check is made again with what failed.
+        fixes: list[str] = []
+        calls: list[MediaCall] = []
+        best: tuple[int, Take, str | None, list[dict[str, Any]], dict[str, Any]] | None = None
+        made = 0
+        for attempt in range(1 + redraw.tries(self.id)):
+            flow = partial(self._take, ctx, inputs, fixes=fixes, attempt=attempt)
+            take, reason = await self.run_flow(ctx, flow)
+            made += 1
+            calls += take.calls
+            files, payload = await self._take_files(ctx, inputs, take)
+            mark = redraw.score(payload["check"])
+            done = not redraw.failed(payload["check"]) or take.calls[-1].where != "local"
+            if best is None or mark > best[0] or done:
+                best = (mark, take, reason, files, payload)
+            if done:
+                break
+            fixes = redraw.failed_text(payload["check"], takecheck.LABELS).splitlines()
+        assert best is not None
+        _, take, reason, files, payload = best
+        if made > 1:
+            payload["redraws"] = made - 1  # tries after the first; the one kept is shown
+        call = take.calls[-1]
+        stage = "draft" if call.where == "local" else None
+        draft = self.media_draft(
+            ctx,
+            inputs,
+            payload,
+            files,
+            calls,
+            take.req.prompt or "",
+            stage=stage,
+            fallback_reason=reason,
+            # What 「用 API 出终版」 resends (Regenerate-2K takes the draft's own inputs), and
+            # why this workflow (按镜头选工作流; the Inspector shows it).
+            params={"request": _sent(take.req.params), **_select(ctx)},
+        )
+        draft.seed = take.req.seed
+        draft.dependencies = [*draft.dependencies, *take.deps]
+        return draft
+
+    async def _take_files(
+        self, ctx: RunContext, inputs: Inputs, take: Take
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """A take's files and payload: the clip trimmed and measured, then checked."""
         call = take.calls[-1]
         frame_ = inputs.context["frame"]
         head = head_s(take.req.params, float(frame_["fps"]))
@@ -693,25 +735,24 @@ class VidComponent(MediaComponent):
             payload["prompt_ir"] = bool(take.rewritten)
         if take.rewrite is not None:
             payload["prompt_rewrite"] = take.rewrite
-        stage = "draft" if call.where == "local" else None
-        draft = self.media_draft(
-            ctx,
-            inputs,
-            payload,
-            files,
-            take.calls,
-            take.req.prompt or "",
-            stage=stage,
-            fallback_reason=reason,
-            # What 「用 API 出终版」 resends (Regenerate-2K takes the draft's own inputs), and
-            # why this workflow (按镜头选工作流; the Inspector shows it).
-            params={"request": _sent(take.req.params), **_select(ctx)},
-        )
-        draft.dependencies = [*draft.dependencies, *take.deps]
-        return draft
+        return files, payload
 
-    async def _take(self, ctx: RunContext, inputs: Inputs, model: str, reason: str | None) -> Take:
+    async def _take(
+        self,
+        ctx: RunContext,
+        inputs: Inputs,
+        model: str,
+        reason: str | None,
+        *,
+        fixes: list[str] | None = None,
+        attempt: int = 0,
+    ) -> Take:
+        """One take on ``model``; ``fixes``: what the take check found wrong in the try before
+        (9e-5), told to the prompt's writer, or added to the prompt when nothing rewrites it;
+        each try after the first on another seed."""
         req, refs, deps, voices, r2v = await self._request(inputs, ctx.compiled, model, ctx)
+        if attempt and req.seed is not None:
+            req = req.model_copy(update={"seed": req.seed + 100 * attempt})
         calls: list[MediaCall] = []
         rewrite: str | None = None
         if self._rewrites(model):
@@ -731,6 +772,7 @@ class VidComponent(MediaComponent):
             seen = look.text if look is not None else None
             facts = self._facts(inputs, req, refs, voices, r2v, ctx.lang, seen)
             facts.duration_s = self._rendered_s(req, model)
+            facts.fixes = list(fixes or [])
             prompt, rewrite_call = await self._rewrite(ctx, inputs, facts)
             calls.append(rewrite_call)
             rewrite = rewrite_call.model_key
@@ -740,6 +782,10 @@ class VidComponent(MediaComponent):
             calls.append(ir_call)
         if rewritten:
             req = req.model_copy(update={"prompt": rewritten})
+        if fixes and not self._rewrites(model):
+            told = "\n".join(fixes)
+            prompt = f"{req.prompt}\n\n[{redraw.FIX_TITLE}]\n{told}"
+            req = req.model_copy(update={"prompt": prompt})
         call = await self.media_call(
             ctx, req, inputs.episode_id, model=model, fallback=False, fallback_reason=reason
         )
@@ -957,13 +1003,17 @@ class VidComponent(MediaComponent):
             )
         else:
             return estimate
-        parts = [estimate, self.services.registry.get(ir).estimate(ask)]
+        written = self.services.registry.get(ir).estimate(ask)
+        parts = [estimate, written]
         if self._rewrites(model):  # the first frame looked at once (cached afterwards)
             look = vlook.estimate(self.services, self._route_model(vlook.VLOOK))
             parts += [look] if look is not None else []
         asks = {**take_asks(inputs.context), "times": []}  # take 检查: the take looked at once
         check = takecheck.estimate(self.services, self._route_model(takecheck.TAKECHECK), asks)
         parts += [check] if check is not None else []
+        if self.where_of(model) == "local":  # each redraw it may take (9e-5): written, looked at
+            again = [written, *([check] if check is not None else [])]
+            parts += again * redraw.tries(self.id)
         return Estimate(
             cost_usd=sum(e.cost_usd for e in parts),
             seconds=sum(e.seconds for e in parts),

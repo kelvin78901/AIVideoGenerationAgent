@@ -359,6 +359,8 @@ function TakeCard({
   const check = checked.success ? checked.data : null;
   const checkFails = check ? check.items.filter((x) => !x.ok).length : 0;
   const sheet = v.files.find((f) => f.role === "sheet");
+  // 检查没过自动重画 (M5.5 9e-5): how many more tries this take took.
+  const redraws = typeof v.payload.redraws === "number" ? v.payload.redraws : 0;
   const note = takeNote(product, v);
   const take = t("wall.take", { n: v.n });
   const res = typeof v.payload.resolution === "string" ? v.payload.resolution : "768p";
@@ -480,6 +482,11 @@ function TakeCard({
             </StatusBadge>
           </div>
           <CheckLines items={check.items} />
+          {redraws ? (
+            <span className="text-xs text-muted-foreground">
+              {t(checkFails ? "wall.redrawnStill" : "wall.redrawn", { count: redraws })}
+            </span>
+          ) : null}
           {checkFails && sheet ? (
             <img
               src={fileUrl(sheet.sha256)}

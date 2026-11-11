@@ -1,6 +1,7 @@
 """take 检查 (M5.5 step 7, route ``takecheck``): each take's contact sheet looked at by a vision
 model against its shot's contract, with what the take's own measures already say. Only a
-warning (Kelvin 2026-11-10); the automatic reruns on a failed check are M6's.
+warning (Kelvin 2026-11-10); a local take that fails it is made again with what failed
+(``pipeline/redraw.py``, M5.5 9e-5), M6's QA reruns come on top.
 
 Run 17 showed what to look for: a door opened, shut and opened again (``repeat``); water poured
 over a still note (``event``); writing that changed between frames (``text``); lips moving on an
@@ -53,6 +54,21 @@ CHECKS = (
     "facing",
 )
 HOLD_S = 1.0  # a still opening longer than this is flagged
+# What each check looked at, for the prompt of a take made again (``pipeline/redraw.py``).
+LABELS = {
+    "repeat": "动作重复（做了又撤销再做）",
+    "event": "东西自己发生了变化",
+    "solid": "穿模（东西穿过人或别的东西）",
+    "text": "字",
+    "mouth": "嘴闭着",
+    "end": "结束状态",
+    "light": "光线和时间",
+    "place": "机位在场景里",
+    "hands": "手",
+    "facing": "朝向",
+    "cut": "片子中间有切镜",
+    "hold": "开头停着不动",
+}
 
 
 def request(services: Services, sha256: str, asks: dict[str, Any]) -> ModelRequest:

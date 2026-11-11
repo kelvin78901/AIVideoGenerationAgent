@@ -64,28 +64,6 @@ LABELS = {
 }
 
 
-def passed(candidates: list[dict[str, Any]]) -> bool:
-    """Whether a run's candidates need no redraw: one passed, or one went unchecked (nothing to
-    go by)."""
-    return any(not (c.get("check") or {}).get("items") or c["check"]["ok"] for c in candidates)
-
-
-def score(candidate: dict[str, Any]) -> int:
-    """How many of its checks passed (the most is the one kept after the last redraw)."""
-    return sum(1 for x in (candidate.get("check") or {}).get("items") or [] if x["ok"])
-
-
-def failed_text(candidate: dict[str, Any]) -> str:
-    """What failed on ``candidate``, one line each, to draw it again (9e-5)."""
-    rows = []
-    for x in (candidate.get("check") or {}).get("items") or []:
-        if not x["ok"]:
-            label = LABELS.get(x["check"], x["check"])
-            note = f"读到「{x['note']}」" if x["check"] == "ocr" else x["note"]
-            rows.append(f"- {label}：{note}" if note else f"- {label}")
-    return "\n".join(rows)
-
-
 def has_asks(asks: dict[str, Any] | None) -> bool:
     given = asks or {}
     return any(

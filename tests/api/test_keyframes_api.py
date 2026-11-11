@@ -359,7 +359,7 @@ def test_a_keyframe_whose_check_fails_is_drawn_again(
     assert version["payload"]["redraws"] == 1
     assert all(c["check"]["ok"] for c in version["payload"]["candidates"])
     assert len(seen) == 6
-    told = _prompt(client, version).split("上一张没过的检查（这次要改掉）")[1]
+    told = _prompt(client, version).split("上一次没过的检查（这次要改掉）")[1]
     assert told.lstrip("]】\n：: ").startswith("- 机位在场景里：机位在楼道里")
     draws = _rows(client, ModelCall, ModelCall.product_id == product["id"])
     assert [c.component_id for c in draws].count("kf") == 2  # both draws recorded

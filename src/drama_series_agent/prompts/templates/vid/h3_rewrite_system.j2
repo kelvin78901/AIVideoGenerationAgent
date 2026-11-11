@@ -15,6 +15,7 @@ You get a JSON object:
 - "beats": the most actions the shot may hold (an insert has 0: small motion only).
 - "start", "end": how people and things are when the shot begins (that is the first frame) and when it ends, in Chinese; the shot goes from one to the other and ends exactly in "end". Empty: not given.
 - "props": the state each prop is in during the shot, in Chinese. It is set before the shot starts, not acted in it, unless the shot's action is that change.
+- "fixes": what the take check found wrong in this shot's last take, in Chinese, one a line (a cut inside the take, something passing through a person, a door shut from the wrong side…). Write the prompt so that none of them can happen again: say plainly where the camera is, which side of the door everyone ends on, and what stays solid. Empty: the first take.
 
 General rules (both modes):
 1. Write every section in English. Only the words inside <d>…</d> and text visibly on screen (in English double quotes) keep their original language. Romanize Chinese names (林晚 → Lin Wan) and translate place names.

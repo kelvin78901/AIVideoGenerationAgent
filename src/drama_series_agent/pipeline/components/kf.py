@@ -49,7 +49,7 @@ from drama_series_agent.modelhub.workflows import (
     load_workflow,
     spec_workflows_dir,
 )
-from drama_series_agent.pipeline import kfcheck
+from drama_series_agent.pipeline import kfcheck, redraw
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.img import prop_physical, prop_text
 from drama_series_agent.pipeline.components.media import (
@@ -727,9 +727,8 @@ class KfComponent(MediaComponent):
         refs, deps, blocks = pick_refs(inputs, draft_file(source), limit)
         frame = inputs.context["frame"]
         where = self.where_of(ctx.model_key)
-        # 检查没过自动重画 (9e-5): every candidate failed its check, so draw again with what
-        # failed, up to ``redraw`` more times on this machine (an API picture costs: a warning).
-        redraws = self.redraws() if where == "local" else 0
+        # 检查没过自动重画 (9e-5, ``pipeline/redraw.py``): every candidate failed its check.
+        redraws = redraw.tries(self.id) if where == "local" else 0
         calls: list[Any] = []
         best: tuple[int, int, str, list[dict[str, Any]], list[dict[str, Any]]] | None = None
         fixes: list[Block] = []
@@ -758,13 +757,14 @@ class KfComponent(MediaComponent):
                 raise ComponentError("no_images")
             files = candidate_files(call)
             checked = await self._check(ctx, inputs, files, [{} for _ in files])
-            top = max(checked, key=kfcheck.score)
-            if best is None or kfcheck.score(top) > best[0]:
-                best = (kfcheck.score(top), attempt, prompt, files, checked)
-            if kfcheck.passed(checked):
-                best = (kfcheck.score(top), attempt, prompt, files, checked)
+            top = max(checked, key=lambda c: redraw.score(c.get("check")))
+            mark = redraw.score(top.get("check"))
+            done = not all(redraw.failed(c.get("check")) for c in checked)
+            if best is None or mark > best[0] or done:
+                best = (mark, attempt, prompt, files, checked)
+            if done:  # one passed, or one went unchecked (nothing to go by)
                 break
-            fixes = [Block("上一张没过的检查（这次要改掉）", kfcheck.failed_text(top))]
+            fixes = [Block(redraw.FIX_TITLE, redraw.failed_text(top["check"], kfcheck.LABELS))]
         assert best is not None
         _, kept, prompt, files, checked = best
         payload: dict[str, Any] = {
@@ -782,13 +782,6 @@ class KfComponent(MediaComponent):
         if source:
             draft.params["source"] = {"version_id": source[0].id, "idx": source[1]}
         return draft
-
-    def redraws(self) -> int:
-        """``redraw`` of this component in ``config/components.yaml``."""
-        try:
-            return max(0, get_config().components.component(self.id).redraw)
-        except KeyError:
-            return 0
 
     def estimate(self, inputs: Inputs, compiled: str, model: str) -> Estimate:
         source = bool(inputs.params.get("source_version_id"))
@@ -808,7 +801,7 @@ class KfComponent(MediaComponent):
         look = kfcheck.estimate(self.services, route_model(self.services, kfcheck.KFCHECK), asks)
         if kfcheck.has_asks(asks) and look is not None:  # 关键帧检查: one look a candidate
             # … and as many again for each redraw it may take (on this machine only: 9e-5)
-            tries = 1 + (self.redraws() if self.where_of(model) == "local" else 0)
+            tries = 1 + (redraw.tries(self.id) if self.where_of(model) == "local" else 0)
             parts += [look] * n * tries
         return Estimate(
             cost_usd=sum(e.cost_usd for e in parts),

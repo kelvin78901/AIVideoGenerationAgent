@@ -95,6 +95,9 @@ class Facts:
     start: list[str] = field(default_factory=list)
     end: list[str] = field(default_factory=list)
     props: list[str] = field(default_factory=list)
+    # 检查没过自动重画 (M5.5 9e-5): what the take check found wrong in this shot's last try,
+    # in Chinese, one a line; empty on a first try.
+    fixes: list[str] = field(default_factory=list)
 
     def as_json(self) -> dict[str, Any]:
         out = asdict(self)
@@ -142,6 +145,7 @@ class Facts:
             start=[str(x) for x in data.get("start") or []],
             end=[str(x) for x in data.get("end") or []],
             props=[str(x) for x in data.get("props") or []],
+            fixes=[str(x) for x in data.get("fixes") or []],
         )
 
 
