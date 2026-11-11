@@ -219,7 +219,10 @@
       "event": "nothing happens by itself",
       "end": "end state",
       "cut": "one continuous shot",
-      "hold": "no still opening"
+      "hold": "no still opening",
+      "hands": "every hand is hers",
+      "facing": "what she looks at faces her",
+      "solid": "nothing passes through"
     }
   }
 }

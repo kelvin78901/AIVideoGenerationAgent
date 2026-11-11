@@ -92,14 +92,18 @@ from drama_series_agent.pipeline.component import (
 )
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, voice_of
 from drama_series_agent.pipeline.components.kf import (
+    FACING_NOTE,
     FRAMING,
     MOVE,
+    PART_VIEW,
     PROPS_NOTE,
     _references,
     asset_rows,
     blocking_text,
+    facing,
     in_frame,
     local_workflow,
+    part_of,
     pick_refs,
     props_text,
     ref_limit,
@@ -158,6 +162,8 @@ def take_asks(context: dict[str, Any]) -> dict[str, Any]:
         "beats": int(context.get("beats", 2)),
         "light": context.get("light"),
         "place": context.get("place"),
+        "part": context.get("part"),
+        "facing": context.get("facing"),
         "end": list(context.get("end") or []),
         "texts": [t for t in context.get("texts") or [] if t.get("method") == "model"],
         "inner": list(
@@ -388,6 +394,12 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
 
     refs, unlocked, texts = await _references(session, invalidation, ids)
     refs = [r for r in refs if not r.get("scale")]  # 比例参考 is for the keyframe (M5.5)
+    # A close-up of part of someone (M5.5 step 9e-2, ``kf.PART_VIEW``): not her whole figure.
+    people = [str(r["name"]) for r in refs if r["kind"] == "character"]
+    part = part_of(shot, contract, people)
+    if part:
+        refs = [r for r in refs if not (r["kind"] == "character" and r["name"] == part)]
+    looked_at = facing(shot, contract, people, [t["name"] for t in texts])
     frame_ = await output_frame(session, product.series_id)
     spec = await session.get(OutputSpecRow, product.series_id)
     frame_["fps"] = str(spec.fps if spec is not None else get_config().spec.defaults.get("fps", 24))
@@ -403,6 +415,10 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
         in_shot = set(ids) | named
         look.append(blocking_text(list(shot["blocking"]), in_shot))
+    if part:
+        look.append(PART_VIEW.format(who=part))
+    if looked_at:
+        look.append(FACING_NOTE.format(who=looked_at["who"], things="、".join(looked_at["things"])))
     if own is None:  # the script's action lines; a picture the user wrote replaces them
         look += [str(x.text) for x in action]
     blocks = [Block("画幅", f"{frame_['aspect']}，{seconds:g} 秒"), Block("镜头", "；".join(look))]
@@ -446,6 +462,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "kind": kind,
             "light": light,
             "place": scene_place(str(scene["heading"])) if scene and scene.get("heading") else None,
+            "part": part,
+            "facing": looked_at,
             "beats": beats,
             "start": [f"{i['subject']}：{i['state']}" for i in contract["start"]],
             "end": [f"{i['subject']}：{i['state']}" for i in contract["end"]],

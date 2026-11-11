@@ -1753,8 +1753,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/64/642d59cce539f7ee62fca04df87f4372d4759a383ffb255553fda9f7132de437",
-              "sha256": "642d59cce539f7ee62fca04df87f4372d4759a383ffb255553fda9f7132de437",
+              "path": "blobs/sha256/dc/dc63e5b6991eea12d8a4fb9510fb072a79ced833a2d0344071dbcb3aba707e70",
+              "sha256": "dc63e5b6991eea12d8a4fb9510fb072a79ced833a2d0344071dbcb3aba707e70",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1892,8 +1892,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/64/642d59cce539f7ee62fca04df87f4372d4759a383ffb255553fda9f7132de437",
-              "sha256": "642d59cce539f7ee62fca04df87f4372d4759a383ffb255553fda9f7132de437",
+              "path": "blobs/sha256/dc/dc63e5b6991eea12d8a4fb9510fb072a79ced833a2d0344071dbcb3aba707e70",
+              "sha256": "dc63e5b6991eea12d8a4fb9510fb072a79ced833a2d0344071dbcb3aba707e70",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2015,8 +2015,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/8f/8fbc6f96bb6c95d15e3eae98fc98af53b5b5fcf3d646e9a6d616a78ed727c025",
-              "sha256": "8fbc6f96bb6c95d15e3eae98fc98af53b5b5fcf3d646e9a6d616a78ed727c025",
+              "path": "blobs/sha256/52/52ef304fd00bfc4c4af8d4b65ba2c0a0ec6a4c4e299e5239202fa6c3eb915383",
+              "sha256": "52ef304fd00bfc4c4af8d4b65ba2c0a0ec6a4c4e299e5239202fa6c3eb915383",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2109,8 +2109,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/29/2991b8bea2389e15a29ac3e319c0b4471d7588dcfa57bff9125671124cc31aad",
-              "sha256": "2991b8bea2389e15a29ac3e319c0b4471d7588dcfa57bff9125671124cc31aad",
+              "path": "blobs/sha256/31/31ea2c985159a3969a8b93e1e403ce39c28d87e87fe22b2d48ea2f61c4bdc054",
+              "sha256": "31ea2c985159a3969a8b93e1e403ce39c28d87e87fe22b2d48ea2f61c4bdc054",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2246,7 +2246,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0106,
+        "cost_usd": 0.0107,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.0845
@@ -2501,7 +2501,7 @@
     "scope": "episode",
     "spent_usd": 0.0,
     "budget_usd": 15.0,
-    "projected_usd": 0.064,
+    "projected_usd": 0.0642,
     "insights": [],
     "updated_at": "2026-10-18T09:00:00Z"
   },

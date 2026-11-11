@@ -11,7 +11,10 @@ What is asked comes from the shot (``kf.gather`` puts it in ``context["checks"]`
 - ``mouth``: who speaks only in their head (内心独白: lips closed);
 - ``people``: an insert with nobody in it;
 - ``light``: the light of the scene's time (no daylight at night; ``kf.LIGHT``);
-- ``place``: the camera inside the scene's place (not on the other side of its door).
+- ``place``: the camera inside the scene's place (not on the other side of its door);
+- ``hands``: a close-up of part of someone: every hand hers, nobody else, not her face
+  (``kf.PART_VIEW``; run 19 1-05 had her behind a second hand);
+- ``facing``: what she looks at turned to her, not to the camera (run 19 1-07's phone).
 
 The answer is JSON (``{"items": [{"check", "ok", "note"}]}``); a picture is asked once per model and
 question (``LlmCache``), and a call that fails is not the keyframe's failure (budget and
@@ -43,13 +46,24 @@ KFCHECK = "kfcheck"  # the route (config/components.yaml)
 TASK = "keyframe_check"
 TEMPLATE = "kf/check.j2"
 MAX_TOKENS = 600
-CHECKS = ("start", "scale", "text", "mouth", "people", "light", "place")
+CHECKS = ("start", "scale", "text", "mouth", "people", "light", "place", "hands", "facing")
 
 
 def has_asks(asks: dict[str, Any] | None) -> bool:
     given = asks or {}
     return any(
-        given.get(k) for k in ("start", "scale", "texts", "inner", "no_people", "light", "place")
+        given.get(k)
+        for k in (
+            "start",
+            "scale",
+            "texts",
+            "inner",
+            "no_people",
+            "light",
+            "place",
+            "part",
+            "facing",
+        )
     )
 
 

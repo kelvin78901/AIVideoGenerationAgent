@@ -651,7 +651,8 @@ def test_each_take_is_checked(client: TestClient) -> None:
     check = take["payload"]["check"]
     found = {x["check"]: x["ok"] for x in check["items"]}
     # 1-03: the note's words; a night scene, so its light (run 19: 1-09 lit like day).
-    assert set(found) == {"repeat", "event", "text", "light", "place", "cut", "hold"}
+    # Nothing passes through anything, always (run 19: 1-06's door swung through her).
+    assert set(found) == {"repeat", "event", "solid", "text", "light", "place", "cut", "hold"}
     assert found["cut"] is True and check["model"] == "google/gemini-3.1-flash-lite"
     assert len(take["payload"]["sheet_times"]) == 6
     assert "sheet" in {f["role"] for f in take["files"]}

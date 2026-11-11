@@ -2377,8 +2377,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/9b/9b561f3739a9dcb658b6d9202ccaefe873d223c6fe7c825fc54fc7e87d80e6b1",
-              "sha256": "9b561f3739a9dcb658b6d9202ccaefe873d223c6fe7c825fc54fc7e87d80e6b1",
+              "path": "blobs/sha256/eb/ebdc0ee69ce3292ffab54d92d37a98e20a8d5a7f06b28f923b8729c8703744d4",
+              "sha256": "ebdc0ee69ce3292ffab54d92d37a98e20a8d5a7f06b28f923b8729c8703744d4",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2421,7 +2421,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0038,
+        "cost_usd": 0.0039,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2457,7 +2457,6 @@
             ],
             "aspect": "9:16",
             "refs": [
-              "林晚",
               "黄色便利贴",
               "红色长柄伞"
             ]
@@ -2507,8 +2506,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/d5/d5d8ee620773853be82e144b937e6909acc14128bddf72de1db9afbb59494289",
-              "sha256": "d5d8ee620773853be82e144b937e6909acc14128bddf72de1db9afbb59494289",
+              "path": "blobs/sha256/c9/c98b444132358f312ed748fcb5df27d4bf21fe2f279529a5b2181e97321d8da1",
+              "sha256": "c98b444132358f312ed748fcb5df27d4bf21fe2f279529a5b2181e97321d8da1",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2520,7 +2519,7 @@
               "waveform": null
             }
           ],
-          "content_hash": "sha256:bdbf9dbba9f2d47473f568da8e47f370a395fab37a5fbba818233342eb7660f3",
+          "content_hash": "sha256:1d402ef1d7b11bf41a4319f2288c05420ac759420157dbb2ce9c06968f863e24",
           "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
           "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,

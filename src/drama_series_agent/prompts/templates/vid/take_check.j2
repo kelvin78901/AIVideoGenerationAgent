@@ -6,10 +6,13 @@ You check one video take of a short drama. The picture shows six frames of it in
 {% else %}At most {{ beats }} action(s) in this shot.
 {% endif %}[repeat] Does any action that changes something (a door opened or shut, an object picked up or put down) happen only once, never undone and done again?
 [event] Do things only move when someone moves them: no water pouring or streaming, nothing bursting, appearing, vanishing or changing size or colour by itself?
+[solid] Do people and things stay solid: no door, arm or object passing through a body or another object, nobody walking through a closed door?
 {% if texts %}[text] These words stay exactly the same in every frame they are seen in: {% for t in texts %}"{{ t.exact }}" ({{ t.name }}){% if not loop.last %}; {% endif %}{% endfor %}.
 {% endif %}{% if inner %}[mouth] {{ inner | join(", ") }} only speak in their head here: do their lips stay closed?
 {% endif %}{% if light %}[light] The time of day and its light (Chinese): {{ light }} Is every frame lit like this (no daylight in a night scene, outside a door or window included)?
 {% endif %}{% if place %}[place] The camera is inside {{ place }} (Chinese) for the whole take. Is every frame seen from inside it, and is everyone who should end up there (see the end) on this side of its door?
+{% endif %}{% if part %}[hands] This is a close-up of part of {{ part }} (Chinese name) for the whole take: is every hand and arm in every frame hers, reaching in from the edge of the frame, with no second person and no face of hers turned to the camera?
+{% endif %}{% if facing %}[facing] {{ facing.who }} looks at {{ facing.things | join(", ") }} (Chinese): does its screen or written side face {{ facing.who }} (the camera behind or beside her), not turned to the camera while she sees its back?
 {% endif %}{% if end %}[end] At the end of the take (Chinese): {{ end | join("; ") }}. Does the last frame look like this{% if place %}, inside {{ place }}{% endif %}?
 {% endif %}
 Answer with JSON only, one item per check in square brackets above, a short note in Chinese when it fails:

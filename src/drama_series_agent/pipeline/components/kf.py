@@ -112,6 +112,20 @@ LOCAL_REFS = 3  # a local workflow that does not say
 # in cm, the person about 165 cm tall.
 _LENGTH = re.compile(r"(\d+(?:\.\d+)?)\s*(cm|厘米|公分|mm|毫米|m|米)(?![a-z])")
 _UNIT_CM = {"cm": 1.0, "厘米": 1.0, "公分": 1.0, "mm": 0.1, "毫米": 0.1, "m": 100.0, "米": 100.0}
+# A close-up of part of someone (M5.5 step 9e-2; run 19 1-05: her whole figure from its
+# reference stood behind and a second hand came in front; 1-07: the phone held up to the lens,
+# its screen away from her). Her own reference is left out: it is a whole person.
+PART_VIEW = (
+    "这是{who}身上局部的特写：从{who}的肩后（过肩）或她自己的视角拍；画面里只有{who}的手和小臂，"
+    "从画面下方或侧边伸进来，看不到她的脸，也没有别的人。"
+)
+PART_LOOK = "{who}的手和衣袖照她的穿着（只画手和小臂）：{desc}"
+# What someone looks at, turned to them (run 19 1-07: the screen faced the camera).
+FACING_NOTE = (
+    "{who}看着的东西（{things}），屏幕或写字的一面朝着{who}；要让观众看见上面的字，镜头就在{who}"
+    "的肩后或身侧看过去，不要让{who}把它举起来对着镜头。"
+)
+_LOOKS = ("看", "盯", "读", "望", "瞥")
 _SMALL = ((3, "指尖大小"), (12, "手掌大小，比脸小"), (25, "和脸差不多大"), (45, "到前臂长"))
 _TALL = (
     (60, "立着到人的膝盖"),
@@ -230,6 +244,12 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     for source in sorted(set((c or {}).get("props_from", {}).values())):
         deps.append(await invalidation.dependency(session, plan.id, shot_slice(source)))
     refs, unlocked, texts = await _references(session, invalidation, ids)
+    people = [str(r["name"]) for r in refs if r["kind"] == "character"]
+    part = part_of(shot, c, people)
+    part_desc = next((str(r["desc"]) for r in refs if part and r["name"] == part), "")
+    if part:  # her reference is a whole person: the model drew her behind her own hand
+        refs = [r for r in refs if not (r["kind"] == "character" and r["name"] == part)]
+    seen = facing(shot, c, people, [t["name"] for t in texts])
     orientation = "竖屏" if _vertical(frame["aspect"]) else "横屏"
     framing = FRAMING.get(shot["framing"], shot["framing"])
     move = MOVE.get(shot["camera_move"], shot["camera_move"])
@@ -248,6 +268,14 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
         in_shot = set(ids) | named
         blocks.append(Block("站位", blocking_text(list(shot["blocking"]), in_shot)))
+    if part:
+        blocks.append(Block("视角", PART_VIEW.format(who=part)))
+        if part_desc:
+            blocks.append(Block("手", PART_LOOK.format(who=part, desc=part_desc)))
+    if seen:
+        blocks.append(
+            Block("朝向", FACING_NOTE.format(who=seen["who"], things="、".join(seen["things"])))
+        )
     if action:
         blocks.append(Block("剧本", "\n".join(str(x.get("text") or "") for x in action)))
     for t in texts:
@@ -264,6 +292,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         "no_people": False,
         "light": light,
         "place": place,
+        "part": part,
+        "facing": seen,
     }
     if c is not None:
         blocks += await contract_blocks(session, c, ids, filmed_lines)
@@ -310,6 +340,37 @@ def props_text(props: list[dict[str, str]], assets: dict[str, Asset]) -> str:
     return "；".join(
         f"{assets[p['asset_id']].name}：{p['state']}" for p in props if p["asset_id"] in assets
     )
+
+
+def part_of(shot: dict[str, Any], contract: dict[str, Any] | None, people: list[str]) -> str | None:
+    """Whose part a close-up films (``PART_VIEW``): a subject 「林晚的手」, or only things while
+    she is in the shot (1-07: 手机 in her hand); None for a face, a wider shot or nobody."""
+    if shot.get("framing") != "closeup" or not people:
+        return None
+    c = contract or {}
+    subjects = [str(x.get("subject") or "") for x in [*c.get("start", []), *c.get("end", [])]]
+    for who in people:
+        if any(s.startswith(f"{who}的") for s in subjects):
+            return who
+    if subjects and not any(s in people for s in subjects):
+        return people[0]
+    return None
+
+
+def facing(
+    shot: dict[str, Any], contract: dict[str, Any] | None, people: list[str], texts: list[str]
+) -> dict[str, Any] | None:
+    """Who looks at what has words or a screen in the shot (``FACING_NOTE``), if anyone does."""
+    if not people or not texts:
+        return None
+    c = contract or {}
+    said = " ".join(
+        [str(shot.get("intent") or "")]
+        + [str(x.get("state") or "") for x in [*c.get("start", []), *c.get("end", [])]]
+    )
+    if part_of(shot, contract, people) is None and not any(w in said for w in _LOOKS):
+        return None
+    return {"who": people[0], "things": texts}
 
 
 def size_words(size: str) -> str | None:

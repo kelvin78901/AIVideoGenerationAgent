@@ -38,7 +38,20 @@ TAKECHECK = "takecheck"  # the route (config/components.yaml)
 TASK = "take_check"
 TEMPLATE = "vid/take_check.j2"
 MAX_TOKENS = 700
-CHECKS = ("repeat", "event", "text", "mouth", "end", "light", "place")
+# ``solid`` always (run 19 1-06: the door swung through her); ``hands`` and ``facing`` as the
+# keyframe's (M5.5 step 9e-2).
+CHECKS = (
+    "repeat",
+    "event",
+    "solid",
+    "text",
+    "mouth",
+    "end",
+    "light",
+    "place",
+    "hands",
+    "facing",
+)
 HOLD_S = 1.0  # a still opening longer than this is flagged
 
 

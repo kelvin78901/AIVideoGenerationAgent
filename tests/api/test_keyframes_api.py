@@ -95,14 +95,21 @@ def test_the_demo_keyframes(client: TestClient) -> None:
 
 def test_only_locked_references_are_sent(client: TestClient) -> None:
     """1-05 uses 林晚, the note (both locked) and the hair tie (not locked yet); the umbrella the
-    note is stuck on comes with it (locked, ``props_linked``)."""
+    note is stuck on comes with it (locked, ``props_linked``). A close-up of her hand: her own
+    picture, a whole person, stays out (M5.5 step 9e-2; run 19 drew her behind a second hand),
+    and it is filmed over her shoulder, the note's words turned to her."""
     product = _run(client, "1-05")
     version = product["versions"][-1]
     assert version["stage"] == "draft" and version["where"] == "local"
-    assert version["payload"]["refs"] == ["林晚", "黄色便利贴", "红色长柄伞"]
+    assert version["payload"]["refs"] == ["黄色便利贴", "红色长柄伞"]
     assert version["payload"]["aspect"] == "9:16"
     sent = _prompt(client, version)
-    assert "参考图 1：林晚（角色）" in sent and "旧黑发圈（未锁定" in sent
+    assert "林晚（角色）" not in sent and "旧黑发圈（未锁定" in sent
+    assert "[视角]\n" + kf.PART_VIEW.format(who="林晚") in sent
+    assert "[手]\n林晚的手和衣袖照她的穿着" in sent
+    assert "[朝向]\n" + kf.FACING_NOTE.format(who="林晚", things="黄色便利贴") in sent
+    checks = {x["check"] for x in version["payload"]["candidates"][0]["check"]["items"]}
+    assert {"hands", "facing"} <= checks
     calls = _rows(client, ModelCall, ModelCall.product_id == product["id"])
     assert calls and calls[-1].shot_id == "demo-shot-1-05" and calls[-1].episode_id == EP1
 
