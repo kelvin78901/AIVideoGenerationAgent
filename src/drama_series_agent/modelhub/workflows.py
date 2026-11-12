@@ -58,6 +58,8 @@ def spec_workflows_dir(spec: ModelSpec) -> Path | None:
 
 Slot = Literal[
     "first_frame",
+    "base_image",  # the picture a redraw starts from (M5.5 ``redraw``)
+    "denoise",  # how much of it a redraw changes, 0–1
     "video_in",
     "ref_image",
     "ref_audio",
@@ -78,7 +80,15 @@ Slot = Literal[
 OUTPUT_SLOTS = frozenset({"video_out", "image_out", "audio_out"})
 # Slots filled with an uploaded file's name (``input/dramastudio/…``).
 FILE_SLOTS = frozenset(
-    {"first_frame", "video_in", "ref_image", "ref_audio", "dialogue_audio", "tail_clip"}
+    {
+        "first_frame",
+        "base_image",
+        "video_in",
+        "ref_image",
+        "ref_audio",
+        "dialogue_audio",
+        "tail_clip",
+    }
 )
 # Numbered file slots (1, 2 …): a list of names, filled in order.
 LIST_SLOTS: tuple[Slot, ...] = ("ref_image", "ref_audio")

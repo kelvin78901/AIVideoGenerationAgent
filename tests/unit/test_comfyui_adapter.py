@@ -78,6 +78,7 @@ class FakeComfy:
 
     def __init__(self) -> None:
         self.video: bytes | None = None  # answer with this clip from node 92 (h3-i2v's output)
+        self.image_node = "8"  # the node a picture comes from (fake-edit's output)
         self.sockets: list[asyncio.Queue[str | None]] = []
         self.polls = 0
         self.hang = False
@@ -134,7 +135,9 @@ class FakeComfy:
                 outputs = {"92": {"images": [clip], "animated": [True]}}
                 return httpx.Response(200, json={pid: {"outputs": outputs, "status": status}})
             out = {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "temp"}]}
-            return httpx.Response(200, json={pid: {"outputs": {"8": out}, "status": status}})
+            return httpx.Response(
+                200, json={pid: {"outputs": {self.image_node: out}, "status": status}}
+            )
         if path == "/queue" and method == "GET":
             running = [] if self.lost else [[1, f"p{len(self.prompts)}", {}, {}, []]]
             return httpx.Response(200, json={"queue_running": running, "queue_pending": []})
@@ -627,3 +630,32 @@ def test_a_longer_h3_clip_runs_slower_per_second(store: BlobStore) -> None:
     assert secs(7.29) == pytest.approx(255, abs=15)
     assert secs(15.0) == pytest.approx(804, abs=20)
     assert secs(2.0) == secs(5.0)  # H3 makes 5 s at the least
+
+
+# --------------------------------------------------------------------------- redraw (M5.5)
+
+REDRAW = ModelSpec(
+    key="comfy/flux3-klein-redraw", kind="image", where="local", display="Klein redraw",
+    runtime="comfyui", workflow="flux3-klein-redraw",
+)  # fmt: skip
+
+
+async def test_a_redraw_starts_from_its_picture_with_the_strength(
+    root: Path, store: BlobStore
+) -> None:
+    """The picture is the latent to start from (``base_image``) and reference 1; the strength
+    is the sampler's denoise; the size is the workflow's for the aspect."""
+    shutil.copytree(WORKFLOWS_DIR / "flux3-klein-redraw", root / "flux3-klein-redraw")
+    fake = FakeComfy()
+    fake.image_node = "20"  # the workflow's PreviewImage
+    req = _req(store)
+    sha = req.params["refs"][0]
+    req.params.update(base_image=sha, denoise=0.3)
+    await _adapter(fake, root, store, spec=REDRAW).run(req, CallContext())
+    graph = fake.prompts[0]
+    by_title = {n["_meta"]["title"]: n["inputs"] for n in graph.values()}
+    assert by_title["Base"]["image"] == f"dramastudio/{sha}.png"
+    assert by_title["Reference 1"]["image"] == f"dramastudio/{sha}.png"
+    assert by_title["Sampler"]["denoise"] == 0.3 and by_title["Sampler"]["latent_image"][0] == "24"
+    assert (by_title["Size"]["width"], by_title["Size"]["height"]) == (928, 1664)
+    assert "EmptyFlux2LatentImage" not in {n["class_type"] for n in graph.values()}

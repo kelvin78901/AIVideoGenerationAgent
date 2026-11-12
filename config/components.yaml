@@ -226,6 +226,19 @@ components:
     follows_output_spec: true
     gate: storyboard
 
+  # 以这张为底重画（M5.5 第 13 步）：关键帧、参考图、六视图单张、上传的图。本地 Klein 按改动幅度（denoise）从这张出发；
+  # Qwen-Image-Edit 和 API 没有数值强度，幅度写进提示词，这张作参考图 1。结果是同一个产物的新版本（origin redraw）。
+  - id: redraw
+    stage: storyboard
+    name: { zh: 以这张为底重画, en: Redraw from this picture }
+    kind: image
+    api: [google/nano-banana-2.1, openai/gpt-image-2]
+    local: [comfy/flux3-klein-redraw, comfy/qwen-image-edit]
+    balanced: { mode: local, local: comfy/flux3-klein-redraw, api: google/nano-banana-2.1, fallback_to: google/nano-banana-2.1 }
+    per_call_cap_usd: 0.5
+    cheap_api: volc/seedream-5.0
+    note: 手动出，一次一张；改动幅度本地是 denoise，API 写进提示词；新版本跟着原图的上游，不自动采纳关键帧和参考图
+
   - id: world
     stage: storyboard
     name: { zh: 3D 场景（可选）, en: 3D world (optional) }

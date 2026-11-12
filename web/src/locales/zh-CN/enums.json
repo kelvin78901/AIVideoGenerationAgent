@@ -20,7 +20,10 @@
     "auto_qa_rerun": "质检不过自动重跑",
     "comfy_ingest": "从 ComfyUI 存回",
     "pick": "锁定的候选",
-    "upload": "上传"
+    "upload": "上传",
+    "redraw": "以这张为底重画",
+    "inpaint": "局部修复",
+    "upscale": "放大"
   },
   "emotion": {
     "calm": "平静",

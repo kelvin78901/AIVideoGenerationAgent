@@ -1,4 +1,5 @@
-"""Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``."""
+"""Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``; 以这张为底重画
+``POST /versions/{id}/redraw`` (M5.5, ``pipeline/components/redraw.py``)."""
 
 from __future__ import annotations
 
@@ -9,6 +10,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.jobs import job_public
+from drama_series_agent.pipeline.components.redraw import DEFAULT_STRENGTH, redraw_target
 from drama_series_agent.pipeline.schema import ProductOut
 
 router = APIRouter(tags=["products"])
@@ -140,3 +142,39 @@ async def save_prompt(product_id: str, body: PromptBody, state: State) -> Produc
 async def compile_prompt(product_id: str, body: CompileBody, state: State) -> dict[str, str]:
     """Preview of the compiled layer for an intent (PromptEditor, debounced)."""
     return await state.runs.compile_preview(product_id, body.intent, body.model)
+
+
+class RedrawBody(BaseModel):
+    """以这张为底重画: picture ``idx`` of the version (a candidate, or a view's number), what to
+    change, and 改动幅度 (0.1 a touch, 1.0 drawn anew)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    idx: int = Field(default=0, ge=0)
+    prompt: str | None = Field(default=None, max_length=2000)
+    strength: float = Field(default=DEFAULT_STRENGTH, ge=0.1, le=1.0)
+    where: Literal["local", "api"] | None = None
+    model: str | None = Field(default=None, max_length=80)
+
+
+@router.post("/versions/{version_id}/redraw")
+async def redraw_version(version_id: str, body: RedrawBody, state: State) -> dict[str, Any]:
+    """→ the queued run (component ``redraw``) making a new version of the same product: one
+    candidate for a keyframe or reference picture, that view replaced for a views set. Over a
+    limit it waits for 确认 like any run (hard rule 6)."""
+    async with state.db.session() as session:
+        product = await redraw_target(session, version_id, body.idx)
+    job = await state.runs.start(
+        product.id,
+        "run",
+        model=body.model,
+        intent=(body.prompt or "").strip() or None,
+        where=body.where,
+        component_id="redraw",
+        params={
+            "redraw_version_id": version_id,
+            "redraw_idx": body.idx,
+            "strength": body.strength,
+        },
+    )
+    return job_public(job)

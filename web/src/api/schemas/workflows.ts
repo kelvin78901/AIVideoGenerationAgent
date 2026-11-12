@@ -13,6 +13,9 @@ export type WorkflowTier = z.infer<typeof WorkflowTierSchema>;
 /** The inputs and outputs the studio fills in or reads back (SPEC 6.4.3). */
 export const SlotSchema = z.enum([
   "first_frame",
+  // 以这张为底重画 (M5.5): the picture it starts from, and how much it changes (0–1).
+  "base_image",
+  "denoise",
   "video_in",
   "ref_image",
   "ref_audio",

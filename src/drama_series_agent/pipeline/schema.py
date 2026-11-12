@@ -11,10 +11,11 @@ OwnerType = Literal["series", "episode", "scene", "shot", "asset", "line"]
 ProductStatus = Literal[
     "empty", "queued", "running", "ready", "stale", "adopted", "locked", "failed"
 ]  # fmt: skip
-# ``pick``: the candidate the user locked, alone (M3); ``upload``: the user's own file.
+# ``pick``: the candidate the user locked, alone (M3); ``upload``: the user's own file;
+# ``redraw`` / ``inpaint`` / ``upscale``: a picture made from another one (M5.5).
 VersionOrigin = Literal[
     "run", "rerun", "switch", "edit", "fallback", "import", "auto_qa_rerun", "comfy_ingest",
-    "pick", "upload",
+    "pick", "upload", "redraw", "inpaint", "upscale",
 ]  # fmt: skip
 
 

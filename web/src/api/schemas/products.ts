@@ -70,6 +70,10 @@ export const VersionOriginSchema = z.enum([
   "pick",
   /** The user's own file (M3: a reference picture). */
   "upload",
+  /** A picture made from another one (M5.5): 以这张为底重画 / 局部修复 / 放大. */
+  "redraw",
+  "inpaint",
+  "upscale",
 ]);
 export type VersionOrigin = z.infer<typeof VersionOriginSchema>;
 

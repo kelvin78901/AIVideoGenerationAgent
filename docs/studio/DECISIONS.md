@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-12 · M5.5 第 13 步：以这张为底重画
+
+- **一个组件跑在别人的产物上**：`redraw` 不建自己的产物，结果是原产物的新版本。`RunService.start(component_id="redraw")`：用 redraw 的路由、估价（照样过预算，超了进 `waiting_confirm`）和模型；**不改原产物的提示词**（请求里的 `prompt` 只是这次的意图，没写就用模板默认「按原样重画，细节更清楚」）；任务参数记 `component_id`，执行和「兜底前先问」都按它找组件；版本 `origin=redraw`、`parent` = 原版本；采不采纳按原产物的组件（关键帧、参考图不自动采纳，六视图每次都采纳）。
+- **接口** `POST /versions/{id}/redraw {idx, prompt, strength, where?, model?}`：`idx` 是候选号（锁定的版本只有一张，`idx 0`），六视图是视图号；`strength` 0.1–1.0，默认 0.5。能重画关键帧、参考图、六视图（上传的图就是它们的版本）；别的 422 `redraw_not_supported`，锁定的 409 `product_locked`，没这张 404 `file_not_found`。
+- **新版本**：关键帧、参考图是一张候选（payload `redraw: {version_id, idx, from, strength}`，关键帧带上 `aspect`）；六视图只换那一张、其余复制（这一张不再算 `uploaded`）。**依赖复制原版本的**（原版本过时它也过时）。关键帧本地出的 `stage = draft`，API 出的不标（和直接用 API 出关键帧一样）。不跑关键帧检查（要的话以后加）。
+- **尺寸**：关键帧和六视图按成片规格（本地草稿档、API 交付档）；参考图按原图自己的宽高，画幅取最接近的（1:1 / 16:9 / 9:16 / 4:3 / 3:4）。
+- **本地**：新工作流 `workflows/flux3-klein-redraw`（模型 `comfy/flux3-klein-redraw`）= `flux3-klein` 把空白 latent 换成底图（LoadImage「Base」→ ImageScale lanczos 居中裁到尺寸 → VAEEncode），KSampler 的 `denoise` 绑新槽位 `denoise`，底图绑新槽位 `base_image`（`INPUT_FILES` 照首帧那样上传），同时也是参考图 1。节点类和输入名按本机 ComfyUI `/object_info` 核对过，**没在本机真跑过**（不往 `/prompt` 发），第一次真用时看效果。Qwen-Image-Edit 和 API（Nano Banana 2.1、GPT Image 2）：这张作参考图 1，幅度写成一句话（<0.35 细微、<0.7 适中、其余可以大改）。
+- 路由（`config/components.yaml` 的 `redraw`）：默认本地 Klein 重画，兜底 Nano Banana 2.1，单次上限 $0.5；Models 页多一行（30 行）。
+- 版本来源加 `redraw / inpaint / upscale`（前后端枚举、中英文词表），后两个给第 14、15 步。前端工作流槽位加 `base_image`、`denoise`。
+
 ## 2026-11-12 · M5.5 第 12 步：镜头参考图和风格板
 
 - **同一种东西**：多参考图、镜头参考图、风格板都是「图组」（`pipeline/pictures.py`：`PictureSet` 槽位 + owner 类型 + 允许的用途 + 上限）。一个版本装一组，文件 `role: ref`、`idx`、`purpose`；加一张、删一张都出新版本、马上采纳；`component_id: upload`。第 11 步的 `ref_more` 改成用它（行为不变）。

@@ -269,9 +269,13 @@ class RunService:
         cascade: dict[str, str] | None = None,
         where: Where | None = None,
         params: dict[str, Any] | None = None,
+        component_id: str | None = None,
     ) -> Job:
-        """Queue a run. ``cascade`` (``{id, origin}``): one rerun of 确认并同步
-        (``pipeline/cascade.py``), adopted when it succeeds. ``where``: ``api`` is hybrid
+        """Queue a run. ``component_id``: another component runs on this product (M5.5
+        ``redraw``): its route and estimate, ``intent`` its instruction; the product's own prompt
+        is left as it is, and the version's origin is that component's id. ``cascade``
+        (``{id, origin}``): one rerun of 确认并同步 (``pipeline/cascade.py``), adopted when it
+        succeeds. ``where``: ``api`` is hybrid
         mode's 「用 API 出终版」 (SPEC 7.3; the route's API model). ``params``: what the
         component reads besides the prompt (``Inputs.params``). ``count``: versions to make,
         the component's ``run_count`` when None; the estimate covers them all."""
@@ -280,14 +284,18 @@ class RunService:
             p = await require_product(session, product_id)
             if await self._active_job(session, p) is not None:
                 raise PipelineError(409, "product_busy", id=p.id)
-            comp = self._component(p.component_id)
+            comp = self._component(component_id or p.component_id)
             current = (
                 await session.get(ProductVersion, p.current_version_id)
                 if p.current_version_id
                 else None
             )
             lang = await self._lang(session, p.series_id)
-            starting = None if p.prompt_json else await comp.default_intent(session, p, lang)
+            starting = (
+                None
+                if p.prompt_json and not component_id
+                else await comp.default_intent(session, p, lang)
+            )
             # An API final is one version from one draft.
             final = bool((params or {}).get("source_version_id"))
             count = count or (1 if final else await comp.run_count(session, p))
@@ -319,7 +327,9 @@ class RunService:
         if chosen.select is not None:
             params["select"] = chosen.select
 
-        saved = PromptOut.model_validate(p.prompt_json) if p.prompt_json else None
+        saved = (
+            PromptOut.model_validate(p.prompt_json) if p.prompt_json and not component_id else None
+        )
         # A plain rerun keeps a hand-edited compiled layer; a new intent or another model
         # compiles afresh (DECISIONS M0.5 第 4 步).
         keep = mode != "switch" and intent is None and compiled is None
@@ -333,7 +343,8 @@ class RunService:
         prompt = PromptOut(
             intent=intent, compiled=compiled, compiled_overridden=overridden, model_key=target
         )
-        await self.products.set_prompt(p.id, prompt.model_dump())
+        if component_id is None:
+            await self.products.set_prompt(p.id, prompt.model_dump())
 
         one = comp.estimate(inputs, compiled, target)
         estimate = replace(one, cost_usd=one.cost_usd * count, seconds=one.seconds * count)
@@ -362,6 +373,7 @@ class RunService:
                 "compiled": compiled,
                 "compiled_overridden": overridden,
                 **({"params": params} if params else {}),
+                **({"component_id": comp.id} if component_id else {}),
                 **({"cascade": dict(cascade)} if cascade else {}),
                 **({} if verdict.ok else {"confirm": verdict.params()}),
             },
@@ -431,7 +443,9 @@ class RunService:
         job, params = jctx.job, jctx.params
         async with self.services.db.session() as session:
             p = await require_product(session, product_id)
-            comp = self._component(p.component_id)
+            comp = self._component(str(params.get("component_id") or p.component_id))
+            # The product's own component says whether its versions are adopted.
+            owner = self.components.get(p.component_id) or comp
             base_id = params.get("base_version_id")
             base = await session.get(ProductVersion, base_id) if base_id else None
             lang = await self._lang(session, p.series_id)
@@ -458,15 +472,20 @@ class RunService:
                 select=inputs.params.get("select"),
             )
             draft = await comp.run(ctx, inputs)
-            origin = "fallback" if draft.fallback_reason else mode
+            other = comp is not owner  # e.g. a redraw: its origin, from the picture it redrew
+            origin = "fallback" if draft.fallback_reason else comp.id if other else mode
             # An API final's parent is the draft it started from (SPEC 7.3).
-            parent = inputs.params.get("source_version_id") or (base.id if base else None)
+            parent = (
+                inputs.params.get("source_version_id")
+                or inputs.params.get("redraw_version_id")
+                or (base.id if base else None)
+            )
             last = await self.products.append(
                 p.id,
                 draft,
                 origin=origin,
                 parent_version_id=parent,
-                adopt=True if comp.adopt_every_run else None if comp.auto_adopt else False,
+                adopt=True if owner.adopt_every_run else None if owner.auto_adopt else False,
             )
         assert last is not None
         spec = self.services.registry.spec(last.model_key or model)
@@ -486,11 +505,12 @@ class RunService:
         """``notify: ask``: the job waits; a yes reruns it on the fallback model."""
         async with self.services.db.session() as session:
             p = await require_product(session, product_id)
-            comp = self._component(p.component_id)
-            inputs = await comp.inputs(session, p)
             job = await session.get(Job, p.running_job_id) if p.running_job_id else None
-        inputs.params = dict((job.params_json if job else {}).get("params") or {})
-        compiled = str((p.prompt_json or {}).get("compiled", ""))
+            given = (job.params_json if job else {}) or {}
+            comp = self._component(str(given.get("component_id") or p.component_id))
+            inputs = await comp.inputs(session, p)
+        inputs.params = dict(given.get("params") or {})
+        compiled = str(given.get("compiled") or (p.prompt_json or {}).get("compiled", ""))
         estimate = comp.estimate(inputs, compiled, exc.fallback)
         est = estimate.cost_usd
         return JobNeedsConfirm(

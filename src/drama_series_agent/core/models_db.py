@@ -425,7 +425,8 @@ class ProductVersion(SQLModel, table=True):
     id: str = Field(default_factory=new_id, primary_key=True)
     product_id: str = Field(foreign_key="product.id", ondelete="CASCADE", index=True)
     n: int  # 1-based, shown as v{n}
-    # run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest
+    # run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest / pick /
+    # upload / redraw / inpaint / upscale
     origin: str
     parent_version_id: str | None = None
     payload_json: dict[str, Any] = _json(dict)

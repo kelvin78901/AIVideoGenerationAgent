@@ -85,6 +85,7 @@ EXTS = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}
 # The input files besides references: slot → what it holds.
 INPUT_FILES: tuple[tuple[Slot, str], ...] = (
     ("first_frame", "image"),
+    ("base_image", "image"),  # a redraw's starting picture (M5.5)
     ("video_in", "video"),
     ("dialogue_audio", "audio"),
     ("tail_clip", "video"),  # a continuous shot's lead-in: the last frames before it (15e)
@@ -343,6 +344,8 @@ class ComfyUIAdapter:
                 }
                 if req.params.get("negative"):
                     values["negative"] = str(req.params["negative"])
+                if req.params.get("denoise") is not None:  # a redraw's 改动幅度 (M5.5)
+                    values["denoise"] = float(req.params["denoise"])
                 # The dubbed lines start after the tail clip's frames (M5 step 15e).
                 tail = int(req.params.get("tail_frames") or 0) if "tail_clip" in inputs else 0
                 values["dialogue_frame"] = tail

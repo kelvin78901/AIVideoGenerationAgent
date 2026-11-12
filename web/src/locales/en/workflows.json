@@ -99,6 +99,8 @@
   },
   "slot": {
     "first_frame": "First frame",
+    "base_image": "Base picture",
+    "denoise": "Change strength",
     "video_in": "Input video",
     "ref_image": "Reference {{n}}",
     "prompt": "Prompt (positive)",

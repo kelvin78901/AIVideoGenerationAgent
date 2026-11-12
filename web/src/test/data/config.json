@@ -330,6 +330,20 @@
         "unavailable": {}
       },
       {
+        "id": "redraw",
+        "stage": "storyboard",
+        "kind": "image",
+        "api_models": [
+          "google/nano-banana-2.1",
+          "openai/gpt-image-2"
+        ],
+        "local_models": [
+          "comfy/flux3-klein-redraw",
+          "comfy/qwen-image-edit"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "world",
         "stage": "storyboard",
         "kind": "world",
@@ -1057,6 +1071,14 @@
         "tier": "recommended"
       },
       {
+        "key": "comfy/flux3-klein-redraw",
+        "display": "FLUX 3 Klein 以这张为底重画（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
+      },
+      {
         "key": "comfy/seedvr2",
         "display": "SeedVR2（本地）",
         "where": "local",
@@ -1629,6 +1651,29 @@
           "volc/seedream-5.0"
         ],
         "per_call_cap_usd": 1.0
+      },
+      "redraw": {
+        "mode": "api",
+        "api_model": "google/nano-banana-2.1",
+        "local_model": "comfy/flux3-klein-redraw",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/flux3-klein-redraw",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/flux3-klein-redraw",
+          "comfy/qwen-image-edit",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
       },
       "world": {
         "mode": "api",
@@ -2397,6 +2442,29 @@
           "google/nano-banana-2.1"
         ],
         "per_call_cap_usd": 1.0
+      },
+      "redraw": {
+        "mode": "local",
+        "api_model": "google/nano-banana-2.1",
+        "local_model": "comfy/flux3-klein-redraw",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/nano-banana-2.1",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/nano-banana-2.1",
+          "comfy/qwen-image-edit",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
       },
       "world": {
         "mode": "off",
@@ -3173,6 +3241,30 @@
         ],
         "per_call_cap_usd": 1.0
       },
+      "redraw": {
+        "mode": "local",
+        "api_model": "volc/seedream-5.0",
+        "local_model": "comfy/flux3-klein-redraw",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "volc/seedream-5.0",
+          "notify": "after"
+        },
+        "alt_order": [
+          "volc/seedream-5.0",
+          "comfy/qwen-image-edit",
+          "google/nano-banana-2.1",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
       "world": {
         "mode": "api",
         "api_model": "worldlabs/marble",
@@ -3814,6 +3906,27 @@
           "comfy/flux2-dev"
         ],
         "per_call_cap_usd": 1.0
+      },
+      "redraw": {
+        "mode": "local",
+        "api_model": "google/nano-banana-2.1",
+        "local_model": "comfy/flux3-klein-redraw",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/qwen-image-edit"
+        ],
+        "per_call_cap_usd": 0.5
       },
       "world": {
         "mode": "off",
