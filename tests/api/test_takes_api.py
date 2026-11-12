@@ -663,6 +663,26 @@ def test_each_take_is_checked(client: TestClient) -> None:
     assert len(calls) == 1
 
 
+def test_a_take_does_only_what_its_shot_is_for(client: TestClient) -> None:
+    """Run 20 1-12: the prompt writer had her pick up the umbrella the next shot is for. The
+    draft says only what is written is acted; the take check asks for anything more."""
+    _confirm_storyboard(client)
+    mock = _state(client).registry.mock_settings
+    told: list[dict[str, Any]] = []
+    rewrite = mock.responders[("vid", "h3_prompt")]
+
+    def spy_rewrite(req: ModelRequest) -> Any:
+        told.append(json.loads(str((req.messages or [])[1]["content"])))
+        return rewrite(req)
+
+    mock.responders[("vid", "h3_prompt")] = spy_rewrite
+    shots = _shots(client)
+    take = _run(client, shots["1-04"]["video_product_id"], count=1)["versions"][-1]
+    found = {x["check"] for x in take["payload"]["check"]["items"]}
+    assert "extra" in found
+    assert "没写到就不碰" in told[0]["draft"]
+
+
 def _failing_take_looks(monkeypatch: pytest.MonkeyPatch, fail: int) -> list[list[str]]:
     """The take check fails its first ``fail`` looks (something passes through her); the fixes
     each take's prompt writer was told."""

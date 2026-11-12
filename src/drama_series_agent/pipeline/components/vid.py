@@ -147,7 +147,10 @@ from drama_series_agent.spec.dims import dims
 
 LANGUAGE = {"zh-CN": "Chinese", "en": "English"}
 # 镜头契约 (M5.5): the action budget and how an overlaid line is said, in the draft.
-BEATS = "最多 {n} 个动作；改变状态的动作（开门、放下东西）只做一次，不撤销再重做，犹豫要演出来"
+BEATS = (
+    "最多 {n} 个动作，只演这里写的；画面里、参考图里的人和道具这里没写到就不碰"
+    "（下一个镜头的动作不提前做）；改变状态的动作（开门、放下东西）只做一次，不撤销再重做，犹豫要演出来"
+)
 INSERT_BEATS = "插入镜头：只许微动（光线变化、一滴水、镜头极轻的漂移），东西本身不发生任何事"
 OVERLAY_HOW = {"inner": "内心独白", "offscreen": "画外音"}
 DEFAULT_SOUND = "Natural ambient sound of the scene, matching what is on screen."
@@ -170,6 +173,8 @@ def take_asks(context: dict[str, Any]) -> dict[str, Any]:
         "part": context.get("part"),
         "facing": context.get("facing"),
         "end": list(context.get("end") or []),
+        # run 20 1-12: the rewrite had her pick up the umbrella the next shot is for
+        "acts": str(context.get("first_desc") or ""),
         "texts": [t for t in context.get("texts") or [] if t.get("method") == "model"],
         "inner": list(
             dict.fromkeys(

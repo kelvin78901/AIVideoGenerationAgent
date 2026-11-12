@@ -1005,8 +1005,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/dc/dc2724e9544ed9d22bc1d7fb6fbd7d52fbda196eef4ed600b3f0618472607382",
-              "sha256": "dc2724e9544ed9d22bc1d7fb6fbd7d52fbda196eef4ed600b3f0618472607382",
+              "path": "blobs/sha256/a0/a0950259202c11a0f3037b0fbe72a114394b20d35818b66517e5a3afbb5c192b",
+              "sha256": "a0950259202c11a0f3037b0fbe72a114394b20d35818b66517e5a3afbb5c192b",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1109,8 +1109,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/dc/dc2724e9544ed9d22bc1d7fb6fbd7d52fbda196eef4ed600b3f0618472607382",
-              "sha256": "dc2724e9544ed9d22bc1d7fb6fbd7d52fbda196eef4ed600b3f0618472607382",
+              "path": "blobs/sha256/a0/a0950259202c11a0f3037b0fbe72a114394b20d35818b66517e5a3afbb5c192b",
+              "sha256": "a0950259202c11a0f3037b0fbe72a114394b20d35818b66517e5a3afbb5c192b",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1156,7 +1156,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0302,
+        "cost_usd": 0.0304,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.169
@@ -1650,7 +1650,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0302,
+        "cost_usd": 0.0303,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -1753,8 +1753,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/a2/a226cea38fc15ca3071d4acb9216512e663dc9eabd95f1846f05ea0994ec8006",
-              "sha256": "a226cea38fc15ca3071d4acb9216512e663dc9eabd95f1846f05ea0994ec8006",
+              "path": "blobs/sha256/fa/fadb9f12d5ea64e4c99a0849376bce400a3aa7c8ac82b0b644ca80ef75aa1c51",
+              "sha256": "fadb9f12d5ea64e4c99a0849376bce400a3aa7c8ac82b0b644ca80ef75aa1c51",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -1892,8 +1892,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/a2/a226cea38fc15ca3071d4acb9216512e663dc9eabd95f1846f05ea0994ec8006",
-              "sha256": "a226cea38fc15ca3071d4acb9216512e663dc9eabd95f1846f05ea0994ec8006",
+              "path": "blobs/sha256/fa/fadb9f12d5ea64e4c99a0849376bce400a3aa7c8ac82b0b644ca80ef75aa1c51",
+              "sha256": "fadb9f12d5ea64e4c99a0849376bce400a3aa7c8ac82b0b644ca80ef75aa1c51",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2015,8 +2015,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/87/8705f5c583d31746f4e1e991e18234199e4871ddd9c7a7de6da39c5edec237a0",
-              "sha256": "8705f5c583d31746f4e1e991e18234199e4871ddd9c7a7de6da39c5edec237a0",
+              "path": "blobs/sha256/3f/3f8b903f868770de1222a2e0101a4891d86d08f852de02585f83ba03c4a82160",
+              "sha256": "3f8b903f868770de1222a2e0101a4891d86d08f852de02585f83ba03c4a82160",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2109,8 +2109,8 @@
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/cd/cd118130f24f302e07515191e29a549924cdf39aad61295a3ddb0d3d49afc0fe",
-              "sha256": "cd118130f24f302e07515191e29a549924cdf39aad61295a3ddb0d3d49afc0fe",
+              "path": "blobs/sha256/f5/f59a253da4774c216e4d1f20a0c9327dbf34ed6b87b5d5da6bfc55cc84bd7544",
+              "sha256": "f59a253da4774c216e4d1f20a0c9327dbf34ed6b87b5d5da6bfc55cc84bd7544",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
@@ -2153,7 +2153,7 @@
       "estimate": {
         "model_key": "comfy/h3-r2v",
         "where": "local",
-        "cost_usd": 0.0303,
+        "cost_usd": 0.0305,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1901
@@ -2184,7 +2184,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0303,
+        "cost_usd": 0.0305,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -2215,7 +2215,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0303,
+        "cost_usd": 0.0304,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.2113
@@ -2246,7 +2246,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0302,
+        "cost_usd": 0.0303,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.0845
@@ -2501,7 +2501,7 @@
     "scope": "episode",
     "spent_usd": 0.0,
     "budget_usd": 15.0,
-    "projected_usd": 0.1816,
+    "projected_usd": 0.1824,
     "insights": [],
     "updated_at": "2026-10-18T09:00:00Z"
   },

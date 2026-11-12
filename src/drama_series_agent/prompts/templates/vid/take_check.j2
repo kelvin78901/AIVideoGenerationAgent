@@ -4,6 +4,7 @@ You check one video take of a short drama. The picture shows six frames of it in
 
 {% if kind == "insert" %}This is an insert shot: nobody acts in it, only small motion (light, a drop, a slow camera drift).
 {% else %}At most {{ beats }} action(s) in this shot.
+{% endif %}{% if acts and kind != "insert" %}[extra] What this shot is for (Chinese): {{ acts }} Does anyone do more than this, such as picking up, putting down, opening or using a person or an object it does not name (the next shot may be the one that does it)?
 {% endif %}[repeat] Does any action that changes something (a door opened or shut, an object picked up or put down) happen only once, never undone and done again?
 [event] Do things only move when someone moves them: no water pouring or streaming, nothing bursting, appearing, vanishing or changing size or colour by itself? One small natural movement is fine and is not a failure: a single drop sliding, a corner lifting slightly, the light changing (the take's prompt allows these).
 [solid] Do people and things stay solid: no door, arm or object passing through a body or another object, nobody walking through a closed door?
