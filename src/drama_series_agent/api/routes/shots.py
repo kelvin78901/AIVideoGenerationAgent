@@ -1,16 +1,21 @@
 """An episode's shots (M4, SPEC 9.1): ``GET /episodes/{id}/shots``, ``PATCH /shots/{id}``,
-``POST /shots/{id}/split|merge``. Edits append an ``edit`` version of the episode's 分镜规划
-and adopt it (``shots/service.py``)."""
+``POST /shots/{id}/split|merge``, ``POST /shots/{id}/keyframe/upload`` (M5.5,
+``shots/upload.py``). Edits append an ``edit`` version of the episode's 分镜规划 and adopt it
+(``shots/service.py``)."""
 
 from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, File, Form, UploadFile
 
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.jobs import job_public
+from drama_series_agent.media.image import MAX_UPLOAD_BYTES, Rect
+from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.schema import ProductOut
 from drama_series_agent.shots.schema import ShotChecksOut, ShotOut, ShotPatch, ShotSplitIn
+from drama_series_agent.shots.upload import upload_keyframe
 
 router = APIRouter(tags=["shots"])
 
@@ -51,3 +56,29 @@ async def split_shot(shot_id: str, body: ShotSplitIn, state: State) -> list[Shot
 async def merge_shot(shot_id: str, state: State) -> list[ShotOut]:
     """和同一场的下一个镜头合并; 422 ``no_next_shot``."""
     return await state.shots.merge(shot_id)
+
+
+@router.post("/shots/{shot_id}/keyframe/upload")
+async def upload_shot_keyframe(
+    shot_id: str,
+    state: State,
+    file: Annotated[UploadFile, File()],
+    x: Annotated[int | None, Form()] = None,
+    y: Annotated[int | None, Form()] = None,
+    w: Annotated[int | None, Form()] = None,
+    h: Annotated[int | None, Form()] = None,
+) -> ProductOut:
+    """「上传关键帧」 (PNG, JPEG, WebP): cut to the frame (the box ``x, y, w, h`` in the
+    picture's pixels, else centred), at the delivery size, one candidate, picked; ``low_res`` in
+    the payload when the cut-out is smaller than the draft tier (only a warning)."""
+    given = [v for v in (x, y, w, h) if v is not None]
+    if given and len(given) != 4:
+        raise PipelineError(422, "invalid_crop", reason="give x, y, w and h together")
+    box = Rect(x, y, w, h) if x is not None and y is not None and w and h else None
+    if given and box is None:
+        raise PipelineError(422, "invalid_crop", reason="empty box")
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    kf = await upload_keyframe(
+        state.db, state.products, state.store, shot_id, file.filename or "", data, box
+    )
+    return await state.products.get(kf.id)

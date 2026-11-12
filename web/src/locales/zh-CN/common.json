@@ -140,6 +140,8 @@
     "rights_not_confirmed": "要先勾选「我拥有这部小说的改编权」才能导入",
     "unsupported_file": "只支持 .txt 和 .docx（这个文件是 {{ext}}）",
     "file_too_large": "文件超过 {{limit_mb}} MB",
+    "not_an_image": "只支持 PNG、JPEG、WebP 图片",
+    "invalid_crop": "裁切框不对：要在图片里面，宽高都大于 0",
     "novel_unreadable": "读不出这个文件的文字：.txt 请存成 UTF-8 或 GBK，.docx 请确认不是损坏的文件",
     "novel_empty": "文件里没有正文",
     "chapter_not_found": "没有第 {{idx}} 章",

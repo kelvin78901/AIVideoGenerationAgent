@@ -140,6 +140,8 @@
     "rights_not_confirmed": "Tick “I own the adaptation rights” before importing",
     "unsupported_file": "Only .txt and .docx are supported (this file is {{ext}})",
     "file_too_large": "The file is larger than {{limit_mb}} MB",
+    "not_an_image": "Only PNG, JPEG and WebP pictures",
+    "invalid_crop": "The crop box is wrong: it must be inside the picture, with a width and height",
     "novel_unreadable": "Cannot read the text of this file: save a .txt as UTF-8 or GBK, and check that a .docx is not damaged",
     "novel_empty": "The file has no text",
     "chapter_not_found": "There is no chapter {{idx}}",

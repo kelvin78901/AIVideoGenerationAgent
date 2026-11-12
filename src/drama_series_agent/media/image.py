@@ -2,12 +2,20 @@
 
 PNG (``IHDR``), JPEG (the first ``SOFn`` marker) and WebP (``VP8 ``, ``VP8L``, ``VP8X``) cover
 what people upload as a reference and what the image models return.
+
+An uploaded keyframe (M5.5 step 10) is cut to the frame: ``frame_rect`` is the largest box of
+the output spec's aspect inside the user's rectangle (the whole picture without one, centred),
+``fit`` crops it and scales it to the delivery size with FFmpeg (``crop`` + ``scale``), as PNG.
 """
 
 from __future__ import annotations
 
+import asyncio
 import struct
+import subprocess
 from dataclasses import dataclass
+
+from drama_series_agent.media.audio import ffmpeg_exe
 
 MAX_UPLOAD_BYTES = 20 * 1024 * 1024
 # JPEG start-of-frame markers (not DHT 0xC4, JPG 0xC8, DAC 0xCC).
@@ -76,3 +84,65 @@ def _webp(data: bytes) -> ImageInfo:
         h = int.from_bytes(data[27:30], "little") + 1
         return _checked("image/webp", w, h)
     raise NotAnImage("unsupported WebP")
+
+
+@dataclass(frozen=True)
+class Rect:
+    """A box on a picture, in its pixels."""
+
+    x: int
+    y: int
+    w: int
+    h: int
+
+
+class BadCrop(ValueError):
+    pass
+
+
+def frame_rect(src_w: int, src_h: int, w: int, h: int, box: Rect | None = None) -> Rect:
+    """The largest ``w``:``h`` box centred in ``box`` (the whole picture without one);
+    ``BadCrop`` when ``box`` is empty or not on the picture."""
+    box = box or Rect(0, 0, src_w, src_h)
+    if box.w <= 0 or box.h <= 0 or box.x < 0 or box.y < 0:
+        raise BadCrop("empty box")
+    if box.x + box.w > src_w or box.y + box.h > src_h:
+        raise BadCrop("box outside the picture")
+    if box.w * h > box.h * w:  # wider than the frame: full height
+        cw, ch = max(1, box.h * w // h), box.h
+    else:
+        cw, ch = box.w, max(1, box.w * h // w)
+    return Rect(box.x + (box.w - cw) // 2, box.y + (box.h - ch) // 2, cw, ch)
+
+
+def _fit(data: bytes, crop: Rect, w: int, h: int) -> bytes:
+    cmd = [
+        ffmpeg_exe(),
+        "-hide_banner",
+        "-nostdin",
+        "-loglevel",
+        "error",
+        "-i",
+        "pipe:0",
+        "-vf",
+        f"crop={crop.w}:{crop.h}:{crop.x}:{crop.y},scale={w}:{h}:flags=lanczos",
+        "-frames:v",
+        "1",
+        "-f",
+        "image2pipe",
+        "-c:v",
+        "png",
+        "pipe:1",
+    ]
+    try:
+        done = subprocess.run(cmd, input=data, capture_output=True, check=True, timeout=60)
+    except (OSError, subprocess.SubprocessError) as exc:
+        raise NotAnImage("FFmpeg could not read it") from exc
+    if not done.stdout:
+        raise NotAnImage("FFmpeg wrote nothing")
+    return done.stdout
+
+
+async def fit(data: bytes, crop: Rect, w: int, h: int) -> bytes:
+    """``crop`` of the picture scaled to ``w`` × ``h``, as PNG."""
+    return await asyncio.to_thread(_fit, data, crop, w, h)

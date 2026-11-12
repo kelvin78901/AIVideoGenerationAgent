@@ -379,3 +379,56 @@ def test_a_keyframe_that_never_passes_keeps_the_last_try_as_a_warning(
     pick = {"source_version_id": draft["id"], "source_idx": 0}
     final = _run(client, "1-06", mode="run", where="api", params=pick)["versions"][-1]
     assert final["stage"] == "final" and "redraws" not in final["payload"] and len(seen) == 1
+
+
+def _png(w: int, h: int) -> bytes:
+    from drama_series_agent.modelhub.adapters.mock import solid_png
+
+    return solid_png(w, h, (40, 90, 160))
+
+
+def _upload(client: TestClient, label: str, data: bytes, **box: int) -> Any:
+    return client.post(
+        f"{V1}/shots/{_shot(client, label)['id']}/keyframe/upload",
+        files={"file": ("mine.png", data, "image/png")},
+        data={k: str(v) for k, v in box.items()},
+    )
+
+
+def test_an_uploaded_keyframe_is_cut_to_the_frame(client: TestClient) -> None:
+    """M5.5 step 10: cut to the spec's aspect (centred, or inside the box the user drew), at the
+    delivery size, one candidate, picked; smaller than the draft tier only warns."""
+    resp = _upload(client, "1-04", _png(1000, 1000))
+    assert resp.status_code == 200, resp.text
+    v = resp.json()["versions"][-1]
+    (cand,) = [f for f in v["files"] if f["role"] == "candidate"]
+    assert (v["origin"], cand["w"], cand["h"], cand["mime"]) == ("upload", 1080, 1920, "image/png")
+    assert v["payload"]["crop"] == {"x": 219, "y": 0, "w": 562, "h": 1000}
+    assert v["payload"]["low_res"] is True  # 562 wide, the draft tier is 768
+    assert _shot(client, "1-04")["keyframe_sha256"] == cand["sha256"]
+
+    resp = _upload(client, "1-04", _png(2000, 4000), x=0, y=0, w=1500, h=4000)
+    assert resp.status_code == 200, resp.text
+    v = resp.json()["versions"][-1]
+    assert v["payload"]["crop"] == {"x": 0, "y": 667, "w": 1500, "h": 2666}
+    assert "low_res" not in v["payload"]
+
+    # 「用 API 出终版」 from it, then 「确认这个镜头」 locks the final.
+    final = _run(client, "1-04", mode="run", where="api", params={"source_version_id": v["id"]})[
+        "versions"
+    ][-1]
+    assert (final["stage"], final["parent_version_id"]) == ("final", v["id"])
+    shot = client.patch(f"{V1}/shots/demo-shot-1-04", json={"confirmed": True}).json()
+    assert shot["confirmed"] and _kf(client, "1-04")["locked_hash"]
+
+
+def test_an_upload_the_keyframe_cannot_take(client: TestClient) -> None:
+    assert _code(_upload(client, "1-08", _png(800, 1400))) == "no_keyframe"  # continuous
+    assert _code(_upload(client, "1-01", _png(800, 1400))) == "product_locked"  # confirmed
+    resp = _upload(client, "1-04", b"not a picture")
+    assert (resp.status_code, _code(resp)) == (422, "not_an_image")
+    resp = _upload(client, "1-04", _png(800, 1400), x=0, y=0)
+    assert (resp.status_code, _code(resp)) == (422, "invalid_crop")
+    resp = _upload(client, "1-04", _png(800, 1400), x=400, y=0, w=800, h=1400)
+    assert (resp.status_code, _code(resp)) == (422, "invalid_crop")
+    assert _kf(client, "1-04")["versions"][-1]["origin"] != "upload"

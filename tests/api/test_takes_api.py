@@ -665,6 +665,22 @@ def test_each_take_is_checked(client: TestClient) -> None:
     assert len(calls) == 1
 
 
+def test_an_uploaded_keyframe_is_the_takes_first_frame(client: TestClient) -> None:
+    """M5.5 step 10: an uploaded keyframe, locked when the shot is confirmed, starts its take."""
+    from drama_series_agent.modelhub.adapters.mock import solid_png
+
+    shots = _shots(client)
+    resp = client.post(
+        f"{V1}/shots/{shots['1-04']['id']}/keyframe/upload",
+        files={"file": ("mine.png", solid_png(900, 1600, (10, 120, 60)), "image/png")},
+    )
+    assert resp.status_code == 200, resp.text
+    (mine,) = [f for f in resp.json()["versions"][-1]["files"] if f["role"] == "candidate"]
+    _confirm_storyboard(client)
+    take = _run(client, shots["1-04"]["video_product_id"], count=1)["versions"][-1]
+    assert take["params"]["request"]["first_frame"] == mine["sha256"]
+
+
 def test_a_take_does_only_what_its_shot_is_for(client: TestClient) -> None:
     """Run 20 1-12: the prompt writer had her pick up the umbrella the next shot is for. The
     draft says only what is written is acted; the take check asks for anything more."""
