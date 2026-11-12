@@ -174,7 +174,7 @@ def take_asks(context: dict[str, Any]) -> dict[str, Any]:
         "facing": context.get("facing"),
         "end": list(context.get("end") or []),
         # run 20 1-12: the rewrite had her pick up the umbrella the next shot is for
-        "acts": str(context.get("first_desc") or ""),
+        "acts": str(context.get("acts") or ""),
         "texts": [t for t in context.get("texts") or [] if t.get("method") == "model"],
         "inner": list(
             dict.fromkeys(
@@ -474,6 +474,9 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "frame": frame_,
             "first_frame": first,
             "first_desc": first_desc,
+            # what the shot is for, the take check's ``extra`` (a continuous shot has no picture
+            # of its own: the plan's intent)
+            "acts": first_desc or str(shot.get("intent") or ""),
             "tail_clip": tail,
             # 镜头契约 (M5.5; before it, 15o's 插入镜头: nobody in it and nothing said)
             "kind": kind,

@@ -1,5 +1,5 @@
-M5 local smoke · 2026-11-11 18:58
-GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 26168 MiB
+M5 local smoke · 2026-11-11 21:52
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 28450 MiB
 ComfyUI 0.41.2 at http://127.0.0.1:8188
 output spec 9:16 1080p 24 fps
 
@@ -15,9 +15,9 @@ output spec 9:16 1080p 24 fps
    1-09: take 1, 4.89s, shot 5.0s, cut 0.00-4.89s
    1-10: take 1, 5.68s, shot 5.0s, cut 0.00-5.68s
    1-11: take 1, 4.27s, shot 4.0s, cut 0.00-4.00s
-   1-12: take 1, 4.89s, shot 4.0s, cut 0.17-4.89s
+   1-12: take 1, 4.89s, shot 4.0s, cut 0.33-4.89s
    1-13: take 1, 4.27s, shot 4.0s, cut 0.00-4.00s
-   ep1-cut.mp4: 60.28s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-cut.mp4
+   ep1-cut.mp4: 60.11s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-cut.mp4
    ep1-uncut.mp4: 64.61s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-uncut.mp4
 
 result: all local steps ran

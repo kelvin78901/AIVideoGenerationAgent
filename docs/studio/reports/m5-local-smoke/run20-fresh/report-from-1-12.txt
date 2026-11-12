@@ -1,28 +1,20 @@
-M5 local smoke · 2026-11-11 18:38
-GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 28493 MiB
+M5 local smoke · 2026-11-11 21:40
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 26178 MiB
 ComfyUI 0.41.2 at http://127.0.0.1:8188
 output spec 9:16 1080p 24 fps
 
-== from 1-12: 1-01, 1-02, 1-03, 1-04, 1-05, 1-06, 1-07, 1-08, 1-09, 1-10, 1-11 already made
+== from 1-12: 1-01, 1-02, 1-03, 1-04, 1-05, 1-06, 1-07, 1-08, 1-09, 1-10, 1-11, 1-12, 1-13 already made
 == take-1-12: 1-12 1 条（same_scene_cut，medium，声音 native）
-   1 job(s) in 493.2 s, GPU memory peak 31685 MiB
+   1 job(s) in 160.7 s, GPU memory peak 31666 MiB
+   call deepseek/v4.1-flash [api] success 5.0 s audio=Nones
+   call comfy/h3 [local] success 152.1 s audio=5.17s
    call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
-   call deepseek/v4.1-flash [api] success 5.7 s audio=Nones
-   call comfy/h3 [local] success 155.6 s audio=5.17s
-   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
-   call deepseek/v4.1-flash [api] success 5.4 s audio=Nones
-   call comfy/h3 [local] success 152.6 s audio=5.17s
-   call google/gemini-3.1-flash-lite [api] success 2.0 s audio=Nones
-   call deepseek/v4.1-flash [api] success 5.3 s audio=Nones
-   call deepseek/v4.1-flash [api] success 3.4 s audio=Nones
-   call comfy/h3 [local] success 152.8 s audio=5.17s
-   call google/gemini-3.1-flash-lite [api] success 2.3 s audio=Nones
    model comfy/h3 [local], files: take-1-12-1-video.mp4 (768x1344 4.89s), take-1-12-1-poster.png (768x1344), take-1-12-1-last_frame.png (768x1344), take-1-12-1-raw.mp4 (768x1344 5.17s), take-1-12-1-sheet.png (?)
    clip 768x1344 4.89s @ 24.0 fps, sound yes; asked 4.00s (minus the 0.3s cut: 3.70s; a model's shortest clip can be longer); voices [], refs []
    adopted 1-12-1; model comfy/h3, select default, rewritten by deepseek/v4.1-flash
-   1-12-1 检查 没过（重出 2 次）：repeat ✓，event ✓，solid ✓，light ✓，place ✓，end ✗ 林晚最后跨出了门口，站在了门外的楼道里，不再是“站在林晚出租屋”内，cut ✓，hold ✓
-   deepseek/v4.1-flash in this data dir: 49 call(s), $0.0877
-   google/gemini-3.1-flash-lite in this data dir: 91 call(s), $0.0521
+   1-12-1 检查 过：extra ✓，repeat ✓，event ✓，solid ✓，light ✓，place ✓，end ✓，cut ✓，hold ✓
+   deepseek/v4.1-flash in this data dir: 53 call(s), $0.0953
+   google/gemini-3.1-flash-lite in this data dir: 96 call(s), $0.0551
 == cut: 粗剪（每镜按镜头时长裁 / 不裁）
    1-01: take 1, 4.89s, shot 5.0s, cut 0.00-4.89s
    1-02: take 1, 4.89s, shot 4.0s, cut 0.25-4.25s
@@ -35,10 +27,10 @@ output spec 9:16 1080p 24 fps
    1-09: take 1, 4.89s, shot 5.0s, cut 0.00-4.89s
    1-10: take 1, 5.68s, shot 5.0s, cut 0.00-5.68s
    1-11: take 1, 4.27s, shot 4.0s, cut 0.00-4.00s
-   1-12: take 1, 4.89s, shot 4.0s, cut 0.17-4.89s
-   1-13: no take, left out
-   ep1-cut.mp4: 56.28s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-cut.mp4
-   ep1-uncut.mp4: 60.34s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-uncut.mp4
+   1-12: take 1, 4.89s, shot 4.0s, cut 0.33-4.89s
+   1-13: take 1, 4.27s, shot 4.0s, cut 0.00-4.00s
+   ep1-cut.mp4: 60.11s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-cut.mp4
+   ep1-uncut.mp4: 64.61s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-uncut.mp4
 
 result: all local steps ran
 files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh

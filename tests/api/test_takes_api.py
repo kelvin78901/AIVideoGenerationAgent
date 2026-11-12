@@ -491,6 +491,8 @@ def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
     sent = take["params"]["request"]
     seconds = shots["1-08"]["duration_s"]
     assert (sent["tail_frames"], sent["first_frame"]) == (22, last["sha256"])
+    # No picture of its own: the take check asks for anything more than the plan's intent.
+    assert "extra" in {x["check"] for x in take["payload"]["check"]["items"]}
     looks = _rows(client, ModelCall, ModelCall.component_id == vlook.VLOOK)
     assert {c.shot_id for c in looks} == {
         "demo-shot-1-06",
