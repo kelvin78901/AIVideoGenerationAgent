@@ -18,7 +18,7 @@ from __future__ import annotations
 from typing import Any
 
 from drama_series_agent.core.db import Database
-from drama_series_agent.core.models_db import Product, Shot
+from drama_series_agent.core.models_db import Episode, Product, Shot
 from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.media.image import (
     MAX_UPLOAD_BYTES,
@@ -32,6 +32,7 @@ from drama_series_agent.media.image import (
 from drama_series_agent.pipeline.components.media import output_frame
 from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.pictures import SHOT_REFS, Owner, add_picture, remove_picture
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.shots.service import keyframe_products
 from drama_series_agent.spec.dims import dims
@@ -94,3 +95,33 @@ async def upload_keyframe(
         fresh = await session.get(Product, kf.id)
     assert fresh is not None
     return fresh
+
+
+async def _shot_owner(db: Database, shot_id: str) -> Owner:
+    async with db.session() as session:
+        shot = await session.get(Shot, shot_id)
+        if shot is None or shot.retired:
+            raise PipelineError(404, "shot_not_found", id=shot_id)
+        if shot.shot_type == "continuous":  # drawn from the shot before: no keyframe to guide
+            raise PipelineError(409, "no_keyframe", id=shot_id)
+        episode = await session.get(Episode, shot.episode_id)
+    label = f"{episode.idx if episode else 0}-{shot.idx:02d}"
+    return Owner(shot.series_id, shot.id, label)
+
+
+async def add_shot_ref(
+    db: Database,
+    products: ProductService,
+    store: BlobStore,
+    shot_id: str,
+    purpose: str,
+    filename: str,
+    data: bytes,
+) -> str:
+    """镜头参考图 (M5.5 step 12): a picture for this shot's 构图 / 姿势 / 光线 / 风格."""
+    owner = await _shot_owner(db, shot_id)
+    return await add_picture(db, products, store, SHOT_REFS, owner, purpose, filename, data)
+
+
+async def remove_shot_ref(db: Database, products: ProductService, shot_id: str, idx: int) -> str:
+    return await remove_picture(db, products, SHOT_REFS, await _shot_owner(db, shot_id), idx)

@@ -31,7 +31,7 @@ from typing import Any
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from drama_series_agent.assets.refs import MORE_KINDS, PURPOSE_LABEL, PURPOSES, more_refs
+from drama_series_agent.assets.refs import MORE_KINDS, PURPOSE_LABEL, PURPOSES, REF_MORE
 from drama_series_agent.core.config import Resolved, get_config
 from drama_series_agent.core.models_db import (
     Asset,
@@ -67,6 +67,12 @@ from drama_series_agent.pipeline.components.text import text_settings
 from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
+from drama_series_agent.pipeline.pictures import (
+    SHOT_PURPOSE_LABEL,
+    SHOT_REFS,
+    STYLE_BOARD,
+    sets_of,
+)
 from drama_series_agent.pipeline.runs import item_of
 from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.qa import ocr
@@ -336,6 +342,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     if part:  # her reference is a whole person: the model drew her behind her own hand
         refs = [r for r in refs if not (r["kind"] == "character" and r["name"] == part)]
     refs += await extra_refs(session, invalidation, refs)
+    refs += await set_refs(session, invalidation, row.id, product.series_id)
     seen = facing(shot, c, people, [t["name"] for t in texts])
     orientation = "竖屏" if _vertical(frame["aspect"]) else "横屏"
     framing = FRAMING.get(shot["framing"], shot["framing"])
@@ -632,7 +639,7 @@ async def extra_refs(
     """多参考图 (M5.5 step 11): the extra pictures of the assets whose main picture is sent,
     after all of them, by purpose (every 正脸 first), then in the assets' order."""
     mains = [r for r in refs if r["kind"] in MORE_KINDS and r.get("asset_id")]
-    more = await more_refs(session, invalidation, [str(r["asset_id"]) for r in mains])
+    more = await sets_of(session, invalidation, REF_MORE, [str(r["asset_id"]) for r in mains])
     out: list[tuple[tuple[int, int, int], dict[str, Any]]] = []
     for order, r in enumerate(mains):
         m = more.get(str(r["asset_id"]))
@@ -652,23 +659,69 @@ async def extra_refs(
     return [item for _, item in sorted(out, key=lambda x: x[0])]
 
 
+async def set_refs(
+    session: AsyncSession, invalidation: Invalidation, shot_id: str, series_id: str
+) -> list[dict[str, Any]]:
+    """镜头参考图 then 风格板 (M5.5 step 12), after the assets' pictures, each for its purpose."""
+    out: list[dict[str, Any]] = []
+    for kind, owner_id, name in (
+        (SHOT_REFS, shot_id, "镜头参考"),
+        (STYLE_BOARD, series_id, "风格板"),
+    ):
+        got = (await sets_of(session, invalidation, kind, [owner_id])).get(owner_id)
+        for f in (got or {}).get("files") or []:
+            out.append(
+                {
+                    "name": name,
+                    "kind": "shot" if kind is SHOT_REFS else "style",
+                    "purpose": str(f.get("purpose") or "style"),
+                    "product_id": got["product_id"] if got else "",
+                    "sha256": f["sha256"],
+                    "hash": got["hash"] if got else None,
+                }
+            )
+    return out
+
+
+ONLY_REFS = ("more", "shot", "style")  # pictures that only add to the references
+
+
 def ref_label(r: dict[str, Any]) -> str:
-    """How a sent picture is named in the prompt and in the version's ``refs``."""
+    """How a sent picture is named in the version's ``refs``: 「林晚·正脸」「镜头参考·构图」."""
     if r["kind"] == "more":
         return f"{r['name']}·{PURPOSE_LABEL.get(r['purpose'], r['purpose'])}"
+    if r["kind"] == "shot":
+        return f"{r['name']}·{SHOT_PURPOSE_LABEL.get(r['purpose'], r['purpose'])}"
     return str(r["name"])
 
 
+def ref_title(i: int, r: dict[str, Any]) -> str:
+    """「参考图 3：林晚（角色·正脸）」 in the prompt."""
+    if r["kind"] in KIND_LABEL:
+        return f"参考图 {i}：{r['name']}（{KIND_LABEL[r['kind']]}）"
+    if r["kind"] == "more" and r["purpose"] in PURPOSE_LABEL:
+        of = KIND_LABEL.get(r["of"], "")
+        return f"参考图 {i}：{r['name']}（{of}·{PURPOSE_LABEL[r['purpose']]}）"
+    if r["kind"] == "shot" and r["purpose"] in SHOT_PURPOSE_LABEL:
+        return f"参考图 {i}：{r['name']}（{SHOT_PURPOSE_LABEL[r['purpose']]}）"
+    return f"参考图 {i}：{r['name']}"
+
+
 def more_note(refs: list[dict[str, Any]]) -> str:
-    """What each extra picture is only for: 「参考图 3 只参考林晚的服装」."""
+    """What each added picture is only for: 「参考图 3 只参考林晚的服装」, 「参考图 5 只参考构图，
+    里面的人和东西不照搬」."""
     notes = []
     for i, r in enumerate(refs, 1):
-        if r["kind"] != "more":
-            continue
-        if r["purpose"] == "other":
-            notes.append(f"参考图 {i} 是{r['name']}的另一张参考")
-        else:
-            notes.append(f"参考图 {i} 只参考{r['name']}的{PURPOSE_LABEL[r['purpose']]}")
+        if r["kind"] == "more":
+            if r["purpose"] == "other":
+                notes.append(f"参考图 {i} 是{r['name']}的另一张参考")
+            else:
+                notes.append(f"参考图 {i} 只参考{r['name']}的{PURPOSE_LABEL[r['purpose']]}")
+        elif r["kind"] == "shot":
+            what = SHOT_PURPOSE_LABEL.get(r["purpose"], r["purpose"])
+            notes.append(f"参考图 {i} 只参考{what}，里面的人和东西不照搬")
+        elif r["kind"] == "style":
+            notes.append(f"参考图 {i} 只参考画面风格（色调、质感、光影），里面的人和东西不照搬")
     return "；".join(notes) + "。" if notes else ""
 
 
@@ -694,24 +747,15 @@ def pick_refs(
     locked = list(inputs.context.get("refs") or [])
     room = None if limit is None else max(0, limit - len(refs))
     sent = locked if room is None else locked[:room]
-    # An extra picture left out is not missing: the asset's main picture went.
-    left_out = [r["name"] for r in locked[len(sent) :] if r["kind"] != "more"]
+    # A picture that only adds (多参考图, 镜头参考, 风格板) left out is not missing.
+    left_out = [r["name"] for r in locked[len(sent) :] if r["kind"] not in ONLY_REFS]
     refs += sent
     deps: list[DependencyDraft] = []
     for r in sent:
         if r.get("hash") and all(d.upstream_product_id != r["product_id"] for d in deps):
             deps.append(DependencyDraft(r["product_id"], r["hash"], ""))
     if refs:
-        named = "；".join(
-            f"参考图 {i}：{r['name']}"
-            + (f"（{KIND_LABEL[r['kind']]}）" if r["kind"] in KIND_LABEL else "")
-            + (
-                f"（{KIND_LABEL.get(r['of'], '')}·{PURPOSE_LABEL[r['purpose']]}）"
-                if r["kind"] == "more" and r["purpose"] in PURPOSE_LABEL
-                else ""
-            )
-            for i, r in enumerate(refs, 1)
-        )
+        named = "；".join(ref_title(i, r) for i, r in enumerate(refs, 1))
         blocks.append(
             Block(
                 "参考图",

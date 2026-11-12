@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-12 · M5.5 第 12 步：镜头参考图和风格板
+
+- **同一种东西**：多参考图、镜头参考图、风格板都是「图组」（`pipeline/pictures.py`：`PictureSet` 槽位 + owner 类型 + 允许的用途 + 上限）。一个版本装一组，文件 `role: ref`、`idx`、`purpose`；加一张、删一张都出新版本、马上采纳；`component_id: upload`。第 11 步的 `ref_more` 改成用它（行为不变）。
+- **镜头参考图** `shot_refs`（owner 镜头）：`POST /shots/{id}/refs`（表单 `file` + `purpose`：`composition / pose / light / style`，默认 `composition`）、`DELETE /shots/{id}/refs/{idx}`；最多 4 张。连续镜头没有自己的关键帧，409 `no_keyframe`。
+- **风格板** `style_board`（owner 剧）：`POST /series/{id}/style-board`（只收文件，用途固定 `style`）、`DELETE /series/{id}/style-board/{idx}`；最多 4 张。放在成片规格的路由文件里（`spec/style_board.py`），界面在成片规格页（第 16 步）。
+- **关键帧取参考顺序**：素材主图 → 多参考图 → 本镜头的参考图 → 风格板，到 `max_refs` 从后面截。提示词「参考图 n：镜头参考（构图）」「参考图 n：风格板」，后面写明「参考图 n 只参考构图，里面的人和东西不照搬」「参考图 n 只参考画面风格（色调、质感、光影），里面的人和东西不照搬」；版本 `payload.refs` 记「镜头参考·构图」「风格板」。截掉的这三类都不写进「没传的参考」。
+- **依赖**：只依赖真的发出去的图组（一组一条，当前哈希）。所以风格板第一次加图时，**以前出的关键帧不会变「待更新」**（它们没用过风格板），之后重出的才带上；已经带上的，风格板再改就「待更新」。和第 11 步的多参考图一样。
+- 前端 zod `ProductSlotSchema` 加 `shot_refs`、`style_board`。
+
 ## 2026-11-12 · M5.5 第 11 步：素材（多参考图、六视图单张替换、新建素材）
 
 - **多参考图**：新槽位 `ref_more`（owner 素材，`component_id: upload`，没有组件会跑它，`runs.describe` 找不到模板就不估价）。一个版本装全部，文件 `role: ref`、`idx`、`purpose`（`face / outfit / hair / pose / other`），payload `refs: [{purpose}]`。`POST /assets/{id}/refs`（表单 `file` + `purpose`）加一张、`DELETE /assets/{id}/refs/{idx}` 删一张，都是新版本、马上采纳（不用选）；最多 8 张（409 `too_many_refs`）；只有角色、场景、道具能加（文字、音色 422 `upload_not_supported`）。主图锁着也能加删。

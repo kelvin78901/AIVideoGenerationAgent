@@ -24,6 +24,9 @@ export const ProductSlotSchema = z.enum([
   "ref_scale",
   // An asset's extra pictures, each with its purpose (M5.5 多参考图; the user's own files).
   "ref_more",
+  // A shot's own reference pictures (构图 / 姿势 / 光线 / 风格) and the series' 风格板 (M5.5).
+  "shot_refs",
+  "style_board",
   "text_image",
   "voice",
   "line_audio",

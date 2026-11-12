@@ -1,7 +1,7 @@
 """An episode's shots (M4, SPEC 9.1): ``GET /episodes/{id}/shots``, ``PATCH /shots/{id}``,
-``POST /shots/{id}/split|merge``, ``POST /shots/{id}/keyframe/upload`` (M5.5,
-``shots/upload.py``). Edits append an ``edit`` version of the episode's 分镜规划 and adopt it
-(``shots/service.py``)."""
+``POST /shots/{id}/split|merge``, ``POST /shots/{id}/keyframe/upload`` and 镜头参考图
+``/shots/{id}/refs`` (M5.5, ``shots/upload.py``). Edits append an ``edit`` version of the
+episode's 分镜规划 and adopt it (``shots/service.py``)."""
 
 from __future__ import annotations
 
@@ -15,7 +15,7 @@ from drama_series_agent.media.image import MAX_UPLOAD_BYTES, Rect
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.schema import ProductOut
 from drama_series_agent.shots.schema import ShotChecksOut, ShotOut, ShotPatch, ShotSplitIn
-from drama_series_agent.shots.upload import upload_keyframe
+from drama_series_agent.shots.upload import add_shot_ref, remove_shot_ref, upload_keyframe
 
 router = APIRouter(tags=["shots"])
 
@@ -82,3 +82,25 @@ async def upload_shot_keyframe(
         state.db, state.products, state.store, shot_id, file.filename or "", data, box
     )
     return await state.products.get(kf.id)
+
+
+@router.post("/shots/{shot_id}/refs")
+async def add_shot_picture(
+    shot_id: str,
+    state: State,
+    file: Annotated[UploadFile, File()],
+    purpose: Annotated[str, Form(max_length=16)] = "composition",
+) -> ProductOut:
+    """镜头参考图 (M5.5): a picture for this shot's ``composition`` / ``pose`` / ``light`` /
+    ``style``; the ``shot_refs`` product, its new version adopted (at most 4). A continuous
+    shot has no keyframe to guide (409 ``no_keyframe``)."""
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    pid = await add_shot_ref(
+        state.db, state.products, state.store, shot_id, purpose, file.filename or "", data
+    )
+    return await state.products.get(pid)
+
+
+@router.delete("/shots/{shot_id}/refs/{idx}")
+async def remove_shot_picture(shot_id: str, idx: int, state: State) -> ProductOut:
+    return await state.products.get(await remove_shot_ref(state.db, state.products, shot_id, idx))
