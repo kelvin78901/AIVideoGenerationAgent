@@ -41,7 +41,9 @@ from sqlmodel import col, delete, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.assets import ops
+from drama_series_agent.assets import refs as more
 from drama_series_agent.assets.schema import (
+    AssetCreateIn,
     AssetLockIn,
     AssetOut,
     AssetPatch,
@@ -68,6 +70,7 @@ from drama_series_agent.core.models_db import (
     ProductVersion,
     Scene,
     ScriptLine,
+    Series,
     Shot,
     utcnow,
 )
@@ -89,7 +92,11 @@ from drama_series_agent.pipeline.components.text import (
     TextComponent,
     text_settings,
 )
-from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, ViewsComponent
+from drama_series_agent.pipeline.components.views import (
+    REF_VIEWS_SLOT,
+    VIEWS,
+    ViewsComponent,
+)
 from drama_series_agent.pipeline.components.voice import VOICE_SLOT
 from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
@@ -131,9 +138,13 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
         if row is None:
             row = Asset(id=item["id"], series_id=series_id, kind=item["kind"], name=item["name"])
         old = dict(row.seed_json or {})
+        # One made by hand (M5.5) keeps what the user wrote; the analysis only finds it in scenes.
+        hand = row.manual and row.id in rows
         seed = {
             "key": item.get("key"),
-            "description": item.get("description") or "",
+            "description": (
+                old.get("description") or "" if hand else item.get("description") or ""
+            ),
             "text": item.get("text"),
             "note": item.get("note"),
             "physical": item.get("physical"),
@@ -144,7 +155,9 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
         changed = bool(old.get("changed")) or (
             made and old.get("description") != seed["description"]
         )
-        row.kind, row.name, row.bible_id = item["kind"], item["name"], item.get("bible_id")
+        if not hand:
+            row.kind, row.name = item["kind"], item["name"]
+        row.bible_id = item.get("bible_id")
         row.seed_json = {**seed, "changed": changed}
         row.retired = False
         row.updated_at = now
@@ -403,6 +416,74 @@ class AssetService:
                 raise PipelineError(409, "product_locked", id=product.id)
         await self._write_patch(asset_id, body)
         return await self.get(asset_id)
+
+    async def create(self, series_id: str, body: AssetCreateIn) -> AssetOut:
+        """「新建素材」 (M5.5 step 11): an asset the analysis did not find, ``manual``, with its
+        product; no scene uses it until a shot takes it as a reference (or an analysis finds one
+        of that kind and name, which then is this one: ``known_assets``)."""
+        name = body.name.strip()
+        if not name:
+            raise PipelineError(422, "name_required")
+        async with self._db.session() as session:
+            if await session.get(Series, series_id) is None:
+                raise PipelineError(404, "series_not_found", id=series_id)
+            rows = (await session.exec(select(Asset).where(Asset.series_id == series_id))).all()
+            if any(a.kind == body.kind and a.name == name and not a.retired for a in rows):
+                raise PipelineError(409, "asset_exists", name=name)
+            order = max((int((a.seed_json or {}).get("order") or 0) for a in rows), default=-1)
+            asset_id = ops.new_asset_id()
+            session.add(
+                Asset(
+                    id=asset_id,
+                    series_id=series_id,
+                    kind=body.kind,
+                    name=name,
+                    manual=True,
+                    seed_json={
+                        "key": f"manual:{asset_id}",
+                        "description": body.description.strip(),
+                        "order": order + 1,
+                        "changed": False,
+                    },
+                )
+            )
+            await session.commit()
+        await self._products.ensure(
+            series_id=series_id,
+            owner_type="asset",
+            owner_id=asset_id,
+            slot=ops.slot_of(body.kind),
+            component_id=ops.component_of(body.kind),
+        )
+        return await self.get(asset_id)
+
+    async def add_more(self, asset_id: str, purpose: str, filename: str, data: bytes) -> str:
+        """「加参考图」 (``assets/refs.py``): the ``ref_more`` product's id."""
+        return await more.add_more(
+            self._db, self._products, self._store, asset_id, purpose, filename, data
+        )
+
+    async def remove_more(self, asset_id: str, idx: int) -> str:
+        return await more.remove_more(self._db, self._products, asset_id, idx)
+
+    async def upload_view(self, product_id: str, view: str, filename: str, data: bytes) -> str:
+        """六视图单张替换 by an uploaded picture (``assets/refs.py``)."""
+        return await more.replace_view(
+            self._db, self._products, self._store, product_id, view, REF_VIEWS_SLOT, filename,
+            data,
+        )  # fmt: skip
+
+    async def redraw_view(self, product_id: str, view: str) -> Job:
+        """「重画这一张」: a views run drawing only ``view`` (409 ``views_outdated`` when the
+        set follows another picture: redraw them all)."""
+        if view not in VIEWS:
+            raise PipelineError(422, "unknown_view", view=view)
+        async with self._db.session() as session:
+            p, _ = await more.views_version(session, product_id, REF_VIEWS_SLOT)
+            stale = await self._invalidation.stale_ids(session, [p])
+        if p.id in stale:
+            raise PipelineError(409, "views_outdated", id=product_id)
+        return await self._runs.start(product_id, "run", params={"view": view})
 
     async def _write_patch(self, asset_id: str, body: AssetPatch) -> None:
         async with self._db.session() as session:

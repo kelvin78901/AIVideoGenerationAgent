@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-12 · M5.5 第 11 步：素材（多参考图、六视图单张替换、新建素材）
+
+- **多参考图**：新槽位 `ref_more`（owner 素材，`component_id: upload`，没有组件会跑它，`runs.describe` 找不到模板就不估价）。一个版本装全部，文件 `role: ref`、`idx`、`purpose`（`face / outfit / hair / pose / other`），payload `refs: [{purpose}]`。`POST /assets/{id}/refs`（表单 `file` + `purpose`）加一张、`DELETE /assets/{id}/refs/{idx}` 删一张，都是新版本、马上采纳（不用选）；最多 8 张（409 `too_many_refs`）；只有角色、场景、道具能加（文字、音色 422 `upload_not_supported`）。主图锁着也能加删。
+- **关键帧怎么用**：只给**主图已锁定**的素材接多参考图（它们补充主图，不顶替；主图没锁就按文字画）。顺序是全部主图之后，再按用途（所有素材的正脸 → 服装 → 发型 → 姿势 → 其他）、同用途按素材顺序，超过 `max_refs` 的从后面截掉；截掉的多参考图不写进「没传的参考」（主图已经传了）。提示词「参考图 n：林晚（角色·正脸）」，后面加一句「参考图 n 只参考林晚的正脸」；版本 `payload.refs` 记成「林晚·正脸」。依赖是 `ref_more` 产物的当前哈希（一张素材一条），加删一张后用到它的关键帧变「待更新」。手部特写拿掉人物主图时，她的多参考图也不发（只对主图已发的素材接）。
+- **六视图单张替换**：`POST /products/{id}/views/{view}`。带文件 = 上传这一张：复制其余 5 张和被复制版本的依赖（上传不改变它跟着哪张锁定图，过时的仍然过时），`origin=upload`，采纳，payload `uploaded: [view…]`，上传的图不裁切。不带文件 = 「重画这一张」：views 组件带 `params.view` 只画这一张（一次调用、估价按 1 张），其余复制当前采纳的那组；这组已经过时（跟着以前锁定的图）就 409 `views_outdated`，要整组重画——否则新版本记新依赖，旧的 5 张就被当成跟上了。重画的那张从 `uploaded` 里去掉。返回 `{product, job}` 二选一。
+- **新建素材**：`POST /series/{id}/assets {kind: character|scene|prop|text, name, description}` → `asset.manual = true`，`seed_json.key = manual:<id>`、描述写在 seed（和分析出来的一样当提示词意图层），排在最后，产物一起建好；同类同名 409 `asset_exists`。镜头的 `asset_ids` 除了本集用到的素材，也收剧里手动建的（`PATCH /shots/{id}`）。**重新分析**：手动素材进 `known_assets`，分析找到同类同名的就用它的 id（出场挂到它身上），`materialize` 不改手动素材的名字和描述；本来就不退场（物化只加不退）。
+- 前端 zod：`ProductSlotSchema` 加 `ref_more`（不加的话素材的产物列表一出现它就解析失败），版本文件加 `purpose`；后端 `VersionFileOut.purpose` 让 web fixtures 每个文件多一个 `purpose: null`（重导）。界面在第 16 步。
+
 ## 2026-11-12 · M5.5 第 10 步：上传关键帧的细节
 
 - **裁切**：`POST /shots/{id}/keyframe/upload` 的表单 `x, y, w, h`（原图像素，四个一起给）是用户画的框；框里取成片画幅最大的居中一块（`media/image.py:frame_rect`），没给框就是整张图居中。框的比例不必正好是画幅，前端裁切弹窗锁比例时两者一样。四个只给一部分、框为空或出了图片：422 `invalid_crop`。

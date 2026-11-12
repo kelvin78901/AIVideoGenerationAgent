@@ -497,6 +497,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -511,6 +512,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -525,6 +527,7 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -539,6 +542,7 @@
               "h": 1366,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -589,6 +593,7 @@
               "h": 1920,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -635,6 +640,7 @@
               "h": 1920,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -754,6 +760,7 @@
               "h": 768,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -768,6 +775,7 @@
               "h": 768,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -782,6 +790,7 @@
               "h": 768,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -796,6 +805,7 @@
               "h": 768,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -842,6 +852,7 @@
               "h": 768,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -930,6 +941,7 @@
               "h": 768,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -944,6 +956,7 @@
               "h": 768,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -958,6 +971,7 @@
               "h": 768,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -972,6 +986,7 @@
               "h": 768,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1088,6 +1103,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1102,6 +1118,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1116,6 +1133,7 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1130,6 +1148,7 @@
               "h": 1366,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1176,6 +1195,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1285,6 +1305,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1299,6 +1320,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1313,6 +1335,7 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1327,6 +1350,7 @@
               "h": 1366,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1377,6 +1401,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1465,6 +1490,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1479,6 +1505,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1493,6 +1520,7 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1507,6 +1535,7 @@
               "h": 1366,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1592,6 +1621,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1606,6 +1636,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1620,6 +1651,7 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1634,6 +1666,7 @@
               "h": 1366,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1680,6 +1713,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1789,6 +1823,7 @@
               "h": 1920,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1803,6 +1838,7 @@
               "h": 1920,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1817,6 +1853,7 @@
               "h": 1920,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1831,6 +1868,7 @@
               "h": 1920,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1881,6 +1919,7 @@
               "h": 1920,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -2173,6 +2212,7 @@
               "h": null,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": 0,
               "emotion": null,
               "waveform": [
@@ -2252,6 +2292,7 @@
               "h": null,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": 1,
               "emotion": null,
               "waveform": [
@@ -2331,6 +2372,7 @@
               "h": null,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": 0,
               "emotion": null,
               "waveform": [
@@ -2410,6 +2452,7 @@
               "h": null,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": 1,
               "emotion": null,
               "waveform": [
@@ -2489,6 +2532,7 @@
               "h": null,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": 0,
               "emotion": null,
               "waveform": [
@@ -2568,6 +2612,7 @@
               "h": null,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": 1,
               "emotion": null,
               "waveform": [
@@ -2688,6 +2733,7 @@
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": [
@@ -2767,6 +2813,7 @@
               "h": null,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": 0,
               "emotion": "calm",
               "waveform": [
@@ -2846,6 +2893,7 @@
               "h": null,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": 0,
               "emotion": "angry",
               "waveform": [
@@ -2925,6 +2973,7 @@
               "h": null,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": 0,
               "emotion": "crying",
               "waveform": [
@@ -3004,6 +3053,7 @@
               "h": null,
               "idx": 3,
               "view": null,
+              "purpose": null,
               "line": 0,
               "emotion": "whisper",
               "waveform": [
@@ -3083,6 +3133,7 @@
               "h": null,
               "idx": 4,
               "view": null,
+              "purpose": null,
               "line": 0,
               "emotion": "shout",
               "waveform": [
@@ -3278,6 +3329,7 @@
               "h": 1366,
               "idx": 0,
               "view": "side",
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -3292,6 +3344,7 @@
               "h": 1366,
               "idx": 1,
               "view": "back",
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -3306,6 +3359,7 @@
               "h": 1366,
               "idx": 2,
               "view": "calm",
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -3320,6 +3374,7 @@
               "h": 1366,
               "idx": 3,
               "view": "smile",
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -3334,6 +3389,7 @@
               "h": 1366,
               "idx": 4,
               "view": "angry",
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -3348,6 +3404,7 @@
               "h": 1366,
               "idx": 5,
               "view": "sad",
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null

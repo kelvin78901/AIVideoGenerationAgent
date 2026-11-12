@@ -22,6 +22,8 @@ export const ProductSlotSchema = z.enum([
   "ref_views",
   // A locked prop with a locked character, to show its real size (M5.5 `scale`).
   "ref_scale",
+  // An asset's extra pictures, each with its purpose (M5.5 多参考图; the user's own files).
+  "ref_more",
   "text_image",
   "voice",
   "line_audio",
@@ -81,6 +83,9 @@ export const VersionFileSchema = z.object({
   /** Which view a `role: view` picture is: side / back / calm / smile / angry / sad (M3 补视图;
    * versions before 2026-10-21 have one `expressions` sheet instead of the four). */
   view: z.string().nullable().optional(),
+  /** 多参考图 (`ref_more`, M5.5): what a `role: ref` picture is for: face / outfit / hair /
+   * pose / other. */
+  purpose: z.string().nullable().optional(),
   /** A voice sample: which of the voice's audition lines it reads. */
   line: z.number().int().nullable().optional(),
   /** A voice's emotion variant (`enums:emotion.<id>`, config/voice.yaml). */

@@ -21,10 +21,10 @@
 
 ## 下一步
 
-- **9 中 / 9 中 B**（223d1b9、4025879）先按检查改分镜再出 take；用户写的画面描述取代剧本动作行（B）。详见 [`reports/M5.5.md`](reports/M5.5.md)。
-- **9 后 / 9d / 9e**（0d3c8ff … f236bb5）第十九轮整集、流程约束、再追六条、第二十轮整集重出；详见 [`reports/M5.5.md`](reports/M5.5.md)「各小步」和 `reports/m5-local-smoke/run20-fresh/README.md`。**Kelvin 2026-11-12：第二十轮和第十七轮差不多，保留，不回退**；剩下的小问题记在 `reports/M5.5.md`「遗留问题」。第 9 步勾掉。
-- **10**（本提交）上传关键帧：`POST /shots/{id}/keyframe/upload`（`shots/upload.py`；表单 `x, y, w, h` 可选）→ 框里取画幅最大居中一块（`media/image.py:frame_rect`），FFmpeg 缩到交付档 PNG（`fit`），`origin=upload` 一张候选自动选中，比草稿档小标 `low_res`；连续镜头 409 `no_keyframe`、锁定 409 `product_locked`、422 `not_an_image` / `invalid_crop`（i18n common 两个新 key）；API 终版可从它出，确认镜头锁定后 take 首帧就是它。DECISIONS「第 10 步」。测试：image_fit / image_info 单元、keyframes API（两条新）、takes API 那条新的、security；ruff、mypy（含 linux）干净。
-- **下一步：第 11 步 素材**（`ref_more` 多参考图带用途、六视图单张替换 `POST /products/{id}/views/{view}`、手动新建素材 `POST /series/{id}/assets` + `asset.manual`；`kf` 取参考接多参考图）。从计划「设计要点 · 素材」和 `assets/service.py:upload`、`pipeline/components/kf.py` 取参考那段开始。
+- **9 中 / 9 中 B / 9 后 / 9d / 9e**（223d1b9 … f236bb5）先按检查改分镜再出 take、用户画面描述取代剧本动作行；第十九轮整集、流程约束、再追六条、第二十轮整集重出；详见 [`reports/M5.5.md`](reports/M5.5.md)「各小步」和 `reports/m5-local-smoke/run20-fresh/README.md`。**Kelvin 2026-11-12：第二十轮和第十七轮差不多，保留，不回退**；剩下的小问题记在 `reports/M5.5.md`「遗留问题」。第 9 步勾掉。
+- **10**（ec5a9a9）上传关键帧 `POST /shots/{id}/keyframe/upload`（`shots/upload.py`）：框里取画幅最大居中一块，缩到交付档 PNG，一张候选自动选中，`low_res` 只提示。DECISIONS「第 10 步」。
+- **11**（本提交）素材：多参考图 `ref_more`（`assets/refs.py`；`POST /assets/{id}/refs` 表单 `file` + `purpose`、`DELETE /assets/{id}/refs/{idx}`，新版本马上采纳，最多 8 张）；关键帧在全部主图后按用途接上（只接主图已锁定的，`kf.extra_refs`，到 `max_refs` 为止，依赖 `ref_more`）；六视图单张替换 `POST /products/{id}/views/{view}`（带文件上传、不带重画这一张 `params.view`，过时的 409 `views_outdated`）；新建素材 `POST /series/{id}/assets`（`manual`，镜头可引用，重新分析认得、不改它）。前端 zod 加 `ref_more` 槽位和文件 `purpose`；i18n common 10 个错误 key。DECISIONS「第 11 步」。测试：新 `test_asset_more_api.py`（6）、keyframes / assets / asset refs / asset sync / asset text / shots / security API、kf 单元、web fixtures 重导、前端 assets vitest、tsc、i18n；ruff、mypy（含 linux）干净。
+- **下一步：第 12 步**（看计划「12.」那一条和「设计要点 · 镜头参考图 / 风格板」：`shot_refs`、`style_board`，关键帧取参考顺序 素材 → 镜头参考 → 风格）。从 `pipeline/components/kf.py:extra_refs` / `pick_refs` 和 `assets/refs.py` 开始。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。

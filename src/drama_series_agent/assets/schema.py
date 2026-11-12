@@ -110,6 +110,16 @@ class AssetPatch(BaseModel):
     physical: PhysicalPatch | None = None  # a prop's (M5.5)
 
 
+class AssetCreateIn(BaseModel):
+    """``POST /series/{id}/assets`` 「新建素材」 (M5.5): one the analysis did not find."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["character", "scene", "prop", "text"]
+    name: str = Field(min_length=1, max_length=60)
+    description: str = Field(default="", max_length=2000)
+
+
 class AssetLockIn(BaseModel):
     """``POST /assets/{id}/lock``: by default the picked candidate of the version on screen;
     ``force`` locks on-screen text OCR read differently."""

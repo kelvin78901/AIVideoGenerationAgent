@@ -31,6 +31,7 @@ from typing import Any
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.assets.refs import MORE_KINDS, PURPOSE_LABEL, PURPOSES, more_refs
 from drama_series_agent.core.config import Resolved, get_config
 from drama_series_agent.core.models_db import (
     Asset,
@@ -334,6 +335,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     part_desc = next((str(r["desc"]) for r in refs if part and r["name"] == part), "")
     if part:  # her reference is a whole person: the model drew her behind her own hand
         refs = [r for r in refs if not (r["kind"] == "character" and r["name"] == part)]
+    refs += await extra_refs(session, invalidation, refs)
     seen = facing(shot, c, people, [t["name"] for t in texts])
     orientation = "竖屏" if _vertical(frame["aspect"]) else "横屏"
     framing = FRAMING.get(shot["framing"], shot["framing"])
@@ -610,6 +612,7 @@ async def _references(
             {
                 "name": a.name,
                 "kind": a.kind,
+                "asset_id": a.id,
                 "product_id": p.id,
                 "sha256": ref["sha256"],
                 "hash": h,
@@ -621,6 +624,52 @@ async def _references(
             }
         )
     return refs, unlocked, texts
+
+
+async def extra_refs(
+    session: AsyncSession, invalidation: Invalidation, refs: list[dict[str, Any]]
+) -> list[dict[str, Any]]:
+    """多参考图 (M5.5 step 11): the extra pictures of the assets whose main picture is sent,
+    after all of them, by purpose (every 正脸 first), then in the assets' order."""
+    mains = [r for r in refs if r["kind"] in MORE_KINDS and r.get("asset_id")]
+    more = await more_refs(session, invalidation, [str(r["asset_id"]) for r in mains])
+    out: list[tuple[tuple[int, int, int], dict[str, Any]]] = []
+    for order, r in enumerate(mains):
+        m = more.get(str(r["asset_id"]))
+        for f in (m or {}).get("files") or []:
+            purpose = str(f.get("purpose") or "other")
+            rank = PURPOSES.index(purpose) if purpose in PURPOSES else len(PURPOSES)
+            item = {
+                "name": r["name"],
+                "kind": "more",
+                "of": r["kind"],
+                "purpose": purpose,
+                "product_id": m["product_id"] if m else "",
+                "sha256": f["sha256"],
+                "hash": m["hash"] if m else None,
+            }
+            out.append(((rank, order, int(f.get("idx") or 0)), item))
+    return [item for _, item in sorted(out, key=lambda x: x[0])]
+
+
+def ref_label(r: dict[str, Any]) -> str:
+    """How a sent picture is named in the prompt and in the version's ``refs``."""
+    if r["kind"] == "more":
+        return f"{r['name']}·{PURPOSE_LABEL.get(r['purpose'], r['purpose'])}"
+    return str(r["name"])
+
+
+def more_note(refs: list[dict[str, Any]]) -> str:
+    """What each extra picture is only for: 「参考图 3 只参考林晚的服装」."""
+    notes = []
+    for i, r in enumerate(refs, 1):
+        if r["kind"] != "more":
+            continue
+        if r["purpose"] == "other":
+            notes.append(f"参考图 {i} 是{r['name']}的另一张参考")
+        else:
+            notes.append(f"参考图 {i} 只参考{r['name']}的{PURPOSE_LABEL[r['purpose']]}")
+    return "；".join(notes) + "。" if notes else ""
 
 
 async def _has_character(session: AsyncSession, ids: list[str]) -> bool:
@@ -645,17 +694,31 @@ def pick_refs(
     locked = list(inputs.context.get("refs") or [])
     room = None if limit is None else max(0, limit - len(refs))
     sent = locked if room is None else locked[:room]
-    left_out = [r["name"] for r in locked[len(sent) :]]
+    # An extra picture left out is not missing: the asset's main picture went.
+    left_out = [r["name"] for r in locked[len(sent) :] if r["kind"] != "more"]
     refs += sent
-    deps = [DependencyDraft(r["product_id"], r["hash"], "") for r in sent if r.get("hash")]
+    deps: list[DependencyDraft] = []
+    for r in sent:
+        if r.get("hash") and all(d.upstream_product_id != r["product_id"] for d in deps):
+            deps.append(DependencyDraft(r["product_id"], r["hash"], ""))
     if refs:
         named = "；".join(
             f"参考图 {i}：{r['name']}"
             + (f"（{KIND_LABEL[r['kind']]}）" if r["kind"] in KIND_LABEL else "")
+            + (
+                f"（{KIND_LABEL.get(r['of'], '')}·{PURPOSE_LABEL[r['purpose']]}）"
+                if r["kind"] == "more" and r["purpose"] in PURPOSE_LABEL
+                else ""
+            )
             for i, r in enumerate(refs, 1)
         )
         blocks.append(
-            Block("参考图", named + "。人物的长相、发型和服装，场景和道具的样子都要和参考图一致。")
+            Block(
+                "参考图",
+                named
+                + "。人物的长相、发型和服装，场景和道具的样子都要和参考图一致。"
+                + more_note(refs),
+            )
         )
     if draft_sha is not None:
         blocks.append(Block("草稿", FINAL_NOTE))
@@ -770,7 +833,7 @@ class KfComponent(MediaComponent):
         payload: dict[str, Any] = {
             "candidates": checked,
             "aspect": frame["aspect"],
-            "refs": [r["name"] for r in refs if r["name"] != "草稿"],
+            "refs": [ref_label(r) for r in refs if r["kind"] != "draft"],
         }
         if len(calls) > 1:
             payload["redraws"] = len(calls) - 1  # tries after the first; ``kept``: the one shown

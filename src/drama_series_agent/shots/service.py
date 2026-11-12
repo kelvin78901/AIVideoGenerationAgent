@@ -1068,11 +1068,22 @@ class ShotService:
         episode's, it is not shorter than its lines' audio)."""
         async with self._db.session() as session:
             assets, _ = await episode_assets(session, p.owner_id)
+            hand = {
+                a.id
+                for a in await session.exec(
+                    select(Asset).where(
+                        Asset.series_id == p.series_id,
+                        col(Asset.manual).is_(True),
+                        col(Asset.retired).is_(False),
+                    )
+                )
+            }
             lines = await _lines(session, p.owner_id)
             shot = ops.find_shot(v.payload_json, shot_id)
             assert shot is not None
             audio = await line_audio_seconds(session, shot.get("line_ids") or [])
-        unknown = [a for a in changes.get("asset_ids", []) if a not in assets]
+        # The episode's assets, and the ones made by hand (M5.5 新建素材).
+        unknown = [a for a in changes.get("asset_ids", []) if a not in assets and a not in hand]
         if unknown:
             raise PipelineError(422, "asset_not_found", id=unknown[0])
         manual = changes.get("manual_s")

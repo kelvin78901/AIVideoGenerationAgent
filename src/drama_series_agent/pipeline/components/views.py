@@ -16,6 +16,9 @@ four expressions, drawn from that picture.
   on the official 40 steps at cfg 4.0 (``comfy/qwen-image-edit-hq``, Kelvin 2026-10-21): the
   four-step LoRA left skin plastic and edges soft, and ignores negative prompts. Each view
   goes with a negative prompt (``negative_for``).
+- 「重画这一张」 (M5.5 step 11, ``POST /products/{id}/views/{view}`` without a file): a run
+  with ``params.view`` draws that view alone and copies the other five from the adopted set;
+  a set that follows an older locked picture is drawn again whole (409 ``views_outdated``).
 """
 
 from __future__ import annotations
@@ -25,7 +28,7 @@ from typing import Any
 from sqlmodel import select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from drama_series_agent.core.models_db import Asset, Product
+from drama_series_agent.core.models_db import Asset, Product, ProductVersion
 from drama_series_agent.modelhub.adapters.base import Estimate
 from drama_series_agent.pipeline.component import Inputs, RunContext
 from drama_series_agent.pipeline.components.img import REF_IMAGE_SLOT
@@ -104,9 +107,15 @@ class ViewsComponent(MediaComponent):
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
         frame = inputs.context["frame"]
         ref = inputs.context["ref"]["sha256"]
+        # 「重画这一张」 (M5.5 step 11): one view drawn, the others copied from the adopted set.
+        one = inputs.params.get("view")
+        if one is not None and one not in VIEWS:
+            raise PipelineError(422, "unknown_view", view=one)
+        drawn = [one] if one else list(VIEWS)
+        kept, prior = await self._others(ctx.product, one) if one else ({}, {})
         prompts = {
-            view: prompt_text(ctx.compiled, [*inputs.blocks, Block("视图", text)])
-            for view, text in VIEWS.items()
+            view: prompt_text(ctx.compiled, [*inputs.blocks, Block("视图", VIEWS[view])])
+            for view in drawn
         }
 
         async def flow(model: str, reason: str | None) -> list[MediaCall]:
@@ -131,15 +140,23 @@ class ViewsComponent(MediaComponent):
             return calls
 
         calls, reason = await self.run_flow(ctx, flow)
-        files: list[dict[str, Any]] = []
-        for i, (view, call) in enumerate(zip(VIEWS, calls, strict=True)):
+        new: dict[str, dict[str, Any]] = {}
+        for view, call in zip(drawn, calls, strict=True):
             for f in call.files[:1]:
-                files.append(file_entry("view", f.sha256, f.mime, w=f.w, h=f.h, idx=i, view=view))
-        payload = {
+                new[view] = file_entry("view", f.sha256, f.mime, w=f.w, h=f.h, view=view)
+        files: list[dict[str, Any]] = []
+        for i, view in enumerate(VIEWS):
+            entry = new.get(view) or kept.get(view)
+            if entry is not None:
+                files.append({**entry, "idx": i})
+        payload: dict[str, Any] = {
             "views": list(VIEWS),
             "from": ref,
             "negative": {view: negative_for(view) for view in VIEWS},
         }
+        uploaded = [v for v in prior.get("uploaded", []) if v != one]
+        if uploaded:
+            payload["uploaded"] = uploaded
         sent = "\n\n---\n\n".join(prompts.values())
         return self.media_draft(ctx, inputs, payload, files, calls, sent, fallback_reason=reason)
 
@@ -147,10 +164,30 @@ class ViewsComponent(MediaComponent):
         frame = inputs.context["frame"]
         req = self.image_request(
             compiled,
-            n=len(VIEWS),
+            n=1 if inputs.params.get("view") else len(VIEWS),
             size=frame_size(frame, self.where_of(model)),
             aspect=frame["aspect"],
             seed=None,
             task="views",
         )
         return self.services.registry.get(model).estimate(req)
+
+    async def _others(
+        self, product: Product, view: str
+    ) -> tuple[dict[str, dict[str, Any]], dict[str, Any]]:
+        """The adopted set's other views and its payload; 409 ``views_outdated`` when that set
+        follows another picture than the locked one (redraw them all)."""
+        async with self.services.db.session() as session:
+            p = await session.get(Product, product.id)
+            v = (
+                await session.get(ProductVersion, p.adopted_version_id)
+                if p is not None and p.adopted_version_id
+                else None
+            )
+            stale = await self.services.invalidation.stale_ids(session, [p]) if p else set()
+        if v is None or product.id in stale:
+            raise PipelineError(409, "views_outdated", id=product.id)
+        others = {str(f["view"]): f for f in v.files_json if f.get("view") not in (None, view)}
+        if set(others) != set(VIEWS) - {view}:
+            raise PipelineError(409, "views_outdated", id=product.id)
+        return others, dict(v.payload_json)
