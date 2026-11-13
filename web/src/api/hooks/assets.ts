@@ -8,6 +8,7 @@ import {
   AssetMatrixSchema,
   AssetSchema,
   type Asset,
+  type AssetCreate,
   type AssetLock,
   type AssetPatch,
 } from "@/api/schemas/assets";
@@ -95,6 +96,16 @@ export function useUploadAsset(seriesId: string) {
       store(asset);
       void client.invalidateQueries({ queryKey: productKeys.detail(asset.product_id) });
     },
+  });
+}
+
+/** 新建素材: a `manual` asset with its product, not drawn yet; 409 `asset_exists` for one of the
+ * same kind and name. */
+export function useCreateAsset(seriesId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AssetCreate) => post(`/series/${enc(seriesId)}/assets`, AssetSchema, body),
+    onSuccess: () => client.invalidateQueries({ queryKey: assetKeys.all(seriesId) }),
   });
 }
 

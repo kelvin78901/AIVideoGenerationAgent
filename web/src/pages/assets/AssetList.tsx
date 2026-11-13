@@ -1,12 +1,14 @@
+import { Plus } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import type { Asset, AssetKind } from "@/api/schemas/assets";
 import { Chip } from "@/components/Chip";
 import { StatusBadge } from "@/components/StatusBadge";
+import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { STATUS_TONE } from "@/pages/assets/status";
 
-/** 素材清单: filter by kind, one row per asset with its status. */
+/** 素材清单: filter by kind, one row per asset with its status; 「＋ 新建素材」 (草图 A4). */
 export function AssetList({
   assets,
   kinds,
@@ -14,6 +16,7 @@ export function AssetList({
   onFilter,
   selectedId,
   onSelect,
+  onCreate,
 }: {
   assets: Asset[];
   kinds: AssetKind[];
@@ -21,6 +24,7 @@ export function AssetList({
   onFilter: (f: AssetKind | "all") => void;
   selectedId: string;
   onSelect: (a: Asset) => void;
+  onCreate: () => void;
 }) {
   const { t } = useTranslation("assets");
   const { t: te } = useTranslation("enums");
@@ -30,12 +34,18 @@ export function AssetList({
       aria-label={t("list.label")}
       className="flex flex-col gap-2.5 rounded-lg border bg-card p-3"
     >
-      <div role="radiogroup" aria-label={t("list.filter")} className="flex flex-wrap gap-1.5">
-        {(["all", ...kinds] as const).map((k) => (
-          <Chip key={k} role="radio" selected={filter === k} onClick={() => onFilter(k)}>
-            {k === "all" ? t("list.all") : te(`assetKind.${k}`)}
-          </Chip>
-        ))}
+      <div className="flex flex-wrap items-start justify-between gap-2">
+        <div role="radiogroup" aria-label={t("list.filter")} className="flex flex-wrap gap-1.5">
+          {(["all", ...kinds] as const).map((k) => (
+            <Chip key={k} role="radio" selected={filter === k} onClick={() => onFilter(k)}>
+              {k === "all" ? t("list.all") : te(`assetKind.${k}`)}
+            </Chip>
+          ))}
+        </div>
+        <Button size="sm" variant="outline" onClick={onCreate}>
+          <Plus aria-hidden />
+          {t("list.create")}
+        </Button>
       </div>
       <ul className="flex flex-col gap-1">
         {shown.map((a) => {
@@ -52,11 +62,20 @@ export function AssetList({
                 )}
               >
                 <span className="flex min-w-0 flex-1 flex-col">
-                  <span className="truncate text-sm font-medium">{a.name}</span>
+                  <span className="flex min-w-0 items-center gap-1.5">
+                    <span className="truncate text-sm font-medium">{a.name}</span>
+                    {a.manual ? (
+                      <StatusBadge icon={null} className="shrink-0">
+                        {t("list.manual")}
+                      </StatusBadge>
+                    ) : null}
+                  </span>
                   <span className="text-xs text-muted-foreground">
                     {te(`assetKind.${a.kind}`)} ·{" "}
                     {!a.scenes.length
-                      ? t("list.notHere")
+                      ? a.manual && !a.shots.length
+                        ? t("list.manualUnused")
+                        : t("list.notHere")
                       : a.shots.length
                         ? t("list.scenesShots", { count: a.scenes.length, shots: a.shots.length })
                         : t("list.scenes", { count: a.scenes.length })}

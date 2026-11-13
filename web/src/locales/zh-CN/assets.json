@@ -19,7 +19,10 @@
     "all": "全部",
     "scenes": "出现在 {{count}} 场",
     "scenesShots": "{{count}} 场 · {{shots}} 个镜头",
-    "notHere": "本集未出现"
+    "notHere": "本集未出现",
+    "create": "新建素材",
+    "manual": "手动",
+    "manualUnused": "还没有镜头用"
   },
   "detail": {
     "label": "素材详情",
@@ -40,7 +43,8 @@
     "uploadFile": "选择要上传的图片",
     "uploaded": "已上传「{{name}}」，成为一张候选并已选中。",
     "editTitle": "「{{name}}」已锁定，改动会影响下游",
-    "editWhat": "新描述：{{text}}"
+    "editWhat": "新描述：{{text}}",
+    "uploadHint": "不裁切"
   },
   "text": {
     "exact": "画面里的字（逐字核对）",
@@ -131,7 +135,7 @@
   },
   "views": {
     "title": "补视图",
-    "note": "锁定后按锁定的图自动补齐，换了锁定图会重画",
+    "note": "锁定后从锁定的图自动画，换了锁定的图会重画；悬停一张可以重画或换成上传的",
     "running": "正在按锁定的图补齐侧面、背面和表情……",
     "stale": "锁定的图换了，正在等重画",
     "none": "锁定后自动补齐侧面、背面和表情。",
@@ -141,7 +145,14 @@
     "calm": "平静",
     "smile": "微笑",
     "angry": "愤怒",
-    "sad": "难过"
+    "sad": "难过",
+    "redraw": "重画这张",
+    "upload": "上传",
+    "redrawOne": "重画{{view}}",
+    "uploadOne": "上传一张换掉{{view}}",
+    "uploadFile": "选择要换上的图片",
+    "redrawStarted": "正在重画{{view}}，其余 5 张不变。",
+    "uploaded": "已换上{{view}}，其余 5 张不变；历史里能换回。"
   },
   "matrix": {
     "label": "出场矩阵",
@@ -199,5 +210,31 @@
     "redraw": "重画这张",
     "redrawing": "已开始重画比例参考。",
     "order": "只供对照，关键帧不用它（它画错的大小会被关键帧照搬）。"
+  },
+  "more": {
+    "title": "更多参考图",
+    "hint": "你自己的照片或截图，每张标明参考什么；锁定后也能加减，用到它的关键帧会变「待更新」",
+    "hintUnlocked": "你自己的照片或截图，每张标明参考什么；主图锁定后关键帧才带上它们",
+    "add": "上传"
+  },
+  "create": {
+    "title": "新建素材",
+    "kind": "类别",
+    "name": "名字",
+    "desc": "描述",
+    "descPlaceholder": "提示词的意图层：它长什么样、在剧里是什么",
+    "source": "图从哪来",
+    "sources": {
+      "generate": "按描述生成候选",
+      "upload": "上传图片"
+    },
+    "pick": "选择图片",
+    "noFile": "还没选图片",
+    "generateHint": "新建后马上按描述出一组候选；超出预算会先等你确认。",
+    "foot": "手动建的素材，重新分析剧本时不会被删。",
+    "cancel": "取消",
+    "submit": "新建",
+    "doneGenerate": "已新建「{{name}}」，正在按描述生成候选。",
+    "doneUpload": "已新建「{{name}}」：上传的图是它的候选，已选中。"
   }
 }

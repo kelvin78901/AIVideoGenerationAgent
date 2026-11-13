@@ -251,6 +251,8 @@ def test_an_asset_made_by_hand(client: TestClient) -> None:
     key = resp.json()
     assert key["kind"] == "prop" and key["status"] == "not_generated"
     assert key["intent"] == "一把磨亮的黄铜旧钥匙" and key["scenes"] == []
+    # The list marks it 「手动」; no scene has it yet.
+    assert key["manual"] and key["source"] == {"code": "manual", "params": {}}
     (row,) = _rows(client, Asset, Asset.id == key["id"])
     assert row.manual
     assert any(a["id"] == key["id"] for a in client.get(f"{V1}/series/demo/assets").json())

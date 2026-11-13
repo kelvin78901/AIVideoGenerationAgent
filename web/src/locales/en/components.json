@@ -273,7 +273,8 @@
       "scene_heading": "Script scene {{scene}} heading",
       "episode_scene": "Episode {{episode}} scene {{scene}}",
       "dialogue_count": "Script · {{count}} lines",
-      "episode": "Episode {{episode}}"
+      "episode": "Episode {{episode}}",
+      "manual": "Made by hand"
     }
   },
   "chart": {

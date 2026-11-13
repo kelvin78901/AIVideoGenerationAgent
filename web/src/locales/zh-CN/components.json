@@ -273,7 +273,8 @@
       "scene_heading": "剧本 场 {{scene}} 场景头",
       "episode_scene": "第 {{episode}} 集 场 {{scene}}",
       "dialogue_count": "剧本 台词 {{count}} 句",
-      "episode": "第 {{episode}} 集"
+      "episode": "第 {{episode}} 集",
+      "manual": "手动新建"
     }
   },
   "chart": {

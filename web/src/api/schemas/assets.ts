@@ -89,8 +89,27 @@ export const AssetSchema = z.object({
   seed_changed: z.boolean(),
   /** A prop's real size, material and wear (M5.5); null for other kinds. Content. */
   physical: PhysicalSchema.nullable().optional(),
+  /** 新建素材 by the user (M5.5): an analysis never removes or renames it. */
+  manual: z.boolean().optional(),
 });
 export type Asset = z.infer<typeof AssetSchema>;
+
+/** The kinds 「新建素材」 makes (`POST /series/{id}/assets`; a voice comes from the script). */
+export const NEW_ASSET_KINDS = ["character", "scene", "prop", "text"] as const;
+export type NewAssetKind = (typeof NEW_ASSET_KINDS)[number];
+
+/** `POST /series/{id}/assets` 「新建素材」 */
+export interface AssetCreate {
+  kind: NewAssetKind;
+  name: string;
+  description: string;
+}
+
+/** What 多参考图 can be for (`assets/refs.py:PURPOSES`), at most `MORE_REFS_MAX`, and only for a
+ * character, a scene or a prop. */
+export const MORE_REF_PURPOSES = ["face", "outfit", "hair", "pose", "other"] as const;
+export const MORE_REFS_MAX = 8;
+export const MORE_REF_KINDS: readonly AssetKind[] = ["character", "scene", "prop"];
 
 /** `PATCH /assets/{id}` */
 export const AssetPatchSchema = z.object({

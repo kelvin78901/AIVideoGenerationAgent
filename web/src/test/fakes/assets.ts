@@ -15,6 +15,11 @@
  *   picture, then unlocked (and episode 1's assets gate reopened);
  * - editing a locked asset is the impact preview's `asset_edit`: saved, the lock kept; 确认并同步
  *   draws new candidates;
+ * - M5.5: 新建素材 (`manual`, its product empty; 409 `asset_exists`), 多参考图 (`ref_more`, the
+ *   picture sets of `test/fakes/pictures.ts`; a character, scene or prop), 六视图换一张 (an upload
+ *   replaces that view in a new adopted version; without a file, a run for that view, 409
+ *   `views_outdated` once the set is stale), and 以这张为底重画 / 局部修复 / 放大 of a candidate
+ *   (recorded in `edits`; refused once locked);
  * - episode 1's 素材 badge counts the assets it uses (those with scenes) and their locks, and
  *   its gate needs them all locked (409 `assets_not_locked`).
  */
@@ -39,6 +44,7 @@ import {
 import { primaryModel } from "@/mocks/route";
 import data from "@/test/data/assets.json";
 import { fakeResolve } from "@/test/fakes/config";
+import { addFakePicture, fakePictureProducts, removeFakePicture } from "@/test/fakes/pictures";
 import { assetShotLines } from "@/test/fakes/shots";
 
 const demoAssets = data.assets.map((a) => AssetSchema.parse(a));
@@ -58,6 +64,12 @@ export const fakeAssets = {
   analyses: [] as string[],
   /** Episodes whose assets gate is confirmed. */
   confirmed: new Set<string>(),
+  /** 新建素材 requests, in order. */
+  created: [] as { kind: string; name: string; description: string }[],
+  /** 六视图换一张, in order (`file`: the upload's name; null: 重画这一张). */
+  views_replaced: [] as { view: string; file: string | null }[],
+  /** 重画 / 修复 / 放大 of a candidate, in order. */
+  edits: [] as { op: string; version: string; idx: number }[],
 };
 
 /** The episode the fixture's assets are about (their `scenes`). */
@@ -70,6 +82,103 @@ export function resetFakeAssets() {
   fakeAssets.uploads = [];
   fakeAssets.analyses = [];
   fakeAssets.confirmed = new Set();
+  fakeAssets.created = [];
+  fakeAssets.views_replaced = [];
+  fakeAssets.edits = [];
+}
+
+const MORE_KINDS = ["character", "scene", "prop"];
+
+/** A new asset's product: no version yet (the backend's `ensure`). */
+function emptyProduct(a: Asset): Product {
+  return {
+    id: a.product_id,
+    series_id: a.series_id,
+    owner_type: "asset",
+    owner_id: a.id,
+    slot: a.kind === "text" ? "text_image" : "ref_image",
+    component_id: a.kind === "text" ? "text" : "img",
+    current_version_id: null,
+    adopted_version_id: null,
+    locked_hash: null,
+    status: "empty",
+    versions: [],
+    prompt: null,
+    estimate: null,
+    running: null,
+  };
+}
+
+/** 新建素材 (`AssetService.create`). */
+function createAsset(seriesId: string, body: Record<string, unknown>): Response {
+  const kind = String(body.kind ?? "");
+  const name = String(body.name ?? "").trim();
+  const description = String(body.description ?? "").trim();
+  if (!["character", "scene", "prop", "text"].includes(kind)) return error(422, "invalid_request");
+  if (!name) return error(422, "name_required");
+  if (fakeAssets.assets.some((a) => a.series_id === seriesId && a.kind === kind && a.name === name))
+    return error(409, "asset_exists", { name });
+  fakeAssets.created.push({ kind, name, description });
+  const id = `manual-${fakeAssets.created.length}`;
+  const a: Asset = AssetSchema.parse({
+    id,
+    series_id: seriesId,
+    kind,
+    name,
+    intent: description,
+    source: { code: "manual", params: {} },
+    shots: [],
+    scenes: [],
+    product_id: `p-${id}`,
+    status: "not_generated",
+    pick: 0,
+    text: kind === "text" ? { exact: "", method: "composite", style: "printed" } : null,
+    voice: null,
+    note: null,
+    seed_changed: false,
+    physical: kind === "prop" ? { size: "", material: "", wear: "" } : null,
+    manual: true,
+  });
+  fakeAssets.assets.push(a);
+  fakeAssets.products.push(emptyProduct(a));
+  return HttpResponse.json(withStatus(a));
+}
+
+/** 六视图换一张 (`assets/refs.py:replace_view`, `views.py` with `params.view`). */
+async function replaceView(id: unknown, view: string, request: Request): Promise<Response> {
+  const p = fakeAssets.views.find((x) => x.id === String(id));
+  if (!p) return error(404, "product_not_found", { id });
+  const at = p.versions.find((v) => v.id === p.adopted_version_id);
+  if (!at?.files.some((f) => f.view === view)) return error(422, "unknown_view", { view });
+  const file = (await request.formData()).get("file");
+  if (!(file instanceof File)) {
+    if (p.status === "stale") return error(409, "views_outdated", { id: p.id });
+    fakeAssets.views_replaced.push({ view, file: null });
+    p.status = "running";
+    return HttpResponse.json({
+      product: null,
+      job: job(p, `${p.id}-${view}`, "comfy/views", "run"),
+    });
+  }
+  fakeAssets.views_replaced.push({ view, file: file.name });
+  const n = p.versions.length + 1;
+  const vid = `${p.id}-v${n}`;
+  p.versions.push({
+    ...structuredClone(at),
+    id: vid,
+    n,
+    origin: "upload",
+    parent_version_id: at.id,
+    content_hash: `sha256:${vid}`,
+    files: at.files.map((f) =>
+      f.view === view
+        ? { ...f, sha256: `${vid}-${view}`, path: `blobs/sha256/00/${vid}-${view}` }
+        : f,
+    ),
+  });
+  p.current_version_id = vid;
+  p.adopted_version_id = vid;
+  return HttpResponse.json({ product: p, job: null });
 }
 
 const used = () => fakeAssets.assets.filter((a) => a.scenes.length > 0);
@@ -464,6 +573,45 @@ export function assetHandlers() {
       return HttpResponse.json(withStatus(a));
     }),
 
+    http.post("*/api/v1/series/:id/assets", async ({ params, request }) =>
+      createAsset(String(params.id), (await request.json()) as Record<string, unknown>),
+    ),
+
+    http.post("*/api/v1/assets/:id/refs", ({ params, request }) => {
+      const a = findAsset(params.id);
+      if (!a) return error(404, "asset_not_found", { id: params.id });
+      if (!MORE_KINDS.includes(a.kind)) return error(422, "upload_not_supported", { kind: a.kind });
+      return addFakePicture("ref_more", a.id, request);
+    }),
+
+    http.delete("*/api/v1/assets/:id/refs/:idx", ({ params }) => {
+      const a = findAsset(params.id);
+      if (!a) return error(404, "asset_not_found", { id: params.id });
+      return removeFakePicture("ref_more", a.id, Number(params.idx));
+    }),
+
+    http.post("*/api/v1/products/:id/views/:view", ({ params, request }) =>
+      replaceView(params.id, String(params.view), request),
+    ),
+
+    http.post("*/api/v1/versions/:id/:op", async ({ params, request }) => {
+      const op = String(params.op);
+      if (op !== "redraw" && op !== "inpaint" && op !== "upscale") return undefined;
+      const id = String(params.id);
+      const p = fakeAssets.products.find((x) => x.versions.some((v) => v.id === id));
+      if (!p) return undefined;
+      if (p.locked_hash) return error(409, "product_locked", { id: p.id });
+      const idx =
+        op === "inpaint"
+          ? Number((await request.formData()).get("idx") ?? 0)
+          : Number(((await request.json()) as { idx?: number }).idx ?? 0);
+      fakeAssets.edits.push({ op, version: id, idx });
+      const model = op === "upscale" ? "comfy/seedvr2-img" : "comfy/flux3-klein-redraw";
+      const v = addVersion(p, 1, { origin: op, model, stage: null });
+      v.parent_version_id = id;
+      return HttpResponse.json(job(p, v.id, model, op));
+    }),
+
     http.post("*/api/v1/episodes/:id/assets/analyze", ({ params }) => {
       const id = String(params.id);
       fakeAssets.analyses.push(id);
@@ -484,7 +632,7 @@ export function assetHandlers() {
       if (!owner.startsWith("asset:")) return undefined;
       const id = owner.slice("asset:".length);
       const mine = [...fakeAssets.products, ...fakeAssets.views].filter((p) => p.owner_id === id);
-      return HttpResponse.json(mine);
+      return HttpResponse.json([...mine, ...fakePictureProducts(owner)]);
     }),
 
     http.get("*/api/v1/products/:id", ({ params }) => {

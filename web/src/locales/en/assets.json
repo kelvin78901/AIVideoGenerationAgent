@@ -19,7 +19,10 @@
     "all": "All",
     "scenes": "In {{count}} scenes",
     "scenesShots": "{{count}} scenes · {{shots}} shots",
-    "notHere": "Not in this episode"
+    "notHere": "Not in this episode",
+    "create": "New asset",
+    "manual": "By hand",
+    "manualUnused": "No shot uses it yet"
   },
   "detail": {
     "label": "Asset details",
@@ -40,7 +43,8 @@
     "uploadFile": "Choose a picture to upload",
     "uploaded": "Uploaded “{{name}}”: it is a candidate now, and picked.",
     "editTitle": "{{name}} is locked: the change reaches downstream",
-    "editWhat": "New description: {{text}}"
+    "editWhat": "New description: {{text}}",
+    "uploadHint": "Not cropped"
   },
   "text": {
     "exact": "Text in the frame (checked letter by letter)",
@@ -131,7 +135,7 @@
   },
   "views": {
     "title": "Extra views",
-    "note": "Drawn from the locked picture once it is locked; locking another one redraws them",
+    "note": "Drawn from the locked picture once it is locked, and again when another one is locked; hover one to redraw it or replace it with an upload",
     "running": "Drawing the side, back and expressions from the locked picture…",
     "stale": "The locked picture changed; waiting to redraw",
     "none": "The side, back and expressions are drawn once it is locked.",
@@ -141,7 +145,14 @@
     "calm": "Calm",
     "smile": "Smile",
     "angry": "Angry",
-    "sad": "Sad"
+    "sad": "Sad",
+    "redraw": "Redraw",
+    "upload": "Upload",
+    "redrawOne": "Redraw the {{view}} view",
+    "uploadOne": "Replace the {{view}} view with an upload",
+    "uploadFile": "Choose the picture to put in",
+    "redrawStarted": "Redrawing the {{view}} view; the other 5 stay as they are.",
+    "uploaded": "The {{view}} view is replaced; the other 5 stay as they are. History has the old one."
   },
   "matrix": {
     "label": "Appearance matrix",
@@ -199,5 +210,31 @@
     "redraw": "Redraw",
     "redrawing": "Redrawing the scale reference.",
     "order": "For comparison only; keyframes do not use it (they copied the sizes it got wrong)."
+  },
+  "more": {
+    "title": "More pictures",
+    "hint": "Your own photos or screenshots, each marked with what it shows; you can add and remove them while it is locked, and the keyframes that use it turn outdated",
+    "hintUnlocked": "Your own photos or screenshots, each marked with what it shows; keyframes send them once the main picture is locked",
+    "add": "Upload"
+  },
+  "create": {
+    "title": "New asset",
+    "kind": "Type",
+    "name": "Name",
+    "desc": "Description",
+    "descPlaceholder": "The prompt's intent layer: what it looks like and what it is in the story",
+    "source": "Where the picture comes from",
+    "sources": {
+      "generate": "Draw candidates from the description",
+      "upload": "Upload a picture"
+    },
+    "pick": "Choose a picture",
+    "noFile": "No picture chosen",
+    "generateHint": "Candidates are drawn from the description right away; over budget, it waits for you to confirm.",
+    "foot": "An asset made by hand stays when the script is analyzed again.",
+    "cancel": "Cancel",
+    "submit": "Create",
+    "doneGenerate": "Created “{{name}}”; drawing candidates from the description.",
+    "doneUpload": "Created “{{name}}”: the uploaded picture is its candidate, picked."
   }
 }

@@ -926,6 +926,7 @@ class AssetService:
                         voice=_voice(a, settings, here or mine, lines),
                         note=seed.get("note"),
                         seed_changed=bool(seed.get("changed")),
+                        manual=a.manual,
                         physical=(
                             PhysicalOut(**(prop_physical(a, p) or {})) if a.kind == "prop" else None
                         ),
@@ -951,6 +952,8 @@ def _source(
             u = everywhere[0]
             where = {"episode": episodes.get(u.episode_id, 0), "scene": numbers.get(u.scene_id, 0)}
             return MessageOut(code="episode_scene", params=where)
+        if asset.manual:  # 新建素材 (M5.5) no scene has yet
+            return MessageOut(code="manual", params={})
         return MessageOut(code="note", params={"note": note or ""})
     if asset.kind == "voice":
         count = sum(len(u.line_ids_json) for u in here)

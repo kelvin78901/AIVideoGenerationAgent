@@ -32,6 +32,7 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { AssetDetail } from "@/pages/assets/AssetDetail";
 import { AssetList } from "@/pages/assets/AssetList";
+import { NewAssetDialog } from "@/pages/assets/NewAsset";
 import { AssetMatrix } from "@/pages/assets/AssetMatrix";
 import { DubAllRow } from "@/pages/assets/Dub";
 import { useInspectorStore } from "@/stores/inspector";
@@ -60,6 +61,7 @@ export default function AssetsPage() {
   const [filter, setFilter] = useState<AssetKind | "all">("all");
   const [selectedId, setSelectedId] = useState("linwan");
   const [unlocking, setUnlocking] = useState<Asset | null>(null);
+  const [creating, setCreating] = useState(false);
   const [view, setView] = useState<View>("list");
   const matrix = useAssetMatrix(episode?.id, view === "matrix");
 
@@ -233,6 +235,7 @@ export default function AssetsPage() {
                   onFilter={setFilter}
                   selectedId={selected.id}
                   onSelect={select}
+                  onCreate={() => setCreating(true)}
                 />
               ) : (
                 <QueryState query={matrix} skeleton={<Skeleton className="h-48 w-full" />}>
@@ -265,6 +268,16 @@ export default function AssetsPage() {
           ) : null
         }
       </QueryState>
+
+      <NewAssetDialog
+        seriesId={seriesId}
+        open={creating}
+        onClose={() => setCreating(false)}
+        onCreated={(a) => {
+          setFilter("all");
+          select(a);
+        }}
+      />
 
       {unlocking && preview.data ? (
         <ImpactDialog

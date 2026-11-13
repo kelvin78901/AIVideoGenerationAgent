@@ -73,6 +73,7 @@ class AssetOut(BaseModel):
     # The analysis now describes it differently from what its product was made from.
     seed_changed: bool
     physical: PhysicalOut | None = None  # a prop's (M5.5); None for other kinds
+    manual: bool = False  # 新建素材 by the user (M5.5), not found by the analysis
 
 
 class TextPatch(BaseModel):

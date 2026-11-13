@@ -1,4 +1,4 @@
-import { Lock, LockOpen, Upload } from "lucide-react";
+import { Lock, LockOpen } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
@@ -10,6 +10,7 @@ import { useImpactPreview } from "@/api/hooks/impact";
 import { useProduct } from "@/api/hooks/products";
 import {
   CandidatesPayloadSchema,
+  MORE_REF_KINDS,
   TextMethodSchema,
   TextPenSchema,
   TextStyleSchema,
@@ -22,6 +23,8 @@ import { Chip } from "@/components/Chip";
 import { EmptyState } from "@/components/EmptyState";
 import { FinalButton } from "@/components/FinalButton";
 import { ImpactDialog } from "@/components/ImpactDialog";
+import { PictureMenu } from "@/components/pictures/PictureMenu";
+import type { PictureTarget } from "@/components/pictures/RedrawDialog";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -30,6 +33,7 @@ import { currentVersion } from "@/lib/versions";
 import { AssetViews } from "@/pages/assets/AssetViews";
 import { ImageCandidates } from "@/pages/assets/Candidates";
 import { VoiceDubLines } from "@/pages/assets/Dub";
+import { MoreRefs } from "@/pages/assets/MoreRefs";
 import { isVoiceDraft, STATUS_TONE } from "@/pages/assets/status";
 import { PropPhysical, ScaleReference } from "@/pages/assets/Prop";
 import { VoicePanel } from "@/pages/assets/Voice";
@@ -39,6 +43,15 @@ const LETTERS = "ABCD";
 const PROP_STYLES = ["handwritten", "printed"] as const;
 // Pictures a reference can be uploaded as (the backend reads their size from the header).
 const UPLOAD_TYPES = "image/png,image/jpeg,image/webp";
+// 放大 makes a reference picture this long on its long side (`iup`, M5.5 step 15).
+const UPSCALE_LONG = 2048;
+
+/** The size 放大 makes a picture of `w` × `h`; null when it is that long already. */
+function upscaleSize(w: number | null | undefined, h: number | null | undefined) {
+  if (!w || !h || Math.max(w, h) >= UPSCALE_LONG) return null;
+  const k = UPSCALE_LONG / Math.max(w, h);
+  return { w: Math.round(w * k), h: Math.round(h * k) };
+}
 
 /** 素材详情: what the asset is, how it is made, its candidates, and lock / unlock. Changing a
  * locked asset (its description, text settings, voice source) shows the impact first
@@ -97,6 +110,22 @@ export function AssetDetail({
     return f ? fileUrl(f.sha256) : null;
   });
   const locked = asset.status === "locked";
+  // 换来源 works on the picked candidate; on-screen text is only uploaded (redraw takes pictures).
+  const pickedFile = version?.files.find((x) => x.role === "candidate" && x.idx === asset.pick);
+  const target: PictureTarget | null =
+    product.data && version && pickedFile && asset.kind !== "text"
+      ? {
+          productId: product.data.id,
+          versionId: version.id,
+          idx: asset.pick,
+          name: `${asset.name} ${t("cands.label", { n: version.n, letter: LETTERS[asset.pick] ?? "A" })}`,
+          src: fileUrl(pickedFile.sha256),
+          aspect,
+          seed: `${asset.id}-${version.n}-${asset.pick}`,
+          w: pickedFile.w,
+          h: pickedFile.h,
+        }
+      : null;
   const pictures = asset.kind !== "voice";
   // A voice's auditions are not a voice yet: its final is what gets locked.
   const needsFinal = asset.kind === "voice" && isVoiceDraft(version);
@@ -171,14 +200,14 @@ export function AssetDetail({
                   );
                 }}
               />
-              <Button
-                variant="outline"
+              {/* A locked reference is not redrawn or replaced: unlocking shows what it reaches. */}
+              <PictureMenu
+                target={target}
+                upscaleTo={upscaleSize(pickedFile?.w, pickedFile?.h)}
+                onUpload={() => fileInput.current?.click()}
+                uploadHint={t("detail.uploadHint")}
                 disabled={locked || busy || upload.isPending}
-                onClick={() => fileInput.current?.click()}
-              >
-                <Upload aria-hidden />
-                {t("detail.upload")}
-              </Button>
+              />
             </>
           ) : null}
           <Button
@@ -411,6 +440,7 @@ export function AssetDetail({
         </div>
       )}
 
+      {MORE_REF_KINDS.includes(asset.kind) ? <MoreRefs asset={asset} /> : null}
       {asset.kind === "character" ? <AssetViews asset={asset} aspect={aspect} /> : null}
       {prop ? <ScaleReference asset={asset} aspect={aspect} /> : null}
 

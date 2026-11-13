@@ -64,7 +64,7 @@ describe("AssetsPage", () => {
     renderAssets();
     await ready();
     await user.click(within(list()).getByRole("radio", { name: "画面文字" }));
-    expect(within(list()).getAllByRole("button")).toHaveLength(1);
+    expect(within(list()).getAllByRole("button", { pressed: false })).toHaveLength(1);
   });
 
   it("a prop's writing: each candidate shows its OCR check (M5.5: only a warning)", async () => {
@@ -348,7 +348,7 @@ describe("AssetsPage", () => {
     );
     // A locked asset takes no upload.
     await user.click(item(/红色长柄伞/));
-    expect(screen.getByRole("button", { name: "上传参考图" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "换来源" })).toBeDisabled();
   });
 
   it("candidates are small cards; 放大 shows one at screen size, ← → the others", async () => {

@@ -51,7 +51,8 @@
       "voice": null,
       "note": null,
       "seed_changed": false,
-      "physical": null
+      "physical": null,
+      "manual": false
     },
     {
       "id": "zhouyu",
@@ -74,7 +75,8 @@
       "voice": null,
       "note": "本集只出现字迹",
       "seed_changed": false,
-      "physical": null
+      "physical": null,
+      "manual": false
     },
     {
       "id": "hall",
@@ -109,7 +111,8 @@
       "voice": null,
       "note": null,
       "seed_changed": false,
-      "physical": null
+      "physical": null,
+      "manual": false
     },
     {
       "id": "room",
@@ -142,7 +145,8 @@
       "voice": null,
       "note": null,
       "seed_changed": false,
-      "physical": null
+      "physical": null,
+      "manual": false
     },
     {
       "id": "store",
@@ -165,7 +169,8 @@
       "voice": null,
       "note": "第 2 集出场",
       "seed_changed": false,
-      "physical": null
+      "physical": null,
+      "manual": false
     },
     {
       "id": "umbrella",
@@ -206,7 +211,8 @@
         "size": "全长约 90 cm，收拢时粗约 6 cm",
         "material": "尼龙伞面、木质弯柄、金属伞骨",
         "wear": "用了几年，伞面有点褪色，木柄磨得发亮"
-      }
+      },
+      "manual": false
     },
     {
       "id": "note",
@@ -255,7 +261,8 @@
         "size": "约 7.6 cm 见方",
         "material": "黄色便利贴纸",
         "wear": "新撕下的一张，边角被雨打湿"
-      }
+      },
+      "manual": false
     },
     {
       "id": "band",
@@ -294,7 +301,8 @@
         "size": "直径约 4 cm",
         "material": "黑色布面皮筋",
         "wear": "洗旧了，皮筋松了"
-      }
+      },
+      "manual": false
     },
     {
       "id": "phone",
@@ -333,7 +341,8 @@
         "size": "约 15 cm × 7 cm",
         "material": "黑色手机壳、玻璃屏",
         "wear": "屏幕有一道细划痕"
-      }
+      },
+      "manual": false
     },
     {
       "id": "txt2",
@@ -373,7 +382,8 @@
       "voice": null,
       "note": null,
       "seed_changed": false,
-      "physical": null
+      "physical": null,
+      "manual": false
     },
     {
       "id": "vlinwan",
@@ -428,7 +438,8 @@
       },
       "note": null,
       "seed_changed": false,
-      "physical": null
+      "physical": null,
+      "manual": false
     },
     {
       "id": "vzhouyu",
@@ -454,7 +465,8 @@
       },
       "note": "第 2 集出场",
       "seed_changed": false,
-      "physical": null
+      "physical": null,
+      "manual": false
     }
   ],
   "products": [

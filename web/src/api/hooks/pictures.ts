@@ -4,6 +4,7 @@
  * new version of the same product (history keeps the old one).
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { z } from "zod";
 
 import { del, post, postForm } from "@/api/client";
 import { productKeys } from "@/api/hooks/products";
@@ -100,11 +101,37 @@ export function useUpscalePicture() {
   );
 }
 
-/** Where a picture set (镜头参考图, 风格板) is added to and removed from. */
+const ViewReplaceSchema = z.object({
+  /** After an upload: the views set's new version, adopted. */
+  product: ProductSchema.nullable().optional(),
+  /** 重画这一张: the run drawing that one view. */
+  job: JobSchema.nullable().optional(),
+});
+
+/** 六视图换一张 (`POST /products/{id}/views/{view}`): with a file, it takes that view's place;
+ * without, that view is drawn again (409 `views_outdated` when the set follows an older locked
+ * picture: the whole set is redrawn instead). The other five are copied either way. */
+export function useReplaceView(assetId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ productId, view, file }: { productId: string; view: string; file?: File }) => {
+      const form = new FormData();
+      if (file) form.append("file", file);
+      return postForm(`/products/${enc(productId)}/views/${enc(view)}`, ViewReplaceSchema, form);
+    },
+    onSuccess: (out, vars) => {
+      if (out.product) client.setQueryData(productKeys.detail(out.product.id), out.product);
+      else void client.invalidateQueries({ queryKey: productKeys.detail(vars.productId) });
+      void client.invalidateQueries({ queryKey: productKeys.list({ owner: `asset:${assetId}` }) });
+    },
+  });
+}
+
+/** Where a picture set (镜头参考图, 风格板, 多参考图) is added to and removed from. */
 interface SetEndpoint {
-  /** `/shots/{id}/refs`, `/series/{id}/style-board` */
+  /** `/shots/{id}/refs`, `/series/{id}/style-board`, `/assets/{id}/refs` */
   path: string;
-  /** The list it is in: `shot:<id>`, `series:<id>`. */
+  /** The list it is in: `shot:<id>`, `series:<id>`, `asset:<id>`. */
   owner: string;
 }
 

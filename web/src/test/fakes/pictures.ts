@@ -1,7 +1,8 @@
 /**
  * Fake picture sets for page tests (`pipeline/pictures.py`, M5.5): 镜头参考图 `shot_refs` (owner a
  * shot: composition / pose / light / style, at most 4; a continuous shot 409 `no_keyframe`) and
- * 风格板 `style_board` (owner the series: style, at most 4). Adding or removing a picture is a
+ * 风格板 `style_board` (owner the series: style, at most 4); 多参考图 `ref_more` (owner an asset:
+ * face / outfit / hair / pose / other, at most 8; its routes are in `test/fakes/assets.ts`). Adding or removing a picture is a
  * new version with the rest renumbered, adopted at once; the set's product is made on its first
  * picture. A shot's products list (`?owner=shot:<id>`) is its keyframe and its set.
  */
@@ -13,8 +14,10 @@ import { fakeShotProducts, findShot } from "@/test/fakes/shots";
 const SETS = {
   shot_refs: { owner: "shot", purposes: ["composition", "pose", "light", "style"], max: 4 },
   style_board: { owner: "series", purposes: ["style"], max: 4 },
+  ref_more: { owner: "asset", purposes: ["face", "outfit", "hair", "pose", "other"], max: 8 },
 } as const;
-type Slot = keyof typeof SETS;
+export type PictureSlot = keyof typeof SETS;
+type Slot = PictureSlot;
 
 /** State of the fake; `resetFakePictures()` (called by `backend()`) restores it. */
 export const fakePictures = { products: [] as Product[] };
@@ -93,7 +96,12 @@ function append(p: Product, files: ProductVersion["files"], origin: "upload" | "
   return p;
 }
 
-async function add(slot: Slot, ownerId: string, request: Request): Promise<Response> {
+/** 加一张 (form `file` + `purpose`): the set's new version, adopted. */
+export async function addFakePicture(
+  slot: Slot,
+  ownerId: string,
+  request: Request,
+): Promise<Response> {
   const form = await request.formData();
   const file = form.get("file");
   if (!file || typeof file === "string") return error(422, "not_an_image");
@@ -118,7 +126,8 @@ async function add(slot: Slot, ownerId: string, request: Request): Promise<Respo
   return HttpResponse.json(append(p, [...files, entry], "upload"));
 }
 
-function remove(slot: Slot, ownerId: string, idx: number): Response {
+/** 删一张: the others, renumbered, in a new version. */
+export function removeFakePicture(slot: Slot, ownerId: string, idx: number): Response {
   const p = fakePictures.products.find((x) => x.slot === slot && x.owner_id === ownerId);
   const files = p ? filesOf(p) : [];
   if (!p || !files[idx]) return error(404, "ref_not_found", { id: ownerId, idx });
@@ -151,17 +160,17 @@ export function pictureHandlers() {
     }),
     http.post("*/api/v1/shots/:id/refs", ({ params, request }) => {
       const id = shotOwner(params.id);
-      return typeof id === "string" ? add("shot_refs", id, request) : id;
+      return typeof id === "string" ? addFakePicture("shot_refs", id, request) : id;
     }),
     http.delete("*/api/v1/shots/:id/refs/:idx", ({ params }) => {
       const id = shotOwner(params.id);
-      return typeof id === "string" ? remove("shot_refs", id, Number(params.idx)) : id;
+      return typeof id === "string" ? removeFakePicture("shot_refs", id, Number(params.idx)) : id;
     }),
     http.post("*/api/v1/series/:id/style-board", ({ params, request }) =>
-      add("style_board", String(params.id), request),
+      addFakePicture("style_board", String(params.id), request),
     ),
     http.delete("*/api/v1/series/:id/style-board/:idx", ({ params }) =>
-      remove("style_board", String(params.id), Number(params.idx)),
+      removeFakePicture("style_board", String(params.id), Number(params.idx)),
     ),
   ];
 }
