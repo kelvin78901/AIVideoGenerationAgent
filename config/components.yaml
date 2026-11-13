@@ -239,6 +239,18 @@ components:
     cheap_api: volc/seedream-5.0
     note: 手动出，一次一张；改动幅度本地是 denoise，API 写进提示词；新版本跟着原图的上游，不自动采纳关键帧和参考图
 
+  # 局部修复（M5.5 第 14 步）：涂过的地方按要求重画，其余不变。能修的和重画一样。本地 Klein 只在遮罩里加噪、出图后按遮罩贴回；
+  # API 只有 GPT Image 2 收遮罩（官方：遮罩只是引导，不一定严格按形状）。结果是同一个产物的新版本（origin inpaint）。
+  - id: inpaint
+    stage: storyboard
+    name: { zh: 局部修复, en: Inpaint }
+    kind: image
+    api: [openai/gpt-image-2]
+    local: [comfy/klein-inpaint]
+    balanced: { mode: local, local: comfy/klein-inpaint, api: openai/gpt-image-2, fallback_to: openai/gpt-image-2 }
+    per_call_cap_usd: 0.5
+    note: 手动出，一次一张；遮罩白色 = 要改；本地遮罩外一个像素都不动，API 整张重出、遮罩只是引导；不自动采纳关键帧和参考图
+
   - id: world
     stage: storyboard
     name: { zh: 3D 场景（可选）, en: 3D world (optional) }

@@ -101,6 +101,7 @@
     "first_frame": "首帧",
     "base_image": "底图",
     "denoise": "改动幅度",
+    "mask": "局部修复遮罩",
     "video_in": "输入视频",
     "ref_image": "参考图 {{n}}",
     "prompt": "提示词（正向）",

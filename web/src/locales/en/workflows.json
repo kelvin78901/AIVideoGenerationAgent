@@ -101,6 +101,7 @@
     "first_frame": "First frame",
     "base_image": "Base picture",
     "denoise": "Change strength",
+    "mask": "Inpaint mask",
     "video_in": "Input video",
     "ref_image": "Reference {{n}}",
     "prompt": "Prompt (positive)",

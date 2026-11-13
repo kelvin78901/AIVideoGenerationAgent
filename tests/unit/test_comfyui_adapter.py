@@ -659,3 +659,37 @@ async def test_a_redraw_starts_from_its_picture_with_the_strength(
     assert by_title["Sampler"]["denoise"] == 0.3 and by_title["Sampler"]["latent_image"][0] == "24"
     assert (by_title["Size"]["width"], by_title["Size"]["height"]) == (928, 1664)
     assert "EmptyFlux2LatentImage" not in {n["class_type"] for n in graph.values()}
+
+
+INPAINT = ModelSpec(
+    key="comfy/klein-inpaint", kind="image", where="local", display="Klein inpaint",
+    runtime="comfyui", workflow="klein-inpaint",
+)  # fmt: skip
+
+
+async def test_an_inpaint_noises_only_the_mask_and_pastes_it_back(
+    root: Path, store: BlobStore
+) -> None:
+    """局部修复 (M5.5 step 14): the picture and the grayscale mask are uploaded; the sampler
+    starts from the masked latent at full denoise; the output is the decoded picture pasted
+    onto the scaled original through the grown mask."""
+    shutil.copytree(WORKFLOWS_DIR / "klein-inpaint", root / "klein-inpaint")
+    fake = FakeComfy()
+    fake.image_node = "20"
+    req = _req(store)
+    sha = req.params["refs"][0]
+    mask = store.put_bytes(solid_png(8, 8, (255, 255, 255)))
+    req.params.update(base_image=sha, mask=mask, mask_alpha=store.put_bytes(b"not for comfy"))
+    await _adapter(fake, root, store, spec=INPAINT).run(req, CallContext())
+    graph = fake.prompts[0]
+    by_title = {n["_meta"]["title"]: n for n in graph.values()}
+    assert by_title["Base"]["inputs"]["image"] == f"dramastudio/{sha}.png"
+    assert by_title["Mask"]["inputs"] == {"image": f"dramastudio/{mask}.png", "channel": "red"}
+    sampler = by_title["Sampler"]["inputs"]
+    assert sampler["denoise"] == 1.0 and graph[sampler["latent_image"][0]]["class_type"] == (
+        "SetLatentNoiseMask"
+    )
+    paste = by_title["Paste back"]["inputs"]
+    assert graph[paste["mask"][0]]["class_type"] == "GrowMask"
+    assert graph[paste["destination"][0]]["_meta"]["title"] == "Size"
+    assert by_title["Output"]["inputs"]["images"][0] == "28"

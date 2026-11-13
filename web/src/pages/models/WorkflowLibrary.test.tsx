@@ -61,7 +61,7 @@ describe("WorkflowLibrary", () => {
     fakeImport("sdxl_basic.json");
     renderLibrary();
     await screen.findByRole("rowgroup", { name: LTX });
-    expect(within(library()).getAllByRole("rowgroup")).toHaveLength(12);
+    expect(within(library()).getAllByRole("rowgroup")).toHaveLength(13);
     expect(header(H3)).toHaveTextContent("comfy/h3视频生成平台推荐正常没试跑过没变");
     expect(header(FLASHVSR)).toHaveTextContent("平台推荐缺 1 个节点包");
     expect(header(LTX)).toHaveTextContent("comfy/ltx2视频生成未验证绑定待确认 8 项没试跑过");
@@ -73,8 +73,8 @@ describe("WorkflowLibrary", () => {
         .getAllByRole("rowgroup")
         .map((r) => r.getAttribute("aria-label")),
     ).toEqual([LTX, SDXL]);
-    await user.click(within(tiers).getByRole("radio", { name: "平台推荐 10" }));
-    expect(within(library()).getAllByRole("rowgroup")).toHaveLength(10);
+    await user.click(within(tiers).getByRole("radio", { name: "平台推荐 11" }));
+    expect(within(library()).getAllByRole("rowgroup")).toHaveLength(11);
   });
 
   it("shipped workflows keep the bindings their workflow.yaml names and their tier", async () => {

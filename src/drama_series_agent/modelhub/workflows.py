@@ -60,6 +60,7 @@ Slot = Literal[
     "first_frame",
     "base_image",  # the picture a redraw starts from (M5.5 ``redraw``)
     "denoise",  # how much of it a redraw changes, 0–1
+    "mask",  # where an inpaint repaints: grayscale, white = change (M5.5 ``inpaint``)
     "video_in",
     "ref_image",
     "ref_audio",
@@ -83,6 +84,7 @@ FILE_SLOTS = frozenset(
     {
         "first_frame",
         "base_image",
+        "mask",
         "video_in",
         "ref_image",
         "ref_audio",

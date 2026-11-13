@@ -344,6 +344,18 @@
         "unavailable": {}
       },
       {
+        "id": "inpaint",
+        "stage": "storyboard",
+        "kind": "image",
+        "api_models": [
+          "openai/gpt-image-2"
+        ],
+        "local_models": [
+          "comfy/klein-inpaint"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "world",
         "stage": "storyboard",
         "kind": "world",
@@ -1079,6 +1091,14 @@
         "tier": "recommended"
       },
       {
+        "key": "comfy/klein-inpaint",
+        "display": "FLUX 3 Klein 局部修复（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
+      },
+      {
         "key": "comfy/seedvr2",
         "display": "SeedVR2（本地）",
         "where": "local",
@@ -1672,6 +1692,27 @@
           "comfy/flux3-klein-redraw",
           "comfy/qwen-image-edit",
           "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "inpaint": {
+        "mode": "api",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/klein-inpaint",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/klein-inpaint",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/klein-inpaint"
         ],
         "per_call_cap_usd": 0.5
       },
@@ -2462,6 +2503,27 @@
         "alt_order": [
           "google/nano-banana-2.1",
           "comfy/qwen-image-edit",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "inpaint": {
+        "mode": "local",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/klein-inpaint",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "openai/gpt-image-2",
+          "notify": "after"
+        },
+        "alt_order": [
           "openai/gpt-image-2"
         ],
         "per_call_cap_usd": 0.5
@@ -3265,6 +3327,27 @@
         ],
         "per_call_cap_usd": 0.5
       },
+      "inpaint": {
+        "mode": "local",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/klein-inpaint",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "openai/gpt-image-2",
+          "notify": "after"
+        },
+        "alt_order": [
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
       "world": {
         "mode": "api",
         "api_model": "worldlabs/marble",
@@ -3926,6 +4009,25 @@
         "alt_order": [
           "comfy/qwen-image-edit"
         ],
+        "per_call_cap_usd": 0.5
+      },
+      "inpaint": {
+        "mode": "local",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/klein-inpaint",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
         "per_call_cap_usd": 0.5
       },
       "world": {

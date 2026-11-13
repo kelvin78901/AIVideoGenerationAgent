@@ -16,6 +16,8 @@ export const SlotSchema = z.enum([
   // 以这张为底重画 (M5.5): the picture it starts from, and how much it changes (0–1).
   "base_image",
   "denoise",
+  // 局部修复 (M5.5): where it repaints, white = change.
+  "mask",
   "video_in",
   "ref_image",
   "ref_audio",

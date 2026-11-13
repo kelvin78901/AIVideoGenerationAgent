@@ -1,16 +1,20 @@
 """Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``; 以这张为底重画
-``POST /versions/{id}/redraw`` (M5.5, ``pipeline/components/redraw.py``)."""
+``POST /versions/{id}/redraw`` and 局部修复 ``POST /versions/{id}/inpaint`` (M5.5,
+``pipeline/components/redraw.py``, ``inpaint.py``)."""
 
 from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.jobs import job_public
+from drama_series_agent.media.image import MAX_UPLOAD_BYTES
+from drama_series_agent.pipeline.components.inpaint import inpaint_params
 from drama_series_agent.pipeline.components.redraw import DEFAULT_STRENGTH, redraw_target
+from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.schema import ProductOut
 
 router = APIRouter(tags=["products"])
@@ -163,7 +167,7 @@ async def redraw_version(version_id: str, body: RedrawBody, state: State) -> dic
     candidate for a keyframe or reference picture, that view replaced for a views set. Over a
     limit it waits for 确认 like any run (hard rule 6)."""
     async with state.db.session() as session:
-        product = await redraw_target(session, version_id, body.idx)
+        product, _ = await redraw_target(session, version_id, body.idx)
     job = await state.runs.start(
         product.id,
         "run",
@@ -176,5 +180,38 @@ async def redraw_version(version_id: str, body: RedrawBody, state: State) -> dic
             "redraw_idx": body.idx,
             "strength": body.strength,
         },
+    )
+    return job_public(job)
+
+
+@router.post("/versions/{version_id}/inpaint")
+async def inpaint_version(
+    version_id: str,
+    state: State,
+    mask: Annotated[UploadFile, File()],
+    idx: Annotated[int, Form(ge=0)] = 0,
+    prompt: Annotated[str | None, Form(max_length=2000)] = None,
+    where: Annotated[Literal["local", "api"] | None, Form()] = None,
+    model: Annotated[str | None, Form(max_length=80)] = None,
+) -> dict[str, Any]:
+    """局部修复 picture ``idx`` of the version where ``mask`` is painted (PNG, JPEG or WebP of
+    the picture's shape, any size; light = change), as ``prompt`` says → the queued run
+    (component ``inpaint``): one candidate for a keyframe or reference picture, that view
+    replaced for a views set. 422 ``bad_mask`` for another shape or nothing painted; over a
+    limit it waits for 确认 like any run (hard rule 6)."""
+    data = await mask.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise PipelineError(413, "file_too_large", limit=MAX_UPLOAD_BYTES)
+    async with state.db.session() as session:
+        product, picture = await redraw_target(session, version_id, idx, "inpaint")
+    params = await inpaint_params(state.store, picture, data, version_id, idx)
+    job = await state.runs.start(
+        product.id,
+        "run",
+        model=model or None,
+        intent=(prompt or "").strip() or None,
+        where=where,
+        component_id="inpaint",
+        params=params,
     )
     return job_public(job)

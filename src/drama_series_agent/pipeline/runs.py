@@ -478,6 +478,7 @@ class RunService:
             parent = (
                 inputs.params.get("source_version_id")
                 or inputs.params.get("redraw_version_id")
+                or inputs.params.get("inpaint_version_id")
                 or (base.id if base else None)
             )
             last = await self.products.append(

@@ -85,7 +85,8 @@ EXTS = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}
 # The input files besides references: slot → what it holds.
 INPUT_FILES: tuple[tuple[Slot, str], ...] = (
     ("first_frame", "image"),
-    ("base_image", "image"),  # a redraw's starting picture (M5.5)
+    ("base_image", "image"),  # a redraw's or an inpaint's starting picture (M5.5)
+    ("mask", "image"),  # where an inpaint repaints, white = change (M5.5)
     ("video_in", "video"),
     ("dialogue_audio", "audio"),
     ("tail_clip", "video"),  # a continuous shot's lead-in: the last frames before it (15e)

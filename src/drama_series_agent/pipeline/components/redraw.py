@@ -94,8 +94,8 @@ class RedrawComponent(MediaComponent):
     async def _source(
         self, product: Product, params: dict[str, Any]
     ) -> tuple[ProductVersion, dict[str, Any], list[DependencyDraft]]:
-        version_id = str(params.get("redraw_version_id") or "")
-        idx = int(params.get("redraw_idx") or 0)
+        version_id = str(params.get(f"{self.id}_version_id") or "")
+        idx = int(params.get(f"{self.id}_idx") or 0)
         async with self.services.db.session() as session:
             v = await session.get(ProductVersion, version_id)
             if v is None or v.product_id != product.id:
@@ -116,31 +116,38 @@ class RedrawComponent(MediaComponent):
             return Dims(w=w, h=h), nearest_aspect(w, h)
         return frame_size(frame, where), str(frame["aspect"])
 
-    def _request(
-        self, prompt: str, sha: str, size: Dims, aspect: str, seed: int | None, strength: float
-    ) -> Any:
-        return self.image_request(
-            prompt,
-            n=1,
-            size=size,
-            aspect=aspect,
-            seed=seed,
-            task="redraw",
-            refs=[sha],
-            extra={"base_image": sha, "denoise": strength},
-        )
+    # What a redraw sends and records; ``inpaint`` (M5.5 step 14) says its own.
+    def _base(self, params: dict[str, Any], sha: str) -> str:
+        """The picture the model starts from."""
+        return sha
+
+    def _extra(self, params: dict[str, Any], base: str) -> dict[str, Any]:
+        return {"base_image": base, "denoise": self._strength(params)}
+
+    def _blocks(self, params: dict[str, Any]) -> list[Block]:
+        return [Block("改动幅度", strength_words(self._strength(params)))]
+
+    def _record(self, params: dict[str, Any]) -> dict[str, Any]:
+        return {"strength": self._strength(params)}
+
+    @staticmethod
+    def _strength(params: dict[str, Any]) -> float:
+        return float(params.get("strength") or DEFAULT_STRENGTH)
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
         params = inputs.params
-        strength = float(params.get("strength") or DEFAULT_STRENGTH)
         v, f, kept = await self._source(ctx.product, params)
         inputs.deps = kept
         sha = str(f["sha256"])
-        prompt = prompt_text(ctx.compiled, [Block("改动幅度", strength_words(strength))])
+        base = self._base(params, sha)
+        prompt = prompt_text(ctx.compiled, self._blocks(params))
 
         async def flow(model: str, reason: str | None) -> list[MediaCall]:
             size, aspect = self._size(inputs, f, self.where_of(model))
-            req = self._request(prompt, sha, size, aspect, ctx.seed, strength)
+            req = self.image_request(
+                prompt, n=1, size=size, aspect=aspect, seed=ctx.seed, task=self.id,
+                refs=[base], extra=self._extra(params, base),
+            )  # fmt: skip
             return [
                 await self.media_call(
                     ctx, req, inputs.episode_id, model=model, fallback=False,
@@ -153,11 +160,11 @@ class RedrawComponent(MediaComponent):
         if not out:
             raise ComponentError("no_images")
         got = out[0]
-        redraw = {
+        record = {
             "version_id": v.id,
-            "idx": int(params.get("redraw_idx") or 0),
+            "idx": int(params.get(f"{self.id}_idx") or 0),
             "from": sha,
-            "strength": strength,
+            **self._record(params),
         }
         if inputs.context["slot"] == REF_VIEWS:
             view = f.get("view")
@@ -171,6 +178,8 @@ class RedrawComponent(MediaComponent):
             payload = dict(v.payload_json)
             uploaded = [u for u in payload.get("uploaded", []) if u != view]
             payload.pop("uploaded", None)
+            payload.pop("redraw", None)
+            payload.pop("inpaint", None)
             if uploaded:
                 payload["uploaded"] = uploaded
         else:
@@ -178,10 +187,10 @@ class RedrawComponent(MediaComponent):
             payload = {"candidates": [{}]}
             if "aspect" in v.payload_json:
                 payload["aspect"] = v.payload_json["aspect"]
-        payload["redraw"] = redraw
+        payload[self.id] = record
         draft = self.media_draft(
             ctx, inputs, payload, files, calls, prompt, fallback_reason=reason,
-            params={"redraw": redraw},
+            params={self.id: record},
         )  # fmt: skip
         if inputs.context["slot"] == KEYFRAME:
             draft.stage = "draft" if calls[0].where == "local" else None
@@ -195,23 +204,27 @@ class RedrawComponent(MediaComponent):
             size=frame_size(frame, self.where_of(model)),
             aspect=frame["aspect"],
             seed=None,
-            task="redraw",
+            task=self.id,
             refs=["-"],
         )
         return self.services.registry.get(model).estimate(req)
 
 
-async def redraw_target(session: AsyncSession, version_id: str, idx: int) -> Product:
-    """The product a redraw of picture ``idx`` of ``version_id`` makes a version of; 404 when
-    there is no such picture, 422 for a product it does not take, 409 once it is locked."""
+async def redraw_target(
+    session: AsyncSession, version_id: str, idx: int, what: str = "redraw"
+) -> tuple[Product, dict[str, Any]]:
+    """The product a redraw (or an inpaint, ``what``) of picture ``idx`` of ``version_id`` makes
+    a version of, and that picture's file entry; 404 when there is no such picture, 422
+    ``{what}_not_supported`` for a product it does not take, 409 once it is locked."""
     v = await session.get(ProductVersion, version_id)
     p = await session.get(Product, v.product_id) if v is not None else None
     if v is None or p is None or p.retired:
         raise PipelineError(404, "version_not_found", id=version_id)
     if p.slot not in REDRAW_SLOTS:
-        raise PipelineError(422, "redraw_not_supported", slot=p.slot)
+        raise PipelineError(422, f"{what}_not_supported", slot=p.slot)
     if p.locked_hash:
         raise PipelineError(409, "product_locked", id=p.id)
-    if picked_file(v, p.slot, idx) is None:
+    f = picked_file(v, p.slot, idx)
+    if f is None:
         raise PipelineError(404, "file_not_found", id=version_id, idx=idx)
-    return p
+    return p, f

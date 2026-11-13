@@ -1623,6 +1623,387 @@
       "updated_at": "2026-10-18T09:00:00Z"
     },
     {
+      "id": "wf_klein-inpaint",
+      "slug": "klein-inpaint",
+      "model_key": "comfy/klein-inpaint",
+      "name": "FLUX 3 Klein 局部修复",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "inpaint"
+      ],
+      "caps": {
+        "aspects": [
+          "16:9",
+          "1:1",
+          "2:3",
+          "3:2",
+          "3:4",
+          "4:3",
+          "9:16"
+        ],
+        "max_seconds": null,
+        "refs": 4,
+        "vram_gb": null
+      },
+      "file_sha256": "453e1a98ab7d0da54a9efc87df130a655dd63777a27ef14a56d5cb91d4402585",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Prompt",
+          "node_class": "StringFormat",
+          "field": "values.a",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "ImageScale",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "ImageScale",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Sampler",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "base_image",
+          "index": null,
+          "node_title": "Base",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "mask",
+          "index": null,
+          "node_title": "Mask",
+          "node_class": "LoadImageMask",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 1,
+          "node_title": "Reference 1",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 2,
+          "node_title": "Reference 2",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 3,
+          "node_title": "Reference 3",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "ref_image",
+          "index": 4,
+          "node_title": "Reference 4",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "image_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "PreviewImage",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Load diffusion model",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Load text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Load VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Load prompt upsampler",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Reference 1",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 2",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 3",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference 4",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Reference batch",
+          "class_type": "BatchImagesNode",
+          "fields": []
+        },
+        {
+          "title": "Prompt",
+          "class_type": "StringFormat",
+          "fields": [
+            "f_string",
+            "values.a"
+          ]
+        },
+        {
+          "title": "Upsampler system prompt",
+          "class_type": "PrimitiveStringMultiline",
+          "fields": [
+            "value"
+          ]
+        },
+        {
+          "title": "Prompt upsampler",
+          "class_type": "TextGenerate",
+          "fields": [
+            "max_length",
+            "sampling_mode",
+            "sampling_mode.temperature",
+            "sampling_mode.top_k",
+            "sampling_mode.top_p",
+            "sampling_mode.min_p",
+            "sampling_mode.repetition_penalty",
+            "sampling_mode.seed",
+            "sampling_mode.presence_penalty",
+            "thinking",
+            "use_default_template",
+            "mtp"
+          ]
+        },
+        {
+          "title": "Caption",
+          "class_type": "CLIPTextEncode",
+          "fields": []
+        },
+        {
+          "title": "Empty negative",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "Reference latents",
+          "class_type": "ReferenceMultiLatent",
+          "fields": [
+            "resolution",
+            "resolution.megapixels"
+          ]
+        },
+        {
+          "title": "Model sampling",
+          "class_type": "ModelSamplingFlux",
+          "fields": [
+            "max_shift",
+            "base_shift",
+            "width",
+            "height"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "PreviewImage",
+          "fields": []
+        },
+        {
+          "title": "Upsampled prompt",
+          "class_type": "PreviewAny",
+          "fields": []
+        },
+        {
+          "title": "Base",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Size",
+          "class_type": "ImageScale",
+          "fields": [
+            "upscale_method",
+            "width",
+            "height",
+            "crop"
+          ]
+        },
+        {
+          "title": "Encode base",
+          "class_type": "VAEEncode",
+          "fields": []
+        },
+        {
+          "title": "Mask",
+          "class_type": "LoadImageMask",
+          "fields": [
+            "image",
+            "channel"
+          ]
+        },
+        {
+          "title": "Masked latent",
+          "class_type": "SetLatentNoiseMask",
+          "fields": []
+        },
+        {
+          "title": "Grow mask",
+          "class_type": "GrowMask",
+          "fields": [
+            "expand",
+            "tapered_corners"
+          ]
+        },
+        {
+          "title": "Paste back",
+          "class_type": "ImageCompositeMasked",
+          "fields": [
+            "x",
+            "y",
+            "resize_source"
+          ]
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "broken",
+        "node_classes": {
+          "found": 15,
+          "total": 21
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": [
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "GrowMask"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "ImageCompositeMasked"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "ImageScale"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "LoadImageMask"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "SetLatentNoiseMask"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "VAEEncode"
+            }
+          }
+        ]
+      },
+      "trial": null,
+      "branches": [],
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
       "id": "wf_qwen-image",
       "slug": "qwen-image",
       "model_key": "comfy/qwen-image",
@@ -2894,6 +3275,7 @@
       }
     ],
     "wf_flux3-klein-redraw": [],
+    "wf_klein-inpaint": [],
     "wf_ltx2": [
       {
         "code": "comfy_change",

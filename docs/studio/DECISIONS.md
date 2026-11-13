@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-12 · M5.5 第 14 步：局部修复
+
+- **接口** `POST /versions/{id}/inpaint`（multipart）：`mask` 文件（PNG / JPEG / WebP，亮的地方 = 要改，透明算黑；和原图同形状、大小随意）+ `idx`、`prompt`、`where`、`model`。和重画一样能修关键帧、参考图、六视图单张；锁定的 409，没这张 404，别的 422 `inpaint_not_supported`；遮罩形状不对、什么都没涂 422 `bad_mask`，读不了 422 `not_an_image`。
+- **遮罩在请求时处理**（`media/image.py:mask_for`，FFmpeg，没加图像库）：铺在黑底上、最近邻缩到原图的宽高、≥ 128 算涂过，存两份：灰度 PNG（白 = 改，ComfyUI `LoadImageMask` 读红通道）和 RGBA PNG（透明 = 改、其余不透明黑，OpenAI 用）。原图不是 PNG 的转一份 PNG 发出去（OpenAI 要求图和遮罩同格式同尺寸）。版本 payload `inpaint: {version_id, idx, from, mask, share}`（`share` = 涂了多大比例）。
+- **组件 `inpaint` 继承 `redraw`**（钩子 `_base / _extra / _blocks / _record`，参数名按组件 id 取）：跑在原产物上、`origin=inpaint`、`parent` = 原版本、依赖复制、尺寸规则、采纳规则都和重画一样；没有改动幅度（遮罩里整块重画）。提示词多一块「范围」。
+- **本地**：新工作流 `workflows/klein-inpaint`（模型 `comfy/klein-inpaint`）= 重画那份加遮罩：`SetLatentNoiseMask` 只在遮罩里加噪，KSampler `denoise 1.0`，出图后 `ImageCompositeMasked` 按放宽 8 像素（`GrowMask`）的遮罩贴回缩放后的原图，**遮罩外一个像素都不动**。节点按本机 `/object_info` 核对过，没真跑过（第 18 步试跑）。
+- **API 只有 GPT Image 2**（Nano Banana、Seedream 不收遮罩）：2026-11-12 按官方指南「Edit an image using a mask」核对：multipart `mask` 字段（官方 curl `-F "mask=@mask.png"`）、带 alpha 通道、和图同格式同尺寸（< 50 MB）、多张图时遮罩对第一张；「遮罩只是引导，不一定严格按形状」。**哪种像素算要改，文档没用文字写**，官方示例把黑白遮罩直接拷进 alpha（黑 → 透明），所以按透明 = 要改发；第 18 步 API 冒烟确认，写在适配器文件头。和计划不同：`gpt-image-2` 不标 `verify: true`（模型 ID 和接口第 10 步已核对，只有遮罩语义待确认，标了会让整个模型显示待核对）。
+- 路由（`components.yaml` 的 `inpaint`）：默认本地 Klein，兜底 GPT Image 2，单次上限 $0.5，不设 `cheap_api`；Models 页 31 行。前端工作流槽位加 `mask`。
+
 ## 2026-11-12 · M5.5 第 13 步：以这张为底重画
 
 - **一个组件跑在别人的产物上**：`redraw` 不建自己的产物，结果是原产物的新版本。`RunService.start(component_id="redraw")`：用 redraw 的路由、估价（照样过预算，超了进 `waiting_confirm`）和模型；**不改原产物的提示词**（请求里的 `prompt` 只是这次的意图，没写就用模板默认「按原样重画，细节更清楚」）；任务参数记 `component_id`，执行和「兜底前先问」都按它找组件；版本 `origin=redraw`、`parent` = 原版本；采不采纳按原产物的组件（关键帧、参考图不自动采纳，六视图每次都采纳）。

@@ -280,6 +280,24 @@ async def test_gpt_image_edits_with_refs_as_multipart(store: BlobStore) -> None:
 
 
 @respx.mock
+async def test_gpt_image_inpaint_sends_the_alpha_mask_after_the_picture(store: BlobStore) -> None:
+    """局部修复 (M5.5 step 14): the picture is the first ``image[]``, the RGBA mask the ``mask``
+    part; the grayscale one (ComfyUI's) is not sent."""
+    base = store.put_bytes(solid_png(16, 16, (10, 10, 10)))
+    alpha = store.put_bytes(b"ALPHA-MASK-PNG")
+    route = respx.post(f"{OPENAI}/images/edits").mock(
+        return_value=httpx.Response(200, json=_openai_answer(1))
+    )
+    req = _req(refs=[base])
+    req.params.update(base_image=base, mask=store.put_bytes(b"GRAY"), mask_alpha=alpha)
+    await _adapter("openai/gpt-image-2", store).run(req, CallContext())
+    body = route.calls.last.request.content
+    assert body.count(b'name="image[]"') == 1 and body.count(b'name="mask"') == 1
+    assert body.index(b'name="image[]"') < body.index(b'name="mask"')
+    assert b"ALPHA-MASK-PNG" in body and b"GRAY" not in body
+
+
+@respx.mock
 async def test_gpt_image_moderation_is_content_blocked(store: BlobStore) -> None:
     blocked = {"error": {"code": "moderation_blocked", "message": "rejected"}}
     respx.post(f"{OPENAI}/images/generations").mock(return_value=httpx.Response(400, json=blocked))

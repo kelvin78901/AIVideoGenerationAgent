@@ -9,6 +9,12 @@ Checked against developers.openai.com on 2026-10-21 (DECISIONS 同日「第 10 �
   1088×1920).
 - Pictures always come back as ``b64_json``; ``input_fidelity`` must not be sent (gpt-image-2
   always reads references at high fidelity); ``quality`` comes from ``caps.request``.
+- 局部修复 (M5.5 step 14, checked against the guide's 「Edit an image using a mask」 on
+  2026-11-12): a ``mask`` part (PNG with an alpha channel, the first picture's format and size)
+  goes with the pictures; it applies to the first one. Which pixels are repainted the guide
+  does not say in words; its sample turns a black-and-white mask into alpha (black →
+  transparent), so transparent = change (``params.mask_alpha``, ``media/image.py:Mask``) —
+  to confirm with the first live inpaint. The model takes the mask as guidance only.
 - Billed by tokens (``usage``); the estimate prices the output tokens a picture of that size
   takes (``caps.est_tokens_per_mp``) and ``caps.est_ref_tokens`` per reference.
 """
@@ -105,6 +111,9 @@ class OpenAIImageAdapter(ImageApiAdapter):
                     ("image[]", (f"ref{i}.{mime.split('/')[-1]}", data, mime))
                     for i, (data, mime) in enumerate(refs)
                 ]
+                if req.params.get("mask_alpha"):  # 局部修复: applies to the first picture
+                    mask = self._store.read_bytes(str(req.params["mask_alpha"]))
+                    files.append(("mask", ("mask.png", mask, "image/png")))
                 data = {k: str(v) for k, v in fields.items()}
                 resp = await self._send(client, "/images/edits", headers, data=data, files=files)
             else:

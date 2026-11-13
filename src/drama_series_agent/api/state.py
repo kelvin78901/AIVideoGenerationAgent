@@ -55,6 +55,7 @@ from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, DubCompo
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
 from drama_series_agent.pipeline.components.img import ImgComponent
+from drama_series_agent.pipeline.components.inpaint import InpaintComponent
 from drama_series_agent.pipeline.components.kf import KfComponent, stale_aspect
 from drama_series_agent.pipeline.components.plan import (
     SHOT_PLAN_SLOT,
@@ -186,6 +187,7 @@ class StudioState:
         components.add(ViewsComponent(components.services))
         components.add(ScaleComponent(components.services))
         components.add(RedrawComponent(components.services))
+        components.add(InpaintComponent(components.services))
         text = TextComponent(components.services)
         components.add(text)
         components.add(VoiceComponent(components.services))
