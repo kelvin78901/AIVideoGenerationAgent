@@ -2687,6 +2687,173 @@
       "updated_at": "2026-10-18T09:00:00Z"
     },
     {
+      "id": "wf_seedvr2-img",
+      "slug": "seedvr2-img",
+      "model_key": "comfy/seedvr2-img",
+      "name": "SeedVR2 7B 图片超分（本地）",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "iup"
+      ],
+      "caps": {
+        "aspects": [],
+        "max_seconds": null,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "8e6470460952215d2017252cc23d25ba413e09e8dcecc7022f86bbca1d1b3d7f",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "base_image",
+          "index": null,
+          "node_title": "Base",
+          "node_class": "LoadImage",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "ResizeImageMaskNode",
+          "field": "resize_type.width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "Size",
+          "node_class": "ResizeImageMaskNode",
+          "field": "resize_type.height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Restore",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "image_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "PreviewImage",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Base",
+          "class_type": "LoadImage",
+          "fields": [
+            "image"
+          ]
+        },
+        {
+          "title": "Size",
+          "class_type": "ResizeImageMaskNode",
+          "fields": [
+            "resize_type",
+            "resize_type.width",
+            "resize_type.height",
+            "resize_type.crop",
+            "scale_method"
+          ]
+        },
+        {
+          "title": "Preprocess",
+          "class_type": "SeedVR2Preprocess",
+          "fields": []
+        },
+        {
+          "title": "SeedVR2 VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "SeedVR2 7B",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "Encode",
+          "class_type": "VAEEncodeTiled",
+          "fields": [
+            "tile_size",
+            "overlap",
+            "temporal_size",
+            "temporal_overlap"
+          ]
+        },
+        {
+          "title": "Conditioning",
+          "class_type": "SeedVR2Conditioning",
+          "fields": []
+        },
+        {
+          "title": "Restore",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecodeTiled",
+          "fields": [
+            "tile_size",
+            "overlap",
+            "temporal_size",
+            "temporal_overlap"
+          ]
+        },
+        {
+          "title": "Colour fix",
+          "class_type": "SeedVR2PostProcessing",
+          "fields": [
+            "color_correction_method"
+          ]
+        },
+        {
+          "title": "Output",
+          "class_type": "PreviewImage",
+          "fields": []
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "ok",
+        "node_classes": {
+          "found": 11,
+          "total": 11
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": []
+      },
+      "trial": null,
+      "branches": [],
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
       "id": "wf_seedvr2-up",
       "slug": "seedvr2-up",
       "model_key": "comfy/seedvr2",

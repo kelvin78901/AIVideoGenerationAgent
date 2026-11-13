@@ -1,6 +1,7 @@
 """Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``; 以这张为底重画
-``POST /versions/{id}/redraw`` and 局部修复 ``POST /versions/{id}/inpaint`` (M5.5,
-``pipeline/components/redraw.py``, ``inpaint.py``)."""
+``POST /versions/{id}/redraw``, 局部修复 ``POST /versions/{id}/inpaint`` and 图片超分
+``POST /versions/{id}/upscale`` (M5.5, ``pipeline/components/redraw.py``, ``inpaint.py``,
+``iup.py``)."""
 
 from __future__ import annotations
 
@@ -10,9 +11,11 @@ from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
 from drama_series_agent.api.state import StudioState, get_state
+from drama_series_agent.core.config import get_config
 from drama_series_agent.core.jobs import job_public
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES
 from drama_series_agent.pipeline.components.inpaint import inpaint_params
+from drama_series_agent.pipeline.components.iup import refuse_if_unavailable
 from drama_series_agent.pipeline.components.redraw import DEFAULT_STRENGTH, redraw_target
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.schema import ProductOut
@@ -213,5 +216,31 @@ async def inpaint_version(
         where=where,
         component_id="inpaint",
         params=params,
+    )
+    return job_public(job)
+
+
+class UpscaleBody(BaseModel):
+    """图片超分: picture ``idx`` of the version (a candidate, or a view's number)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    idx: int = Field(default=0, ge=0)
+
+
+@router.post("/versions/{version_id}/upscale")
+async def upscale_version(version_id: str, body: UpscaleBody, state: State) -> dict[str, Any]:
+    """→ the queued run (component ``iup``, origin ``upscale``): a keyframe at the delivery
+    size, a reference picture or a view at a long edge of 2048; one candidate, or that view
+    replaced. Only locally: 409 ``upscale_unavailable`` with the reason (``machine_cuda``,
+    ``machine_missing`` + count) on a machine that cannot run it."""
+    refuse_if_unavailable(get_config(), await state.setup.capabilities())
+    async with state.db.session() as session:
+        product, _ = await redraw_target(session, version_id, body.idx, "upscale")
+    job = await state.runs.start(
+        product.id,
+        "run",
+        component_id="iup",
+        params={"iup_version_id": version_id, "iup_idx": body.idx},
     )
     return job_public(job)

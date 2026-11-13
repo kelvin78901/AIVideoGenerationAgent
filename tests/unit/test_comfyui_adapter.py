@@ -693,3 +693,28 @@ async def test_an_inpaint_noises_only_the_mask_and_pastes_it_back(
     assert graph[paste["mask"][0]]["class_type"] == "GrowMask"
     assert graph[paste["destination"][0]]["_meta"]["title"] == "Size"
     assert by_title["Output"]["inputs"]["images"][0] == "28"
+
+
+SEEDVR2_IMG = ModelSpec(
+    key="comfy/seedvr2-img", kind="image", where="local", display="SeedVR2 image",
+    runtime="comfyui", workflow="seedvr2-img",
+)  # fmt: skip
+
+
+async def test_an_image_upscale_is_the_size_asked_for(root: Path, store: BlobStore) -> None:
+    """图片超分 (M5.5 step 15): the picture is uploaded as the base, the size is the request's
+    as is (``caps.exact_size``: 1080 is no multiple of 16; SeedVR2 pads and crops back), no
+    references are sent."""
+    shutil.copytree(WORKFLOWS_DIR / "seedvr2-img", root / "seedvr2-img")
+    fake = FakeComfy()
+    fake.image_node = "11"
+    req = _req(store)
+    sha = req.params.pop("refs")[0]
+    req.params.update(base_image=sha, width=1080, height=1920, aspect="9:16")
+    await _adapter(fake, root, store, spec=SEEDVR2_IMG).run(req, CallContext())
+    by_title = {n["_meta"]["title"]: n["inputs"] for n in fake.prompts[0].values()}
+    assert by_title["Base"]["image"] == f"dramastudio/{sha}.png"
+    size = by_title["Size"]
+    assert (size["resize_type.width"], size["resize_type.height"]) == (1080, 1920)
+    assert by_title["Colour fix"]["color_correction_method"] == "lab"
+    assert fake.uploads == [("dramastudio", f"{sha}.png")]

@@ -170,6 +170,9 @@ class Component(ABC):
     # False when 确认并同步 must not redo it on its own (M4: 分镜规划; a new plan would overwrite
     # the user's framing, blocking and confirmed shots), so it is only marked 待更新.
     cascade_rerun: ClassVar[bool] = True
+    # The origin of the versions it makes on another component's product (M5.5: ``redraw``,
+    # ``inpaint``; ``iup`` makes ``upscale``); its id when None.
+    origin: ClassVar[str | None] = None
 
     def __init__(self, services: Services) -> None:
         self.services = services

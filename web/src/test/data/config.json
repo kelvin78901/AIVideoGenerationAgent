@@ -356,6 +356,16 @@
         "unavailable": {}
       },
       {
+        "id": "iup",
+        "stage": "storyboard",
+        "kind": "image",
+        "api_models": [],
+        "local_models": [
+          "comfy/seedvr2-img"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "world",
         "stage": "storyboard",
         "kind": "world",
@@ -1099,6 +1109,14 @@
         "tier": "recommended"
       },
       {
+        "key": "comfy/seedvr2-img",
+        "display": "SeedVR2 图片超分（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
+      },
+      {
         "key": "comfy/seedvr2",
         "display": "SeedVR2（本地）",
         "where": "local",
@@ -1715,6 +1733,25 @@
           "comfy/klein-inpaint"
         ],
         "per_call_cap_usd": 0.5
+      },
+      "iup": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/seedvr2-img",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "world": {
         "mode": "api",
@@ -2527,6 +2564,25 @@
           "openai/gpt-image-2"
         ],
         "per_call_cap_usd": 0.5
+      },
+      "iup": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/seedvr2-img",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "world": {
         "mode": "off",
@@ -3348,6 +3404,25 @@
         ],
         "per_call_cap_usd": 0.5
       },
+      "iup": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/seedvr2-img",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
+      },
       "world": {
         "mode": "api",
         "api_model": "worldlabs/marble",
@@ -4029,6 +4104,25 @@
         },
         "alt_order": [],
         "per_call_cap_usd": 0.5
+      },
+      "iup": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/seedvr2-img",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "world": {
         "mode": "off",

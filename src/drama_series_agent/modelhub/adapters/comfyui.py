@@ -395,6 +395,8 @@ class ComfyUIAdapter:
         fixed = sizes.get(str(req.params.get("aspect") or ""))
         if fixed:
             return int(fixed[0]), int(fixed[1])
+        if wf.meta.caps.get("exact_size"):  # the size asked for, as is (an image upscale, M5.5)
+            return int(req.params["width"]), int(req.params["height"])
         w = int(req.params.get("width") or 1080)
         h = int(req.params.get("height") or 1920)
         max_pixels = int(wf.meta.caps.get("max_pixels") or DEFAULT_MAX_PIXELS)

@@ -121,8 +121,16 @@ class RedrawComponent(MediaComponent):
         """The picture the model starts from."""
         return sha
 
+    def _refs(self, base: str) -> list[str]:
+        """The picture is reference 1 too (the models without a base image start from it)."""
+        return [base]
+
     def _extra(self, params: dict[str, Any], base: str) -> dict[str, Any]:
         return {"base_image": base, "denoise": self._strength(params)}
+
+    def _stage(self, where: str) -> str | None:
+        """A keyframe's stage: a local one is a draft, as a keyframe run's is."""
+        return "draft" if where == "local" else None
 
     def _blocks(self, params: dict[str, Any]) -> list[Block]:
         return [Block("改动幅度", strength_words(self._strength(params)))]
@@ -146,7 +154,7 @@ class RedrawComponent(MediaComponent):
             size, aspect = self._size(inputs, f, self.where_of(model))
             req = self.image_request(
                 prompt, n=1, size=size, aspect=aspect, seed=ctx.seed, task=self.id,
-                refs=[base], extra=self._extra(params, base),
+                refs=self._refs(base), extra=self._extra(params, base),
             )  # fmt: skip
             return [
                 await self.media_call(
@@ -193,7 +201,7 @@ class RedrawComponent(MediaComponent):
             params={self.id: record},
         )  # fmt: skip
         if inputs.context["slot"] == KEYFRAME:
-            draft.stage = "draft" if calls[0].where == "local" else None
+            draft.stage = self._stage(calls[0].where)
         return draft
 
     def estimate(self, inputs: Inputs, compiled: str, model: str) -> Estimate:

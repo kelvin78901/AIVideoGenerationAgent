@@ -473,12 +473,14 @@ class RunService:
             )
             draft = await comp.run(ctx, inputs)
             other = comp is not owner  # e.g. a redraw: its origin, from the picture it redrew
-            origin = "fallback" if draft.fallback_reason else comp.id if other else mode
-            # An API final's parent is the draft it started from (SPEC 7.3).
+            origin = (
+                "fallback" if draft.fallback_reason else (comp.origin or comp.id) if other else mode
+            )
+            # An API final's parent is the draft it started from (SPEC 7.3); a redraw's, inpaint's
+            # or upscale's, the version it worked on (``{component}_version_id``).
             parent = (
                 inputs.params.get("source_version_id")
-                or inputs.params.get("redraw_version_id")
-                or inputs.params.get("inpaint_version_id")
+                or (inputs.params.get(f"{comp.id}_version_id") if other else None)
                 or (base.id if base else None)
             )
             last = await self.products.append(

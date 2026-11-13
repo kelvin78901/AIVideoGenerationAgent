@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-12 · M5.5 第 15 步：图片超分
+
+- **接口** `POST /versions/{id}/upscale {idx}`：组件 `iup`（继承 `redraw`），`origin=upscale`（组件新属性 `origin`，没写就用组件 id；`RunService` 的父版本统一取 `{组件 id}_version_id`）。能放大的和重画一样；锁定 409、没这张 404、别的 422 `upscale_not_supported`。
+- **尺寸**：关键帧 → 成片规格的交付尺寸（硬规则 10）；参考图、六视图单张 → 长边 2048、保持原图形状（偶数边）。放大的关键帧 `stage = final`（和「用 API 出终版」从草稿出的一样）；不自动采纳关键帧和参考图，六视图照旧采纳。
+- **只有本地**：新工作流 `workflows/seedvr2-img`（模型 `comfy/seedvr2-img`，和视频 2K 精修同一套 7B int8 权重、同样的安装项）= ComfyUI 官方模板 `utility_seedvr2_7b_int8_upscale_image`（本机模板包里那份）改成 API 格式：按尺寸缩放（居中裁）而不是按倍数、去掉 alpha、lab 调色。`SeedVR2Preprocess` 补边、`PostProcessing` 裁回，宽高不必是 16 的倍数：工作流 `caps.exact_size: true` 让 ComfyUI 适配器按请求的宽高原样填（1080 × 1920 不被改成 1088）。节点按本机 `/object_info` 核对，没真跑过（第 18 步）。
+- **跑不了时**：路由没有 API 模型；机器跑不了（扫描后没 CUDA 或缺安装项）时接口 409 `upscale_unavailable`，`params.reason` 是 catalog 同样的原因（`machine_cuda` / `machine_missing` + `count`），前端按钮用 catalog 的 `unavailable.local` 灰掉写原因（第 16 步）。
+- Models 页 32 行。
+
 ## 2026-11-12 · M5.5 第 14 步：局部修复
 
 - **接口** `POST /versions/{id}/inpaint`（multipart）：`mask` 文件（PNG / JPEG / WebP，亮的地方 = 要改，透明算黑；和原图同形状、大小随意）+ `idx`、`prompt`、`where`、`model`。和重画一样能修关键帧、参考图、六视图单张；锁定的 409，没这张 404，别的 422 `inpaint_not_supported`；遮罩形状不对、什么都没涂 422 `bad_mask`，读不了 422 `not_an_image`。

@@ -251,6 +251,17 @@ components:
     per_call_cap_usd: 0.5
     note: 手动出，一次一张；遮罩白色 = 要改；本地遮罩外一个像素都不动，API 整张重出、遮罩只是引导；不自动采纳关键帧和参考图
 
+  # 图片超分（M5.5 第 15 步）：关键帧放大到交付尺寸，参考图、六视图单张放大到长边 2048，只补细节不改内容。
+  # 只有本地 SeedVR2 7B（和视频 2K 精修同一套权重）；没有 API，机器跑不了时按钮灰掉写原因（catalog 的 unavailable）。
+  - id: iup
+    stage: storyboard
+    name: { zh: 图片超分, en: Image upscale }
+    kind: image
+    api: []
+    local: [comfy/seedvr2-img]
+    balanced: { mode: local, local: comfy/seedvr2-img }
+    note: 手动出，一次一张；只放大补细节，结果是同一个产物的新版本（origin upscale），不自动采纳关键帧和参考图
+
   - id: world
     stage: storyboard
     name: { zh: 3D 场景（可选）, en: 3D world (optional) }
