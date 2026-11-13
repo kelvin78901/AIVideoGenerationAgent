@@ -90,7 +90,7 @@ export function AssetViews({ asset, aspect }: { asset: Asset; aspect: Aspect }) 
                       aria-label={tc("lightbox.zoom", { label: name })}
                       title={tc("lightbox.zoom", { label: name })}
                       onClick={() => setZoomed(at)}
-                      className="rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                      className="block w-full rounded-md outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
                       <MediaThumb
                         aspect={aspect}
