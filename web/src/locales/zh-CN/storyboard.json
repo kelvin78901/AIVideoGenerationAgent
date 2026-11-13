@@ -141,7 +141,16 @@
     "merge": "和下一个合并",
     "mergeNone": "同一场里后面没有镜头了",
     "splitDone": "已拆分：{{id}} 后面多了 {{next}}",
-    "mergeDone": "已把下一个镜头并进 {{id}}"
+    "mergeDone": "已把下一个镜头并进 {{id}}",
+    "uploadTitle": "上传首帧 · 镜头 {{id}}",
+    "uploadHint": "按 {{aspect}} 裁",
+    "regenerate": "重新生成一组",
+    "regenerateFree": "本地 · 免费",
+    "regenerateCost": "约 {{cost}}",
+    "uploaded": "上传 · {{name}}",
+    "uploadedPlain": "上传的图",
+    "lowRes": "分辨率偏低",
+    "uploadDone": "已上传为镜头 {{id}} 的新候选，并选中了它。"
   },
   "contract": {
     "label": "镜头契约",

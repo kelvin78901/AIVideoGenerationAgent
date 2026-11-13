@@ -312,5 +312,78 @@
     "button": "Final via API",
     "buttonCost": "Final via API · about {{cost}}",
     "started": "Making the final: candidate {{letter}} as the reference, one picture on {{model}}."
+  },
+  "pictures": {
+    "menu": "Change source",
+    "model": "Model",
+    "noModel": "No model can do this right now; see the Models page.",
+    "local": "{{model}} · free",
+    "apiCost": "{{model}} · {{cost}} / picture",
+    "cancel": "Cancel",
+    "oneCandidate": "Makes one new candidate; the original stays in history",
+    "upload": "Upload a picture…",
+    "redraw": {
+      "item": "Redraw from this picture…",
+      "title": "Redraw from this picture · {{name}}",
+      "prompt": "What to change",
+      "placeholder": "Leave empty to redraw it as it is, with clearer detail",
+      "strength": "How much to change",
+      "small": "Small: framing and people stay",
+      "medium": "Medium",
+      "large": "Large: only the rough layout stays",
+      "apiNote": "API models take no numeric strength; the amount goes into the prompt.",
+      "foot": "Makes one new candidate · the reference assets go along as usual",
+      "submit": "Redraw",
+      "started": "Redrawing {{name}}: one new candidate."
+    },
+    "inpaint": {
+      "item": "Inpaint…",
+      "title": "Inpaint · {{name}}",
+      "canvas": "Paint over what should change",
+      "tool": "Brush or eraser",
+      "brush": "Brush",
+      "eraser": "Eraser",
+      "size": "Size",
+      "undo": "Undo",
+      "clear": "Clear",
+      "prompt": "Paint the marked area as",
+      "placeholder": "e.g. a yellow sticky note on the umbrella handle, ballpoint handwriting, corners wet from the rain",
+      "keep": "Pixels outside the painted area stay as they are.",
+      "paintFirst": "Paint over what should change first",
+      "submit": "Inpaint",
+      "started": "Inpainting {{name}}: one new candidate.",
+      "noCanvas": "This browser cannot draw the mask."
+    },
+    "upscale": {
+      "item": "Upscale to {{w}}×{{h}}",
+      "itemPlain": "Upscale",
+      "hint": "local",
+      "already": "It is that size already",
+      "started": "Upscaling {{name}} to {{w}}×{{h}}: one new candidate."
+    },
+    "crop": {
+      "box": "Crop box",
+      "boxValue": "{{w}}×{{h}} from {{x}}, {{y}}",
+      "broken": "Cannot read this picture (PNG, JPEG or WebP).",
+      "source": "Original {{w}}×{{h}}",
+      "output": "Output {{aspect}} → cut {{cw}}×{{ch}} → scaled to {{w}}×{{h}}",
+      "frame": "Crop box",
+      "frameHint": "Fixed at {{aspect}}: drag to place it, scroll to zoom (keys: arrows move, + / - zoom)",
+      "anchor": {
+        "x": {
+          "center": "Centre",
+          "start": "Left",
+          "end": "Right"
+        },
+        "y": {
+          "center": "Centre",
+          "start": "Top",
+          "end": "Bottom"
+        }
+      },
+      "lowRes": "The cut-out is {{cw}}×{{ch}}, smaller than the draft size {{w}}×{{h}}, and will look soft scaled up. You can use it now and Upscale later.",
+      "foot": "The upload becomes a new candidate: pick it and confirm the shot, or redraw, upscale or finish it via API.",
+      "submit": "Upload as candidate"
+    }
   }
 }

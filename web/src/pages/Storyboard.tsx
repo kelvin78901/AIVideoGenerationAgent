@@ -283,6 +283,7 @@ export default function StoryboardPage() {
                 shot={shot}
                 assets={assets.data ?? []}
                 aspect={aspect}
+                dims={spec.data?.dims ?? null}
                 safeArea={showSafe ? safeArea : null}
                 assetsPath={paths.step(seriesId, ep, "assets")}
                 lines={lines}

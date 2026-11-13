@@ -141,7 +141,16 @@
     "merge": "Merge with the next",
     "mergeNone": "No later shot in this scene",
     "splitDone": "Split: {{next}} now follows {{id}}",
-    "mergeDone": "The next shot is merged into {{id}}"
+    "mergeDone": "The next shot is merged into {{id}}",
+    "uploadTitle": "Upload the first frame · shot {{id}}",
+    "uploadHint": "cut to {{aspect}}",
+    "regenerate": "Generate a new set",
+    "regenerateFree": "local · free",
+    "regenerateCost": "about {{cost}}",
+    "uploaded": "Upload · {{name}}",
+    "uploadedPlain": "Uploaded picture",
+    "lowRes": "Low resolution",
+    "uploadDone": "Uploaded as a new candidate of shot {{id}} and picked."
   },
   "contract": {
     "label": "Shot contract",

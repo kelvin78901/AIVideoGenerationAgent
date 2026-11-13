@@ -1,15 +1,16 @@
-import { http } from "msw";
+import { http, passthrough } from "msw";
 
 import type { Job } from "@/api/schemas/jobs";
 import { modelByKey } from "@/mocks/fixtures/demo/models";
 import { demoCost } from "@/mocks/fixtures/demo/products";
 import { demoVideos } from "@/mocks/handlers/shots";
-import { demoError, demoJson, v1 } from "@/mocks/http";
+import { demoJson, v1 } from "@/mocks/http";
 import { demoRoute, primaryModel } from "@/mocks/route";
 
 /**
  * The generate page's takes, rules, run log, 取消采纳 and ratings are the backend's (M5); 2K 精修
- * stays the demo's until M6.
+ * stays the demo's until M6. A picture's 放大 (M5.5, keyframes and reference pictures) is the
+ * backend's: any version not of a take passes through.
  */
 export const generateHandlers = [
   // 2K 精修: queue the take on the 2K finishing component's route → job.
@@ -17,7 +18,7 @@ export const generateHandlers = [
     const id = String(params.id);
     const product = (await demoVideos(request)).find((p) => p.versions.some((v) => v.id === id));
     const version = product?.versions.find((v) => v.id === id);
-    if (!product || !version) return demoError(404, "version_not_found", { id });
+    if (!product || !version) return passthrough();
     const model = primaryModel(await demoRoute("up")) ?? "comfy/seedvr2";
     const seconds = typeof version.payload.duration_s === "number" ? version.payload.duration_s : 4;
     const local = modelByKey(model)?.where === "local";

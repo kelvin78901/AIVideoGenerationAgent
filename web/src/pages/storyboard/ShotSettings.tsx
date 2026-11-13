@@ -1,9 +1,12 @@
 import { CheckCircle2, Combine, Film, Plus, RotateCcw, Scissors } from "lucide-react";
-import { useId, useState, type ReactNode } from "react";
+import type { TFunction } from "i18next";
+import { useId, useRef, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
+import { toast } from "sonner";
 
-import { fileUrl } from "@/api/client";
+import { errorMessage, fileUrl } from "@/api/client";
+import { useUploadKeyframe } from "@/api/hooks/pictures";
 import { useProduct } from "@/api/hooks/products";
 import { CandidatesPayloadSchema, type Asset } from "@/api/schemas/assets";
 import {
@@ -14,18 +17,24 @@ import {
   type Shot,
   type ShotPatch,
 } from "@/api/schemas/shots";
-import type { Aspect, SafeArea } from "@/api/schemas/spec";
+import type { ProductVersion } from "@/api/schemas/products";
+import type { Aspect, OutputSpec, SafeArea } from "@/api/schemas/spec";
 import { CandidateGrid } from "@/components/CandidateGrid";
 import { Chip } from "@/components/Chip";
 import { EmptyState } from "@/components/EmptyState";
 import { FinalButton } from "@/components/FinalButton";
 import { MediaThumb } from "@/components/MediaThumb";
+import { CropDialog } from "@/components/pictures/CropDialog";
+import { PictureMenu } from "@/components/pictures/PictureMenu";
+import type { PictureTarget } from "@/components/pictures/RedrawDialog";
 import { SafeAreaOverlay } from "@/components/SafeAreaOverlay";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
 import { Input, Label, Textarea } from "@/components/ui/form";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { useRunAction } from "@/components/useRunAction";
+import { formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { currentVersion } from "@/lib/versions";
 import { Blocking } from "@/pages/storyboard/Blocking";
@@ -34,6 +43,8 @@ import { durationSource } from "@/pages/storyboard/duration";
 import { CheckLines, ShotIssues } from "@/pages/storyboard/ShotChecks";
 
 const LETTERS = "ABC";
+
+type SpecDims = OutputSpec["dims"];
 
 function Field({ label, children }: { label: string; children: ReactNode }) {
   return (
@@ -44,21 +55,39 @@ function Field({ label, children }: { label: string; children: ReactNode }) {
   );
 }
 
+/** What a candidate's card says it is: uploaded (the file's name), or how a run made it. */
+function madeBy(t: TFunction<"storyboard">, te: TFunction<"enums">, version: ProductVersion) {
+  if (version.origin === "upload")
+    return version.note ? t("shot.uploaded", { name: version.note }) : t("shot.uploadedPlain");
+  if (version.origin === "redraw" || version.origin === "inpaint" || version.origin === "upscale")
+    return te(`origin.${version.origin}`);
+  return t(version.stage === "final" ? "shot.kfFinal" : "shot.kfDraft");
+}
+
 /** 首帧: the shot's own keyframe candidates (pick one; a local draft can be finished on the API
- * model, M3 混合), or the last frame of an earlier shot. */
+ * model, M3 混合; 换来源 ▾ uploads, redraws, inpaints or upscales the picked one), or the last
+ * frame of an earlier shot. */
 function FirstFrame({
   shot,
   aspect,
+  dims,
   safeArea,
   onPick,
 }: {
   shot: Shot;
   aspect: Aspect;
+  dims: SpecDims | null;
   safeArea: SafeArea | null;
   onPick: (i: number) => void;
 }) {
   const { t } = useTranslation("storyboard");
+  const { t: te } = useTranslation("enums");
+  const { t: tc } = useTranslation();
   const product = useProduct(shot.keyframe_product_id ?? undefined);
+  const upload = useUploadKeyframe(shot.id, shot.episode_id);
+  const regenerate = useRunAction(shot.keyframe_product_id ?? "");
+  const input = useRef<HTMLInputElement>(null);
+  const [file, setFile] = useState<File | null>(null);
   const version = product.data ? currentVersion(product.data) : undefined;
   const parsed = CandidatesPayloadSchema.safeParse(version?.payload);
   const cands = parsed.success ? parsed.data.candidates : [];
@@ -79,11 +108,101 @@ function FirstFrame({
       </div>
     );
   }
-  if (!version || !cands.length || !product.data)
-    return <EmptyState icon={Film} title={t("shot.noKeyframe")} />;
-  const made = t(version.stage === "final" ? "shot.kfFinal" : "shot.kfDraft");
+  const kf = product.data;
+  const fileOf = (i: number) =>
+    version?.files.find((f) => f.role === "candidate" && (f.idx ?? 0) === i);
+  const pickedFile = fileOf(shot.keyframe_pick);
+  const lowRes = version?.payload.low_res === true;
+  const target: PictureTarget | null =
+    kf && version && pickedFile
+      ? {
+          productId: kf.id,
+          versionId: version.id,
+          idx: shot.keyframe_pick,
+          name: `${shot.label} ${t("shot.kfLabel", { n: version.n, letter: LETTERS[shot.keyframe_pick] ?? "A" })}`,
+          src: fileUrl(pickedFile.sha256),
+          aspect,
+          seed: `${shot.id}-${version.n}-${shot.keyframe_pick}`,
+          w: pickedFile.w,
+          h: pickedFile.h,
+        }
+      : null;
+  const delivery = dims?.delivery ?? null;
+  const upscaleTo = delivery && pickedFile && (pickedFile.w ?? 0) < delivery.w ? delivery : null;
+  const est = kf?.estimate;
+  const busy = !!kf?.running || regenerate.pending;
+
+  const menu =
+    kf && !shot.confirmed ? (
+      <PictureMenu
+        target={target}
+        upscaleTo={upscaleTo}
+        regenerate={{
+          label: t("shot.regenerate"),
+          hint: est
+            ? est.cost_usd > 0
+              ? t("shot.regenerateCost", { cost: formatUsd(est.cost_usd, { cents: true }) })
+              : t("shot.regenerateFree")
+            : undefined,
+          busy,
+          onSelect: () => regenerate.run({ mode: kf.versions.length ? "rerun" : "run" }),
+        }}
+        onUpload={dims ? () => input.current?.click() : undefined}
+        uploadHint={t("shot.uploadHint", { aspect })}
+      />
+    ) : null;
+  const uploader = (
+    <>
+      <input
+        ref={input}
+        type="file"
+        accept="image/png,image/jpeg,image/webp"
+        className="hidden"
+        data-testid="keyframe-upload"
+        onChange={(e) => {
+          const f = e.target.files?.[0];
+          e.target.value = "";
+          if (f) setFile(f);
+        }}
+      />
+      {dims ? (
+        <CropDialog
+          file={file}
+          title={t("shot.uploadTitle", { id: shot.label })}
+          aspect={aspect}
+          draft={dims.draft}
+          delivery={dims.delivery}
+          pending={upload.isPending}
+          onClose={() => setFile(null)}
+          onSubmit={(box) =>
+            file &&
+            upload.mutate(
+              { file, box },
+              {
+                onSuccess: () => {
+                  toast.success(t("shot.uploadDone", { id: shot.label }));
+                  setFile(null);
+                },
+                onError: (err) => toast.error(errorMessage(tc, err)),
+              },
+            )
+          }
+        />
+      ) : null}
+    </>
+  );
+
+  if (!version || !cands.length || !kf)
+    return (
+      <div className="flex flex-col gap-2">
+        <EmptyState icon={Film} title={t("shot.noKeyframe")} />
+        {menu ? <div>{menu}</div> : null}
+        {uploader}
+      </div>
+    );
+  const made = madeBy(t, te, version);
   const cards = cands.map((c, i) => {
-    const file = version.files.find((f) => f.role === "candidate" && f.idx === i);
+    const file = fileOf(i);
     return {
       label: t("shot.kfLabel", { n: version.n, letter: LETTERS[i] }),
       letter: LETTERS[i] ?? "",
@@ -93,6 +212,11 @@ function FirstFrame({
       meta: (
         <span className="flex flex-col gap-0.5">
           <span className="text-xs text-muted-foreground">{c.label ?? made}</span>
+          {lowRes ? (
+            <StatusBadge tone="warn" icon={null} className="self-start">
+              {t("shot.lowRes")}
+            </StatusBadge>
+          ) : null}
           {c.check ? <CheckLines items={c.check.items} /> : null}
         </span>
       ),
@@ -122,16 +246,18 @@ function FirstFrame({
         </p>
       ) : null}
       {shot.confirmed ? null : (
-        <div>
+        <div className="flex flex-wrap items-center gap-2">
           <FinalButton
             componentId="kf"
-            product={product.data}
+            product={kf}
             version={version}
             pick={shot.keyframe_pick}
             letter={LETTERS[shot.keyframe_pick] ?? "A"}
           />
+          {menu}
         </div>
       )}
+      {uploader}
     </div>
   );
 }
@@ -252,6 +378,7 @@ export function ShotSettings({
   shot,
   assets,
   aspect,
+  dims,
   safeArea,
   assetsPath,
   lines,
@@ -266,6 +393,8 @@ export function ShotSettings({
   shot: Shot;
   assets: Asset[];
   aspect: Aspect;
+  /** The output spec's sizes (上传并裁切, 放大); null while it loads. */
+  dims: SpecDims | null;
   /** 安全区 on: laid over the keyframe candidates. */
   safeArea: SafeArea | null;
   assetsPath: string;
@@ -369,6 +498,7 @@ export function ShotSettings({
         <FirstFrame
           shot={shot}
           aspect={aspect}
+          dims={dims}
           safeArea={safeArea}
           onPick={(i) => onPatch({ keyframe_pick: i })}
         />

@@ -312,5 +312,78 @@
     "button": "用 API 出终版",
     "buttonCost": "用 API 出终版 · 约 {{cost}}",
     "started": "已开始出终版：以候选 {{letter}} 为参考，用 {{model}} 出 1 张。"
+  },
+  "pictures": {
+    "menu": "换来源",
+    "model": "用哪个模型",
+    "noModel": "这个操作现在没有能用的模型，去「模型与兜底」页看看。",
+    "local": "{{model}} · 免费",
+    "apiCost": "{{model}} · {{cost}} / 张",
+    "cancel": "取消",
+    "oneCandidate": "出一张新候选，原图留在历史里",
+    "upload": "上传图片…",
+    "redraw": {
+      "item": "以这张为底重画…",
+      "title": "以这张为底重画 · {{name}}",
+      "prompt": "想改什么",
+      "placeholder": "没写就按原样重画，细节更清楚",
+      "strength": "改动幅度",
+      "small": "小：构图人物不动",
+      "medium": "中",
+      "large": "大：只留大致构图",
+      "apiNote": "API 模型没有数值强度，幅度写进提示词。",
+      "foot": "出一张新候选 · 参考素材照常一起传",
+      "submit": "重画",
+      "started": "已开始重画 {{name}}：出一张新候选。"
+    },
+    "inpaint": {
+      "item": "局部修复…",
+      "title": "局部修复 · {{name}}",
+      "canvas": "在图上涂出要改的地方",
+      "tool": "画笔或橡皮",
+      "brush": "画笔",
+      "eraser": "橡皮",
+      "size": "大小",
+      "undo": "撤销",
+      "clear": "清除",
+      "prompt": "涂出来的地方画成",
+      "placeholder": "比如：伞柄上贴一张黄色便利贴，圆珠笔手写，边角被雨打湿",
+      "keep": "涂抹以外的像素保持不变。",
+      "paintFirst": "先在图上涂出要改的地方",
+      "submit": "修复",
+      "started": "已开始局部修复 {{name}}：出一张新候选。",
+      "noCanvas": "这个浏览器画不了遮罩。"
+    },
+    "upscale": {
+      "item": "放大到 {{w}}×{{h}}",
+      "itemPlain": "放大",
+      "hint": "本地",
+      "already": "已经是这个尺寸了",
+      "started": "已开始放大 {{name}} 到 {{w}}×{{h}}：出一张新候选。"
+    },
+    "crop": {
+      "box": "裁切框",
+      "boxValue": "从 {{x}}, {{y}} 起 {{w}}×{{h}}",
+      "broken": "读不出这张图（支持 PNG、JPEG、WebP）。",
+      "source": "原图 {{w}}×{{h}}",
+      "output": "成片 {{aspect}} → 裁出 {{cw}}×{{ch}} → 缩到 {{w}}×{{h}}",
+      "frame": "裁切框",
+      "frameHint": "固定 {{aspect}}，拖动选位置，滚轮缩放（键盘：方向键移动，+ / - 缩放）",
+      "anchor": {
+        "x": {
+          "center": "居中",
+          "start": "靠左",
+          "end": "靠右"
+        },
+        "y": {
+          "center": "居中",
+          "start": "靠上",
+          "end": "靠下"
+        }
+      },
+      "lowRes": "裁出来 {{cw}}×{{ch}}，小于草稿尺寸 {{w}}×{{h}}，放大后会发糊。可以先用，之后点「放大」。",
+      "foot": "上传后是一张新候选，可以直接选它确认镜头，也可以拿去重画、放大、出终版。",
+      "submit": "上传为候选"
+    }
   }
 }
