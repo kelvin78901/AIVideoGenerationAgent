@@ -7,6 +7,7 @@ import { Toaster } from "@/components/ui/sonner";
 import StoryboardPage from "@/pages/Storyboard";
 import { backend } from "@/test/backend";
 import { fakeConfig } from "@/test/fakes/config";
+import { fakePictures } from "@/test/fakes/pictures";
 import { fakeShots } from "@/test/fakes/shots";
 import { FakeEventSource } from "@/test/fakeEventSource";
 import { renderAt } from "@/test/render";
@@ -229,5 +230,47 @@ describe("首帧 · 换来源", () => {
     renderBoard();
     await screen.findByRole("radiogroup", { name: "首帧" });
     expect(screen.queryByRole("button", { name: "换来源" })).not.toBeInTheDocument();
+  });
+});
+
+describe("参考 · 镜头参考图和风格板", () => {
+  it("adds a picture for the light of this shot, then removes it", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+    const set = await screen.findByRole("group", { name: "这个镜头的参考图" });
+    expect(set).toHaveTextContent("0 / 4 张");
+    await user.selectOptions(within(set).getByRole("combobox", { name: "参考什么" }), "光线");
+    await user.upload(
+      within(set).getByLabelText("选一张图片加进这个镜头的参考图"),
+      new File(["png"], "lamp.png", { type: "image/png" }),
+    );
+    expect(
+      await within(set).findByRole("img", { name: "这个镜头的参考图 1（光线）" }),
+    ).toBeInTheDocument();
+    expect(set).toHaveTextContent("1 / 4 张");
+    const product = fakePictures.products.find((p) => p.slot === "shot_refs");
+    expect(product?.owner_id).toBe(shot("1-04")?.id);
+    expect(product?.versions.at(-1)?.files[0]?.purpose).toBe("light");
+
+    await user.click(within(set).getByRole("button", { name: "删掉 这个镜头的参考图 1（光线）" }));
+    await waitFor(() => expect(within(set).queryByRole("img")).not.toBeInTheDocument());
+    expect(product?.versions).toHaveLength(2);
+  });
+
+  it("a continuous shot takes no reference pictures; the style board links to the spec page", async () => {
+    const user = userEvent.setup();
+    renderBoard();
+    await screen.findByRole("group", { name: "这个镜头的参考图" });
+    const add = screen.getByRole("link", { name: "去添加" });
+    expect(add).toHaveAttribute("href", "/s/demo/spec");
+    expect(add.parentElement).toHaveTextContent("还没有 · 去添加");
+    await user.click(
+      within(screen.getByRole("region", { name: "镜头列表" })).getByRole("button", {
+        name: /^1-08/,
+      }),
+    );
+    await screen.findByRole("heading", { name: "镜头 1-08" });
+    expect(screen.queryByRole("group", { name: "这个镜头的参考图" })).not.toBeInTheDocument();
+    expect(screen.getByText("剧的风格板")).toBeInTheDocument();
   });
 });

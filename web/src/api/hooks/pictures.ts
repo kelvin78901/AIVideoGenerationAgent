@@ -5,11 +5,11 @@
  */
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { post, postForm } from "@/api/client";
+import { del, post, postForm } from "@/api/client";
 import { productKeys } from "@/api/hooks/products";
 import { shotKeys } from "@/api/hooks/shots";
 import { JobSchema, type Job } from "@/api/schemas/jobs";
-import { ProductSchema } from "@/api/schemas/products";
+import { ProductSchema, type Product } from "@/api/schemas/products";
 import type { Where } from "@/api/schemas/common";
 
 const enc = encodeURIComponent;
@@ -98,4 +98,50 @@ export function useUpscalePicture() {
   return useVersionRun((r: { productId: string; versionId: string; idx: number }) =>
     post(`/versions/${enc(r.versionId)}/upscale`, JobSchema, { idx: r.idx }),
   );
+}
+
+/** Where a picture set (镜头参考图, 风格板) is added to and removed from. */
+interface SetEndpoint {
+  /** `/shots/{id}/refs`, `/series/{id}/style-board` */
+  path: string;
+  /** The list it is in: `shot:<id>`, `series:<id>`. */
+  owner: string;
+}
+
+/** 加一张 / 删一张 of a picture set: each is a new version, adopted at once. */
+export function usePictureSet({ path, owner }: SetEndpoint) {
+  const client = useQueryClient();
+  const stored = (product: Product) => {
+    client.setQueryData(productKeys.detail(product.id), product);
+    void client.invalidateQueries({ queryKey: productKeys.list({ owner }) });
+  };
+  const add = useMutation({
+    mutationFn: ({ file, purpose }: { file: File; purpose?: string }) => {
+      const form = new FormData();
+      form.append("file", file);
+      if (purpose) form.append("purpose", purpose);
+      return postForm(path, ProductSchema, form);
+    },
+    onSuccess: stored,
+  });
+  const remove = useMutation({
+    mutationFn: (idx: number) => del(`${path}/${idx}`, ProductSchema),
+    onSuccess: stored,
+  });
+  return { add, remove };
+}
+
+/** The pictures of a set's adopted version, in order. */
+export function setPictures(product: Product | undefined): PictureFile[] {
+  const v = product?.versions.find((x) => x.id === product.adopted_version_id);
+  return (v?.files ?? [])
+    .filter((f) => f.role === "ref")
+    .map((f, i) => ({ idx: f.idx ?? i, sha256: f.sha256, purpose: f.purpose ?? null }))
+    .sort((a, b) => a.idx - b.idx);
+}
+
+export interface PictureFile {
+  idx: number;
+  sha256: string;
+  purpose: string | null;
 }

@@ -384,6 +384,15 @@
       "lowRes": "The cut-out is {{cw}}×{{ch}}, smaller than the draft size {{w}}×{{h}}, and will look soft scaled up. You can use it now and Upscale later.",
       "foot": "The upload becomes a new candidate: pick it and confirm the shot, or redraw, upscale or finish it via API.",
       "submit": "Upload as candidate"
+    },
+    "set": {
+      "picture": "{{label}} {{n}} ({{purpose}})",
+      "remove": "Remove {{name}}",
+      "purpose": "What it is for",
+      "add": "Upload a reference",
+      "count": "{{count}} / {{max}}",
+      "full": "At most {{max}}; remove one to add another",
+      "file": "Pick a picture to add to {{label}}"
     }
   }
 }

@@ -152,5 +152,15 @@
     "failed": "配音失败",
     "no_voice": "没有音色",
     "voice_not_locked": "音色未锁定"
+  },
+  "refPurpose": {
+    "composition": "构图",
+    "pose": "姿势",
+    "light": "光线",
+    "style": "风格",
+    "face": "正脸",
+    "outfit": "服装",
+    "hair": "发型",
+    "other": "其他"
   }
 }

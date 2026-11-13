@@ -152,5 +152,15 @@
     "failed": "Dubbing failed",
     "no_voice": "No voice",
     "voice_not_locked": "Voice not locked"
+  },
+  "refPurpose": {
+    "composition": "Composition",
+    "pose": "Pose",
+    "light": "Light",
+    "style": "Style",
+    "face": "Face",
+    "outfit": "Outfit",
+    "hair": "Hair",
+    "other": "Other"
   }
 }

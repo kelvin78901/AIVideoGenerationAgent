@@ -26,6 +26,7 @@ import {
 } from "@/test/fakes/generate";
 import { gateHandlers, resetFakeImpact } from "@/test/fakes/impact";
 import { novelHandlers, resetFakeNovel } from "@/test/fakes/novel";
+import { fakePictureProducts, pictureHandlers, resetFakePictures } from "@/test/fakes/pictures";
 import { fakeScriptProducts, resetFakeScript, scriptHandlers } from "@/test/fakes/script";
 import {
   fakeShotProducts,
@@ -194,6 +195,7 @@ function seriesHandlers() {
     ...assetHandlers(),
     ...dubHandlers(),
     ...shotHandlers(),
+    ...pictureHandlers(),
     ...generateHandlers(),
     ...gateHandlers(),
   ];
@@ -203,9 +205,15 @@ function seriesHandlers() {
  * What the MSW demo merges in from the backend (`mocks/backend.ts`): products, the plan, the
  * shots and takes the post demo reads, the summary it lays the dashboard over, and the badges.
  */
-function fakeBackendFetch(request: Request): Response {
+async function fakeBackendFetch(request: Request): Promise<Response> {
   const url = new URL(request.url);
   const owner = url.searchParams.get("owner") ?? "";
+  // The series' picture sets (风格板) after its bible products.
+  if (url.pathname.endsWith("/api/v1/products") && owner.startsWith("series:")) {
+    const bible = bibleBackendFetch(url);
+    const list = bible ? ((await bible.json()) as unknown[]) : [];
+    return HttpResponse.json([...list, ...fakePictureProducts(owner)]);
+  }
   if (url.pathname.endsWith("/api/v1/products") && /^(episode|shot):/.test(owner))
     return HttpResponse.json([
       ...fakeScriptProducts(owner),
@@ -248,7 +256,8 @@ export function backend({ mock = true }: { mock?: boolean } = {}) {
   resetFakeGenerate();
   resetFakeImpact();
   resetFakeWorkflows();
-  setBackendFetch((request) => Promise.resolve(fakeBackendFetch(request)));
+  resetFakePictures();
+  setBackendFetch(fakeBackendFetch);
   resetFakeSetup();
   resetFakeConfig();
   server.use(

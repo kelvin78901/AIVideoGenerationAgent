@@ -150,7 +150,16 @@
     "uploaded": "Upload · {{name}}",
     "uploadedPlain": "Uploaded picture",
     "lowRes": "Low resolution",
-    "uploadDone": "Uploaded as a new candidate of shot {{id}} and picked."
+    "uploadDone": "Uploaded as a new candidate of shot {{id}} and picked.",
+    "shotRefs": "This shot's references",
+    "shotRefsHint": "for this shot only, each saying what it is for; sent after the assets",
+    "styleBoard": "Series style board",
+    "styleBoardHint": "shared by the whole series, managed on the Output spec page; sent last",
+    "styleBoardPicture": "Style board {{n}}",
+    "styleBoardCount": "{{count}} pictures",
+    "styleBoardNone": "none yet",
+    "styleBoardManage": "manage",
+    "styleBoardAdd": "add some"
   },
   "contract": {
     "label": "Shot contract",

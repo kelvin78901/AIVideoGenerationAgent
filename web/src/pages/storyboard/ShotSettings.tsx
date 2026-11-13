@@ -40,6 +40,7 @@ import { currentVersion } from "@/lib/versions";
 import { Blocking } from "@/pages/storyboard/Blocking";
 import { ContractSection } from "@/pages/storyboard/ContractSection";
 import { durationSource } from "@/pages/storyboard/duration";
+import { ShotRefs } from "@/pages/storyboard/ShotRefs";
 import { CheckLines, ShotIssues } from "@/pages/storyboard/ShotChecks";
 
 const LETTERS = "ABC";
@@ -376,6 +377,7 @@ function SplitMerge({
 /** 镜头设定: everything about one shot, saved as you change it. */
 export function ShotSettings({
   shot,
+  seriesId,
   assets,
   aspect,
   dims,
@@ -391,6 +393,7 @@ export function ShotSettings({
   onMerge,
 }: {
   shot: Shot;
+  seriesId: string;
   assets: Asset[];
   aspect: Aspect;
   /** The output spec's sizes (上传并裁切, 放大); null while it loads. */
@@ -632,6 +635,7 @@ export function ShotSettings({
             </PopoverContent>
           </Popover>
         </div>
+        <ShotRefs shot={shot} seriesId={seriesId} />
       </Field>
 
       <Field label={t("shot.sound")}>

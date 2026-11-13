@@ -150,7 +150,16 @@
     "uploaded": "上传 · {{name}}",
     "uploadedPlain": "上传的图",
     "lowRes": "分辨率偏低",
-    "uploadDone": "已上传为镜头 {{id}} 的新候选，并选中了它。"
+    "uploadDone": "已上传为镜头 {{id}} 的新候选，并选中了它。",
+    "shotRefs": "这个镜头的参考图",
+    "shotRefsHint": "只给这个镜头用，标明参考什么；排在素材之后",
+    "styleBoard": "剧的风格板",
+    "styleBoardHint": "整部剧共用，在「成片规格」页管理；排在最后",
+    "styleBoardPicture": "风格板 {{n}}",
+    "styleBoardCount": "{{count}} 张",
+    "styleBoardNone": "还没有",
+    "styleBoardManage": "去管理",
+    "styleBoardAdd": "去添加"
   },
   "contract": {
     "label": "镜头契约",

@@ -281,6 +281,7 @@ export default function StoryboardPage() {
               <ShotSettings
                 key={`${shot.id}-${undone}`}
                 shot={shot}
+                seriesId={seriesId}
                 assets={assets.data ?? []}
                 aspect={aspect}
                 dims={spec.data?.dims ?? null}
