@@ -227,6 +227,11 @@ class Component(ABC):
         estimate only reads what was asked before)."""
         return ModelChoice(self.model_for(inputs, model, settings))
 
+    def api_final_usd(self, inputs: Inputs, compiled: str, settings: Resolved) -> float | None:
+        """What a run on the route's API model costs, when the page prices that button apart
+        from the next run (M5.5: 「克隆 · 约 $X」); None elsewhere."""
+        return None
+
     # ------------------------------------------------------------------ run
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:

@@ -39,6 +39,16 @@ export type TextSettings = z.infer<typeof TextSettingsSchema>;
 export const OcrIssueSchema = z.enum(["missing", "wrong", "has_text"]);
 export const VoiceMethodSchema = z.enum(["design", "clone", "local"]);
 
+/** 声音克隆的样本: its name and length, and the clip a player plays (its first `clip_s`). */
+export const VoiceSampleSchema = z.object({
+  name: z.string(),
+  duration_s: z.number(),
+  sha256: z.string(),
+  clip_s: z.number().nullable(),
+  waveform: z.array(z.number()),
+});
+export type VoiceSample = z.infer<typeof VoiceSampleSchema>;
+
 /** A scene of the episode asked for that the asset appears in, and its lines there. */
 export const AssetSceneSchema = z.object({
   scene_id: z.string(),
@@ -81,6 +91,10 @@ export const AssetSchema = z.object({
     .object({
       method: VoiceMethodSchema,
       lines: z.array(z.object({ text: z.string(), tone: z.string() })),
+      /** 声音克隆 (M5.5): the uploaded sample (`sha256` plays its levelled first seconds). */
+      sample: VoiceSampleSchema.nullable(),
+      /** 「我确认已获得声音本人的授权」; a new sample unticks it. */
+      consent: z.boolean(),
     })
     .nullable(),
   /** What the analysis said about it (e.g. 「第 2 集出场」 for one not used yet). */
@@ -116,7 +130,9 @@ export const AssetPatchSchema = z.object({
   intent: z.string().optional(),
   pick: z.number().int().nonnegative().optional(),
   text: TextSettingsSchema.partial().optional(),
-  voice: z.object({ method: VoiceMethodSchema }).optional(),
+  voice: z
+    .object({ method: VoiceMethodSchema.optional(), consent: z.boolean().optional() })
+    .optional(),
   /** A prop's 真实尺寸 / 材质 / 新旧; an empty string clears one. */
   physical: PhysicalSchema.partial().optional(),
 });
@@ -165,6 +181,8 @@ export const VoiceFinalSchema = z.object({
   emotions: z.array(z.string()),
   /** The audition it was made from (content). */
   label: z.string().nullable().optional(),
+  /** Made from an uploaded sample (声音克隆, M5.5). */
+  cloned: z.boolean().optional(),
 });
 
 /** `POST /assets/{id}/lock`: by default the picked candidate of the version on screen.

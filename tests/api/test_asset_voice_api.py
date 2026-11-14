@@ -292,8 +292,11 @@ def test_a_clone_needs_a_sample_and_the_speakers_consent(client: TestClient) -> 
     assert client.get(f"{V1}/files/{sample['sha256']}").status_code == 200
     resp = client.post(run, json={"mode": "run"})
     assert resp.status_code == 409 and resp.json()["detail"]["code"] == "voice_clone_consent"
-    # Still priced before the box is ticked (the page shows what a clone costs).
-    assert client.get(f"{V1}/products/demo-p-asset-vzhouyu").status_code == 200
+    # Still priced before the box is ticked: the page shows what a clone costs.
+    estimate = _product(client, "vzhouyu")["estimate"]
+    sample_chars = len(get_config().voice.sample_text)
+    assert (estimate["model_key"], estimate["cost_usd"]) == ("local/indextts2", 0)
+    assert estimate["final_usd"] == pytest.approx(CLONE + 5 * sample_chars * PER_CHAR, abs=1e-4)
 
     resp = client.patch(f"{V1}/assets/vzhouyu", json={"voice": {"consent": True}})
     assert resp.json()["voice"]["consent"] is True

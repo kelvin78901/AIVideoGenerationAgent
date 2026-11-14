@@ -113,7 +113,6 @@
     "lines": "Audition with lines from the script",
     "note": "Three free auditions first; choose one and make the final, which is what gets locked",
     "needsFinal": "An audition cannot be locked: make the final first",
-    "cloneLater": "Coming later",
     "finalApi": "Make the final with {{model}}",
     "finalLocal": "Make the final locally (free)",
     "finalStarted": "Making the final from candidate {{letter}}: the voice, then five emotion variants.",
@@ -121,7 +120,25 @@
     "final": "Final · {{label}} · {{provider}}",
     "provider": {
       "api": "API voice design",
-      "local": "Local"
+      "local": "Local",
+      "cloneApi": "MiniMax clone",
+      "cloneLocal": "Local clone"
+    },
+    "finalCloned": "Final · {{provider}}",
+    "clone": {
+      "title": "Voice sample",
+      "upload": "Upload a sample",
+      "replace": "Replace the sample",
+      "formats": "WAV, MP3 or M4A, 10 s to 5 min, at most 20 MB",
+      "sample": "{{name}} · {{seconds}} s",
+      "consent": "I confirm the speaker has agreed to have their voice cloned",
+      "consentHint": "Tick it again after replacing the sample.",
+      "run": "Clone · about {{cost}}",
+      "runFree": "Clone",
+      "local": "Local IndexTTS uses this sample as its reference (free)",
+      "started": "Cloning: the voice, then five emotion variants.",
+      "needSample": "Upload a sample first",
+      "needConsent": "Tick the consent box first"
     },
     "anchor": "Sample",
     "variants": "Emotion variants",

@@ -60,6 +60,9 @@ export const fakeAssets = {
   views: structuredClone(demoViews),
   /** Pictures uploaded, in order. */
   uploads: [] as { id: string; name: string }[],
+  /** 声音克隆的样本 uploaded (asset, file name), and the clones made from them. */
+  samples: [] as { id: string; name: string }[],
+  clones: [] as { id: string; where: "api" | "local" }[],
   /** 重新分析剧本 requests, in order (episode ids). */
   analyses: [] as string[],
   /** Episodes whose assets gate is confirmed. */
@@ -80,6 +83,8 @@ export function resetFakeAssets() {
   fakeAssets.products = structuredClone(demoProducts);
   fakeAssets.views = structuredClone(demoViews);
   fakeAssets.uploads = [];
+  fakeAssets.samples = [];
+  fakeAssets.clones = [];
   fakeAssets.analyses = [];
   fakeAssets.confirmed = new Set();
   fakeAssets.created = [];
@@ -428,8 +433,38 @@ const audio = (id: string, role: string, extra: Partial<ProductVersion["files"][
   ...extra,
 });
 
+/** 声音克隆: no auditions, every run is a final from the sample (409 without the sample or
+ * the 本人授权 box); MiniMax on `where: api`, else IndexTTS. */
+function runClone(p: Product, a: Asset, body: RunRequest): Job | Response {
+  const voice = a.voice;
+  if (!voice?.sample) return error(409, "voice_sample_missing", { id: p.id });
+  if (!voice.consent) return error(409, "voice_clone_consent", { id: p.id });
+  const api = body.where === "api";
+  const model = api
+    ? (fakeResolve("voice", null)?.values.api_model ?? "minimax/speech-2.8-hd")
+    : "local/indextts2";
+  const v = addVersion(p, 3, { origin: body.mode, model, stage: "final" });
+  v.payload = {
+    provider: api ? "minimax" : "local",
+    voice_id: api ? `ds-${v.id}` : null,
+    emotions: EMOTIONS,
+    label: null,
+    cloned: true,
+  };
+  v.files = [
+    audio(voice.sample.sha256, "anchor", {}),
+    ...EMOTIONS.map((emotion, k) =>
+      audio(`${v.id}-${emotion}`, "variant", { idx: k, line: 0, emotion }),
+    ),
+  ];
+  fakeAssets.clones.push({ id: a.id, where: api ? "api" : "local" });
+  return job(p, v.id, model, body.mode);
+}
+
 /** A voice's run: three auditions reading its lines, or (from one of them) its final. */
-function runVoice(p: Product, body: RunRequest): Job {
+function runVoice(p: Product, body: RunRequest): Job | Response {
+  const clone = fakeAssets.assets.find((x) => x.product_id === p.id);
+  if (clone?.voice?.method === "clone") return runClone(p, clone, body);
   const source = body.params?.source_version_id;
   const local = body.where === "local";
   const model = !source
@@ -467,7 +502,7 @@ function runVoice(p: Product, body: RunRequest): Job {
   return job(p, v.id, model, body.mode);
 }
 
-function run(p: Product, body: RunRequest): Job {
+function run(p: Product, body: RunRequest): Job | Response {
   if (p.component_id === "voice") return runVoice(p, body);
   const route = fakeResolve(p.component_id, null)?.values ?? null;
   const source = body.where === "api" ? body.params?.source_version_id : undefined;
@@ -546,6 +581,16 @@ export function assetHandlers() {
       }
       if (text && a.text) a.text = { ...a.text, ...text };
       if (voice && a.voice) a.voice = { ...a.voice, ...voice };
+      // 「克隆 · 约 $X」: the clone fee and five lines on MiniMax.
+      if (voice?.method === "clone") {
+        const now = p.estimate ?? {
+          model_key: "local/indextts2",
+          where: "local",
+          cost_usd: 0,
+          seconds: 30,
+        };
+        p.estimate = { ...now, final_usd: 1.4 };
+      }
       if (physical) a.physical = setPhysical(a, physical);
       return HttpResponse.json(withStatus(a));
     }),
@@ -570,6 +615,29 @@ export function assetHandlers() {
       v.note = name || null;
       a.pick = 0;
       p.pick = { version_id: v.id, idx: 0 };
+      return HttpResponse.json(withStatus(a));
+    }),
+
+    http.post("*/api/v1/assets/:id/voice/sample", async ({ params, request }) => {
+      const a = findAsset(params.id);
+      const p = a && productOf(a);
+      if (!a || !p) return error(404, "asset_not_found", { id: params.id });
+      if (!a.voice) return error(422, "upload_not_supported", { kind: a.kind });
+      if (p.locked_hash) return error(409, "product_locked", { id: p.id });
+      const file = (await request.formData()).get("file");
+      const name = file instanceof File ? file.name : "";
+      fakeAssets.samples.push({ id: a.id, name });
+      a.voice = {
+        ...a.voice,
+        consent: false,
+        sample: {
+          name,
+          duration_s: 14.2,
+          sha256: `sample-${a.id}-${fakeAssets.samples.length}`,
+          clip_s: 14.2,
+          waveform: Array.from({ length: 64 }, (_, i) => ((i * 3) % 10) / 10),
+        },
+      };
       return HttpResponse.json(withStatus(a));
     }),
 
@@ -643,7 +711,8 @@ export function assetHandlers() {
     http.post("*/api/v1/products/:id/run", async ({ params, request }) => {
       const p = fakeAssets.products.find((x) => x.id === params.id);
       if (!p) return undefined;
-      return HttpResponse.json(run(p, (await request.json()) as RunRequest));
+      const made = run(p, (await request.json()) as RunRequest);
+      return made instanceof Response ? made : HttpResponse.json(made);
     }),
   ];
 }

@@ -48,7 +48,7 @@ from drama_series_agent.core.models_db import (
     Scene,
     ScriptLine,
 )
-from drama_series_agent.modelhub.adapters.base import Estimate, ModelRequest
+from drama_series_agent.modelhub.adapters.base import Estimate, ModelError, ModelRequest
 from drama_series_agent.pipeline.component import (
     ComponentError,
     Inputs,
@@ -164,6 +164,16 @@ class VoiceComponent(MediaComponent):
         return await super().choose_model(
             product, inputs, model, settings, lang=lang, named=named, ask=ask
         )
+
+    def api_final_usd(self, inputs: Inputs, compiled: str, settings: Resolved) -> float | None:
+        """「克隆 · 约 $X」: a clone on the route's API model (the clone fee and five lines)."""
+        model = settings.values.get("api_model")
+        if inputs.context["method"] != "clone" or not model:
+            return None
+        try:
+            return round(self.estimate(inputs, compiled, str(model)).cost_usd, 4)
+        except (LookupError, ModelError):
+            return None
 
     # ------------------------------------------------------------------ run
 

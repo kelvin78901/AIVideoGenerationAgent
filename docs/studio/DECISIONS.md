@@ -9,6 +9,7 @@
 - **样本**：`POST /assets/{id}/voice/sample`（`assets/voice_sample.py`）按 MiniMax 的规矩先在本地查（长度按去掉首尾静音后算），存两份：原文件（传给 MiniMax）和参考片段。都在音色产物的 `settings.voice.sample`，不进依赖哈希（锁定后不能改设置，改样本要先解锁）。
 - **本人授权**存在 `settings.voice.consent`（`PATCH /assets/{id} {voice: {consent}}`），**换样本会清掉**（可能换了一个人）。没有样本 / 没勾授权时入队返回 409 `voice_sample_missing` / `voice_clone_consent`；检查放在 `choose_model(ask=True)`，只在入队时查，估价照样能算（页面要显示「克隆 · 约 $X」）。运行时再查一次。
 - `PATCH` 的 `voice` 改成合并（`method`、`consent` 都可选），原来是整个覆盖，会把样本冲掉。
+- **界面（19b）**：照草图 A5，「声音克隆」不再灰掉；选了它，音色来源下面多一块「声音样本」（`pages/assets/VoiceClone.tsx`）：上传 / 换一段样本、播放、授权勾选、「用本地出终版（免费）」和「克隆 · 约 $X」。价格是产品估价的 `final_usd`：新的组件钩子 `api_final_usd`（音色在克隆时按路由的 `api_model` 估），因为下一次运行的估价是本地的（免费）。改音色来源后前端重新拉产品，价格跟着变。克隆时不显示「点重跑出 3 个音色候选」的空状态，也不显示试听的「出终版」按钮。参考片段只裁不再统一响度一次（`audio.measured`），否则时长比样本还多 0.1 秒。
 
 ## 2026-11-14 · M5.5 第 18 步：图片编辑本机核对和 API 冒烟
 

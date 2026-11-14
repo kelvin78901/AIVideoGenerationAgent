@@ -216,7 +216,8 @@ class RunService:
             cost_usd=round(est.cost_usd, 4),
             seconds=est.seconds,
             priced=est.priced,
-            final_usd=self._final_api_cost(comp, inputs, compiled, model),
+            final_usd=self._final_api_cost(comp, inputs, compiled, model)
+            or comp.api_final_usd(inputs, compiled, settings),
         )
 
     def _final_api_cost(

@@ -108,10 +108,18 @@ export function VoicePanel({
       ) : final.success ? (
         <section aria-label={t("voice.finalTitle")} className="flex flex-col gap-2">
           <div className="text-sm font-medium">
-            {t("voice.final", {
-              label: final.data.label ?? "",
-              provider: t(`voice.provider.${final.data.provider === "local" ? "local" : "api"}`),
-            })}
+            {final.data.cloned
+              ? t("voice.finalCloned", {
+                  provider: t(
+                    `voice.provider.${final.data.provider === "local" ? "cloneLocal" : "cloneApi"}`,
+                  ),
+                })
+              : t("voice.final", {
+                  label: final.data.label ?? "",
+                  provider: t(
+                    `voice.provider.${final.data.provider === "local" ? "local" : "api"}`,
+                  ),
+                })}
           </div>
           <div className="flex items-center gap-3">
             <span className="w-24 shrink-0 text-xs text-muted-foreground">{t("voice.anchor")}</span>
@@ -173,7 +181,8 @@ function VoiceFinalButton({
   const run = useRunProduct(product.id);
   const local = asset.voice?.method === "local";
   const apiModel = config?.api_model ?? null;
-  if (!local && !apiModel) return null;
+  // A clone has no auditions: its panel starts the final from the sample.
+  if (asset.voice?.method === "clone" || (!local && !apiModel)) return null;
   const model = models.find((m) => m.key === apiModel);
   const busy = run.isPending || product.running !== null;
   return (

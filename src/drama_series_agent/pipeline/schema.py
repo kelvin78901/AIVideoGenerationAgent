@@ -77,7 +77,7 @@ class EstimateOut(BaseModel):
     # False: the model has no known price (cost_usd is 0); a run waits for a yes first.
     priced: bool = True
     # 「用 API 出终版」 of a take where the component has a ``final_api`` (videos: Regenerate-2K
-    # of the shot's length); None elsewhere.
+    # of the shot's length), or a voice's clone on its API model (M5.5); None elsewhere.
     final_usd: float | None = None
 
 

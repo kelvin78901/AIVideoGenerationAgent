@@ -113,7 +113,6 @@
     "lines": "用剧本里的台词试读",
     "note": "先免费试听 3 个，选一个出终版；终版才能锁定",
     "needsFinal": "试听不能直接锁定：先出终版",
-    "cloneLater": "之后支持",
     "finalApi": "用 {{model}} 出终版",
     "finalLocal": "用本地出终版（免费）",
     "finalStarted": "已开始出终版：以候选 {{letter}} 为基础，定下音色，再出 5 个情绪变体。",
@@ -121,7 +120,25 @@
     "final": "终版 · {{label}} · {{provider}}",
     "provider": {
       "api": "API 音色设计",
-      "local": "本地"
+      "local": "本地",
+      "cloneApi": "MiniMax 克隆",
+      "cloneLocal": "本地克隆"
+    },
+    "finalCloned": "终版 · {{provider}}",
+    "clone": {
+      "title": "声音样本",
+      "upload": "上传样本",
+      "replace": "换一段样本",
+      "formats": "WAV、MP3 或 M4A，10 秒到 5 分钟，不超过 20 MB",
+      "sample": "{{name}} · {{seconds}} 秒",
+      "consent": "我确认已获得声音本人的授权",
+      "consentHint": "换一段样本后要重新勾选。",
+      "run": "克隆 · 约 {{cost}}",
+      "runFree": "克隆",
+      "local": "本地 IndexTTS 直接拿这段样本当参考音频（免费）",
+      "started": "已开始克隆：定下音色，再出 5 个情绪变体。",
+      "needSample": "先上传样本",
+      "needConsent": "先勾选授权"
     },
     "anchor": "样音",
     "variants": "情绪变体",

@@ -13,7 +13,7 @@ from typing import Any
 
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.storage import BlobStore
-from drama_series_agent.media.audio import AudioError, joined_sample, prepare_clip
+from drama_series_agent.media.audio import AudioError, joined_sample, measured, prepare_clip
 from drama_series_agent.pipeline.errors import PipelineError
 
 MAX_SAMPLE_BYTES = 20 * 1024 * 1024
@@ -47,7 +47,7 @@ async def store_sample(store: BlobStore, filename: str, data: bytes) -> dict[str
         raise PipelineError(422, "voice_sample_too_long", seconds=whole.duration_s, max=cfg.max_s)
     cut = joined_sample([whole.data], 0.0, cfg.ref_max_s)
     assert cut is not None  # one clip is always long enough for a floor of 0
-    ref = await prepare_clip(cut)
+    ref = measured(cut)  # already levelled: only cut
     return {
         "sha256": store.put_bytes(data),
         "name": filename[:200],

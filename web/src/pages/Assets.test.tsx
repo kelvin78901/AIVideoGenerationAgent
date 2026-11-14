@@ -219,8 +219,45 @@ describe("AssetsPage", () => {
     ).toEqual(["平静", "愤怒", "哭腔", "耳语", "喊叫"].map((e) => expect.stringContaining(e)));
     expect(screen.getByRole("button", { name: "播放：……周屿？" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "文字描述设计" })).toBeChecked();
-    // 声音克隆 comes later.
-    expect(screen.getByRole("radio", { name: "声音克隆" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "声音克隆" })).toBeEnabled();
+  });
+
+  it("a voice clone: a sample, the speaker's consent, then the clone is the final", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/^周屿\s*音色/));
+    await user.click(screen.getByRole("radio", { name: "声音克隆" }));
+    await waitFor(() => expect(asset("vzhouyu")?.voice?.method).toBe("clone"));
+    const panel = await screen.findByRole("region", { name: "声音样本" });
+    const local = within(panel).getByRole("button", { name: "用本地出终版（免费）" });
+    const clone = within(panel).getByRole("button", { name: "克隆 · 约 $1.40" });
+    expect(local).toBeDisabled();
+    expect(clone).toBeDisabled();
+    expect(panel).toHaveTextContent("先上传样本");
+    const consent = within(panel).getByRole("checkbox", { name: "我确认已获得声音本人的授权" });
+    expect(consent).toBeDisabled();
+
+    const file = new File(["RIFF"], "me.wav", { type: "audio/wav" });
+    await user.upload(within(panel).getByLabelText("上传样本"), file);
+    expect(await within(panel).findByText("me.wav · 14.2 秒")).toBeInTheDocument();
+    expect(fakeAssets.samples).toEqual([{ id: "vzhouyu", name: "me.wav" }]);
+    expect(within(panel).getByRole("button", { name: "播放：me.wav" })).toBeInTheDocument();
+    expect(panel).toHaveTextContent("先勾选授权");
+    expect(clone).toBeDisabled();
+
+    await user.click(consent);
+    await waitFor(() => expect(asset("vzhouyu")?.voice?.consent).toBe(true));
+    await waitFor(() => expect(clone).toBeEnabled());
+    await user.click(clone);
+    const final = await screen.findByRole("region", { name: "终版" });
+    expect(final).toHaveTextContent("终版 · MiniMax 克隆");
+    expect(fakeAssets.clones).toEqual([{ id: "vzhouyu", where: "api" }]);
+    // The sample is the final's anchor.
+    expect(productOf("vzhouyu")?.versions.at(-1)?.files[0]?.sha256).toBe("sample-vzhouyu-1");
+    await user.click(screen.getByRole("button", { name: "锁定为参考" }));
+    await waitFor(() => expect(item(/^周屿\s*音色/)).toHaveTextContent("已锁定"));
+    expect(within(panel).getByRole("button", { name: "换一段样本" })).toBeDisabled();
   });
 
   it("a voice: free auditions, then the final, which is what gets locked", async () => {

@@ -119,6 +119,8 @@ const seeds: Seed[] = [
         { text: "……周屿？", tone: "低声，愣住" },
         { text: "三年了。他凭什么。", tone: "画外音，压着火" },
       ],
+      sample: null,
+      consent: false,
     },
   },
   {
@@ -128,7 +130,7 @@ const seeds: Seed[] = [
     state: "none",
     source: msg("episode", { episode: 2 }),
     intent: "第 2 集出场前再定。",
-    voice: { method: "design", lines: [] },
+    voice: { method: "design", lines: [], sample: null, consent: false },
   },
 ];
 

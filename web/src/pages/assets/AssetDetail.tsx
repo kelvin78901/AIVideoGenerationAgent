@@ -37,6 +37,7 @@ import { MoreRefs } from "@/pages/assets/MoreRefs";
 import { isVoiceDraft, STATUS_TONE } from "@/pages/assets/status";
 import { PropPhysical, ScaleReference } from "@/pages/assets/Prop";
 import { VoicePanel } from "@/pages/assets/Voice";
+import { VoiceClone } from "@/pages/assets/VoiceClone";
 
 const LETTERS = "ABCD";
 // The writing on a prop is drawn by the model, handwritten or printed (M5.5, sketch A2).
@@ -364,13 +365,18 @@ export function AssetDetail({
               options={VoiceMethodSchema.options.map((m) => ({
                 value: m,
                 label: t(`voice.methods.${m}`),
-                // 声音克隆 comes later (Kelvin 2026-10-20).
-                disabled: m === "clone",
-                hint: m === "clone" ? t("voice.cloneLater") : undefined,
               }))}
             />
             <p className="text-xs text-muted-foreground">{t(`voice.hint.${asset.voice.method}`)}</p>
           </div>
+          {asset.voice.method === "clone" && product.data ? (
+            <VoiceClone
+              asset={asset}
+              product={product.data}
+              locked={locked}
+              onConsent={(consent) => save({ voice: { consent } })}
+            />
+          ) : null}
           {product.data && version ? (
             <VoicePanel
               asset={asset}
@@ -379,7 +385,8 @@ export function AssetDetail({
               locked={locked}
               onPick={(pick) => save({ pick })}
             />
-          ) : (
+          ) : asset.voice.method === "clone" ? null : (
+            // A clone has no auditions to wait for: its panel above says what comes first.
             <EmptyState title={t("cands.emptyVoice")} />
           )}
           {episode ? (
