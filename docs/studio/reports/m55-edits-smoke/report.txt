@@ -1,0 +1,57 @@
+M5.5 picture edits smoke · 2026-11-14 04:40 · cap $1.0
+steps ['check', 'local', 'api']; base kf-1-04-candidate-0.png
+ComfyUI 0.41.2 at http://127.0.0.1:8188; models C:\Users\kelvin\DramaStudio
+connection google_llm: ok (google/nano-banana-2.1)
+connection openai_llm: ok (openai/gpt-image-2)
+== check flux3-klein-redraw
+   check: ok
+   trial passed 768x1366 in 13.7 s
+== check klein-inpaint
+   check: ok
+   trial passed 768x1366 in 7.2 s
+== check seedvr2-img
+   check: ok
+   trial passed 768x1366 in 4.6 s
+== upload: kf-1-04-candidate-0.png as 1-04's first frame, cut {'x': 0, 'y': 7, 'w': 928, 'h': 1649}
+   model None [None], files: upload-candidate-0.png (1080x1920)
+== local redraw: FLUX 3 Klein, 改动幅度 0.5
+   local redraw: done in 15.7 s
+   comfy/flux3-klein-redraw [local] parent 7276a5dbf9cb4312ad2aba3a7ba13eb3 {}
+   model comfy/flux3-klein-redraw [local], files: local-redraw-candidate-0.png (928x1664)
+== local inpaint: Klein, the note
+   local inpaint: done in 8.6 s
+   comfy/klein-inpaint [local] parent 7276a5dbf9cb4312ad2aba3a7ba13eb3 {}
+   model comfy/klein-inpaint [local], files: local-inpaint-candidate-0.png (928x1664)
+== local upscale: SeedVR2, the redraw → 1080×1920
+   local upscale: done in 5.0 s
+   comfy/seedvr2-img [local] parent 60f5bf4e43d74014894744344d26bcf4 {}
+   model comfy/seedvr2-img [local], files: local-upscale-candidate-0.png (1080x1920)
+== api redraw: google/nano-banana-2.1
+   api redraw: done in 18.2 s
+   google/nano-banana-2.1 [api] parent 7276a5dbf9cb4312ad2aba3a7ba13eb3 {}
+   model google/nano-banana-2.1 [api], files: api-redraw-candidate-0.jpg (1536x2752)
+== api inpaint: openai/gpt-image-2 with the mask
+   api inpaint: done in 63.0 s
+   openai/gpt-image-2 [api] parent 7276a5dbf9cb4312ad2aba3a7ba13eb3 {}
+   model openai/gpt-image-2 [api], files: api-inpaint-candidate-0.png (1088x1920)
+
+== model_call
+id   component  model                       where  status   fb  out        cost
+1    redraw     comfy/flux3-klein-redraw    local  success  -   1 img      $0.0000
+2    inpaint    comfy/klein-inpaint         local  success  -   1 img      $0.0000
+3    iup        comfy/seedvr2-img           local  success  -   1 img      $0.0000
+4    redraw     comfy/flux3-klein-redraw    local  success  -   1 img      $0.0000
+5    inpaint    comfy/klein-inpaint         local  success  -   1 img      $0.0000
+6    iup        comfy/seedvr2-img           local  success  -   1 img      $0.0000
+7    redraw     google/nano-banana-2.1      api    success  -   1 img      $0.0527
+8    inpaint    openai/gpt-image-2          api    success  -   1 img      $0.1718
+total $0.2245 over 8 calls; failures 0
+
+job                          estimate   spent      seconds
+local redraw                 $0.0000    $0.0000    15.7
+local inpaint                $0.0000    $0.0000    8.6
+local upscale                $0.0000    $0.0000    5.0
+api redraw                   $0.0504    $0.0527    18.2
+api inpaint                  $0.2421    $0.1718    63.0
+
+result: every step ran
