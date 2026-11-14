@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-14 · M5.5 第 19 步：声音克隆
+
+- **MiniMax 克隆接口按官方文档核对（2026-11-14，国际站 + 国内站）**：先 `POST /files/upload`（multipart，`purpose=voice_clone`；mp3 / m4a / wav，10 秒到 5 分钟，≤ 20 MB）拿 `file_id`，再 `POST /voice_clone {file_id, voice_id}`。`voice_id` 由我们定（8–256 位、字母开头，`ds` + 22 位哈希，按素材、样本、种子算，重试同一个）。克隆费国际站 $1.5、国内站 9.90 元，**在第一次用这个音色合成时收**（和音色设计一样），`providers.yaml` 早就有 `extras.voice_clone`；第一次合成带 `charge_design` + `cloned`，返回的 `usage_voice_count` 记成 `voice_clone`。不带试听文本（`text`），克隆本身不花钱。未使用的克隆音色 7 天后被删，所以克隆和出情绪变体放在同一次运行里。新错误码：1043、2037、2038（账号要先实名认证）、2039、2051、2052。
+- **克隆没有试听，每次运行都是终版**：音色设计的 3 个试听是为了在几种倾向里挑；克隆只有一种声音。锚点（`role: anchor`）就是样本统一响度后的前 15 秒（`voice.yaml` `clone.ref_max_s`）。API = MiniMax 克隆 + 5 个情绪；本地 = `local_final`（IndexTTS）拿这段样本当参考音频，免费；API 任何一步失败整套改本地（和设计一样，一个音色不混两家）。路由是本地草稿模型（Qwen3-TTS 只能按文字设计）时，克隆改走 `local_final`（`model_for`）。
+- **样本**：`POST /assets/{id}/voice/sample`（`assets/voice_sample.py`）按 MiniMax 的规矩先在本地查（长度按去掉首尾静音后算），存两份：原文件（传给 MiniMax）和参考片段。都在音色产物的 `settings.voice.sample`，不进依赖哈希（锁定后不能改设置，改样本要先解锁）。
+- **本人授权**存在 `settings.voice.consent`（`PATCH /assets/{id} {voice: {consent}}`），**换样本会清掉**（可能换了一个人）。没有样本 / 没勾授权时入队返回 409 `voice_sample_missing` / `voice_clone_consent`；检查放在 `choose_model(ask=True)`，只在入队时查，估价照样能算（页面要显示「克隆 · 约 $X」）。运行时再查一次。
+- `PATCH` 的 `voice` 改成合并（`method`、`consent` 都可选），原来是整个覆盖，会把样本冲掉。
+
 ## 2026-11-14 · M5.5 第 18 步：图片编辑本机核对和 API 冒烟
 
 - 新脚本 `scripts/smoke/live_edits.py`（`check` / `local` / `api` 三步，`api` 要 `DRAMA_LIVE=1`，默认上限 $1）：三个本地工作流体检 + 试跑，再拿第二十轮 1-04 的真关键帧上传、本地重画 / 局部修复 / 放大，API 重画（Nano Banana 2.1）和局部修复（GPT Image 2）各一张。结论和对照图在 `reports/m55-edits-smoke/README.md`；花了 $0.2245。

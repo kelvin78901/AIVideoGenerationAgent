@@ -17,6 +17,7 @@ from drama_series_agent.assets.schema import (
     AssetPatch,
     MatrixOut,
 )
+from drama_series_agent.assets.voice_sample import MAX_SAMPLE_BYTES
 from drama_series_agent.core.jobs import job_public
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES
 from drama_series_agent.pipeline.schema import ProductOut
@@ -64,6 +65,16 @@ async def upload_asset(
     """「上传参考图」 (PNG, JPEG, WebP): a new version with that one candidate, picked."""
     data = await file.read(MAX_UPLOAD_BYTES + 1)
     return await state.assets.upload(asset_id, file.filename or "", data)
+
+
+@router.post("/assets/{asset_id}/voice/sample")
+async def upload_voice_sample(
+    asset_id: str, state: State, file: Annotated[UploadFile, File()]
+) -> AssetOut:
+    """声音克隆的样本 (M5.5): WAV / MP3 / M4A, 10 s to 5 min, at most 20 MB. Replaces the one
+    before and unticks 本人授权."""
+    data = await file.read(MAX_SAMPLE_BYTES + 1)
+    return await state.assets.upload_voice_sample(asset_id, file.filename or "", data)
 
 
 @router.post("/assets/{asset_id}/refs")

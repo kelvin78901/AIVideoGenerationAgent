@@ -41,9 +41,22 @@ class VoiceLineOut(BaseModel):
     tone: str
 
 
+class VoiceSampleOut(BaseModel):
+    """声音克隆的样本 (M5.5): the upload's name and length; ``sha256`` is the levelled clip a
+    player plays (its first seconds, ``clip_s``)."""
+
+    name: str
+    duration_s: float
+    sha256: str
+    clip_s: float | None = None
+    waveform: list[float] = Field(default_factory=list)
+
+
 class VoiceOut(BaseModel):
     method: VoiceMethod
     lines: list[VoiceLineOut]
+    sample: VoiceSampleOut | None = None  # 声音克隆 (M5.5)
+    consent: bool = False  # 「我确认已获得声音本人的授权」
 
 
 class AssetSceneOut(BaseModel):
@@ -98,7 +111,8 @@ class PhysicalPatch(BaseModel):
 class VoicePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    method: VoiceMethod
+    method: VoiceMethod | None = None
+    consent: bool | None = None  # 声音克隆: the speaker agreed (M5.5)
 
 
 class AssetPatch(BaseModel):

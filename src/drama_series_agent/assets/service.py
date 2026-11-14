@@ -57,7 +57,9 @@ from drama_series_agent.assets.schema import (
     TextOut,
     VoiceLineOut,
     VoiceOut,
+    VoiceSampleOut,
 )
+from drama_series_agent.assets.voice_sample import store_sample
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.models_db import (
@@ -515,7 +517,9 @@ class AssetService:
             changes = body.text.model_dump(exclude_none=True)
             await self._products.update_settings(product.id, {"text": {**text_now, **changes}})
         if body.voice is not None:
-            await self._products.update_settings(product.id, {"voice": body.voice.model_dump()})
+            voice = (product.settings_json or {}).get("voice") or {}
+            changes = body.voice.model_dump(exclude_none=True)
+            await self._products.update_settings(product.id, {"voice": {**voice, **changes}})
         if body.physical is not None:
             # All three are written, so clearing one does not bring the analysis's back.
             physical = {k: physical_now.get(k, "") for k in ops.PHYSICAL_KEYS}
@@ -583,6 +587,22 @@ class AssetService:
             await self.draw_views(asset_id)
         # A locked prop no longer draws its 比例参考 by itself (M5.5 step 9e-1): the picture got
         # the size wrong and every keyframe copied it; the keyframe says the size in words.
+        return await self.get(asset_id)
+
+    async def upload_voice_sample(self, asset_id: str, filename: str, data: bytes) -> AssetOut:
+        """声音克隆: the sample a clone is made from (``assets/voice_sample.py``); the 本人授权
+        box starts unticked again."""
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+            product = await asset_product(session, asset_id)
+            if asset.kind != "voice" or product is None:
+                raise PipelineError(422, "upload_not_supported", kind=asset.kind)
+            if product.locked_hash:
+                raise PipelineError(409, "product_locked", id=product.id)
+            voice = (product.settings_json or {}).get("voice") or {}
+        sample = await store_sample(self._store, filename, data)
+        changes = {"voice": {**voice, "sample": sample, "consent": False}}
+        await self._products.update_settings(product.id, changes)
         return await self.get(asset_id)
 
     async def upload(self, asset_id: str, filename: str, data: bytes) -> AssetOut:
@@ -992,5 +1012,19 @@ def _voice(
             line = lines.get(i)
             if line is not None and not line.retired:
                 picked.append(VoiceLineOut(text=line.text, tone=line.tone or ""))
-    method = (settings.get("voice") or {}).get("method") or "design"
-    return VoiceOut(method=method, lines=picked[:VOICE_LINES])
+    voice = settings.get("voice") or {}
+    sample = voice.get("sample")
+    return VoiceOut(
+        method=voice.get("method") or "design",
+        lines=picked[:VOICE_LINES],
+        sample=VoiceSampleOut(
+            name=sample["name"],
+            duration_s=sample["duration_s"],
+            sha256=sample["ref"]["sha256"],
+            clip_s=sample["ref"].get("duration_s"),
+            waveform=sample["ref"].get("waveform") or [],
+        )
+        if sample
+        else None,
+        consent=bool(voice.get("consent")),
+    )

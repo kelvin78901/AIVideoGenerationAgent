@@ -434,7 +434,9 @@
             "text": "三年了。他凭什么。",
             "tone": "OS"
           }
-        ]
+        ],
+        "sample": null,
+        "consent": false
       },
       "note": null,
       "seed_changed": false,
@@ -461,7 +463,9 @@
       "text": null,
       "voice": {
         "method": "design",
-        "lines": []
+        "lines": [],
+        "sample": null,
+        "consent": false
       },
       "note": "第 2 集出场",
       "seed_changed": false,
