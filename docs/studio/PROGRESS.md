@@ -17,7 +17,7 @@
 ## 下一步
 
 - **第 3 步**质检框架（Mock）：新 `pipeline/qa.py`、组件 `qa`（把 `pipeline/takecheck.py` 并进来，`components.yaml` 的 `takecheck` 行并到 `qa`，覆盖配置迁移）；take 出完自动入队质检（看 `pipeline/components/vid.py:run` 里 takecheck 现在在哪调）；写 `qa_json` / `qa_pass` 和出片那次 `model_call` 的 `qa_scores_json`；`POST /versions/{id}/qa`；生成规则阈值可写（`pipeline/generate.py` 的 rules，`app_setting`）。视觉检查的提问加账本（`ledger_inputs(...).ledger(...)`）。
-- **M6 草图 Kelvin 2026-11-15 同意**（`prototype/m6/`，前端第 9 步照它做；S1 只列这个镜头拍到的人，见 DECISIONS「M6 第 2 步」）。Kelvin 要做的：M5.5 草图那一项 ROADMAP 还没勾。
+- **M6 草图 Kelvin 2026-11-15 同意**（`prototype/m6/`，前端第 9 步照它做；S1 只列这个镜头拍到的人，见 DECISIONS「M6 第 2 步」）。M5.5 草图 Kelvin 2026-11-15 也同意，ROADMAP 已勾。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
@@ -66,6 +66,5 @@
 
 ## 等 Kelvin 的事
 
-- **M5.5 草图**（`docs/studio/prototype/m5.5/`）：看布局和文案。三件事 Kelvin 2026-11-10 已定（风格板在成片规格页、画面文字 OCR 也只提示、take 卡局部修复按钮留着功能 M6），记在 DECISIONS「M5.5 计划」和计划第 5、12、16 步。
 - 以后：火山方舟开通 Seedance 2.5（要交保证金，Kelvin 先不管）后补跑 `live_video.py --only seedance`。 可选：想在本机 ComfyUI 里用 DramaStudio 节点，在 Setup 页勾「DramaStudio 节点包」安装（先存快照，没替你装），再重启 ComfyUI。已定：`w_h3` 的两个 Turbo LoRA 留着，以后可能做「快速草稿」档（2026-10-28）；本地 H3 20 步、原生配音合格（2026-10-27）。
 
