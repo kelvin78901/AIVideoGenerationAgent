@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M6 草图 · 生成</title>
+<link rel="stylesheet" href="../m5.5/sketch.css">
+<style>
+  .qa { background: var(--muted); border-radius: 6px; padding: 8px; margin-top: 8px; font-size: 12px; }
+  .qa .r { display: flex; gap: 6px; align-items: baseline; padding: 1px 0; }
+  .qa .r span:first-child { flex: 1; color: var(--muted-fg); }
+  .mask { position: absolute; left: 30%; top: 46%; width: 44%; height: 20%; border-radius: 40% 50% 45% 50%;
+    background: rgba(242, 80, 80, .45); outline: 2px dashed #f25050; }
+  .thr td:nth-child(2) { width: 160px; }
+  .toggle { display: inline-block; width: 28px; height: 16px; border-radius: 8px; background: var(--primary); position: relative; vertical-align: middle; }
+  .toggle::after { content: ""; position: absolute; right: 2px; top: 2px; width: 12px; height: 12px; border-radius: 50%; background: var(--card); }
+  .toggle.off { background: var(--input); } .toggle.off::after { right: auto; left: 2px; }
+</style>
+<script>if (location.search.includes("dark")) document.documentElement.classList.add("dark");</script>
+</head>
+<body>
+<div class="page">
+  <h1>M6 草图 · 生成页（自动质检、修复、阈值）</h1>
+  <p class="sub">原型 Generate.dc.html 已有的（候选墙、质检行、推荐、2K 精修按钮、自动规则）照原型；这里只画原型没有的三处。黄色便签是给 Kelvin 的说明。</p>
+
+  <div class="frame"><span class="tag">G1 · 候选卡：质检结果 + 修复菜单</span>
+    <div class="row">
+      <div class="card" style="width:250px">
+        <div class="thumb" style="width:216px; height:290px; background:var(--media)"><span class="corner">T1</span><span class="tr"><span class="badge fail">未过 2 项</span></span><span class="bl"><span class="badge">5.2s · 768p</span></span></div>
+        <div style="margin-top:8px">MiniMax H3（本地）</div><div class="sub">本地 · 无 API 费用 · 11:31 · 质检没过，已自动重跑</div>
+        <div class="qa">
+          <div class="row" style="justify-content:space-between; margin-bottom:4px"><b style="font-size:13px">自动质检</b><span class="badge fail">未过 2 项</span></div>
+          <div class="r"><span>人脸一致性</span><b class="bad">0.61 ✗</b></div>
+          <div class="r"><span>口型同步</span><b class="ok">7.4 ✓</b></div>
+          <div class="r"><span>台词识别错字率</span><b class="ok">0% ✓</b></div>
+          <div class="r"><span>音色相似度</span><b class="ok">0.78 ✓</b></div>
+          <div class="r"><span>画面文字</span><b>—</b></div>
+          <div class="r"><span>画面检查 ▸</span><b class="bad">1 处 ✗</b></div>
+          <div class="sub" style="margin-top:4px">重新质检</div>
+        </div>
+        <div class="row" style="gap:6px; margin-top:8px"><a class="btn sm">采纳</a><a class="btn sm">用 API 出终版 · 约 $0.19</a></div>
+      </div>
+
+      <div class="card" style="width:250px">
+        <div class="thumb" style="width:216px; height:290px; background:var(--media)"><span class="corner">T2</span><span class="tr"><span class="badge warn">只差口型</span></span><span class="bl"><span class="badge">5.2s · 768p</span></span></div>
+        <div style="margin-top:8px">MiniMax H3（本地）</div><div class="sub">本地 · 无 API 费用 · 11:38 · 自动重跑</div>
+        <div class="qa">
+          <div class="row" style="justify-content:space-between; margin-bottom:4px"><b style="font-size:13px">自动质检</b><span class="badge warn">未过 1 项</span></div>
+          <div class="r"><span>人脸一致性</span><b class="ok">0.83 ✓</b></div>
+          <div class="r"><span>口型同步</span><b class="warn">4.9 ✗</b></div>
+          <div class="r"><span>台词识别错字率</span><b class="ok">0% ✓</b></div>
+          <div class="r"><span>音色相似度</span><b class="ok">0.80 ✓</b></div>
+          <div class="r"><span>画面检查 ▸</span><b class="ok">没问题 ✓</b></div>
+          <div class="sub" style="margin-top:4px">只差口型 → 已自动送去口型修复（本地 LatentSync，排第 1）；修好的 T3 通过就是「推荐」</div>
+        </div>
+        <div class="row" style="gap:6px; margin-top:8px"><a class="btn sm">采纳</a><a class="btn sm">局部修复 ▾</a><a class="btn sm">2K 精修 · 本地</a></div>
+      </div>
+
+      <div class="col">
+        <div class="sub">点「局部修复 ▾」</div>
+        <div class="menu">
+          <div class="hl"><span>口型修复</span><small>本地 · 约 2 分钟</small></div>
+          <div><span>口型修复（API）</span><small>sync · 约 $0.36</small></div>
+          <div class="sep"></div>
+          <div><span>涂一块区域重画…</span><small>本地 · 约 6 分钟</small></div>
+        </div>
+        <div class="note" style="width:250px"><b>说明：</b>口型修复用这个镜头配好的台词音频，只改嘴部；原生同步的镜头修完声音换成配音（模式 C）。本机没装 LatentSync / VACE 时对应一行灰掉，写「去 Setup 安装」。</div>
+      </div>
+    </div>
+    <div class="note"><b>说明：</b>原型的五行之外加「音色相似度」（对锁定音色，只给有对白的镜头）。「画面检查」展开就是 M5.5 的契约检查（拼图 + 每项），M6 多查站位左右、手里的道具、服装、时段（对连续性账本）。不适用的项显示「—」。修好的新版本出现在这一镜的候选墙上；原来那条是已采纳的、新版本又通过质检，就自动改采纳新版本（Kelvin 2026-11-14 定），toast 写「已采纳修好的 T3，T2 还在历史里」。</div>
+  </div>
+
+  <div class="frame"><span class="tag">G2 · 涂一块区域重画（视频局部修复）</span>
+    <div class="dialog" style="width:760px">
+      <h2>局部修复 · 1-04 T2</h2>
+      <div class="row">
+        <div class="col">
+          <div class="thumb" style="width:270px; height:480px; background:var(--media)"><span class="mask"></span><span class="corner">首帧</span></div>
+          <div class="row" style="gap:6px"><a class="btn sm">◀ 0:00</a><span class="sub">拖动换一帧看（遮罩整条都用同一块）</span></div>
+        </div>
+        <div class="col grow">
+          <div class="label">画笔</div>
+          <div class="row" style="gap:6px"><span class="seg"><span class="on">涂</span><span>擦</span></span><span class="sub">粗细</span><div class="slider" style="width:140px"><i style="width:40%"></i><b style="left:36%"></b></div><a class="btn sm">清空</a></div>
+          <div class="label">这一块要变成什么</div>
+          <textarea class="textarea" style="min-height:90px">右手握着伞柄，五根手指分开，不粘连</textarea>
+          <div class="sub">遮罩外的画面原样保留；声音不动。</div>
+          <div class="label">模型</div>
+          <div class="sub">Wan VACE（本地）· 一条 5 秒约 6 分钟 · 无 API 费用</div>
+        </div>
+      </div>
+      <div class="foot"><span class="sub" style="margin-right:auto">出来是一条新候选，原来的留在历史里</span><a class="btn">取消</a><a class="btn primary">开始修复</a></div>
+    </div>
+    <div class="note"><b>说明：</b>和关键帧的局部修复同一种画布（M5.5 的 InpaintDialog），只是画在 take 的帧上。耗时、显存要在 8a 步本机验证后填真数；验证不过会先找 Kelvin。</div>
+  </div>
+
+  <div class="frame"><span class="tag">G3 · 自动规则：阈值可改</span>
+    <div class="card" style="max-width:760px">
+      <h2>自动规则</h2>
+      <div>每个镜头先出 <span class="input" style="width:44px; display:inline-block">2</span> 条候选</div>
+      <div style="margin-top:6px">质检没过，自动重跑最多 <span class="input" style="width:44px; display:inline-block">2</span> 次，仍不过就按兜底设置换模型</div>
+      <div style="margin-top:6px">单个镜头花费超过 $ <span class="input" style="width:56px; display:inline-block">2.00</span> 就停下来问我</div>
+      <div style="margin-top:6px">只有口型没过：<span class="badge">自动口型修复</span> <span class="sub">（不整条重跑）</span></div>
+      <div class="label">质检阈值 <span class="sub">只影响这部剧；改了已有的 take 会按新阈值重新判，不重新算分</span></div>
+      <table class="kv thr">
+        <tr><th>项目</th><th>阈值</th><th>开</th><th>说明</th></tr>
+        <tr><td>人脸一致性</td><td>≥ <span class="input" style="width:60px; display:inline-block">0.75</span></td><td><span class="toggle"></span></td><td class="sub">对比锁定的角色参考</td></tr>
+        <tr><td>口型同步</td><td>≥ <span class="input" style="width:60px; display:inline-block">6</span></td><td><span class="toggle"></span></td><td class="sub">SyncNet 置信度，只查有对白的镜头</td></tr>
+        <tr><td>台词识别错字率</td><td>≤ <span class="input" style="width:60px; display:inline-block">10</span> %</td><td><span class="toggle"></span></td><td class="sub">识别结果对剧本台词</td></tr>
+        <tr><td>音色相似度</td><td>≥ <span class="input" style="width:60px; display:inline-block">0.60</span></td><td><span class="toggle"></span></td><td class="sub">对锁定音色</td></tr>
+        <tr><td>画面文字</td><td>逐字一致</td><td><span class="toggle"></span></td><td class="sub">OCR 每秒一帧</td></tr>
+        <tr><td>画面检查</td><td>没问题</td><td><span class="toggle"></span></td><td class="sub">视觉模型对契约和连续性账本</td></tr>
+      </table>
+      <div class="row" style="justify-content:flex-end; margin-top:8px"><a class="btn sm ghost">恢复默认</a></div>
+    </div>
+    <div class="note"><b>说明：</b>原型这里是一行只读文字。改成表格：每项能改数、能关掉（关掉的项照样显示分数，但不算没过、不触发重跑）。默认值来自 components.yaml，5c 步本机校准后更新。</div>
+  </div>
+</div>
+</body>
+</html>
