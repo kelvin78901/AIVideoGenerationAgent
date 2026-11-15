@@ -4,18 +4,18 @@
 
 ## 当前
 
-- 里程碑：**M5.5 镜头契约 + 图片来源与编辑**，计划 [`plans/M5.5.md`](plans/M5.5.md)（Kelvin 2026-11-10 批准；DECISIONS「M5.5 计划」）。M5 已合并（PR #7，e6044d4），M5 的各步记录在 [`reports/M5.md`](reports/M5.md)。
-- 分支：`m5.5-images`（从 main e6044d4 开出）。
-- Kelvin 定：契约和检查先做（第 2–9 步），图片来源与编辑后做（第 10–18 步）；检查**只提示、不挡**；声音克隆最后一步。
+- 里程碑：**M6 质检与精修**，计划 [`plans/M6.md`](plans/M6.md)（Kelvin 2026-11-14 批准；DECISIONS「M6 计划」）。M5.5 已合并（PR #8，d453a70），各步记录在 [`reports/M5.5.md`](reports/M5.5.md)。
+- 分支：`m6-qa`（从 main d453a70 开出）。
+- Kelvin 定：局部修复做口型 + 视频局部修复两种；只差口型 → 自动口型修复；API take 不过也自动重跑（受单镜上限管）；精修采纳中的 take、新版通过就自动采纳。
 
 ## 已完成的小步
 
-- **0–19**：各小步的记录（提交、测试）都挪进了 [`reports/M5.5.md`](reports/M5.5.md)「各小步」。最后几步：17（b236e27）Playwright `m55`；18（dfc7e79）图片编辑本机核对和 API 冒烟；19a（90abadc）、19b（9e4024e）声音克隆。
-- **20**（本提交）收尾：本机全量 pytest 941 passed；`pnpm -C web e2e` 40 passed、1 failed（已知时好时坏的 smoke「a locked spec changes aspect…」，单独连跑 3 次都过）；音色克隆截图 `reports/ui/assets-voice-clone.*`；`reports/M5.5.md` 写完；SPEC 4.2 / 5 / 9.1 补 M5.5；ROADMAP 除「界面草图给 Kelvin 看过」都勾掉；开 PR。
+- **0**（本提交）开分支 `m6-qa`、计划存 `plans/M6.md`、ROADMAP 链接计划、DECISIONS「M6 计划」。只改文档，没跑测试。
 
 ## 下一步
 
-- **等 Kelvin 看 PR**（描述就是 `reports/M5.5.md`）：合并后从 main 开下一个里程碑（`/milestone` 出 M6 计划）。Kelvin 要做的：重启 `start.ps1` 的后端；看一眼 M5.5 草图对应的页面，可以就勾掉 ROADMAP 那一项。
+- **第 1 步**：线框草图 `docs/studio/prototype/m6/`（账本一节、阈值编辑、take 卡局部修复菜单和视频遮罩弹窗），样式照 `prototype/m5.5/sketch.css`，亮 / 暗截图。草图不挡后端，接着做**第 2 步**连续性账本（从 `shots/ops.py` 的 blocking、`shots/contract.py` 和分镜物化 `shots/service.py` 开始；迁移 `0025`）。
+- Kelvin 要做的：看 M6 草图（第 1 步出来后）；M5.5 草图那一项 ROADMAP 还没勾。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
 - **和 MSW 共存的规则**（M2 计划「和 MSW 共存」）：MSW 只处理它内存库里有的 id，其他放行到后端；做完一块就从 MSW 库里删掉那块数据；删掉的 handler 挪成 `web/src/test/fakes/` 的测试假后端。
