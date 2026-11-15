@@ -100,6 +100,28 @@
         "start_inherited": false,
         "props_inherited": [],
         "props_linked": []
+      },
+      "ledger": {
+        "characters": [
+          {
+            "asset_id": "linwan",
+            "name": "林晚",
+            "position": "center",
+            "depth": "mid",
+            "facing": null,
+            "holding": [],
+            "holding_names": [],
+            "holding_from": null,
+            "outfit": "米色风衣湿了半边",
+            "outfit_from": null
+          }
+        ],
+        "props": [],
+        "time": {
+          "time_of_day": "night",
+          "clock": null,
+          "clock_from": null
+        }
       }
     },
     {
@@ -203,6 +225,28 @@
         "start_inherited": false,
         "props_inherited": [],
         "props_linked": []
+      },
+      "ledger": {
+        "characters": [],
+        "props": [
+          {
+            "asset_id": "umbrella",
+            "name": "红色长柄伞",
+            "state": "斜靠在门边墙上，伞面湿",
+            "from_shot": null
+          },
+          {
+            "asset_id": "note",
+            "name": "黄色便利贴",
+            "state": "贴在伞柄上，有字，边角湿",
+            "from_shot": null
+          }
+        ],
+        "time": {
+          "time_of_day": "night",
+          "clock": null,
+          "clock_from": null
+        }
       }
     },
     {
@@ -295,6 +339,22 @@
         "start_inherited": false,
         "props_inherited": [],
         "props_linked": []
+      },
+      "ledger": {
+        "characters": [],
+        "props": [
+          {
+            "asset_id": "note",
+            "name": "黄色便利贴",
+            "state": "手写的字歪歪扭扭，边角被雨打湿，墨迹微晕",
+            "from_shot": null
+          }
+        ],
+        "time": {
+          "time_of_day": "night",
+          "clock": null,
+          "clock_from": null
+        }
       }
     },
     {
@@ -408,6 +468,41 @@
         "props_linked": [
           "umbrella"
         ]
+      },
+      "ledger": {
+        "characters": [
+          {
+            "asset_id": "linwan",
+            "name": "林晚",
+            "position": "right",
+            "depth": "mid",
+            "facing": null,
+            "holding": [],
+            "holding_names": [],
+            "holding_from": null,
+            "outfit": "米色风衣湿了半边",
+            "outfit_from": null
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "note",
+            "name": "黄色便利贴",
+            "state": "贴在伞柄上，有字",
+            "from_shot": null
+          },
+          {
+            "asset_id": "umbrella",
+            "name": "红色长柄伞",
+            "state": "斜靠在门边墙上，伞面湿",
+            "from_shot": "demo-shot-1-02"
+          }
+        ],
+        "time": {
+          "time_of_day": "night",
+          "clock": null,
+          "clock_from": null
+        }
       }
     },
     {
@@ -518,6 +613,41 @@
         "props_linked": [
           "umbrella"
         ]
+      },
+      "ledger": {
+        "characters": [
+          {
+            "asset_id": "linwan",
+            "name": "林晚",
+            "position": "center",
+            "depth": "near",
+            "facing": null,
+            "holding": [],
+            "holding_names": [],
+            "holding_from": null,
+            "outfit": "米色风衣湿了半边",
+            "outfit_from": null
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "note",
+            "name": "黄色便利贴",
+            "state": "贴在伞柄上，有字",
+            "from_shot": null
+          },
+          {
+            "asset_id": "umbrella",
+            "name": "红色长柄伞",
+            "state": "斜靠在门边墙上，伞面湿",
+            "from_shot": "demo-shot-1-02"
+          }
+        ],
+        "time": {
+          "time_of_day": "night",
+          "clock": null,
+          "clock_from": null
+        }
       }
     },
     {
@@ -622,6 +752,32 @@
         "start_inherited": false,
         "props_inherited": [],
         "props_linked": []
+      },
+      "ledger": {
+        "characters": [
+          {
+            "asset_id": "linwan",
+            "name": "林晚",
+            "position": "center",
+            "depth": "mid",
+            "facing": null,
+            "holding": [
+              "umbrella"
+            ],
+            "holding_names": [
+              "红色长柄伞"
+            ],
+            "holding_from": null,
+            "outfit": "米色风衣湿了半边",
+            "outfit_from": null
+          }
+        ],
+        "props": [],
+        "time": {
+          "time_of_day": "night",
+          "clock": null,
+          "clock_from": null
+        }
       }
     },
     {
@@ -708,6 +864,22 @@
         "start_inherited": false,
         "props_inherited": [],
         "props_linked": []
+      },
+      "ledger": {
+        "characters": [],
+        "props": [
+          {
+            "asset_id": "phone",
+            "name": "手机",
+            "state": "亮屏，锁屏时间 23:52，没有新消息",
+            "from_shot": null
+          }
+        ],
+        "time": {
+          "time_of_day": "night",
+          "clock": "23:52",
+          "clock_from": null
+        }
       }
     },
     {
@@ -807,6 +979,28 @@
         "start_inherited": true,
         "props_inherited": [],
         "props_linked": []
+      },
+      "ledger": {
+        "characters": [
+          {
+            "asset_id": "linwan",
+            "name": "林晚",
+            "position": "center",
+            "depth": "mid",
+            "facing": null,
+            "holding": [],
+            "holding_names": [],
+            "holding_from": null,
+            "outfit": "米色风衣湿了半边",
+            "outfit_from": null
+          }
+        ],
+        "props": [],
+        "time": {
+          "time_of_day": "night",
+          "clock": "23:52",
+          "clock_from": "demo-shot-1-07"
+        }
       }
     },
     {
@@ -915,6 +1109,35 @@
         "start_inherited": true,
         "props_inherited": [],
         "props_linked": []
+      },
+      "ledger": {
+        "characters": [
+          {
+            "asset_id": "linwan",
+            "name": "林晚",
+            "position": "right",
+            "depth": "mid",
+            "facing": "望向门外地上",
+            "holding": [],
+            "holding_names": [],
+            "holding_from": null,
+            "outfit": "米色风衣湿了半边",
+            "outfit_from": null
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "umbrella",
+            "name": "红色长柄伞",
+            "state": "靠在门外墙边",
+            "from_shot": null
+          }
+        ],
+        "time": {
+          "time_of_day": "night",
+          "clock": "23:52",
+          "clock_from": "demo-shot-1-07"
+        }
       }
     }
   ],

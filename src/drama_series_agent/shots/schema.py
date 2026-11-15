@@ -64,6 +64,7 @@ class ShotOut(BaseModel):
     # Confirmed, but its settings (the plan's ``shot:<id>`` slice) or its keyframe changed since.
     confirm_stale: bool
     contract: ShotContractOut  # M5.5
+    ledger: ShotLedgerOut  # M6 连续性账本
 
 
 class StateItem(BaseModel):
@@ -99,6 +100,44 @@ class ShotContractOut(BaseModel):
     start_inherited: bool = False
     props_inherited: list[str] = []
     props_linked: list[str] = []
+
+
+class LedgerCharacter(BaseModel):
+    """A person the shot films, at its start (``shots/ledger.py``). ``position`` / ``depth`` from
+    the top view as the camera sees it; ``*_from``: the earlier shot it was carried from."""
+
+    asset_id: str
+    name: str
+    position: Literal["left", "center", "right"] | None
+    depth: Literal["near", "mid", "far"] | None
+    facing: str | None
+    holding: list[str]
+    holding_names: list[str]
+    holding_from: str | None
+    outfit: str | None
+    outfit_from: str | None
+
+
+class LedgerProp(BaseModel):
+    asset_id: str
+    name: str
+    state: str
+    from_shot: str | None  # the earlier shot that gave the state; None = this shot's own
+
+
+class LedgerTime(BaseModel):
+    time_of_day: str | None
+    clock: str | None
+    clock_from: str | None
+
+
+class ShotLedgerOut(BaseModel):
+    """连续性账本 (M6): worked out on read from the plan, the contract, the top view, the assets'
+    descriptions and the scene's time (not stored, DECISIONS 2026-11-15)."""
+
+    characters: list[LedgerCharacter]
+    props: list[LedgerProp]
+    time: LedgerTime
 
 
 class ContractPatch(BaseModel):

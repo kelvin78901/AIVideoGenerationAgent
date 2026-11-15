@@ -124,6 +124,19 @@ def test_each_shot_has_its_contract(client: TestClient) -> None:
     assert row.contract_json["kind"] == "insert"
 
 
+def test_each_shot_has_its_ledger(client: TestClient) -> None:
+    """连续性账本 (M6): who is where, holds what, the props' states, the clock carried on."""
+    by = {s["label"]: s["ledger"] for s in _shots(client)}
+    (lin,) = by["1-04"]["characters"]
+    assert (lin["name"], lin["position"]) == ("林晚", "right")
+    umbrella = next(p for p in by["1-04"]["props"] if p["asset_id"] == "umbrella")
+    assert umbrella["from_shot"] == "demo-shot-1-02"
+    assert by["1-06"]["characters"][0]["holding"] == ["umbrella"]
+    assert by["1-02"]["characters"] == []  # an insert: nobody in it
+    assert by["1-07"]["time"] == {"time_of_day": "night", "clock": "23:52", "clock_from": None}
+    assert by["1-08"]["time"]["clock_from"] == "demo-shot-1-07"
+
+
 def test_a_contract_edit_is_checked_and_kept(client: TestClient) -> None:
     start = [{"subject": "林晚的手", "state": "悬在便利贴上方"}]
     r = client.patch(

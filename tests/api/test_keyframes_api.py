@@ -269,6 +269,26 @@ def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
     assert shot["contract"]["props_linked"] == ["umbrella"]
 
 
+def test_the_keyframe_carries_what_the_scene_left_in_hand(client: TestClient) -> None:
+    """连续性账本 (M6): 1-04 ends with the umbrella in her hand and 1-05 says nothing of her, so
+    1-05 starts with it; a new 1-04 makes 1-05's keyframe stale."""
+    end = [{"subject": "林晚", "state": "右手握着红色长柄伞，没穿外套"}]
+    r = client.patch(f"{V1}/shots/demo-shot-1-04", json={"contract": {"end": end}})
+    assert r.status_code == 200, r.text
+    r = client.patch(f"{V1}/shots/demo-shot-1-05", json={"contract": {"start": []}})
+    assert r.status_code == 200, r.text
+    (lin,) = r.json()["ledger"]["characters"]
+    assert (lin["holding"], lin["holding_from"]) == (["umbrella"], "demo-shot-1-04")
+    hand = _prompt(client, _run(client, "1-05")["versions"][-1])
+    assert (
+        "[接上一镜]\n" + kf.CARRIED_NOTE + "林晚手里还拿着：红色长柄伞；林晚的穿着：没穿外套"
+        in hand
+    )
+    end = [{"subject": "林晚", "state": "两手空着"}]
+    assert client.patch(f"{V1}/shots/demo-shot-1-04", json={"contract": {"end": end}}).is_success
+    assert _kf(client, "1-05")["status"] == "stale"
+
+
 def test_the_other_side_of_the_door_is_its_scene(client: TestClient) -> None:
     """M5.5 step 9e-3: the flat's ``adjoins`` says its door opens onto the stairwell; 1-06 (she
     comes in and shuts the door) sends the stairwell's picture as the other side and says so

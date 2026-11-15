@@ -11,11 +11,12 @@
 ## 已完成的小步
 
 - **0**（d7b43a0）开分支 `m6-qa`、计划存 `plans/M6.md`、ROADMAP 链接计划、DECISIONS「M6 计划」。只改文档。
-- **1**（本提交）线框草图 `prototype/m6/`：`takes.html`（G1 候选卡质检 + 「局部修复 ▾」菜单、G2 视频局部修复弹窗、G3 阈值表）、`storyboard.html`（S1 只读的「连续性」一节），亮 / 暗截图（Playwright 截的，脚本在会话 scratchpad，没进仓库）。只改文档。
+- **1**（efe50c5）线框草图 `prototype/m6/`：`takes.html`（G1–G3）、`storyboard.html`（S1 连续性）。只改文档。
+- **2**（本提交）连续性账本：`shots/ledger.py`（现算、不建表，Kelvin 2026-11-15 同意）、`ShotOut.ledger`、`shots/service.py:ledger_inputs`；关键帧和视频编译加「接上一镜」并依赖来源镜头；web 测试数据 `shots.json` / `generate.json` 重新生成（只多了 `ledger`）。测试：`test_ledger.py` 10 passed、`test_shots_api.py` 14 passed、`test_keyframes_api.py` + `test_takes_api.py` 42 passed、`test_web_fixtures.py -k "shots or generate"` 2 passed；ruff、mypy 过。
 
 ## 下一步
 
-- **第 2 步**连续性账本：从 `shots/ops.py` 的 blocking、`shots/contract.py` 和分镜物化 `shots/service.py` 开始；迁移 `0025`；`ShotOut.ledger`；关键帧 / 视频编译上下文加账本。测试 `tests/unit/test_ledger.py`。
+- **第 3 步**质检框架（Mock）：新 `pipeline/qa.py`、组件 `qa`（把 `pipeline/takecheck.py` 并进来，`components.yaml` 的 `takecheck` 行并到 `qa`，覆盖配置迁移）；take 出完自动入队质检（看 `pipeline/components/vid.py:run` 里 takecheck 现在在哪调）；写 `qa_json` / `qa_pass` 和出片那次 `model_call` 的 `qa_scores_json`；`POST /versions/{id}/qa`；生成规则阈值可写（`pipeline/generate.py` 的 rules，`app_setting`）。视觉检查的提问加账本（`ledger_inputs(...).ledger(...)`）。
 - Kelvin 要做的：看 M6 草图 `docs/studio/prototype/m6/`（前端第 9 步照它做）；M5.5 草图那一项 ROADMAP 还没勾。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。

@@ -78,8 +78,14 @@ from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.qa import ocr
 from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import contract as contracts
+from drama_series_agent.shots import ledger as ledgers
 from drama_series_agent.shots import ops
-from drama_series_agent.shots.service import KEYFRAME_SLOT, prop_names, scene_place
+from drama_series_agent.shots.service import (
+    KEYFRAME_SLOT,
+    ledger_inputs,
+    prop_names,
+    scene_place,
+)
 
 REF_ORDER = ops.REF_KINDS
 REF_SLOTS = ("ref_image", "text_image")
@@ -96,6 +102,7 @@ REAL_WORLD = (
     "被雨打湿的地方颜色变深、墨迹微晕；人体自然（每只手五根手指），物体不互相穿插、不悬空。"
 )
 # 镜头契约 (M5.5): the keyframe is the shot's first moment, not a summary of it.
+CARRIED_NOTE = "同一场前面的镜头留下的，这一镜开始时还是这样："
 START_NOTE = "首帧画的是镜头开始的这一刻（不是整个镜头的概括）："
 # Run 19 1-04: a second note in her hand beside the one on the umbrella.
 PROPS_NOTE = "道具的状态是摆好的（每样道具画面里只有一件）："
@@ -328,6 +335,18 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     ids = in_frame(shot, c)
     for source in sorted(set((c or {}).get("props_from", {}).values())):
         deps.append(await invalidation.dependency(session, plan.id, shot_slice(source)))
+    # 连续性账本 (M6): who still holds or wears what an earlier shot of the scene left them with,
+    # when this shot's own contract does not say; those shots are read too.
+    carried: list[str] = []
+    if c is not None:
+        lg = (await ledger_inputs(session, product.series_id)).ledger(
+            shot, c, list(by_id.values()), None
+        )
+        carried = ledgers.carried(lg)
+        read = set((c.get("props_from") or {}).values())
+        for source in ledgers.sources(lg):
+            if source not in read and carried:
+                deps.append(await invalidation.dependency(session, plan.id, shot_slice(source)))
     here, across = await shot_space(session, product.series_id, ids, said_of(shot, c, action))
     refs, unlocked, texts = await _references(
         session, invalidation, ids + [a.asset_id for a in across if a.asset_id not in ids]
@@ -398,6 +417,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         blocks += await contract_blocks(session, c, ids, filmed_lines)
         asks["start"] = [f"{x['subject']}：{x['state']}" for x in c["start"]]
         asks["inner"] = inner_speakers(c, filmed_lines)
+    if carried:
+        blocks.append(Block("接上一镜", CARRIED_NOTE + "；".join(carried)))
     if sizes := await prop_sizes(session, ids):
         blocks.append(Block("尺寸", SIZE_NOTE + sizes))
         asks["scale"] = sizes.split("；")

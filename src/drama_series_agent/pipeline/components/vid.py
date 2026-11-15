@@ -134,11 +134,13 @@ from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.script import ops as script_ops
 from drama_series_agent.shots import check as shot_check
 from drama_series_agent.shots import contract as contracts
+from drama_series_agent.shots import ledger as ledgers
 from drama_series_agent.shots import ops
 from drama_series_agent.shots.service import (
     KEYFRAME_SLOT,
     STORYBOARD_GATE,
     VIDEO_SLOT,
+    ledger_inputs,
     own_picture,
     prop_names,
     scene_place,
@@ -312,6 +314,14 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     if contract["start_inherited"] and shot.get("tail_from"):
         tail_slice = shot_slice(str(shot["tail_from"]))
         deps.append(await invalidation.dependency(session, plan.id, tail_slice))
+    # 连续性账本 (M6): what an earlier shot of the scene left someone holding or wearing, when
+    # this shot's contract does not say (those shots are read too).
+    lg = (await ledger_inputs(session, product.series_id)).ledger(shot, contract, shots, None)
+    carried = ledgers.carried(lg)
+    read = set(contract["props_from"].values()) | {str(shot.get("tail_from") or "")}
+    for source in ledgers.sources(lg) if carried else []:
+        if source not in read:
+            deps.append(await invalidation.dependency(session, plan.id, shot_slice(source)))
     # Only a line said on screen is made in the take. An inner voice or an off-screen line is
     # laid over the shot in the edit (M5 step 15p): a voice the take makes sounds said in the
     # room, and with the lips closed it reads as lips out of sync. The take is silent-lipped.
@@ -459,6 +469,8 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     blocks.append(Block("动作", INSERT_BEATS if kind == "insert" else BEATS.format(n=beats)))
     if contract["start"]:
         blocks.append(Block("开始时", states_text(contract["start"])))
+    if carried:
+        blocks.append(Block("接上一镜", "；".join(carried)))
     if contract["end"]:
         blocks.append(Block("结束时", states_text(contract["end"])))
     if contract["props"] and props_text(contract["props"], assets):
@@ -487,7 +499,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "part": part,
             "facing": looked_at,
             "beats": beats,
-            "start": [f"{i['subject']}：{i['state']}" for i in contract["start"]],
+            "start": [f"{i['subject']}：{i['state']}" for i in contract["start"]] + carried,
             "end": [f"{i['subject']}：{i['state']}" for i in contract["end"]],
             "props": [x for x in props_text(contract["props"], assets).split("；") if x],
             "overlay": overlay,

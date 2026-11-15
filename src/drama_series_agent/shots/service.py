@@ -64,7 +64,7 @@ from drama_series_agent.episodes.service import (
     scene_numbers,
 )
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
-from drama_series_agent.pipeline.components.img import asset_aspect
+from drama_series_agent.pipeline.components.img import asset_aspect, prop_text, text_settings
 from drama_series_agent.pipeline.components.plan import (
     SHOT_PLAN_SLOT,
     PlanComponent,
@@ -86,12 +86,14 @@ from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.pipeline.timing import ShotDuration, line_seconds, shot_duration
 from drama_series_agent.shots import check as shot_check
 from drama_series_agent.shots import contract as contracts
+from drama_series_agent.shots import ledger as ledgers
 from drama_series_agent.shots import ops
 from drama_series_agent.shots.schema import (
     ShotChecksOut,
     ShotContractOut,
     ShotEditIn,
     ShotIssueOut,
+    ShotLedgerOut,
     ShotOut,
     ShotPatch,
     ShotSplitIn,
@@ -388,6 +390,78 @@ async def prop_names(session: AsyncSession, series_id: str) -> dict[str, list[st
 
 
 @dataclass(frozen=True)
+class LedgerInputs:
+    """What 连续性账本 reads besides the plan (``shots/ledger.py``), for a whole series."""
+
+    kinds: dict[str, str]
+    names: dict[str, str]
+    prop_names: dict[str, list[str]]
+    descriptions: dict[str, str]  # character → how they look (the picture's description)
+    texts: dict[str, str]  # on-screen text and text-bearing prop → the literal text
+
+    def ledger(
+        self,
+        shot: Mapping[str, Any],
+        contract: Mapping[str, Any],
+        shots: list[dict[str, Any]],
+        time_of_day: str | None,
+    ) -> dict[str, Any]:
+        return ledgers.build(
+            shot,
+            contract,
+            shots,
+            kinds=self.kinds,
+            names=self.names,
+            prop_names=self.prop_names,
+            descriptions=self.descriptions,
+            texts=self.texts,
+            time_of_day=time_of_day,
+        )
+
+
+async def ledger_inputs(session: AsyncSession, series_id: str) -> LedgerInputs:
+    """The series' assets as the ledger reads them (M6 step 2)."""
+    assets = (
+        await session.exec(
+            select(Asset).where(Asset.series_id == series_id, col(Asset.retired).is_(False))
+        )
+    ).all()
+    products = {
+        p.owner_id: p
+        for p in (
+            await session.exec(
+                select(Product).where(
+                    Product.series_id == series_id,
+                    Product.owner_type == "asset",
+                    col(Product.slot).in_(("ref_image", "text_image")),
+                )
+            )
+        ).all()
+    }
+    descriptions: dict[str, str] = {}
+    texts: dict[str, str] = {}
+    for a in assets:
+        p = products.get(a.id)
+        if a.kind == "character":
+            descriptions[a.id] = str(
+                ((p.prompt_json if p else None) or {}).get("intent")
+                or (a.seed_json or {}).get("description")
+                or ""
+            )
+        elif a.kind == "text":
+            texts[a.id] = text_settings(a, p.settings_json if p else None)["exact"]
+        elif (written := prop_text(a, p)) is not None:
+            texts[a.id] = written["exact"]
+    return LedgerInputs(
+        kinds={a.id: a.kind for a in assets},
+        names={a.id: a.name for a in assets},
+        prop_names=await prop_names(session, series_id),
+        descriptions=descriptions,
+        texts=texts,
+    )
+
+
+@dataclass(frozen=True)
 class ShotState:
     confirmed: bool  # its last decision is a confirm
     stale: bool  # confirmed, but its settings or its keyframe changed since (「待更新」)
@@ -544,6 +618,7 @@ class ShotService:
             numbers = await scene_numbers(session, episode.series_id)
             kinds = {a.id: a.kind for a in (await episode_assets(session, episode_id))[0].values()}
             names = await prop_names(session, episode.series_id)
+            ledger_in = await ledger_inputs(session, episode.series_id)
             scenes = {
                 s.id: s
                 for s in (
@@ -570,6 +645,7 @@ class ShotService:
             timing = _timing(s, mine, audio, longest)
             kf = keyframes.get(s["id"])
             state = states[s["id"]]
+            effective = contracts.effective(s, _spoken(s, lines), kinds, by_id, names)
             scene = scenes.get(s["scene_id"])
             seed = str(s.get("intent") or "")
             intent = str(((kf.prompt_json if kf else None) or {}).get("intent") or seed)
@@ -625,8 +701,9 @@ class ShotService:
                     keyframe_sha256=picture,
                     confirmed=state.confirmed,
                     confirm_stale=state.stale,
-                    contract=ShotContractOut.model_validate(
-                        contracts.effective(s, _spoken(s, lines), kinds, by_id, names)
+                    contract=ShotContractOut.model_validate(effective),
+                    ledger=ShotLedgerOut.model_validate(
+                        ledger_in.ledger(s, effective, shots, scene.time_of_day if scene else None)
                     ),
                 )
             )
