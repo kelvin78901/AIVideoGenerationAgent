@@ -96,7 +96,7 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
     # The first frame is looked at and the prompt rewritten into H3's official layout once for
     # both takes (M5 steps 14b, 15g); each take is checked from its contact sheet (M5.5 step 7).
     others = [c["component_id"] for c in calls if c["model_key"] != takes[0]["model_key"]]
-    assert sorted(others) == ["takecheck", "takecheck", "vlook", "vprompt"]
+    assert sorted(others) == ["qa", "qa", "vlook", "vprompt"]
     assert _spent(api) == pytest.approx(spent + sum(c["cost_usd"] for c in calls), abs=1e-4)
 
     # Adopt A, drop it, adopt B.
@@ -118,7 +118,8 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
     )
     assert (final["files"][0]["w"], final["files"][0]["h"]) == (1440, 2560)
     done = [c for c in api.calls(job["id"]) if c["status"] == "success"]
-    (call,) = [c for c in done if c["component_id"] != "takecheck"]  # the final is checked too
+    # The final is checked too (the take check is 自动质检's since M6).
+    (call,) = [c for c in done if c["component_id"] != "qa"]
     assert call["cost_usd"] == pytest.approx(price, abs=0.001)
     assert _spent(api) == pytest.approx(spent + sum(c["cost_usd"] for c in done), abs=1e-4)
     _adopt(api, final)
@@ -157,4 +158,5 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
     # The run log has 1-05's takes and its final.
     log = api.get(f"/episodes/{EP}/generate-log")
     codes = [e["message"]["code"] for e in log if e["shot_label"] == "1-05"]
-    assert sorted(codes) == ["final", "take", "take"], codes
+    # Each take is checked once it is made (M6): ``take_pass`` when its QA job has run.
+    assert sorted(c.removesuffix("_pass") for c in codes) == ["final", "take", "take"], codes

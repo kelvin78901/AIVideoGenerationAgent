@@ -465,19 +465,6 @@
         "unavailable": {}
       },
       {
-        "id": "takecheck",
-        "stage": "generate",
-        "kind": "vlm",
-        "api_models": [
-          "google/gemini-3.1-flash-lite",
-          "google/gemini-3.6-flash"
-        ],
-        "local_models": [
-          "local/qwen3-vl-32b"
-        ],
-        "unavailable": {}
-      },
-      {
         "id": "ctrl",
         "stage": "generate",
         "kind": "video",
@@ -519,8 +506,8 @@
         "stage": "generate",
         "kind": "vlm",
         "api_models": [
-          "google/gemini-3.6-flash",
-          "google/gemini-3.1-flash-lite"
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
         ],
         "local_models": [
           "local/qwen3-vl-32b"
@@ -1219,6 +1206,30 @@
         "price": null,
         "priced": true,
         "tier": null
+      },
+      {
+        "key": "local/auraface",
+        "display": "AuraFace 人脸（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": null
+      },
+      {
+        "key": "local/syncnet",
+        "display": "SyncNet 口型（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": null
+      },
+      {
+        "key": "local/campplus",
+        "display": "CAM++ 说话人（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": null
       }
     ],
     "local_runtime_ok": true
@@ -1895,28 +1906,6 @@
         ],
         "per_call_cap_usd": 0.02
       },
-      "takecheck": {
-        "mode": "api",
-        "api_model": "google/gemini-3.1-flash-lite",
-        "local_model": "local/qwen3-vl-32b",
-        "fallback": {
-          "enabled": true,
-          "on": [
-            "error",
-            "timeout",
-            "qa_fail"
-          ],
-          "qa_fail_n": 2,
-          "timeout_s": 600,
-          "to": "local/qwen3-vl-32b",
-          "notify": "after"
-        },
-        "alt_order": [
-          "local/qwen3-vl-32b",
-          "google/gemini-3.6-flash"
-        ],
-        "per_call_cap_usd": 0.02
-      },
       "ctrl": {
         "mode": "local",
         "api_model": null,
@@ -1983,7 +1972,7 @@
       },
       "qa": {
         "mode": "api",
-        "api_model": "google/gemini-3.6-flash",
+        "api_model": "google/gemini-3.1-flash-lite",
         "local_model": "local/qwen3-vl-32b",
         "fallback": {
           "enabled": true,
@@ -1999,9 +1988,9 @@
         },
         "alt_order": [
           "local/qwen3-vl-32b",
-          "google/gemini-3.1-flash-lite"
+          "google/gemini-3.6-flash"
         ],
-        "per_call_cap_usd": 0.2
+        "per_call_cap_usd": 0.02
       },
       "music": {
         "mode": "api",
@@ -2720,28 +2709,6 @@
         ],
         "per_call_cap_usd": 0.02
       },
-      "takecheck": {
-        "mode": "api",
-        "api_model": "google/gemini-3.1-flash-lite",
-        "local_model": "local/qwen3-vl-32b",
-        "fallback": {
-          "enabled": false,
-          "on": [
-            "error",
-            "timeout",
-            "qa_fail"
-          ],
-          "qa_fail_n": 2,
-          "timeout_s": 600,
-          "to": null,
-          "notify": "after"
-        },
-        "alt_order": [
-          "local/qwen3-vl-32b",
-          "google/gemini-3.6-flash"
-        ],
-        "per_call_cap_usd": 0.02
-      },
       "ctrl": {
         "mode": "local",
         "api_model": null,
@@ -2807,11 +2774,11 @@
         "per_call_cap_usd": 0.5
       },
       "qa": {
-        "mode": "local",
-        "api_model": "google/gemini-3.6-flash",
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
         "local_model": "local/qwen3-vl-32b",
         "fallback": {
-          "enabled": true,
+          "enabled": false,
           "on": [
             "error",
             "timeout",
@@ -2819,14 +2786,14 @@
           ],
           "qa_fail_n": 2,
           "timeout_s": 600,
-          "to": "google/gemini-3.6-flash",
+          "to": null,
           "notify": "after"
         },
         "alt_order": [
-          "google/gemini-3.6-flash",
-          "google/gemini-3.1-flash-lite"
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
         ],
-        "per_call_cap_usd": 0.2
+        "per_call_cap_usd": 0.02
       },
       "music": {
         "mode": "hybrid",
@@ -3565,28 +3532,6 @@
         ],
         "per_call_cap_usd": 0.02
       },
-      "takecheck": {
-        "mode": "local",
-        "api_model": "google/gemini-3.1-flash-lite",
-        "local_model": "local/qwen3-vl-32b",
-        "fallback": {
-          "enabled": true,
-          "on": [
-            "error",
-            "timeout",
-            "qa_fail"
-          ],
-          "qa_fail_n": 2,
-          "timeout_s": 600,
-          "to": "google/gemini-3.1-flash-lite",
-          "notify": "after"
-        },
-        "alt_order": [
-          "google/gemini-3.1-flash-lite",
-          "google/gemini-3.6-flash"
-        ],
-        "per_call_cap_usd": 0.02
-      },
       "ctrl": {
         "mode": "local",
         "api_model": null,
@@ -3671,7 +3616,7 @@
           "google/gemini-3.1-flash-lite",
           "google/gemini-3.6-flash"
         ],
-        "per_call_cap_usd": 0.2
+        "per_call_cap_usd": 0.02
       },
       "music": {
         "mode": "local",
@@ -4225,25 +4170,6 @@
         "alt_order": [],
         "per_call_cap_usd": 0.02
       },
-      "takecheck": {
-        "mode": "local",
-        "api_model": "google/gemini-3.1-flash-lite",
-        "local_model": "local/qwen3-vl-32b",
-        "fallback": {
-          "enabled": false,
-          "on": [
-            "error",
-            "timeout",
-            "qa_fail"
-          ],
-          "qa_fail_n": 2,
-          "timeout_s": 600,
-          "to": null,
-          "notify": "after"
-        },
-        "alt_order": [],
-        "per_call_cap_usd": 0.02
-      },
       "ctrl": {
         "mode": "local",
         "api_model": null,
@@ -4307,7 +4233,7 @@
       },
       "qa": {
         "mode": "local",
-        "api_model": "google/gemini-3.6-flash",
+        "api_model": "google/gemini-3.1-flash-lite",
         "local_model": "local/qwen3-vl-32b",
         "fallback": {
           "enabled": false,
@@ -4322,7 +4248,7 @@
           "notify": "after"
         },
         "alt_order": [],
-        "per_call_cap_usd": 0.2
+        "per_call_cap_usd": 0.02
       },
       "music": {
         "mode": "local",

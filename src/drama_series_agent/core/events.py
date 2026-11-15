@@ -24,6 +24,7 @@ class EventType(StrEnum):
     JOB_UPDATED = "job.updated"
     PRODUCT_UPDATED = "product.updated"
     VERSION_CREATED = "version.created"
+    VERSION_QA = "version.qa"  # a take's QA written (M6, pipeline/qa.py)
     COST_UPDATED = "cost.updated"
     GATE_UPDATED = "gate.updated"
     SYNC_UPDATED = "sync.updated"

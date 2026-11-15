@@ -300,6 +300,7 @@ function qaValue(t: TFunction<"generate">, te: TFunction<"enums">, c: QaCheck): 
   if (c.ok === null) return "—";
   switch (c.metric) {
     case "face":
+    case "speaker":
       return c.value?.toFixed(2) ?? "—";
     case "lipsync":
       return c.value?.toFixed(1) ?? "—";

@@ -272,6 +272,10 @@ class ComponentDefault(_Loose):
     # LLM suggests a workflow when no rule matches.
     select_rules: list[SelectRule] = Field(default_factory=list)
     select_suggest: bool = False
+    # 自动质检 (qa, M6): metric → the local tool that measures it, and the default thresholds
+    # (a series changes them in its generate rules).
+    tools: dict[str, str] = Field(default_factory=dict)
+    thresholds: dict[str, float] = Field(default_factory=dict)
 
 
 class FallbackDefaults(_Loose):

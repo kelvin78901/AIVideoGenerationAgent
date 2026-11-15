@@ -245,7 +245,10 @@
       "hands": "every hand is hers",
       "facing": "what she looks at faces her",
       "solid": "nothing passes through",
-      "extra": "nothing more than the shot is for"
+      "extra": "nothing more than the shot is for",
+      "position": "everyone where they stand",
+      "holding": "holding what they held",
+      "outfit": "the same clothes"
     }
   }
 }

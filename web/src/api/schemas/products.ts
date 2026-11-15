@@ -104,10 +104,10 @@ export type VersionFile = z.infer<typeof VersionFileSchema>;
 
 /**
  * Auto QA of a video take (SPEC 5 `qa`, components.yaml thresholds): face similarity to the
- * locked reference, SyncNet confidence, ASR character error rate, OCR of on-screen text, and
- * the vision model's look at the picture.
+ * locked reference, SyncNet confidence, ASR character error rate, the voice against the locked
+ * voice (M6), OCR of on-screen text, and the vision model's look at the picture.
  */
-export const QaMetricSchema = z.enum(["face", "lipsync", "asr", "ocr", "vlm"]);
+export const QaMetricSchema = z.enum(["face", "lipsync", "asr", "speaker", "ocr", "vlm"]);
 export type QaMetric = z.infer<typeof QaMetricSchema>;
 
 /** What the vision model or OCR found; the UI translates `enums:qaIssue.<code>`. */

@@ -62,6 +62,7 @@ class MediaCall:
     data: Any = None  # the call's JSON (a voice design's ``voice_id``)
     # A ComfyUI workflow's run: workflow_id, workflow_sha256, comfy_env_hash (SPEC 6.4.5).
     comfy: dict[str, Any] | None = None
+    call_id: int | None = None  # its ``model_call`` row (None: from the cache)
 
 
 async def output_frame(session: AsyncSession, series_id: str) -> dict[str, str]:
@@ -212,6 +213,7 @@ class MediaComponent(Component):
             version_fallback(routed.fallback_reason),
             data=routed.json,
             comfy=comfy if isinstance(comfy, dict) else None,
+            call_id=routed.call_id,
         )
 
     async def source_candidate(

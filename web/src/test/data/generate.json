@@ -2452,7 +2452,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0305,
+        "cost_usd": 0.0306,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -2483,7 +2483,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0304,
+        "cost_usd": 0.0305,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.2113
@@ -2580,7 +2580,16 @@
     "thresholds": {
       "face_sim": 0.75,
       "syncnet_conf": 6.0,
-      "cer_max": 0.1
+      "cer_max": 0.1,
+      "speaker_sim": 0.6
+    },
+    "qa_on": {
+      "face": true,
+      "lipsync": true,
+      "asr": true,
+      "speaker": true,
+      "ocr": true,
+      "vlm": true
     }
   },
   "workflow_rules": {
@@ -2769,7 +2778,7 @@
     "scope": "episode",
     "spent_usd": 0.0,
     "budget_usd": 15.0,
-    "projected_usd": 0.1824,
+    "projected_usd": 0.1828,
     "insights": [],
     "updated_at": "2026-10-18T09:00:00Z"
   },

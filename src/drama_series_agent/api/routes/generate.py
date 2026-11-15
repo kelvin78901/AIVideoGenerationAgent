@@ -42,11 +42,15 @@ async def get_generate_rules(series_id: str, state: State) -> GenerateRules:
 async def put_generate_rules(
     series_id: str, body: GenerateRulesPatch, state: State
 ) -> GenerateRules:
-    """Change one or more rules; the QA thresholds are read-only (components.yaml)."""
+    """Change one or more rules; a change to the QA thresholds or switches judges the series'
+    takes again (not measured again)."""
     async with state.db.session() as session:
         if await session.get(Series, series_id) is None:
             raise ApiError(404, "series_not_found", id=series_id)
-        return await save_rules(session, series_id, body)
+        rules = await save_rules(session, series_id, body)
+    if body.thresholds is not None or body.qa_on is not None or body.reset_qa:
+        await state.qa.rejudge(series_id)
+    return rules
 
 
 @router.get("/episodes/{episode_id}/generate-log")

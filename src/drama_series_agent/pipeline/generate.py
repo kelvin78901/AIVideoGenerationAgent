@@ -5,7 +5,9 @@ the run log.
 under ``generate.rules.<series id>``; a field nobody set reads the config: ``takes_per_shot`` is
 the video component's ``candidates``, ``qa_retry_max`` the fallback default ``qa_fail_n`` (read
 by M6's QA reruns), ``shot_cap_usd`` the config's ``shot_cap_usd`` (``modelhub/budget.py``), and
-``thresholds`` the QA component's, read-only here.
+``thresholds`` the QA component's. The thresholds and which checks count (``qa_on``) are the
+series' to change too (M6 step 3); a check turned off is still measured and shown, it only no
+longer fails a take. Changing them judges the takes again (``pipeline/qa.py:rejudge``).
 
 **Run log** (``GET /episodes/{id}/generate-log``) is worked out on read from the video products
 of the episode's shots: each take (a version) is a line, a take made by a fallback gets the
@@ -41,10 +43,25 @@ TAKE_ORIGINS = ("run", "rerun", "switch", "fallback")
 LOGGED_JOB_STATES = ("running", "waiting_confirm", "failed")
 
 
+QA_METRICS = ("face", "lipsync", "asr", "speaker", "ocr", "vlm")
+
+
 class QaThresholds(BaseModel):
-    face_sim: float
-    syncnet_conf: float
-    cer_max: float
+    face_sim: float = Field(ge=0, le=1)
+    syncnet_conf: float = Field(ge=0, le=20)
+    cer_max: float = Field(ge=0, le=1)
+    speaker_sim: float = Field(ge=0, le=1)
+
+
+class QaSwitches(BaseModel):
+    """Which checks can fail a take (all on unless the series turned one off)."""
+
+    face: bool = True
+    lipsync: bool = True
+    asr: bool = True
+    speaker: bool = True
+    ocr: bool = True
+    vlm: bool = True
 
 
 class GenerateRules(BaseModel):
@@ -52,14 +69,40 @@ class GenerateRules(BaseModel):
     qa_retry_max: int = Field(ge=0, le=5)
     shot_cap_usd: float = Field(ge=0)
     thresholds: QaThresholds
+    qa_on: QaSwitches = Field(default_factory=QaSwitches)
+
+
+class QaThresholdsPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    face_sim: float | None = Field(default=None, ge=0, le=1)
+    syncnet_conf: float | None = Field(default=None, ge=0, le=20)
+    cer_max: float | None = Field(default=None, ge=0, le=1)
+    speaker_sim: float | None = Field(default=None, ge=0, le=1)
+
+
+class QaSwitchesPatch(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    face: bool | None = None
+    lipsync: bool | None = None
+    asr: bool | None = None
+    speaker: bool | None = None
+    ocr: bool | None = None
+    vlm: bool | None = None
 
 
 class GenerateRulesPatch(BaseModel):
+    """``reset_qa``: 恢复默认, the thresholds and switches back to the config's."""
+
     model_config = ConfigDict(extra="forbid")
 
     takes_per_shot: int | None = Field(default=None, ge=1, le=6)
     qa_retry_max: int | None = Field(default=None, ge=0, le=5)
     shot_cap_usd: float | None = Field(default=None, ge=0)
+    thresholds: QaThresholdsPatch | None = None
+    qa_on: QaSwitchesPatch | None = None
+    reset_qa: bool | None = None
 
 
 class LogMessage(BaseModel):
@@ -97,6 +140,7 @@ def default_rules() -> GenerateRules:
             face_sim=float(raw.get("face_sim", 0.75)),
             syncnet_conf=float(raw.get("syncnet_conf", 6)),
             cer_max=float(raw.get("cer_max", 0.1)),
+            speaker_sim=float(raw.get("speaker_sim", 0.6)),
         ),
     )
 
@@ -104,15 +148,34 @@ def default_rules() -> GenerateRules:
 async def load_rules(session: AsyncSession, series_id: str) -> GenerateRules:
     row = await session.get(AppSetting, _key(series_id))
     saved = GenerateRulesPatch.model_validate(row.value_json) if row else GenerateRulesPatch()
-    return default_rules().model_copy(update=saved.model_dump(exclude_none=True))
+    rules = default_rules()
+    flat = saved.model_dump(exclude_none=True, exclude={"thresholds", "qa_on", "reset_qa"})
+    thresholds = (saved.thresholds or QaThresholdsPatch()).model_dump(exclude_none=True)
+    switches = (saved.qa_on or QaSwitchesPatch()).model_dump(exclude_none=True)
+    return rules.model_copy(
+        update={
+            **flat,
+            "thresholds": rules.thresholds.model_copy(update=thresholds),
+            "qa_on": rules.qa_on.model_copy(update=switches),
+        }
+    )
 
 
 async def save_rules(
     session: AsyncSession, series_id: str, patch: GenerateRulesPatch
 ) -> GenerateRules:
-    """Merge ``patch`` into what the series saved (the UI changes one field at a time)."""
+    """Merge ``patch`` into what the series saved (the UI changes one field at a time; the
+    thresholds and switches one item at a time)."""
     row = await session.get(AppSetting, _key(series_id)) or AppSetting(key=_key(series_id))
-    row.value_json = {**row.value_json, **patch.model_dump(exclude_none=True)}
+    old = dict(row.value_json)
+    new = patch.model_dump(exclude_none=True, exclude={"reset_qa"})
+    if patch.reset_qa:
+        old.pop("thresholds", None)
+        old.pop("qa_on", None)
+    for key in ("thresholds", "qa_on"):
+        if key in new:
+            new[key] = {**(old.get(key) or {}), **new[key]}
+    row.value_json = {**old, **new}
     row.updated_at = utcnow()
     session.add(row)
     await session.commit()

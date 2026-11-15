@@ -661,7 +661,8 @@ def test_each_take_is_checked(client: TestClient) -> None:
     assert found["cut"] is True and check["model"] == "google/gemini-3.1-flash-lite"
     assert len(take["payload"]["sheet_times"]) == 6
     assert "sheet" in {f["role"] for f in take["files"]}
-    calls = [c for c in _rows(client, ModelCall) if c.component_id == "takecheck"]
+    # The take check's route is 自动质检 since M6; the run's look has no version yet.
+    calls = [c for c in _rows(client, ModelCall) if c.component_id == "qa" and not c.version_id]
     assert len(calls) == 1
 
 

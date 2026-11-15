@@ -1130,6 +1130,8 @@ async def _seed_takes(db: Database, products: ProductService, compiler: PromptCo
                 origin="run" if origin == "final" else origin,
                 parent_version_id=source.id if source is not None else None,
                 adopt=False,
+                # Not queued for QA: the demo's checked takes come with M6 step 10.
+                hooks=False,
             )
             first = first or last
         if last is not None and seeds[-1][2] == "final":

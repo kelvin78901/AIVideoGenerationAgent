@@ -82,6 +82,7 @@
     "face": "Face match",
     "lipsync": "Lip sync",
     "asr": "Dialogue (ASR)",
+    "speaker": "Voice match",
     "ocr": "On-screen text",
     "vlm": "Picture check"
   },

@@ -22,6 +22,7 @@ export const EVENT_TYPES = [
   "job.updated",
   "product.updated",
   "version.created",
+  "version.qa",
   "cost.updated",
   "gate.updated",
   "sync.updated",
@@ -57,6 +58,8 @@ const invalidates: Partial<Record<EventType, readonly (readonly unknown[])[]>> =
   "product.updated": [productKeys.all, ["series"], ["episodes"]],
   // A new take also adds a line to the generate step's run log.
   "version.created": [productKeys.all, generateKeys.logs],
+  // A take's QA was written (M6): its card and its run-log line.
+  "version.qa": [productKeys.all, generateKeys.logs],
   // Confirming or reopening locks products and changes the step badges and script status.
   "gate.updated": [productKeys.all, ["series"], ["episodes"]],
 };

@@ -35,7 +35,7 @@ from drama_series_agent.modelhub.adapters.upload import compact_picture
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm
 from drama_series_agent.pipeline.component import Services
 
-TAKECHECK = "takecheck"  # the route (config/components.yaml)
+TAKECHECK = "qa"  # the route: 自动质检 (M6 step 3; the take check's own route until then)
 TASK = "take_check"
 TEMPLATE = "vid/take_check.j2"
 MAX_TOKENS = 700
@@ -53,6 +53,9 @@ CHECKS = (
     "place",
     "hands",
     "facing",
+    "position",
+    "holding",
+    "outfit",
 )
 HOLD_S = 1.0  # a still opening longer than this is flagged
 # What each check looked at, for the prompt of a take made again (``pipeline/redraw.py``).
@@ -68,6 +71,9 @@ LABELS = {
     "place": "机位在场景里",
     "hands": "手",
     "facing": "朝向",
+    "position": "站位（左右）",
+    "holding": "手里拿的东西",
+    "outfit": "服装",
     "cut": "片子中间有切镜",
     "hold": "开头停着不动",
 }

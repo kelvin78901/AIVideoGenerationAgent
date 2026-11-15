@@ -419,3 +419,7 @@ local_models:
   - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python }
   - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }
   - { key: local/rapidocr,          kind: ocr,     display: RapidOCR（本地）,         runtime: python, worker: worker_rapidocr, env: ocr, gpu: false, caps: { langs: [zh, en] }, needs: [rt_ocr] }
+  # 自动质检的本地工具（M6，pipeline/qa.py；CPU、$0）。worker 和环境第 5 步装（rt_qa / w_qa），之前在真实模式下「未检查」。
+  - { key: local/auraface,          kind: qa_face,    display: AuraFace 人脸（本地）,      runtime: python, gpu: false, verify: true }
+  - { key: local/syncnet,           kind: qa_sync,    display: SyncNet 口型（本地）,       runtime: python, gpu: false, verify: true }
+  - { key: local/campplus,          kind: qa_speaker, display: CAM++ 说话人（本地）,       runtime: python, gpu: false, verify: true }

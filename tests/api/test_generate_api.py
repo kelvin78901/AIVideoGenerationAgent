@@ -45,6 +45,17 @@ def _settle(client: TestClient, job: dict[str, Any]) -> dict[str, Any]:
     return job
 
 
+def _qa_settled(client: TestClient) -> None:
+    """Every take's QA job (M6) has ended."""
+    deadline = time.monotonic() + 60
+    while True:
+        jobs = [j for j in client.get(f"{V1}/jobs?limit=200").json() if j["kind"] == "qa.take"]
+        if all(j["state"] in ("succeeded", "failed", "canceled") for j in jobs):
+            return
+        assert time.monotonic() < deadline, "QA did not finish"
+        time.sleep(0.02)
+
+
 def _run(client: TestClient, product_id: str, **body: Any) -> dict[str, Any]:
     resp = client.post(f"{V1}/products/{product_id}/run", json={"mode": "run", **body})
     assert resp.status_code == 200, resp.text
@@ -58,18 +69,24 @@ def test_rules_default_to_the_config_and_save_per_series(client: TestClient) -> 
         "takes_per_shot": 2,  # vid.candidates
         "qa_retry_max": 2,  # fallback_defaults.qa_fail_n
         "shot_cap_usd": 2.0,
-        "thresholds": {"face_sim": 0.75, "syncnet_conf": 6.0, "cer_max": 0.1},
+        "thresholds": {
+            "face_sim": 0.75,
+            "syncnet_conf": 6.0,
+            "cer_max": 0.1,
+            "speaker_sim": 0.6,
+        },
+        "qa_on": {m: True for m in ("face", "lipsync", "asr", "speaker", "ocr", "vlm")},
     }
     resp = client.put(f"{V1}/series/{sid}/generate-rules", json={"takes_per_shot": 3})
     assert resp.status_code == 200 and resp.json()["takes_per_shot"] == 3
     resp = client.put(f"{V1}/series/{sid}/generate-rules", json={"shot_cap_usd": 0.5})
     assert resp.json()["takes_per_shot"] == 3 and resp.json()["shot_cap_usd"] == 0.5
-    # Out of range, or the read-only thresholds.
+    # Out of range (the thresholds are the series' too since M6, ``test_qa_api.py``).
     assert (
         client.put(f"{V1}/series/{sid}/generate-rules", json={"takes_per_shot": 9}).status_code
         == 422
     )
-    bad = {"thresholds": {"face_sim": 0.5, "syncnet_conf": 1, "cer_max": 1}}
+    bad = {"thresholds": {"face_sim": 1.5}}
     assert client.put(f"{V1}/series/{sid}/generate-rules", json=bad).status_code == 422
     assert client.get(f"{V1}/series/nope/generate-rules").status_code == 404
 
@@ -92,9 +109,11 @@ def test_the_run_log_lists_takes_fallbacks_and_failures(client: TestClient) -> N
     failed = _run(client, shots["1-03"]["video_product_id"])
     assert failed["state"] == "failed"
 
+    _qa_settled(client)
     log = client.get(f"{V1}/episodes/{EP1}/generate-log").json()
     lines = [(e["shot_label"], e["message"]["code"], e["warn"]) for e in log]
-    assert lines[:2] == [("1-01", "take", False), ("1-01", "take", False)]
+    # Each take was checked (M6): a passing take's line says so.
+    assert lines[:2] == [("1-01", "take_pass", False), ("1-01", "take_pass", False)]
     assert ("1-02", "fallback_error", True) in lines
     assert lines[-1] == ("1-03", "failed", True)
     first = log[0]["message"]["params"]

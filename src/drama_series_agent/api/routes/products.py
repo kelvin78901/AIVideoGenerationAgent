@@ -1,7 +1,7 @@
 """Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``; 以这张为底重画
 ``POST /versions/{id}/redraw``, 局部修复 ``POST /versions/{id}/inpaint`` and 图片超分
 ``POST /versions/{id}/upscale`` (M5.5, ``pipeline/components/redraw.py``, ``inpaint.py``,
-``iup.py``)."""
+``iup.py``); 重新质检 ``POST /versions/{id}/qa`` (M6, ``pipeline/qa.py``)."""
 
 from __future__ import annotations
 
@@ -244,3 +244,9 @@ async def upscale_version(version_id: str, body: UpscaleBody, state: State) -> d
         params={"iup_version_id": version_id, "iup_idx": body.idx},
     )
     return job_public(job)
+
+
+@router.post("/versions/{version_id}/qa")
+async def qa_version(version_id: str, state: State) -> dict[str, Any]:
+    """「重新质检」: → the queued QA job of a take (409 ``qa_not_a_take`` for anything else)."""
+    return job_public(await state.qa.request(version_id))

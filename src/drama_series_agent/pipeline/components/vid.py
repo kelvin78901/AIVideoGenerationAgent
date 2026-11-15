@@ -185,7 +185,29 @@ def take_asks(context: dict[str, Any]) -> dict[str, Any]:
                 if o.get("how") == "inner" and o.get("who")
             )
         ),
+        **ledger_asks(context.get("ledger") or {}),
     }
+
+
+SIDE = {"left": "左边", "center": "中间", "right": "右边"}
+DEPTH = {"near": "近处", "mid": "", "far": "远处"}
+
+
+def ledger_asks(ledger: dict[str, Any]) -> dict[str, list[str]]:
+    """连续性账本 (M6): where each person stands as the camera sees it, what is in their hands,
+    what they wear, for the take check's ``position`` / ``holding`` / ``outfit``."""
+    where, holding, outfit = [], [], []
+    for c in ledger.get("characters") or []:
+        name = str(c.get("name") or "")
+        if not name:
+            continue
+        if c.get("position") in SIDE:
+            where.append(f"{name}在画面{SIDE[c['position']]}{DEPTH.get(c.get('depth') or '', '')}")
+        if c.get("holding_names"):
+            holding.append(f"{name}手里拿着{'、'.join(c['holding_names'])}")
+        if c.get("outfit"):
+            outfit.append(f"{name}：{c['outfit']}")
+    return {"where": where, "holding": holding, "outfit": outfit}
 
 
 def shot_label(episode: Episode | None, shots: list[dict[str, Any]], shot_id: str) -> str:
@@ -514,6 +536,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "look": look,
             "sound": sound,
             "shot": {"shot_type": shot["shot_type"], "framing": shot["framing"]},
+            "ledger": lg,  # 连续性账本: what the take is checked against (M6)
         },
     )
 
@@ -729,7 +752,8 @@ class VidComponent(MediaComponent):
             fallback_reason=reason,
             # What 「用 API 出终版」 resends (Regenerate-2K takes the draft's own inputs), and
             # why this workflow (按镜头选工作流; the Inspector shows it).
-            params={"request": _sent(take.req.params), **_select(ctx)},
+            # ``call_id``: the call that made the clip, where QA writes its scores (M6).
+            params={"request": _sent(take.req.params), **_select(ctx), "call_id": call.call_id},
         )
         draft.seed = take.req.seed
         draft.dependencies = [*draft.dependencies, *take.deps]

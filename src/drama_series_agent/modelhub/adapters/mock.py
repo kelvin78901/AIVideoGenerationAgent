@@ -277,6 +277,16 @@ class MockAdapter:
         kind = self.spec.kind
         if kind in LLM_KINDS or kind == "asr":
             return self._llm(req)
+        meta = req.meta
+        measure = self.settings.responders.get(
+            (str(meta.get("component")), str(meta.get("task", "run")))
+        )
+        if measure is not None and kind not in IMAGE_KINDS | AUDIO_KINDS | VIDEO_KINDS:
+            # A measuring tool (OCR, a QA tool, M6) answers with what it measured.
+            data = measure(req)
+            return ModelResult(
+                text=json.dumps(data, ensure_ascii=False), json=data, raw={"mock": True}
+            )
         if kind in IMAGE_KINDS:
             return self._image(req)
         if kind in AUDIO_KINDS:

@@ -48,6 +48,8 @@ LockRecorder = Callable[[AsyncSession, Product, ProductVersion], Awaitable[None]
 # Fills in what a product shows before its next run: the prompt (a default one if it never
 # ran) and the estimate on the current route (pipeline/runs.py).
 Describer = Callable[[Product], Awaitable[tuple[PromptOut | None, EstimateOut | None]]]
+# Told about each version a run appends to a slot, after it is committed (M6: a take's QA).
+Created = Callable[[Product, ProductVersion], Awaitable[None]]
 ACTIVE_JOB_STATES = ("queued", "waiting_confirm", "running")
 
 
@@ -181,6 +183,11 @@ class ProductService:
         # Slots of products made by the dozen (a line's audio): listed without the next run's
         # prompt and estimate, and a new take of one is not toasted.
         self.quiet_slots: set[str] = set()
+        self._created: dict[str, list[Created]] = {}
+
+    def on_created(self, slot: str, hook: Created) -> None:
+        """Call ``hook`` after each version ``append`` adds to a product of ``slot``."""
+        self._created.setdefault(slot, []).append(hook)
 
     def on_adopt(self, slot: str, materializer: Materializer) -> None:
         """Rebuild the domain rows of ``slot`` from a newly adopted version (same transaction).
@@ -265,11 +272,13 @@ class ProductService:
         parent_version_id: str | None = None,
         adopt: bool | None = None,
         make_current: bool = True,
+        hooks: bool = True,
     ) -> ProductVersion:
         """Append a version and make it current (unless ``make_current`` is False).
 
         ``adopt``: None = only if nothing is adopted yet (first success); True = adopt it (a
-        user's edit); False = never.
+        user's edit); False = never. ``hooks`` False: the ``on_created`` hooks are not told
+        (the demo's seeded takes).
         """
         async with self._db.session() as session:
             p = await require_product(session, product_id)
@@ -342,6 +351,8 @@ class ProductService:
             },
         )
         await self._announce(p)
+        for hook in self._created.get(p.slot, []) if hooks else []:
+            await hook(p, v)
         return v
 
     async def append_edit(
