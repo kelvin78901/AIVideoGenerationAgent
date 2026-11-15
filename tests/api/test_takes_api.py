@@ -85,6 +85,24 @@ def _run(client: TestClient, product_id: str, **body: Any) -> dict[str, Any]:
     return product
 
 
+def _checked(client: TestClient, product_id: str) -> dict[str, Any]:
+    """The product once every job has ended: its takes' QA (M6, which also runs the take check)
+    and whatever QA started."""
+    deadline = time.monotonic() + 120
+    while True:
+        jobs = client.get(f"{V1}/jobs?limit=500").json()
+        if all(j["state"] in ("succeeded", "failed", "canceled", "waiting_confirm") for j in jobs):
+            product: dict[str, Any] = client.get(f"{V1}/products/{product_id}").json()
+            return product
+        assert time.monotonic() < deadline, "the jobs did not settle"
+        time.sleep(0.05)
+
+
+def _look(take: dict[str, Any]) -> dict[str, Any]:
+    """QA's picture check of a take (the take check of M5.5)."""
+    return dict(next(c for c in take["qa"]["checks"] if c["metric"] == "vlm"))
+
+
 def _refused(client: TestClient, product_id: str) -> tuple[int, str, dict[str, Any]]:
     resp = client.post(f"{V1}/products/{product_id}/run", json={"mode": "run"})
     detail = resp.json()["detail"]
@@ -492,7 +510,8 @@ def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
     seconds = shots["1-08"]["duration_s"]
     assert (sent["tail_frames"], sent["first_frame"]) == (22, last["sha256"])
     # No picture of its own: the take check asks for anything more than the plan's intent.
-    assert "extra" in {x["check"] for x in take["payload"]["check"]["items"]}
+    take = _checked(client, pid)["versions"][-1]
+    assert "extra" in {x["check"] for x in _look(take)["items"]}
     looks = _rows(client, ModelCall, ModelCall.component_id == vlook.VLOOK)
     assert {c.shot_id for c in looks} == {
         "demo-shot-1-06",
@@ -648,12 +667,16 @@ def test_a_changed_shot_or_aspect_lists_its_takes(client: TestClient) -> None:
 
 
 def test_each_take_is_checked(client: TestClient) -> None:
-    """take 检查 (M5.5 step 7): the take's six frames on a sheet (kept as its ``sheet`` file),
-    looked at against the contract; a cut and a still opening measured; only a warning."""
+    """take 检查 (M5.5 step 7; QA's picture check since M6): the take's six frames on a sheet
+    (kept as its ``sheet`` file), looked at against the contract; a cut and a still opening
+    measured."""
     _confirm_storyboard(client)
     shots = _shots(client)
-    take = _run(client, shots["1-03"]["video_product_id"], count=1)["versions"][-1]
-    check = take["payload"]["check"]
+    pid = shots["1-03"]["video_product_id"]
+    _run(client, pid, count=1)
+    take = _checked(client, pid)["versions"][-1]
+    assert "check" not in take["payload"]  # looked at by QA, not by the run
+    check = _look(take)
     found = {x["check"]: x["ok"] for x in check["items"]}
     # 1-03: the note's words; a night scene, so its light (run 19: 1-09 lit like day).
     # Nothing passes through anything, always (run 19: 1-06's door swung through her).
@@ -661,9 +684,12 @@ def test_each_take_is_checked(client: TestClient) -> None:
     assert found["cut"] is True and check["model"] == "google/gemini-3.1-flash-lite"
     assert len(take["payload"]["sheet_times"]) == 6
     assert "sheet" in {f["role"] for f in take["files"]}
-    # The take check's route is 自动质检 since M6; the run's look has no version yet.
-    calls = [c for c in _rows(client, ModelCall) if c.component_id == "qa" and not c.version_id]
-    assert len(calls) == 1
+    calls = [
+        c
+        for c in _rows(client, ModelCall)
+        if c.component_id == "qa" and c.model_key == "google/gemini-3.1-flash-lite"
+    ]
+    assert [c.version_id for c in calls] == [take["id"]]
 
 
 def test_an_uploaded_keyframe_is_the_takes_first_frame(client: TestClient) -> None:
@@ -696,8 +722,10 @@ def test_a_take_does_only_what_its_shot_is_for(client: TestClient) -> None:
 
     mock.responders[("vid", "h3_prompt")] = spy_rewrite
     shots = _shots(client)
-    take = _run(client, shots["1-04"]["video_product_id"], count=1)["versions"][-1]
-    found = {x["check"] for x in take["payload"]["check"]["items"]}
+    pid = shots["1-04"]["video_product_id"]
+    _run(client, pid, count=1)
+    take = _checked(client, pid)["versions"][-1]
+    found = {x["check"] for x in _look(take)["items"]}
     assert "extra" in found
     assert "没写到就不碰" in told[0]["draft"]
 
@@ -728,35 +756,20 @@ def _failing_take_looks(monkeypatch: pytest.MonkeyPatch, fail: int) -> list[list
 def test_a_take_that_fails_its_check_is_made_again(
     client: TestClient, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    """M5.5 9e-5 (Kelvin 2026-11-11): a local take that fails its check is made again, its
-    prompt writer told what failed, up to ``redraw`` (2) more times; the first that passes is
-    kept, every try's calls are recorded."""
+    """A take whose look fails is made again (M6 step 4, QA's rerun; M5.5 9e-5 made it inside
+    the run): the next take's prompt writer is told what failed, every take is kept."""
     _confirm_storyboard(client)
     shots = _shots(client)
     told = _failing_take_looks(monkeypatch, fail=1)
-    product = _run(client, shots["1-03"]["video_product_id"], count=1)
-    take = product["versions"][-1]
-    assert take["payload"]["redraws"] == 1 and take["payload"]["check"]["ok"] is True
-    assert told == [[], ["- 穿模（东西穿过人或别的东西）：门板穿过了她的肩膀"]]
-    videos = [
-        c
-        for c in _rows(client, ModelCall)
-        if c.product_id == product["id"]
-        and c.component_id == "vid"
-        and c.model_key == take["model_key"]
+    pid = shots["1-03"]["video_product_id"]
+    _run(client, pid, count=1)
+    product = _checked(client, pid)
+    assert [(v["origin"], v["qa_pass"]) for v in product["versions"]] == [
+        ("run", False),
+        ("auto_qa_rerun", True),
     ]
-    assert len(videos) == 2  # both takes made, one kept
-
-
-def test_a_take_that_never_passes_keeps_the_best_try_as_a_warning(
-    client: TestClient, monkeypatch: pytest.MonkeyPatch
-) -> None:
-    _confirm_storyboard(client)
-    shots = _shots(client)
-    told = _failing_take_looks(monkeypatch, fail=99)
-    take = _run(client, shots["1-03"]["video_product_id"], count=1)["versions"][-1]
-    assert take["payload"]["redraws"] == 2 and take["payload"]["check"]["ok"] is False
-    assert len(told) == 3 and take["stage"] == "draft"  # only a warning: it can be adopted
+    assert told == [[], ["- 穿模（东西穿过人或别的东西）：门板穿过了她的肩膀"]]
+    assert product["versions"][-1]["stage"] == "draft"
 
 
 def test_a_picture_the_user_wrote_replaces_the_scripts_action_lines(client: TestClient) -> None:

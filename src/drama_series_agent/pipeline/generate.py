@@ -39,7 +39,7 @@ from drama_series_agent.core.models_db import (
 VIDEO_COMPONENT = "vid"
 QA_COMPONENT = "qa"
 # Versions that are takes; ``pick`` / ``edit`` / ``import`` are not generation runs.
-TAKE_ORIGINS = ("run", "rerun", "switch", "fallback")
+TAKE_ORIGINS = ("run", "rerun", "switch", "fallback", "auto_qa_rerun")
 LOGGED_JOB_STATES = ("running", "waiting_confirm", "failed")
 
 
@@ -294,19 +294,28 @@ async def generate_log(
 
 def _take(v: ProductVersion, label: str) -> GenerateLogEntry:
     """``take`` / ``switch`` / ``final``; once QA has run (M6) ``take_pass`` / ``take_fail``
-    and ``switch_pass`` / ``switch_fail``."""
+    and ``switch_pass`` / ``switch_fail`` (a check turned off fails nothing); the take after
+    which QA acted, ``take_fail_rerun`` / ``_fallback`` / ``_lip`` / ``_stop``
+    (``pipeline/qa_policy.py``), ``issues`` the checks that failed."""
     prefix = "final" if v.stage == "final" else "switch" if v.origin == "switch" else "take"
     checks: list[dict[str, Any]] = list((v.qa_json or {}).get("checks") or [])
-    fails = sum(1 for c in checks if c.get("ok") is False)
+    failed = [str(c["metric"]) for c in checks if c.get("ok") is False and not c.get("off")]
+    fails = len(failed)
     code = prefix
     if v.qa_json is not None and prefix != "final":
         code = f"{prefix}_{'fail' if fails else 'pass'}"
+    policy = (v.qa_json or {}).get("policy") or {}
+    if fails and policy.get("action") in ("rerun", "fallback", "lip", "stop"):
+        code = f"take_fail_{policy['action']}"
     params: dict[str, str | int | float] = {
         "model": v.model_key or "",
         "take": v.n,
         "cost_usd": round(v.cost_usd, 4),
         "fails": fails,
+        "issues": ",".join(failed),
     }
+    if policy.get("model"):
+        params["to"] = str(policy["model"])
     return _entry(
         f"v-{v.id}", v.created_at, label, code, params, warn=fails > 0 or v.origin == "switch"
     )

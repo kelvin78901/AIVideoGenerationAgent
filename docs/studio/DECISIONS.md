@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-15 · M6 第 4 步：自动重跑和兜底
+
+- **「一批」= 同一个任务出的 take**（`job_id` 相同；终版 `stage: final` 不算）。这一批的质检都写完、没有一条通过、至少一条没过才动作；有一条「未检查」（`qa_pass` 为 None）也不动。镜头已采纳、已锁定、或正有任务在跑时不动（人已经做了决定）。同一批的两个质检任务可能同时结束：策略加一把锁，重复的那次 `start` 会 409 `product_busy`，忽略。
+- **连续次数**：从最近一次「人点的」run 之后数自动重跑的任务数。自动重跑在版本 `params.auto = auto_qa_rerun` 里留记号，所以它在路上因为出错兜底到 API（origin 变成 `fallback`）也照样算一次，不会无限重跑。人点的「重跑 / 换一个 / 出一条」之后重新数。
+- **只差口型**：第 7a 步之前先当普通重跑（判断已经在 `decide` 里，测试覆盖）。
+- **兜底等确认**：`notify: ask` 时兜底任务直接进 `waiting_confirm`，`confirm = {reason: fallback, failed_model, error: qa_fail, estimate_usd, …}`，和出错兜底的确认卡同一个样子；`RunService.start` 加 `origin`、`fallback_reason`、`ask` 三个参数。
+- **决定记在触发它的那条 take 上**（`qa_json.policy = {action, job_id, model}`），运行记录读它：`take_fail_rerun`（原型已有）、`take_fail_fallback`、`take_fail_lip`、`take_fail_stop`；`issues` 改成没过的项（`face,ocr`），前端有对应的质检项名字就用它，否则照旧当 `qaIssue`。计划里写的 `auto_rerun` / `qa_fallback` / `qa_stop` / `auto_lip` 几个码不单独做。
+- **去掉出片时的看图检查和重画**：`vid.run` 只出一条，照样拼 6 帧图（`sheet`）给质检看；`components.yaml` 去掉 `vid.redraw`。本地出片的估价因此从约 $0.03 降到约 $0.011（不再算重画的改写和看图）；每次自动重跑入队前单独估价（硬规则 6）。关键帧的检查和重画不动。
+
 ## 2026-11-15 · M6 第 3 步：质检框架
 
 - **一个质检任务做完所有项**：`qa.take`，`cpu` 队列，`max_attempts` 1；画面检查（看图模型）在任务里直接调，不另开 API 任务（计划写的「视觉检查那一步走 API 队列」不做）。原因：一条 take 只看一张拼图（约 $0.001），按拼图 + 提问缓存；出片时那次看过的，质检里命中缓存不再花钱。第 4 步去掉出片时的检查后，质检就是唯一的一次。

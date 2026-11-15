@@ -271,6 +271,9 @@ class RunService:
         where: Where | None = None,
         params: dict[str, Any] | None = None,
         component_id: str | None = None,
+        origin: str | None = None,
+        fallback_reason: str | None = None,
+        ask: dict[str, Any] | None = None,
     ) -> Job:
         """Queue a run. ``component_id``: another component runs on this product (M5.5
         ``redraw``): its route and estimate, ``intent`` its instruction; the product's own prompt
@@ -279,7 +282,10 @@ class RunService:
         succeeds. ``where``: ``api`` is hybrid
         mode's 「用 API 出终版」 (SPEC 7.3; the route's API model). ``params``: what the
         component reads besides the prompt (``Inputs.params``). ``count``: versions to make,
-        the component's ``run_count`` when None; the estimate covers them all."""
+        the component's ``run_count`` when None; the estimate covers them all. QA's own runs
+        (M6, ``pipeline/qa_policy.py``): ``origin`` the versions' (``auto_qa_rerun``),
+        ``fallback_reason`` a fallback made because QA failed (``qa_fail``), ``ask`` the
+        ``confirm`` it waits for (``notify: ask``) whatever the budget says."""
         router = self.services.router
         async with self.services.db.session() as session:
             p = await require_product(session, product_id)
@@ -376,14 +382,28 @@ class RunService:
                 **({"params": params} if params else {}),
                 **({"component_id": comp.id} if component_id else {}),
                 **({"cascade": dict(cascade)} if cascade else {}),
+                **({"origin": origin} if origin else {}),
+                **({"fallback_reason": fallback_reason} if fallback_reason else {}),
                 **({} if verdict.ok else {"confirm": verdict.params()}),
+                **(
+                    {
+                        "confirm": {
+                            "estimate_usd": round(estimate.cost_usd, 4),
+                            "limit_usd": None,
+                            "priced": estimate.priced,
+                            **ask,
+                        }
+                    }
+                    if ask is not None and verdict.ok
+                    else {}
+                ),
             },
             series_id=p.series_id,
             episode_id=inputs.episode_id,
             product_id=p.id,
             component_id=comp.id,
             est_cost_usd=round(estimate.cost_usd, 6),
-            wait_for_confirm=not verdict.ok,
+            wait_for_confirm=not verdict.ok or ask is not None,
         )
         await self.products.start_run(p.id, job.id)
         return job
@@ -473,9 +493,16 @@ class RunService:
                 select=inputs.params.get("select"),
             )
             draft = await comp.run(ctx, inputs)
+            if params.get("origin"):  # QA's own run (M6): still known after a fallback
+                draft.params = {**draft.params, "auto": params["origin"]}
             other = comp is not owner  # e.g. a redraw: its origin, from the picture it redrew
+            given = str(params.get("origin") or mode)
             origin = (
-                "fallback" if draft.fallback_reason else (comp.origin or comp.id) if other else mode
+                "fallback"
+                if draft.fallback_reason
+                else (comp.origin or comp.id)
+                if other
+                else given
             )
             # An API final's parent is the draft it started from (SPEC 7.3); a redraw's, inpaint's
             # or upscale's, the version it worked on (``{component}_version_id``).

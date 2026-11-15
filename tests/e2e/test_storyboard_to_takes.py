@@ -37,6 +37,23 @@ def _spent(api: Api) -> float:
     return float(api.get("/metrics/summary", scope="episode", episode=EP)["spent_usd"])
 
 
+def _qa_calls(api: Api, product_id: str) -> list[dict[str, Any]]:
+    """Once the product's QA jobs (M6) have ended: their calls (the picture check costs)."""
+    import time
+
+    deadline = time.monotonic() + 120
+    while True:
+        jobs = [
+            j
+            for j in api.get("/jobs", limit=500)
+            if j["kind"] == "qa.take" and j["product_id"] == product_id
+        ]
+        if all(j["state"] in ("succeeded", "failed", "canceled") for j in jobs):
+            return [c for j in jobs for c in api.calls(j["id"]) if c["status"] == "success"]
+        assert time.monotonic() < deadline, "QA did not finish"
+        time.sleep(0.05)
+
+
 def _badge(api: Api) -> dict[str, Any]:
     return dict(api.get(f"/episodes/{EP}/progress")["steps"]["generate"])
 
@@ -94,10 +111,14 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
         assert c["select_json"]["by"] in ("rule", "default"), c
     assert takes[0]["params"]["select"] == clips[0]["select_json"]
     # The first frame is looked at and the prompt rewritten into H3's official layout once for
-    # both takes (M5 steps 14b, 15g); each take is checked from its contact sheet (M5.5 step 7).
+    # both takes (M5 steps 14b, 15g); each take is checked from its contact sheet by its own QA
+    # job (M6), not by the run.
     others = [c["component_id"] for c in calls if c["model_key"] != takes[0]["model_key"]]
-    assert sorted(others) == ["qa", "qa", "vlook", "vprompt"]
-    assert _spent(api) == pytest.approx(spent + sum(c["cost_usd"] for c in calls), abs=1e-4)
+    assert sorted(others) == ["vlook", "vprompt"]
+    checks = _qa_calls(api, takes[0]["product_id"])
+    assert _spent(api) == pytest.approx(
+        spent + sum(c["cost_usd"] for c in calls + checks), abs=1e-4
+    )
 
     # Adopt A, drop it, adopt B.
     _adopt(api, takes[0])
@@ -109,7 +130,8 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
     product = _video(api, shots["1-05"])
     price = product["estimate"]["final_usd"]
     assert price > 0
-    spent = _spent(api)
+    # What was spent before the final, its takes' QA left out (counted with the final's below).
+    spent = _spent(api) - sum(c["cost_usd"] for c in _qa_calls(api, product["id"]))
     job = _start(api, product["id"], where="api", params={"source_version_id": takes[1]["id"]})
     final = next(v for v in _video(api, shots["1-05"])["versions"] if v["stage"] == "final")
     assert (final["model_key"], final["parent_version_id"]) == (
@@ -118,10 +140,10 @@ def test_from_the_confirmed_storyboard_to_the_generate_gate(backend: Backend) ->
     )
     assert (final["files"][0]["w"], final["files"][0]["h"]) == (1440, 2560)
     done = [c for c in api.calls(job["id"]) if c["status"] == "success"]
-    # The final is checked too (the take check is 自动质检's since M6).
-    (call,) = [c for c in done if c["component_id"] != "qa"]
+    (call,) = done  # its QA is a job of its own (M6)
     assert call["cost_usd"] == pytest.approx(price, abs=0.001)
-    assert _spent(api) == pytest.approx(spent + sum(c["cost_usd"] for c in done), abs=1e-4)
+    checks = _qa_calls(api, product["id"])
+    assert _spent(api) == pytest.approx(spent + sum(c["cost_usd"] for c in done + checks), abs=1e-4)
     _adopt(api, final)
 
     # 生成确认 before every shot has a take: refused, with the shots still open.

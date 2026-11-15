@@ -78,6 +78,7 @@ from drama_series_agent.pipeline.impact import ImpactService, register_kinds
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.qa import QaService
+from drama_series_agent.pipeline.qa_policy import QaPolicy
 from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.pipeline.timing import longest_take_s
 from drama_series_agent.prompts.compiler import PromptCompiler
@@ -207,6 +208,7 @@ class StudioState:
         budget.episode_budget = episodes.budget
         runs = RunService(components, products, jobs, bus, budget)
         qa = QaService(components, products, jobs, bus)
+        qa.policy = QaPolicy(runs)
         novel.after_import = runs.ensure_series_products
 
         async def estimate(product: Product) -> float | None:

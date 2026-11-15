@@ -1,8 +1,11 @@
 import { useTranslation } from "react-i18next";
 
 import type { GenerateLogEntry } from "@/api/schemas/generate";
+import { QaMetricSchema } from "@/api/schemas/products";
 import { formatTime, formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
+
+const QA_METRICS = new Set<string>(QaMetricSchema.options);
 
 /** 运行记录, newest first. Model keys and costs in the params are formatted here. */
 export function RunLog({
@@ -27,9 +30,15 @@ export function RunLog({
     return t(`log.${e.message.code}` as "log.started", {
       ...p,
       model: modelName(typeof p.model === "string" ? p.model : null),
+      to: modelName(typeof p.to === "string" ? p.to : null),
       cost: cost === null ? "" : t("log.cost", { amount: formatUsd(cost, { cents: true }) }),
       issues: issues
-        .map((c) => te(`qaIssue.${c}` as "qaIssue.face_mismatch"))
+        // A failed check (M6: face, lipsync …), or what the vision model or OCR found.
+        .map((c) =>
+          QA_METRICS.has(c)
+            ? t(`qa.${c}` as "qa.face")
+            : te(`qaIssue.${c}` as "qaIssue.face_mismatch"),
+        )
         .join(t("log.issueSep")),
       defaultValue: e.message.code,
     });

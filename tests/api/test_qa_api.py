@@ -151,18 +151,17 @@ def test_a_new_take_is_measured_and_judged(client: TestClient) -> None:
     tools = _rows(client, ModelCall, ModelCall.component_id == "qa")
     by_model = sorted(c.model_key for c in tools if c.version_id == take["id"])
     assert by_model == [
+        "google/gemini-3.1-flash-lite",  # the picture check, the only look at the sheet
         "local/auraface",
         "local/campplus",
         "local/rapidocr",
         "local/syncnet",
         "local/whisper-large-v3",
     ]
-    mine = [c for c in tools if c.version_id == take["id"]]
+    mine = [c for c in tools if c.version_id == take["id"] and c.model_key.startswith("local/")]
     assert all(c.cost_usd == 0 and c.where == "local" for c in mine)
-    # The run looked at the sheet already (the take check, now on this route), with the same
-    # question: QA's look is that one, cached.
-    looks = [c.model_key for c in tools if c.version_id is None]
-    assert looks == ["google/gemini-3.1-flash-lite"]
+    # The run itself no longer looks (M6 step 4: no run-time take check).
+    assert not [c for c in tools if c.version_id is None]
 
 
 def test_on_screen_words_are_read_back(client: TestClient) -> None:
@@ -230,3 +229,105 @@ def test_thresholds_are_bounded(client: TestClient) -> None:
     assert resp.status_code == 422
     resp = client.put(f"{V1}/series/demo/generate-rules", json={"qa_on": {"nose": True}})
     assert resp.status_code == 422
+
+
+def _failing_faces(client: TestClient) -> None:
+    """Mock's face tool finds nobody alike from now on."""
+    from drama_series_agent.modelhub.adapters.base import ModelRequest
+
+    def face(req: ModelRequest) -> dict[str, Any]:
+        refs = req.params.get("refs") or []
+        return {"faces": [{"asset_id": r["asset_id"], "name": r["name"], "sim": 0.3} for r in refs]}
+
+    _state(client).registry.add_mock_responder("qa", "face", face)
+
+
+def _settled(client: TestClient) -> None:
+    """No job of any kind is left to run (QA starts runs, runs start QA)."""
+    deadline = time.monotonic() + 120
+    while True:
+        jobs = client.get(f"{V1}/jobs?limit=500").json()
+        if all(j["state"] in (*DONE, "waiting_confirm") for j in jobs):
+            return
+        assert time.monotonic() < deadline, "the jobs did not settle"
+        time.sleep(0.05)
+
+
+def test_a_failed_take_is_made_again_then_falls_back_then_stops(client: TestClient) -> None:
+    _confirm_storyboard(client)
+    client.put(f"{V1}/series/demo/generate-rules", json={"qa_retry_max": 1}).raise_for_status()
+    _failing_faces(client)
+    pid = _shots(client)["1-04"]["video_product_id"]
+    resp = client.post(f"{V1}/products/{pid}/run", json={"mode": "run", "count": 1})
+    assert resp.status_code == 200, resp.text
+    _settled(client)
+
+    versions = client.get(f"{V1}/products/{pid}").json()["versions"]
+    assert [(v["origin"], v["qa_pass"]) for v in versions] == [
+        ("run", False),
+        ("auto_qa_rerun", False),
+        ("fallback", False),
+    ]
+    first, rerun, fallback = versions
+    # The rerun is told what failed; the fallback is the route's, for this reason.
+    assert rerun["params"]["fixes"] == ["- 人物的脸要和参考图一样"]
+    assert (rerun["model_key"], rerun["params"]["auto"]) == (first["model_key"], "auto_qa_rerun")
+    assert (fallback["fallback_reason"], fallback["model_key"]) == ("qa_fail", "minimax/h3-api")
+    (call,) = _rows(client, ModelCall, ModelCall.id == fallback["params"]["call_id"])
+    assert (call.is_fallback, call.fallback_reason) == (True, "qa_fail")
+
+    log = client.get(f"{V1}/episodes/{EP1}/generate-log").json()
+    lines = [(e["message"]["code"], e["message"]["params"]) for e in log]
+    codes = [c for c, _ in lines]
+    assert codes == ["take_fail_rerun", "take_fail_fallback", "take_fail_stop"]
+    assert lines[0][1]["issues"] == "face"
+    assert lines[1][1]["to"] == "minimax/h3-api"
+
+    # A person's own run starts again: one automatic rerun after it.
+    client.post(f"{V1}/products/{pid}/run", json={"mode": "rerun", "count": 1}).raise_for_status()
+    _settled(client)
+    versions = client.get(f"{V1}/products/{pid}").json()["versions"]
+    assert [v["origin"] for v in versions[3:]] == ["rerun", "auto_qa_rerun", "fallback"]
+
+
+def test_a_fallback_waits_for_a_yes_when_asked_to(client: TestClient) -> None:
+    _confirm_storyboard(client)
+    client.put(f"{V1}/series/demo/generate-rules", json={"qa_retry_max": 0}).raise_for_status()
+    fallback = {
+        "enabled": True,
+        "on": ["error", "timeout", "qa_fail"],
+        "qa_fail_n": 2,
+        "timeout_s": 600,
+        "to": "minimax/h3-api",
+        "notify": "ask",
+    }
+    body = {"scope": "component", "scope_id": None, "component_id": "vid"}
+    resp = client.put(f"{V1}/config/override", json={**body, "data": {"fallback": fallback}})
+    assert resp.status_code == 200, resp.text
+    _failing_faces(client)
+    pid = _shots(client)["1-04"]["video_product_id"]
+    client.post(f"{V1}/products/{pid}/run", json={"mode": "run", "count": 1}).raise_for_status()
+    _settled(client)
+    (job,) = [
+        j for j in client.get(f"{V1}/jobs?state=waiting_confirm").json() if j["product_id"] == pid
+    ]
+    confirm = job["params"]["confirm"]
+    assert (confirm["reason"], confirm["error"], job["params"]["fallback_reason"]) == (
+        "fallback",
+        "qa_fail",
+        "qa_fail",
+    )
+    assert confirm["estimate_usd"] > 0 and job["params"]["model_key"] == "minimax/h3-api"
+    log = client.get(f"{V1}/episodes/{EP1}/generate-log").json()
+    assert [e["message"]["code"] for e in log] == ["take_fail_fallback", "waiting"]
+
+
+def test_an_adopted_shot_is_left_alone(client: TestClient) -> None:
+    _confirm_storyboard(client)
+    take = _take(client, "1-04")
+    client.post(f"{V1}/versions/{take['id']}/adopt").raise_for_status()
+    _set_mock_qa(client, take["id"], {"face": 0.41})
+    _requa(client, take["id"])
+    _settled(client)
+    pid = _shots(client)["1-04"]["video_product_id"]
+    assert len(client.get(f"{V1}/products/{pid}").json()["versions"]) == 1

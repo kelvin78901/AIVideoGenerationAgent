@@ -1388,7 +1388,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0304,
+        "cost_usd": 0.0108,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.169
@@ -1644,7 +1644,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0303,
+        "cost_usd": 0.0107,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -1900,7 +1900,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0303,
+        "cost_usd": 0.0107,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -2421,7 +2421,7 @@
       "estimate": {
         "model_key": "comfy/h3-r2v",
         "where": "local",
-        "cost_usd": 0.0305,
+        "cost_usd": 0.0108,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1901
@@ -2452,7 +2452,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0306,
+        "cost_usd": 0.0108,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.1268
@@ -2483,7 +2483,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0305,
+        "cost_usd": 0.0108,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.2113
@@ -2514,7 +2514,7 @@
       "estimate": {
         "model_key": "comfy/h3",
         "where": "local",
-        "cost_usd": 0.0303,
+        "cost_usd": 0.0107,
         "seconds": 0.0,
         "priced": true,
         "final_usd": 0.0845
@@ -2620,7 +2620,8 @@
           "model": "comfy/h3",
           "take": 1,
           "cost_usd": 0.0,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2635,7 +2636,8 @@
           "model": "minimax/h3-regenerate-2k",
           "take": 2,
           "cost_usd": 0.338,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2650,7 +2652,8 @@
           "model": "comfy/h3",
           "take": 1,
           "cost_usd": 0.0,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2665,7 +2668,8 @@
           "model": "minimax/h3-regenerate-2k",
           "take": 2,
           "cost_usd": 0.2535,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2680,7 +2684,8 @@
           "model": "comfy/h3",
           "take": 1,
           "cost_usd": 0.0,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2695,7 +2700,8 @@
           "model": "minimax/h3-regenerate-2k",
           "take": 2,
           "cost_usd": 0.2535,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2710,7 +2716,8 @@
           "model": "comfy/h3-r2v",
           "take": 1,
           "cost_usd": 0.0,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2725,7 +2732,8 @@
           "model": "comfy/h3-r2v",
           "take": 2,
           "cost_usd": 0.0,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2753,7 +2761,8 @@
           "model": "minimax/h3-api",
           "take": 3,
           "cost_usd": 0.507,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": false
@@ -2768,7 +2777,8 @@
           "model": "volc/seedance-2.5",
           "take": 4,
           "cost_usd": 2.3717,
-          "fails": 0
+          "fails": 0,
+          "issues": ""
         }
       },
       "warn": true
@@ -2778,7 +2788,7 @@
     "scope": "episode",
     "spent_usd": 0.0,
     "budget_usd": 15.0,
-    "projected_usd": 0.1828,
+    "projected_usd": 0.0646,
     "insights": [],
     "updated_at": "2026-10-18T09:00:00Z"
   },

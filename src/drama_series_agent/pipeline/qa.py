@@ -65,6 +65,7 @@ from drama_series_agent.qa.ocr import contains, normalize
 
 if TYPE_CHECKING:
     from drama_series_agent.pipeline.component import ComponentRegistry
+    from drama_series_agent.pipeline.qa_policy import QaPolicy
 
 QA = "qa"  # the route and its config (components.yaml)
 QA_JOB = "qa.take"
@@ -476,6 +477,8 @@ class QaService:
         self.products = products
         self.jobs = jobs
         self.bus = bus
+        # 不达标自动重跑和兜底 (step 4), told after each take's QA.
+        self.policy: QaPolicy | None = None
         jobs.register(QA_JOB, self._handle)
         products.on_created(VIDEO_SLOT, self._take_made)
         for metric, responder in MOCKS.items():
@@ -559,6 +562,8 @@ class QaService:
             },
         )
         await self.products.announce(product.id)
+        if self.policy is not None:
+            await self.policy.after_qa(product.id)
         return {"version_id": version.id, "qa_pass": passed, "score": qa["score"]}
 
     async def _write(self, version_id: str, qa: dict[str, Any], passed: bool | None) -> None:
