@@ -7,4 +7,6 @@
 | `takes.html` | G1 候选卡的质检结果（加音色相似度）和「局部修复 ▾」菜单（口型修复 / 涂一块区域重画）、G2 视频局部修复弹窗、G3 自动规则里阈值可改 | `takes.light.jpg` / `.dark.jpg` |
 | `storyboard.html` | S1 镜头设置里只读的「连续性」一节（站位、朝向、手里、服装、时间） | `storyboard.light.jpg` / `.dark.jpg` |
 
+Kelvin 2026-11-15 看过、同意。S1 实际只列这个镜头拍到的人（「不在这个镜头」那一行不做，DECISIONS「M6 第 2 步」）。
+
 打开：直接用浏览器打开 HTML；地址后面加 `?dark` 看暗色。
