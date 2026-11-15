@@ -32,7 +32,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.assets import ops
 from drama_series_agent.bible.service import bible_product
-from drama_series_agent.core.models_db import Episode, Product, ProductVersion
+from drama_series_agent.core.models_db import Asset, Episode, Product, ProductVersion
 from drama_series_agent.core.paths import REPO_ROOT
 from drama_series_agent.episodes.service import script_product
 from drama_series_agent.modelhub.adapters.base import ModelRequest
@@ -62,6 +62,11 @@ class FoundAsset(BaseModel):
     lines: list[int] = Field(default_factory=list)
     text: TextSpec | None = None
     note: str | None = None
+    # M5.5: text written on a prop (its key or name) is the prop's; a new prop's real size.
+    on: str | None = None
+    physical: dict[str, str] | None = None
+    # M5.5 step 9e-3: a scene's neighbours through a door or window ([{via, to, note}]).
+    adjoins: list[dict[str, str]] | None = None
 
 
 class AssetsAnswer(BaseModel):
@@ -80,7 +85,8 @@ async def asset_list_product(session: AsyncSession, episode_id: str) -> Product 
 async def known_assets(
     session: AsyncSession, series_id: str, episode_id: str
 ) -> list[dict[str, Any]]:
-    """The assets of the series' adopted lists, this episode's first (ids carry over)."""
+    """The assets of the series' adopted lists, this episode's first (ids carry over), then
+    the ones made by hand (M5.5): one found of that kind and name is that one."""
     rows = (
         await session.exec(
             select(Product).where(
@@ -96,6 +102,15 @@ async def known_assets(
         v = await session.get(ProductVersion, p.adopted_version_id)
         if v is not None:
             out.extend(ops.assets_of(v.payload_json))
+    manual = await session.exec(
+        select(Asset).where(
+            Asset.series_id == series_id, col(Asset.manual).is_(True), col(Asset.retired).is_(False)
+        )
+    )
+    for a in manual.all():
+        out.append(
+            {"id": a.id, "key": (a.seed_json or {}).get("key"), "kind": a.kind, "name": a.name}
+        )
     return out
 
 

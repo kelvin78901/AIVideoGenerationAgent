@@ -14,6 +14,10 @@
  *   lone picture is locked as it is; the version on screen stays); a continuous shot needs none.
  *   Taking it back unlocks the keyframe and reopens 分镜确认;
  * - keyframe runs: 重跑 three local drafts; 「用 API 出终版」 one picture whose parent is the draft;
+ * - 换来源 (M5.5, `shots/upload.py`, `POST /versions/{id}/redraw|inpaint|upscale`): an upload is
+ *   one picked candidate at the delivery size (`low_res` under the draft size); 重画 / 局部修复 /
+ *   放大 one candidate whose parent is that version (放大: at the delivery size, `stage=final`);
+ *   continuous shots 409 `no_keyframe`, a locked keyframe 409 `product_locked`;
  * - 分镜确认 needs every shot confirmed and none 「待更新」 (409 `shots_not_confirmed`); it locks
  *   the plan;
  * - the impact preview's `shot_edit` (a confirmed shot, a confirmed storyboard) and
@@ -31,7 +35,14 @@ import {
   type ProductVersion,
   type RunRequest,
 } from "@/api/schemas/products";
-import { ShotPatchSchema, ShotSchema, type Shot, type ShotPatch } from "@/api/schemas/shots";
+import {
+  ShotChecksSchema,
+  ShotPatchSchema,
+  ShotSchema,
+  type Shot,
+  type ShotIssue,
+  type ShotPatch,
+} from "@/api/schemas/shots";
 import { primaryModel } from "@/mocks/route";
 import data from "@/test/data/shots.json";
 import { fakeResolve } from "@/test/fakes/config";
@@ -39,6 +50,16 @@ import { fakeResolve } from "@/test/fakes/config";
 const demoShots = z.array(ShotSchema).parse(data.shots);
 const demoPlan = ProductSchema.parse(data.plan);
 const demoKeyframes = data.keyframes.map((p) => ProductSchema.parse(p));
+const demoChecks = ShotChecksSchema.parse(data.checks);
+/** What the Mock model's 分镜检查 finds in episode 1 (`pipeline/components/plancheck.py`). */
+const MOCK_LLM_ISSUE: ShotIssue = {
+  shot_id: "demo-shot-1-03",
+  label: "1-03",
+  code: "insert_event",
+  params: {},
+  source: "llm",
+  text: "插入镜头写了「雨水把字一点点泡开」：状态变化应该摆好，不要在镜头里发生。",
+};
 
 /** The episode the fixture's shots are of. */
 const EPISODE = "demo-e1";
@@ -50,18 +71,42 @@ export const fakeShots = {
   shots: structuredClone(demoShots),
   plan: structuredClone(demoPlan),
   keyframes: structuredClone(demoKeyframes),
+  /** 分镜检查 (M5.5): the rules' findings; `POST` adds the Mock model's. */
+  checks: structuredClone(demoChecks),
   /** Episodes whose 分镜确认 is confirmed. */
   confirmed: new Set<string>(),
   /** Every `PATCH /shots/{id}`, in order. */
   patches: [] as ({ id: string } & ShotPatch)[],
+  /** Every 换来源 request (M5.5), in order. */
+  edits: [] as PictureEdit[],
 };
+
+/** What a 换来源 request sent. */
+export type PictureEdit =
+  | { kind: "upload"; shot: string; name: string; box: Record<string, number> | null }
+  | { kind: "redraw"; version: string; body: Record<string, unknown> }
+  | {
+      kind: "inpaint";
+      version: string;
+      idx: number;
+      prompt: string | null;
+      where: string | null;
+      mask: number;
+    }
+  | { kind: "upscale"; version: string; idx: number };
+
+/** The delivery size of the fixture's 9:16 spec, and its draft tier (`spec/dims.py`). */
+const DELIVERY = { w: 1080, h: 1920 };
+const DRAFT = { w: 768, h: 1366 };
 
 export function resetFakeShots() {
   fakeShots.shots = structuredClone(demoShots);
   fakeShots.plan = structuredClone(demoPlan);
   fakeShots.keyframes = structuredClone(demoKeyframes);
+  fakeShots.checks = structuredClone(demoChecks);
   fakeShots.confirmed = new Set();
   fakeShots.patches = [];
+  fakeShots.edits = [];
 }
 
 const error = (status: number, code: string, params: Record<string, unknown> = {}) =>
@@ -182,8 +227,14 @@ function retime(s: Shot) {
 
 /** The settings of `PATCH /shots/{id}` written in place (no checks); the refusal, or null. */
 function write(s: Shot, patch: ShotPatch): Response | null {
-  const { confirmed, keyframe_pick: pick, intent, duration_s: seconds, ...rest } = patch;
+  const { confirmed, keyframe_pick: pick, intent, duration_s: seconds, contract, ...rest } = patch;
   void confirmed;
+  if (contract) {
+    // 镜头契约 (M5.5): only the fields given; ``delivery`` only the lines given.
+    const delivery = { ...s.contract.delivery, ...contract.delivery };
+    s.contract = { ...s.contract, ...contract, delivery };
+    if (contract.kind === "insert") s.contract.beats = 0;
+  }
   if (seconds !== undefined) {
     if (seconds !== null && seconds < s.min_s)
       return error(422, "duration_below_audio", { id: s.id, min_s: s.min_s });
@@ -525,6 +576,20 @@ export function shotHandlers() {
       HttpResponse.json(params.id === EPISODE ? fakeShots.shots : []),
     ),
 
+    http.get("*/api/v1/episodes/:id/shot-checks", ({ params }) =>
+      params.id === EPISODE
+        ? HttpResponse.json(fakeShots.checks)
+        : HttpResponse.json({ issues: [], llm_product_id: null, llm_state: "none" }),
+    ),
+
+    http.post("*/api/v1/episodes/:id/shot-checks", ({ params }) => {
+      if (params.id !== EPISODE) return error(404, "episode_not_found", { id: params.id });
+      const rules = fakeShots.checks.issues.filter((i) => i.source === "rule");
+      const issues = [...rules, MOCK_LLM_ISSUE].sort((a, b) => a.label.localeCompare(b.label));
+      fakeShots.checks = { ...fakeShots.checks, issues, llm_state: "ready" };
+      return HttpResponse.json(job(fakeShots.plan, "shot-check", "deepseek/v4.1-flash", "run"));
+    }),
+
     http.patch("*/api/v1/shots/:id", async ({ params, request }) => {
       const s = findShot(params.id);
       if (!s) return error(404, "shot_not_found", { id: params.id });
@@ -550,6 +615,85 @@ export function shotHandlers() {
     http.get("*/api/v1/products/:id", ({ params }) => {
       const p = productById(params.id);
       return p ? HttpResponse.json(p) : undefined;
+    }),
+
+    http.post("*/api/v1/shots/:id/keyframe/upload", async ({ params, request }) => {
+      const s = findShot(params.id);
+      if (!s) return error(404, "shot_not_found", { id: params.id });
+      const kf = keyframeOf(s);
+      if (s.shot_type === "continuous" || !kf) return error(409, "no_keyframe", { id: s.id });
+      if (kf.locked_hash) return error(409, "product_locked", { id: kf.id });
+      const form = await request.formData();
+      const file = form.get("file");
+      const name = typeof file === "object" && file && "name" in file ? String(file.name) : "";
+      const nums = ["x", "y", "w", "h"].map((k) => form.get(k));
+      const box = nums.every((v) => v !== null)
+        ? { x: Number(nums[0]), y: Number(nums[1]), w: Number(nums[2]), h: Number(nums[3]) }
+        : null;
+      fakeShots.edits.push({ kind: "upload", shot: s.id, name, box });
+      const v = addVersion(kf, 1, { origin: "upload", model: null, stage: null });
+      v.note = name || null;
+      v.payload = {
+        candidates: [{}],
+        crop: box,
+        ...(box && (box.w < DRAFT.w || box.h < DRAFT.h) ? { low_res: true } : {}),
+      };
+      for (const f of v.files) Object.assign(f, DELIVERY);
+      kf.pick = { version_id: v.id, idx: 0 };
+      s.keyframe_pick = 0;
+      repicture(s);
+      return HttpResponse.json(kf);
+    }),
+
+    http.post("*/api/v1/versions/:id/:op", async ({ params, request }) => {
+      const op = String(params.op);
+      if (op !== "redraw" && op !== "inpaint" && op !== "upscale") return undefined;
+      const id = String(params.id);
+      const kf = fakeShots.keyframes.find((p) => p.versions.some((v) => v.id === id));
+      if (!kf) return undefined;
+      if (kf.locked_hash) return error(409, "product_locked", { id: kf.id });
+      let where: string | null;
+      if (op === "inpaint") {
+        const form = await request.formData();
+        const mask = form.get("mask");
+        const prompt = form.get("prompt");
+        const w = form.get("where");
+        where = typeof w === "string" ? w : null;
+        fakeShots.edits.push({
+          kind: "inpaint",
+          version: id,
+          idx: Number(form.get("idx") ?? 0),
+          prompt: typeof prompt === "string" ? prompt : null,
+          where,
+          mask: typeof mask === "object" && mask ? mask.size : 0,
+        });
+      } else {
+        const body = (await request.json()) as Record<string, unknown>;
+        where = typeof body.where === "string" ? body.where : null;
+        fakeShots.edits.push(
+          op === "redraw"
+            ? { kind: "redraw", version: id, body }
+            : { kind: "upscale", version: id, idx: Number(body.idx ?? 0) },
+        );
+      }
+      const model = {
+        redraw: where === "api" ? "google/nano-banana-2.1" : "comfy/flux3-klein-redraw",
+        inpaint: where === "api" ? "openai/gpt-image-2" : "comfy/klein-inpaint",
+        upscale: "comfy/seedvr2-img",
+      }[op];
+      const v = addVersion(kf, 1, {
+        origin: op,
+        model,
+        stage: op === "upscale" ? "final" : model.startsWith("comfy/") ? "draft" : null,
+      });
+      v.parent_version_id = id;
+      if (op === "upscale") for (const f of v.files) Object.assign(f, DELIVERY);
+      const s = fakeShots.shots.find((x) => x.keyframe_product_id === kf.id);
+      if (s) {
+        s.keyframe_pick = 0;
+        repicture(s);
+      }
+      return HttpResponse.json(job(kf, v.id, model, op));
     }),
 
     http.post("*/api/v1/products/:id/run", async ({ params, request }) => {

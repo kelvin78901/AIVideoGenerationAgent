@@ -10,6 +10,7 @@ AssetKind = Literal["character", "scene", "prop", "text", "voice"]
 AssetStatus = Literal["locked", "choosing", "not_generated"]
 TextMethod = Literal["composite", "model"]
 TextStyle = Literal["handwritten", "printed", "screen"]
+TextPen = Literal["ballpoint", "marker", "pencil"]  # what handwriting is written with (M5.5)
 VoiceMethod = Literal["design", "clone", "local"]
 
 
@@ -24,6 +25,15 @@ class TextOut(BaseModel):
     exact: str
     method: TextMethod
     style: TextStyle
+    pen: TextPen = "ballpoint"
+
+
+class PhysicalOut(BaseModel):
+    """A prop's real size, material and wear (M5.5; content, any may be empty)."""
+
+    size: str = ""
+    material: str = ""
+    wear: str = ""
 
 
 class VoiceLineOut(BaseModel):
@@ -31,9 +41,22 @@ class VoiceLineOut(BaseModel):
     tone: str
 
 
+class VoiceSampleOut(BaseModel):
+    """声音克隆的样本 (M5.5): the upload's name and length; ``sha256`` is the levelled clip a
+    player plays (its first seconds, ``clip_s``)."""
+
+    name: str
+    duration_s: float
+    sha256: str
+    clip_s: float | None = None
+    waveform: list[float] = Field(default_factory=list)
+
+
 class VoiceOut(BaseModel):
     method: VoiceMethod
     lines: list[VoiceLineOut]
+    sample: VoiceSampleOut | None = None  # 声音克隆 (M5.5)
+    consent: bool = False  # 「我确认已获得声音本人的授权」
 
 
 class AssetSceneOut(BaseModel):
@@ -62,6 +85,8 @@ class AssetOut(BaseModel):
     note: str | None
     # The analysis now describes it differently from what its product was made from.
     seed_changed: bool
+    physical: PhysicalOut | None = None  # a prop's (M5.5); None for other kinds
+    manual: bool = False  # 新建素材 by the user (M5.5), not found by the analysis
 
 
 class TextPatch(BaseModel):
@@ -70,12 +95,24 @@ class TextPatch(BaseModel):
     exact: str | None = Field(default=None, max_length=200)
     method: TextMethod | None = None
     style: TextStyle | None = None
+    pen: TextPen | None = None
+
+
+class PhysicalPatch(BaseModel):
+    """A prop's 真实尺寸 / 材质 / 新旧 (M5.5); an empty string clears one."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    size: str | None = Field(default=None, max_length=200)
+    material: str | None = Field(default=None, max_length=200)
+    wear: str | None = Field(default=None, max_length=200)
 
 
 class VoicePatch(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
-    method: VoiceMethod
+    method: VoiceMethod | None = None
+    consent: bool | None = None  # 声音克隆: the speaker agreed (M5.5)
 
 
 class AssetPatch(BaseModel):
@@ -85,6 +122,17 @@ class AssetPatch(BaseModel):
     pick: int | None = Field(default=None, ge=0)
     text: TextPatch | None = None
     voice: VoicePatch | None = None
+    physical: PhysicalPatch | None = None  # a prop's (M5.5)
+
+
+class AssetCreateIn(BaseModel):
+    """``POST /series/{id}/assets`` 「新建素材」 (M5.5): one the analysis did not find."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: Literal["character", "scene", "prop", "text"]
+    name: str = Field(min_length=1, max_length=60)
+    description: str = Field(default="", max_length=2000)
 
 
 class AssetLockIn(BaseModel):

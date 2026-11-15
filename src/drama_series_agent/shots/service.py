@@ -32,7 +32,7 @@ draws the keyframes again (local drafts).
 from __future__ import annotations
 
 import re
-from collections.abc import Awaitable, Callable, Iterable
+from collections.abc import Awaitable, Callable, Iterable, Mapping
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 from typing import Any
@@ -44,6 +44,7 @@ from sqlmodel.ext.asyncio.session import AsyncSession
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.models_db import (
     Asset,
+    BibleEntity,
     Episode,
     GateDecision,
     Job,
@@ -71,6 +72,10 @@ from drama_series_agent.pipeline.components.plan import (
     plan_product,
     shot_slice,
 )
+from drama_series_agent.pipeline.components.plancheck import (
+    SHOT_CHECK_SLOT,
+    PlanCheckComponent,
+)
 from drama_series_agent.pipeline.drafts import PlannedChange
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
@@ -79,8 +84,18 @@ from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ACTIVE_JOB_STATES, ProductService
 from drama_series_agent.pipeline.runs import RunService
 from drama_series_agent.pipeline.timing import ShotDuration, line_seconds, shot_duration
+from drama_series_agent.shots import check as shot_check
+from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
-from drama_series_agent.shots.schema import ShotEditIn, ShotOut, ShotPatch, ShotSplitIn
+from drama_series_agent.shots.schema import (
+    ShotChecksOut,
+    ShotContractOut,
+    ShotEditIn,
+    ShotIssueOut,
+    ShotOut,
+    ShotPatch,
+    ShotSplitIn,
+)
 from drama_series_agent.spec.schema import SpecPatch, apply_patch
 
 KEYFRAME_SLOT = "keyframe"
@@ -97,6 +112,26 @@ _HEADING_MARKS = re.compile(r"^(?:[日夜晨昏][　\s]+)?(?:[内外][　\s]+)?"
 
 async def keyframe_products(session: AsyncSession, shot_ids: Iterable[str]) -> dict[str, Product]:
     return await shot_products(session, shot_ids, KEYFRAME_SLOT)
+
+
+def own_picture(keyframe: Product | None, shot: Mapping[str, Any]) -> str | None:
+    """The picture description the user wrote for a shot (storyboard page or prompt panel: the
+    keyframe prompt's intent), when it is not the plan's. Then it says what the shot shows, and
+    the script's action lines it films are not read beside it (Kelvin 2026-11-10, run 19: the
+    script's 「拉开门，又关上……再拉开」 against a picture that opens the door once)."""
+    mine = str(((keyframe.prompt_json if keyframe else None) or {}).get("intent") or "").strip()
+    return mine if mine and mine != str(shot.get("intent") or "").strip() else None
+
+
+async def pictured(session: AsyncSession, shots: list[dict[str, Any]]) -> list[dict[str, Any]]:
+    """The plan's shots with the picture description on screen: the user's own
+    (``own_picture``, marked ``picture_edited``) over the plan's. What the checks read."""
+    keyframes = await keyframe_products(session, [str(s["id"]) for s in shots])
+    out = []
+    for s in shots:
+        mine = own_picture(keyframes.get(str(s["id"])), s)
+        out.append({**s, "intent": mine, "picture_edited": True} if mine else s)
+    return out
 
 
 async def video_products(session: AsyncSession, shot_ids: Iterable[str]) -> dict[str, Product]:
@@ -128,6 +163,11 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
     now = utcnow()
     shots = ops.shots_of(version.payload_json)
     kept: set[str] = set()
+    pictures = await keyframe_products(session, list(rows))
+    for s in shots:
+        if (old := rows.get(s["id"])) is not None and (kf := pictures.get(s["id"])) is not None:
+            _follow_plan(kf, old.intent, str(s.get("intent") or ""), now)
+            session.add(kf)
     for n, s in enumerate(shots, 1):
         row = rows.get(s["id"]) or Shot(
             id=s["id"],
@@ -155,6 +195,7 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
         row.blocking_json = list(s.get("blocking") or [])
         row.audio_mode = s["audio_mode"]
         row.difficulty = int(s.get("difficulty") or 1)
+        row.contract_json = s.get("contract")
         row.retired = False
         row.updated_at = now
         session.add(row)
@@ -188,6 +229,21 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
                 p.retired = retired
                 p.updated_at = now
                 session.add(p)
+
+
+def _follow_plan(kf: Product, was: str, now_said: str, now: datetime) -> None:
+    """A new plan's picture for a shot whose keyframe prompt still holds the old plan's (every
+    run saves the intent it ran with): that prompt is the plan's, not the user's, so it goes
+    and the keyframe takes the new picture (run 20: run 17's pictures read as the user's own,
+    so a plan made again changed nothing). A picture the user wrote differs and is kept; a
+    hand-edited compiled layer keeps its layer with the new intent."""
+    saved = dict(kf.prompt_json or {})
+    if not saved or was.strip() == now_said.strip():
+        return
+    if str(saved.get("intent") or "").strip() != was.strip():
+        return
+    kf.prompt_json = {**saved, "intent": now_said} if saved.get("compiled_overridden") else None
+    kf.updated_at = now
 
 
 async def ensure_plan(session: AsyncSession, product: Product, version: ProductVersion) -> None:
@@ -301,6 +357,34 @@ def dialogue_text(lines: Iterable[ScriptLine]) -> str | None:
         who = x.character_name or ""
         rows.append(f"{who}（{x.tone}）：{x.text}" if x.tone else f"{who}：{x.text}")
     return "\n".join(rows) or None
+
+
+async def prop_names(session: AsyncSession, series_id: str) -> dict[str, list[str]]:
+    """The series' props, id → its name, its bible entry's name and aliases (``红伞``)."""
+    props = (
+        await session.exec(
+            select(Asset).where(
+                Asset.series_id == series_id, Asset.kind == "prop", col(Asset.retired).is_(False)
+            )
+        )
+    ).all()
+    entries = {
+        e.id: e
+        for e in (
+            await session.exec(
+                select(BibleEntity).where(
+                    BibleEntity.series_id == series_id, BibleEntity.kind == "prop"
+                )
+            )
+        ).all()
+    }
+    out: dict[str, list[str]] = {}
+    for a in props:
+        key = str((a.seed_json or {}).get("key") or "")
+        e = entries.get(key.split(":", 1)[1]) if key.startswith("prop:") else None
+        names = [a.name, *([e.name, *e.aliases_json] if e is not None else [])]
+        out[a.id] = list(dict.fromkeys(n for n in names if n))
+    return out
 
 
 @dataclass(frozen=True)
@@ -458,6 +542,8 @@ class ShotService:
                 session, [x.id for x in lines.values() if x.type in ops.SPEAKING]
             )
             numbers = await scene_numbers(session, episode.series_id)
+            kinds = {a.id: a.kind for a in (await episode_assets(session, episode_id))[0].values()}
+            names = await prop_names(session, episode.series_id)
             scenes = {
                 s.id: s
                 for s in (
@@ -477,6 +563,7 @@ class ShotService:
             }
         longest = await self._longest() if self._longest is not None else None
         labels = _labels(episode.idx, shots)
+        by_id = {s["id"]: s for s in shots}
         out = []
         for i, s in enumerate(shots, 1):
             mine = [lines[x] for x in s.get("line_ids") or [] if x in lines]
@@ -538,9 +625,66 @@ class ShotService:
                     keyframe_sha256=picture,
                     confirmed=state.confirmed,
                     confirm_stale=state.stale,
+                    contract=ShotContractOut.model_validate(
+                        contracts.effective(s, _spoken(s, lines), kinds, by_id, names)
+                    ),
                 )
             )
         return out
+
+    async def checks(self, episode_id: str) -> ShotChecksOut:
+        """分镜检查 (M5.5): the rules over the plan on screen, worked out now, and the model's
+        last check of the episode (``plancheck``), with whether the plan changed since."""
+        async with self._db.session() as session:
+            episode = await session.get(Episode, episode_id)
+            if episode is None or episode.retired:
+                raise PipelineError(404, "episode_not_found", id=episode_id)
+            v = await _current(session, await plan_product(session, episode_id))
+            labels, found = await plan_issues(session, episode, v)
+            mine = await check_product(session, episode_id)
+            last = (
+                await session.get(ProductVersion, mine.adopted_version_id)
+                if mine is not None and mine.adopted_version_id
+                else None
+            )
+            stale = mine is not None and mine.id in await self._invalidation.stale_ids(
+                session, [mine]
+            )
+        state = (
+            "none"
+            if mine is None
+            else "running"
+            if mine.status in ("queued", "running")
+            else "failed"
+            if mine.status == "failed" and last is None
+            else "none"
+            if last is None
+            else "stale"
+            if stale
+            else "ready"
+        )
+        return ShotChecksOut(
+            issues=[ShotIssueOut(label=labels[i["shot_id"]], **i) for i in found],
+            llm_product_id=mine.id if mine is not None else None,
+            llm_state=state,
+        )
+
+    async def run_checks(self, episode_id: str) -> Job:
+        """「检查」: the model's 分镜检查 of the episode's adopted plan (made the first time)."""
+        async with self._db.session() as session:
+            episode = await session.get(Episode, episode_id)
+            if episode is None or episode.retired:
+                raise PipelineError(404, "episode_not_found", id=episode_id)
+            product = await check_product(session, episode_id)
+        if product is None:
+            product = await self._products.ensure(
+                series_id=episode.series_id,
+                owner_type="episode",
+                owner_id=episode_id,
+                slot=SHOT_CHECK_SLOT,
+                component_id=PlanCheckComponent.id,
+            )
+        return await self._runs.start(product.id, "run")
 
     async def get(self, shot_id: str) -> ShotOut:
         episode_id = await self._episode_of_shot(shot_id)
@@ -924,11 +1068,22 @@ class ShotService:
         episode's, it is not shorter than its lines' audio)."""
         async with self._db.session() as session:
             assets, _ = await episode_assets(session, p.owner_id)
+            hand = {
+                a.id
+                for a in await session.exec(
+                    select(Asset).where(
+                        Asset.series_id == p.series_id,
+                        col(Asset.manual).is_(True),
+                        col(Asset.retired).is_(False),
+                    )
+                )
+            }
             lines = await _lines(session, p.owner_id)
             shot = ops.find_shot(v.payload_json, shot_id)
             assert shot is not None
             audio = await line_audio_seconds(session, shot.get("line_ids") or [])
-        unknown = [a for a in changes.get("asset_ids", []) if a not in assets]
+        # The episode's assets, and the ones made by hand (M5.5 新建素材).
+        unknown = [a for a in changes.get("asset_ids", []) if a not in assets and a not in hand]
         if unknown:
             raise PipelineError(422, "asset_not_found", id=unknown[0])
         manual = changes.get("manual_s")
@@ -938,6 +1093,18 @@ class ShotService:
             if manual < floor:
                 raise PipelineError(422, "duration_below_audio", min_s=floor)
         characters = [a.id for a in assets.values() if a.kind == "character"]
+        if "contract" in changes:
+            kinds = {a.id: a.kind for a in assets.values()}
+            spoken = _spoken(shot, lines)
+            now = contracts.effective(shot, spoken, kinds)
+            now.pop("start_inherited", None)
+            refs = list(changes.get("asset_ids") or shot.get("asset_ids") or [])
+            try:
+                changes["contract"] = contracts.patch(
+                    now, changes["contract"], [x.line_id for x in spoken], refs, kinds
+                )
+            except contracts.ContractError as e:
+                raise PipelineError(422, e.code, **e.params) from e
         payload: dict[str, Any] = _apply(
             lambda: ops.patch(v.payload_json, shot_id, changes, characters)
         )
@@ -1001,7 +1168,19 @@ def _changes(body: ShotPatch) -> dict[str, Any]:
         changes["asset_ids"] = list(dict.fromkeys(body.asset_ids))
     if "duration_s" in fields:
         changes["manual_s"] = body.duration_s
+    if "contract" in fields and body.contract is not None:
+        # turned into the whole contract in ``_edited`` (it needs the shot's lines and assets)
+        changes["contract"] = body.contract.model_dump(mode="json", exclude_unset=True)
     return changes
+
+
+def _spoken(shot: dict[str, Any], lines: dict[str, ScriptLine]) -> list[contracts.SpokenLine]:
+    """The lines a shot films, as its contract sees them."""
+    return [
+        contracts.SpokenLine(x, n, lines[x].type, lines[x].tone or "")
+        for n, x in enumerate(shot.get("line_ids") or [], 1)
+        if x in lines
+    ]
 
 
 def _next_in_scene(payload: dict[str, Any], shot_id: str) -> str | None:
@@ -1045,6 +1224,48 @@ async def _scene_refs_drawn_for(session: AsyncSession, series_id: str, aspect: s
         if v is not None and (v.payload_json or {}).get("aspect") == aspect:
             n += 1
     return n
+
+
+async def plan_issues(
+    session: AsyncSession, episode: Episode, plan: ProductVersion | None
+) -> tuple[dict[str, str], list[dict[str, Any]]]:
+    """分镜检查 of ``plan`` (a version of ``episode``'s shot plan): the shot labels, and every
+    finding in shot order, the rules' worked out now over the pictures on screen, then the
+    model's last check (``plancheck``). What the page shows and a plan made again fixes."""
+    shots = await pictured(session, ops.shots_of(plan.payload_json) if plan else [])
+    rows = await _lines(session, episode.id)
+    assets, _ = await episode_assets(session, episode.id)
+    places = {
+        x.id: scene_place(x.heading)
+        for x in (await session.exec(select(Scene).where(Scene.episode_id == episode.id))).all()
+    }
+    mine = await check_product(session, episode.id)
+    last = (
+        await session.get(ProductVersion, mine.adopted_version_id)
+        if mine is not None and mine.adopted_version_id
+        else None
+    )
+    lines = {x.id: shot_check.LineInfo(x.type, x.text, x.tone or "") for x in rows.values()}
+    labels = shot_check.labels(episode.idx, shots)
+    contracts = shot_check.contracts_of(shots, lines, {a.id: a.kind for a in assets.values()})
+    found = [i.as_json() for i in shot_check.check(shots, labels, lines, contracts, places)]
+    if last is not None:
+        found += [i for i in last.payload_json.get("issues") or [] if i["shot_id"] in labels]
+    order = {sid: n for n, sid in enumerate(labels)}
+    found.sort(key=lambda i: (order[i["shot_id"]], i["source"] != "rule"))
+    return labels, found
+
+
+async def check_product(session: AsyncSession, episode_id: str) -> Product | None:
+    """The episode's 分镜检查 product (``plancheck``), once a check was asked for."""
+    rows = await session.exec(
+        select(Product).where(
+            Product.owner_type == "episode",
+            Product.owner_id == episode_id,
+            Product.slot == SHOT_CHECK_SLOT,
+        )
+    )
+    return rows.first()
 
 
 async def _current(session: AsyncSession, p: Product | None) -> ProductVersion | None:

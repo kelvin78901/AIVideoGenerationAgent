@@ -166,5 +166,10 @@
     "saved": "Saved: {{spec}}.",
     "resolveFirst": "First choose above what to do with the work already generated.",
     "nothing": "Nothing changed."
+  },
+  "styleBoard": {
+    "title": "Style board",
+    "lead": "The look the whole series shares (colour, texture, light), up to 4 pictures. Every keyframe sends them last among its references, for the style only — nothing in them is copied; changing the board marks the keyframes that used it as outdated.",
+    "add": "Upload a picture"
   }
 }

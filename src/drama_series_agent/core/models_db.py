@@ -425,7 +425,8 @@ class ProductVersion(SQLModel, table=True):
     id: str = Field(default_factory=new_id, primary_key=True)
     product_id: str = Field(foreign_key="product.id", ondelete="CASCADE", index=True)
     n: int  # 1-based, shown as v{n}
-    # run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest
+    # run / rerun / switch / edit / fallback / import / auto_qa_rerun / comfy_ingest / pick /
+    # upload / redraw / inpaint / upscale
     origin: str
     parent_version_id: str | None = None
     payload_json: dict[str, Any] = _json(dict)
@@ -754,6 +755,7 @@ class Asset(SQLModel, table=True):
     name: str
     bible_id: str | None = None  # the bible entry it was drawn from
     seed_json: dict[str, Any] = _json(dict)
+    manual: bool = False  # made by hand (M5.5): a new analysis never retires it
     retired: bool = False
     created_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)
@@ -816,6 +818,7 @@ class Shot(SQLModel, table=True):
     audio_mode: str = "native"  # native (PLAN mode B) / tts (mode A) / none (DECISIONS M5 plan)
     difficulty: int = 1  # 1–6 (PLAN 空间与物理)
     control_json: dict[str, Any] | None = _json()  # a control video's settings (M5)
+    contract_json: dict[str, Any] | None = _json()  # 镜头契约 (M5.5, ``shots/contract.py``)
     retired: bool = False
     updated_at: datetime = Field(
         default_factory=utcnow, sa_column=Column(UtcDateTime(), nullable=False)

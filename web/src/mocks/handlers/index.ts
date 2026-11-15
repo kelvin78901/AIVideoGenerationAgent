@@ -42,7 +42,7 @@
  * | PUT /products/{id}/prompt        | M2             |
  * | POST /products/{id}/compile      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | POST /versions/{id}/upscale      | M6             |
+ * | POST /versions/{id}/upscale (takes) | M6          |
  * | GET /episodes/{id}/timeline      | M7             |
  * | PATCH /clips/{id}, /subtitles/{id} | M7           |
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |

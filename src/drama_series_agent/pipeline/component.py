@@ -170,6 +170,9 @@ class Component(ABC):
     # False when 确认并同步 must not redo it on its own (M4: 分镜规划; a new plan would overwrite
     # the user's framing, blocking and confirmed shots), so it is only marked 待更新.
     cascade_rerun: ClassVar[bool] = True
+    # The origin of the versions it makes on another component's product (M5.5: ``redraw``,
+    # ``inpaint``; ``iup`` makes ``upscale``); its id when None.
+    origin: ClassVar[str | None] = None
 
     def __init__(self, services: Services) -> None:
         self.services = services
@@ -223,6 +226,11 @@ class Component(ABC):
         ``named``: the caller chose ``model``; ``ask``: a model may be asked (an enqueue; an
         estimate only reads what was asked before)."""
         return ModelChoice(self.model_for(inputs, model, settings))
+
+    def api_final_usd(self, inputs: Inputs, compiled: str, settings: Resolved) -> float | None:
+        """What a run on the route's API model costs, when the page prices that button apart
+        from the next run (M5.5: 「克隆 · 约 $X」); None elsewhere."""
+        return None
 
     # ------------------------------------------------------------------ run
 

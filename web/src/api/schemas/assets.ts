@@ -24,17 +24,30 @@ export type AssetStatus = z.infer<typeof AssetStatusSchema>;
 
 export const TextMethodSchema = z.enum(["composite", "model"]);
 export const TextStyleSchema = z.enum(["handwritten", "printed", "screen"]);
+/** What handwriting is written with (M5.5; 用什么写). */
+export const TextPenSchema = z.enum(["ballpoint", "marker", "pencil"]);
 /** On-screen text: the exact characters, how they are made, and the lettering. */
 export const TextSettingsSchema = z.object({
   exact: z.string(),
   method: TextMethodSchema,
   style: TextStyleSchema,
+  pen: TextPenSchema.optional(),
 });
 export type TextSettings = z.infer<typeof TextSettingsSchema>;
 /** Why OCR does not match: characters or punctuation left out, some read as others, or text
  * on a base meant for compositing. */
 export const OcrIssueSchema = z.enum(["missing", "wrong", "has_text"]);
 export const VoiceMethodSchema = z.enum(["design", "clone", "local"]);
+
+/** 声音克隆的样本: its name and length, and the clip a player plays (its first `clip_s`). */
+export const VoiceSampleSchema = z.object({
+  name: z.string(),
+  duration_s: z.number(),
+  sha256: z.string(),
+  clip_s: z.number().nullable(),
+  waveform: z.array(z.number()),
+});
+export type VoiceSample = z.infer<typeof VoiceSampleSchema>;
 
 /** A scene of the episode asked for that the asset appears in, and its lines there. */
 export const AssetSceneSchema = z.object({
@@ -46,6 +59,14 @@ export const AssetSceneSchema = z.object({
   line_ids: z.array(z.string()),
 });
 export type AssetScene = z.infer<typeof AssetSceneSchema>;
+
+/** 真实尺寸 / 材质 / 新旧 of a prop (M5.5): the keyframe draws it to scale. */
+export const PhysicalSchema = z.object({
+  size: z.string(),
+  material: z.string(),
+  wear: z.string(),
+});
+export type Physical = z.infer<typeof PhysicalSchema>;
 
 export const AssetSchema = z.object({
   id: z.string(),
@@ -70,21 +91,50 @@ export const AssetSchema = z.object({
     .object({
       method: VoiceMethodSchema,
       lines: z.array(z.object({ text: z.string(), tone: z.string() })),
+      /** 声音克隆 (M5.5): the uploaded sample (`sha256` plays its levelled first seconds). */
+      sample: VoiceSampleSchema.nullable(),
+      /** 「我确认已获得声音本人的授权」; a new sample unticks it. */
+      consent: z.boolean(),
     })
     .nullable(),
   /** What the analysis said about it (e.g. 「第 2 集出场」 for one not used yet). */
   note: z.string().nullable(),
   /** The script now describes it differently from what its candidates were made from. */
   seed_changed: z.boolean(),
+  /** A prop's real size, material and wear (M5.5); null for other kinds. Content. */
+  physical: PhysicalSchema.nullable().optional(),
+  /** 新建素材 by the user (M5.5): an analysis never removes or renames it. */
+  manual: z.boolean().optional(),
 });
 export type Asset = z.infer<typeof AssetSchema>;
+
+/** The kinds 「新建素材」 makes (`POST /series/{id}/assets`; a voice comes from the script). */
+export const NEW_ASSET_KINDS = ["character", "scene", "prop", "text"] as const;
+export type NewAssetKind = (typeof NEW_ASSET_KINDS)[number];
+
+/** `POST /series/{id}/assets` 「新建素材」 */
+export interface AssetCreate {
+  kind: NewAssetKind;
+  name: string;
+  description: string;
+}
+
+/** What 多参考图 can be for (`assets/refs.py:PURPOSES`), at most `MORE_REFS_MAX`, and only for a
+ * character, a scene or a prop. */
+export const MORE_REF_PURPOSES = ["face", "outfit", "hair", "pose", "other"] as const;
+export const MORE_REFS_MAX = 8;
+export const MORE_REF_KINDS: readonly AssetKind[] = ["character", "scene", "prop"];
 
 /** `PATCH /assets/{id}` */
 export const AssetPatchSchema = z.object({
   intent: z.string().optional(),
   pick: z.number().int().nonnegative().optional(),
   text: TextSettingsSchema.partial().optional(),
-  voice: z.object({ method: VoiceMethodSchema }).optional(),
+  voice: z
+    .object({ method: VoiceMethodSchema.optional(), consent: z.boolean().optional() })
+    .optional(),
+  /** A prop's 真实尺寸 / 材质 / 新旧; an empty string clears one. */
+  physical: PhysicalSchema.partial().optional(),
 });
 export type AssetPatch = z.infer<typeof AssetPatchSchema>;
 
@@ -104,10 +154,22 @@ export const CandidatesPayloadSchema = z.object({
       /** …the voice described in words, and its id when it is already an API voice. */
       design: z.string().nullable().optional(),
       voice_id: z.string().nullable().optional(),
+      /** Keyframes (M5.5 关键帧检查): what a vision model and OCR found; only a warning.
+       * `check` start / scale / text / mouth / people / ocr; `note` is content. */
+      check: z
+        .object({
+          items: z.array(z.object({ check: z.string(), ok: z.boolean(), note: z.string() })),
+          ok: z.boolean(),
+          model: z.string().nullable(),
+        })
+        .optional(),
     }),
   ),
   /** On-screen text: the settings the candidates were made with. */
   text: TextSettingsSchema.nullable().optional(),
+  /** Keyframes (M5.5 9e-5): how many times every candidate failed its check and was drawn
+   * again with what failed; absent when the first try passed. */
+  redraws: z.number().int().optional(),
 });
 export type CandidatesPayload = z.infer<typeof CandidatesPayloadSchema>;
 
@@ -119,10 +181,12 @@ export const VoiceFinalSchema = z.object({
   emotions: z.array(z.string()),
   /** The audition it was made from (content). */
   label: z.string().nullable().optional(),
+  /** Made from an uploaded sample (声音克隆, M5.5). */
+  cloned: z.boolean().optional(),
 });
 
 /** `POST /assets/{id}/lock`: by default the picked candidate of the version on screen.
- * On-screen text OCR read differently is refused (409 `ocr_mismatch`) unless `force`. */
+ * An OCR mismatch only warns (M5.5). */
 export const AssetLockSchema = z.object({
   version_id: z.string().optional(),
   idx: z.number().int().nonnegative().optional(),

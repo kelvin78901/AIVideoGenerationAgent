@@ -257,6 +257,9 @@ class ComponentDefault(_Loose):
     cheap_api: str | None = None
     per_call_cap_usd: float | None = None  # 单次花费上限; default: ComponentsConfig's
     candidates: int | None = None
+    # 检查没过自动重画 (M5.5 9e-5, kf and vid): how many more tries, with what failed, when the
+    # check fails every candidate of a local run; 0: only a warning.
+    redraw: int = 0
     # 「用 API 出终版」 of a local draft goes to this model, not the route's API model (vid: H3
     # Regenerate-2K).
     final_api: str | None = None
@@ -371,12 +374,21 @@ class VoiceEmotion(_Loose):
     minimax: dict[str, Any] = Field(default_factory=dict)  # T2A overrides (emotion, vol, model)
 
 
+class VoiceClone(_Loose):
+    """声音克隆 (M5.5): how long the uploaded sample may be (MiniMax: 10 s to 5 min)."""
+
+    min_s: float = 10.0
+    max_s: float = 300.0
+    ref_max_s: float = 15.0  # the local reference and the final's anchor are cut at this
+
+
 class VoiceConfig(_Loose):
     """How a voice is auditioned and finished (M3 ``voice``): ``config/voice.yaml``."""
 
     lines: int = 2  # script lines a voice reads to audition
     sample_text: str = "你好。"  # what it reads when its character has no lines yet
     local_final: str = "local/indextts2"  # variants of a local voice; the API flow's fallback
+    clone: VoiceClone = Field(default_factory=VoiceClone)
     drafts: list[VoiceDraft] = Field(default_factory=list)
     emotions: list[VoiceEmotion] = Field(default_factory=list)
     # 台词配音: words in a line's tone → its emotion, the first match in this order.

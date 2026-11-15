@@ -18,7 +18,14 @@
       {
         "key": "scene:l-flat:night",
         "name": "林晚出租屋 · 夜",
-        "description": "十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。"
+        "description": "十来平米的出租屋，门后挂着画板，桌上堆着画稿；只开一盏台灯，暖光；旧的绿色铁门。",
+        "adjoins": [
+          {
+            "via": "门",
+            "to": "scene:l-stairs:night",
+            "note": "门外是六楼楼道：水泥地，楼梯口在门的左边，声控灯昏黄；红伞靠在门外右手边的墙上"
+          }
+        ]
       },
       {
         "key": "prop:p-umbrella",
@@ -27,7 +34,7 @@
       {
         "key": "prop:p-note",
         "name": "黄色便利贴",
-        "description": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。上面的字另做（见画面文字）。"
+        "description": "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起；上面是黑色圆珠笔手写的一行字，歪扭但能认清。"
       },
       {
         "key": "prop:p-hairtie",
@@ -41,6 +48,7 @@
       {
         "kind": "text",
         "name": "便利贴手写",
+        "on": "prop:p-note",
         "description": "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
         "text": { "exact": "楼下便利店，等你到十二点。", "style": "handwritten", "method": "model" },
         "lines": [3]

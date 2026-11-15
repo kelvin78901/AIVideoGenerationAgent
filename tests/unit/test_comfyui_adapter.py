@@ -78,6 +78,7 @@ class FakeComfy:
 
     def __init__(self) -> None:
         self.video: bytes | None = None  # answer with this clip from node 92 (h3-i2v's output)
+        self.image_node = "8"  # the node a picture comes from (fake-edit's output)
         self.sockets: list[asyncio.Queue[str | None]] = []
         self.polls = 0
         self.hang = False
@@ -134,7 +135,9 @@ class FakeComfy:
                 outputs = {"92": {"images": [clip], "animated": [True]}}
                 return httpx.Response(200, json={pid: {"outputs": outputs, "status": status}})
             out = {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "temp"}]}
-            return httpx.Response(200, json={pid: {"outputs": {"8": out}, "status": status}})
+            return httpx.Response(
+                200, json={pid: {"outputs": {self.image_node: out}, "status": status}}
+            )
         if path == "/queue" and method == "GET":
             running = [] if self.lost else [[1, f"p{len(self.prompts)}", {}, {}, []]]
             return httpx.Response(200, json={"queue_running": running, "queue_pending": []})
@@ -627,3 +630,91 @@ def test_a_longer_h3_clip_runs_slower_per_second(store: BlobStore) -> None:
     assert secs(7.29) == pytest.approx(255, abs=15)
     assert secs(15.0) == pytest.approx(804, abs=20)
     assert secs(2.0) == secs(5.0)  # H3 makes 5 s at the least
+
+
+# --------------------------------------------------------------------------- redraw (M5.5)
+
+REDRAW = ModelSpec(
+    key="comfy/flux3-klein-redraw", kind="image", where="local", display="Klein redraw",
+    runtime="comfyui", workflow="flux3-klein-redraw",
+)  # fmt: skip
+
+
+async def test_a_redraw_starts_from_its_picture_with_the_strength(
+    root: Path, store: BlobStore
+) -> None:
+    """The picture is the latent to start from (``base_image``) and reference 1; the strength
+    is the sampler's denoise; the size is the workflow's for the aspect."""
+    shutil.copytree(WORKFLOWS_DIR / "flux3-klein-redraw", root / "flux3-klein-redraw")
+    fake = FakeComfy()
+    fake.image_node = "20"  # the workflow's PreviewImage
+    req = _req(store)
+    sha = req.params["refs"][0]
+    req.params.update(base_image=sha, denoise=0.3)
+    await _adapter(fake, root, store, spec=REDRAW).run(req, CallContext())
+    graph = fake.prompts[0]
+    by_title = {n["_meta"]["title"]: n["inputs"] for n in graph.values()}
+    assert by_title["Base"]["image"] == f"dramastudio/{sha}.png"
+    assert by_title["Reference 1"]["image"] == f"dramastudio/{sha}.png"
+    assert by_title["Sampler"]["denoise"] == 0.3 and by_title["Sampler"]["latent_image"][0] == "24"
+    assert (by_title["Size"]["width"], by_title["Size"]["height"]) == (928, 1664)
+    assert "EmptyFlux2LatentImage" not in {n["class_type"] for n in graph.values()}
+
+
+INPAINT = ModelSpec(
+    key="comfy/klein-inpaint", kind="image", where="local", display="Klein inpaint",
+    runtime="comfyui", workflow="klein-inpaint",
+)  # fmt: skip
+
+
+async def test_an_inpaint_noises_only_the_mask_and_pastes_it_back(
+    root: Path, store: BlobStore
+) -> None:
+    """局部修复 (M5.5 step 14): the picture and the grayscale mask are uploaded; the sampler
+    starts from the masked latent at full denoise; the output is the decoded picture pasted
+    onto the scaled original through the grown mask."""
+    shutil.copytree(WORKFLOWS_DIR / "klein-inpaint", root / "klein-inpaint")
+    fake = FakeComfy()
+    fake.image_node = "20"
+    req = _req(store)
+    sha = req.params["refs"][0]
+    mask = store.put_bytes(solid_png(8, 8, (255, 255, 255)))
+    req.params.update(base_image=sha, mask=mask, mask_alpha=store.put_bytes(b"not for comfy"))
+    await _adapter(fake, root, store, spec=INPAINT).run(req, CallContext())
+    graph = fake.prompts[0]
+    by_title = {n["_meta"]["title"]: n for n in graph.values()}
+    assert by_title["Base"]["inputs"]["image"] == f"dramastudio/{sha}.png"
+    assert by_title["Mask"]["inputs"] == {"image": f"dramastudio/{mask}.png", "channel": "red"}
+    sampler = by_title["Sampler"]["inputs"]
+    assert sampler["denoise"] == 1.0 and graph[sampler["latent_image"][0]]["class_type"] == (
+        "SetLatentNoiseMask"
+    )
+    paste = by_title["Paste back"]["inputs"]
+    assert graph[paste["mask"][0]]["class_type"] == "GrowMask"
+    assert graph[paste["destination"][0]]["_meta"]["title"] == "Size"
+    assert by_title["Output"]["inputs"]["images"][0] == "28"
+
+
+SEEDVR2_IMG = ModelSpec(
+    key="comfy/seedvr2-img", kind="image", where="local", display="SeedVR2 image",
+    runtime="comfyui", workflow="seedvr2-img",
+)  # fmt: skip
+
+
+async def test_an_image_upscale_is_the_size_asked_for(root: Path, store: BlobStore) -> None:
+    """图片超分 (M5.5 step 15): the picture is uploaded as the base, the size is the request's
+    as is (``caps.exact_size``: 1080 is no multiple of 16; SeedVR2 pads and crops back), no
+    references are sent."""
+    shutil.copytree(WORKFLOWS_DIR / "seedvr2-img", root / "seedvr2-img")
+    fake = FakeComfy()
+    fake.image_node = "11"
+    req = _req(store)
+    sha = req.params.pop("refs")[0]
+    req.params.update(base_image=sha, width=1080, height=1920, aspect="9:16")
+    await _adapter(fake, root, store, spec=SEEDVR2_IMG).run(req, CallContext())
+    by_title = {n["_meta"]["title"]: n["inputs"] for n in fake.prompts[0].values()}
+    assert by_title["Base"]["image"] == f"dramastudio/{sha}.png"
+    size = by_title["Size"]
+    assert (size["resize_type.width"], size["resize_type.height"]) == (1080, 1920)
+    assert by_title["Colour fix"]["color_correction_method"] == "lab"
+    assert fake.uploads == [("dramastudio", f"{sha}.png")]

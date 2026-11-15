@@ -25,9 +25,10 @@ from typing import Any
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
+from drama_series_agent.assets.ops import appearance_only, physical_from, physical_text
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.models_db import Asset, Product, ProductVersion
-from drama_series_agent.modelhub.adapters.base import Estimate
+from drama_series_agent.modelhub.adapters.base import CallContext, Estimate
 from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
 from drama_series_agent.pipeline.components.media import (
     MediaComponent,
@@ -41,6 +42,7 @@ from drama_series_agent.pipeline.components.media import (
 from drama_series_agent.pipeline.drafts import DependencyDraft, VersionDraft
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.prompts.compiler import Block
+from drama_series_agent.qa import ocr
 
 REF_IMAGE_SLOT = "ref_image"
 KIND_GUIDE = {
@@ -54,7 +56,58 @@ KIND_GUIDE = {
         "（手、门框、桌面）看得出它的真实尺寸；看得清材质和细节。"
     ),
 }
+# Run 19: the note's description says 「贴在伞柄上」 and its picture drew a black umbrella;
+# every scale reference and keyframe after took it from there. Where a prop is put is the
+# shot's (its contract's props), not its picture's.
+# A picture model draws what the prompt names, told not to or not: the description's clauses
+# that put it on something are left out of what is sent (``appearance_only``), and this names
+# nothing.
+PROP_ALONE = "只画这件道具本身，和衬托大小的手或桌面；不画它贴着、挂着或放着的别的物件。"
 FINAL_NOTE = "以参考图里的草稿为准，画得更精细：构图、样子和颜色都不要改。"
+STYLE_GUIDE = {
+    "handwritten": "手写：圆珠笔写在纸上，笔画自然，有一点倾斜和深浅变化。",
+    "printed": "印刷：清楚的黑体或宋体，排得整齐。",
+    "screen": "屏幕界面：手机或电脑的系统字体，清晰、发光，界面简洁。",
+}
+PEN = {"ballpoint": "圆珠笔", "marker": "马克笔", "pencil": "铅笔"}  # 用什么写 (M5.5)
+
+
+def lettering(text: dict[str, str]) -> str:
+    """The 字迹 / 字体 line: handwriting with the pen it was written with (ballpoint by
+    default, which reads as before)."""
+    guide = STYLE_GUIDE.get(text.get("style", ""), "")
+    pen = PEN.get(text.get("pen") or "", "")
+    return guide.replace("圆珠笔", pen) if text.get("style") == "handwritten" and pen else guide
+
+
+# 有字的道具 (M5.5): the writing is part of the prop, drawn on its own picture.
+PROP_TEXT = "道具上的字，必须逐字一致"
+
+
+def text_settings(asset: Asset, settings: dict[str, Any] | None) -> dict[str, str]:
+    """The characters, how they are made and the lettering: the product's settings over what
+    the analysis found."""
+    seed = (asset.seed_json or {}).get("text") or {}
+    mine = (settings or {}).get("text") or {}
+    return {"exact": "", "method": "composite", "style": "printed", **seed, **mine}
+
+
+def prop_text(asset: Asset, product: Product | None) -> dict[str, str] | None:
+    """The writing on a prop (M5.5: the note's 「楼下便利店，等你到十二点。」), always drawn by
+    the model; None when the prop has none."""
+    if asset.kind != "prop":
+        return None
+    text = text_settings(asset, product.settings_json if product else None)
+    return {**text, "method": "model"} if text["exact"].strip() else None
+
+
+def prop_physical(asset: Asset, product: Product | None) -> dict[str, str] | None:
+    """A prop's size, material and wear: what the user set on its picture (``settings``),
+    else what the analysis found (M5.5)."""
+    mine = ((product.settings_json if product else None) or {}).get("physical")
+    if isinstance(mine, dict):  # set on the assets page, even emptied
+        return physical_from(mine)
+    return physical_from((asset.seed_json or {}).get("physical"))
 
 
 def asset_aspect(kind: str, spec_aspect: str) -> str:
@@ -107,13 +160,19 @@ class ImgComponent(MediaComponent):
                     session, c["product_id"], ""
                 )
                 characters.append(c)
-        return Inputs(
-            blocks=[
-                Block("类别", KIND_GUIDE.get(asset.kind, "")),
-                Block("画幅", frame["aspect"]),
-            ],
-            context={"kind": asset.kind, "frame": frame, "characters": characters},
-        )
+        blocks = [Block("类别", KIND_GUIDE.get(asset.kind, "")), Block("画幅", frame["aspect"])]
+        if asset.kind == "prop":
+            blocks.append(Block("只有道具", PROP_ALONE))
+        if asset.kind == "prop" and (size := physical_text(prop_physical(asset, product))):
+            blocks.append(Block("真实尺寸和材质", size))
+        context: dict[str, Any] = {"kind": asset.kind, "frame": frame, "characters": characters}
+        if (text := prop_text(asset, product)) is not None:
+            blocks += [
+                Block(PROP_TEXT, f"「{text['exact']}」"),
+                Block("字迹", lettering(text)),
+            ]
+            context["text"] = text
+        return Inputs(blocks=blocks, context=context)
 
     # ------------------------------------------------------------------ run
 
@@ -122,7 +181,11 @@ class ImgComponent(MediaComponent):
         refs, deps, blocks = self._refs(ctx.intent, inputs, source)
         frame = inputs.context["frame"]
         where = self.where_of(ctx.model_key)
-        prompt = prompt_text(ctx.compiled, blocks)
+        compiled = ctx.compiled
+        if inputs.context.get("kind") == "prop" and not ctx.compiled_overridden and ctx.intent:
+            names = [str(c["name"]) for c in inputs.context.get("characters") or []]
+            compiled = compiled.replace(ctx.intent, appearance_only(ctx.intent, names))
+        prompt = prompt_text(compiled, blocks)
         req = self.image_request(
             prompt,
             n=1 if source else self.candidates(),
@@ -149,6 +212,17 @@ class ImgComponent(MediaComponent):
         draft.dependencies = [*draft.dependencies, *deps]
         if source:
             draft.params["source"] = {"version_id": source[0].id, "idx": source[1]}
+        if (text := inputs.context.get("text")) is not None:
+            # 画面文字 and a prop's writing: OCR reads each candidate back (only a warning).
+            call_ctx = self._call_ctx(ctx, None)
+            checked = []
+            for f in draft.files:
+                if f.get("role") == "candidate":
+                    read = await ocr.read(
+                        self.services.router, self.services.store, f["sha256"], call_ctx
+                    )
+                    checked.append(ocr.check(text["exact"], read, text["method"]))
+            draft.payload = {**draft.payload, "candidates": checked, "text": text}
         return draft
 
     def estimate(self, inputs: Inputs, compiled: str, model: str) -> Estimate:
@@ -166,8 +240,18 @@ class ImgComponent(MediaComponent):
         return self.services.registry.get(model).estimate(req)
 
     def picture_params(self, inputs: Inputs) -> dict[str, Any]:
-        """Extra request params (画面文字: the characters to draw)."""
-        return {}
+        """Extra request params: the characters a model draws (画面文字, a prop's writing)."""
+        text = inputs.context.get("text")
+        return {"text": text["exact"]} if text and text["method"] == "model" else {}
+
+    async def check_upload(
+        self, asset: Asset, product: Product, sha256: str
+    ) -> tuple[dict[str, Any], dict[str, str]]:
+        """An uploaded picture's OCR against the text's settings now, and those settings."""
+        text = prop_text(asset, product) or text_settings(asset, product.settings_json)
+        ctx = CallContext(component_id=self.id, series_id=product.series_id, product_id=product.id)
+        read = await ocr.read(self.services.router, self.services.store, sha256, ctx)
+        return ocr.check(text["exact"], read, text["method"]), text
 
     # ------------------------------------------------------------------ internals
 

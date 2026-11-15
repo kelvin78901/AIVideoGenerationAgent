@@ -20,10 +20,17 @@ from sqlmodel import col, select
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
-from drama_series_agent.core.models_db import Job, ModelCall, Product, ScriptLine
+from drama_series_agent.core.models_db import (
+    Job,
+    ModelCall,
+    Product,
+    ProductVersion,
+    ScriptLine,
+)
 from drama_series_agent.media.video import probe
 from drama_series_agent.modelhub.adapters.base import ModelRequest
-from drama_series_agent.pipeline import vlook
+from drama_series_agent.pipeline import takecheck, vlook
+from drama_series_agent.pipeline.components.vid import VidComponent
 from drama_series_agent.prompts import h3_format
 
 LOCAL = "http://127.0.0.1"
@@ -123,7 +130,7 @@ def test_a_first_run_makes_two_takes_from_the_keyframe(client: TestClient) -> No
     for take in takes:
         # A local draft keeps its untrimmed clip (``raw``) for Regenerate-2K.
         roles = [f["role"] for f in take["files"]]
-        assert roles == ["video", "poster", "last_frame", "raw", "prompt"]
+        assert roles == ["video", "poster", "last_frame", "raw", "sheet", "prompt"]
         assert (take["model_key"], take["where"], take["stage"]) == ("comfy/h3", "local", "draft")
         video = take["files"][0]
         # The shot's length less the 0.3 s cut off the head.
@@ -291,6 +298,8 @@ def test_an_h3_api_take_goes_through_context_ir(client: TestClient) -> None:
     text = _prompt(client, take)
     assert "<Audio 1>: fully_copy - <Audio 1> is reused 1:1" in text
     assert "overall_soundscape: <Audio 1> as it is, with no other sound." in text
+    # The other side of the flat's door is the stairwell (M5.5 step 9e-3).
+    assert "门那边是「老小区楼道 · 夜」，照参考图里的它画，不另编：门外是六楼楼道" in text
 
 
 def _seconds(client: TestClient, sha: str) -> float:
@@ -375,7 +384,13 @@ def test_an_api_final_regenerates_the_local_draft_at_2k(client: TestClient) -> N
     assert final["model_key"] == "minimax/h3-regenerate-2k" and final["where"] == "api"
     assert final["parent_version_id"] == draft["id"]
     assert final["payload"]["resolution"] == "2k"
-    assert [f["role"] for f in final["files"]] == ["video", "poster", "last_frame", "prompt"]
+    assert [f["role"] for f in final["files"]] == [
+        "video",
+        "poster",
+        "last_frame",
+        "sheet",
+        "prompt",
+    ]
     assert (final["files"][0]["w"], final["files"][0]["h"]) == (1440, 2560)
     assert _prompt(client, final) == _prompt(client, draft)  # resent as it was
     (call,) = _rows(client, ModelCall, ModelCall.model_key == "minimax/h3-regenerate-2k")
@@ -476,6 +491,8 @@ def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
     sent = take["params"]["request"]
     seconds = shots["1-08"]["duration_s"]
     assert (sent["tail_frames"], sent["first_frame"]) == (22, last["sha256"])
+    # No picture of its own: the take check asks for anything more than the plan's intent.
+    assert "extra" in {x["check"] for x in take["payload"]["check"]["items"]}
     looks = _rows(client, ModelCall, ModelCall.component_id == vlook.VLOOK)
     assert {c.shot_id for c in looks} == {
         "demo-shot-1-06",
@@ -507,7 +524,8 @@ def test_a_continuing_local_take_is_guided_with_the_tail_of_the_one_before(
 
 def _on_screen(client: TestClient, shot: dict[str, Any]) -> None:
     """Make the shot's spoken lines said on screen: 1-06's only line is 林晚's inner voice,
-    which is laid in the edit, not made in the take (M5 step 15p)."""
+    which is laid in the edit, not made in the take (M5 step 15p). The script says dialogue and
+    the shot's contract (M5.5) says it is delivered on screen, as a new plan would."""
 
     async def write() -> None:
         async with _state(client).db.session() as s:
@@ -516,6 +534,22 @@ def _on_screen(client: TestClient, shot: dict[str, Any]) -> None:
                 if row.type == "vo":
                     row.type = "dialogue"
                     s.add(row)
+            plan = (
+                await s.exec(
+                    select(Product).where(
+                        Product.owner_id == shot["episode_id"], Product.slot == "shot_plan"
+                    )
+                )
+            ).one()
+            version = await s.get(ProductVersion, plan.adopted_version_id)
+            assert version is not None
+            payload = json.loads(json.dumps(version.payload_json))
+            for x in payload["shots"]:
+                if x["id"] == shot["id"] and x.get("contract"):
+                    x["contract"]["delivery"] = {i: "dialogue" for i in x["contract"]["delivery"]}
+                    x["contract"]["kind"] = "dialogue"
+            version.payload_json = payload
+            s.add(version)
             await s.commit()
 
     client.portal.call(write)  # type: ignore[union-attr]
@@ -545,8 +579,13 @@ def test_an_inner_voice_is_left_out_of_the_take_and_an_insert_moves_little(
     assert told[-1]["dialogue"] == [] and told[-1]["shot_kind"] == "performance"
     assert "剪辑时另铺" in told[-1]["draft"] and "三年了。他凭什么。" in told[-1]["draft"]
     assert "<d>" not in _prompt(client, take)
+    assert "（内心独白）" in told[-1]["draft"] and told[-1]["end"] == [
+        "林晚：背靠着门",
+        "家门：关着",
+    ]
     _run(client, shots["1-03"]["video_product_id"], count=1)
-    assert told[-1]["shot_kind"] == "insert"
+    assert told[-1]["shot_kind"] == "insert" and told[-1]["beats"] == 0
+    assert "插入镜头：只许微动" in told[-1]["draft"]
 
 
 def _dub_shot(client: TestClient, shot: dict[str, Any]) -> None:
@@ -606,3 +645,164 @@ def test_a_changed_shot_or_aspect_lists_its_takes(client: TestClient) -> None:
     assert resp.status_code == 200, resp.text
     codes = {x["code"]: x for x in resp.json()["lines"]}
     assert codes["videos_redo"]["params"] == {"count": 2, "adopted": 1}
+
+
+def test_each_take_is_checked(client: TestClient) -> None:
+    """take 检查 (M5.5 step 7): the take's six frames on a sheet (kept as its ``sheet`` file),
+    looked at against the contract; a cut and a still opening measured; only a warning."""
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    take = _run(client, shots["1-03"]["video_product_id"], count=1)["versions"][-1]
+    check = take["payload"]["check"]
+    found = {x["check"]: x["ok"] for x in check["items"]}
+    # 1-03: the note's words; a night scene, so its light (run 19: 1-09 lit like day).
+    # Nothing passes through anything, always (run 19: 1-06's door swung through her).
+    assert set(found) == {"repeat", "event", "solid", "text", "light", "place", "cut", "hold"}
+    assert found["cut"] is True and check["model"] == "google/gemini-3.1-flash-lite"
+    assert len(take["payload"]["sheet_times"]) == 6
+    assert "sheet" in {f["role"] for f in take["files"]}
+    calls = [c for c in _rows(client, ModelCall) if c.component_id == "takecheck"]
+    assert len(calls) == 1
+
+
+def test_an_uploaded_keyframe_is_the_takes_first_frame(client: TestClient) -> None:
+    """M5.5 step 10: an uploaded keyframe, locked when the shot is confirmed, starts its take."""
+    from drama_series_agent.modelhub.adapters.mock import solid_png
+
+    shots = _shots(client)
+    resp = client.post(
+        f"{V1}/shots/{shots['1-04']['id']}/keyframe/upload",
+        files={"file": ("mine.png", solid_png(900, 1600, (10, 120, 60)), "image/png")},
+    )
+    assert resp.status_code == 200, resp.text
+    (mine,) = [f for f in resp.json()["versions"][-1]["files"] if f["role"] == "candidate"]
+    _confirm_storyboard(client)
+    take = _run(client, shots["1-04"]["video_product_id"], count=1)["versions"][-1]
+    assert take["params"]["request"]["first_frame"] == mine["sha256"]
+
+
+def test_a_take_does_only_what_its_shot_is_for(client: TestClient) -> None:
+    """Run 20 1-12: the prompt writer had her pick up the umbrella the next shot is for. The
+    draft says only what is written is acted; the take check asks for anything more."""
+    _confirm_storyboard(client)
+    mock = _state(client).registry.mock_settings
+    told: list[dict[str, Any]] = []
+    rewrite = mock.responders[("vid", "h3_prompt")]
+
+    def spy_rewrite(req: ModelRequest) -> Any:
+        told.append(json.loads(str((req.messages or [])[1]["content"])))
+        return rewrite(req)
+
+    mock.responders[("vid", "h3_prompt")] = spy_rewrite
+    shots = _shots(client)
+    take = _run(client, shots["1-04"]["video_product_id"], count=1)["versions"][-1]
+    found = {x["check"] for x in take["payload"]["check"]["items"]}
+    assert "extra" in found
+    assert "没写到就不碰" in told[0]["draft"]
+
+
+def _failing_take_looks(monkeypatch: pytest.MonkeyPatch, fail: int) -> list[list[str]]:
+    """The take check fails its first ``fail`` looks (something passes through her); the fixes
+    each take's prompt writer was told."""
+    told: list[list[str]] = []
+    seen: list[str] = []
+
+    async def look(*args: Any) -> tuple[list[dict[str, Any]], str]:
+        seen.append(args[1])
+        ok = len(seen) > fail
+        item = {"check": "solid", "ok": ok, "note": "" if ok else "门板穿过了她的肩膀", "frame": 3}
+        return [item], "google/gemini-3.1-flash-lite"
+
+    real = VidComponent._rewrite_messages
+
+    def messages(self: VidComponent, facts: h3_format.Facts) -> list[dict[str, Any]]:
+        told.append(list(facts.fixes))
+        return real(self, facts)
+
+    monkeypatch.setattr(takecheck, "look", look)
+    monkeypatch.setattr(VidComponent, "_rewrite_messages", messages)
+    return told
+
+
+def test_a_take_that_fails_its_check_is_made_again(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """M5.5 9e-5 (Kelvin 2026-11-11): a local take that fails its check is made again, its
+    prompt writer told what failed, up to ``redraw`` (2) more times; the first that passes is
+    kept, every try's calls are recorded."""
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    told = _failing_take_looks(monkeypatch, fail=1)
+    product = _run(client, shots["1-03"]["video_product_id"], count=1)
+    take = product["versions"][-1]
+    assert take["payload"]["redraws"] == 1 and take["payload"]["check"]["ok"] is True
+    assert told == [[], ["- 穿模（东西穿过人或别的东西）：门板穿过了她的肩膀"]]
+    videos = [
+        c
+        for c in _rows(client, ModelCall)
+        if c.product_id == product["id"]
+        and c.component_id == "vid"
+        and c.model_key == take["model_key"]
+    ]
+    assert len(videos) == 2  # both takes made, one kept
+
+
+def test_a_take_that_never_passes_keeps_the_best_try_as_a_warning(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    told = _failing_take_looks(monkeypatch, fail=99)
+    take = _run(client, shots["1-03"]["video_product_id"], count=1)["versions"][-1]
+    assert take["payload"]["redraws"] == 2 and take["payload"]["check"]["ok"] is False
+    assert len(told) == 3 and take["stage"] == "draft"  # only a warning: it can be adopted
+
+
+def test_a_picture_the_user_wrote_replaces_the_scripts_action_lines(client: TestClient) -> None:
+    """Kelvin 2026-11-10 (run 19): the script's 「拉开门，又关上……再拉开」 is not read beside a
+    picture description the user wrote; a shot left as planned still gets its action lines."""
+    shots = _shots(client)
+    client.patch(f"{V1}/shots/{shots['1-02']['id']}", json={"confirmed": False})
+    resp = client.patch(
+        f"{V1}/shots/{shots['1-02']['id']}", json={"intent": "门口：伞柄上的便利贴，近一点。"}
+    )
+    assert resp.status_code == 200, resp.text
+    _confirm_storyboard(client)
+
+    async def look(label: str) -> str:
+        state = _state(client)
+        component = state.components.get("vid")
+        assert component is not None
+        async with state.db.session() as session:
+            product = await session.get(Product, shots[label]["video_product_id"])
+            assert product is not None
+            inputs = await component.inputs(session, product)
+        return next(b.text for b in inputs.blocks if b.title == "镜头")
+
+    edited = client.portal.call(look, "1-02")  # type: ignore[union-attr]
+    planned = client.portal.call(look, "1-01")  # type: ignore[union-attr]
+    assert "门口靠着一把红色长柄伞" not in edited, edited
+    assert "画板" in planned, planned
+
+
+def test_script_lines_that_undo_themselves_are_not_filmed(client: TestClient) -> None:
+    """Kelvin 2026-11-11 (run 20): 1-08 films the script's 「她拉开门，又关上。停了两秒，再拉开。」;
+    the rules say it undoes itself, so the take follows the shot's picture alone."""
+    _confirm_storyboard(client)
+    shots = _shots(client)
+    _adopt(client, _run(client, shots["1-06"]["video_product_id"], count=1)["versions"][-1])
+
+    async def look(label: str) -> str:
+        state = _state(client)
+        component = state.components.get("vid")
+        assert component is not None
+        async with state.db.session() as session:
+            product = await session.get(Product, shots[label]["video_product_id"])
+            assert product is not None
+            inputs = await component.inputs(session, product)
+        return next(b.text for b in inputs.blocks if b.title == "镜头")
+
+    door = client.portal.call(look, "1-08")  # type: ignore[union-attr]
+    assert "停了两秒，再拉开" not in door, door
+    planned = client.portal.call(look, "1-01")  # type: ignore[union-attr]
+    assert "画板" in planned, planned  # lines that can be filmed are still read

@@ -9,8 +9,9 @@ A picture asked to show text (``params["text"]``, M3 画面文字) carries it in
 what the "model drew": nothing on any other picture.
 
 A voice design (request kind ``voice_design``) answers a ``voice_id`` with its trial audio; a
-call with ``params["charge_design"]`` bills the design's flat price (``Usage.calls``), as
-MiniMax charges it on a designed voice's first synthesis.
+call with ``params["charge_design"]`` bills the design's flat price (``Usage.calls``; a clone's
+with ``params["cloned"]``), as MiniMax charges it on a voice's first synthesis. A voice clone
+(kind ``voice_clone``) answers the ``voice_id`` it was asked to register, nothing else.
 """
 
 from __future__ import annotations
@@ -42,6 +43,7 @@ from drama_series_agent.modelhub.adapters.base import (
     OutputFile,
     Usage,
 )
+from drama_series_agent.modelhub.adapters.minimax import voice_fee
 from drama_series_agent.modelhub.pricing import cost_usd
 from drama_series_agent.modelhub.workflows import workflow_sha256
 
@@ -81,7 +83,7 @@ def estimate_tokens(text: str) -> int:
 
 
 def _design_calls(req: ModelRequest) -> dict[str, int] | None:
-    return {"voice_design": 1} if req.params.get("charge_design") else None
+    return voice_fee(req.params)
 
 
 def _digest(*parts: object) -> bytes:
@@ -363,6 +365,8 @@ class MockAdapter:
     def _audio(self, req: ModelRequest) -> ModelResult:
         """A tone whose pitch follows the model, the text and how it is spoken (the voice, the
         emotion …), so different takes sound different."""
+        if req.kind == "voice_clone":
+            return ModelResult(json={"voice_id": req.params.get("voice_id")}, raw={"mock": True})
         text = req.text()
         duration = float(req.params.get("duration_s", max(0.5, len(text) * 0.25)))
         how = json.dumps(req.params, sort_keys=True, ensure_ascii=False, default=str)

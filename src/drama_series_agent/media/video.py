@@ -254,6 +254,35 @@ def _cuts(data: bytes) -> list[float]:
     return [round(float(m), 3) for m in re.findall(r"pts_time:([\d.]+)", text)]
 
 
+SHEET_FRAMES = 6  # take 检查 (M5.5): frames evenly through the clip, on one 3 × 2 sheet
+SHEET_W = 360  # each frame's width on the sheet
+
+
+def _sheet(data: bytes, frames: int) -> tuple[bytes, list[float]]:
+    with TemporaryDirectory() as tmp:
+        src, out = Path(tmp) / "in.mp4", Path(tmp) / "sheet.png"
+        src.write_bytes(data)
+        duration = _probe_file(src).duration_s or 1.0
+        step = duration / frames
+        times = [round((i + 0.5) * step, 2) for i in range(frames)]
+        cols = 3 if frames > 3 else frames
+        rows = -(-frames // cols)
+        _run(
+            "-i", str(src), "-map", "0:v:0",
+            "-vf", f"fps={frames / duration:.6f},scale={SHEET_W}:-2,tile={cols}x{rows}",
+            "-frames:v", "1", "-y", str(out),
+        )  # fmt: skip
+        if not out.exists():
+            raise VideoError("video_unreadable", "no contact sheet")
+        return out.read_bytes(), times
+
+
+async def contact_sheet(data: bytes, frames: int = SHEET_FRAMES) -> tuple[bytes, list[float]]:
+    """``frames`` frames evenly through a clip on one PNG (rows of 3, left to right), and the
+    second each was taken at (M5.5 take 检查)."""
+    return await asyncio.to_thread(_sheet, data, frames)
+
+
 async def probe(data: bytes) -> VideoInfo:
     return await asyncio.to_thread(_probe, data)
 

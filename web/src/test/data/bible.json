@@ -416,6 +416,9 @@
         "name": "便利贴",
         "aliases": [],
         "data": {
+          "size": "约 7.6 cm 见方",
+          "material": "黄色便利贴纸",
+          "wear": "新撕下的一张，边角被雨打湿",
           "summary": "“楼下便利店，等你到十二点。”"
         },
         "paras": [
@@ -451,6 +454,9 @@
           "红伞"
         ],
         "data": {
+          "size": "全长约 90 cm，收拢时粗约 6 cm",
+          "material": "尼龙伞面、木质弯柄、金属伞骨",
+          "wear": "用了几年，伞面有点褪色，木柄磨得发亮",
           "summary": "伞骨有一截缠着铁丝"
         },
         "paras": [
@@ -526,6 +532,9 @@
         "name": "手机",
         "aliases": [],
         "data": {
+          "size": "约 15 cm × 7 cm",
+          "material": "黑色手机壳、玻璃屏",
+          "wear": "屏幕有一道细划痕",
           "summary": ""
         },
         "paras": [
@@ -607,6 +616,9 @@
         "name": "旧发圈",
         "aliases": [],
         "data": {
+          "size": "直径约 4 cm",
+          "material": "黑色布面皮筋",
+          "wear": "洗旧了，皮筋松了",
           "summary": "黑色 · 皮筋松了，珠子磨白"
         },
         "paras": [
@@ -1028,7 +1040,7 @@
       "component_id": "extract",
       "current_version_id": "demo-p-extract-v1",
       "adopted_version_id": "demo-p-extract-v1",
-      "locked_hash": "sha256:bb028a6b6707cf43d8bc06d3fdccac58c606b84f6e4fb946d6a5f5e05db93925",
+      "locked_hash": "sha256:e3284e3714d4951b5b50c72e23fc77967a8f72137eb80dc5309dbee4909e01fd",
       "status": "locked",
       "versions": [
         {
@@ -1442,6 +1454,9 @@
                 "name": "便利贴",
                 "aliases": [],
                 "data": {
+                  "size": "约 7.6 cm 见方",
+                  "material": "黄色便利贴纸",
+                  "wear": "新撕下的一张，边角被雨打湿",
                   "summary": "“楼下便利店，等你到十二点。”"
                 },
                 "paras": [
@@ -1476,6 +1491,9 @@
                   "红伞"
                 ],
                 "data": {
+                  "size": "全长约 90 cm，收拢时粗约 6 cm",
+                  "material": "尼龙伞面、木质弯柄、金属伞骨",
+                  "wear": "用了几年，伞面有点褪色，木柄磨得发亮",
                   "summary": "伞骨有一截缠着铁丝"
                 },
                 "paras": [
@@ -1550,6 +1568,9 @@
                 "name": "手机",
                 "aliases": [],
                 "data": {
+                  "size": "约 15 cm × 7 cm",
+                  "material": "黑色手机壳、玻璃屏",
+                  "wear": "屏幕有一道细划痕",
                   "summary": ""
                 },
                 "paras": [
@@ -1628,6 +1649,9 @@
                 "name": "旧发圈",
                 "aliases": [],
                 "data": {
+                  "size": "直径约 4 cm",
+                  "material": "黑色布面皮筋",
+                  "wear": "洗旧了，皮筋松了",
                   "summary": "黑色 · 皮筋松了，珠子磨白"
                 },
                 "paras": [
@@ -1859,9 +1883,9 @@
             "distinct": []
           },
           "files": [],
-          "content_hash": "sha256:bb028a6b6707cf43d8bc06d3fdccac58c606b84f6e4fb946d6a5f5e05db93925",
+          "content_hash": "sha256:e3284e3714d4951b5b50c72e23fc77967a8f72137eb80dc5309dbee4909e01fd",
           "intent": "列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。",
-          "compiled": "你负责从小说里抽取设定（人物、地点、道具、事件、人物关系），交给剧本和素材两步使用。\n\n[规则]\n列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。\n- 原文每段前有段号，例如 [P12]。每个条目在 paras 里列出它出现或被提到的段号，只能用原文里给出的段号。\n- 段落里【补写】后面的文字是作者已采纳的补写，和原文一样可以用；它属于那一段，引用时写那一段的段号。\n- 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。\n- 不要编造原文没有的信息；不知道的字段不写。\n- summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。\n- 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。\n\n[输出 JSON]\n{\n  \"entities\": [\n    {\"kind\": \"character | location | prop | event | relation\", \"name\": \"名字\", \"aliases\": [], \"summary\": \"一行简介\", \"details\": {\"age\": \"\", \"occupation\": \"\", \"appearance\": \"\"}, \"paras\": [12, 13]}\n  ],\n  \"chapters\": [{\"chapter\": 1, \"summary\": \"本章摘要\"}]\n}\n\n# 目标模型：local/qwen3.6-27b",
+          "compiled": "你负责从小说里抽取设定（人物、地点、道具、事件、人物关系），交给剧本和素材两步使用。\n\n[规则]\n列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。\n- 原文每段前有段号，例如 [P12]。每个条目在 paras 里列出它出现或被提到的段号，只能用原文里给出的段号。\n- 段落里【补写】后面的文字是作者已采纳的补写，和原文一样可以用；它属于那一段，引用时写那一段的段号。\n- 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。\n- 不要编造原文没有的信息；不知道的字段不写。\n- summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。\n- 道具的 details 另写 size（真实尺寸，带单位；原文没写就按常识估，写「约」）、material（材质）、wear（新旧、使用痕迹）：画面按它画出和人物的真实比例。\n- 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。\n\n[输出 JSON]\n{\n  \"entities\": [\n    {\"kind\": \"character | location | prop | event | relation\", \"name\": \"名字\", \"aliases\": [], \"summary\": \"一行简介\", \"details\": {\"age\": \"\", \"occupation\": \"\", \"appearance\": \"\"}, \"paras\": [12, 13]},\n    {\"kind\": \"prop\", \"name\": \"红色长柄伞\", \"aliases\": [\"红伞\"], \"summary\": \"一行简介\", \"details\": {\"size\": \"全长约 90 cm\", \"material\": \"尼龙伞面、木质弯柄\", \"wear\": \"用了几年，伞面褪色\"}, \"paras\": [2]}\n  ],\n  \"chapters\": [{\"chapter\": 1, \"summary\": \"本章摘要\"}]\n}\n\n# 目标模型：local/qwen3.6-27b",
           "compiled_overridden": false,
           "model_key": "local/qwen3.6-27b",
           "where": "local",
@@ -1883,7 +1907,7 @@
       ],
       "prompt": {
         "intent": "列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。",
-        "compiled": "你负责从小说里抽取设定（人物、地点、道具、事件、人物关系），交给剧本和素材两步使用。\n\n[规则]\n列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。\n- 原文每段前有段号，例如 [P12]。每个条目在 paras 里列出它出现或被提到的段号，只能用原文里给出的段号。\n- 段落里【补写】后面的文字是作者已采纳的补写，和原文一样可以用；它属于那一段，引用时写那一段的段号。\n- 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。\n- 不要编造原文没有的信息；不知道的字段不写。\n- summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。\n- 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。\n\n[输出 JSON]\n{\n  \"entities\": [\n    {\"kind\": \"character | location | prop | event | relation\", \"name\": \"名字\", \"aliases\": [], \"summary\": \"一行简介\", \"details\": {\"age\": \"\", \"occupation\": \"\", \"appearance\": \"\"}, \"paras\": [12, 13]}\n  ],\n  \"chapters\": [{\"chapter\": 1, \"summary\": \"本章摘要\"}]\n}\n\n# 目标模型：local/qwen3.6-27b",
+        "compiled": "你负责从小说里抽取设定（人物、地点、道具、事件、人物关系），交给剧本和素材两步使用。\n\n[规则]\n列出所有出场或被提到的人物、地点、道具和时间点。人物写清年龄、职业、外貌。只用原文和已采纳的补写，不要编。\n- 原文每段前有段号，例如 [P12]。每个条目在 paras 里列出它出现或被提到的段号，只能用原文里给出的段号。\n- 段落里【补写】后面的文字是作者已采纳的补写，和原文一样可以用；它属于那一段，引用时写那一段的段号。\n- 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。\n- 不要编造原文没有的信息；不知道的字段不写。\n- summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。\n- 道具的 details 另写 size（真实尺寸，带单位；原文没写就按常识估，写「约」）、material（材质）、wear（新旧、使用痕迹）：画面按它画出和人物的真实比例。\n- 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。\n\n[输出 JSON]\n{\n  \"entities\": [\n    {\"kind\": \"character | location | prop | event | relation\", \"name\": \"名字\", \"aliases\": [], \"summary\": \"一行简介\", \"details\": {\"age\": \"\", \"occupation\": \"\", \"appearance\": \"\"}, \"paras\": [12, 13]},\n    {\"kind\": \"prop\", \"name\": \"红色长柄伞\", \"aliases\": [\"红伞\"], \"summary\": \"一行简介\", \"details\": {\"size\": \"全长约 90 cm\", \"material\": \"尼龙伞面、木质弯柄\", \"wear\": \"用了几年，伞面褪色\"}, \"paras\": [2]}\n  ],\n  \"chapters\": [{\"chapter\": 1, \"summary\": \"本章摘要\"}]\n}\n\n# 目标模型：local/qwen3.6-27b",
         "compiled_overridden": false,
         "model_key": "local/qwen3.6-27b"
       },

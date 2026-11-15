@@ -89,6 +89,7 @@
           "h": null,
           "idx": null,
           "view": null,
+          "purpose": null,
           "line": null,
           "emotion": null,
           "waveform": [
@@ -184,6 +185,7 @@
           "h": null,
           "idx": null,
           "view": null,
+          "purpose": null,
           "line": null,
           "emotion": null,
           "waveform": [

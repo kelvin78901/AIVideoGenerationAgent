@@ -1,0 +1,39 @@
+# 局部修复（M5.5 第 14 步，组件 inpaint）：flux3-klein-redraw 那份工作流加上遮罩。
+# 底图（LoadImage「Base」→ ImageScale 缩放裁到尺寸 → VAEEncode）只在遮罩里加噪（SetLatentNoiseMask），
+# KSampler denoise 1.0；出图后按放宽 8 像素的遮罩贴回缩放后的底图（ImageCompositeMasked），遮罩外的像素不变。
+# 遮罩是灰度 PNG、白色 = 要改（LoadImageMask「Mask」读红通道），和底图同尺寸；底图同时是参考图 1。
+# 节点和输入名 2026-11-12 按本机 ComfyUI 的 /object_info 核对（LoadImageMask、SetLatentNoiseMask、GrowMask、
+# ImageCompositeMasked），还没在本机真跑过（第 18 步试跑）。
+name: { zh: FLUX 3 Klein 局部修复, en: FLUX 3 Klein inpaint }
+kind: image
+tier: recommended
+bindings:
+  - { slot: prompt, node: Prompt, field: values.a }
+  - { slot: width, node: Size, field: width }
+  - { slot: height, node: Size, field: height }
+  - { slot: seed, node: Sampler, field: seed }
+  - { slot: base_image, node: Base, field: image }
+  - { slot: mask, node: Mask, field: image }
+  - { slot: ref_image, index: 1, node: Reference 1, field: image }
+  - { slot: ref_image, index: 2, node: Reference 2, field: image, optional: true }
+  - { slot: ref_image, index: 3, node: Reference 3, field: image, optional: true }
+  - { slot: ref_image, index: 4, node: Reference 4, field: image, optional: true }
+  - { slot: image_out, node: Output }
+# 加载器用到的文件（HF 上 black-forest-labs/flux-3-image-klein-comfy 是要登录同意许可的仓库，安装清单还没有）
+models:
+  - { folder: diffusion_models, name: flux3-image-klein-int8-convrot.safetensors }
+  - { folder: text_encoders, name: qwen3vl_4b_int8_convrot.safetensors }
+  - { folder: text_encoders, name: qwen3.5_9b_flux3_prompt_upsampler_int8_convrot.safetensors }
+  - { folder: vae, name: flux2-vae.safetensors }
+caps:
+  max_refs: 4
+  est_seconds: 15
+  sizes:
+    "1:1": [1328, 1328]
+    "16:9": [1664, 928]
+    "9:16": [928, 1664]
+    "4:3": [1472, 1104]
+    "3:4": [1104, 1472]
+    "3:2": [1584, 1056]
+    "2:3": [1056, 1584]
+  max_pixels: 1763584

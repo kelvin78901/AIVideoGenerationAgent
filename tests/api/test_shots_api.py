@@ -15,7 +15,13 @@ from sqlmodel import select
 
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
-from drama_series_agent.core.models_db import Dependency, Product, ProductVersion, Shot
+from drama_series_agent.core.models_db import (
+    Dependency,
+    ModelCall,
+    Product,
+    ProductVersion,
+    Shot,
+)
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -107,6 +113,117 @@ def test_an_edit_is_an_adopted_edit_version(client: TestClient) -> None:
     assert client.patch(f"{V1}/shots/nope", json={"framing": "wide"}).status_code == 404
 
 
+def test_each_shot_has_its_contract(client: TestClient) -> None:
+    """镜头契约 (M5.5): from the plan; 1-08 (continuous) starts where 1-06 ends."""
+    by = {s["label"]: s for s in _shots(client)}
+    assert by["1-03"]["contract"]["kind"] == "insert" and by["1-03"]["contract"]["beats"] == 0
+    assert by["1-06"]["contract"]["delivery"] == {"demo-b10": "inner"}
+    assert by["1-08"]["contract"]["start_inherited"] is True
+    assert by["1-08"]["contract"]["start"] == by["1-06"]["contract"]["end"]
+    (row,) = _rows(client, Shot, Shot.id == "demo-shot-1-03")
+    assert row.contract_json["kind"] == "insert"
+
+
+def test_a_contract_edit_is_checked_and_kept(client: TestClient) -> None:
+    start = [{"subject": "林晚的手", "state": "悬在便利贴上方"}]
+    r = client.patch(
+        f"{V1}/shots/demo-shot-1-05",
+        json={"contract": {"kind": "insert", "start": start}},
+    )
+    assert r.status_code == 200, r.text
+    got = r.json()["contract"]
+    assert (got["kind"], got["beats"], got["start"]) == ("insert", 0, start)
+    assert got["props"][0] == {"asset_id": "note", "state": "贴在伞柄上，有字"}  # untouched
+    # The umbrella the note is stuck on is in the shot (1-02's state), not written into it.
+    assert got["props_linked"] == ["umbrella"]
+    (row,) = _rows(client, Shot, Shot.id == "demo-shot-1-05")
+    assert row.contract_json["kind"] == "insert"
+    assert [p["asset_id"] for p in row.contract_json["props"]] == ["note"]
+    for bad in (
+        {"beats": 3},  # an insert's budget is 0
+        {"delivery": {"demo-b2": "inner"}},  # not a line it films
+        {"props": [{"asset_id": "linwan", "state": "站着"}]},  # not a prop
+    ):
+        r = client.patch(f"{V1}/shots/demo-shot-1-05", json={"contract": bad})
+        assert r.status_code == 422, (bad, r.text)
+    r = client.patch(f"{V1}/shots/demo-shot-1-05", json={"contract": {"mood": "x"}})
+    assert r.status_code == 422  # not a field (the request schema)
+
+
+def test_the_storyboard_check(client: TestClient) -> None:
+    """分镜检查 (M5.5): the rules at once (1-08 opens the door twice and looks like a replay of
+    1-06), the model's check when asked (Mock: 1-03), stale once the plan changes."""
+    url = f"{V1}/episodes/{EP1}/shot-checks"
+    first = client.get(url).json()
+    assert [(i["label"], i["code"], i["source"]) for i in first["issues"]] == [
+        # The script's lines for 1-06 and 1-08 cannot be filmed as written: the pictures are.
+        ("1-06", "lines_dropped", "rule"),
+        ("1-06", "crowded", "rule"),
+        ("1-08", "lines_dropped", "rule"),
+        ("1-08", "undone", "rule"),
+        ("1-08", "replay", "rule"),
+    ]
+    assert first["issues"][1]["params"]["actions"] == "她进门、关门"
+    assert first["issues"][2]["params"]["words"].startswith("拉开 → 关上")
+    assert first["issues"][3]["params"]["steps"].startswith("拉开 → 关上")
+    assert first["issues"][4]["params"]["other"] == "1-06"
+    assert first["llm_state"] == "none"  # its product is made with the episode
+    resp = client.post(url)
+    assert resp.status_code == 200, resp.text
+    _wait(client, resp.json()["id"])
+    checked = client.get(url).json()
+    assert checked["llm_state"] == "ready"
+    llm = [i for i in checked["issues"] if i["source"] == "llm"]
+    assert [(i["label"], i["code"]) for i in llm] == [("1-03", "insert_event")]
+    assert "泡开" in llm[0]["text"]
+    calls = _rows(client, ModelCall, ModelCall.component_id == "plancheck")
+    assert len(calls) == 1
+    client.patch(f"{V1}/shots/demo-shot-1-05", json={"framing": "wide"})
+    assert client.get(url).json()["llm_state"] == "stale"
+    assert client.get(f"{V1}/episodes/nope/shot-checks").status_code == 404
+    # The picture description on screen is what is checked (run 19: an edited 1-09 was not).
+    resp = client.patch(f"{V1}/shots/demo-shot-1-06", json={"intent": "她拉开门，又关上，再拉开。"})
+    assert resp.status_code == 200, resp.text
+    again = client.get(url).json()["issues"]
+    assert ("1-06", "undone") in [(i["label"], i["code"]) for i in again]
+    # Each run of the model's check is the one shown (run 19: the second stayed unadopted).
+    _wait(client, client.post(url).json()["id"])
+    assert client.get(url).json()["llm_state"] == "ready"
+    assert len(_rows(client, ModelCall, ModelCall.component_id == "plancheck")) == 2
+
+
+def test_a_new_plans_picture_replaces_the_one_a_keyframe_ran_with(client: TestClient) -> None:
+    """Run 20: every keyframe run saves the picture it ran with, and a plan made again read it
+    as the user's own (run 17's 「她进门、关门，后背抵着门」 stayed). The plan's picture follows
+    the new plan; one the user wrote stays."""
+    shots = {s["label"]: s for s in _shots(client)}
+    door = shots["1-06"]["keyframe_product_id"]
+    resp = client.post(f"{V1}/products/{door}/run", json={"mode": "rerun"})
+    _wait(client, resp.json()["id"])  # saves the plan's picture as its prompt
+    assert client.get(f"{V1}/products/{door}").json()["prompt"]["intent"].startswith("出租屋内")
+    mine = "林晚低头看着便利贴，一动不动。"
+    client.patch(f"{V1}/shots/{shots['1-04']['id']}", json={"intent": mine}).raise_for_status()
+    plan = _plan(client)
+    new = {"demo-shot-1-06": "出租屋内，她推门进来。", "demo-shot-1-04": "林晚抬头。"}
+
+    async def replan() -> None:
+        state = _state(client)
+        async with state.db.session() as session:
+            base = await session.get(ProductVersion, plan["adopted_version_id"])
+            assert base is not None
+        payload = json.loads(json.dumps(base.payload_json))
+        for shot in payload["shots"]:
+            shot["intent"] = new.get(shot["id"], shot["intent"])
+        await state.products.append_edit(plan["id"], base, payload)
+
+    client.portal.call(replan)  # type: ignore[union-attr]
+    after = {s["label"]: s for s in _shots(client)}
+    assert after["1-06"]["intent"] == "出租屋内，她推门进来。"
+    prompt = client.get(f"{V1}/products/{door}").json()["prompt"]
+    assert prompt is None or prompt["intent"] == "出租屋内，她推门进来。"
+    assert after["1-04"]["intent"] == mine  # the user's stays
+
+
 def test_a_dialogue_shot_is_never_shorter_than_its_audio(client: TestClient) -> None:
     r = client.patch(f"{V1}/shots/demo-shot-1-04", json={"duration_s": 2})
     assert r.status_code == 422
@@ -148,6 +265,33 @@ def test_a_rerun_keeps_the_shots_and_waits_to_be_adopted(client: TestClient) -> 
     plan = _plan(client)
     assert plan["current_version_id"] != plan["adopted_version_id"]
     assert [s["id"] for s in _shots(client)] == [f"demo-shot-1-0{n}" for n in range(1, 10)]
+
+
+def test_a_plan_made_again_is_told_what_the_check_found(client: TestClient) -> None:
+    """M5.5 9e-4: the check's findings in the plan it replaces go into the prompt, to be fixed
+    (run 19's 1-06 crossed the doorway and did four more things; the demo's 1-06 too)."""
+    url = f"{V1}/episodes/{EP1}/shot-checks"
+    found = [(i["label"], i["code"]) for i in client.get(url).json()["issues"]]
+    assert ("1-06", "crowded") in found
+    _wait(client, client.post(url).json()["id"])  # the model's (Mock: 1-03)
+    pid = _plan(client)["id"]
+
+    async def blocks() -> dict[str, str]:
+        state = _state(client)
+        component = state.components.get("plan")
+        assert component is not None
+        async with state.db.session() as session:
+            product = await session.get(Product, pid)
+            assert product is not None
+            inputs = await component.inputs(session, product)
+        return {b.title: b.text for b in inputs.blocks}
+
+    told = client.portal.call(blocks)["上一版的分镜检查"]  # type: ignore[union-attr]
+    assert "1-06（规则）一个镜头里动作太多：她进门、关门。" in told
+    assert "1-06（规则）剧本这几行动作拍不了" in told
+    assert "1-08（规则）同一个变化做了又撤销再做" in told
+    assert "1-03（模型）插入镜头写了「雨水把字一点点泡开」" in told
+    assert "进门、出门）单独一个镜头" in _plan(client)["prompt"]["compiled"]  # how plans are made
 
 
 def test_only_a_new_structure_makes_the_plan_stale(client: TestClient) -> None:

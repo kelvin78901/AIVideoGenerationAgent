@@ -1,0 +1,54 @@
+M5 local smoke · 2026-11-11 00:18
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 20979 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== redo: 只靠流程（9d），不改分镜
+   1-01 scene_change wide action/2 | 开始 林晚在楼梯口，抱着画板袋，湿了半边 | 结束 林晚停在六楼楼梯口，抬头看见门边的伞，愣住 | 道具 — | 台词 —
+      画面：楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼，在楼梯口停步，抬头看见门边靠着一把红伞，愣住。
+   1-02 same_scene_cut medium performance/1 | 开始 林晚走到门口，停下看着伞 | 结束 林晚盯着伞，表情疑惑 | 道具 umbrella:靠墙，伞柄贴便利贴；note:贴在伞柄上 | 台词 —
+      画面：门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。
+   1-03 same_scene_cut closeup insert/0 | 开始 便利贴贴在伞柄上，字迹清晰 | 结束 便利贴不变 | 道具 note:贴在伞柄上，字迹歪扭；umbrella:靠墙，伞柄贴便利贴（沿用） | 台词 —
+      画面：便利贴特写，歪扭的手写字，边角被雨打湿。
+   1-04 same_scene_cut close dialogue/1 | 开始 林晚看着便利贴，愣住 | 结束 林晚低声说出名字，表情复杂 | 道具 note:贴在伞柄上，字迹歪扭（沿用）；umbrella:靠墙，伞柄贴便利贴（带进来） | 台词 {'demo-b5': 'dialogue'}
+      画面：林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。
+   1-05 same_scene_cut closeup action/2 | 开始 林晚的手停在便利贴上方，尚未触碰 | 结束 林晚的手摸到左手腕旧发圈 | 道具 note:贴在伞柄上；band:戴在林晚左手腕；umbrella:靠墙，伞柄贴便利贴（带进来） | 台词 —
+      画面：她的指尖停在便利贴上，下意识摸左手腕的旧发圈。
+   1-06 scene_change wide action/2 | 开始 林晚站在门外，伞仍靠在门边墙上 | 结束 林晚在屋里，背靠着关上的门 | 道具 umbrella:靠在门外墙边，没有拿进屋 | 台词 —
+      画面：出租屋内，林晚空着手进门、反手关上门，后背抵着门，台灯暖光。
+   1-07 same_scene_cut closeup performance/1 | 开始 手机屏幕亮着，显示 23:52 | 结束 手机屏幕仍亮着 | 道具 phone:屏幕显示 23:52 | 台词 —
+      画面：手机亮屏，锁屏时间 23:52，没有新消息。
+   1-08 continuous medium dialogue/1 (接上一镜) | 开始 林晚在屋里，背靠着关上的门 | 结束 林晚仍靠着门，表情复杂 | 道具 phone:屏幕亮着，握在手中 | 台词 {'demo-b10': 'inner'}
+      画面：林晚背靠着门，手机屏幕光照亮她的脸，她看着手机，表情复杂，内心独白。画面中景，光线微弱。
+   1-09 same_scene_cut wide action/2 | 开始 林晚站在门后，手握着门把 | 结束 林晚拉开门，站在门口；家门开着 | 道具 — | 台词 —
+      画面：林晚从门边站直，转身握住门把，停了两秒，拉开门。画面中景，她表情纠结。
+   1-10 same_scene_cut medium action/2 | 开始 林晚站在门口；红伞靠在门外墙边 | 结束 林晚拿着伞，直起身 | 道具 umbrella:靠在门外墙边，被林晚拿起 | 台词 —
+      画面：门外，林晚站在门口，弯腰拿起靠在门外墙边的红色长柄伞，直起身，表情坚定。画面中景，光线从屋内照出。
+== plancheck: 分镜检查（规则 + DeepSeek）
+   1 job(s) in 2.5 s, GPU memory peak 20979 MiB
+   call deepseek/v4.1-flash [api] success 2.4 s audio=Nones
+   模型检查 ready，5 处提示
+   1-06 cross_space [rule] {'words': '门外', 'place': '林晚出租屋'}
+   1-08 replay [llm] 1-06 结束是「背靠着关上的门」中景，1-08 又是「背靠着门」中景，两个有人的镜头机位景别一样，接起来像回放；把 1-08 改成近景或换个角度（如侧面拍手机光）。
+   1-09 undone [llm] 剧本 L9 是「拉开门，又关上，再拉开」，分镜只保留一次开门，但下一镜 1-10 要拍门外拿伞——要么补上再关再开的动作（会超 2 个动作），要么把 L9 改成只开一次门，别让观众以为门自己又关上了。
+   1-10 cross_space [rule] {'words': '门外', 'place': '林晚出租屋'}
+   1-10 other [llm] 1-06 明确伞没拿进屋、靠在门外墙边，1-09 只写了拉开门，1-10 开始又说红伞靠在门外——门开后到拿伞之间伞的位置没交代，画面容易显得伞凭空出现在手边；改成 1-10 开始先给拖鞋旁墙边的伞一个明确位置再弯腰拿。
+== kf: 关键帧重画（本地草稿）并检查（Gemini + OCR）：1-05
+   1 job(s) in 51.1 s, GPU memory peak 24915 MiB
+   call comfy/flux3-klein [local] success 42.3 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call local/rapidocr [local] success 1.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   model comfy/flux3-klein [local], files: kf-1-05-candidate-0.png (928x1664), kf-1-05-candidate-1.png (928x1664), kf-1-05-candidate-2.png (928x1664)
+   1-05 #0: start ✗ 手已经触碰并捏住了便利贴，并非“尚未触碰”，scale ✓，text ✗ 字体看起来过于规范，像打印字体而非手写，light ✓，place ✓，ocr ✓
+   1-05 #1: start ✗ 林晚的手直接触碰并捏住了便利贴，并非停在上方，scale ✓，text ✗ 文字为电脑打印字体，非手写，且多了一个字，light ✓，place ✓，ocr ✓
+   1-05 #2: start ✗ 林晚的手直接接触并捏住了便利贴，并非“尚未触碰”，scale ✓，text ✓，light ✓，place ✓，ocr ✓
+   1-05: 确认第 3 张（200）
+   分镜 confirmed 10/10
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run19-redo
+data: C:\Users\kelvin\AppData\Local\Temp\drama-ep19-5Oilw8\home

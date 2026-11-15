@@ -20,7 +20,10 @@
     "auto_qa_rerun": "Rerun after failed QA",
     "comfy_ingest": "Saved back from ComfyUI",
     "pick": "Locked candidate",
-    "upload": "Uploaded"
+    "upload": "Uploaded",
+    "redraw": "Redrawn from a picture",
+    "inpaint": "Fixed in part",
+    "upscale": "Upscaled"
   },
   "emotion": {
     "calm": "Calm",
@@ -149,5 +152,15 @@
     "failed": "Dubbing failed",
     "no_voice": "No voice",
     "voice_not_locked": "Voice not locked"
+  },
+  "refPurpose": {
+    "composition": "Composition",
+    "pose": "Pose",
+    "light": "Light",
+    "style": "Style",
+    "face": "Face",
+    "outfit": "Outfit",
+    "hair": "Hair",
+    "other": "Other"
   }
 }

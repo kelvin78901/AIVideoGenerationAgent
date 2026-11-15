@@ -333,7 +333,7 @@ describe("GateButton", () => {
     await waitFor(() => expect(button).toBeEnabled());
     await user.click(button);
     expect(
-      await screen.findByText("还有 3 条素材没锁定：林晚出租屋 · 夜、旧黑发圈、便利贴手写"),
+      await screen.findByText("还有 2 条素材没锁定：林晚出租屋 · 夜、旧黑发圈"),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("next-step")).not.toBeInTheDocument();
     expect(fakeAssets.confirmed.has(EP1)).toBe(false);

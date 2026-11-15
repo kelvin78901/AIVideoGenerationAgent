@@ -175,6 +175,22 @@
         "unavailable": {}
       },
       {
+        "id": "scale",
+        "stage": "assets",
+        "kind": "image",
+        "api_models": [
+          "openai/gpt-image-2",
+          "google/nano-banana-pro",
+          "google/nano-banana-2.1",
+          "volc/seedream-5.0"
+        ],
+        "local_models": [
+          "comfy/qwen-image-edit-hq",
+          "comfy/qwen-image-edit"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "text",
         "stage": "assets",
         "kind": "image",
@@ -254,6 +270,47 @@
         "unavailable": {}
       },
       {
+        "id": "kfcheck",
+        "stage": "storyboard",
+        "kind": "vlm",
+        "api_models": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "local_models": [
+          "local/qwen3-vl-32b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "plancheck",
+        "stage": "storyboard",
+        "kind": "llm",
+        "api_models": [
+          "deepseek/v4-pro",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "local_models": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "kf",
         "stage": "storyboard",
         "kind": "image",
@@ -269,6 +326,42 @@
           "comfy/qwen-image-edit",
           "comfy/qwen-image",
           "comfy/flux2-dev"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "redraw",
+        "stage": "storyboard",
+        "kind": "image",
+        "api_models": [
+          "google/nano-banana-2.1",
+          "openai/gpt-image-2"
+        ],
+        "local_models": [
+          "comfy/flux3-klein-redraw",
+          "comfy/qwen-image-edit"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "inpaint",
+        "stage": "storyboard",
+        "kind": "image",
+        "api_models": [
+          "openai/gpt-image-2"
+        ],
+        "local_models": [
+          "comfy/klein-inpaint"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "iup",
+        "stage": "storyboard",
+        "kind": "image",
+        "api_models": [],
+        "local_models": [
+          "comfy/seedvr2-img"
         ],
         "unavailable": {}
       },
@@ -360,6 +453,19 @@
       },
       {
         "id": "vlook",
+        "stage": "generate",
+        "kind": "vlm",
+        "api_models": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "local_models": [
+          "local/qwen3-vl-32b"
+        ],
+        "unavailable": {}
+      },
+      {
+        "id": "takecheck",
         "stage": "generate",
         "kind": "vlm",
         "api_models": [
@@ -987,6 +1093,30 @@
         "tier": "recommended"
       },
       {
+        "key": "comfy/flux3-klein-redraw",
+        "display": "FLUX 3 Klein 以这张为底重画（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
+      },
+      {
+        "key": "comfy/klein-inpaint",
+        "display": "FLUX 3 Klein 局部修复（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
+      },
+      {
+        "key": "comfy/seedvr2-img",
+        "display": "SeedVR2 图片超分（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
+      },
+      {
         "key": "comfy/seedvr2",
         "display": "SeedVR2（本地）",
         "where": "local",
@@ -1326,6 +1456,31 @@
         ],
         "per_call_cap_usd": 1.0
       },
+      "scale": {
+        "mode": "api",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/qwen-image-edit-hq",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/qwen-image-edit-hq",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/qwen-image-edit-hq",
+          "comfy/qwen-image-edit",
+          "google/nano-banana-pro",
+          "google/nano-banana-2.1",
+          "volc/seedream-5.0"
+        ],
+        "per_call_cap_usd": 0.5
+      },
       "text": {
         "mode": "api",
         "api_model": "openai/gpt-image-2",
@@ -1449,6 +1604,64 @@
         ],
         "per_call_cap_usd": 0.8
       },
+      "kfcheck": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3-vl-32b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
+      "plancheck": {
+        "mode": "api",
+        "api_model": "deepseek/v4-pro",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3.6-27b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4.1-flash",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
       "kf": {
         "mode": "api",
         "api_model": "openai/gpt-image-2",
@@ -1476,6 +1689,69 @@
           "volc/seedream-5.0"
         ],
         "per_call_cap_usd": 1.0
+      },
+      "redraw": {
+        "mode": "api",
+        "api_model": "google/nano-banana-2.1",
+        "local_model": "comfy/flux3-klein-redraw",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/flux3-klein-redraw",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/flux3-klein-redraw",
+          "comfy/qwen-image-edit",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "inpaint": {
+        "mode": "api",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/klein-inpaint",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "comfy/klein-inpaint",
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/klein-inpaint"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "iup": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/seedvr2-img",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "world": {
         "mode": "api",
@@ -1598,6 +1874,28 @@
         "per_call_cap_usd": 0.05
       },
       "vlook": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "local/qwen3-vl-32b",
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
+      "takecheck": {
         "mode": "api",
         "api_model": "google/gemini-3.1-flash-lite",
         "local_model": "local/qwen3-vl-32b",
@@ -1989,6 +2287,31 @@
         ],
         "per_call_cap_usd": 1.0
       },
+      "scale": {
+        "mode": "local",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image-edit-hq",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/nano-banana-pro",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/nano-banana-pro",
+          "comfy/qwen-image-edit",
+          "openai/gpt-image-2",
+          "google/nano-banana-2.1",
+          "volc/seedream-5.0"
+        ],
+        "per_call_cap_usd": 0.5
+      },
       "text": {
         "mode": "hybrid",
         "api_model": "openai/gpt-image-2",
@@ -2112,6 +2435,64 @@
         ],
         "per_call_cap_usd": 0.8
       },
+      "kfcheck": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
+      "plancheck": {
+        "mode": "api",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "qwen/qwen3.7-plus",
+          "notify": "after"
+        },
+        "alt_order": [
+          "qwen/qwen3.7-plus",
+          "local/qwen3.6-27b",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
       "kf": {
         "mode": "hybrid",
         "api_model": "google/nano-banana-2.1",
@@ -2139,6 +2520,69 @@
           "google/nano-banana-2.1"
         ],
         "per_call_cap_usd": 1.0
+      },
+      "redraw": {
+        "mode": "local",
+        "api_model": "google/nano-banana-2.1",
+        "local_model": "comfy/flux3-klein-redraw",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/nano-banana-2.1",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/nano-banana-2.1",
+          "comfy/qwen-image-edit",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "inpaint": {
+        "mode": "local",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/klein-inpaint",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "openai/gpt-image-2",
+          "notify": "after"
+        },
+        "alt_order": [
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "iup": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/seedvr2-img",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "world": {
         "mode": "off",
@@ -2255,6 +2699,28 @@
         "per_call_cap_usd": 0.05
       },
       "vlook": {
+        "mode": "api",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-vl-32b",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
+      "takecheck": {
         "mode": "api",
         "api_model": "google/gemini-3.1-flash-lite",
         "local_model": "local/qwen3-vl-32b",
@@ -2659,6 +3125,31 @@
         ],
         "per_call_cap_usd": 1.0
       },
+      "scale": {
+        "mode": "local",
+        "api_model": "volc/seedream-5.0",
+        "local_model": "comfy/qwen-image-edit-hq",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "volc/seedream-5.0",
+          "notify": "after"
+        },
+        "alt_order": [
+          "volc/seedream-5.0",
+          "comfy/qwen-image-edit",
+          "openai/gpt-image-2",
+          "google/nano-banana-pro",
+          "google/nano-banana-2.1"
+        ],
+        "per_call_cap_usd": 0.5
+      },
       "text": {
         "mode": "local",
         "api_model": "google/nano-banana-pro",
@@ -2782,6 +3273,64 @@
         ],
         "per_call_cap_usd": 0.8
       },
+      "kfcheck": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/gemini-3.1-flash-lite",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
+      "plancheck": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "deepseek/v4.1-flash",
+          "notify": "after"
+        },
+        "alt_order": [
+          "deepseek/v4.1-flash",
+          "local/qwen3-30b-a3b",
+          "deepseek/v4-pro",
+          "moonshot/kimi-k3.1-pro",
+          "qwen/qwen3.8-max",
+          "qwen/qwen3.7-plus",
+          "volc/doubao-2.1-pro",
+          "zhipu/glm-5.3",
+          "minimax/m3",
+          "qwen/qwen3.8-flash",
+          "zhipu/glm-5.3-flash",
+          "google/gemini-3.6-flash",
+          "openai/gpt-6-luna",
+          "openrouter/claude-sonnet-5.5",
+          "openrouter/any",
+          "moonshot/kimi-k2.6",
+          "google/gemini-3.1-flash-lite"
+        ],
+        "per_call_cap_usd": 0.05
+      },
       "kf": {
         "mode": "local",
         "api_model": "volc/seedream-5.0",
@@ -2809,6 +3358,70 @@
           "google/nano-banana-2.1"
         ],
         "per_call_cap_usd": 1.0
+      },
+      "redraw": {
+        "mode": "local",
+        "api_model": "volc/seedream-5.0",
+        "local_model": "comfy/flux3-klein-redraw",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "volc/seedream-5.0",
+          "notify": "after"
+        },
+        "alt_order": [
+          "volc/seedream-5.0",
+          "comfy/qwen-image-edit",
+          "google/nano-banana-2.1",
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "inpaint": {
+        "mode": "local",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/klein-inpaint",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "openai/gpt-image-2",
+          "notify": "after"
+        },
+        "alt_order": [
+          "openai/gpt-image-2"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "iup": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/seedvr2-img",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "world": {
         "mode": "api",
@@ -2931,6 +3544,28 @@
         "per_call_cap_usd": 0.05
       },
       "vlook": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": true,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": "google/gemini-3.1-flash-lite",
+          "notify": "after"
+        },
+        "alt_order": [
+          "google/gemini-3.1-flash-lite",
+          "google/gemini-3.6-flash"
+        ],
+        "per_call_cap_usd": 0.02
+      },
+      "takecheck": {
         "mode": "local",
         "api_model": "google/gemini-3.1-flash-lite",
         "local_model": "local/qwen3-vl-32b",
@@ -3247,6 +3882,27 @@
         ],
         "per_call_cap_usd": 1.0
       },
+      "scale": {
+        "mode": "local",
+        "api_model": "google/nano-banana-pro",
+        "local_model": "comfy/qwen-image-edit-hq",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/qwen-image-edit"
+        ],
+        "per_call_cap_usd": 0.5
+      },
       "text": {
         "mode": "local",
         "api_model": "openai/gpt-image-2",
@@ -3346,6 +4002,45 @@
         "alt_order": [],
         "per_call_cap_usd": 0.8
       },
+      "kfcheck": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.02
+      },
+      "plancheck": {
+        "mode": "local",
+        "api_model": "deepseek/v4.1-flash",
+        "local_model": "local/qwen3.6-27b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "local/qwen3-30b-a3b"
+        ],
+        "per_call_cap_usd": 0.05
+      },
       "kf": {
         "mode": "local",
         "api_model": "google/nano-banana-2.1",
@@ -3369,6 +4064,65 @@
           "comfy/flux2-dev"
         ],
         "per_call_cap_usd": 1.0
+      },
+      "redraw": {
+        "mode": "local",
+        "api_model": "google/nano-banana-2.1",
+        "local_model": "comfy/flux3-klein-redraw",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [
+          "comfy/qwen-image-edit"
+        ],
+        "per_call_cap_usd": 0.5
+      },
+      "inpaint": {
+        "mode": "local",
+        "api_model": "openai/gpt-image-2",
+        "local_model": "comfy/klein-inpaint",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.5
+      },
+      "iup": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/seedvr2-img",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "world": {
         "mode": "off",
@@ -3453,6 +4207,25 @@
         "per_call_cap_usd": 0.05
       },
       "vlook": {
+        "mode": "local",
+        "api_model": "google/gemini-3.1-flash-lite",
+        "local_model": "local/qwen3-vl-32b",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": 0.02
+      },
+      "takecheck": {
         "mode": "local",
         "api_model": "google/gemini-3.1-flash-lite",
         "local_model": "local/qwen3-vl-32b",

@@ -11,6 +11,8 @@ Framing = Literal["wide", "medium", "close", "closeup"]
 CameraMove = Literal["static", "push", "follow", "pan"]
 AudioMode = Literal["native", "tts", "none"]
 BlockingKind = Literal["character", "camera", "prop", "landmark"]
+ContractKind = Literal["performance", "action", "dialogue", "insert"]
+Delivery = Literal["dialogue", "offscreen", "inner"]
 
 
 class BlockingItem(BaseModel):
@@ -61,6 +63,55 @@ class ShotOut(BaseModel):
     confirmed: bool  # its last 「确认这个镜头」 decision (gate ``shot``) is a confirm
     # Confirmed, but its settings (the plan's ``shot:<id>`` slice) or its keyframe changed since.
     confirm_stale: bool
+    contract: ShotContractOut  # M5.5
+
+
+class StateItem(BaseModel):
+    """A person or thing and what it looks like (「家门」: 「关着」)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    subject: str
+    state: str
+
+
+class PropState(BaseModel):
+    """The state a prop reference is in during the shot (set, not acted)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    asset_id: str
+    state: str
+
+
+class ShotContractOut(BaseModel):
+    """镜头契约 (M5.5, ``shots/contract.py``). ``delivery``: line id → how it is said.
+    ``start_inherited``: a continuous shot without a start of its own begins where the shot it
+    follows ends. ``props_inherited``: props the shot uses without a state, in the last state its
+    scene gave them; ``props_linked``: props a state puts another on or by, in the shot too."""
+
+    kind: ContractKind
+    beats: int
+    start: list[StateItem]
+    end: list[StateItem]
+    props: list[PropState]
+    delivery: dict[str, Delivery]
+    start_inherited: bool = False
+    props_inherited: list[str] = []
+    props_linked: list[str] = []
+
+
+class ContractPatch(BaseModel):
+    """Any of the contract's fields; ``delivery`` only the lines it changes."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    kind: ContractKind | None = None
+    beats: int | None = Field(default=None, ge=0, le=4)
+    start: list[StateItem] | None = None
+    end: list[StateItem] | None = None
+    props: list[PropState] | None = None
+    delivery: dict[str, Delivery] | None = None
 
 
 class ShotPatch(BaseModel):
@@ -76,8 +127,30 @@ class ShotPatch(BaseModel):
     audio_mode: AudioMode | None = None
     asset_ids: list[str] | None = None
     blocking: list[BlockingItem] | None = None
+    contract: ContractPatch | None = None
     keyframe_pick: int | None = Field(default=None, ge=0)
     confirmed: bool | None = None
+
+
+class ShotIssueOut(BaseModel):
+    """One 分镜检查 finding (M5.5): a rule's (``shots/check.py``; the front end words it by
+    ``code`` and ``params``) or the model's (``text`` is its own words). Only a warning."""
+
+    shot_id: str
+    label: str
+    code: str
+    params: dict[str, str]
+    source: Literal["rule", "llm"]
+    text: str
+
+
+class ShotChecksOut(BaseModel):
+    """``GET /episodes/{id}/shot-checks``. ``llm_state``: none (never asked), running, ready,
+    stale (the plan changed since), failed."""
+
+    issues: list[ShotIssueOut]
+    llm_product_id: str | None
+    llm_state: Literal["none", "running", "ready", "stale", "failed"]
 
 
 class ShotSplitIn(BaseModel):

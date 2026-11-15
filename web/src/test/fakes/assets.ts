@@ -5,8 +5,7 @@
  * as the page needs them:
  * - 选这个 / 改描述 / 画面文字 / 音色来源 on the asset (refused once locked);
  * - 锁定为参考 turns the picked candidate of the version on screen into an adopted, locked
- *   `pick` version (the version on screen stays); on-screen text OCR read differently is
- *   refused (409 `ocr_mismatch`) unless `force`;
+ *   `pick` version (the version on screen stays); OCR read differently only warns (M5.5);
  * - 重跑 adds a version with fresh candidates (on-screen text: every one OCR-checked and
  *   matching; a voice: three auditions reading its lines); 「用 API 出终版」 one picture from
  *   the draft, or a voice's final (its sample and five emotions), which is locked whole while
@@ -16,6 +15,11 @@
  *   picture, then unlocked (and episode 1's assets gate reopened);
  * - editing a locked asset is the impact preview's `asset_edit`: saved, the lock kept; 确认并同步
  *   draws new candidates;
+ * - M5.5: 新建素材 (`manual`, its product empty; 409 `asset_exists`), 多参考图 (`ref_more`, the
+ *   picture sets of `test/fakes/pictures.ts`; a character, scene or prop), 六视图换一张 (an upload
+ *   replaces that view in a new adopted version; without a file, a run for that view, 409
+ *   `views_outdated` once the set is stale), and 以这张为底重画 / 局部修复 / 放大 of a candidate
+ *   (recorded in `edits`; refused once locked);
  * - episode 1's 素材 badge counts the assets it uses (those with scenes) and their locks, and
  *   its gate needs them all locked (409 `assets_not_locked`).
  */
@@ -23,13 +27,11 @@ import { http, HttpResponse } from "msw";
 
 import { injectEvent } from "@/api/events";
 import {
-  AssetLockSchema,
   AssetMatrixSchema,
   AssetPatchSchema,
   AssetSchema,
-  CandidatesPayloadSchema,
   type Asset,
-  type AssetLock,
+  type Physical,
 } from "@/api/schemas/assets";
 import type { Impact } from "@/api/schemas/impact";
 import type { Job } from "@/api/schemas/jobs";
@@ -42,6 +44,7 @@ import {
 import { primaryModel } from "@/mocks/route";
 import data from "@/test/data/assets.json";
 import { fakeResolve } from "@/test/fakes/config";
+import { addFakePicture, fakePictureProducts, removeFakePicture } from "@/test/fakes/pictures";
 import { assetShotLines } from "@/test/fakes/shots";
 
 const demoAssets = data.assets.map((a) => AssetSchema.parse(a));
@@ -57,10 +60,19 @@ export const fakeAssets = {
   views: structuredClone(demoViews),
   /** Pictures uploaded, in order. */
   uploads: [] as { id: string; name: string }[],
+  /** 声音克隆的样本 uploaded (asset, file name), and the clones made from them. */
+  samples: [] as { id: string; name: string }[],
+  clones: [] as { id: string; where: "api" | "local" }[],
   /** 重新分析剧本 requests, in order (episode ids). */
   analyses: [] as string[],
   /** Episodes whose assets gate is confirmed. */
   confirmed: new Set<string>(),
+  /** 新建素材 requests, in order. */
+  created: [] as { kind: string; name: string; description: string }[],
+  /** 六视图换一张, in order (`file`: the upload's name; null: 重画这一张). */
+  views_replaced: [] as { view: string; file: string | null }[],
+  /** 重画 / 修复 / 放大 of a candidate, in order. */
+  edits: [] as { op: string; version: string; idx: number }[],
 };
 
 /** The episode the fixture's assets are about (their `scenes`). */
@@ -71,8 +83,107 @@ export function resetFakeAssets() {
   fakeAssets.products = structuredClone(demoProducts);
   fakeAssets.views = structuredClone(demoViews);
   fakeAssets.uploads = [];
+  fakeAssets.samples = [];
+  fakeAssets.clones = [];
   fakeAssets.analyses = [];
   fakeAssets.confirmed = new Set();
+  fakeAssets.created = [];
+  fakeAssets.views_replaced = [];
+  fakeAssets.edits = [];
+}
+
+const MORE_KINDS = ["character", "scene", "prop"];
+
+/** A new asset's product: no version yet (the backend's `ensure`). */
+function emptyProduct(a: Asset): Product {
+  return {
+    id: a.product_id,
+    series_id: a.series_id,
+    owner_type: "asset",
+    owner_id: a.id,
+    slot: a.kind === "text" ? "text_image" : "ref_image",
+    component_id: a.kind === "text" ? "text" : "img",
+    current_version_id: null,
+    adopted_version_id: null,
+    locked_hash: null,
+    status: "empty",
+    versions: [],
+    prompt: null,
+    estimate: null,
+    running: null,
+  };
+}
+
+/** 新建素材 (`AssetService.create`). */
+function createAsset(seriesId: string, body: Record<string, unknown>): Response {
+  const kind = String(body.kind ?? "");
+  const name = String(body.name ?? "").trim();
+  const description = String(body.description ?? "").trim();
+  if (!["character", "scene", "prop", "text"].includes(kind)) return error(422, "invalid_request");
+  if (!name) return error(422, "name_required");
+  if (fakeAssets.assets.some((a) => a.series_id === seriesId && a.kind === kind && a.name === name))
+    return error(409, "asset_exists", { name });
+  fakeAssets.created.push({ kind, name, description });
+  const id = `manual-${fakeAssets.created.length}`;
+  const a: Asset = AssetSchema.parse({
+    id,
+    series_id: seriesId,
+    kind,
+    name,
+    intent: description,
+    source: { code: "manual", params: {} },
+    shots: [],
+    scenes: [],
+    product_id: `p-${id}`,
+    status: "not_generated",
+    pick: 0,
+    text: kind === "text" ? { exact: "", method: "composite", style: "printed" } : null,
+    voice: null,
+    note: null,
+    seed_changed: false,
+    physical: kind === "prop" ? { size: "", material: "", wear: "" } : null,
+    manual: true,
+  });
+  fakeAssets.assets.push(a);
+  fakeAssets.products.push(emptyProduct(a));
+  return HttpResponse.json(withStatus(a));
+}
+
+/** 六视图换一张 (`assets/refs.py:replace_view`, `views.py` with `params.view`). */
+async function replaceView(id: unknown, view: string, request: Request): Promise<Response> {
+  const p = fakeAssets.views.find((x) => x.id === String(id));
+  if (!p) return error(404, "product_not_found", { id });
+  const at = p.versions.find((v) => v.id === p.adopted_version_id);
+  if (!at?.files.some((f) => f.view === view)) return error(422, "unknown_view", { view });
+  const file = (await request.formData()).get("file");
+  if (!(file instanceof File)) {
+    if (p.status === "stale") return error(409, "views_outdated", { id: p.id });
+    fakeAssets.views_replaced.push({ view, file: null });
+    p.status = "running";
+    return HttpResponse.json({
+      product: null,
+      job: job(p, `${p.id}-${view}`, "comfy/views", "run"),
+    });
+  }
+  fakeAssets.views_replaced.push({ view, file: file.name });
+  const n = p.versions.length + 1;
+  const vid = `${p.id}-v${n}`;
+  p.versions.push({
+    ...structuredClone(at),
+    id: vid,
+    n,
+    origin: "upload",
+    parent_version_id: at.id,
+    content_hash: `sha256:${vid}`,
+    files: at.files.map((f) =>
+      f.view === view
+        ? { ...f, sha256: `${vid}-${view}`, path: `blobs/sha256/00/${vid}-${view}` }
+        : f,
+    ),
+  });
+  p.current_version_id = vid;
+  p.adopted_version_id = vid;
+  return HttpResponse.json({ product: p, job: null });
 }
 
 const used = () => fakeAssets.assets.filter((a) => a.scenes.length > 0);
@@ -149,8 +260,16 @@ export function editFakeAsset(assetId: string, patch: Record<string, unknown>, r
   }
   if (body.text && a.text) a.text = { ...a.text, ...body.text };
   if (body.voice && a.voice) a.voice = { ...a.voice, ...body.voice };
+  if (body.physical) a.physical = setPhysical(a, body.physical);
   if (redraw) run(p, { mode: "rerun" });
 }
+
+/** 真实尺寸 / 材质 / 新旧 as typed (trimmed; an emptied one stays empty). */
+const setPhysical = (a: Asset, given: Partial<Physical>): Physical => {
+  const now: Physical = { size: "", material: "", wear: "", ...a.physical };
+  const typed = Object.fromEntries(Object.entries(given).map(([k, v]) => [k, v.trim()]));
+  return { ...now, ...typed };
+};
 
 const error = (status: number, code: string, params: Record<string, unknown> = {}) =>
   HttpResponse.json({ detail: { code, params } }, { status });
@@ -173,7 +292,7 @@ function announce(p: Product) {
 }
 
 /** 锁定为参考: the picked candidate of the version on screen, as a locked `pick` version. */
-function lock(a: Asset, p: Product, body: AssetLock): Response {
+function lock(a: Asset, p: Product): Response {
   if (p.locked_hash) return error(409, "product_locked", { id: p.id });
   const source = current(p);
   if (!source) return error(409, "nothing_to_lock", { id: a.id });
@@ -189,17 +308,6 @@ function lock(a: Asset, p: Product, body: AssetLock): Response {
   if (a.kind === "voice") return error(409, "voice_needs_final", { id: a.id });
   const file = source.files.find((f) => f.role === "candidate" && f.idx === a.pick);
   if (!file) return error(422, "no_such_candidate", { id: source.id, idx: a.pick });
-  const parsed = CandidatesPayloadSchema.safeParse(source.payload);
-  const made = parsed.success ? parsed.data : null;
-  const cand = made?.candidates[a.pick];
-  if (cand?.ocr_ok === false && !body.force)
-    return error(409, "ocr_mismatch", {
-      id: a.id,
-      idx: a.pick,
-      read: cand.ocr ?? "",
-      exact: made?.text?.exact ?? "",
-      issue: cand.ocr_issue ?? "",
-    });
   const n = p.versions.length + 1;
   const pick: ProductVersion = {
     ...structuredClone(source),
@@ -325,8 +433,38 @@ const audio = (id: string, role: string, extra: Partial<ProductVersion["files"][
   ...extra,
 });
 
+/** 声音克隆: no auditions, every run is a final from the sample (409 without the sample or
+ * the 本人授权 box); MiniMax on `where: api`, else IndexTTS. */
+function runClone(p: Product, a: Asset, body: RunRequest): Job | Response {
+  const voice = a.voice;
+  if (!voice?.sample) return error(409, "voice_sample_missing", { id: p.id });
+  if (!voice.consent) return error(409, "voice_clone_consent", { id: p.id });
+  const api = body.where === "api";
+  const model = api
+    ? (fakeResolve("voice", null)?.values.api_model ?? "minimax/speech-2.8-hd")
+    : "local/indextts2";
+  const v = addVersion(p, 3, { origin: body.mode, model, stage: "final" });
+  v.payload = {
+    provider: api ? "minimax" : "local",
+    voice_id: api ? `ds-${v.id}` : null,
+    emotions: EMOTIONS,
+    label: null,
+    cloned: true,
+  };
+  v.files = [
+    audio(voice.sample.sha256, "anchor", {}),
+    ...EMOTIONS.map((emotion, k) =>
+      audio(`${v.id}-${emotion}`, "variant", { idx: k, line: 0, emotion }),
+    ),
+  ];
+  fakeAssets.clones.push({ id: a.id, where: api ? "api" : "local" });
+  return job(p, v.id, model, body.mode);
+}
+
 /** A voice's run: three auditions reading its lines, or (from one of them) its final. */
-function runVoice(p: Product, body: RunRequest): Job {
+function runVoice(p: Product, body: RunRequest): Job | Response {
+  const clone = fakeAssets.assets.find((x) => x.product_id === p.id);
+  if (clone?.voice?.method === "clone") return runClone(p, clone, body);
   const source = body.params?.source_version_id;
   const local = body.where === "local";
   const model = !source
@@ -364,7 +502,7 @@ function runVoice(p: Product, body: RunRequest): Job {
   return job(p, v.id, model, body.mode);
 }
 
-function run(p: Product, body: RunRequest): Job {
+function run(p: Product, body: RunRequest): Job | Response {
   if (p.component_id === "voice") return runVoice(p, body);
   const route = fakeResolve(p.component_id, null)?.values ?? null;
   const source = body.where === "api" ? body.params?.source_version_id : undefined;
@@ -422,8 +560,9 @@ export function assetHandlers() {
       if (!a || !p) return error(404, "asset_not_found", { id: params.id });
       const body = AssetPatchSchema.safeParse(await request.json());
       if (!body.success) return error(422, "invalid_request");
-      const { intent, pick, text, voice } = body.data;
-      if (p.locked_hash && (intent !== undefined || text || voice))
+      const { intent, pick, text, voice, physical } = body.data;
+      if (physical && a.kind !== "prop") return error(422, "invalid_patch", { issues: "physical" });
+      if (p.locked_hash && (intent !== undefined || text || voice || physical))
         return error(409, "product_locked", { id: p.id });
       if (intent !== undefined) {
         a.intent = intent;
@@ -442,15 +581,25 @@ export function assetHandlers() {
       }
       if (text && a.text) a.text = { ...a.text, ...text };
       if (voice && a.voice) a.voice = { ...a.voice, ...voice };
+      // 「克隆 · 约 $X」: the clone fee and five lines on MiniMax.
+      if (voice?.method === "clone") {
+        const now = p.estimate ?? {
+          model_key: "local/indextts2",
+          where: "local",
+          cost_usd: 0,
+          seconds: 30,
+        };
+        p.estimate = { ...now, final_usd: 1.4 };
+      }
+      if (physical) a.physical = setPhysical(a, physical);
       return HttpResponse.json(withStatus(a));
     }),
 
-    http.post("*/api/v1/assets/:id/lock", async ({ params, request }) => {
+    http.post("*/api/v1/assets/:id/lock", ({ params }) => {
       const a = findAsset(params.id);
       const p = a && productOf(a);
       if (!a || !p) return error(404, "asset_not_found", { id: params.id });
-      const body = AssetLockSchema.safeParse(await request.json().catch(() => ({})));
-      return lock(a, p, body.success ? body.data : {});
+      return lock(a, p);
     }),
 
     http.post("*/api/v1/assets/:id/upload", async ({ params, request }) => {
@@ -467,6 +616,68 @@ export function assetHandlers() {
       a.pick = 0;
       p.pick = { version_id: v.id, idx: 0 };
       return HttpResponse.json(withStatus(a));
+    }),
+
+    http.post("*/api/v1/assets/:id/voice/sample", async ({ params, request }) => {
+      const a = findAsset(params.id);
+      const p = a && productOf(a);
+      if (!a || !p) return error(404, "asset_not_found", { id: params.id });
+      if (!a.voice) return error(422, "upload_not_supported", { kind: a.kind });
+      if (p.locked_hash) return error(409, "product_locked", { id: p.id });
+      const file = (await request.formData()).get("file");
+      const name = file instanceof File ? file.name : "";
+      fakeAssets.samples.push({ id: a.id, name });
+      a.voice = {
+        ...a.voice,
+        consent: false,
+        sample: {
+          name,
+          duration_s: 14.2,
+          sha256: `sample-${a.id}-${fakeAssets.samples.length}`,
+          clip_s: 14.2,
+          waveform: Array.from({ length: 64 }, (_, i) => ((i * 3) % 10) / 10),
+        },
+      };
+      return HttpResponse.json(withStatus(a));
+    }),
+
+    http.post("*/api/v1/series/:id/assets", async ({ params, request }) =>
+      createAsset(String(params.id), (await request.json()) as Record<string, unknown>),
+    ),
+
+    http.post("*/api/v1/assets/:id/refs", ({ params, request }) => {
+      const a = findAsset(params.id);
+      if (!a) return error(404, "asset_not_found", { id: params.id });
+      if (!MORE_KINDS.includes(a.kind)) return error(422, "upload_not_supported", { kind: a.kind });
+      return addFakePicture("ref_more", a.id, request);
+    }),
+
+    http.delete("*/api/v1/assets/:id/refs/:idx", ({ params }) => {
+      const a = findAsset(params.id);
+      if (!a) return error(404, "asset_not_found", { id: params.id });
+      return removeFakePicture("ref_more", a.id, Number(params.idx));
+    }),
+
+    http.post("*/api/v1/products/:id/views/:view", ({ params, request }) =>
+      replaceView(params.id, String(params.view), request),
+    ),
+
+    http.post("*/api/v1/versions/:id/:op", async ({ params, request }) => {
+      const op = String(params.op);
+      if (op !== "redraw" && op !== "inpaint" && op !== "upscale") return undefined;
+      const id = String(params.id);
+      const p = fakeAssets.products.find((x) => x.versions.some((v) => v.id === id));
+      if (!p) return undefined;
+      if (p.locked_hash) return error(409, "product_locked", { id: p.id });
+      const idx =
+        op === "inpaint"
+          ? Number((await request.formData()).get("idx") ?? 0)
+          : Number(((await request.json()) as { idx?: number }).idx ?? 0);
+      fakeAssets.edits.push({ op, version: id, idx });
+      const model = op === "upscale" ? "comfy/seedvr2-img" : "comfy/flux3-klein-redraw";
+      const v = addVersion(p, 1, { origin: op, model, stage: null });
+      v.parent_version_id = id;
+      return HttpResponse.json(job(p, v.id, model, op));
     }),
 
     http.post("*/api/v1/episodes/:id/assets/analyze", ({ params }) => {
@@ -489,7 +700,7 @@ export function assetHandlers() {
       if (!owner.startsWith("asset:")) return undefined;
       const id = owner.slice("asset:".length);
       const mine = [...fakeAssets.products, ...fakeAssets.views].filter((p) => p.owner_id === id);
-      return HttpResponse.json(mine);
+      return HttpResponse.json([...mine, ...fakePictureProducts(owner)]);
     }),
 
     http.get("*/api/v1/products/:id", ({ params }) => {
@@ -500,7 +711,8 @@ export function assetHandlers() {
     http.post("*/api/v1/products/:id/run", async ({ params, request }) => {
       const p = fakeAssets.products.find((x) => x.id === params.id);
       if (!p) return undefined;
-      return HttpResponse.json(run(p, (await request.json()) as RunRequest));
+      const made = run(p, (await request.json()) as RunRequest);
+      return made instanceof Response ? made : HttpResponse.json(made);
     }),
   ];
 }

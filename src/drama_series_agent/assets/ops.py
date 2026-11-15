@@ -56,6 +56,7 @@ class Line:
     type: str
     character_id: str | None
     text: str
+    tone: str = ""
 
 
 @dataclass
@@ -67,6 +68,12 @@ class Found:
     description: str = ""
     text: dict[str, Any] | None = None
     note: str | None = None
+    # A prop's real size, material and wear (M5.5): from its bible entry's details, or the
+    # answer's ``physical``; the keyframe draws it to scale.
+    physical: dict[str, str] | None = None
+    # A scene's neighbours through a door or window (M5.5 step 9e-3): [{via, to, note}], ``to``
+    # another scene's key or name; the keyframe shows that scene's picture through the door.
+    adjoins: list[dict[str, str]] | None = None
     # scene id → line ids ([] = the whole scene)
     uses: dict[str, list[str]] = field(default_factory=dict)
 
@@ -88,6 +95,7 @@ def numbered_lines(script: Mapping[str, Any]) -> list[Line]:
                     type=str(line.get("type") or "action"),
                     character_id=line.get("character_id"),
                     text=str(line.get("text") or ""),
+                    tone=str(line.get("tone") or ""),
                 )
             )
     return out
@@ -106,6 +114,56 @@ def describe(entity: Mapping[str, Any] | None) -> str:
     if isinstance(data.get("summary"), str) and data["summary"]:
         parts.append(str(data["summary"]))
     return "，".join(parts)
+
+
+PHYSICAL_KEYS = ("size", "material", "wear")  # 真实尺寸 / 材质 / 新旧 (M5.5)
+
+
+def physical_of(entity: Mapping[str, Any] | None) -> dict[str, str] | None:
+    """A prop's real size, material and wear from its bible entry's details, else None."""
+    return physical_from((entity or {}).get("data") or {})
+
+
+def physical_from(data: Any) -> dict[str, str] | None:
+    if not isinstance(data, Mapping):
+        return None
+    out = {k: str(data[k]).strip() for k in PHYSICAL_KEYS if str(data.get(k) or "").strip()}
+    return out or None
+
+
+# A clause that puts a prop somewhere (「贴在伞柄上」): where it is is the shot's (its contract's
+# props), not the prop's look. Run 19: the note's picture drew a black umbrella from it.
+_PLACED = re.compile(r"(?:贴|挂|插|放|靠|夹|别|系|绑|摆|搁|躺)(?:在|于)")
+_CLAUSES = re.compile(r"([^，。；,;]+)([，。；,;]?)")
+
+
+def appearance_only(text: str, keep: Iterable[str] = ()) -> str:
+    """A prop's description without the clauses that put it on or in something else; a clause
+    naming one of ``keep`` (a character: 「戴在林晚左手腕上」) stays."""
+    names = [k for k in keep if k]
+    parts = [
+        (clause, mark)
+        for clause, mark in _CLAUSES.findall(text)
+        if not _PLACED.search(clause) or any(n in clause for n in names)
+    ]
+    out = "".join(c + m for c, m in parts).strip("，,；; ")
+    return out if out.endswith(("。", ".")) or not out else out + "。"
+
+
+def adjoins_from(data: Any) -> list[dict[str, str]] | None:
+    """The answer's ``adjoins`` with a ``to``, as strings (anything else dropped)."""
+    out = [
+        {"via": str(x.get("via") or "门"), "to": str(x["to"]), "note": str(x.get("note") or "")}
+        for x in data or []
+        if isinstance(x, dict) and x.get("to")
+    ]
+    return out or None
+
+
+def physical_text(physical: Mapping[str, str] | None) -> str:
+    """「全长约 90 cm；尼龙伞面、木柄；用了几年」."""
+    given = physical or {}
+    return "；".join(str(given[k]) for k in PHYSICAL_KEYS if given.get(k))
 
 
 def scene_key(location_id: str | None, location_name: str, time: str | None) -> str:
@@ -130,6 +188,7 @@ def collect(script: Mapping[str, Any], bible: Mapping[str, Any]) -> list[Found]:
                 name=name,
                 bible_id=bible_id,
                 description="" if kind == "voice" else describe(entities.get(bible_id or "")),
+                physical=physical_of(entities.get(bible_id or "")) if kind == "prop" else None,
             )
         return found[key]
 
@@ -186,6 +245,8 @@ def merge(
     for item in answer.get("assets") or []:
         kind = str(item.get("kind") or "")
         name = str(item.get("name") or "").strip()
+        if kind == "text" and _onto_prop(item, out, by_key, by_line):
+            continue
         target = by_key.get(str(item.get("key") or ""))
         if target is None and kind in KINDS and name:
             target = next((f for f in out if f.kind == kind and _same_name(f.name, name)), None)
@@ -214,6 +275,10 @@ def merge(
             target.name = name
         if item.get("note"):
             target.note = str(item["note"])
+        if target.kind == "scene" and (near := adjoins_from(item.get("adjoins"))):
+            target.adjoins = near
+        if target.kind == "prop" and (given := physical_from(item.get("physical"))):
+            target.physical = {**(target.physical or {}), **given}
         text = item.get("text")
         if target.kind == "text" and isinstance(text, Mapping) and text.get("exact"):
             target.text = {
@@ -226,6 +291,34 @@ def merge(
             if line is not None:
                 target.use(line.scene_id, line.line_id)
     return out
+
+
+def _onto_prop(
+    item: Mapping[str, Any],
+    found: Sequence[Found],
+    by_key: Mapping[str, Found],
+    by_line: Mapping[int, Line],
+) -> bool:
+    """有字的道具 (M5.5): on-screen text the answer says is written on a prop (``on``: the
+    prop's key or name) becomes the prop's writing, drawn on its own picture, not an asset of
+    its own (run 17: the note's picture was a blank yellow paper, the words a separate asset
+    only one shot used). True when it was taken."""
+    on = str(item.get("on") or "").strip()
+    text = item.get("text")
+    if not on or not isinstance(text, Mapping) or not text.get("exact"):
+        return False
+    prop = by_key.get(on) or next(
+        (f for f in found if f.kind == "prop" and _same_name(f.name, on)), None
+    )
+    if prop is None or prop.kind != "prop":
+        return False
+    style = text.get("style") if text.get("style") in _STYLES else "handwritten"
+    prop.text = {"exact": str(text["exact"]), "style": style, "method": "model"}
+    for n in item.get("lines") or []:
+        line = by_line.get(int(n)) if isinstance(n, int) else None
+        if line is not None:
+            prop.use(line.scene_id, line.line_id)
+    return True
 
 
 _STYLES = ("handwritten", "printed", "screen")
@@ -268,6 +361,8 @@ def reconcile(found: Sequence[Found], known: Iterable[Mapping[str, Any]]) -> lis
                 "description": f.description,
                 "text": f.text,
                 "note": f.note,
+                "physical": f.physical,
+                "adjoins": f.adjoins,
                 "uses": [{"scene_id": s, "line_ids": ids} for s, ids in f.uses.items()],
             }
         )

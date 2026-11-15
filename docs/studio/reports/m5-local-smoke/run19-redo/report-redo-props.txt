@@ -1,0 +1,25 @@
+M5 local smoke · 2026-11-11 00:07
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 2256 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== redo: 只靠流程（9d），不改分镜
+== props: 道具本机重画：note（实拍质感、真实尺寸、带字、只画道具）
+   1 job(s) in 125.2 s, GPU memory peak 31216 MiB
+   call comfy/qwen-image [local] success 31.0 s images=4
+   call local/rapidocr [local] success 2.0 s images=1
+   call local/rapidocr [local] success 1.3 s images=1
+   call local/rapidocr [local] success 1.2 s images=1
+   call local/rapidocr [local] success 1.3 s images=1
+   model comfy/qwen-image [local], files: prop-note-candidate-0.png (928x1664), prop-note-candidate-1.png (928x1664), prop-note-candidate-2.png (928x1664), prop-note-candidate-3.png (928x1664)
+   OCR #0: '楼下便利店，等你到十二点。' ok=True
+   OCR #1: '楼下便利店，等你到十二点。' ok=True
+   OCR #2: '楼下便利店，等你到十二点。' ok=True
+   OCR #3: '楼下便利店，等你到十二点。' ok=True
+   note: locked candidate 0
+   model comfy/qwen-image-edit-hq [local], files: scale-note-scale-0.png (928x1664)
+   note: scale reference with 林晚
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run19-redo
+data: C:\Users\kelvin\AppData\Local\Temp\drama-ep19-5Oilw8\home

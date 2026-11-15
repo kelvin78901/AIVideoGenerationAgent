@@ -98,15 +98,6 @@ const seeds: Seed[] = [
     intent: "普通全面屏手机，黑色壳，屏幕有一道细划痕。锁屏内容另做（见画面文字）。",
   },
   {
-    id: "txt1",
-    kind: "text",
-    name: "便利贴手写",
-    state: "choosing",
-    source: msg("script_line", { scene: 1, line: 3 }),
-    intent: "黑色圆珠笔手写，字迹歪扭但能认清，写在黄色便利贴上。",
-    text: { exact: "楼下便利店，等你到十二点。", method: "model", style: "handwritten" },
-  },
-  {
     id: "txt2",
     kind: "text",
     name: "手机锁屏时间",
@@ -128,6 +119,8 @@ const seeds: Seed[] = [
         { text: "……周屿？", tone: "低声，愣住" },
         { text: "三年了。他凭什么。", tone: "画外音，压着火" },
       ],
+      sample: null,
+      consent: false,
     },
   },
   {
@@ -137,7 +130,7 @@ const seeds: Seed[] = [
     state: "none",
     source: msg("episode", { episode: 2 }),
     intent: "第 2 集出场前再定。",
-    voice: { method: "design", lines: [] },
+    voice: { method: "design", lines: [], sample: null, consent: false },
   },
 ];
 

@@ -16,6 +16,13 @@ dubbed with. How it is auditioned and finished is ``config/voice.yaml``.
    job neither designs nor pays again.
 3. **「本地」 source** (or that fallback): the anchor is the picked draft itself and the variants
    come from ``local_final`` (IndexTTS) with the emotion in words; free.
+4. **声音克隆** (M5.5, source ``clone``): the uploaded sample (``settings.voice.sample``,
+   ``assets/voice_sample.py``) with the 本人授权 box ticked (``settings.voice.consent``; an
+   enqueue without either is 409 ``voice_clone_consent`` / ``voice_sample_missing``). There are
+   no auditions: every run is a final whose anchor is the levelled sample (its first
+   ``clone.ref_max_s`` seconds). On an API model MiniMax clones it (``voice_clone``, our own
+   ``voice_id``) and T2A speaks the emotions, the clone's flat fee on the first synthesis; on a
+   local model (or as the API's fallback) ``local_final`` takes the sample as its reference.
 
 Every clip is levelled (``media/audio.py``) before it is stored. A final's files are the anchor
 clips (``role: anchor``) and one ``role: variant`` per emotion (``emotion``), each with its
@@ -25,12 +32,13 @@ waveform; its payload ``{provider, voice_id, emotions, label}``. Only a final ca
 
 from __future__ import annotations
 
+import hashlib
 from typing import Any
 
 from sqlmodel import col, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
-from drama_series_agent.core.config import VoiceConfig, get_config
+from drama_series_agent.core.config import Resolved, VoiceConfig, get_config
 from drama_series_agent.core.models_db import (
     Asset,
     AssetUse,
@@ -40,15 +48,37 @@ from drama_series_agent.core.models_db import (
     Scene,
     ScriptLine,
 )
-from drama_series_agent.modelhub.adapters.base import Estimate, ModelRequest
-from drama_series_agent.pipeline.component import ComponentError, Inputs, RunContext
+from drama_series_agent.modelhub.adapters.base import Estimate, ModelError, ModelRequest
+from drama_series_agent.pipeline.component import (
+    ComponentError,
+    Inputs,
+    ModelChoice,
+    RunContext,
+)
 from drama_series_agent.pipeline.components.media import MediaCall, MediaComponent, prompt_text
-from drama_series_agent.pipeline.drafts import VersionDraft
+from drama_series_agent.pipeline.drafts import VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.prompts.compiler import Block
 
 VOICE_SLOT = "voice"
 DESIGN = "voice_design"
+CLONE = "voice_clone"
+
+
+def _clone_missing(inputs: Inputs) -> str | None:
+    """What a clone still needs: the sample, then the 本人授权 box."""
+    if not inputs.context.get("sample"):
+        return "voice_sample_missing"
+    if not inputs.context.get("consent"):
+        return "voice_clone_consent"
+    return None
+
+
+def clone_voice_id(asset_id: str, sample: str, seed: int | None) -> str:
+    """The id a clone is registered under at MiniMax: ours, so a retried request names the same
+    voice (a letter first, 8–256 letters, digits, ``-`` or ``_``)."""
+    digest = hashlib.sha256(f"{asset_id}|{sample}|{seed}".encode()).hexdigest()
+    return f"ds{digest[:22]}"
 
 
 async def audition_lines(session: AsyncSession, asset_id: str, n: int) -> list[dict[str, Any]]:
@@ -97,18 +127,59 @@ class VoiceComponent(MediaComponent):
         lines = await audition_lines(session, asset.id, cfg.lines) or [
             {"id": None, "text": cfg.sample_text, "tone": ""}
         ]
-        method = ((product.settings_json or {}).get("voice") or {}).get("method") or "design"
+        voice = (product.settings_json or {}).get("voice") or {}
+        method = voice.get("method") or "design"
         reads = "\n".join(f"{x['text']}（{x['tone']}）" if x["tone"] else x["text"] for x in lines)
         return Inputs(
             blocks=[Block("角色", asset.name), Block("试读", reads)],
-            context={"lines": lines, "method": method},
+            context={
+                "lines": lines,
+                "method": method,
+                "asset_id": asset.id,
+                "sample": voice.get("sample"),
+                "consent": bool(voice.get("consent")),
+            },
         )
+
+    def model_for(self, inputs: Inputs, model: str, settings: Resolved) -> str:
+        """A clone made here is ``local_final``'s (the audition model designs from words)."""
+        if inputs.context["method"] == "clone" and self.where_of(model) == "local":
+            return self.config.local_final
+        return model
+
+    async def choose_model(
+        self,
+        product: Product,
+        inputs: Inputs,
+        model: str,
+        settings: Resolved,
+        *,
+        lang: str,
+        named: bool,
+        ask: bool,
+    ) -> ModelChoice:
+        """An enqueue of a clone needs the sample and the 本人授权 box (an estimate does not)."""
+        if ask and inputs.context["method"] == "clone" and (missing := _clone_missing(inputs)):
+            raise PipelineError(409, missing, id=product.id)
+        return await super().choose_model(
+            product, inputs, model, settings, lang=lang, named=named, ask=ask
+        )
+
+    def api_final_usd(self, inputs: Inputs, compiled: str, settings: Resolved) -> float | None:
+        """「克隆 · 约 $X」: a clone on the route's API model (the clone fee and five lines)."""
+        model = settings.values.get("api_model")
+        if inputs.context["method"] != "clone" or not model:
+            return None
+        try:
+            return round(self.estimate(inputs, compiled, str(model)).cost_usd, 4)
+        except (LookupError, ModelError):
+            return None
 
     # ------------------------------------------------------------------ run
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
         if inputs.context["method"] == "clone":
-            raise ComponentError("voice_clone_not_supported")
+            return await self._clone_final(ctx, inputs)
         source = await self.source_candidate(ctx.product, inputs.params)
         if source is None:
             return await self._drafts(ctx, inputs)
@@ -172,6 +243,111 @@ class VoiceComponent(MediaComponent):
         draft.params["source"] = {"version_id": source.id, "idx": idx}
         return draft
 
+    async def _clone_final(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
+        """声音克隆: the sample is the anchor; MiniMax clones it, or ``local_final`` reads with
+        it as the reference (also the API's whole fallback)."""
+        if missing := _clone_missing(inputs):
+            raise ComponentError(missing)
+        sample: dict[str, Any] = dict(inputs.context["sample"])
+        ref = sample["ref"]
+        anchor = file_entry(
+            "anchor",
+            ref["sha256"],
+            "audio/wav",
+            duration_s=ref.get("duration_s"),
+            waveform=ref.get("waveform"),
+            idx=None,
+            line=None,
+        )
+
+        async def flow(model: str, reason: str | None) -> tuple[list[Any], dict[str, Any]]:
+            if self.where_of(model) == "local":
+                return await self._local_final(ctx, inputs, model, reason, [anchor])
+            return await self._api_clone(ctx, inputs, model, reason, sample, anchor)
+
+        if self.where_of(ctx.model_key) == "local":
+            model = self.config.local_final
+            (calls, made), reason = await flow(model, None), None
+        else:
+            (calls, made), reason = await self.run_flow(ctx, flow)
+        payload = {**made["payload"], "label": None, "cloned": True}
+        prompt = prompt_text(ctx.compiled, inputs.blocks)
+        return self.media_draft(
+            ctx,
+            inputs,
+            payload,
+            made["files"],
+            calls,
+            prompt,
+            stage="final",
+            fallback_reason=reason,
+        )
+
+    async def _api_clone(
+        self,
+        ctx: RunContext,
+        inputs: Inputs,
+        model: str,
+        reason: str | None,
+        sample: dict[str, Any],
+        anchor: dict[str, Any],
+    ) -> tuple[list[Any], dict[str, Any]]:
+        """MiniMax: the clone (free until used), then every emotion in that voice."""
+        req = self._clone_request(inputs, sample["sha256"], ctx.seed)
+        clone = await self.media_call(
+            ctx, req, None, model=model, fallback=False, fallback_reason=reason
+        )
+        voice_id = (clone.data or {}).get("voice_id")
+        if not voice_id:
+            raise ComponentError("voice_clone_failed")
+        calls, files = await self._variants(ctx, inputs, model, reason, voice_id, cloned=True)
+        payload = {"provider": model.split("/", 1)[0], "voice_id": voice_id}
+        return [clone, *calls], {"files": [anchor, *files], "payload": self._with_emotions(payload)}
+
+    def _clone_request(self, inputs: Inputs, sample: str, seed: int | None) -> ModelRequest:
+        return ModelRequest(
+            kind=CLONE,
+            prompt="",
+            seed=seed,
+            params={
+                "sample": sample,
+                "voice_id": clone_voice_id(inputs.context["asset_id"], sample, seed),
+            },
+            meta={"component": self.id, "task": "clone"},
+        )
+
+    async def _variants(
+        self,
+        ctx: RunContext,
+        inputs: Inputs,
+        model: str,
+        reason: str | None,
+        voice_id: str,
+        *,
+        cloned: bool = False,
+    ) -> tuple[list[MediaCall], list[dict[str, Any]]]:
+        """The first line in every emotion of the config, in a MiniMax voice; the voice's flat
+        fee on the first synthesis."""
+        lines = inputs.context["lines"]
+        calls: list[MediaCall] = []
+        files: list[dict[str, Any]] = []
+        for k, emotion in enumerate(self.config.emotions):
+            how = dict(emotion.minimax) if model.startswith("minimax/") else {}
+            use = str(how.pop("model", model))
+            req = self._tts(
+                lines[0],
+                task=f"variant:{emotion.id}",
+                seed=ctx.seed,
+                voice_id=voice_id,
+                charge_design=k == 0,
+                cloned=cloned,
+                **how,
+            )
+            call = await self._call(ctx, req, use, reason)
+            calls.append(call)
+            files.append(await self.audio_file(call, "variant", idx=k, line=0, emotion=emotion.id))
+        return calls, files
+
     async def _api_final(
         self,
         ctx: RunContext,
@@ -198,22 +374,12 @@ class VoiceComponent(MediaComponent):
             if not voice_id:
                 raise ComponentError("voice_design_failed")
             files.append(await self.audio_file(call, "anchor", idx=None, line=None))
-        for k, emotion in enumerate(self.config.emotions):
-            how = dict(emotion.minimax) if model.startswith("minimax/") else {}
-            use = str(how.pop("model", model))
-            req = self._tts(
-                lines[0],
-                task=f"variant:{emotion.id}",
-                seed=ctx.seed,
-                voice_id=voice_id,
-                charge_design=k == 0,
-                **how,
-            )
-            call = await self._call(ctx, req, use, reason)
-            calls.append(call)
-            files.append(await self.audio_file(call, "variant", idx=k, line=0, emotion=emotion.id))
+        more_calls, variants = await self._variants(ctx, inputs, model, reason, voice_id)
         payload = {"provider": model.split("/", 1)[0], "voice_id": voice_id}
-        return calls, {"files": files, "payload": self._with_emotions(payload)}
+        return [*calls, *more_calls], {
+            "files": [*files, *variants],
+            "payload": self._with_emotions(payload),
+        }
 
     async def _local_final(
         self,
@@ -250,7 +416,23 @@ class VoiceComponent(MediaComponent):
         the design and every emotion, the design's flat price included."""
         lines = inputs.context["lines"]
         reqs: list[tuple[str, ModelRequest]] = []
-        if not inputs.params.get("source_version_id"):
+        clone = inputs.context["method"] == "clone"
+        if clone and self.where_of(model) != "local":
+            sample = str((inputs.context.get("sample") or {}).get("sha256") or "")
+            reqs.append((model, self._clone_request(inputs, sample, None)))
+            for k, e in enumerate(self.config.emotions):
+                how = dict(e.minimax) if model.startswith("minimax/") else {}
+                use = str(how.pop("model", model))
+                req = self._tts(
+                    lines[0], task=e.id, seed=None, charge_design=k == 0, cloned=True, **how
+                )
+                reqs.append((use, req))
+        elif clone:
+            local = self.config.local_final
+            reqs += [
+                (local, self._tts(lines[0], task=e.id, seed=None)) for e in self.config.emotions
+            ]
+        elif not inputs.params.get("source_version_id"):
             for i, draft in enumerate(self.config.drafts[: self.candidates()]):
                 if self.where_of(model) == "local":
                     reqs += [

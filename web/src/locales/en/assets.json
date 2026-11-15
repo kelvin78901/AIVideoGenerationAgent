@@ -19,7 +19,10 @@
     "all": "All",
     "scenes": "In {{count}} scenes",
     "scenesShots": "{{count}} scenes · {{shots}} shots",
-    "notHere": "Not in this episode"
+    "notHere": "Not in this episode",
+    "create": "New asset",
+    "manual": "By hand",
+    "manualUnused": "No shot uses it yet"
   },
   "detail": {
     "label": "Asset details",
@@ -40,7 +43,8 @@
     "uploadFile": "Choose a picture to upload",
     "uploaded": "Uploaded “{{name}}”: it is a candidate now, and picked.",
     "editTitle": "{{name}} is locked: the change reaches downstream",
-    "editWhat": "New description: {{text}}"
+    "editWhat": "New description: {{text}}",
+    "uploadHint": "Not cropped"
   },
   "text": {
     "exact": "Text in the frame (checked letter by letter)",
@@ -51,13 +55,19 @@
     },
     "hint": {
       "composite": "Generate the plate without text and composite the text in post. The text is always right; best for screens, signs and captions.",
-      "model": "The text is part of the image, with natural perspective and strokes; best for handwritten notes. Every candidate is OCR-checked and mismatches cannot be adopted directly."
+      "model": "The text is part of the image, with natural perspective and strokes; best for handwritten notes. Every candidate is OCR-checked and a mismatch is flagged."
     },
     "style": "Lettering",
     "styles": {
       "handwritten": "Handwritten",
       "printed": "Printed",
       "screen": "Screen UI"
+    },
+    "pen": "Written with",
+    "pens": {
+      "ballpoint": "Ballpoint",
+      "marker": "Marker",
+      "pencil": "Pencil"
     }
   },
   "cands": {
@@ -81,7 +91,8 @@
     "ocrHasText": "OCR found text on the plate: “{{read}}”",
     "ocrUnchecked": "Not OCR-checked: no OCR available on this computer",
     "emptyImage": "Not generated yet. Click Rerun above or on the right for 4 candidates.",
-    "emptyVoice": "Not generated yet. Click Rerun above or on the right for 3 voice candidates."
+    "emptyVoice": "Not generated yet. Click Rerun above or on the right for 3 voice candidates.",
+    "noteProp": "Photographed, in a real place, not a product shot on white"
   },
   "voice": {
     "source": "Voice source",
@@ -102,7 +113,6 @@
     "lines": "Audition with lines from the script",
     "note": "Three free auditions first; choose one and make the final, which is what gets locked",
     "needsFinal": "An audition cannot be locked: make the final first",
-    "cloneLater": "Coming later",
     "finalApi": "Make the final with {{model}}",
     "finalLocal": "Make the final locally (free)",
     "finalStarted": "Making the final from candidate {{letter}}: the voice, then five emotion variants.",
@@ -110,20 +120,29 @@
     "final": "Final · {{label}} · {{provider}}",
     "provider": {
       "api": "API voice design",
-      "local": "Local"
+      "local": "Local",
+      "cloneApi": "MiniMax clone",
+      "cloneLocal": "Local clone"
+    },
+    "finalCloned": "Final · {{provider}}",
+    "clone": {
+      "title": "Voice sample",
+      "upload": "Upload a sample",
+      "replace": "Replace the sample",
+      "formats": "WAV, MP3 or M4A, 10 s to 5 min, at most 20 MB",
+      "sample": "{{name}} · {{seconds}} s",
+      "consent": "I confirm the speaker has agreed to have their voice cloned",
+      "consentHint": "Tick it again after replacing the sample.",
+      "run": "Clone · about {{cost}}",
+      "runFree": "Clone",
+      "local": "Local IndexTTS uses this sample as its reference (free)",
+      "started": "Cloning: the voice, then five emotion variants.",
+      "needSample": "Upload a sample first",
+      "needConsent": "Tick the consent box first"
     },
     "anchor": "Sample",
     "variants": "Emotion variants",
     "variantsHint": "Dialogue audio uses the emotion that matches each line's delivery."
-  },
-  "lockMismatch": {
-    "title": "Candidate {{letter}} does not show the required text",
-    "read": "OCR reads “{{read}}”",
-    "nothing": "OCR reads no text here",
-    "exact": "It should say “{{exact}}”",
-    "hint": "Once locked, every later shot follows this picture. Lock it only if the text is right.",
-    "confirm": "Lock anyway",
-    "cancel": "Cancel"
   },
   "reanalyzing": "Analysing the script again; the list updates when it is done and new assets show up in it.",
   "view": {
@@ -133,7 +152,7 @@
   },
   "views": {
     "title": "Extra views",
-    "note": "Drawn from the locked picture once it is locked; locking another one redraws them",
+    "note": "Drawn from the locked picture once it is locked, and again when another one is locked; hover one to redraw it or replace it with an upload",
     "running": "Drawing the side, back and expressions from the locked picture…",
     "stale": "The locked picture changed; waiting to redraw",
     "none": "The side, back and expressions are drawn once it is locked.",
@@ -143,7 +162,14 @@
     "calm": "Calm",
     "smile": "Smile",
     "angry": "Angry",
-    "sad": "Sad"
+    "sad": "Sad",
+    "redraw": "Redraw",
+    "upload": "Upload",
+    "redrawOne": "Redraw the {{view}} view",
+    "uploadOne": "Replace the {{view}} view with an upload",
+    "uploadFile": "Choose the picture to put in",
+    "redrawStarted": "Redrawing the {{view}} view; the other 5 stay as they are.",
+    "uploaded": "The {{view}} view is replaced; the other 5 stay as they are. History has the old one."
   },
   "matrix": {
     "label": "Appearance matrix",
@@ -179,5 +205,53 @@
     "emotion": "Emotion",
     "emotionAuto": "From the tone ({{emotion}})",
     "emotionSaved": "Emotion set to {{emotion}}; redub to hear it."
+  },
+  "prop": {
+    "size": "Real size",
+    "material": "Material",
+    "wear": "Wear",
+    "sizePlaceholder": "About 90 cm long",
+    "materialPlaceholder": "Nylon canopy, wooden handle",
+    "wearPlaceholder": "A few years old, the canopy a little faded",
+    "hint": "From the story bible, and yours to change; keyframes write its size against the people (“the handle reaches her hip”).",
+    "saved": "Size and material saved; the next run uses them.",
+    "text": "Writing on the prop (checked character by character)",
+    "textHint": "The writing is part of the prop: it is drawn on this prop's picture and comes along in every shot that uses it. Screens and signs stay on-screen text."
+  },
+  "scale": {
+    "title": "Scale reference",
+    "note": "Drawn next to {{name}} to check its size",
+    "none": "No longer drawn by itself: keyframes say the prop's size in words, against a person.",
+    "running": "Drawing the scale reference…",
+    "caption": "{{name}} with it",
+    "redraw": "Redraw",
+    "redrawing": "Redrawing the scale reference.",
+    "order": "For comparison only; keyframes do not use it (they copied the sizes it got wrong)."
+  },
+  "more": {
+    "title": "More pictures",
+    "hint": "Your own photos or screenshots, each marked with what it shows; you can add and remove them while it is locked, and the keyframes that use it turn outdated",
+    "hintUnlocked": "Your own photos or screenshots, each marked with what it shows; keyframes send them once the main picture is locked",
+    "add": "Upload"
+  },
+  "create": {
+    "title": "New asset",
+    "kind": "Type",
+    "name": "Name",
+    "desc": "Description",
+    "descPlaceholder": "The prompt's intent layer: what it looks like and what it is in the story",
+    "source": "Where the picture comes from",
+    "sources": {
+      "generate": "Draw candidates from the description",
+      "upload": "Upload a picture"
+    },
+    "pick": "Choose a picture",
+    "noFile": "No picture chosen",
+    "generateHint": "Candidates are drawn from the description right away; over budget, it waits for you to confirm.",
+    "foot": "An asset made by hand stays when the script is analyzed again.",
+    "cancel": "Cancel",
+    "submit": "Create",
+    "doneGenerate": "Created “{{name}}”; drawing candidates from the description.",
+    "doneUpload": "Created “{{name}}”: the uploaded picture is its candidate, picked."
   }
 }

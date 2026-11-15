@@ -75,7 +75,32 @@
       "keyframe_pick": 0,
       "keyframe_sha256": "faceb02bdd354e89ef5bb40008e21c3a6a9b9f570ba242cc28b8d23079f52595",
       "confirmed": true,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "performance",
+        "beats": 1,
+        "start": [
+          {
+            "subject": "林晚",
+            "state": "在楼梯上往上走，抱着画板袋"
+          },
+          {
+            "subject": "声控灯",
+            "state": "忽明忽暗"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "走到六楼楼道口"
+          }
+        ],
+        "props": [],
+        "delivery": {},
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
+      }
     },
     {
       "id": "demo-shot-1-02",
@@ -153,7 +178,32 @@
       "keyframe_pick": 0,
       "keyframe_sha256": "c2d3a10967a67ff5ec320c986b57d97505d676898b759356c3f8907d66f2f0ba",
       "confirmed": true,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "insert",
+        "beats": 0,
+        "start": [
+          {
+            "subject": "家门",
+            "state": "关着"
+          }
+        ],
+        "end": [],
+        "props": [
+          {
+            "asset_id": "umbrella",
+            "state": "斜靠在门边墙上，伞面湿"
+          },
+          {
+            "asset_id": "note",
+            "state": "贴在伞柄上，有字，边角湿"
+          }
+        ],
+        "delivery": {},
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
+      }
     },
     {
       "id": "demo-shot-1-03",
@@ -183,8 +233,7 @@
       "sound": null,
       "audio_mode": "native",
       "asset_ids": [
-        "note",
-        "txt1"
+        "note"
       ],
       "tail_from": null,
       "tail_note": null,
@@ -230,7 +279,23 @@
       "keyframe_pick": 0,
       "keyframe_sha256": "8ccb815d541b7626a60d9b953e0eb841a93d5a693d8560390505945a0e36cd0f",
       "confirmed": true,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "insert",
+        "beats": 0,
+        "start": [],
+        "end": [],
+        "props": [
+          {
+            "asset_id": "note",
+            "state": "手写的字歪歪扭扭，边角被雨打湿，墨迹微晕"
+          }
+        ],
+        "delivery": {},
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
+      }
     },
     {
       "id": "demo-shot-1-04",
@@ -309,7 +374,41 @@
       "keyframe_pick": 0,
       "keyframe_sha256": "55b29e6b23702a9d952436f8f09f686cb6a8606cd5a007457ea751ac1b0ebe26",
       "confirmed": false,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "dialogue",
+        "beats": 1,
+        "start": [
+          {
+            "subject": "林晚",
+            "state": "站在门口，低头看着便利贴"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "愣住，抬起头"
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "note",
+            "state": "贴在伞柄上，有字"
+          },
+          {
+            "asset_id": "umbrella",
+            "state": "斜靠在门边墙上，伞面湿"
+          }
+        ],
+        "delivery": {
+          "demo-b5": "dialogue"
+        },
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": [
+          "umbrella"
+        ]
+      }
     },
     {
       "id": "demo-shot-1-05",
@@ -387,7 +486,39 @@
       "keyframe_pick": 0,
       "keyframe_sha256": "2e9a2140c93f58117111c0744549015d533c38a66cc883f26a435fe5113e1bb7",
       "confirmed": false,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "performance",
+        "beats": 1,
+        "start": [
+          {
+            "subject": "林晚的手",
+            "state": "手指停在便利贴上方，手腕戴着旧黑发圈"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚的手",
+            "state": "手指停住，没有碰到便利贴"
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "note",
+            "state": "贴在伞柄上，有字"
+          },
+          {
+            "asset_id": "umbrella",
+            "state": "斜靠在门边墙上，伞面湿"
+          }
+        ],
+        "delivery": {},
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": [
+          "umbrella"
+        ]
+      }
     },
     {
       "id": "demo-shot-1-06",
@@ -460,7 +591,38 @@
       "keyframe_pick": 0,
       "keyframe_sha256": "41e0be14078a767529203d1582487130a63ad93edebf72b07943624af0adb9d1",
       "confirmed": false,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "performance",
+        "beats": 2,
+        "start": [
+          {
+            "subject": "林晚",
+            "state": "站在门内，手里拿着红伞"
+          },
+          {
+            "subject": "家门",
+            "state": "开着"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "背靠着门"
+          },
+          {
+            "subject": "家门",
+            "state": "关着"
+          }
+        ],
+        "props": [],
+        "delivery": {
+          "demo-b10": "inner"
+        },
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
+      }
     },
     {
       "id": "demo-shot-1-07",
@@ -530,7 +692,23 @@
       "keyframe_pick": 0,
       "keyframe_sha256": "c589f8e4fcc3a9870c6d324799843a9ae8a2e2fec3380b1c829ff31328e170a8",
       "confirmed": false,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "insert",
+        "beats": 0,
+        "start": [],
+        "end": [],
+        "props": [
+          {
+            "asset_id": "phone",
+            "state": "亮屏，锁屏时间 23:52，没有新消息"
+          }
+        ],
+        "delivery": {},
+        "start_inherited": false,
+        "props_inherited": [],
+        "props_linked": []
+      }
     },
     {
       "id": "demo-shot-1-08",
@@ -600,7 +778,36 @@
       "keyframe_pick": 0,
       "keyframe_sha256": null,
       "confirmed": false,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "performance",
+        "beats": 2,
+        "start": [
+          {
+            "subject": "林晚",
+            "state": "背靠着门"
+          },
+          {
+            "subject": "家门",
+            "state": "关着"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "站在门口，望向门外地上"
+          },
+          {
+            "subject": "家门",
+            "state": "开着"
+          }
+        ],
+        "props": [],
+        "delivery": {},
+        "start_inherited": true,
+        "props_inherited": [],
+        "props_linked": []
+      }
     },
     {
       "id": "demo-shot-1-09",
@@ -678,7 +885,37 @@
       "keyframe_pick": 0,
       "keyframe_sha256": null,
       "confirmed": false,
-      "confirm_stale": false
+      "confirm_stale": false,
+      "contract": {
+        "kind": "performance",
+        "beats": 2,
+        "start": [
+          {
+            "subject": "林晚",
+            "state": "站在门口，望向门外地上"
+          },
+          {
+            "subject": "家门",
+            "state": "开着"
+          }
+        ],
+        "end": [
+          {
+            "subject": "林晚",
+            "state": "弯腰拿起红伞"
+          }
+        ],
+        "props": [
+          {
+            "asset_id": "umbrella",
+            "state": "靠在门外墙边"
+          }
+        ],
+        "delivery": {},
+        "start_inherited": true,
+        "props_inherited": [],
+        "props_linked": []
+      }
     }
   ],
   "plan": {
@@ -760,7 +997,29 @@
                   "y": 0.92
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "performance",
+                "beats": 1,
+                "start": [
+                  {
+                    "subject": "林晚",
+                    "state": "在楼梯上往上走，抱着画板袋"
+                  },
+                  {
+                    "subject": "声控灯",
+                    "state": "忽明忽暗"
+                  }
+                ],
+                "end": [
+                  {
+                    "subject": "林晚",
+                    "state": "走到六楼楼道口"
+                  }
+                ],
+                "props": [],
+                "delivery": {}
+              }
             },
             {
               "id": "demo-shot-1-02",
@@ -821,7 +1080,29 @@
                   "y": 0.8
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "insert",
+                "beats": 0,
+                "start": [
+                  {
+                    "subject": "家门",
+                    "state": "关着"
+                  }
+                ],
+                "end": [],
+                "props": [
+                  {
+                    "asset_id": "umbrella",
+                    "state": "斜靠在门边墙上，伞面湿"
+                  },
+                  {
+                    "asset_id": "note",
+                    "state": "贴在伞柄上，有字，边角湿"
+                  }
+                ],
+                "delivery": {}
+              }
             },
             {
               "id": "demo-shot-1-03",
@@ -838,8 +1119,7 @@
               "summary": "便利贴上的字",
               "sound": null,
               "asset_ids": [
-                "note",
-                "txt1"
+                "note"
               ],
               "tail_from": null,
               "tail_note": null,
@@ -881,7 +1161,20 @@
                   "y": 0.62
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "insert",
+                "beats": 0,
+                "start": [],
+                "end": [],
+                "props": [
+                  {
+                    "asset_id": "note",
+                    "state": "手写的字歪歪扭扭，边角被雨打湿，墨迹微晕"
+                  }
+                ],
+                "delivery": {}
+              }
             },
             {
               "id": "demo-shot-1-04",
@@ -943,7 +1236,32 @@
                   "y": 0.7
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "dialogue",
+                "beats": 1,
+                "start": [
+                  {
+                    "subject": "林晚",
+                    "state": "站在门口，低头看着便利贴"
+                  }
+                ],
+                "end": [
+                  {
+                    "subject": "林晚",
+                    "state": "愣住，抬起头"
+                  }
+                ],
+                "props": [
+                  {
+                    "asset_id": "note",
+                    "state": "贴在伞柄上，有字"
+                  }
+                ],
+                "delivery": {
+                  "demo-b5": "dialogue"
+                }
+              }
             },
             {
               "id": "demo-shot-1-05",
@@ -1004,7 +1322,30 @@
                   "y": 0.62
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "performance",
+                "beats": 1,
+                "start": [
+                  {
+                    "subject": "林晚的手",
+                    "state": "手指停在便利贴上方，手腕戴着旧黑发圈"
+                  }
+                ],
+                "end": [
+                  {
+                    "subject": "林晚的手",
+                    "state": "手指停住，没有碰到便利贴"
+                  }
+                ],
+                "props": [
+                  {
+                    "asset_id": "note",
+                    "state": "贴在伞柄上，有字"
+                  }
+                ],
+                "delivery": {}
+              }
             },
             {
               "id": "demo-shot-1-06",
@@ -1060,7 +1401,35 @@
                   "y": 0.8
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "performance",
+                "beats": 2,
+                "start": [
+                  {
+                    "subject": "林晚",
+                    "state": "站在门内，手里拿着红伞"
+                  },
+                  {
+                    "subject": "家门",
+                    "state": "开着"
+                  }
+                ],
+                "end": [
+                  {
+                    "subject": "林晚",
+                    "state": "背靠着门"
+                  },
+                  {
+                    "subject": "家门",
+                    "state": "关着"
+                  }
+                ],
+                "props": [],
+                "delivery": {
+                  "demo-b10": "inner"
+                }
+              }
             },
             {
               "id": "demo-shot-1-07",
@@ -1113,7 +1482,20 @@
                   "y": 0.62
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "insert",
+                "beats": 0,
+                "start": [],
+                "end": [],
+                "props": [
+                  {
+                    "asset_id": "phone",
+                    "state": "亮屏，锁屏时间 23:52，没有新消息"
+                  }
+                ],
+                "delivery": {}
+              }
             },
             {
               "id": "demo-shot-1-08",
@@ -1166,7 +1548,24 @@
                   "y": 0.8
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "performance",
+                "beats": 2,
+                "start": [],
+                "end": [
+                  {
+                    "subject": "林晚",
+                    "state": "站在门口，望向门外地上"
+                  },
+                  {
+                    "subject": "家门",
+                    "state": "开着"
+                  }
+                ],
+                "props": [],
+                "delivery": {}
+              }
             },
             {
               "id": "demo-shot-1-09",
@@ -1227,14 +1626,32 @@
                   "y": 0.7
                 }
               ],
-              "difficulty": 1
+              "difficulty": 1,
+              "contract": {
+                "kind": "performance",
+                "beats": 2,
+                "start": [],
+                "end": [
+                  {
+                    "subject": "林晚",
+                    "state": "弯腰拿起红伞"
+                  }
+                ],
+                "props": [
+                  {
+                    "asset_id": "umbrella",
+                    "state": "靠在门外墙边"
+                  }
+                ],
+                "delivery": {}
+              }
             }
           ]
         },
         "files": [],
-        "content_hash": "sha256:5f9cc175747b3e0d3473420c8ccd1d04e905bcb277fffb49043996411f6b0fc2",
+        "content_hash": "sha256:be7a0297b6ebe4f54401b52e084dd624c9e8fbcd19e22274f7aabad34f138af1",
         "intent": "每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。",
-        "compiled": "你是竖屏短剧的分镜师：把一集剧本拆成镜头。下游按你写的画面描述出每个镜头的首帧（关键帧），再从关键帧生成视频。\n\n[规则]\n每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。\n- [剧本] 每行前面是 L 号，lines 写这个镜头拍哪几行。每句对白（「名字：」那种行）只能放在一个镜头里；画外音叠在它所在的动作镜头上，和那行动作放在同一个镜头；每行动作（△）都要有镜头拍到，一行动作可以拆成几个镜头。不拍任何一行的镜头（反应、空镜）lines 留空，写 scene（第几场）。\n- type：scene_change 换场（每场第一个镜头）；same_scene_cut 同场切镜（换角度或景别，出新关键帧）；continuous 连续动作（接着前面某个镜头的动作拍，不出新关键帧，continues 写接第几个镜头，从 1 数；中间隔着插入镜头时跳过它，接它前面那个）。\n- framing：wide 远景、medium 中景、close 近景、closeup 特写。move：static 固定、push 缓推、follow 跟拍、pan 摇。\n- picture 写首帧的画面描述：人物在哪、在做什么、什么表情，光线，镜头里看到什么，具体到能直接画出来；summary 写十个字左右的摘要。continuous 的 note 写一句为什么接那个镜头。\n- seconds：每个镜头都写时长（秒），留够表演和动作的时间（停顿、反应、走位）；有对白的镜头不会短于配音，只说台词不演就写个估计。\n- refs 写用到的素材 id，只能从 [素材] 里选：出镜的角色、场景、道具、画面文字，说话角色的音色。\n- audio：native（视频模型直接出声音和口型）、tts（先配音再对口型，画外音、长台词用这个）、none（不出人声）。sound 写环境声和音效。\n- blocking 是俯视站位图，镜头朝图的上方看：人物、道具、地标各一项（label、kind：character / prop / landmark，x、y 在 0 到 1 之间），机位一项（kind：camera）。\n- difficulty：1 普通对话、2 同一空间多机位、3 复杂运镜、4 身体动作和接触、5 物体碰撞和破坏、6 特效。每个镜头只安排一个主要动作，写清至少两个空间关系，遵守 180 度轴线。\n\n[输出 JSON]\n{\"shots\": [{\"scene\": 1, \"lines\": [1], \"type\": \"scene_change\", \"framing\": \"wide\", \"move\": \"push\", \"seconds\": 4, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"hall\"], \"audio\": \"native\", \"sound\": \"雨声、脚步\", \"blocking\": [{\"label\": \"林晚\", \"kind\": \"character\", \"x\": 0.6, \"y\": 0.4}, {\"label\": \"\", \"kind\": \"camera\", \"x\": 0.5, \"y\": 0.9}], \"difficulty\": 1}, {\"scene\": 2, \"lines\": [9], \"type\": \"continuous\", \"continues\": 6, \"note\": \"中间的第 7 个是插入镜头，所以接第 6 个\", \"framing\": \"medium\", \"move\": \"static\", \"seconds\": 6, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"room\"], \"audio\": \"native\", \"blocking\": [], \"difficulty\": 1}]}\n\n# 目标模型：deepseek/v4-pro",
+        "compiled": "你是竖屏短剧的分镜师：把一集剧本拆成镜头。下游按你写的画面描述出每个镜头的首帧（关键帧），再从关键帧生成视频。\n\n[规则]\n每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。\n- [剧本] 每行前面是 L 号，lines 写这个镜头拍哪几行。每句对白（「名字：」那种行）只能放在一个镜头里；画外音叠在它所在的动作镜头上，和那行动作放在同一个镜头；每行动作（△）都要有镜头拍到，一行动作可以拆成几个镜头。不拍任何一行的镜头（反应、空镜）lines 留空，写 scene（第几场）。\n- type：scene_change 换场（每场第一个镜头）；same_scene_cut 同场切镜（换角度或景别，出新关键帧）；continuous 连续动作（接着前面某个镜头的动作拍，不出新关键帧，continues 写接第几个镜头，从 1 数；中间隔着插入镜头时跳过它，接它前面那个）。\n- framing：wide 远景、medium 中景、close 近景、closeup 特写。move：static 固定、push 缓推、follow 跟拍、pan 摇。\n- picture 写首帧的画面描述：人物在哪、在做什么、什么表情，光线，镜头里看到什么，具体到能直接画出来；summary 写十个字左右的摘要。continuous 的 note 写一句为什么接那个镜头。\n- seconds：每个镜头都写时长（秒），留够表演和动作的时间（停顿、反应、走位）；有对白的镜头不会短于配音，只说台词不演就写个估计。\n- refs 写用到的素材 id，只能从 [素材] 里选：出镜的角色、场景、道具、画面文字，说话角色的音色。\n- audio：native（视频模型直接出声音和口型）、tts（先配音再对口型，画外音、长台词用这个）、none（不出人声）。sound 写环境声和音效。\n- blocking 是俯视站位图，镜头朝图的上方看：人物、道具、地标各一项（label、kind：character / prop / landmark，x、y 在 0 到 1 之间），机位一项（kind：camera）。\n- 镜头契约（下游每一步都照它画、照它演、照它检查）：\n  - kind：performance 表演、action 动作、dialogue 对白（有人在画面里开口说话）、insert 插入（画面里没有人：静物、空镜）。beats 写这个镜头最多几个动作：insert 写 0（只许微动：光、一滴水、镜头极轻的漂移，不发生任何事）；performance、dialogue 1–2；action 2–4。\n  - start / end：镜头开始时、结束时人和东西的状态，[{\"subject\": \"家门\", \"state\": \"关着\"}]。picture 画的就是 start。一个镜头里同一个状态变化只发生一次，不许撤销再重做（开门 → 关门 → 再开门）；犹豫要演出来（手搭门把、停住、吸气），不是重复动作。continuous 的 start 可以不写（接它接的那个镜头的 end）。\n  - props：这个镜头里每个道具的状态，[{\"asset_id\": \"note\", \"state\": \"贴在伞柄上，有字，边角湿\"}]。状态是摆好的，不在镜头里发生，除非这个镜头的动作就是这个变化。\n  - delivery：每句台词怎么说，{\"L3\": \"dialogue\"}：dialogue 对白（嘴动、对口型）、offscreen 画外（说话的人不在画面里）、inner 内心独白（嘴闭着；剧本里标「内心独白」的都是 inner）。\n- 穿过门口（进门、出门）单独一个镜头：这个镜头只拍推门走过门口；进来以后转身、关门、靠在门上另起一个镜头（same_scene_cut 或 continuous）。一个镜头最多三个动作，多了就拆。\n- 有 [上一版的分镜检查] 时，这一版要把里面说的问题改掉（拆镜头、改开始结束状态、改画面），不要原样再出一遍。\n- difficulty：1 普通对话、2 同一空间多机位、3 复杂运镜、4 身体动作和接触、5 物体碰撞和破坏、6 特效。每个镜头只安排一个主要动作，写清至少两个空间关系，遵守 180 度轴线。\n\n[输出 JSON]\n{\"shots\": [{\"scene\": 1, \"lines\": [1], \"type\": \"scene_change\", \"framing\": \"wide\", \"move\": \"push\", \"seconds\": 4, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"hall\"], \"audio\": \"native\", \"sound\": \"雨声、脚步\", \"blocking\": [{\"label\": \"林晚\", \"kind\": \"character\", \"x\": 0.6, \"y\": 0.4}, {\"label\": \"\", \"kind\": \"camera\", \"x\": 0.5, \"y\": 0.9}], \"difficulty\": 1, \"kind\": \"performance\", \"beats\": 1, \"start\": [{\"subject\": \"林晚\", \"state\": \"在楼梯口，抱着画板袋\"}], \"end\": [{\"subject\": \"林晚\", \"state\": \"走到六楼门口\"}], \"props\": [], \"delivery\": {}}, {\"scene\": 2, \"lines\": [9], \"type\": \"continuous\", \"continues\": 6, \"note\": \"中间的第 7 个是插入镜头，所以接第 6 个\", \"framing\": \"medium\", \"move\": \"static\", \"seconds\": 6, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"room\"], \"audio\": \"native\", \"blocking\": [], \"difficulty\": 1, \"kind\": \"performance\", \"beats\": 2, \"end\": [{\"subject\": \"家门\", \"state\": \"开着\"}], \"props\": [], \"delivery\": {\"L9\": \"inner\"}}]}\n\n# 目标模型：deepseek/v4-pro",
         "compiled_overridden": false,
         "model_key": "deepseek/v4-pro",
         "where": "api",
@@ -1256,14 +1673,14 @@
     ],
     "prompt": {
       "intent": "每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。",
-      "compiled": "你是竖屏短剧的分镜师：把一集剧本拆成镜头。下游按你写的画面描述出每个镜头的首帧（关键帧），再从关键帧生成视频。\n\n[规则]\n每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。\n- [剧本] 每行前面是 L 号，lines 写这个镜头拍哪几行。每句对白（「名字：」那种行）只能放在一个镜头里；画外音叠在它所在的动作镜头上，和那行动作放在同一个镜头；每行动作（△）都要有镜头拍到，一行动作可以拆成几个镜头。不拍任何一行的镜头（反应、空镜）lines 留空，写 scene（第几场）。\n- type：scene_change 换场（每场第一个镜头）；same_scene_cut 同场切镜（换角度或景别，出新关键帧）；continuous 连续动作（接着前面某个镜头的动作拍，不出新关键帧，continues 写接第几个镜头，从 1 数；中间隔着插入镜头时跳过它，接它前面那个）。\n- framing：wide 远景、medium 中景、close 近景、closeup 特写。move：static 固定、push 缓推、follow 跟拍、pan 摇。\n- picture 写首帧的画面描述：人物在哪、在做什么、什么表情，光线，镜头里看到什么，具体到能直接画出来；summary 写十个字左右的摘要。continuous 的 note 写一句为什么接那个镜头。\n- seconds：每个镜头都写时长（秒），留够表演和动作的时间（停顿、反应、走位）；有对白的镜头不会短于配音，只说台词不演就写个估计。\n- refs 写用到的素材 id，只能从 [素材] 里选：出镜的角色、场景、道具、画面文字，说话角色的音色。\n- audio：native（视频模型直接出声音和口型）、tts（先配音再对口型，画外音、长台词用这个）、none（不出人声）。sound 写环境声和音效。\n- blocking 是俯视站位图，镜头朝图的上方看：人物、道具、地标各一项（label、kind：character / prop / landmark，x、y 在 0 到 1 之间），机位一项（kind：camera）。\n- difficulty：1 普通对话、2 同一空间多机位、3 复杂运镜、4 身体动作和接触、5 物体碰撞和破坏、6 特效。每个镜头只安排一个主要动作，写清至少两个空间关系，遵守 180 度轴线。\n\n[输出 JSON]\n{\"shots\": [{\"scene\": 1, \"lines\": [1], \"type\": \"scene_change\", \"framing\": \"wide\", \"move\": \"push\", \"seconds\": 4, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"hall\"], \"audio\": \"native\", \"sound\": \"雨声、脚步\", \"blocking\": [{\"label\": \"林晚\", \"kind\": \"character\", \"x\": 0.6, \"y\": 0.4}, {\"label\": \"\", \"kind\": \"camera\", \"x\": 0.5, \"y\": 0.9}], \"difficulty\": 1}, {\"scene\": 2, \"lines\": [9], \"type\": \"continuous\", \"continues\": 6, \"note\": \"中间的第 7 个是插入镜头，所以接第 6 个\", \"framing\": \"medium\", \"move\": \"static\", \"seconds\": 6, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"room\"], \"audio\": \"native\", \"blocking\": [], \"difficulty\": 1}]}\n\n# 目标模型：deepseek/v4-pro",
+      "compiled": "你是竖屏短剧的分镜师：把一集剧本拆成镜头。下游按你写的画面描述出每个镜头的首帧（关键帧），再从关键帧生成视频。\n\n[规则]\n每个镜头 2–6 秒。连续动作接上一镜尾帧；同场切镜和换场用新关键帧。台词镜头给近景，插入镜头（手机、纸条）用特写。卡点镜头放最后。\n- [剧本] 每行前面是 L 号，lines 写这个镜头拍哪几行。每句对白（「名字：」那种行）只能放在一个镜头里；画外音叠在它所在的动作镜头上，和那行动作放在同一个镜头；每行动作（△）都要有镜头拍到，一行动作可以拆成几个镜头。不拍任何一行的镜头（反应、空镜）lines 留空，写 scene（第几场）。\n- type：scene_change 换场（每场第一个镜头）；same_scene_cut 同场切镜（换角度或景别，出新关键帧）；continuous 连续动作（接着前面某个镜头的动作拍，不出新关键帧，continues 写接第几个镜头，从 1 数；中间隔着插入镜头时跳过它，接它前面那个）。\n- framing：wide 远景、medium 中景、close 近景、closeup 特写。move：static 固定、push 缓推、follow 跟拍、pan 摇。\n- picture 写首帧的画面描述：人物在哪、在做什么、什么表情，光线，镜头里看到什么，具体到能直接画出来；summary 写十个字左右的摘要。continuous 的 note 写一句为什么接那个镜头。\n- seconds：每个镜头都写时长（秒），留够表演和动作的时间（停顿、反应、走位）；有对白的镜头不会短于配音，只说台词不演就写个估计。\n- refs 写用到的素材 id，只能从 [素材] 里选：出镜的角色、场景、道具、画面文字，说话角色的音色。\n- audio：native（视频模型直接出声音和口型）、tts（先配音再对口型，画外音、长台词用这个）、none（不出人声）。sound 写环境声和音效。\n- blocking 是俯视站位图，镜头朝图的上方看：人物、道具、地标各一项（label、kind：character / prop / landmark，x、y 在 0 到 1 之间），机位一项（kind：camera）。\n- 镜头契约（下游每一步都照它画、照它演、照它检查）：\n  - kind：performance 表演、action 动作、dialogue 对白（有人在画面里开口说话）、insert 插入（画面里没有人：静物、空镜）。beats 写这个镜头最多几个动作：insert 写 0（只许微动：光、一滴水、镜头极轻的漂移，不发生任何事）；performance、dialogue 1–2；action 2–4。\n  - start / end：镜头开始时、结束时人和东西的状态，[{\"subject\": \"家门\", \"state\": \"关着\"}]。picture 画的就是 start。一个镜头里同一个状态变化只发生一次，不许撤销再重做（开门 → 关门 → 再开门）；犹豫要演出来（手搭门把、停住、吸气），不是重复动作。continuous 的 start 可以不写（接它接的那个镜头的 end）。\n  - props：这个镜头里每个道具的状态，[{\"asset_id\": \"note\", \"state\": \"贴在伞柄上，有字，边角湿\"}]。状态是摆好的，不在镜头里发生，除非这个镜头的动作就是这个变化。\n  - delivery：每句台词怎么说，{\"L3\": \"dialogue\"}：dialogue 对白（嘴动、对口型）、offscreen 画外（说话的人不在画面里）、inner 内心独白（嘴闭着；剧本里标「内心独白」的都是 inner）。\n- 穿过门口（进门、出门）单独一个镜头：这个镜头只拍推门走过门口；进来以后转身、关门、靠在门上另起一个镜头（same_scene_cut 或 continuous）。一个镜头最多三个动作，多了就拆。\n- 有 [上一版的分镜检查] 时，这一版要把里面说的问题改掉（拆镜头、改开始结束状态、改画面），不要原样再出一遍。\n- difficulty：1 普通对话、2 同一空间多机位、3 复杂运镜、4 身体动作和接触、5 物体碰撞和破坏、6 特效。每个镜头只安排一个主要动作，写清至少两个空间关系，遵守 180 度轴线。\n\n[输出 JSON]\n{\"shots\": [{\"scene\": 1, \"lines\": [1], \"type\": \"scene_change\", \"framing\": \"wide\", \"move\": \"push\", \"seconds\": 4, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"hall\"], \"audio\": \"native\", \"sound\": \"雨声、脚步\", \"blocking\": [{\"label\": \"林晚\", \"kind\": \"character\", \"x\": 0.6, \"y\": 0.4}, {\"label\": \"\", \"kind\": \"camera\", \"x\": 0.5, \"y\": 0.9}], \"difficulty\": 1, \"kind\": \"performance\", \"beats\": 1, \"start\": [{\"subject\": \"林晚\", \"state\": \"在楼梯口，抱着画板袋\"}], \"end\": [{\"subject\": \"林晚\", \"state\": \"走到六楼门口\"}], \"props\": [], \"delivery\": {}}, {\"scene\": 2, \"lines\": [9], \"type\": \"continuous\", \"continues\": 6, \"note\": \"中间的第 7 个是插入镜头，所以接第 6 个\", \"framing\": \"medium\", \"move\": \"static\", \"seconds\": 6, \"picture\": \"……\", \"summary\": \"……\", \"refs\": [\"linwan\", \"room\"], \"audio\": \"native\", \"blocking\": [], \"difficulty\": 1, \"kind\": \"performance\", \"beats\": 2, \"end\": [{\"subject\": \"家门\", \"state\": \"开着\"}], \"props\": [], \"delivery\": {\"L9\": \"inner\"}}]}\n\n# 目标模型：deepseek/v4-pro",
       "compiled_overridden": false,
       "model_key": "deepseek/v4-pro"
     },
     "estimate": {
       "model_key": "deepseek/v4-pro",
       "where": "api",
-      "cost_usd": 0.0254,
+      "cost_usd": 0.0263,
       "seconds": 0.0,
       "priced": true,
       "final_usd": null
@@ -1315,6 +1732,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1329,6 +1747,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1343,20 +1762,22 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/be/be99cadf0834753816aa5bb15b1d8aadb22def8a28e421da7e833fd568156d70",
-              "sha256": "be99cadf0834753816aa5bb15b1d8aadb22def8a28e421da7e833fd568156d70",
+              "path": "blobs/sha256/5b/5b79152c7dbe7b2f63d5fdd96dde11463f6b23d91b4989854b14b99d4cda9788",
+              "sha256": "5b79152c7dbe7b2f63d5fdd96dde11463f6b23d91b4989854b14b99d4cda9788",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1410,20 +1831,22 @@
               "h": 1920,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/04/04f4b28fc8c59825af4af0a4b20081d3589d7a0032b8b46663baab33fa0fa0d6",
-              "sha256": "04f4b28fc8c59825af4af0a4b20081d3589d7a0032b8b46663baab33fa0fa0d6",
+              "path": "blobs/sha256/1b/1b5e3775e5469a761c3e3bcdb5d5f9caca76e8701e9ad89bb9af719e921c2069",
+              "sha256": "1b5e3775e5469a761c3e3bcdb5d5f9caca76e8701e9ad89bb9af719e921c2069",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1464,7 +1887,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0112,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -1519,6 +1942,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1533,6 +1957,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1547,20 +1972,22 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/e1/e17ff89fb159ce9035b07bad63c188a4f1fb277eef5175ef2176ac2cd40a3b1b",
-              "sha256": "e17ff89fb159ce9035b07bad63c188a4f1fb277eef5175ef2176ac2cd40a3b1b",
+              "path": "blobs/sha256/f5/f5572245d49341c2e69bdd8aca4fe31e1aa8da5abcf4ebbe6872e35344575824",
+              "sha256": "f5572245d49341c2e69bdd8aca4fe31e1aa8da5abcf4ebbe6872e35344575824",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1615,20 +2042,22 @@
               "h": 1920,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/29/295c4aea26f0dbe39cf4b92ac725f3274ada4c4feeea2879fb2652eac4296549",
-              "sha256": "295c4aea26f0dbe39cf4b92ac725f3274ada4c4feeea2879fb2652eac4296549",
+              "path": "blobs/sha256/2d/2def49688c4dddb51b19aecee53cbea8b15a0e92192921aa04b774256b6116d2",
+              "sha256": "2def49688c4dddb51b19aecee53cbea8b15a0e92192921aa04b774256b6116d2",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1669,7 +2098,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0116,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -1722,6 +2151,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1736,6 +2166,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1750,20 +2181,22 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/1b/1b707b318fb23c5236a97a29543f6b6e0ee76684c9b24966419008cde49400c7",
-              "sha256": "1b707b318fb23c5236a97a29543f6b6e0ee76684c9b24966419008cde49400c7",
+              "path": "blobs/sha256/b4/b4f8f0ade3f746e48eee4e18cbce3d66500a5971d00e046b72eb1f699c0e85db",
+              "sha256": "b4f8f0ade3f746e48eee4e18cbce3d66500a5971d00e046b72eb1f699c0e85db",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1816,20 +2249,22 @@
               "h": 1920,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/77/77475d18b296409fe3562bb5ce5b5d7c5b21d77f32414d860bb4493cce354630",
-              "sha256": "77475d18b296409fe3562bb5ce5b5d7c5b21d77f32414d860bb4493cce354630",
+              "path": "blobs/sha256/4d/4d0fedde7750959a76fc74996b593a890b7dc4572f7b9bef72953cf2c1f77a2d",
+              "sha256": "4d0fedde7750959a76fc74996b593a890b7dc4572f7b9bef72953cf2c1f77a2d",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1870,7 +2305,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0114,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -1911,7 +2346,8 @@
             "refs": [
               "林晚",
               "老小区楼道 · 夜",
-              "黄色便利贴"
+              "黄色便利贴",
+              "红色长柄伞"
             ]
           },
           "files": [
@@ -1925,6 +2361,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1939,6 +2376,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -1953,26 +2391,28 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/9b/9b7bd7d09a1834dc5d730e2633154a71d33af3d77116a213b053ba213680777c",
-              "sha256": "9b7bd7d09a1834dc5d730e2633154a71d33af3d77116a213b053ba213680777c",
+              "path": "blobs/sha256/cd/cd680da560f632d750dd148b72f5abf01775b36cd00f8d94f2d92b3abf240b5b",
+              "sha256": "cd680da560f632d750dd148b72f5abf01775b36cd00f8d94f2d92b3abf240b5b",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             }
           ],
-          "content_hash": "sha256:9107280f7b49247ee249741b6b96146ca081f421ba84e07196a1608a478e96a1",
+          "content_hash": "sha256:7a9c936974042ed9d8a2f6af2285ffb991792ab68a777952eec88c83417ae7b8",
           "intent": "林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。",
           "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
@@ -2003,7 +2443,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0117,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2039,8 +2479,8 @@
             ],
             "aspect": "9:16",
             "refs": [
-              "林晚",
-              "黄色便利贴"
+              "黄色便利贴",
+              "红色长柄伞"
             ]
           },
           "files": [
@@ -2054,6 +2494,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -2068,6 +2509,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -2082,26 +2524,28 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/f0/f0ff4921c323447bdb579720e5d0a585d491202fed2a8414f8e59598741b89a3",
-              "sha256": "f0ff4921c323447bdb579720e5d0a585d491202fed2a8414f8e59598741b89a3",
+              "path": "blobs/sha256/c9/c98b444132358f312ed748fcb5df27d4bf21fe2f279529a5b2181e97321d8da1",
+              "sha256": "c98b444132358f312ed748fcb5df27d4bf21fe2f279529a5b2181e97321d8da1",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             }
           ],
-          "content_hash": "sha256:8d2b25e01a5560f5b766f90e6a12c5a1eaddf2f744b5ef8f82365ebcd25b99d1",
+          "content_hash": "sha256:1d402ef1d7b11bf41a4319f2288c05420ac759420157dbb2ce9c06968f863e24",
           "intent": "她的指尖停在便利贴上，下意识摸左手腕的旧发圈。",
           "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 她的指尖停在便利贴上，下意识摸左手腕的旧发圈。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
@@ -2132,7 +2576,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0118,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2169,6 +2613,7 @@
             "aspect": "9:16",
             "refs": [
               "林晚",
+              "门那边：老小区楼道 · 夜",
               "红色长柄伞"
             ]
           },
@@ -2183,6 +2628,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -2197,6 +2643,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -2211,26 +2658,28 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/fd/fd7ce09449e1cdb8df491f8d47667fcb4dbd06839af858d83336e433c1c69b33",
-              "sha256": "fd7ce09449e1cdb8df491f8d47667fcb4dbd06839af858d83336e433c1c69b33",
+              "path": "blobs/sha256/84/84b33cbf637657385b9a75dbb4c56cb8f1f337f56a32d104e46450d36b4c5edd",
+              "sha256": "84b33cbf637657385b9a75dbb4c56cb8f1f337f56a32d104e46450d36b4c5edd",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             }
           ],
-          "content_hash": "sha256:9e2e1f7f232e25b3eb2bbf98c897437ed7bc4afd2e150fdccf4357463dde79ac",
+          "content_hash": "sha256:8eac68f14bfb7c8f0de0a44a4715f08182c7cfd708a38d526c86e478a308c24c",
           "intent": "出租屋内，她进门、关门，后背抵着门，台灯暖光。",
           "compiled": "[任务] 短剧关键帧：这个镜头的第一帧，下游从它生成视频\n[画面] 出租屋内，她进门、关门，后背抵着门，台灯暖光。\n[风格] 写实电影感，光线自然，景深和真实镜头一样\n[约束] 一张完整的单幅画面，不要分格或拼图；人物的长相、发型和服装与参考图一致；画面里不要有字幕；除了[画面文字]要求的字，不要出现任何文字\n\n# 目标模型：comfy/flux3-klein",
           "compiled_overridden": false,
@@ -2261,7 +2710,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0115,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2312,6 +2761,7 @@
               "h": 1366,
               "idx": 0,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -2326,6 +2776,7 @@
               "h": 1366,
               "idx": 1,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -2340,20 +2791,22 @@
               "h": 1366,
               "idx": 2,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
             },
             {
               "role": "prompt",
-              "path": "blobs/sha256/a7/a733e9d5d1ae4dab7a67b04c8f3345d13cde63b747ba0aa1c2bd8421d0cf6f35",
-              "sha256": "a733e9d5d1ae4dab7a67b04c8f3345d13cde63b747ba0aa1c2bd8421d0cf6f35",
+              "path": "blobs/sha256/fc/fcb35d54958494aa9f9584f3c3569d9d53b1380e9b0d9874a2c31be0cf4ea53f",
+              "sha256": "fcb35d54958494aa9f9584f3c3569d9d53b1380e9b0d9874a2c31be0cf4ea53f",
               "mime": "text/plain; charset=utf-8",
               "duration_s": null,
               "w": null,
               "h": null,
               "idx": null,
               "view": null,
+              "purpose": null,
               "line": null,
               "emotion": null,
               "waveform": null
@@ -2390,7 +2843,7 @@
       "estimate": {
         "model_key": "comfy/flux3-klein",
         "where": "local",
-        "cost_usd": 0.0,
+        "cost_usd": 0.0113,
         "seconds": 0.0,
         "priced": true,
         "final_usd": null
@@ -2400,5 +2853,62 @@
       "settings": null,
       "retired": false
     }
-  ]
+  ],
+  "checks": {
+    "issues": [
+      {
+        "shot_id": "demo-shot-1-06",
+        "label": "1-06",
+        "code": "lines_dropped",
+        "params": {
+          "words": "林晚把伞靠回墙边、进屋、关门"
+        },
+        "source": "rule",
+        "text": ""
+      },
+      {
+        "shot_id": "demo-shot-1-06",
+        "label": "1-06",
+        "code": "crowded",
+        "params": {
+          "actions": "她进门、关门"
+        },
+        "source": "rule",
+        "text": ""
+      },
+      {
+        "shot_id": "demo-shot-1-08",
+        "label": "1-08",
+        "code": "lines_dropped",
+        "params": {
+          "words": "拉开 → 关上 → 拉开"
+        },
+        "source": "rule",
+        "text": ""
+      },
+      {
+        "shot_id": "demo-shot-1-08",
+        "label": "1-08",
+        "code": "undone",
+        "params": {
+          "steps": "拉开 → 关上 → 拉开"
+        },
+        "source": "rule",
+        "text": ""
+      },
+      {
+        "shot_id": "demo-shot-1-08",
+        "label": "1-08",
+        "code": "replay",
+        "params": {
+          "other": "1-06",
+          "framing": "medium"
+        },
+        "source": "rule",
+        "text": ""
+      }
+    ],
+    "llm_product_id": "demo-p-shot-check-e1",
+    "llm_state": "none"
+  }
 }

@@ -10,11 +10,16 @@ Checked against platform.minimax.io / platform.minimax.cn on 2026-10-21 (DECISIO
   ``voice_id``, ``emotion`` and ``vol`` (``config/voice.yaml``); ``whisper`` exists on 2.6 only.
 - ``kind="voice_design"``: ``POST /voice_design`` with the description as ``prompt`` and the
   lines as ``preview_text`` (≤ 500 characters); answers a ``voice_id`` and a hex trial clip.
+- ``kind="voice_clone"`` (M5.5, checked 2026-11-14): the sample (blob ``params.sample``) goes up
+  by ``POST /files/upload`` (multipart, ``purpose=voice_clone``; mp3 / m4a / wav, 10 s to 5 min,
+  ≤ 20 MB), then ``POST /voice_clone {file_id, voice_id}`` registers the voice under our own id
+  (8–256 characters, a letter first; letters, digits, ``-``, ``_``). No preview text, so no
+  trial clip and nothing billed here. MiniMax deletes a cloned voice not used within 7 days.
 - Errors come back as HTTP 200 with ``base_resp.status_code`` ≠ 0; rate limits and timeouts are
   retried.
-- Billing: T2A by ``extra_info.usage_characters``; the $3 design fee when a designed voice is
-  first used (``extra_info.usage_voice_count``), not when it is designed; the design's trial clip
-  per character (``extras.design_preview_char``).
+- Billing: T2A by ``extra_info.usage_characters``; the $3 design fee (a cloned voice's $1.5,
+  ``params.cloned``) when the voice is first used (``extra_info.usage_voice_count``), not when it
+  is designed or cloned; the design's trial clip per character (``extras.design_preview_char``).
 """
 
 from __future__ import annotations
@@ -24,6 +29,7 @@ from typing import Any
 
 import httpx
 
+from drama_series_agent.core.storage import BlobStore
 from drama_series_agent.modelhub.adapters.base import (
     CallContext,
     Estimate,
@@ -55,9 +61,15 @@ ERRORS: dict[int, tuple[str, bool]] = {
     1041: ("rate_limited", True),
     1042: ("bad_request", False),
     2013: ("bad_request", False),
+    1043: ("voice_clone_rejected", False),  # the sample's speech check failed
+    2037: ("voice_sample_length", False),  # too short or too long
+    2038: ("voice_clone_forbidden", False),  # the account must be verified first
+    2039: ("voice_exists", False),
     2042: ("voice_not_found", False),
     2045: ("rate_limited", True),
     2049: ("auth_failed", False),
+    2051: ("voice_sample_noisy", False),
+    2052: ("voice_slots_full", False),
     2054: ("voice_not_found", False),
     2056: ("rate_limited", False),  # the 5-hour usage window: waiting seconds will not help
 }
@@ -70,6 +82,20 @@ def billed_chars(text: str) -> int:
     return sum(1 if ord(ch) < 128 else 2 for ch in text)
 
 
+def fee_name(params: dict[str, Any]) -> str:
+    """Which flat fee a voice's first synthesis bills: a clone's or a design's."""
+    return "voice_clone" if params.get("cloned") else "voice_design"
+
+
+def voice_fee(params: dict[str, Any]) -> dict[str, int] | None:
+    """``charge_design``: this synthesis is the voice's first, which MiniMax bills its fee on."""
+    return {fee_name(params): 1} if params.get("charge_design") else None
+
+
+def _suffix(mime: str) -> str:
+    return {"audio/wav": ".wav", "audio/mpeg": ".mp3", "audio/mp4": ".m4a"}.get(mime, "")
+
+
 def _mime(data: bytes) -> str:
     if data[:4] == b"RIFF":
         return "audio/wav"
@@ -77,6 +103,8 @@ def _mime(data: bytes) -> str:
         return "audio/flac"
     if data[:3] == b"ID3" or data[:2] in (b"\xff\xfb", b"\xff\xf3", b"\xff\xf2"):
         return "audio/mpeg"
+    if data[4:8] == b"ftyp":
+        return "audio/mp4"
     return "application/octet-stream"
 
 
@@ -100,10 +128,12 @@ class MiniMaxSpeechAdapter:
         max_retries: int = 2,
         backoff_s: float = 2.0,
         request_timeout_s: float = 120.0,
-        **_: Any,  # ``store``: speech needs no reference files
+        store: BlobStore | None = None,  # a clone's sample
+        **_: Any,
     ) -> None:
         self.spec = spec
         self._get_key = get_key
+        self._store = store
         self._base_url = normalize_base_url(spec.base_url or "")
         self._transport = transport
         self.max_retries = max_retries
@@ -121,9 +151,10 @@ class MiniMaxSpeechAdapter:
         if req.kind == "voice_design":
             n = billed_chars(text[:PREVIEW_MAX])
             usage = Usage(calls={"design_preview_char": n})
+        elif req.kind == "voice_clone":
+            usage = Usage()
         else:
-            design = {"voice_design": 1} if req.params.get("charge_design") else None
-            usage = Usage(chars=billed_chars(text), calls=design)
+            usage = Usage(chars=billed_chars(text), calls=voice_fee(req.params))
         return Estimate(
             cost_usd=cost_usd(self.spec.pricing, usage),
             seconds=5.0 + len(text) * 0.1,
@@ -133,6 +164,8 @@ class MiniMaxSpeechAdapter:
     async def run(self, req: ModelRequest, ctx: CallContext) -> ModelResult:
         if req.kind == "voice_design":
             return await self._design(req)
+        if req.kind == "voice_clone":
+            return await self._clone(req)
         return await self._speak(req)
 
     async def health(self) -> Health:
@@ -174,7 +207,7 @@ class MiniMaxSpeechAdapter:
             usage=Usage(
                 chars=int(extra.get("usage_characters") or billed_chars(req.prompt or "")),
                 output_seconds=duration,
-                calls={"voice_design": voices} if voices else None,
+                calls={fee_name(req.params): voices} if voices else None,
             ),
             raw={"trace_id": data.get("trace_id")},
         )
@@ -194,6 +227,32 @@ class MiniMaxSpeechAdapter:
             raw={"trace_id": data.get("trace_id")},
         )
 
+    async def _clone(self, req: ModelRequest) -> ModelResult:
+        voice_id = str(req.params.get("voice_id") or "")
+        sample = str(req.params.get("sample") or "")
+        if not voice_id or not sample or self._store is None:
+            raise ModelError("bad_request", "a clone needs its voice_id and sample")
+        try:
+            data = self._store.path_for(sample).read_bytes()
+        except (OSError, ValueError) as exc:
+            raise ModelError("voice_sample_unreadable", f"{sample[:12]}: {exc}") from exc
+        mime = _mime(data)
+        uploaded = await self._call(
+            "/files/upload",
+            data={"purpose": "voice_clone"},
+            files={"file": ("sample" + _suffix(mime), data, mime)},
+        )
+        file_id = (uploaded.get("file") or {}).get("file_id")
+        if not file_id:
+            raise ModelError("invalid_response", "no file_id in the upload answer")
+        body: dict[str, Any] = {"file_id": int(file_id), "voice_id": voice_id}
+        body |= dict(req.params.get("clone") or {})  # need_noise_reduction …
+        answer = await self._post("/voice_clone", body)
+        sensitive = answer.get("input_sensitive")
+        if isinstance(sensitive, dict) and int(sensitive.get("type") or 0) != 0:
+            raise ModelError("content_blocked", f"input_sensitive {sensitive.get('type')}")
+        return ModelResult(json={"voice_id": voice_id}, raw={"trace_id": answer.get("trace_id")})
+
     # ------------------------------------------------------------------ internals
 
     def _model_id(self) -> str:
@@ -210,10 +269,14 @@ class MiniMaxSpeechAdapter:
         api_key = self._get_key(name) if name else None
         if not api_key:
             raise ModelError("missing_key", name or self.key)
-        return {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+        return {"Authorization": f"Bearer {api_key}"}
 
     async def _post(self, path: str, body: dict[str, Any]) -> dict[str, Any]:
-        """One call; a ``base_resp`` error that is worth retrying is retried like a 429."""
+        return await self._call(path, json=body)
+
+    async def _call(self, path: str, **content: Any) -> dict[str, Any]:
+        """One call (``json=``, or multipart ``data=`` / ``files=``); a ``base_resp`` error
+        that is worth retrying is retried like a 429."""
         if not self._base_url:
             raise ModelError("base_url_missing", self.key)
         headers = self._headers()
@@ -226,10 +289,10 @@ class MiniMaxSpeechAdapter:
                     client,
                     "POST",
                     path,
-                    json=body,
                     headers=headers,
                     max_retries=self.max_retries,
                     backoff_s=self.backoff_s,
+                    **content,
                 )
                 try:
                     data: dict[str, Any] = resp.json()

@@ -1,0 +1,109 @@
+M5 local smoke · 2026-11-10 17:18
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 21020 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== revise: 按分镜检查改分镜（PATCH /shots，和分镜页一样）
+   1-01: intent, contract（200）
+   1-02: contract（200）
+   1-04: framing（200）
+   1-06: intent, asset_ids, contract（200）
+   1-09: intent, contract（200）
+   1-10: intent, contract（200）
+   1-01 scene_change wide action/2 | 开始 林晚在楼梯口，抱着画板袋，湿了半边 | 结束 林晚停在六楼楼梯口，抬头看见门边的伞，愣住 | 道具 — | 台词 —
+      画面：楼道全景，声控灯忽明忽暗，林晚抱着画板袋走上六楼，在楼梯口停步，抬头看见门边靠着一把红伞，愣住。
+   1-02 same_scene_cut medium performance/1 | 开始 林晚走到门口，停下看着伞 | 结束 林晚盯着伞，表情疑惑 | 道具 umbrella:靠墙，伞柄贴便利贴；note:贴在伞柄上 | 台词 —
+      画面：门口：红色长柄伞斜靠在墙边，伞柄上贴着黄色便利贴。
+   1-03 same_scene_cut closeup insert/0 | 开始 便利贴贴在伞柄上，字迹清晰 | 结束 便利贴不变 | 道具 note:贴在伞柄上，字迹歪扭 | 台词 —
+      画面：便利贴特写，歪扭的手写字，边角被雨打湿。
+   1-04 same_scene_cut close dialogue/1 | 开始 林晚看着便利贴，愣住 | 结束 林晚低声说出名字，表情复杂 | 道具 — | 台词 {'demo-b5': 'dialogue'}
+      画面：林晚低头看着便利贴，愣住，低声说话。声控灯在她脸上一明一暗。
+   1-05 same_scene_cut closeup action/2 | 开始 林晚的手停在便利贴上方，尚未触碰 | 结束 林晚的手摸到左手腕旧发圈 | 道具 note:贴在伞柄上；band:戴在林晚左手腕 | 台词 —
+      画面：她的指尖停在便利贴上，下意识摸左手腕的旧发圈。
+   1-06 scene_change wide action/2 | 开始 林晚站在门外，伞仍靠在门边墙上 | 结束 林晚在屋里，背靠着关上的门 | 道具 — | 台词 —
+      画面：出租屋内，林晚空着手进门、反手关上门，后背抵着门，台灯暖光。
+   1-07 same_scene_cut closeup performance/1 | 开始 手机屏幕亮着，显示 23:52 | 结束 手机屏幕仍亮着 | 道具 phone:屏幕显示 23:52 | 台词 —
+      画面：手机亮屏，锁屏时间 23:52，没有新消息。
+   1-08 continuous medium dialogue/1 (接上一镜) | 开始 林晚在屋里，背靠着关上的门 | 结束 林晚仍靠着门，表情复杂 | 道具 phone:屏幕亮着，握在手中 | 台词 {'demo-b10': 'inner'}
+      画面：林晚背靠着门，手机屏幕光照亮她的脸，她看着手机，表情复杂，内心独白。画面中景，光线微弱。
+   1-09 same_scene_cut wide action/2 | 开始 林晚站在门后，手握着门把 | 结束 林晚拉开门，站在门口；家门开着 | 道具 — | 台词 —
+      画面：林晚从门边站直，转身握住门把，停了两秒，拉开门。画面中景，她表情纠结。
+   1-10 same_scene_cut medium action/2 | 开始 林晚站在门口；红伞靠在门外墙边 | 结束 林晚拿着伞，直起身 | 道具 umbrella:靠在门外墙边，被林晚拿起 | 台词 —
+      画面：门外，林晚站在门口，弯腰拿起靠在门外墙边的红色长柄伞，直起身，表情坚定。画面中景，光线从屋内照出。
+== plancheck: 分镜检查（规则 + DeepSeek）
+   1 job(s) in 2.0 s, GPU memory peak 21020 MiB
+   call deepseek/v4.1-flash [api] success 1.6 s audio=Nones
+   模型检查 stale，4 处提示
+   1-01 state_jump [llm] 开始抱着画板袋、还在楼梯口，结束已到门口；可1-02开始又站在门口看伞，位置接得上，但1-01内走完楼梯到门口最多2个动作，容易拍成瞬间位移。改成1-01只走到六楼楼梯口停步抬头，看到伞愣住；把“走到门口”留给1-02开始。
+   1-06 state_jump [llm] 开始写“拿着伞”，但1-05结束林晚只是摸到发圈，伞仍在墙边，人物手里并未拿伞。改成开始为“林晚站在门口，伞仍靠墙”，动作是拿起伞靠回墙边→进屋→关门。
+   1-09 undone [rule] {'steps': '拉开 → 关上 → 拉开'}
+   1-10 state_jump [llm] 1-09结束林晚已拉开门站在门口，1-10开始又写“俯身”拿伞，但1-06伞已靠回墙边、屋内墙边，门外并没有伞。应明确伞的位置：要么1-06把伞留在门外墙边没拿进屋，要么1-10改成回身从屋内墙边拿伞，别让伞凭空出现在门外。
+== kf: 关键帧重画（本地草稿）并检查（Gemini + OCR）：1-01、1-02、1-04、1-06、1-09、1-10
+   6 job(s) in 237.9 s, GPU memory peak 24935 MiB
+   call comfy/flux3-klein [local] success 24.4 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.3 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call comfy/flux3-klein [local] success 41.9 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call local/rapidocr [local] success 1.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call comfy/flux3-klein [local] success 42.7 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.3 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call comfy/flux3-klein [local] success 25.3 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call comfy/flux3-klein [local] success 24.7 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call comfy/flux3-klein [local] success 42.4 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.8 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.8 s audio=Nones
+   model comfy/flux3-klein [local], files: kf-1-01-candidate-0.png (928x1664), kf-1-01-candidate-1.png (928x1664), kf-1-01-candidate-2.png (928x1664)
+   1-01 #0: start ✗ 林晚没有抱着画板袋，而是拿着一个画本，且衣服没有明显的湿痕
+   1-01 #1: start ✗ 林晚手上抱的是画板，而不是画板袋；衣服没有明显的湿润痕迹
+   1-01 #2: 没有检查
+   1-01: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-02-candidate-0.png (928x1664), kf-1-02-candidate-1.png (928x1664), kf-1-02-candidate-2.png (928x1664)
+   1-02 #0: start ✓，scale ✓，text ✗ 便利贴上的文字与要求不符，且字迹潦草模糊，无法辨认，ocr ✗ 推个复现后，挚作十二点。
+   1-02 #1: start ✓，scale ✗ 伞的高度过高，甚至超过了人物的腰部，远超90cm的比例，text ✗ 便利贴上的文字内容与要求不符，且字迹更接近印刷体而非手写，ocr ✗ 稽下良随后，等作到十二点。
+   1-02 #2: start ✓，scale ✗ 雨伞相对于人物比例过大，长度几乎达到人物腰部以上甚至胸口，且伞柄结构不符合90cm长柄伞的比例，text ✗ 便利贴上的文字内容不符，漏掉了“便利店”三个字，且书写风格与要求不完全一致，ocr ✗ 卷下民轧后，等你到十二点。
+   1-02: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-04-candidate-0.png (928x1664), kf-1-04-candidate-1.png (928x1664), kf-1-04-candidate-2.png (928x1664)
+   1-04 #0: start ✓，scale ✓，text ✗ 便利贴上的文字内容与要求不符，且位置错误（应该在手中那张上），ocr ✓
+   1-04 #1: start ✓，scale ✓，text ✓，ocr ✓
+   1-04 #2: start ✓，scale ✓，text ✓，ocr ✓
+   1-04: 确认第 2 张（200）
+   model comfy/flux3-klein [local], files: kf-1-06-candidate-0.png (928x1664), kf-1-06-candidate-1.png (928x1664), kf-1-06-candidate-2.png (928x1664)
+   1-06 #0: start ✓
+   1-06 #1: start ✓
+   1-06 #2: start ✓
+   1-06: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-09-candidate-0.png (928x1664), kf-1-09-candidate-1.png (928x1664), kf-1-09-candidate-2.png (928x1664)
+   1-09 #0: start ✓
+   1-09 #1: start ✓
+   1-09 #2: start ✓
+   1-09: 确认第 1 张（200）
+   model comfy/flux3-klein [local], files: kf-1-10-candidate-0.png (928x1664), kf-1-10-candidate-1.png (928x1664), kf-1-10-candidate-2.png (928x1664)
+   1-10 #0: start ✓，scale ✗ 伞的高度明显过大，接近成年人腰部以上位置，且伞柄显得过于粗大。
+   1-10 #1: start ✓，scale ✗ 伞的比例过大，且握持位置显得伞身过长，不符合90cm伞的实际比例
+   1-10 #2: start ✓，scale ✗ 伞的比例过大，长度几乎达到成年女性的腰部以上，且握柄位置过高，不符合约90cm长柄伞的正常比例。
+   1-10: 确认第 1 张（200）
+   分镜 confirmed 10/10
+   deepseek/v4.1-flash in this data dir: 25 call(s), $0.0393
+   google/gemini-3.1-flash-lite in this data dir: 75 call(s), $0.0316
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run19-contract
+data: C:\Users\kelvin\AppData\Local\Temp\drama-ep19-5Oilw8\home

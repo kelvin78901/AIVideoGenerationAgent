@@ -1,14 +1,23 @@
-"""Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``."""
+"""Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``; 以这张为底重画
+``POST /versions/{id}/redraw``, 局部修复 ``POST /versions/{id}/inpaint`` and 图片超分
+``POST /versions/{id}/upscale`` (M5.5, ``pipeline/components/redraw.py``, ``inpaint.py``,
+``iup.py``)."""
 
 from __future__ import annotations
 
 from typing import Annotated, Any, Literal
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Form, Query, UploadFile
 from pydantic import BaseModel, ConfigDict, Field
 
 from drama_series_agent.api.state import StudioState, get_state
+from drama_series_agent.core.config import get_config
 from drama_series_agent.core.jobs import job_public
+from drama_series_agent.media.image import MAX_UPLOAD_BYTES
+from drama_series_agent.pipeline.components.inpaint import inpaint_params
+from drama_series_agent.pipeline.components.iup import refuse_if_unavailable
+from drama_series_agent.pipeline.components.redraw import DEFAULT_STRENGTH, redraw_target
+from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.schema import ProductOut
 
 router = APIRouter(tags=["products"])
@@ -140,3 +149,98 @@ async def save_prompt(product_id: str, body: PromptBody, state: State) -> Produc
 async def compile_prompt(product_id: str, body: CompileBody, state: State) -> dict[str, str]:
     """Preview of the compiled layer for an intent (PromptEditor, debounced)."""
     return await state.runs.compile_preview(product_id, body.intent, body.model)
+
+
+class RedrawBody(BaseModel):
+    """以这张为底重画: picture ``idx`` of the version (a candidate, or a view's number), what to
+    change, and 改动幅度 (0.1 a touch, 1.0 drawn anew)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    idx: int = Field(default=0, ge=0)
+    prompt: str | None = Field(default=None, max_length=2000)
+    strength: float = Field(default=DEFAULT_STRENGTH, ge=0.1, le=1.0)
+    where: Literal["local", "api"] | None = None
+    model: str | None = Field(default=None, max_length=80)
+
+
+@router.post("/versions/{version_id}/redraw")
+async def redraw_version(version_id: str, body: RedrawBody, state: State) -> dict[str, Any]:
+    """→ the queued run (component ``redraw``) making a new version of the same product: one
+    candidate for a keyframe or reference picture, that view replaced for a views set. Over a
+    limit it waits for 确认 like any run (hard rule 6)."""
+    async with state.db.session() as session:
+        product, _ = await redraw_target(session, version_id, body.idx)
+    job = await state.runs.start(
+        product.id,
+        "run",
+        model=body.model,
+        intent=(body.prompt or "").strip() or None,
+        where=body.where,
+        component_id="redraw",
+        params={
+            "redraw_version_id": version_id,
+            "redraw_idx": body.idx,
+            "strength": body.strength,
+        },
+    )
+    return job_public(job)
+
+
+@router.post("/versions/{version_id}/inpaint")
+async def inpaint_version(
+    version_id: str,
+    state: State,
+    mask: Annotated[UploadFile, File()],
+    idx: Annotated[int, Form(ge=0)] = 0,
+    prompt: Annotated[str | None, Form(max_length=2000)] = None,
+    where: Annotated[Literal["local", "api"] | None, Form()] = None,
+    model: Annotated[str | None, Form(max_length=80)] = None,
+) -> dict[str, Any]:
+    """局部修复 picture ``idx`` of the version where ``mask`` is painted (PNG, JPEG or WebP of
+    the picture's shape, any size; light = change), as ``prompt`` says → the queued run
+    (component ``inpaint``): one candidate for a keyframe or reference picture, that view
+    replaced for a views set. 422 ``bad_mask`` for another shape or nothing painted; over a
+    limit it waits for 确认 like any run (hard rule 6)."""
+    data = await mask.read(MAX_UPLOAD_BYTES + 1)
+    if len(data) > MAX_UPLOAD_BYTES:
+        raise PipelineError(413, "file_too_large", limit=MAX_UPLOAD_BYTES)
+    async with state.db.session() as session:
+        product, picture = await redraw_target(session, version_id, idx, "inpaint")
+    params = await inpaint_params(state.store, picture, data, version_id, idx)
+    job = await state.runs.start(
+        product.id,
+        "run",
+        model=model or None,
+        intent=(prompt or "").strip() or None,
+        where=where,
+        component_id="inpaint",
+        params=params,
+    )
+    return job_public(job)
+
+
+class UpscaleBody(BaseModel):
+    """图片超分: picture ``idx`` of the version (a candidate, or a view's number)."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    idx: int = Field(default=0, ge=0)
+
+
+@router.post("/versions/{version_id}/upscale")
+async def upscale_version(version_id: str, body: UpscaleBody, state: State) -> dict[str, Any]:
+    """→ the queued run (component ``iup``, origin ``upscale``): a keyframe at the delivery
+    size, a reference picture or a view at a long edge of 2048; one candidate, or that view
+    replaced. Only locally: 409 ``upscale_unavailable`` with the reason (``machine_cuda``,
+    ``machine_missing`` + count) on a machine that cannot run it."""
+    refuse_if_unavailable(get_config(), await state.setup.capabilities())
+    async with state.db.session() as session:
+        product, _ = await redraw_target(session, version_id, body.idx, "upscale")
+    job = await state.runs.start(
+        product.id,
+        "run",
+        component_id="iup",
+        params={"iup_version_id": version_id, "iup_idx": body.idx},
+    )
+    return job_public(job)

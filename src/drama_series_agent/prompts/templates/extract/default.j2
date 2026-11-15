@@ -7,12 +7,14 @@
 - 同一个人物、地点或道具只列一次；原文里的别称、昵称、简称写进 aliases。
 - 不要编造原文没有的信息；不知道的字段不写。
 - summary 是一行简介，不超过 20 字；details 放年龄、职业、外貌、穿着这类具体信息。
+- 道具的 details 另写 size（真实尺寸，带单位；原文没写就按常识估，写「约」）、material（材质）、wear（新旧、使用痕迹）：画面按它画出和人物的真实比例。
 - 每章（[第 N 章]）写一段不超过 80 字的剧情摘要。
 
 [输出 JSON]
 {
   "entities": [
-    {"kind": "character | location | prop | event | relation", "name": "名字", "aliases": [], "summary": "一行简介", "details": {"age": "", "occupation": "", "appearance": ""}, "paras": [12, 13]}
+    {"kind": "character | location | prop | event | relation", "name": "名字", "aliases": [], "summary": "一行简介", "details": {"age": "", "occupation": "", "appearance": ""}, "paras": [12, 13]},
+    {"kind": "prop", "name": "红色长柄伞", "aliases": ["红伞"], "summary": "一行简介", "details": {"size": "全长约 90 cm", "material": "尼龙伞面、木质弯柄", "wear": "用了几年，伞面褪色"}, "paras": [2]}
   ],
   "chapters": [{"chapter": 1, "summary": "本章摘要"}]
 }

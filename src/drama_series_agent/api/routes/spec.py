@@ -1,19 +1,23 @@
-"""Output spec (SPEC 13): ``/series/{id}/spec`` and ``/spec/presets``."""
+"""Output spec (SPEC 13): ``/series/{id}/spec`` and ``/spec/presets``; the series' 风格板
+``/series/{id}/style-board`` (M5.5, ``spec/style_board.py``)."""
 
 from __future__ import annotations
 
 from typing import Annotated, Any
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, File, Query, UploadFile
 
 from drama_series_agent.api.errors import ApiError
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.config import get_config, resolve
 from drama_series_agent.core.models_db import OutputSpecRow
 from drama_series_agent.core.overrides import load_defaults, load_overrides
+from drama_series_agent.media.image import MAX_UPLOAD_BYTES
+from drama_series_agent.pipeline.schema import ProductOut
 from drama_series_agent.spec.compat import Compat, compat_table
 from drama_series_agent.spec.dims import Aspect, Delivery
 from drama_series_agent.spec.schema import OutputSpec, SpecPatch, apply_patch, presets, to_public
+from drama_series_agent.spec.style_board import add_style, remove_style
 
 router = APIRouter(tags=["spec"])
 
@@ -90,3 +94,21 @@ async def get_compat(series_id: str, state: State, aspect: Aspect | None = None)
         lambda comp: resolve(comp, overrides, config=cfg, caps=caps, defaults=defaults).values,
         cfg,
     )
+
+
+@router.post("/series/{series_id}/style-board")
+async def add_style_picture(
+    series_id: str, state: State, file: Annotated[UploadFile, File()]
+) -> ProductOut:
+    """风格板 (M5.5): another picture for the series' look; the ``style_board`` product, its new
+    version adopted (at most 4: 409 ``too_many_refs``); every keyframe depends on it."""
+    data = await file.read(MAX_UPLOAD_BYTES + 1)
+    pid = await add_style(
+        state.db, state.products, state.store, series_id, file.filename or "", data
+    )
+    return await state.products.get(pid)
+
+
+@router.delete("/series/{series_id}/style-board/{idx}")
+async def remove_style_picture(series_id: str, idx: int, state: State) -> ProductOut:
+    return await state.products.get(await remove_style(state.db, state.products, series_id, idx))

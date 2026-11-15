@@ -15,11 +15,14 @@ export function ShotCards({
   aspect,
   selectedId,
   onSelect,
+  issues = {},
 }: {
   shots: Shot[];
   aspect: Aspect;
   selectedId: string;
   onSelect: (id: string) => void;
+  /** 分镜检查: findings per shot id (M5.5; only a warning). */
+  issues?: Record<string, number>;
 }) {
   const { t } = useTranslation("storyboard");
   const { t: te } = useTranslation("enums");
@@ -79,6 +82,11 @@ export function ShotCards({
                 )}
               </StatusBadge>
             </span>
+            {issues[s.id] ? (
+              <StatusBadge tone="warn" icon={null}>
+                {t("checks.badge", { count: issues[s.id] })}
+              </StatusBadge>
+            ) : null}
             <span className="text-xs">{te(`shotType.${s.shot_type}`)}</span>
             <span className="text-xs text-muted-foreground">
               {t("cards.meta", { framing: te(`framing.${s.framing}`), seconds: s.duration_s })}

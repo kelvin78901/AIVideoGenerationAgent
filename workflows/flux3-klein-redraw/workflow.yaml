@@ -1,0 +1,37 @@
+# 以这张为底重画（M5.5 第 13 步，组件 redraw）：flux3-klein 那份工作流，把空白的 latent 换成底图
+# （LoadImage「Base」→ ImageScale 缩放裁到成片尺寸 → VAEEncode），KSampler 的 denoise = 改动幅度
+# （0.2 只改细节，1.0 等于重新画）；底图同时是参考图 1，其余参考图照旧（锁定的素材）。
+# 节点和输入名 2026-11-12 按本机 ComfyUI 的 /object_info 核对（ImageScale、VAEEncode），还没在本机真跑过。
+name: { zh: FLUX 3 Klein 以这张为底重画, en: FLUX 3 Klein redraw from a picture }
+kind: image
+tier: recommended
+bindings:
+  - { slot: prompt, node: Prompt, field: values.a }
+  - { slot: width, node: Size, field: width }
+  - { slot: height, node: Size, field: height }
+  - { slot: seed, node: Sampler, field: seed }
+  - { slot: denoise, node: Sampler, field: denoise }
+  - { slot: base_image, node: Base, field: image }
+  - { slot: ref_image, index: 1, node: Reference 1, field: image }
+  - { slot: ref_image, index: 2, node: Reference 2, field: image, optional: true }
+  - { slot: ref_image, index: 3, node: Reference 3, field: image, optional: true }
+  - { slot: ref_image, index: 4, node: Reference 4, field: image, optional: true }
+  - { slot: image_out, node: Output }
+# 加载器用到的文件（HF 上 black-forest-labs/flux-3-image-klein-comfy 是要登录同意许可的仓库，安装清单还没有）
+models:
+  - { folder: diffusion_models, name: flux3-image-klein-int8-convrot.safetensors }
+  - { folder: text_encoders, name: qwen3vl_4b_int8_convrot.safetensors }
+  - { folder: text_encoders, name: qwen3.5_9b_flux3_prompt_upsampler_int8_convrot.safetensors }
+  - { folder: vae, name: flux2-vae.safetensors }
+caps:
+  max_refs: 4
+  est_seconds: 15
+  sizes:
+    "1:1": [1328, 1328]
+    "16:9": [1664, 928]
+    "9:16": [928, 1664]
+    "4:3": [1472, 1104]
+    "3:4": [1104, 1472]
+    "3:2": [1584, 1056]
+    "2:3": [1056, 1584]
+  max_pixels: 1763584

@@ -10,6 +10,15 @@ lines: 2                           # 试听读这个角色的前几句台词
 sample_text: 你好，我在这儿。等我一下。   # 角色还没有台词时读这句
 local_final: local/indextts2       # 本地变体，也是 MiniMax 失败时的整套兜底
 
+# 声音克隆（M5.5 第 19 步）：上传样本 + 勾「本人授权」。克隆没有试听，每次运行都直接出终版：
+# API = MiniMax 快速克隆（上传样本 → voice_clone 拿 voice_id → T2A 出情绪变体；$1.5 / 9.90 元在第一次合成时收）；
+# 本地 = local_final 拿样本当参考音频，免费。锚点就是统一响度后的样本（最多 ref_max_s 秒）。
+# 样本要求按 MiniMax 文档（2026-11-14 核对）：10 秒到 5 分钟，不超过 20 MB，mp3 / m4a / wav。
+clone:
+  min_s: 10
+  max_s: 300
+  ref_max_s: 15                    # 本地参考音频和锚点截到这么长
+
 # 三个试听：描述后面加上不同的倾向
 drafts:
   - { label: 偏低沉, hint: 声音偏低沉一些 }

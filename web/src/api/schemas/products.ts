@@ -20,10 +20,19 @@ export const ProductSlotSchema = z.enum([
   "ref_image",
   // A character's side / back / expression views, made from the locked reference (M3).
   "ref_views",
+  // A locked prop with a locked character, to show its real size (M5.5 `scale`).
+  "ref_scale",
+  // An asset's extra pictures, each with its purpose (M5.5 多参考图; the user's own files).
+  "ref_more",
+  // A shot's own reference pictures (构图 / 姿势 / 光线 / 风格) and the series' 风格板 (M5.5).
+  "shot_refs",
+  "style_board",
   "text_image",
   "voice",
   "line_audio",
   "shot_plan",
+  // 分镜检查 by a model, one per episode (M5.5; `GET /episodes/{id}/shot-checks`).
+  "shot_check",
   "keyframe",
   "video",
   "upscale",
@@ -61,6 +70,10 @@ export const VersionOriginSchema = z.enum([
   "pick",
   /** The user's own file (M3: a reference picture). */
   "upload",
+  /** A picture made from another one (M5.5): 以这张为底重画 / 局部修复 / 放大. */
+  "redraw",
+  "inpaint",
+  "upscale",
 ]);
 export type VersionOrigin = z.infer<typeof VersionOriginSchema>;
 
@@ -77,6 +90,9 @@ export const VersionFileSchema = z.object({
   /** Which view a `role: view` picture is: side / back / calm / smile / angry / sad (M3 补视图;
    * versions before 2026-10-21 have one `expressions` sheet instead of the four). */
   view: z.string().nullable().optional(),
+  /** 多参考图 (`ref_more`, M5.5): what a `role: ref` picture is for: face / outfit / hair /
+   * pose / other. */
+  purpose: z.string().nullable().optional(),
   /** A voice sample: which of the voice's audition lines it reads. */
   line: z.number().int().nullable().optional(),
   /** A voice's emotion variant (`enums:emotion.<id>`, config/voice.yaml). */

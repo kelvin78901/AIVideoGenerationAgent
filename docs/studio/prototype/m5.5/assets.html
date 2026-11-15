@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>M5.5 草图 · 素材</title>
+<link rel="stylesheet" href="sketch.css">
+<script>if (location.search.includes("dark")) document.documentElement.classList.add("dark");</script>
+</head>
+<body>
+<div class="page">
+  <h1>M5.5 草图 · 素材页</h1>
+  <p class="sub">只画素材详情里新加的部分；左边的列表、右边的组件栏照现在的素材页。黄色便签是给 Kelvin 的说明。</p>
+
+  <!-- A1 -->
+  <div class="frame"><span class="tag">A1 · 道具：真实尺寸、材质、新旧；比例参考</span>
+    <div class="card" style="max-width:900px">
+      <div class="row" style="justify-content:space-between"><div><b style="font-size:17px">红色长柄伞</b> <span class="badge">道具</span> <span class="badge info">已锁定</span></div><div><a class="btn">上传参考图</a> <a class="btn">解锁</a></div></div>
+      <div class="label">描述 <span class="sub">提示词的意图层</span></div>
+      <textarea class="textarea">一把旧的红色长柄伞，伞面是有点褪色的红尼龙，弯钩木柄。</textarea>
+      <div class="row" style="margin-top:8px">
+        <div class="col"><span class="sub">真实尺寸</span><input class="input" value="全长约 90 cm，收拢时直径约 6 cm"></div>
+        <div class="col"><span class="sub">材质</span><input class="input" value="尼龙伞面、木柄、金属伞骨"></div>
+        <div class="col grow"><span class="sub">新旧</span><input class="input" style="width:100%" value="用了几年：伞面褪色，木柄磨得发亮"></div>
+      </div>
+      <div class="sub" style="margin-top:4px">从设定里来，可以改；关键帧按尺寸写它和人物的比例（「伞柄到她的胯部」）。</div>
+      <div class="label">候选 <span class="sub">实拍质感，放在环境里，不是白底产品照</span></div>
+      <div class="row"><div class="cand sel"><div class="thumb g5"><span class="corner">A</span><span class="tr badge info">已选</span></div><span>v3 · A</span><span class="sub">靠在楼道墙边</span></div><div class="cand"><div class="thumb g5"><span class="corner">B</span></div><span>v3 · B</span></div></div>
+      <div class="label">比例参考 <span class="sub">锁定后自动出一张：和林晚同框，看大小对不对</span></div>
+      <div class="row"><div class="cand"><div class="thumb g1"><span class="corner">比例</span></div><span class="sub">林晚拿着伞站着</span><span class="badge pass">✓ 伞柄到胯部</span></div>
+        <div class="col" style="justify-content:flex-end; height:234px"><a class="btn">重画这张</a><a class="btn">换成上传的图</a><span class="sub">关键帧取参考时紧跟在道具图后面</span></div></div>
+    </div>
+    <div class="note"><b>说明：</b>比例参考按道具描述里提到的、或用到这个道具最多的那个角色来画；没有锁定的角色就不出。</div>
+  </div>
+
+  <!-- A2 -->
+  <div class="frame"><span class="tag">A2 · 有字的道具：字是道具的一部分</span>
+    <div class="card" style="max-width:900px">
+      <div><b style="font-size:17px">黄色便利贴</b> <span class="badge">道具</span> <span class="badge warn">待选</span></div>
+      <div class="banner info" style="margin-top:8px">原来的画面文字「便利贴手写」已经并进这个道具：字画在便利贴的图上，分镜引用便利贴就带着字。</div>
+      <div class="label">道具上的字</div>
+      <textarea class="textarea">周屿，伞我拿走了。——晚</textarea>
+      <div class="row" style="margin-top:8px">
+        <div class="col"><span class="sub">用什么写</span><span class="seg"><span class="on">圆珠笔</span><span>马克笔</span><span>铅笔</span><span>印刷</span></span></div>
+        <div class="col"><span class="sub">字迹</span><span class="seg"><span class="on">手写 · 潦草</span><span>手写 · 工整</span></span></div>
+      </div>
+      <div class="label">候选 <span class="sub">每张都用 OCR 对一遍字</span></div>
+      <div class="row">
+        <div class="cand sel"><div class="thumb sq g6"></div><span>v2 · A</span><span class="badge pass">✓ 字一致</span></div>
+        <div class="cand"><div class="thumb sq g6"></div><span>v2 · B</span><span class="badge fail">✗ 少了「了」</span></div>
+        <div class="cand"><div class="thumb sq g6"></div><span>v2 · C</span><span class="badge warn">像印刷体</span></div>
+      </div>
+    </div>
+    <div class="note"><b>说明：</b>和现在的画面文字一样，OCR 不一致只是提示（现在画面文字是挡住锁定、要点「仍然锁定」；这次 Kelvin 定检查只提示，<b>画面文字原来的拦截要不要也改成只提示？</b>草图先保留原样）。屏幕、招牌这类独立的字照旧是「画面文字」。</div>
+  </div>
+
+  <!-- A3 -->
+  <div class="frame"><span class="tag">A3 · 角色：多张参考图（标用途）、六视图换单张</span>
+    <div class="card" style="max-width:900px">
+      <div><b style="font-size:17px">林晚</b> <span class="badge">角色</span> <span class="badge info">已锁定</span></div>
+      <div class="label">锁定的参考图</div>
+      <div class="row"><div class="cand"><div class="thumb g1"><span class="corner">主图</span></div><span class="sub">全身 · 正面</span></div></div>
+      <div class="label">更多参考图 <span class="sub">你自己的照片或截图，每张标明参考什么；锁定后也能加减</span></div>
+      <div class="row">
+        <div class="col"><div class="thumb small g2"></div><select class="input"><option>正脸</option></select><a class="btn sm">删掉</a></div>
+        <div class="col"><div class="thumb small g4"></div><select class="input"><option>服装</option></select><a class="btn sm">删掉</a></div>
+        <div class="col"><div class="thumb small g3"></div><select class="input"><option>发型</option></select><a class="btn sm">删掉</a></div>
+        <div class="col" style="justify-content:center; height:150px"><a class="btn">上传</a><span class="sub">正脸 / 服装 / 发型 / 姿势 / 其他</span></div>
+      </div>
+      <div class="label">补视图 <span class="sub">悬停一张：换一张</span></div>
+      <div class="row">
+        <div class="col"><div class="thumb small g4"></div><span class="sub">侧面</span></div>
+        <div class="col"><div class="thumb small g1" style="outline:2px solid var(--primary)"><div class="bl"><span class="btn sm">重画这张</span><span class="btn sm">上传</span></div></div><span class="sub">背面</span></div>
+        <div class="col"><div class="thumb small g4"></div><span class="sub">平静</span></div>
+        <div class="col"><div class="thumb small g1"></div><span class="sub">微笑</span></div>
+        <div class="col"><div class="thumb small g2"></div><span class="sub">愤怒</span></div>
+        <div class="col"><div class="thumb small g3"></div><span class="sub">难过</span></div>
+      </div>
+    </div>
+    <div class="note"><b>说明：</b>换一张 = 出一个新的补视图版本，其余 5 张照抄，历史里能换回。加减「更多参考图」影响用到林晚的关键帧（走影响范围，和改描述一样）。</div>
+  </div>
+
+  <!-- A4 -->
+  <div class="frame"><span class="tag">A4 · 新建素材（列表顶上「＋ 新建素材」）</span>
+    <div class="row">
+      <div class="card" style="width:300px">
+        <div class="row" style="justify-content:space-between"><span class="seg"><span class="on">全部</span><span>角色</span><span>道具</span></span><a class="btn sm">＋ 新建素材</a></div>
+        <div style="margin-top:10px; border:1px solid var(--border); border-radius:6px; padding:8px">旧钥匙扣 <span class="badge">手动</span><div class="sub">道具 · 还没有镜头用</div></div>
+      </div>
+      <div class="dialog">
+        <h2>新建素材</h2>
+        <div class="label" style="margin-top:0">类别</div>
+        <span class="seg"><span>角色</span><span>场景</span><span class="on">道具</span><span>画面文字</span><span>音色</span></span>
+        <div class="label">名字</div><input class="input" style="width:100%" value="旧钥匙扣">
+        <div class="label">描述</div><textarea class="textarea">周屿留下的黄铜钥匙扣，挂着一个小铃铛。</textarea>
+        <div class="row" style="margin-top:8px"><div class="col"><span class="sub">真实尺寸</span><input class="input" value="约 5 cm"></div><div class="col"><span class="sub">材质</span><input class="input" value="黄铜"></div><div class="col"><span class="sub">新旧</span><input class="input" value="氧化发暗"></div></div>
+        <div class="label">图从哪来</div>
+        <span class="seg"><span class="on">按描述生成候选</span><span>上传图片</span></span>
+        <div class="foot"><span class="sub" style="margin-right:auto">手动建的素材，重新分析剧本时不会被删。</span><a class="btn">取消</a><a class="btn primary">新建</a></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- A5 -->
+  <div class="frame"><span class="tag">A5 · 音色：声音克隆（最后一步做，文案照原型 Assets）</span>
+    <div class="card" style="max-width:700px">
+      <span class="seg"><span>文字描述设计</span><span class="on">声音克隆</span><span>本地 TTS</span></span>
+      <p class="sub">上传 10 秒以上的干净人声样本（需本人授权）。MiniMax 克隆约 $1.5 / 个。</p>
+      <div class="row"><a class="btn">上传样本</a><span class="sub">sample.wav · 14.2 秒 · ▶</span></div>
+      <label style="display:block; margin-top:10px"><input type="checkbox"> 我确认已获得声音本人的授权</label>
+      <div class="foot"><a class="btn primary">克隆 · 约 $1.5</a></div>
+    </div>
+    <div class="note"><b>说明：</b>没勾授权时按钮灰掉。本地 IndexTTS 直接拿这段样本当参考音频，不花钱。</div>
+  </div>
+</div>
+</body>
+</html>

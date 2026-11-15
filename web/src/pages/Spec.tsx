@@ -42,6 +42,7 @@ import { cn } from "@/lib/utils";
 import { CompatTable } from "@/pages/spec/CompatTable";
 import { safeAreaOf } from "@/lib/safeArea";
 import { SafeAreaPreview } from "@/pages/spec/SafeAreaPreview";
+import { StyleBoard } from "@/pages/spec/StyleBoard";
 
 type Draft = Required<SpecPatch>;
 const ASPECTS: Aspect[] = ["9:16", "16:9", "3:4", "1:1", "21:9"];
@@ -359,6 +360,14 @@ export default function SpecPage() {
                     onChange={(subtitles) => setDraft({ ...draft, subtitles })}
                   />
                   <Derive draft={draft} onChange={(derive) => setDraft({ ...draft, derive })} />
+                </Section>
+
+                <Section
+                  id="style-board-title"
+                  title={t("styleBoard.title")}
+                  lead={t("styleBoard.lead")}
+                >
+                  <StyleBoard seriesId={seriesId} />
                 </Section>
               </div>
 

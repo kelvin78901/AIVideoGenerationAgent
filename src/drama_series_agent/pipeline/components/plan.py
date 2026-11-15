@@ -51,7 +51,8 @@ from drama_series_agent.pipeline.components.media import output_frame
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.prompts.compiler import Block
-from drama_series_agent.shots import ops
+from drama_series_agent.shots import check, ops
+from drama_series_agent.shots import contract as shot_contract
 
 DEMO_FIXTURE = REPO_ROOT / "tests" / "fixtures" / "demo" / "plan.json"
 SHOT_PLAN_SLOT = "shot_plan"
@@ -88,6 +89,13 @@ class PlannedShot(BaseModel):
     continues: int | None = None
     note: str | None = None
     difficulty: int | None = None
+    # 镜头契约 (M5.5, ``shots/contract.py``); loose types, the rules repair them.
+    kind: str | None = None
+    beats: int | None = None
+    start: Any = None
+    end: Any = None
+    props: Any = None
+    delivery: Any = None
 
 
 class PlanAnswer(BaseModel):
@@ -117,10 +125,16 @@ async def shot_plan_slicer(
 ) -> Any:
     """``shot:<id>`` (关键帧, confirming a shot): the shot's type, framing, move, top view,
     references, lines and the shot it follows (None once the plan drops it), so a new length
-    or sound never redraws its keyframe. Any other name is a key of the payload."""
+    or sound never redraws its keyframe; and its contract (M5.5), when it has one. Any other
+    name is a key of the payload."""
     if name.startswith(SHOT_SLICE):
         shot = ops.find_shot(version.payload_json, name.removeprefix(SHOT_SLICE))
-        return None if shot is None else {k: shot.get(k) for k in SHOT_SLICE_KEYS}
+        if shot is None:
+            return None
+        out = {k: shot.get(k) for k in SHOT_SLICE_KEYS}
+        if shot.get("contract") is not None:  # M5.5; absent from older plans, whose hash stays
+            out["contract"] = shot["contract"]
+        return out
     return version.payload_json if name == "" else version.payload_json.get(name)
 
 
@@ -168,7 +182,14 @@ def plan_context(
     aliases: dict[str, list[str]] | None = None,
 ) -> ops.PlanContext:
     lines = [
-        ops.PlanLine(n=x.n, scene_id=x.scene_id, line_id=x.line_id, type=x.type, text=x.text)
+        ops.PlanLine(
+            n=x.n,
+            scene_id=x.scene_id,
+            line_id=x.line_id,
+            type=x.type,
+            text=x.text,
+            tone=x.tone,
+        )
         for x in asset_ops.numbered_lines(script)
     ]
     line_assets: dict[str, list[str]] = {}
@@ -220,8 +241,11 @@ def script_text(script: dict[str, Any]) -> str:
             tone = str(line.get("tone") or "")
             text = line.get("text") or ""
             if line.get("type") == "vo":
-                extra = f"，{tone}" if tone and tone.upper() != "OS" else ""
-                rows.append(f"L{n} {who}（画外音{extra}）：{text}")
+                if shot_contract.default_delivery("vo", tone) == "inner":
+                    rows.append(f"L{n} {who}（内心独白）：{text}")
+                else:
+                    extra = f"，{tone}" if tone else ""
+                    rows.append(f"L{n} {who}（画外音{extra}）：{text}")
             elif line.get("type") == "dialogue":
                 rows.append(f"L{n} {who}{f'（{tone}）' if tone else ''}：{text}")
             else:
@@ -265,11 +289,27 @@ async def gather(
         Block("素材", assets_text(ctx) or "（还没做素材分析）"),
         Block("剧本", script_text(adopted.payload_json)),
     ]
+    if base is not None and episode is not None:
+        # Made again: what the check found in the plan it replaces, to be fixed this time.
+        from drama_series_agent.shots.service import plan_issues  # it imports this module
+
+        labels, found = await plan_issues(session, episode, base)
+        if found:
+            blocks.append(Block("上一版的分镜检查", issues_text(labels, found)))
     return Inputs(
         blocks=blocks,
         deps=deps,
         episode_id=episode_id,
         context={"plan": ctx, "base": base.payload_json if base is not None else None},
+    )
+
+
+def issues_text(labels: dict[str, str], found: list[dict[str, Any]]) -> str:
+    """分镜检查 findings, one line each: 「1-06（规则）一个镜头里动作太多：……」."""
+    return "\n".join(
+        f"{labels.get(i['shot_id'], '')}（{'规则' if i['source'] == 'rule' else '模型'}）"
+        f"{check.describe(i)}"
+        for i in found
     )
 
 

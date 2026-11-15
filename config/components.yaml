@@ -118,6 +118,19 @@ components:
     cheap_api: volc/seedream-5.0
     note: 角色锁定后自动补侧面、背面和表情（以锁定的参考图为准，本地用编辑模型的官方 40 步，不用 4 步加速）；自动采纳
 
+  # 比例参考（M5.5 第 5c 步）：道具和一个锁定角色同框的实拍照。第 9e-1 步起锁定道具不再自动出、关键帧不再带：
+  # 第十九轮它自己把伞画到人头顶、便利贴和上半身一样大，关键帧照着画；大小改成关键帧里的文字（和人比）。
+  - id: scale
+    stage: assets
+    name: { zh: 比例参考, en: Scale reference }
+    kind: image
+    api: *img_api
+    local: [comfy/qwen-image-edit-hq, comfy/qwen-image-edit]
+    balanced: { mode: local, local: comfy/qwen-image-edit-hq, api: google/nano-banana-pro, fallback_to: google/nano-banana-pro }
+    per_call_cap_usd: 0.5
+    cheap_api: volc/seedream-5.0
+    note: 手动出（人物按道具描述里提到的、否则同场最多的）；不进关键帧，只供对照
+
   - id: text
     stage: assets
     name: { zh: 画面文字, en: On-screen text }
@@ -171,6 +184,32 @@ components:
     per_call_cap_usd: 0.8
     cheap_api: deepseek/v4.1-flash
 
+  # 关键帧检查（M5.5 第 6 步）：每张关键帧候选出完后，看图模型对着镜头契约查开始状态、道具比例、要出的字、
+  # 内心独白嘴闭着、插入镜头没人；字另用 OCR 逐字对。只提示，不挡确认（Kelvin 2026-11-10）。按图缓存。
+  - id: kfcheck
+    stage: storyboard
+    name: { zh: 关键帧检查, en: Keyframe check }
+    kind: vlm
+    api: [google/gemini-3.1-flash-lite, google/gemini-3.6-flash]
+    local: [local/qwen3-vl-32b]
+    balanced: { mode: api, api: google/gemini-3.1-flash-lite, local: local/qwen3-vl-32b }
+    per_call_cap_usd: 0.02
+    cheap_api: google/gemini-3.1-flash-lite
+    note: 关键帧每张候选看一次（约 $0.0005）；失败只是不检查，不挡出图
+
+  # 分镜检查（M5.5 第 4 步）：规则查不出的（犹豫写成重复动作、超出动作预算、起止状态接不上、
+  # 状态是演出来的而不是摆好的）。整集一次，点「检查」才跑；只提示，不挡确认（Kelvin 2026-11-10）。
+  - id: plancheck
+    stage: storyboard
+    name: { zh: 分镜检查, en: Storyboard check }
+    kind: llm
+    api: *llm_api
+    local: *llm_local
+    balanced: { mode: api, api: deepseek/v4.1-flash, local: local/qwen3.6-27b, fallback_to: qwen/qwen3.7-plus }
+    per_call_cap_usd: 0.05
+    cheap_api: deepseek/v4.1-flash
+    note: 只提示，不挡确认；规则那部分不花钱、读的时候现算
+
   - id: kf
     stage: storyboard
     name: { zh: 关键帧, en: Keyframes }
@@ -182,9 +221,46 @@ components:
     per_call_cap_usd: 1
     cheap_api: volc/seedream-5.0
     candidates: 3
+    redraw: 2   # 关键帧检查每张候选都没过：带着没过的几条再画，最多 2 次（只在本地出图时；M5.5 第 9e 步，Kelvin 2026-11-11 同意）
     note: 本地按锁定的参考图编辑（FLUX 3 Klein，没装时换 Qwen-Image-Edit）；镜头没有锁定的参考图时草稿改用同家的文生图（两家的编辑版都只能按参考图编辑）
     follows_output_spec: true
     gate: storyboard
+
+  # 以这张为底重画（M5.5 第 13 步）：关键帧、参考图、六视图单张、上传的图。本地 Klein 按改动幅度（denoise）从这张出发；
+  # Qwen-Image-Edit 和 API 没有数值强度，幅度写进提示词，这张作参考图 1。结果是同一个产物的新版本（origin redraw）。
+  - id: redraw
+    stage: storyboard
+    name: { zh: 以这张为底重画, en: Redraw from this picture }
+    kind: image
+    api: [google/nano-banana-2.1, openai/gpt-image-2]
+    local: [comfy/flux3-klein-redraw, comfy/qwen-image-edit]
+    balanced: { mode: local, local: comfy/flux3-klein-redraw, api: google/nano-banana-2.1, fallback_to: google/nano-banana-2.1 }
+    per_call_cap_usd: 0.5
+    cheap_api: volc/seedream-5.0
+    note: 手动出，一次一张；改动幅度本地是 denoise，API 写进提示词；新版本跟着原图的上游，不自动采纳关键帧和参考图
+
+  # 局部修复（M5.5 第 14 步）：涂过的地方按要求重画，其余不变。能修的和重画一样。本地 Klein 只在遮罩里加噪、出图后按遮罩贴回；
+  # API 只有 GPT Image 2 收遮罩（官方：遮罩只是引导，不一定严格按形状）。结果是同一个产物的新版本（origin inpaint）。
+  - id: inpaint
+    stage: storyboard
+    name: { zh: 局部修复, en: Inpaint }
+    kind: image
+    api: [openai/gpt-image-2]
+    local: [comfy/klein-inpaint]
+    balanced: { mode: local, local: comfy/klein-inpaint, api: openai/gpt-image-2, fallback_to: openai/gpt-image-2 }
+    per_call_cap_usd: 0.5
+    note: 手动出，一次一张；遮罩白色 = 要改；本地遮罩外一个像素都不动，API 整张重出、遮罩只是引导；不自动采纳关键帧和参考图
+
+  # 图片超分（M5.5 第 15 步）：关键帧放大到交付尺寸，参考图、六视图单张放大到长边 2048，只补细节不改内容。
+  # 只有本地 SeedVR2 7B（和视频 2K 精修同一套权重）；没有 API，机器跑不了时按钮灰掉写原因（catalog 的 unavailable）。
+  - id: iup
+    stage: storyboard
+    name: { zh: 图片超分, en: Image upscale }
+    kind: image
+    api: []
+    local: [comfy/seedvr2-img]
+    balanced: { mode: local, local: comfy/seedvr2-img }
+    note: 手动出，一次一张；只放大补细节，结果是同一个产物的新版本（origin upscale），不自动采纳关键帧和参考图
 
   - id: world
     stage: storyboard
@@ -206,6 +282,7 @@ components:
     per_call_cap_usd: 2
     alt_order: [minimax/h3-api, volc/seedance-2.5, google/gemini-omni-flash-1.1]
     candidates: 2
+    redraw: 2   # take 检查没过：带着没过的几条再出，最多 2 次（只在本地出片时；M5.5 第 9e 步）
     final_api: minimax/h3-regenerate-2k   # 「用 API 出终版」：本地 H3 草稿重生成到 2K
     follows_output_spec: true
     gate: takes
@@ -255,6 +332,19 @@ components:
     per_call_cap_usd: 0.02
     cheap_api: google/gemini-3.1-flash-lite
     note: 只给本地 H3 改写用；一张图描述一次，同一首帧的几条候选、重跑都走缓存
+
+  # take 检查（M5.5 第 7 步）：每条 take 抽 6 帧拼一张图，看图模型对着镜头契约查重复动作、凭空的物理事件、字变了、
+  # 内心独白嘴在动、结尾状态；加上 take 自己量的镜头内切点和开头定格。只提示（自动重跑是 M6）。按拼图缓存。
+  - id: takecheck
+    stage: generate
+    name: { zh: take 检查, en: Take check }
+    kind: vlm
+    api: [google/gemini-3.1-flash-lite, google/gemini-3.6-flash]
+    local: [local/qwen3-vl-32b]
+    balanced: { mode: api, api: google/gemini-3.1-flash-lite, local: local/qwen3-vl-32b }
+    per_call_cap_usd: 0.02
+    cheap_api: google/gemini-3.1-flash-lite
+    note: 每条 take 看一次拼图（约 $0.001）；失败只是不检查
 
   - id: ctrl
     stage: generate

@@ -1,4 +1,4 @@
-import { Lock, LockOpen, Upload } from "lucide-react";
+import { Lock, LockOpen } from "lucide-react";
 import { useId, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Link } from "react-router";
@@ -10,7 +10,9 @@ import { useImpactPreview } from "@/api/hooks/impact";
 import { useProduct } from "@/api/hooks/products";
 import {
   CandidatesPayloadSchema,
+  MORE_REF_KINDS,
   TextMethodSchema,
+  TextPenSchema,
   TextStyleSchema,
   VoiceMethodSchema,
   type Asset,
@@ -21,6 +23,8 @@ import { Chip } from "@/components/Chip";
 import { EmptyState } from "@/components/EmptyState";
 import { FinalButton } from "@/components/FinalButton";
 import { ImpactDialog } from "@/components/ImpactDialog";
+import { PictureMenu } from "@/components/pictures/PictureMenu";
+import type { PictureTarget } from "@/components/pictures/RedrawDialog";
 import { SegmentedControl } from "@/components/SegmentedControl";
 import { StatusBadge } from "@/components/StatusBadge";
 import { Button } from "@/components/ui/button";
@@ -29,12 +33,26 @@ import { currentVersion } from "@/lib/versions";
 import { AssetViews } from "@/pages/assets/AssetViews";
 import { ImageCandidates } from "@/pages/assets/Candidates";
 import { VoiceDubLines } from "@/pages/assets/Dub";
+import { MoreRefs } from "@/pages/assets/MoreRefs";
 import { isVoiceDraft, STATUS_TONE } from "@/pages/assets/status";
+import { PropPhysical, ScaleReference } from "@/pages/assets/Prop";
 import { VoicePanel } from "@/pages/assets/Voice";
+import { VoiceClone } from "@/pages/assets/VoiceClone";
 
 const LETTERS = "ABCD";
+// The writing on a prop is drawn by the model, handwritten or printed (M5.5, sketch A2).
+const PROP_STYLES = ["handwritten", "printed"] as const;
 // Pictures a reference can be uploaded as (the backend reads their size from the header).
 const UPLOAD_TYPES = "image/png,image/jpeg,image/webp";
+// 放大 makes a reference picture this long on its long side (`iup`, M5.5 step 15).
+const UPSCALE_LONG = 2048;
+
+/** The size 放大 makes a picture of `w` × `h`; null when it is that long already. */
+function upscaleSize(w: number | null | undefined, h: number | null | undefined) {
+  if (!w || !h || Math.max(w, h) >= UPSCALE_LONG) return null;
+  const k = UPSCALE_LONG / Math.max(w, h);
+  return { w: Math.round(w * k), h: Math.round(h * k) };
+}
 
 /** 素材详情: what the asset is, how it is made, its candidates, and lock / unlock. Changing a
  * locked asset (its description, text settings, voice source) shows the impact first
@@ -76,6 +94,8 @@ export function AssetDetail({
   const preview = useImpactPreview();
   // A change to the locked asset, waiting in the impact dialog.
   const [editing, setEditing] = useState<AssetPatch | null>(null);
+  // Bumped when a locked prop's edit is cancelled: its size fields show what is saved again.
+  const [reset, setReset] = useState(0);
 
   const version = product.data ? currentVersion(product.data) : undefined;
   const payload = CandidatesPayloadSchema.safeParse(version?.payload);
@@ -91,10 +111,27 @@ export function AssetDetail({
     return f ? fileUrl(f.sha256) : null;
   });
   const locked = asset.status === "locked";
+  // 换来源 works on the picked candidate; on-screen text is only uploaded (redraw takes pictures).
+  const pickedFile = version?.files.find((x) => x.role === "candidate" && x.idx === asset.pick);
+  const target: PictureTarget | null =
+    product.data && version && pickedFile && asset.kind !== "text"
+      ? {
+          productId: product.data.id,
+          versionId: version.id,
+          idx: asset.pick,
+          name: `${asset.name} ${t("cands.label", { n: version.n, letter: LETTERS[asset.pick] ?? "A" })}`,
+          src: fileUrl(pickedFile.sha256),
+          aspect,
+          seed: `${asset.id}-${version.n}-${asset.pick}`,
+          w: pickedFile.w,
+          h: pickedFile.h,
+        }
+      : null;
   const pictures = asset.kind !== "voice";
   // A voice's auditions are not a voice yet: its final is what gets locked.
   const needsFinal = asset.kind === "voice" && isVoiceDraft(version);
   const componentId = asset.kind === "text" ? "text" : "img";
+  const prop = asset.kind === "prop";
   const save = (p: AssetPatch, done?: string) =>
     patchAsset.mutate(
       { id: asset.id, patch: p },
@@ -123,6 +160,7 @@ export function AssetDetail({
     if (!keep) {
       setIntent(asset.intent);
       setExact(asset.text?.exact ?? "");
+      setReset((n) => n + 1);
     }
     setEditing(null);
     preview.reset();
@@ -163,14 +201,14 @@ export function AssetDetail({
                   );
                 }}
               />
-              <Button
-                variant="outline"
+              {/* A locked reference is not redrawn or replaced: unlocking shows what it reaches. */}
+              <PictureMenu
+                target={target}
+                upscaleTo={upscaleSize(pickedFile?.w, pickedFile?.h)}
+                onUpload={() => fileInput.current?.click()}
+                uploadHint={t("detail.uploadHint")}
                 disabled={locked || busy || upload.isPending}
-                onClick={() => fileInput.current?.click()}
-              >
-                <Upload aria-hidden />
-                {t("detail.upload")}
-              </Button>
+              />
             </>
           ) : null}
           <Button
@@ -240,10 +278,18 @@ export function AssetDetail({
         <p className="text-xs text-muted-foreground">{t("detail.descHint")}</p>
       </div>
 
+      {prop ? (
+        <PropPhysical
+          key={`${asset.id}-${reset}-${JSON.stringify(asset.physical)}`}
+          asset={asset}
+          change={change}
+        />
+      ) : null}
+
       {asset.text ? (
         <div className="flex flex-col gap-3">
           <div className="flex flex-col gap-1.5">
-            <Label htmlFor={`${ids}-exact`}>{t("text.exact")}</Label>
+            <Label htmlFor={`${ids}-exact`}>{t(prop ? "prop.text" : "text.exact")}</Label>
             <Input
               id={`${ids}-exact`}
               value={exact}
@@ -252,27 +298,30 @@ export function AssetDetail({
                 if (exact !== asset.text?.exact) change({ text: { exact } });
               }}
             />
+            {prop ? <p className="text-xs text-muted-foreground">{t("prop.textHint")}</p> : null}
           </div>
-          <div className="flex flex-col gap-1.5">
-            <div className="text-sm font-medium">{t("text.method")}</div>
-            <SegmentedControl
-              label={t("text.method")}
-              value={asset.text.method}
-              onChange={(method) => change({ text: { method } })}
-              options={TextMethodSchema.options.map((m) => ({
-                value: m,
-                label: t(`text.methods.${m}`),
-              }))}
-            />
-            <p className="text-xs text-muted-foreground">{t(`text.hint.${asset.text.method}`)}</p>
-          </div>
+          {prop ? null : (
+            <div className="flex flex-col gap-1.5">
+              <div className="text-sm font-medium">{t("text.method")}</div>
+              <SegmentedControl
+                label={t("text.method")}
+                value={asset.text.method}
+                onChange={(method) => change({ text: { method } })}
+                options={TextMethodSchema.options.map((m) => ({
+                  value: m,
+                  label: t(`text.methods.${m}`),
+                }))}
+              />
+              <p className="text-xs text-muted-foreground">{t(`text.hint.${asset.text.method}`)}</p>
+            </div>
+          )}
           <div
             className="flex flex-wrap items-center gap-1.5"
             role="radiogroup"
             aria-label={t("text.style")}
           >
             <span className="mr-1 text-sm font-medium">{t("text.style")}</span>
-            {TextStyleSchema.options.map((s) => (
+            {(prop ? PROP_STYLES : TextStyleSchema.options).map((s) => (
               <Chip
                 key={s}
                 role="radio"
@@ -283,6 +332,25 @@ export function AssetDetail({
               </Chip>
             ))}
           </div>
+          {asset.text.style === "handwritten" ? (
+            <div
+              className="flex flex-wrap items-center gap-1.5"
+              role="radiogroup"
+              aria-label={t("text.pen")}
+            >
+              <span className="mr-1 text-sm font-medium">{t("text.pen")}</span>
+              {TextPenSchema.options.map((pen) => (
+                <Chip
+                  key={pen}
+                  role="radio"
+                  selected={(asset.text?.pen ?? "ballpoint") === pen}
+                  onClick={() => change({ text: { pen } })}
+                >
+                  {t(`text.pens.${pen}`)}
+                </Chip>
+              ))}
+            </div>
+          ) : null}
         </div>
       ) : null}
 
@@ -297,13 +365,18 @@ export function AssetDetail({
               options={VoiceMethodSchema.options.map((m) => ({
                 value: m,
                 label: t(`voice.methods.${m}`),
-                // 声音克隆 comes later (Kelvin 2026-10-20).
-                disabled: m === "clone",
-                hint: m === "clone" ? t("voice.cloneLater") : undefined,
               }))}
             />
             <p className="text-xs text-muted-foreground">{t(`voice.hint.${asset.voice.method}`)}</p>
           </div>
+          {asset.voice.method === "clone" && product.data ? (
+            <VoiceClone
+              asset={asset}
+              product={product.data}
+              locked={locked}
+              onConsent={(consent) => save({ voice: { consent } })}
+            />
+          ) : null}
           {product.data && version ? (
             <VoicePanel
               asset={asset}
@@ -312,7 +385,8 @@ export function AssetDetail({
               locked={locked}
               onPick={(pick) => save({ pick })}
             />
-          ) : (
+          ) : asset.voice.method === "clone" ? null : (
+            // A clone has no auditions to wait for: its panel above says what comes first.
             <EmptyState title={t("cands.emptyVoice")} />
           )}
           {episode ? (
@@ -332,7 +406,9 @@ export function AssetDetail({
                   )
                 : asset.kind === "character"
                   ? t("cands.noteCharacter")
-                  : t("cands.noteOther")}
+                  : prop
+                    ? t("cands.noteProp")
+                    : t("cands.noteOther")}
             </span>
             {product.data && version ? (
               <span className="ml-auto">
@@ -371,7 +447,9 @@ export function AssetDetail({
         </div>
       )}
 
+      {MORE_REF_KINDS.includes(asset.kind) ? <MoreRefs asset={asset} /> : null}
       {asset.kind === "character" ? <AssetViews asset={asset} aspect={aspect} /> : null}
+      {prop ? <ScaleReference asset={asset} aspect={aspect} /> : null}
 
       {editing && preview.data ? (
         <ImpactDialog

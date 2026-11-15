@@ -164,12 +164,18 @@ async def prepare_clip(data: bytes) -> PreparedAudio:
     """What a voice sample or a dubbed line goes through: ``prepare_dialogue``, or under
     ``DRAMA_FAST_AUDIO=1`` the clip as it is, measured (no loudness)."""
     if os.environ.get("DRAMA_FAST_AUDIO") == "1":
-        samples, rate = _samples(data)
-        if not samples:
-            raise AudioError("audio_silent")
-        duration = round(len(samples) / rate, 3)
-        return PreparedAudio(data, duration, None, None, waveform(samples))
+        return measured(data)
     return await prepare_dialogue(data)
+
+
+def measured(data: bytes) -> PreparedAudio:
+    """A 16-bit mono WAV as it is, measured (length and waveform; no loudness): a clip already
+    prepared, such as a cut of one."""
+    samples, rate = _samples(data)
+    if not samples:
+        raise AudioError("audio_silent")
+    duration = round(len(samples) / rate, 3)
+    return PreparedAudio(data, duration, None, None, waveform(samples))
 
 
 async def prepare_dialogue(data: bytes, target: DialogueTarget | None = None) -> PreparedAudio:

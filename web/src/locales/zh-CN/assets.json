@@ -19,7 +19,10 @@
     "all": "全部",
     "scenes": "出现在 {{count}} 场",
     "scenesShots": "{{count}} 场 · {{shots}} 个镜头",
-    "notHere": "本集未出现"
+    "notHere": "本集未出现",
+    "create": "新建素材",
+    "manual": "手动",
+    "manualUnused": "还没有镜头用"
   },
   "detail": {
     "label": "素材详情",
@@ -40,7 +43,8 @@
     "uploadFile": "选择要上传的图片",
     "uploaded": "已上传「{{name}}」，成为一张候选并已选中。",
     "editTitle": "「{{name}}」已锁定，改动会影响下游",
-    "editWhat": "新描述：{{text}}"
+    "editWhat": "新描述：{{text}}",
+    "uploadHint": "不裁切"
   },
   "text": {
     "exact": "画面里的字（逐字核对）",
@@ -51,13 +55,19 @@
     },
     "hint": {
       "composite": "先生成没有字的底图，字在后期合成贴上去。字一定对，适合手机屏幕、招牌、字幕。",
-      "model": "字是画面的一部分，透视和笔迹更自然，适合手写纸条。每张都过 OCR，不一致的不能直接采纳。"
+      "model": "字是画面的一部分，透视和笔迹更自然，适合手写纸条。每张都过 OCR，不一致会标出来提醒你。"
     },
     "style": "字体风格",
     "styles": {
       "handwritten": "手写",
       "printed": "印刷",
       "screen": "屏幕界面"
+    },
+    "pen": "用什么写",
+    "pens": {
+      "ballpoint": "圆珠笔",
+      "marker": "马克笔",
+      "pencil": "铅笔"
     }
   },
   "cands": {
@@ -81,7 +91,8 @@
     "ocrHasText": "OCR 在底图上读到了字：「{{read}}」",
     "ocrUnchecked": "OCR 未检查：这台电脑上没有可用的 OCR",
     "emptyImage": "还没生成。点上方或右侧的「重跑」出 4 张候选。",
-    "emptyVoice": "还没生成。点上方或右侧的「重跑」出 3 个音色候选。"
+    "emptyVoice": "还没生成。点上方或右侧的「重跑」出 3 个音色候选。",
+    "noteProp": "实拍质感，放在环境里，不是白底产品照"
   },
   "voice": {
     "source": "音色来源",
@@ -102,7 +113,6 @@
     "lines": "用剧本里的台词试读",
     "note": "先免费试听 3 个，选一个出终版；终版才能锁定",
     "needsFinal": "试听不能直接锁定：先出终版",
-    "cloneLater": "之后支持",
     "finalApi": "用 {{model}} 出终版",
     "finalLocal": "用本地出终版（免费）",
     "finalStarted": "已开始出终版：以候选 {{letter}} 为基础，定下音色，再出 5 个情绪变体。",
@@ -110,20 +120,29 @@
     "final": "终版 · {{label}} · {{provider}}",
     "provider": {
       "api": "API 音色设计",
-      "local": "本地"
+      "local": "本地",
+      "cloneApi": "MiniMax 克隆",
+      "cloneLocal": "本地克隆"
+    },
+    "finalCloned": "终版 · {{provider}}",
+    "clone": {
+      "title": "声音样本",
+      "upload": "上传样本",
+      "replace": "换一段样本",
+      "formats": "WAV、MP3 或 M4A，10 秒到 5 分钟，不超过 20 MB",
+      "sample": "{{name}} · {{seconds}} 秒",
+      "consent": "我确认已获得声音本人的授权",
+      "consentHint": "换一段样本后要重新勾选。",
+      "run": "克隆 · 约 {{cost}}",
+      "runFree": "克隆",
+      "local": "本地 IndexTTS 直接拿这段样本当参考音频（免费）",
+      "started": "已开始克隆：定下音色，再出 5 个情绪变体。",
+      "needSample": "先上传样本",
+      "needConsent": "先勾选授权"
     },
     "anchor": "样音",
     "variants": "情绪变体",
     "variantsHint": "台词配音按每句的语气选用对应的情绪。"
-  },
-  "lockMismatch": {
-    "title": "候选 {{letter}} 的字和要求不一致",
-    "read": "OCR 读出来是「{{read}}」",
-    "nothing": "OCR 在这张上没读出字",
-    "exact": "要求是「{{exact}}」",
-    "hint": "锁定后，后面的镜头都按这张来。确认字没问题再锁定。",
-    "confirm": "仍然锁定",
-    "cancel": "取消"
   },
   "reanalyzing": "已开始重新分析剧本，分析完清单会自动更新；新增的素材会出现在清单里。",
   "view": {
@@ -133,7 +152,7 @@
   },
   "views": {
     "title": "补视图",
-    "note": "锁定后按锁定的图自动补齐，换了锁定图会重画",
+    "note": "锁定后从锁定的图自动画，换了锁定的图会重画；悬停一张可以重画或换成上传的",
     "running": "正在按锁定的图补齐侧面、背面和表情……",
     "stale": "锁定的图换了，正在等重画",
     "none": "锁定后自动补齐侧面、背面和表情。",
@@ -143,7 +162,14 @@
     "calm": "平静",
     "smile": "微笑",
     "angry": "愤怒",
-    "sad": "难过"
+    "sad": "难过",
+    "redraw": "重画这张",
+    "upload": "上传",
+    "redrawOne": "重画{{view}}",
+    "uploadOne": "上传一张换掉{{view}}",
+    "uploadFile": "选择要换上的图片",
+    "redrawStarted": "正在重画{{view}}，其余 5 张不变。",
+    "uploaded": "已换上{{view}}，其余 5 张不变；历史里能换回。"
   },
   "matrix": {
     "label": "出场矩阵",
@@ -179,5 +205,53 @@
     "emotion": "情绪",
     "emotionAuto": "按语气（{{emotion}}）",
     "emotionSaved": "情绪改成「{{emotion}}」，重配后生效。"
+  },
+  "prop": {
+    "size": "真实尺寸",
+    "material": "材质",
+    "wear": "新旧",
+    "sizePlaceholder": "全长约 90 cm",
+    "materialPlaceholder": "尼龙伞面、木柄",
+    "wearPlaceholder": "用了几年，伞面有点褪色",
+    "hint": "从设定里来，可以改；关键帧按尺寸写它和人物的比例（「伞柄到她的胯部」）。",
+    "saved": "尺寸材质已保存，下次重跑生效。",
+    "text": "道具上的字（逐字核对）",
+    "textHint": "字是道具的一部分：画在这个道具的图上，镜头用到它就带着字。屏幕、招牌这类独立的字仍是「画面文字」。"
+  },
+  "scale": {
+    "title": "比例参考",
+    "note": "和{{name}}同框，看大小对不对",
+    "none": "不再自动出：关键帧里道具的大小用文字写（和人比）。",
+    "running": "正在画比例参考……",
+    "caption": "{{name}}和它同框",
+    "redraw": "重画这张",
+    "redrawing": "已开始重画比例参考。",
+    "order": "只供对照，关键帧不用它（它画错的大小会被关键帧照搬）。"
+  },
+  "more": {
+    "title": "更多参考图",
+    "hint": "你自己的照片或截图，每张标明参考什么；锁定后也能加减，用到它的关键帧会变「待更新」",
+    "hintUnlocked": "你自己的照片或截图，每张标明参考什么；主图锁定后关键帧才带上它们",
+    "add": "上传"
+  },
+  "create": {
+    "title": "新建素材",
+    "kind": "类别",
+    "name": "名字",
+    "desc": "描述",
+    "descPlaceholder": "提示词的意图层：它长什么样、在剧里是什么",
+    "source": "图从哪来",
+    "sources": {
+      "generate": "按描述生成候选",
+      "upload": "上传图片"
+    },
+    "pick": "选择图片",
+    "noFile": "还没选图片",
+    "generateHint": "新建后马上按描述出一组候选；超出预算会先等你确认。",
+    "foot": "手动建的素材，重新分析剧本时不会被删。",
+    "cancel": "取消",
+    "submit": "新建",
+    "doneGenerate": "已新建「{{name}}」，正在按描述生成候选。",
+    "doneUpload": "已新建「{{name}}」：上传的图是它的候选，已选中。"
   }
 }

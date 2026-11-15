@@ -114,17 +114,17 @@ def _versions(client: TestClient, product_id: str) -> int:
 def test_the_assets_gate_needs_every_asset_of_the_episode_locked(client: TestClient) -> None:
     used = [a for a in _assets(client) if a["scenes"]]
     waiting = [a for a in used if a["status"] != "locked"]
-    assert len(used) == 10 and len(waiting) == 3
+    assert len(used) == 9 and len(waiting) == 2
     resp = client.post(f"{V1}/gates/assets/confirm", json={"scope_id": EP1})
     assert resp.status_code == 409 and _code(resp) == "assets_not_locked"
     params = resp.json()["detail"]["params"]
-    assert params["count"] == 3 and set(params["names"].split("、")) == {a["name"] for a in waiting}
+    assert params["count"] == 2 and set(params["names"].split("、")) == {a["name"] for a in waiting}
 
     for a in waiting:  # force: on-screen text OCR may read the first candidate differently
         resp = client.post(f"{V1}/assets/{a['id']}/lock", json={"force": True})
         assert resp.status_code == 200, resp.text
     assert _steps(client)["assets"] == {
-        "state": "in_progress", "done": 10, "total": 10, "stale": 0
+        "state": "in_progress", "done": 9, "total": 9, "stale": 0
     }  # fmt: skip
     resp = client.post(f"{V1}/gates/assets/confirm", json={"scope_id": EP1})
     assert resp.status_code == 200, resp.text
@@ -135,7 +135,7 @@ def test_the_assets_gate_needs_every_asset_of_the_episode_locked(client: TestCli
     impact = _preview(client, "asset_unlock", target["id"], {})
     _apply(client, impact["id"], "mark")
     steps = _steps(client)["assets"]
-    assert (steps["state"], steps["done"]) == ("in_progress", 9)
+    assert (steps["state"], steps["done"]) == ("in_progress", 8)
     assert {a["id"] for a in _assets(client) if a["status"] == "locked"} >= {
         a["id"] for a in used if a["id"] != target["id"]
     }

@@ -85,6 +85,8 @@ EXTS = {"image/png": "png", "image/jpeg": "jpg", "image/webp": "webp"}
 # The input files besides references: slot → what it holds.
 INPUT_FILES: tuple[tuple[Slot, str], ...] = (
     ("first_frame", "image"),
+    ("base_image", "image"),  # a redraw's or an inpaint's starting picture (M5.5)
+    ("mask", "image"),  # where an inpaint repaints, white = change (M5.5)
     ("video_in", "video"),
     ("dialogue_audio", "audio"),
     ("tail_clip", "video"),  # a continuous shot's lead-in: the last frames before it (15e)
@@ -343,6 +345,8 @@ class ComfyUIAdapter:
                 }
                 if req.params.get("negative"):
                     values["negative"] = str(req.params["negative"])
+                if req.params.get("denoise") is not None:  # a redraw's 改动幅度 (M5.5)
+                    values["denoise"] = float(req.params["denoise"])
                 # The dubbed lines start after the tail clip's frames (M5 step 15e).
                 tail = int(req.params.get("tail_frames") or 0) if "tail_clip" in inputs else 0
                 values["dialogue_frame"] = tail
@@ -391,6 +395,8 @@ class ComfyUIAdapter:
         fixed = sizes.get(str(req.params.get("aspect") or ""))
         if fixed:
             return int(fixed[0]), int(fixed[1])
+        if wf.meta.caps.get("exact_size"):  # the size asked for, as is (an image upscale, M5.5)
+            return int(req.params["width"]), int(req.params["height"])
         w = int(req.params.get("width") or 1080)
         h = int(req.params.get("height") or 1920)
         max_pixels = int(wf.meta.caps.get("max_pixels") or DEFAULT_MAX_PIXELS)

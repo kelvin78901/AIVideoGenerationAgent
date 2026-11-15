@@ -42,6 +42,7 @@ import hashlib
 import json
 import math
 from dataclasses import dataclass, replace
+from functools import partial
 from typing import Any
 
 from loguru import logger
@@ -67,6 +68,7 @@ from drama_series_agent.media.video import (
     TRIM_HEAD_S,
     VideoError,
     VideoInfo,
+    contact_sheet,
     frame,
     probe,
     scene_cuts,
@@ -82,7 +84,7 @@ from drama_series_agent.modelhub.adapters.base import (
 )
 from drama_series_agent.modelhub.adapters.mock import Responder
 from drama_series_agent.modelhub.router import BudgetExceeded, NeedsConfirm
-from drama_series_agent.pipeline import vlook, vselect
+from drama_series_agent.pipeline import redraw, takecheck, vlook, vselect
 from drama_series_agent.pipeline.component import (
     ComponentError,
     Inputs,
@@ -91,14 +93,25 @@ from drama_series_agent.pipeline.component import (
 )
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, voice_of
 from drama_series_agent.pipeline.components.kf import (
+    FACING_NOTE,
     FRAMING,
     MOVE,
-    _has_character,
+    PART_VIEW,
+    PROPS_NOTE,
     _references,
+    asset_rows,
     blocking_text,
+    facing,
+    in_frame,
     local_workflow,
+    part_of,
     pick_refs,
+    props_text,
     ref_limit,
+    said_of,
+    scene_light,
+    shot_space,
+    states_text,
 )
 from drama_series_agent.pipeline.components.media import (
     MediaCall,
@@ -119,11 +132,27 @@ from drama_series_agent.pipeline.timing import PRE_ROLL_S, line_seconds, shot_du
 from drama_series_agent.prompts import h3_format
 from drama_series_agent.prompts.compiler import Block
 from drama_series_agent.script import ops as script_ops
+from drama_series_agent.shots import check as shot_check
+from drama_series_agent.shots import contract as contracts
 from drama_series_agent.shots import ops
-from drama_series_agent.shots.service import KEYFRAME_SLOT, STORYBOARD_GATE, VIDEO_SLOT
+from drama_series_agent.shots.service import (
+    KEYFRAME_SLOT,
+    STORYBOARD_GATE,
+    VIDEO_SLOT,
+    own_picture,
+    prop_names,
+    scene_place,
+)
 from drama_series_agent.spec.dims import dims
 
 LANGUAGE = {"zh-CN": "Chinese", "en": "English"}
+# 镜头契约 (M5.5): the action budget and how an overlaid line is said, in the draft.
+BEATS = (
+    "最多 {n} 个动作，只演这里写的；画面里、参考图里的人和道具这里没写到就不碰"
+    "（下一个镜头的动作不提前做）；改变状态的动作（开门、放下东西）只做一次，不撤销再重做，犹豫要演出来"
+)
+INSERT_BEATS = "插入镜头：只许微动（光线变化、一滴水、镜头极轻的漂移），东西本身不发生任何事"
+OVERLAY_HOW = {"inner": "内心独白", "offscreen": "画外音"}
 DEFAULT_SOUND = "Natural ambient sound of the scene, matching what is on screen."
 VPROMPT = "vprompt"  # the route of the H3 prompt rewrite (config/components.yaml)
 REWRITE_TRIES = 2
@@ -131,6 +160,30 @@ FIX_PROMPT = (
     "This does not follow the official H3 layout yet. Fix every point and answer with the "
     "whole prompt again, nothing else:"
 )
+
+
+def take_asks(context: dict[str, Any]) -> dict[str, Any]:
+    """What a take is checked for (``templates/vid/take_check.j2``), from its shot."""
+    return {
+        "kind": context.get("kind") or "performance",
+        "beats": int(context.get("beats", 2)),
+        "light": context.get("light"),
+        "place": context.get("place"),
+        "across": list(context.get("across") or []),
+        "part": context.get("part"),
+        "facing": context.get("facing"),
+        "end": list(context.get("end") or []),
+        # run 20 1-12: the rewrite had her pick up the umbrella the next shot is for
+        "acts": str(context.get("acts") or ""),
+        "texts": [t for t in context.get("texts") or [] if t.get("method") == "model"],
+        "inner": list(
+            dict.fromkeys(
+                str(o["who"])
+                for o in context.get("overlay") or []
+                if o.get("how") == "inner" and o.get("who")
+            )
+        ),
+    }
 
 
 def shot_label(episode: Episode | None, shots: list[dict[str, Any]], shot_id: str) -> str:
@@ -190,6 +243,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     deps = [await invalidation.dependency(session, plan.id, shot_slice(row.id))]
 
     # The first frame.
+    own = None  # the user's picture description (``own_picture``): then no action lines
     if shot["shot_type"] == "continuous" and shot.get("tail_from"):
         upstream = await _shot_product(session, str(shot["tail_from"]), VIDEO_SLOT)
         take = (
@@ -218,6 +272,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         first = str(ref["sha256"])
         # What the keyframe was asked to show; a look at the picture replaces it (``vlook``).
         first_desc = str((keyframe.prompt_json or {}).get("intent") or shot.get("intent") or "")
+        own = own_picture(keyframe, shot)
 
     # The lines it films, in script order.
     script = await script_product(session, episode_id)
@@ -238,11 +293,30 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             deps.append(await invalidation.dependency(session, script.id, f"line:{x.id}"))
     spoken = [x for x in lines if x.type in ops.SPEAKING]
     action = [x for x in lines if x.type not in ops.SPEAKING]
-    # An inner voice or off-screen line (``vo``) is laid over the shot in the edit, not made in
-    # the take (M5 step 15p): a voice the take makes sounds said in the room, and with the
-    # lips closed it reads as lips out of sync. The take is made silent-lipped.
-    voiced = [x for x in spoken if x.type != "vo"]
-    overlaid = [x for x in spoken if x.type == "vo"]
+    # 镜头契约 (M5.5): a continuous shot without a start of its own starts where the shot it
+    # follows ends, so that shot's plan settings are read too.
+    assets = await asset_rows(session, list(shot.get("asset_ids") or []))
+    contract = contracts.effective(
+        shot,
+        [contracts.SpokenLine(x.id, n, x.type, x.tone or "") for n, x in enumerate(lines, 1)],
+        {a.id: a.kind for a in assets.values()},
+        {s["id"]: s for s in shots},
+        await prop_names(session, product.series_id),
+    )
+    # The props the scene puts in the picture too (``props_linked``), and the shots that gave
+    # the props their states.
+    ids = in_frame(shot, contract)
+    assets = await asset_rows(session, ids)
+    for source in sorted(set(contract["props_from"].values())):
+        deps.append(await invalidation.dependency(session, plan.id, shot_slice(source)))
+    if contract["start_inherited"] and shot.get("tail_from"):
+        tail_slice = shot_slice(str(shot["tail_from"]))
+        deps.append(await invalidation.dependency(session, plan.id, tail_slice))
+    # Only a line said on screen is made in the take. An inner voice or an off-screen line is
+    # laid over the shot in the edit (M5 step 15p): a voice the take makes sounds said in the
+    # room, and with the lips closed it reads as lips out of sync. The take is silent-lipped.
+    voiced = [x for x in spoken if contracts.speaks_on_screen(contract, x.id)]
+    overlaid = [x for x in spoken if not contracts.speaks_on_screen(contract, x.id)]
 
     # Who speaks: S1, S2 … in speaking order.
     speakers: dict[str, int] = {}
@@ -301,7 +375,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "sx": speakers[x.character_id or x.character_name or x.id],
             "who": x.character_name or "",
             "text": x.text,
-            "vo": x.type == "vo",
+            "vo": False,  # said on screen (an inner or off-screen line is not in the take)
         }
         for x in voiced
     ]
@@ -310,6 +384,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "line_id": x.id,
             "who": x.character_name or "",
             "text": x.text,
+            "how": contract["delivery"].get(x.id, "offscreen"),
             "sha256": audio[x.id][1]["sha256"] if x.id in audio else None,
         }
         for x in overlaid
@@ -327,7 +402,14 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
         shot.get("manual_s"),
     ).seconds
 
-    refs, unlocked, texts = await _references(session, invalidation, shot.get("asset_ids") or [])
+    refs, unlocked, texts = await _references(session, invalidation, ids)
+    refs = [r for r in refs if not r.get("scale")]  # 比例参考 is for the keyframe (M5.5)
+    # A close-up of part of someone (M5.5 step 9e-2, ``kf.PART_VIEW``): not her whole figure.
+    people = [str(r["name"]) for r in refs if r["kind"] == "character"]
+    part = part_of(shot, contract, people)
+    if part:
+        refs = [r for r in refs if not (r["kind"] == "character" and r["name"] == part)]
+    looked_at = facing(shot, contract, people, [t["name"] for t in texts])
     frame_ = await output_frame(session, product.series_id)
     spec = await session.get(OutputSpecRow, product.series_id)
     frame_["fps"] = str(spec.fps if spec is not None else get_config().spec.defaults.get("fps", 24))
@@ -336,11 +418,26 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
     look: list[str] = [f"{framing}，{move}"]
     if scene is not None and scene.get("heading"):
         look.append(str(scene["heading"]))
+    light = scene_light(scene)
+    if light:
+        look.append(light)
     if shot.get("blocking"):
         named = {r["name"] for r in refs} | set(unlocked) | {t["name"] for t in texts}
-        in_shot = set(shot.get("asset_ids") or []) | named
+        in_shot = set(ids) | named
         look.append(blocking_text(list(shot["blocking"]), in_shot))
-    look += [str(x.text) for x in action]
+    here, across = await shot_space(
+        session, product.series_id, ids, said_of(shot, contract, list(action))
+    )
+    look += [a.text() for a in across]  # what is through the door (M5.5 step 9e-3)
+    if part:
+        look.append(PART_VIEW.format(who=part))
+    if looked_at:
+        look.append(FACING_NOTE.format(who=looked_at["who"], things="、".join(looked_at["things"])))
+    # The script's action lines; a picture the user wrote replaces them, and so does the plan's
+    # when they undo themselves or crowd the shot (``check.lines_fault``, Kelvin 2026-11-11).
+    acted = [str(x.text) for x in action]
+    if own is None and shot_check.lines_fault(acted, contract) is None:
+        look += acted
     blocks = [Block("画幅", f"{frame_['aspect']}，{seconds:g} 秒"), Block("镜头", "；".join(look))]
     if dialogue:
         blocks.append(
@@ -351,14 +448,24 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             Block(
                 "画外",
                 "内心独白 / 画外音，剪辑时另铺，这条片子里没有人说话、嘴闭着：\n"
-                + "\n".join(f"{o['who']}：{o['text']}" for o in overlay),
+                + "\n".join(
+                    f"{o['who']}（{OVERLAY_HOW.get(o['how'], '画外音')}）：{o['text']}"
+                    for o in overlay
+                ),
             )
         )
+    kind = str(contract["kind"])
+    beats = int(contract["beats"])
+    blocks.append(Block("动作", INSERT_BEATS if kind == "insert" else BEATS.format(n=beats)))
+    if contract["start"]:
+        blocks.append(Block("开始时", states_text(contract["start"])))
+    if contract["end"]:
+        blocks.append(Block("结束时", states_text(contract["end"])))
+    if contract["props"] and props_text(contract["props"], assets):
+        blocks.append(Block("道具", PROPS_NOTE + props_text(contract["props"], assets)))
     sound = shot.get("sound")
     if sound:
         blocks.append(Block("声音", str(sound)))
-    # 插入镜头 (M5 step 15o): no one in it and nothing said: the rewrite keeps its motion small.
-    person = bool(voiced) or await _has_character(session, list(shot.get("asset_ids") or []))
     return Inputs(
         blocks=blocks,
         deps=deps,
@@ -367,8 +474,22 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "frame": frame_,
             "first_frame": first,
             "first_desc": first_desc,
+            # what the shot is for, the take check's ``extra`` (a continuous shot has no picture
+            # of its own: the plan's intent)
+            "acts": first_desc or str(shot.get("intent") or ""),
             "tail_clip": tail,
-            "kind": "performance" if person else "insert",
+            # 镜头契约 (M5.5; before it, 15o's 插入镜头: nobody in it and nothing said)
+            "kind": kind,
+            "light": light,
+            "place": here
+            or (scene_place(str(scene["heading"])) if scene and scene.get("heading") else None),
+            "across": [f"{a.via}那边是{a.name}" for a in across],
+            "part": part,
+            "facing": looked_at,
+            "beats": beats,
+            "start": [f"{i['subject']}：{i['state']}" for i in contract["start"]],
+            "end": [f"{i['subject']}：{i['state']}" for i in contract["end"]],
+            "props": [x for x in props_text(contract["props"], assets).split("；") if x],
             "overlay": overlay,
             "refs": refs,
             "unlocked": unlocked,
@@ -551,6 +672,7 @@ class VidComponent(MediaComponent):
             "h3_prompt": _mock_rewrite,
             "select": vselect.mock_suggest,
             vlook.TASK: vlook.mock_look,
+            takecheck.TASK: takecheck.mock_check,
         }
 
     async def run(self, ctx: RunContext, inputs: Inputs) -> VersionDraft:
@@ -558,12 +680,53 @@ class VidComponent(MediaComponent):
         if source is not None:
             return await self._final(ctx, inputs, source)
 
-        async def flow(model: str, reason: str | None) -> Take:
-            return await self._take(ctx, inputs, model, reason)
-
         # A local take that fails or times out is made again on the fallback (the H3 API), its
-        # request built for that model (SPEC 7.3).
-        take, reason = await self.run_flow(ctx, flow)
+        # request built for that model (SPEC 7.3). 检查没过自动重画 (9e-5, ``pipeline/redraw.py``):
+        # a local take that fails its check is made again with what failed.
+        fixes: list[str] = []
+        calls: list[MediaCall] = []
+        best: tuple[int, Take, str | None, list[dict[str, Any]], dict[str, Any]] | None = None
+        made = 0
+        for attempt in range(1 + redraw.tries(self.id)):
+            flow = partial(self._take, ctx, inputs, fixes=fixes, attempt=attempt)
+            take, reason = await self.run_flow(ctx, flow)
+            made += 1
+            calls += take.calls
+            files, payload = await self._take_files(ctx, inputs, take)
+            mark = redraw.score(payload["check"])
+            done = not redraw.failed(payload["check"]) or take.calls[-1].where != "local"
+            if best is None or mark > best[0] or done:
+                best = (mark, take, reason, files, payload)
+            if done:
+                break
+            fixes = redraw.failed_text(payload["check"], takecheck.LABELS).splitlines()
+        assert best is not None
+        _, take, reason, files, payload = best
+        if made > 1:
+            payload["redraws"] = made - 1  # tries after the first; the one kept is shown
+        call = take.calls[-1]
+        stage = "draft" if call.where == "local" else None
+        draft = self.media_draft(
+            ctx,
+            inputs,
+            payload,
+            files,
+            calls,
+            take.req.prompt or "",
+            stage=stage,
+            fallback_reason=reason,
+            # What 「用 API 出终版」 resends (Regenerate-2K takes the draft's own inputs), and
+            # why this workflow (按镜头选工作流; the Inspector shows it).
+            params={"request": _sent(take.req.params), **_select(ctx)},
+        )
+        draft.seed = take.req.seed
+        draft.dependencies = [*draft.dependencies, *take.deps]
+        return draft
+
+    async def _take_files(
+        self, ctx: RunContext, inputs: Inputs, take: Take
+    ) -> tuple[list[dict[str, Any]], dict[str, Any]]:
+        """A take's files and payload: the clip trimmed and measured, then checked."""
         call = take.calls[-1]
         frame_ = inputs.context["frame"]
         head = head_s(take.req.params, float(frame_["fps"]))
@@ -579,29 +742,29 @@ class VidComponent(MediaComponent):
             "refs": [r["name"] for r in take.refs],
             "voices": [v["who"] for v in take.voices],
         }
+        files = await self._check_take(ctx, inputs, files, payload)
         if take.rewritten is not None:
             payload["prompt_ir"] = bool(take.rewritten)
         if take.rewrite is not None:
             payload["prompt_rewrite"] = take.rewrite
-        stage = "draft" if call.where == "local" else None
-        draft = self.media_draft(
-            ctx,
-            inputs,
-            payload,
-            files,
-            take.calls,
-            take.req.prompt or "",
-            stage=stage,
-            fallback_reason=reason,
-            # What 「用 API 出终版」 resends (Regenerate-2K takes the draft's own inputs), and
-            # why this workflow (按镜头选工作流; the Inspector shows it).
-            params={"request": _sent(take.req.params), **_select(ctx)},
-        )
-        draft.dependencies = [*draft.dependencies, *take.deps]
-        return draft
+        return files, payload
 
-    async def _take(self, ctx: RunContext, inputs: Inputs, model: str, reason: str | None) -> Take:
+    async def _take(
+        self,
+        ctx: RunContext,
+        inputs: Inputs,
+        model: str,
+        reason: str | None,
+        *,
+        fixes: list[str] | None = None,
+        attempt: int = 0,
+    ) -> Take:
+        """One take on ``model``; ``fixes``: what the take check found wrong in the try before
+        (9e-5), told to the prompt's writer, or added to the prompt when nothing rewrites it;
+        each try after the first on another seed."""
         req, refs, deps, voices, r2v = await self._request(inputs, ctx.compiled, model, ctx)
+        if attempt and req.seed is not None:
+            req = req.model_copy(update={"seed": req.seed + 100 * attempt})
         calls: list[MediaCall] = []
         rewrite: str | None = None
         if self._rewrites(model):
@@ -621,6 +784,7 @@ class VidComponent(MediaComponent):
             seen = look.text if look is not None else None
             facts = self._facts(inputs, req, refs, voices, r2v, ctx.lang, seen)
             facts.duration_s = self._rendered_s(req, model)
+            facts.fixes = list(fixes or [])
             prompt, rewrite_call = await self._rewrite(ctx, inputs, facts)
             calls.append(rewrite_call)
             rewrite = rewrite_call.model_key
@@ -630,6 +794,10 @@ class VidComponent(MediaComponent):
             calls.append(ir_call)
         if rewritten:
             req = req.model_copy(update={"prompt": rewritten})
+        if fixes and not self._rewrites(model):
+            told = "\n".join(fixes)
+            prompt = f"{req.prompt}\n\n[{redraw.FIX_TITLE}]\n{told}"
+            req = req.model_copy(update={"prompt": prompt})
         call = await self.media_call(
             ctx, req, inputs.episode_id, model=model, fallback=False, fallback_reason=reason
         )
@@ -693,6 +861,7 @@ class VidComponent(MediaComponent):
             "cuts": await self._cuts(files),
         }
         payload.pop("prompt_ir", None)
+        files = await self._check_take(ctx, inputs, files, payload)
         draft = self.media_draft(ctx, inputs, payload, files, [call], prompt, stage="final")
         draft.params["source"] = {"version_id": source.id}
         return draft
@@ -704,6 +873,36 @@ class VidComponent(MediaComponent):
         if video is None:
             raise ComponentError("no_video")
         return await clip_files(self.services.store, video.sha256, raw=raw, head=head)
+
+    async def _check_take(
+        self,
+        ctx: RunContext,
+        inputs: Inputs,
+        files: list[dict[str, Any]],
+        payload: dict[str, Any],
+    ) -> list[dict[str, Any]]:
+        """take 检查 (M5.5): the take's contact sheet looked at against its contract, and what
+        its own measures say, into ``payload.check`` (only a warning); the sheet joins the take's
+        files (``role: sheet``)."""
+        items = takecheck.measured(payload)
+        model = None
+        video = next(f for f in files if f["role"] == "video")
+        data = self.services.store.path_for(video["sha256"]).read_bytes()
+        try:
+            png, times = await contact_sheet(data)
+        except VideoError as exc:
+            logger.warning("no contact sheet for the take ({})", exc.code)
+        else:
+            sha = self.services.store.put_bytes(png)
+            files = [*files, file_entry("sheet", sha, "image/png")]
+            asks = {**take_asks(inputs.context), "times": times}
+            call_ctx = self._call_ctx(ctx, inputs.episode_id)
+            seen = await takecheck.look(self.services, sha, asks, item_of(ctx.product), call_ctx)
+            if seen is not None:
+                items, model = [*seen[0], *items], seen[1]
+            payload["sheet_times"] = times
+        payload["check"] = {"items": items, "ok": all(x["ok"] for x in items), "model": model}
+        return files
 
     async def _cuts(self, files: list[dict[str, Any]]) -> list[float]:
         """Where the take seems to cut inside the clip (M5 step 15j; a take of one continuous
@@ -816,10 +1015,17 @@ class VidComponent(MediaComponent):
             )
         else:
             return estimate
-        parts = [estimate, self.services.registry.get(ir).estimate(ask)]
+        written = self.services.registry.get(ir).estimate(ask)
+        parts = [estimate, written]
         if self._rewrites(model):  # the first frame looked at once (cached afterwards)
             look = vlook.estimate(self.services, self._route_model(vlook.VLOOK))
             parts += [look] if look is not None else []
+        asks = {**take_asks(inputs.context), "times": []}  # take 检查: the take looked at once
+        check = takecheck.estimate(self.services, self._route_model(takecheck.TAKECHECK), asks)
+        parts += [check] if check is not None else []
+        if self.where_of(model) == "local":  # each redraw it may take (9e-5): written, looked at
+            again = [written, *([check] if check is not None else [])]
+            parts += again * redraw.tries(self.id)
         return Estimate(
             cost_usd=sum(e.cost_usd for e in parts),
             seconds=sum(e.seconds for e in parts),
@@ -919,6 +1125,10 @@ class VidComponent(MediaComponent):
             dialogue=lines,
             sound="N/A" if context["audio_mode"] == "none" else str(context.get("sound") or ""),
             shot_kind=str(context.get("kind") or "performance"),
+            beats=int(context.get("beats", 2)),
+            start=list(context.get("start") or []),
+            end=list(context.get("end") or []),
+            props=list(context.get("props") or []),
         )
 
     def _rewrite_request(self, messages: list[dict[str, Any]]) -> ModelRequest:
@@ -1100,10 +1310,21 @@ class VidComponent(MediaComponent):
         sections when voice samples go along)."""
         said = [ln.strip() for ln in compiled.splitlines() if ln.strip() and not ln.startswith("#")]
         description = " ".join([*said, *context["look"]])
+        # 镜头契约 (M5.5): the action budget, how it starts and ends, the props as set.
+        kind, beats = context.get("kind"), int(context.get("beats", 2))
+        description += " " + (INSERT_BEATS if kind == "insert" else BEATS.format(n=beats)) + "。"
+        for label, key in (
+            ("开始时", "start"),
+            ("结束时", "end"),
+            ("道具（状态是摆好的，每样只有一件）", "props"),
+        ):
+            if context.get(key):
+                description += f" {label}：" + "；".join(context[key]) + "。"
         overlay = context.get("overlay") or []
         if overlay:  # said in the edit (M5 step 15p): the take shows the mood, lips closed
             description += " 画外（剪辑时另铺，这条片子里没有人说话、嘴闭着）：" + "；".join(
-                f"{o['who']}：{o['text']}" for o in overlay
+                f"{o['who']}（{OVERLAY_HOW.get(str(o.get('how')), '画外音')}）：{o['text']}"
+                for o in overlay
             )
         audio_of = {v["sx"]: i for i, v in enumerate(voices, 1)}
         dialogue = [{**d, "audio": audio_of.get(d["sx"])} for d in context["dialogue"]]

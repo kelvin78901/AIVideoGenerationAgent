@@ -90,3 +90,63 @@ def test_ids_carry_over_by_key_or_name() -> None:
     assert assets["scene:l-1:dawn"]["uses"] == [
         {"scene_id": "s1", "line_ids": []}, {"scene_id": "s2", "line_ids": []}
     ]  # fmt: skip
+
+
+def test_writing_on_a_prop_is_the_props() -> None:
+    """M5.5: text the answer puts ``on`` a prop becomes that prop's writing (drawn on its
+    picture), not an asset of its own; on something unknown it stays on-screen text."""
+    lines = ops.numbered_lines(SCRIPT)
+    bible = {
+        "entities": [
+            *BIBLE["entities"][:5],
+            {"id": "p-2", "kind": "prop", "name": "旧船票", "data": {"size": "约 8 cm × 4 cm"}},
+        ]
+    }
+    answer = {
+        "assets": [
+            {"kind": "text", "name": "船票上的字", "on": "prop:p-2",
+             "text": {"exact": "平安渡 · 一张", "style": "printed"}, "lines": [3]},
+            {"kind": "text", "name": "门上的字", "on": "门板",
+             "text": {"exact": "茶", "style": "printed", "method": "model"}, "lines": [3]},
+            {"key": "prop:p-1", "physical": {"size": "直径约 5 cm", "junk": "x"}},
+        ]
+    }  # fmt: skip
+    merged = {f.key: f for f in ops.merge(ops.collect(SCRIPT, bible), answer, lines, bible)}
+    ticket = merged["prop:p-2"]
+    assert ticket.text == {"exact": "平安渡 · 一张", "style": "printed", "method": "model"}
+    assert ticket.uses == {"s1": ["x1", "x3"]}  # the line with the words joins it
+    assert ticket.physical == {"size": "约 8 cm × 4 cm"}  # from the bible
+    assert "text:name:船票上的字" not in merged
+    assert merged["text:name:门上的字"].text is not None  # 门板 is not a prop it knows
+    assert merged["prop:p-1"].physical == {"size": "直径约 5 cm"}  # from the answer
+
+
+def test_a_props_picture_is_of_the_prop_alone() -> None:
+    """Run 19: the note's 「贴在伞柄上」 drew a black umbrella on its picture; where a prop is put
+    is the shot's. A clause that names a character stays (the hair tie on 林晚's wrist)."""
+    note = "方形黄色便利贴，贴在伞柄上，边角被雨打湿卷起。"
+    assert ops.appearance_only(note) == "方形黄色便利贴，边角被雨打湿卷起。"
+    band = "洗旧了的黑色布发圈，戴在林晚左手腕上。"
+    assert ops.appearance_only(band, ["林晚"]) == band
+    assert (
+        ops.appearance_only("挂在林晚包上的钥匙扣，铜的", ["林晚"])
+        == "挂在林晚包上的钥匙扣，铜的。"
+    )
+    assert ops.appearance_only("放在桌上") == ""
+
+
+def test_a_scene_names_what_is_through_its_door() -> None:
+    """M5.5 step 9e-3: a scene's ``adjoins`` (through which door or window, to which scene, how it
+    looks from here); one without a ``to`` is dropped."""
+    lines = ops.numbered_lines(SCRIPT)
+    near = [
+        {"via": "门", "to": "scene:l-2:night", "note": "门外是茶馆后院"},
+        {"via": "窗", "note": "没写是哪个场景"},
+    ]
+    answer = {"assets": [{"kind": "scene", "name": "茶馆 · 夜", "adjoins": near}]}
+    merged = {f.key: f for f in ops.merge(ops.collect(SCRIPT, BIBLE), answer, lines, BIBLE)}
+    assert merged["scene:l-2:night"].adjoins == [
+        {"via": "门", "to": "scene:l-2:night", "note": "门外是茶馆后院"}
+    ]
+    assert ops.adjoins_from([{"to": "x"}, "y", None]) == [{"via": "门", "to": "x", "note": ""}]
+    assert ops.adjoins_from(None) is None

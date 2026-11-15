@@ -55,6 +55,8 @@ from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT, DubCompo
 from drama_series_agent.pipeline.components.enrich import EnrichComponent
 from drama_series_agent.pipeline.components.extract import ExtractComponent
 from drama_series_agent.pipeline.components.img import ImgComponent
+from drama_series_agent.pipeline.components.inpaint import InpaintComponent
+from drama_series_agent.pipeline.components.iup import IupComponent
 from drama_series_agent.pipeline.components.kf import KfComponent, stale_aspect
 from drama_series_agent.pipeline.components.plan import (
     SHOT_PLAN_SLOT,
@@ -62,6 +64,9 @@ from drama_series_agent.pipeline.components.plan import (
     asset_list_slicer,
     shot_plan_slicer,
 )
+from drama_series_agent.pipeline.components.plancheck import PlanCheckComponent
+from drama_series_agent.pipeline.components.redraw import RedrawComponent
+from drama_series_agent.pipeline.components.scale import ScaleComponent
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.components.text import TextComponent
@@ -181,12 +186,17 @@ class StudioState:
         components.add(AssetsComponent(components.services))
         components.add(ImgComponent(components.services))
         components.add(ViewsComponent(components.services))
+        components.add(ScaleComponent(components.services))
+        components.add(RedrawComponent(components.services))
+        components.add(InpaintComponent(components.services))
+        components.add(IupComponent(components.services))
         text = TextComponent(components.services)
         components.add(text)
         components.add(VoiceComponent(components.services))
         dub = DubComponent(components.services)
         components.add(dub)
         components.add(PlanComponent(components.services))
+        components.add(PlanCheckComponent(components.services))
         components.add(KfComponent(components.services))
         components.add(VidComponent(components.services))
         # A line's audio is one of dozens: lists of them skip the per-product estimate.

@@ -36,6 +36,7 @@ EMOTIONS = ["calm", "angry", "crying", "whisper", "shout"]
 CNY = 7.1  # providers.yaml currency_rates
 PER_CHAR = 350 / 1e6 / CNY  # MiniMax Speech HD (China), per character
 DESIGN = 9.90 / CNY  # the voice design fee, on the first synthesis
+CLONE = 9.90 / CNY  # a clone's (国内站 快速复刻), also on the first synthesis
 
 
 @pytest.fixture
@@ -257,10 +258,119 @@ def test_a_local_voice_is_free(client: TestClient) -> None:
     assert client.post(f"{V1}/assets/vzhouyu/lock").status_code == 200
 
 
-def test_cloning_is_not_supported_yet(client: TestClient) -> None:
+def _sample(
+    client: TestClient, seconds: float = 12.0, name: str = "me.wav", rate: int = 48000
+) -> Any:
+    files = {"file": (name, sine_wav(seconds, rate=rate), "audio/wav")}
+    return client.post(f"{V1}/assets/vzhouyu/voice/sample", files=files)
+
+
+def _clone_ready(client: TestClient) -> dict[str, Any]:
+    """周屿's source is 声音克隆, with a 12 s sample and the 本人授权 box ticked."""
+    client.patch(f"{V1}/assets/vzhouyu", json={"voice": {"method": "clone"}}).raise_for_status()
+    assert _sample(client).status_code == 200
+    resp = client.patch(f"{V1}/assets/vzhouyu", json={"voice": {"consent": True}})
+    voice: dict[str, Any] = resp.json()["voice"]
+    assert (voice["method"], voice["consent"]) == ("clone", True)
+    return voice
+
+
+def test_a_clone_needs_a_sample_and_the_speakers_consent(client: TestClient) -> None:
     client.patch(f"{V1}/assets/vzhouyu", json={"voice": {"method": "clone"}})
-    job = _wait(client, _run(client, "vzhouyu")["id"])
-    assert job["state"] == "failed" and job["error"]["code"] == "voice_clone_not_supported"
+    run = f"{V1}/products/demo-p-asset-vzhouyu/run"
+    resp = client.post(run, json={"mode": "run"})
+    assert resp.status_code == 409 and resp.json()["detail"]["code"] == "voice_sample_missing"
+
+    resp = _sample(client)
+    assert resp.status_code == 200, resp.text
+    voice = resp.json()["voice"]
+    sample = voice["sample"]
+    assert (voice["method"], voice["consent"]) == ("clone", False)
+    assert (sample["name"], sample["duration_s"]) == ("me.wav", 12.0)
+    assert sample["clip_s"] == pytest.approx(12.0, abs=0.05)  # the levelled clip
+    assert len(sample["waveform"]) == 64
+    assert client.get(f"{V1}/files/{sample['sha256']}").status_code == 200
+    resp = client.post(run, json={"mode": "run"})
+    assert resp.status_code == 409 and resp.json()["detail"]["code"] == "voice_clone_consent"
+    # Still priced before the box is ticked: the page shows what a clone costs.
+    estimate = _product(client, "vzhouyu")["estimate"]
+    sample_chars = len(get_config().voice.sample_text)
+    assert (estimate["model_key"], estimate["cost_usd"]) == ("local/indextts2", 0)
+    assert estimate["final_usd"] == pytest.approx(CLONE + 5 * sample_chars * PER_CHAR, abs=1e-4)
+
+    resp = client.patch(f"{V1}/assets/vzhouyu", json={"voice": {"consent": True}})
+    assert resp.json()["voice"]["consent"] is True
+    assert resp.json()["voice"]["method"] == "clone"  # the method stays
+    # A new sample may be someone else: the box is unticked again.
+    other = _sample(client, 20.0, "other.wav").json()["voice"]
+    assert other["consent"] is False
+    assert other["sample"]["duration_s"] == 20.0 and other["sample"]["clip_s"] == 15.0
+
+
+def test_a_sample_is_checked_like_minimax_checks_it(client: TestClient) -> None:
+    resp = _sample(client, 6.0)
+    assert resp.status_code == 422 and resp.json()["detail"]["code"] == "voice_sample_too_short"
+    resp = _sample(client, 301.0, rate=8000)
+    assert resp.status_code == 422 and resp.json()["detail"]["code"] == "voice_sample_too_long"
+    files = {"file": ("notes.txt", b"hello there, not a sound", "text/plain")}
+    resp = client.post(f"{V1}/assets/vzhouyu/voice/sample", files=files)
+    assert resp.status_code == 422 and resp.json()["detail"]["code"] == "not_audio"
+    # Only a voice takes one; a locked voice refuses.
+    files = {"file": ("me.wav", sine_wav(12.0), "audio/wav")}
+    resp = client.post(f"{V1}/assets/linwan/voice/sample", files=files)
+    assert resp.status_code == 422 and resp.json()["detail"]["code"] == "upload_not_supported"
+    resp = client.post(f"{V1}/assets/vlinwan/voice/sample", files=files)
+    assert resp.status_code == 409 and resp.json()["detail"]["code"] == "product_locked"
+
+
+def test_a_local_clone_reads_with_the_sample_for_free(client: TestClient) -> None:
+    """No auditions: the run is a final, IndexTTS with the sample as its reference."""
+    voice = _clone_ready(client)
+    job = _done(client, "vzhouyu")
+    assert job["est_cost_usd"] == 0
+    final = _latest(client, "vzhouyu")
+    assert (final["stage"], final["model_key"], final["cost_usd"]) == (
+        "final", "local/indextts2", 0
+    )  # fmt: skip
+    assert final["payload"]["provider"] == "local" and final["payload"]["cloned"] is True
+    (anchor,) = _by_role(final, "anchor")
+    assert anchor["sha256"] == voice["sample"]["sha256"]
+    assert len(_by_role(final, "variant")) == 5
+    calls = [c for c in _rows(client, ModelCall) if c.job_id == job["id"]]
+    assert {c.model_key for c in calls} == {"local/indextts2"} and len(calls) == 5
+    assert client.post(f"{V1}/assets/vzhouyu/lock").status_code == 200
+
+
+def test_a_minimax_clone_pays_its_fee_on_the_first_synthesis(client: TestClient) -> None:
+    voice = _clone_ready(client)
+    job = _done(client, "vzhouyu", where="api")
+    final = _latest(client, "vzhouyu")
+    assert (final["stage"], final["model_key"]) == ("final", "minimax/speech-2.8-hd")
+    payload = final["payload"]
+    assert payload["provider"] == "minimax" and payload["cloned"] is True
+    assert payload["voice_id"].startswith("ds") and len(payload["voice_id"]) == 24
+    assert [f["sha256"] for f in _by_role(final, "anchor")] == [voice["sample"]["sha256"]]
+    assert [f["emotion"] for f in _by_role(final, "variant")] == EMOTIONS
+
+    calls = [c for c in _rows(client, ModelCall) if c.job_id == job["id"]]
+    assert len(calls) == 6 and all(c.status == "success" for c in calls)
+    sample = len(get_config().voice.sample_text)
+    assert sorted(round(c.cost_usd, 6) for c in calls) == sorted(
+        [0.0] + [round(sample * PER_CHAR, 6)] * 4 + [round(CLONE + sample * PER_CHAR, 6)]
+    )
+    assert final["cost_usd"] == pytest.approx(CLONE + 5 * sample * PER_CHAR)
+    assert job["est_cost_usd"] == pytest.approx(final["cost_usd"])
+
+
+def test_a_failing_clone_is_made_locally_as_a_whole(client: TestClient) -> None:
+    voice = _clone_ready(client)
+    _state(client).registry.mock_settings.fail_keys.add("minimax/speech-2.6-hd")  # whisper
+    _done(client, "vzhouyu", where="api")
+    final = _latest(client, "vzhouyu")
+    assert (final["origin"], final["fallback_reason"]) == ("fallback", "error")
+    assert final["model_key"] == "local/indextts2" and final["cost_usd"] == 0
+    assert final["payload"]["voice_id"] is None
+    assert [f["sha256"] for f in _by_role(final, "anchor")] == [voice["sample"]["sha256"]]
 
 
 def test_samples_are_levelled(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
@@ -328,5 +438,51 @@ def test_the_minimax_final_through_the_real_adapter(
     assert len(calls) == 6 and all(c.status == "success" for c in calls)
     # the trial clip (2.00 元 / 万字符), the design fee, five lines
     expected = billed * 0.0002 / CNY + DESIGN + 5 * billed * PER_CHAR
+    assert final["cost_usd"] == pytest.approx(expected)
+    assert job["est_cost_usd"] == pytest.approx(expected)
+
+
+@respx.mock(assert_all_called=False)
+def test_a_clone_through_the_real_adapter(client: TestClient, respx_mock: respx.MockRouter) -> None:
+    """Against a fake MiniMax: the sample uploaded (``purpose=voice_clone``), cloned under our
+    voice_id, five syntheses; the clone's fee on the one MiniMax bills it on."""
+    respx_mock.route(host="127.0.0.1").pass_through()
+    _clone_ready(client)
+    client.post(f"{V1}/providers/minimax_llm/key", json={"api_key": "mm-test"}).raise_for_status()
+    registry = _state(client).registry
+    registry.mock = False
+    registry._adapters.clear()
+
+    ok = {"base_resp": {"status_code": 0}}
+    upload = respx_mock.post(f"{MINIMAX}/files/upload").mock(
+        return_value=httpx.Response(200, json={"file": {"file_id": 4242}, **ok})
+    )
+    clone = respx_mock.post(f"{MINIMAX}/voice_clone").mock(
+        return_value=httpx.Response(200, json={"input_sensitive": {"type": 0}, **ok})
+    )
+    wav = sine_wav(0.6).hex()
+    billed = 2 * len(get_config().voice.sample_text)
+    first = {"usage_characters": billed, "audio_length": 600, "usage_voice_count": 1}
+    rest = {"usage_characters": billed, "audio_length": 600}
+    t2a = respx_mock.post(f"{MINIMAX}/t2a_v2").mock(
+        side_effect=[
+            httpx.Response(200, json={"data": {"audio": wav}, "extra_info": info, **ok})
+            for info in (first, rest, rest, rest, rest)
+        ]
+    )
+    job = _done(client, "vzhouyu", where="api")
+
+    assert upload.call_count == 1 and clone.call_count == 1 and t2a.call_count == 5
+    sent = upload.calls[0].request
+    assert b'name="purpose"' in sent.content and b"voice_clone" in sent.content
+    assert sent.headers["content-type"].startswith("multipart/form-data")
+    body = json.loads(clone.calls[0].request.content)
+    final = _latest(client, "vzhouyu")
+    assert body == {"file_id": 4242, "voice_id": final["payload"]["voice_id"]}
+    voices = {json.loads(c.request.content)["voice_setting"]["voice_id"] for c in t2a.calls}
+    assert voices == {body["voice_id"]}
+    calls = [c for c in _rows(client, ModelCall) if c.job_id == job["id"]]
+    assert len(calls) == 6 and all(c.status == "success" for c in calls)
+    expected = CLONE + 5 * billed * PER_CHAR
     assert final["cost_usd"] == pytest.approx(expected)
     assert job["est_cost_usd"] == pytest.approx(expected)

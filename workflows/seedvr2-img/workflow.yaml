@@ -1,0 +1,23 @@
+# 图片超分（M5.5 第 15 步，组件 iup）：按 ComfyUI 官方模板 utility_seedvr2_7b_int8_upscale_image（本机
+# comfyui_workflow_templates_json 里那份）改写成 API 格式，模型和视频 2K 精修同一套（7B int8，清单 w_sr）。和官方不同：
+# - 直接缩放到要的尺寸（scale dimensions，居中裁），不按倍数：关键帧 → 交付尺寸（成片规格），参考图 → 长边 2048；
+#   SeedVR2Preprocess 补边、PostProcessing 裁回，所以宽高不必是 16 的倍数（caps.exact_size：按请求的宽高原样填）；
+# - 没有 alpha（JoinImageWithAlpha 去掉，我们的图都不透明）；
+# - lab 调色（官方默认 none；和视频那份一样，颜色和原图一致）。
+# 只放大、补细节，不改内容。节点和输入名 2026-11-12 按本机 /object_info 核对，还没在本机真跑过（第 18 步试跑）。
+name: { zh: SeedVR2 7B 图片超分（本地）, en: SeedVR2 7B image upscale (local) }
+kind: image
+tier: recommended
+bindings:
+  - { slot: base_image, node: Base, field: image }
+  - { slot: width, node: Size, field: resize_type.width }
+  - { slot: height, node: Size, field: resize_type.height }
+  - { slot: seed, node: Restore, field: seed }
+  - { slot: image_out, node: Output }
+models:
+  - { folder: diffusion_models, name: seedvr2_7b_int8_convrot.safetensors }
+  - { folder: vae, name: seedvr2_ema_vae_fp16.safetensors }
+caps:
+  exact_size: true
+  # 估：视频那份 768×1344 → 1080×1920 每秒片子约 40 s（24 帧），一张图加上加载模型约 30 s
+  est_seconds: 30

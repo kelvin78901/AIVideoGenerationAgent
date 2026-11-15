@@ -379,7 +379,7 @@ def test_progress_of_the_novel_and_script_steps(client: TestClient) -> None:
     assert e2["script"]["state"] == "not_started"
     assert steps["post"]["state"] == "not_started"
     # 素材 counts the assets episode 1 uses (10 of the demo's 13), 7 of them locked.
-    assert steps["assets"] == {"state": "in_progress", "done": 7, "total": 10, "stale": 0}
+    assert steps["assets"] == {"state": "in_progress", "done": 7, "total": 9, "stale": 0}
     assert e2["assets"]["state"] == "not_started"
     # Accepting an addition: the bible, the plan and episode 1's script (it is on its first
     # paragraph) all read it; episode 2's script does not.

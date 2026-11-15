@@ -11,10 +11,11 @@ OwnerType = Literal["series", "episode", "scene", "shot", "asset", "line"]
 ProductStatus = Literal[
     "empty", "queued", "running", "ready", "stale", "adopted", "locked", "failed"
 ]  # fmt: skip
-# ``pick``: the candidate the user locked, alone (M3); ``upload``: the user's own file.
+# ``pick``: the candidate the user locked, alone (M3); ``upload``: the user's own file;
+# ``redraw`` / ``inpaint`` / ``upscale``: a picture made from another one (M5.5).
 VersionOrigin = Literal[
     "run", "rerun", "switch", "edit", "fallback", "import", "auto_qa_rerun", "comfy_ingest",
-    "pick", "upload",
+    "pick", "upload", "redraw", "inpaint", "upscale",
 ]  # fmt: skip
 
 
@@ -28,6 +29,7 @@ class VersionFileOut(BaseModel):
     h: int | None = None
     idx: int | None = None  # a candidate's or view's number in its version (M3)
     view: str | None = None  # side / back / calm / smile / angry / sad (补视图)
+    purpose: str | None = None  # 多参考图: face / outfit / hair / pose / other (M5.5)
     line: int | None = None  # a voice sample: which of its audition lines it reads
     emotion: str | None = None  # a voice's emotion variant (config/voice.yaml)
     waveform: list[float] | None = None  # audio: 64 peaks, 0–1 (media/audio.py)
@@ -75,7 +77,7 @@ class EstimateOut(BaseModel):
     # False: the model has no known price (cost_usd is 0); a run waits for a yes first.
     priced: bool = True
     # 「用 API 出终版」 of a take where the component has a ``final_api`` (videos: Regenerate-2K
-    # of the shot's length); None elsewhere.
+    # of the shot's length), or a voice's clone on its API model (M5.5); None elsewhere.
     final_usd: float | None = None
 
 

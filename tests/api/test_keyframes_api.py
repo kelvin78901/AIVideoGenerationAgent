@@ -19,6 +19,8 @@ from sqlmodel import select
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import GateDecision, ModelCall, OutputSpecRow
+from drama_series_agent.pipeline import kfcheck
+from drama_series_agent.pipeline.components import kf
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -93,14 +95,22 @@ def test_the_demo_keyframes(client: TestClient) -> None:
 
 
 def test_only_locked_references_are_sent(client: TestClient) -> None:
-    """1-05 uses 林晚, the note (both locked) and the hair tie (not locked yet)."""
+    """1-05 uses 林晚, the note (both locked) and the hair tie (not locked yet); the umbrella the
+    note is stuck on comes with it (locked, ``props_linked``). A close-up of her hand: her own
+    picture, a whole person, stays out (M5.5 step 9e-2; run 19 drew her behind a second hand),
+    and it is filmed over her shoulder, the note's words turned to her."""
     product = _run(client, "1-05")
     version = product["versions"][-1]
     assert version["stage"] == "draft" and version["where"] == "local"
-    assert version["payload"]["refs"] == ["林晚", "黄色便利贴"]
+    assert version["payload"]["refs"] == ["黄色便利贴", "红色长柄伞"]
     assert version["payload"]["aspect"] == "9:16"
     sent = _prompt(client, version)
-    assert "参考图 1：林晚（角色）" in sent and "旧黑发圈（未锁定" in sent
+    assert "林晚（角色）" not in sent and "旧黑发圈（未锁定" in sent
+    assert "[视角]\n" + kf.PART_VIEW.format(who="林晚") in sent
+    assert "[手]\n林晚的手和衣袖照她的穿着" in sent
+    assert "[朝向]\n" + kf.FACING_NOTE.format(who="林晚", things="黄色便利贴") in sent
+    checks = {x["check"] for x in version["payload"]["candidates"][0]["check"]["items"]}
+    assert {"hands", "facing"} <= checks
     calls = _rows(client, ModelCall, ModelCall.product_id == product["id"])
     assert calls and calls[-1].shot_id == "demo-shot-1-05" and calls[-1].episode_id == EP1
 
@@ -232,3 +242,193 @@ def test_a_keyframe_for_the_old_aspect_is_stale(client: TestClient) -> None:
     shots = client.get(f"{V1}/episodes/{EP1}/shots").json()
     assert [s["confirm_stale"] for s in shots][:3] == [True] * 3
     assert _kf(client, "1-04")["status"] == "stale"
+
+
+def test_the_keyframe_draws_the_shots_start(client: TestClient) -> None:
+    """镜头契约 (M5.5): the first moment of the shot, the props as set, an inner voice with the
+    mouth shut (1-06: 林晚's OS)."""
+    door = _prompt(client, _run(client, "1-06")["versions"][-1])
+    assert "首帧画的是镜头开始的这一刻" in door and "家门：开着" in door
+    assert "林晚在心里说话（内心独白），嘴闭着" in door
+    note = _prompt(client, _run(client, "1-02")["versions"][-1])
+    assert kf.PROPS_NOTE + "红色长柄伞：斜靠在门边墙上，伞面湿" in note
+    # The scene's time of day (夜): its light, said outright (run 19: lit like day).
+    assert "[光线]\n" + kf.LIGHT["night"] in note
+    # The camera is in the scene's place (run 19: 1-06 shot from the stairwell, shut out).
+    assert "[机位]\n" + kf.PLACE_NOTE.format(place="林晚出租屋") in door
+    # 道具的真实尺寸 (M5.5 step 5): drawn to scale against the people.
+    assert "道具按真实尺寸画，和人物的比例要对：红色长柄伞：全长约 90 cm" in note
+    assert "收拢时粗约 6 cm（立着到人的胯部）；" in note
+    # 1-05 has no umbrella of its own, but its note is 「贴在伞柄上」: the umbrella is in the
+    # picture, in the state 1-02 gave it, from its own picture (run 19: a black one was drawn).
+    hand = _prompt(client, _run(client, "1-05")["versions"][-1])
+    assert "红色长柄伞：斜靠在门边墙上，伞面湿" in hand
+    assert "红色长柄伞（道具）" in hand.split("[参考图]", 1)[1]
+    shots = client.get(f"{V1}/episodes/{EP1}/shots").json()
+    shot = next(s for s in shots if s["label"] == "1-05")
+    assert shot["contract"]["props_linked"] == ["umbrella"]
+
+
+def test_the_other_side_of_the_door_is_its_scene(client: TestClient) -> None:
+    """M5.5 step 9e-3: the flat's ``adjoins`` says its door opens onto the stairwell; 1-06 (she
+    comes in and shuts the door) sends the stairwell's picture as the other side and says so
+    (run 19 1-09: the door opened onto a street). 1-01, on the stairs, sees no door open."""
+    door = _run(client, "1-06")["versions"][-1]
+    sent = _prompt(client, door)
+    assert "门那边：老小区楼道 · 夜（场景）" in sent
+    assert "[另一边]\n门那边是「老小区楼道 · 夜」，照参考图里的它画，不另编：门外是六楼楼道" in sent
+    asked = door["payload"]["candidates"][0]["check"]["items"]
+    assert "place" in {x["check"] for x in asked}
+    stairs = _prompt(client, _run(client, "1-01")["versions"][-1])
+    assert "[另一边]" not in stairs and "门那边" not in stairs
+
+
+def test_a_locked_prop_draws_no_scale_reference(client: TestClient) -> None:
+    """M5.5 step 9e-1: locking 旧黑发圈 no longer draws its 比例参考 (run 19's put the umbrella at
+    her head and the note as big as her chest, and the keyframes copied it); the keyframe says
+    the size in words, against a person."""
+    resp = client.post(f"{V1}/assets/band/lock", json={"idx": 0})
+    assert resp.status_code == 200, resp.text
+    prompt = _prompt(client, _run(client, "1-05", model="google/nano-banana-pro")["versions"][-1])
+    assert "比例参考" not in prompt
+    assert not _rows(client, ModelCall, ModelCall.component_id == "scale")
+    note = _prompt(client, _run(client, "1-02")["versions"][-1])
+    assert "（立着到人的胯部）；黄色便利贴：约 7.6 cm 见方" in note
+    assert "（手掌大小，比脸小）" in note
+
+
+def test_each_keyframe_candidate_is_checked(client: TestClient) -> None:
+    """关键帧检查 (M5.5 step 6): a vision model against the shot's promises, the note's words read
+    back by OCR, per candidate; only a warning. 1-02 (the umbrella and the note at the door,
+    nobody there): its start, the props' sizes, the words, nobody in it."""
+    version = _run(client, "1-02")["versions"][-1]
+    cands = version["payload"]["candidates"]
+    assert len(cands) == 3
+    for c in cands:
+        checks = {x["check"]: x["ok"] for x in c["check"]["items"]}
+        assert checks == {
+            "start": True,
+            "scale": True,
+            "text": True,
+            "people": True,
+            "light": True,
+            "place": True,
+            "ocr": True,
+        }
+        assert c["check"]["ok"] is True and c["check"]["model"] == "google/gemini-3.1-flash-lite"
+    calls = _rows(client, ModelCall, ModelCall.component_id == "kfcheck")
+    assert len(calls) == 3 and {c.product_id for c in calls} == {_kf(client, "1-02")["id"]}
+    # 1-06: 林晚's inner voice, lips closed.
+    door = _run(client, "1-06")["versions"][-1]["payload"]["candidates"][0]["check"]["items"]
+    assert {x["check"] for x in door} >= {"start", "mouth"}
+    # A failed look leaves the vision part unchecked; OCR still reads the note's words (1-04).
+    _state(client).registry.mock_settings.fail_keys.add("google/gemini-3.1-flash-lite")
+    unchecked = _run(client, "1-04")["versions"][-1]["payload"]["candidates"]
+    for c in unchecked:
+        assert c["check"]["model"] is None
+        assert {x["check"] for x in c["check"]["items"]} == {"ocr"}
+
+
+def _failing_looks(monkeypatch: pytest.MonkeyPatch, fail: int) -> list[str]:
+    """The vision check fails its first ``fail`` looks (「机位在楼道里」); the pictures seen."""
+    seen: list[str] = []
+
+    async def look(*args: Any) -> tuple[list[dict[str, Any]], str]:
+        seen.append(args[1])
+        ok = len(seen) > fail
+        item = {"check": "place", "ok": ok, "note": "" if ok else "机位在楼道里"}
+        return [item], "google/gemini-3.1-flash-lite"
+
+    monkeypatch.setattr(kfcheck, "look", look)
+    return seen
+
+
+def _prompt(client: TestClient, version: dict[str, Any]) -> str:
+    sha = next(f["sha256"] for f in version["files"] if f["role"] == "prompt")
+    return _state(client).store.path_for(sha).read_text(encoding="utf-8")
+
+
+def test_a_keyframe_whose_check_fails_is_drawn_again(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """M5.5 9e-5 (Kelvin 2026-11-11): every candidate failed, so the keyframe is drawn again
+    with what failed, up to ``redraw`` (2) more times; the first run that passes is kept."""
+    seen = _failing_looks(monkeypatch, fail=3)  # the first run's three candidates
+    product = _run(client, "1-06")
+    version = product["versions"][-1]
+    assert version["payload"]["redraws"] == 1
+    assert all(c["check"]["ok"] for c in version["payload"]["candidates"])
+    assert len(seen) == 6
+    told = _prompt(client, version).split("上一次没过的检查（这次要改掉）")[1]
+    assert told.lstrip("]】\n：: ").startswith("- 机位在场景里：机位在楼道里")
+    draws = _rows(client, ModelCall, ModelCall.product_id == product["id"])
+    assert [c.component_id for c in draws].count("kf") == 2  # both draws recorded
+
+
+def test_a_keyframe_that_never_passes_keeps_the_last_try_as_a_warning(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    seen = _failing_looks(monkeypatch, fail=99)
+    product = _run(client, "1-06")
+    draft = product["versions"][-1]
+    assert draft["payload"]["redraws"] == 2 and len(seen) == 9  # 1 + 2 tries of 3
+    assert not any(c["check"]["ok"] for c in draft["payload"]["candidates"])
+    assert draft["stage"] == "draft"  # confirming goes on: only a warning
+    # An API final is never drawn again by itself (it costs): one look, kept as it is.
+    seen.clear()
+    pick = {"source_version_id": draft["id"], "source_idx": 0}
+    final = _run(client, "1-06", mode="run", where="api", params=pick)["versions"][-1]
+    assert final["stage"] == "final" and "redraws" not in final["payload"] and len(seen) == 1
+
+
+def _png(w: int, h: int) -> bytes:
+    from drama_series_agent.modelhub.adapters.mock import solid_png
+
+    return solid_png(w, h, (40, 90, 160))
+
+
+def _upload(client: TestClient, label: str, data: bytes, **box: int) -> Any:
+    return client.post(
+        f"{V1}/shots/{_shot(client, label)['id']}/keyframe/upload",
+        files={"file": ("mine.png", data, "image/png")},
+        data={k: str(v) for k, v in box.items()},
+    )
+
+
+def test_an_uploaded_keyframe_is_cut_to_the_frame(client: TestClient) -> None:
+    """M5.5 step 10: cut to the spec's aspect (centred, or inside the box the user drew), at the
+    delivery size, one candidate, picked; smaller than the draft tier only warns."""
+    resp = _upload(client, "1-04", _png(1000, 1000))
+    assert resp.status_code == 200, resp.text
+    v = resp.json()["versions"][-1]
+    (cand,) = [f for f in v["files"] if f["role"] == "candidate"]
+    assert (v["origin"], cand["w"], cand["h"], cand["mime"]) == ("upload", 1080, 1920, "image/png")
+    assert v["payload"]["crop"] == {"x": 219, "y": 0, "w": 562, "h": 1000}
+    assert v["payload"]["low_res"] is True  # 562 wide, the draft tier is 768
+    assert _shot(client, "1-04")["keyframe_sha256"] == cand["sha256"]
+
+    resp = _upload(client, "1-04", _png(2000, 4000), x=0, y=0, w=1500, h=4000)
+    assert resp.status_code == 200, resp.text
+    v = resp.json()["versions"][-1]
+    assert v["payload"]["crop"] == {"x": 0, "y": 667, "w": 1500, "h": 2666}
+    assert "low_res" not in v["payload"]
+
+    # 「用 API 出终版」 from it, then 「确认这个镜头」 locks the final.
+    final = _run(client, "1-04", mode="run", where="api", params={"source_version_id": v["id"]})[
+        "versions"
+    ][-1]
+    assert (final["stage"], final["parent_version_id"]) == ("final", v["id"])
+    shot = client.patch(f"{V1}/shots/demo-shot-1-04", json={"confirmed": True}).json()
+    assert shot["confirmed"] and _kf(client, "1-04")["locked_hash"]
+
+
+def test_an_upload_the_keyframe_cannot_take(client: TestClient) -> None:
+    assert _code(_upload(client, "1-08", _png(800, 1400))) == "no_keyframe"  # continuous
+    assert _code(_upload(client, "1-01", _png(800, 1400))) == "product_locked"  # confirmed
+    resp = _upload(client, "1-04", b"not a picture")
+    assert (resp.status_code, _code(resp)) == (422, "not_an_image")
+    resp = _upload(client, "1-04", _png(800, 1400), x=0, y=0)
+    assert (resp.status_code, _code(resp)) == (422, "invalid_crop")
+    resp = _upload(client, "1-04", _png(800, 1400), x=400, y=0, w=800, h=1400)
+    assert (resp.status_code, _code(resp)) == (422, "invalid_crop")
+    assert _kf(client, "1-04")["versions"][-1]["origin"] != "upload"

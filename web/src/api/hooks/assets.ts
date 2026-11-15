@@ -8,6 +8,7 @@ import {
   AssetMatrixSchema,
   AssetSchema,
   type Asset,
+  type AssetCreate,
   type AssetLock,
   type AssetPatch,
 } from "@/api/schemas/assets";
@@ -60,7 +61,8 @@ export function usePatchAsset(seriesId: string) {
       patch(`/assets/${enc(p.id)}`, AssetSchema, p.patch),
     onSuccess: (asset, p) => {
       store(asset);
-      if (p.patch.intent !== undefined)
+      // The next run's estimate follows the intent and a voice's source (a clone's price).
+      if (p.patch.intent !== undefined || p.patch.voice?.method !== undefined)
         void client.invalidateQueries({ queryKey: productKeys.all });
     },
   });
@@ -95,6 +97,29 @@ export function useUploadAsset(seriesId: string) {
       store(asset);
       void client.invalidateQueries({ queryKey: productKeys.detail(asset.product_id) });
     },
+  });
+}
+
+/** 声音克隆的样本 (WAV / MP3 / M4A, 10 s to 5 min, 20 MB at most); unticks 本人授权. */
+export function useUploadVoiceSample(seriesId: string) {
+  const store = useStoreAsset(seriesId);
+  return useMutation({
+    mutationFn: (p: { id: string; file: File }) => {
+      const form = new FormData();
+      form.append("file", p.file);
+      return postForm(`/assets/${enc(p.id)}/voice/sample`, AssetSchema, form);
+    },
+    onSuccess: (asset) => store(asset),
+  });
+}
+
+/** 新建素材: a `manual` asset with its product, not drawn yet; 409 `asset_exists` for one of the
+ * same kind and name. */
+export function useCreateAsset(seriesId: string) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (body: AssetCreate) => post(`/series/${enc(seriesId)}/assets`, AssetSchema, body),
+    onSuccess: () => client.invalidateQueries({ queryKey: assetKeys.all(seriesId) }),
   });
 }
 

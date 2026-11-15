@@ -52,6 +52,18 @@ def check(exact: str, read: str | None, method: str) -> dict[str, Any]:
     return {"ocr": read, "ocr_ok": issue is None, "ocr_issue": issue}
 
 
+def contains(read: str | None, exact: str) -> bool:
+    """A keyframe's OCR has the words somewhere (M5.5 关键帧检查: the picture has more in it);
+    a final punctuation mark may be missing."""
+    got, want = normalize(read or ""), normalize(exact)
+    if not want:
+        return True
+    end = len(want)
+    while end and unicodedata.category(want[end - 1]).startswith("P"):
+        end -= 1
+    return want[: end or len(want)] in got
+
+
 def _matches(got: str, want: str) -> bool:
     """``got`` is ``want``, or ``want`` without the punctuation it ends with."""
     if got == want:

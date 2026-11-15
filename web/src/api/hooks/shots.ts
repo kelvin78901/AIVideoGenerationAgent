@@ -4,13 +4,34 @@ import { z } from "zod";
 import { api, patch, post } from "@/api/client";
 import { productKeys } from "@/api/hooks/products";
 import { seriesKeys } from "@/api/hooks/series";
-import { ShotSchema, type Shot, type ShotPatch } from "@/api/schemas/shots";
+import { JobSchema } from "@/api/schemas/jobs";
+import { ShotChecksSchema, ShotSchema, type Shot, type ShotPatch } from "@/api/schemas/shots";
 
 const enc = encodeURIComponent;
 
 export const shotKeys = {
   list: (episodeId: string) => ["episodes", episodeId, "shots"] as const,
+  checks: (episodeId: string) => ["episodes", episodeId, "shot-checks"] as const,
 };
+
+/** 分镜检查 (M5.5): the rules' findings and the model's last check; a plan edit or the check's
+ * own run refreshes it (product events refresh every episode query). */
+export function useShotChecks(episodeId: string | undefined) {
+  return useQuery({
+    queryKey: shotKeys.checks(episodeId ?? ""),
+    queryFn: () => api(`/episodes/${enc(episodeId ?? "")}/shot-checks`, ShotChecksSchema),
+    enabled: !!episodeId,
+  });
+}
+
+/** 「检查」 / 「重新检查」: the model's check of the episode's plan (a job). */
+export function useRunShotChecks(episodeId: string | undefined) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: () => post(`/episodes/${enc(episodeId ?? "")}/shot-checks`, JobSchema),
+    onSuccess: () => client.invalidateQueries({ queryKey: shotKeys.checks(episodeId ?? "") }),
+  });
+}
 
 export function useShots(episodeId: string | undefined) {
   return useQuery({
@@ -40,11 +61,23 @@ export function usePatchShot(episodeId: string | undefined) {
     mutationFn: (p: { id: string; patch: ShotPatch }) =>
       patch(`/shots/${enc(p.id)}`, ShotSchema, p.patch),
     onMutate: ({ id, patch: change }) => {
-      const { duration_s: seconds, ...rest } = change;
+      const { duration_s: seconds, contract, ...rest } = change;
       const shown =
         seconds === null || seconds === undefined ? rest : { ...rest, duration_s: seconds };
       client.setQueryData<Shot[]>(key, (old) =>
-        old?.map((s) => (s.id === id ? { ...s, ...shown } : s)),
+        old?.map((s) =>
+          s.id === id
+            ? {
+                ...s,
+                ...shown,
+                contract: {
+                  ...s.contract,
+                  ...contract,
+                  delivery: { ...s.contract.delivery, ...contract?.delivery },
+                },
+              }
+            : s,
+        ),
       );
     },
     onSuccess: (shot) => {

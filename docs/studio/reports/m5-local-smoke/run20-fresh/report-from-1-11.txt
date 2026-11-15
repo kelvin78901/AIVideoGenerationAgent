@@ -1,0 +1,36 @@
+M5 local smoke · 2026-11-11 18:35
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 2093 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== from 1-11: 1-01, 1-02, 1-03, 1-04, 1-05, 1-06, 1-07, 1-08, 1-09, 1-10 already made
+== take-1-11: 1-11 1 条（continuous，medium，声音 native，接 1-10 的尾帧）
+   1 job(s) in 195.0 s, GPU memory peak 31685 MiB
+   call comfy/h3 [local] success 191.1 s audio=5.17s
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   model comfy/h3 [local], files: take-1-11-1-video.mp4 (768x1344 4.27s), take-1-11-1-poster.png (768x1344), take-1-11-1-last_frame.png (768x1344), take-1-11-1-raw.mp4 (768x1344 5.17s), take-1-11-1-sheet.png (?)
+   clip 768x1344 4.27s @ 24.0 fps, sound yes; asked 4.00s (minus the 0.3s cut: 3.70s; a model's shortest clip can be longer); voices [], refs []
+   adopted 1-11-1; model comfy/h3, select default, rewritten by deepseek/v4.1-flash
+   1-11-1 检查 过：repeat ✓，event ✓，solid ✓，light ✓，place ✓，end ✓，cut ✓，hold ✓
+   deepseek/v4.1-flash in this data dir: 45 call(s), $0.0797
+   google/gemini-3.1-flash-lite in this data dir: 87 call(s), $0.0495
+== cut: 粗剪（每镜按镜头时长裁 / 不裁）
+   1-01: take 1, 4.89s, shot 5.0s, cut 0.00-4.89s
+   1-02: take 1, 4.89s, shot 4.0s, cut 0.25-4.25s
+   1-03: take 1, 4.89s, shot 4.0s, cut 0.00-4.00s
+   1-04: take 1, 4.89s, shot 4.0s, cut 0.33-4.65s
+   1-05: take 1, 4.89s, shot 5.0s, cut 0.00-4.89s
+   1-06: take 1, 4.89s, shot 5.0s, cut 0.00-4.89s
+   1-07: take 1, 6.38s, shot 6.0s, cut 0.00-6.00s
+   1-08: take 1, 4.89s, shot 4.0s, cut 0.89-4.89s
+   1-09: take 1, 4.89s, shot 5.0s, cut 0.00-4.89s
+   1-10: take 1, 5.68s, shot 5.0s, cut 0.00-5.68s
+   1-11: take 1, 4.27s, shot 4.0s, cut 0.00-4.00s
+   1-12: no take, left out
+   1-13: no take, left out
+   ep1-cut.mp4: 51.56s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-cut.mp4
+   ep1-uncut.mp4: 55.45s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh\ep1-uncut.mp4
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run20-fresh
+data: C:\Users\kelvin\AppData\Local\Temp\drama-ep20b\home

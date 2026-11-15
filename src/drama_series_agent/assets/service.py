@@ -25,8 +25,9 @@ the locked picture straight from the dependency graph. **Uploading** a picture a
 with that one candidate (``origin: upload``), to lock or to start an API final from.
 
 **On-screen text** is checked by OCR (``pipeline/components/text.py``): a candidate OCR read
-differently from what it must say locks only with ``force`` (409 ``ocr_mismatch``); one not
-checked (no OCR on this machine) locks as usual. An uploaded picture is read too.
+differently from what it must say is only flagged on its card: it locks like any other
+(M5.5, Kelvin 2026-11-10: checks warn, never block; ``force`` is still accepted). An uploaded
+picture is read too.
 """
 
 from __future__ import annotations
@@ -40,7 +41,9 @@ from sqlmodel import col, delete, func, select
 from sqlmodel.ext.asyncio.session import AsyncSession
 
 from drama_series_agent.assets import ops
+from drama_series_agent.assets import refs as more
 from drama_series_agent.assets.schema import (
+    AssetCreateIn,
     AssetLockIn,
     AssetOut,
     AssetPatch,
@@ -50,10 +53,13 @@ from drama_series_agent.assets.schema import (
     MatrixOut,
     MatrixSceneOut,
     MessageOut,
+    PhysicalOut,
     TextOut,
     VoiceLineOut,
     VoiceOut,
+    VoiceSampleOut,
 )
+from drama_series_agent.assets.voice_sample import store_sample
 from drama_series_agent.core.db import Database
 from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.models_db import (
@@ -66,6 +72,7 @@ from drama_series_agent.core.models_db import (
     ProductVersion,
     Scene,
     ScriptLine,
+    Series,
     Shot,
     utcnow,
 )
@@ -80,12 +87,18 @@ from drama_series_agent.episodes.service import (
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES, NotAnImage, image_info
 from drama_series_agent.pipeline.components.assets import ASSET_LIST_SLOT, asset_list_product
 from drama_series_agent.pipeline.components.dub import LINE_AUDIO_SLOT
+from drama_series_agent.pipeline.components.img import prop_physical, prop_text
+from drama_series_agent.pipeline.components.scale import REF_SCALE_SLOT, ScaleComponent
 from drama_series_agent.pipeline.components.text import (
     TEXT_IMAGE_SLOT,
     TextComponent,
     text_settings,
 )
-from drama_series_agent.pipeline.components.views import REF_VIEWS_SLOT, ViewsComponent
+from drama_series_agent.pipeline.components.views import (
+    REF_VIEWS_SLOT,
+    VIEWS,
+    ViewsComponent,
+)
 from drama_series_agent.pipeline.components.voice import VOICE_SLOT
 from drama_series_agent.pipeline.drafts import PlannedChange, VersionDraft, file_entry
 from drama_series_agent.pipeline.errors import PipelineError
@@ -127,18 +140,26 @@ async def materialize(session: AsyncSession, product: Product, version: ProductV
         if row is None:
             row = Asset(id=item["id"], series_id=series_id, kind=item["kind"], name=item["name"])
         old = dict(row.seed_json or {})
+        # One made by hand (M5.5) keeps what the user wrote; the analysis only finds it in scenes.
+        hand = row.manual and row.id in rows
         seed = {
             "key": item.get("key"),
-            "description": item.get("description") or "",
+            "description": (
+                old.get("description") or "" if hand else item.get("description") or ""
+            ),
             "text": item.get("text"),
             "note": item.get("note"),
+            "physical": item.get("physical"),
+            "adjoins": item.get("adjoins"),
             "order": old.get("order", order) if row.id in rows else order,
         }
         # Already made from another description: say so, never overwrite what the user has.
         changed = bool(old.get("changed")) or (
             made and old.get("description") != seed["description"]
         )
-        row.kind, row.name, row.bible_id = item["kind"], item["name"], item.get("bible_id")
+        if not hand:
+            row.kind, row.name = item["kind"], item["name"]
+        row.bible_id = item.get("bible_id")
         row.seed_json = {**seed, "changed": changed}
         row.retired = False
         row.updated_at = now
@@ -391,10 +412,80 @@ class AssetService:
             product = await asset_product(session, asset_id)
             if product is None:
                 raise PipelineError(409, "product_missing", id=asset_id)
-            if product.locked_hash and (body.intent is not None or body.text or body.voice):
+            if product.locked_hash and (
+                body.intent is not None or body.text or body.voice or body.physical
+            ):
                 raise PipelineError(409, "product_locked", id=product.id)
         await self._write_patch(asset_id, body)
         return await self.get(asset_id)
+
+    async def create(self, series_id: str, body: AssetCreateIn) -> AssetOut:
+        """「新建素材」 (M5.5 step 11): an asset the analysis did not find, ``manual``, with its
+        product; no scene uses it until a shot takes it as a reference (or an analysis finds one
+        of that kind and name, which then is this one: ``known_assets``)."""
+        name = body.name.strip()
+        if not name:
+            raise PipelineError(422, "name_required")
+        async with self._db.session() as session:
+            if await session.get(Series, series_id) is None:
+                raise PipelineError(404, "series_not_found", id=series_id)
+            rows = (await session.exec(select(Asset).where(Asset.series_id == series_id))).all()
+            if any(a.kind == body.kind and a.name == name and not a.retired for a in rows):
+                raise PipelineError(409, "asset_exists", name=name)
+            order = max((int((a.seed_json or {}).get("order") or 0) for a in rows), default=-1)
+            asset_id = ops.new_asset_id()
+            session.add(
+                Asset(
+                    id=asset_id,
+                    series_id=series_id,
+                    kind=body.kind,
+                    name=name,
+                    manual=True,
+                    seed_json={
+                        "key": f"manual:{asset_id}",
+                        "description": body.description.strip(),
+                        "order": order + 1,
+                        "changed": False,
+                    },
+                )
+            )
+            await session.commit()
+        await self._products.ensure(
+            series_id=series_id,
+            owner_type="asset",
+            owner_id=asset_id,
+            slot=ops.slot_of(body.kind),
+            component_id=ops.component_of(body.kind),
+        )
+        return await self.get(asset_id)
+
+    async def add_more(self, asset_id: str, purpose: str, filename: str, data: bytes) -> str:
+        """「加参考图」 (``assets/refs.py``): the ``ref_more`` product's id."""
+        return await more.add_more(
+            self._db, self._products, self._store, asset_id, purpose, filename, data
+        )
+
+    async def remove_more(self, asset_id: str, idx: int) -> str:
+        return await more.remove_more(self._db, self._products, asset_id, idx)
+
+    async def upload_view(self, product_id: str, view: str, filename: str, data: bytes) -> str:
+        """六视图单张替换 by an uploaded picture (``assets/refs.py``)."""
+        return await more.replace_view(
+            self._db, self._products, self._store, product_id, view, REF_VIEWS_SLOT, filename,
+            data,
+        )  # fmt: skip
+
+    async def redraw_view(self, product_id: str, view: str) -> Job:
+        """「重画这一张」: a views run drawing only ``view`` (409 ``views_outdated`` when the
+        set follows another picture: redraw them all)."""
+        if view not in VIEWS:
+            raise PipelineError(422, "unknown_view", view=view)
+        async with self._db.session() as session:
+            p, _ = await more.views_version(session, product_id, REF_VIEWS_SLOT)
+            stale = await self._invalidation.stale_ids(session, [p])
+        if p.id in stale:
+            raise PipelineError(409, "views_outdated", id=product_id)
+        return await self._runs.start(product_id, "run", params={"view": view})
 
     async def _write_patch(self, asset_id: str, body: AssetPatch) -> None:
         async with self._db.session() as session:
@@ -402,7 +493,14 @@ class AssetService:
             product = await asset_product(session, asset_id)
             assert product is not None
             current = product.current_version_id
-            text_now = text_settings(asset, product.settings_json) if asset.kind == "text" else {}
+            text_now = (
+                text_settings(asset, product.settings_json)
+                if asset.kind in ("text", "prop")
+                else {}
+            )
+            if body.physical is not None and asset.kind != "prop":
+                raise PipelineError(422, "invalid_patch", kind="asset", issues="physical")
+            physical_now = prop_physical(asset, product) or {}
         if body.intent is not None:
             await self._runs.save_prompt(product.id, body.intent, None)
             async with self._db.session() as session:
@@ -419,7 +517,16 @@ class AssetService:
             changes = body.text.model_dump(exclude_none=True)
             await self._products.update_settings(product.id, {"text": {**text_now, **changes}})
         if body.voice is not None:
-            await self._products.update_settings(product.id, {"voice": body.voice.model_dump()})
+            voice = (product.settings_json or {}).get("voice") or {}
+            changes = body.voice.model_dump(exclude_none=True)
+            await self._products.update_settings(product.id, {"voice": {**voice, **changes}})
+        if body.physical is not None:
+            # All three are written, so clearing one does not bring the analysis's back.
+            physical = {k: physical_now.get(k, "") for k in ops.PHYSICAL_KEYS}
+            physical |= {
+                k: v.strip() for k, v in body.physical.model_dump(exclude_none=True).items()
+            }
+            await self._products.update_settings(product.id, {"physical": physical})
 
     async def analyze(self, episode_id: str) -> Job:
         """「重新分析剧本」: run the episode's 素材分析 (every run is adopted; the list only
@@ -468,8 +575,8 @@ class AssetService:
                 raise PipelineError(409, "voice_needs_final", id=asset_id)
             if v is not None and v.product_id == product.id and not has_candidates:
                 idx = None
-            if product.slot == TEXT_IMAGE_SLOT and not body.force and idx is not None:
-                await _refuse_ocr_mismatch(session, product, version_id, idx)
+            # An OCR mismatch only warns (Kelvin 2026-11-10, M5.5): the candidate card shows it;
+            # ``force`` is still accepted and means nothing now.
 
         async def record(session: AsyncSession, p: Product, v: ProductVersion) -> None:
             await record_asset_gate(session, self._invalidation, p, "confirm")
@@ -478,6 +585,24 @@ class AssetService:
         await self._gate_updated(product, "confirm")
         if kind == "character":
             await self.draw_views(asset_id)
+        # A locked prop no longer draws its 比例参考 by itself (M5.5 step 9e-1): the picture got
+        # the size wrong and every keyframe copied it; the keyframe says the size in words.
+        return await self.get(asset_id)
+
+    async def upload_voice_sample(self, asset_id: str, filename: str, data: bytes) -> AssetOut:
+        """声音克隆: the sample a clone is made from (``assets/voice_sample.py``); the 本人授权
+        box starts unticked again."""
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+            product = await asset_product(session, asset_id)
+            if asset.kind != "voice" or product is None:
+                raise PipelineError(422, "upload_not_supported", kind=asset.kind)
+            if product.locked_hash:
+                raise PipelineError(409, "product_locked", id=product.id)
+            voice = (product.settings_json or {}).get("voice") or {}
+        sample = await store_sample(self._store, filename, data)
+        changes = {"voice": {**voice, "sample": sample, "consent": False}}
+        await self._products.update_settings(product.id, changes)
         return await self.get(asset_id)
 
     async def upload(self, asset_id: str, filename: str, data: bytes) -> AssetOut:
@@ -499,7 +624,8 @@ class AssetService:
         sha = self._store.put_bytes(data)
         name = filename[:200]
         payload: dict[str, Any] = {"candidates": [{}]}
-        if product.slot == TEXT_IMAGE_SLOT and self._text is not None:
+        written = product.slot == TEXT_IMAGE_SLOT or prop_text(asset, product) is not None
+        if written and self._text is not None:
             checked, text = await self._text.check_upload(asset, product, sha)
             payload = {"candidates": [checked], "text": text}
         draft = VersionDraft(
@@ -512,6 +638,29 @@ class AssetService:
         v = await self._products.append(product.id, draft, origin="upload", adopt=False)
         await self._products.set_pick(product.id, v.id, 0)
         return await self.get(asset_id)
+
+    async def draw_scale(self, asset_id: str) -> Job | None:
+        """比例参考 of a locked prop (M5.5), unless it already follows the locked pictures; none
+        when no character is locked yet. Not drawn on lock since step 9e-1, and no keyframe
+        sends it."""
+        async with self._db.session() as session:
+            asset = await self._require(session, asset_id)
+        p = await self._products.ensure(
+            series_id=asset.series_id,
+            owner_type="asset",
+            owner_id=asset.id,
+            slot=REF_SCALE_SLOT,
+            component_id=ScaleComponent.id,
+        )
+        async with self._db.session() as session:
+            stale = await self._invalidation.stale_ids(session, [p])
+        if p.adopted_version_id and p.id not in stale:
+            return None
+        try:
+            return await self._runs.start(p.id, "run")
+        except PipelineError as exc:  # no locked character, already drawing, or no model here
+            logger.info("scale reference of {} not started: {}", asset_id, exc.code)
+            return None
 
     async def draw_views(self, asset_id: str) -> Job | None:
         """补视图 of a locked character, unless the views already follow this picture."""
@@ -797,33 +946,15 @@ class AssetService:
                         voice=_voice(a, settings, here or mine, lines),
                         note=seed.get("note"),
                         seed_changed=bool(seed.get("changed")),
+                        manual=a.manual,
+                        physical=(
+                            PhysicalOut(**(prop_physical(a, p) or {})) if a.kind == "prop" else None
+                        ),
                     ),
                 )
             )
         ranked.sort(key=lambda r: r[0])
         return [o for _, o in ranked]
-
-
-async def _refuse_ocr_mismatch(
-    session: AsyncSession, product: Product, version_id: str, idx: int
-) -> None:
-    """409 ``ocr_mismatch`` when OCR read the candidate differently from what it must say."""
-    v = await session.get(ProductVersion, version_id)
-    if v is None or v.product_id != product.id:
-        return  # lock_pick says what is wrong
-    candidates = (v.payload_json or {}).get("candidates") or []
-    entry = candidates[idx] if 0 <= idx < len(candidates) else {}
-    if isinstance(entry, dict) and entry.get("ocr_ok") is False:
-        exact = str(((v.payload_json or {}).get("text") or {}).get("exact") or "")
-        raise PipelineError(
-            409,
-            "ocr_mismatch",
-            id=product.owner_id,
-            idx=idx,
-            read=entry.get("ocr") or "",
-            exact=exact,
-            issue=entry.get("ocr_issue") or "",
-        )
 
 
 def _source(
@@ -841,6 +972,8 @@ def _source(
             u = everywhere[0]
             where = {"episode": episodes.get(u.episode_id, 0), "scene": numbers.get(u.scene_id, 0)}
             return MessageOut(code="episode_scene", params=where)
+        if asset.manual:  # 新建素材 (M5.5) no scene has yet
+            return MessageOut(code="manual", params={})
         return MessageOut(code="note", params={"note": note or ""})
     if asset.kind == "voice":
         count = sum(len(u.line_ids_json) for u in here)
@@ -857,6 +990,9 @@ def _source(
 
 
 def _text(asset: Asset, settings: dict[str, Any]) -> TextOut | None:
+    if asset.kind == "prop":  # 有字的道具 (M5.5)
+        t = text_settings(asset, settings)
+        return TextOut.model_validate({**t, "method": "model"}) if t["exact"].strip() else None
     if asset.kind != "text":
         return None
     return TextOut.model_validate(text_settings(asset, settings))
@@ -876,5 +1012,19 @@ def _voice(
             line = lines.get(i)
             if line is not None and not line.retired:
                 picked.append(VoiceLineOut(text=line.text, tone=line.tone or ""))
-    method = (settings.get("voice") or {}).get("method") or "design"
-    return VoiceOut(method=method, lines=picked[:VOICE_LINES])
+    voice = settings.get("voice") or {}
+    sample = voice.get("sample")
+    return VoiceOut(
+        method=voice.get("method") or "design",
+        lines=picked[:VOICE_LINES],
+        sample=VoiceSampleOut(
+            name=sample["name"],
+            duration_s=sample["duration_s"],
+            sha256=sample["ref"]["sha256"],
+            clip_s=sample["ref"].get("duration_s"),
+            waveform=sample["ref"].get("waveform") or [],
+        )
+        if sample
+        else None,
+        consent=bool(voice.get("consent")),
+    )

@@ -1,0 +1,174 @@
+{
+  "1": {
+    "class_type": "LoadImage",
+    "_meta": {
+      "title": "Base"
+    },
+    "inputs": {
+      "image": "example.png"
+    }
+  },
+  "2": {
+    "class_type": "ResizeImageMaskNode",
+    "_meta": {
+      "title": "Size"
+    },
+    "inputs": {
+      "input": [
+        "1",
+        0
+      ],
+      "resize_type": "scale dimensions",
+      "resize_type.width": 1080,
+      "resize_type.height": 1920,
+      "resize_type.crop": "center",
+      "scale_method": "lanczos"
+    }
+  },
+  "3": {
+    "class_type": "SeedVR2Preprocess",
+    "_meta": {
+      "title": "Preprocess"
+    },
+    "inputs": {
+      "resized_images": [
+        "2",
+        0
+      ]
+    }
+  },
+  "4": {
+    "class_type": "VAELoader",
+    "_meta": {
+      "title": "SeedVR2 VAE"
+    },
+    "inputs": {
+      "vae_name": "seedvr2_ema_vae_fp16.safetensors"
+    }
+  },
+  "5": {
+    "class_type": "UNETLoader",
+    "_meta": {
+      "title": "SeedVR2 7B"
+    },
+    "inputs": {
+      "unet_name": "seedvr2_7b_int8_convrot.safetensors",
+      "weight_dtype": "default"
+    }
+  },
+  "6": {
+    "class_type": "VAEEncodeTiled",
+    "_meta": {
+      "title": "Encode"
+    },
+    "inputs": {
+      "pixels": [
+        "3",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "tile_size": 512,
+      "overlap": 128,
+      "temporal_size": 4096,
+      "temporal_overlap": 8
+    }
+  },
+  "7": {
+    "class_type": "SeedVR2Conditioning",
+    "_meta": {
+      "title": "Conditioning"
+    },
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "vae_conditioning": [
+        "6",
+        0
+      ]
+    }
+  },
+  "8": {
+    "class_type": "KSampler",
+    "_meta": {
+      "title": "Restore"
+    },
+    "inputs": {
+      "model": [
+        "5",
+        0
+      ],
+      "seed": 959948902156062,
+      "steps": 1,
+      "cfg": 1.0,
+      "sampler_name": "euler",
+      "scheduler": "simple",
+      "positive": [
+        "7",
+        0
+      ],
+      "negative": [
+        "7",
+        1
+      ],
+      "latent_image": [
+        "6",
+        0
+      ],
+      "denoise": 1.0
+    }
+  },
+  "9": {
+    "class_type": "VAEDecodeTiled",
+    "_meta": {
+      "title": "Decode"
+    },
+    "inputs": {
+      "samples": [
+        "8",
+        0
+      ],
+      "vae": [
+        "4",
+        0
+      ],
+      "tile_size": 512,
+      "overlap": 128,
+      "temporal_size": 4096,
+      "temporal_overlap": 8
+    }
+  },
+  "10": {
+    "class_type": "SeedVR2PostProcessing",
+    "_meta": {
+      "title": "Colour fix"
+    },
+    "inputs": {
+      "images": [
+        "9",
+        0
+      ],
+      "original_resized_images": [
+        "2",
+        0
+      ],
+      "color_correction_method": "lab"
+    }
+  },
+  "11": {
+    "class_type": "PreviewImage",
+    "_meta": {
+      "title": "Output"
+    },
+    "inputs": {
+      "images": [
+        "10",
+        0
+      ]
+    }
+  }
+}

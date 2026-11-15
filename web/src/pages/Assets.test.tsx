@@ -33,7 +33,7 @@ const list = () => screen.getByRole("region", { name: "素材清单" });
 const item = (name: RegExp) => within(list()).getByRole("button", { name });
 const asset = (id: string) => fakeAssets.assets.find((a) => a.id === id);
 const productOf = (id: string) => fakeAssets.products.find((p) => p.id === `demo-p-asset-${id}`);
-const ready = () => screen.findByText("已锁定 7 / 10");
+const ready = () => screen.findByText("已锁定 7 / 9");
 
 beforeEach(() => {
   vi.stubGlobal("EventSource", FakeEventSource);
@@ -46,13 +46,13 @@ afterEach(() => {
 });
 
 describe("AssetsPage", () => {
-  it("lists 13 assets, 7 locked, with the analysis summary", async () => {
+  it("lists 12 assets, 7 locked, with the analysis summary", async () => {
     renderAssets();
     await ready();
     expect(
-      screen.getByText("从剧本分析出：角色 2 · 场景 3 · 道具 4 · 画面文字 2 · 音色 2"),
+      screen.getByText("从剧本分析出：角色 2 · 场景 3 · 道具 4 · 画面文字 1 · 音色 2"),
     ).toBeInTheDocument();
-    expect(within(list()).getAllByRole("button", { pressed: false })).toHaveLength(12);
+    expect(within(list()).getAllByRole("button", { pressed: false })).toHaveLength(11);
     expect(await screen.findByText("当前产物 · 林晚 · 参考图 4 张候选")).toBeInTheDocument();
     // The API final v2 stays on screen; the picture locked from it is a version of its own.
     expect(screen.getByText(/v2 · Nano Banana Pro/)).toHaveTextContent("已锁定");
@@ -64,65 +64,77 @@ describe("AssetsPage", () => {
     renderAssets();
     await ready();
     await user.click(within(list()).getByRole("radio", { name: "画面文字" }));
-    expect(within(list()).getAllByRole("button")).toHaveLength(2);
+    expect(within(list()).getAllByRole("button", { pressed: false })).toHaveLength(1);
   });
 
-  it("shows each text candidate's OCR check; compositing in post takes a rerun", async () => {
+  it("a prop's writing: each candidate shows its OCR check (M5.5: only a warning)", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
-    await user.click(item(/便利贴手写/));
+    await user.click(item(/黄色便利贴/));
     const cands = screen.getByRole("radiogroup", { name: "候选" });
     const cand = (name: string) => within(cands).getByRole("radio", { name });
     expect(within(cand("v1 · A")).getByRole("img", { name: "v1 · A" })).toBeInTheDocument();
-    expect(cand("v1 · A")).toHaveTextContent("模型直接出字OCR 一致");
+    expect(cand("v1 · A")).toHaveTextContent("OCR 一致");
     expect(cand("v1 · B")).toHaveTextContent("OCR 不一致：有错字");
     expect(cand("v1 · D")).toHaveTextContent("OCR 不一致：缺字或缺标点");
-    // The candidates were drawn by the model: switching the method changes nothing until a rerun.
-    await user.click(screen.getByRole("radio", { name: "后期贴字（推荐）" }));
-    await waitFor(() => expect(asset("txt1")?.text?.method).toBe("composite"));
-    expect(
-      await screen.findByText(
-        "这一版是按「模型直接出字」出的「楼下便利店，等你到十二点。」；字或做法改了，点「重跑」按现在的设置出",
-      ),
-    ).toBeInTheDocument();
-    expect(cand("v1 · B")).toHaveTextContent("OCR 不一致：有错字");
-    await user.click(screen.getAllByRole("button", { name: /^重跑/ })[0] as HTMLElement);
-    const base = await screen.findByRole("radio", { name: "v2 · A" });
-    // A blank base, the text laid over it as post will paste it.
-    expect(base).toHaveTextContent("楼下便利店，等你到十二点。");
-    expect(base).toHaveTextContent("无字底图 + 后期贴字OCR 确认底图没有字");
-    expect(
-      screen.getByText("每张都做了 OCR，确认底图上没有字；上面叠的字是后期贴字的预览"),
-    ).toBeInTheDocument();
-    expect(screen.queryByText(/这一版是按/)).not.toBeInTheDocument();
   });
 
-  it("locking text OCR read differently asks first; 「仍然锁定」 locks it", async () => {
+  it("a locked prop's size and pen go through the impact; its writing has no method", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
-    await user.click(item(/便利贴手写/));
-    await user.click(screen.getByRole("radio", { name: "v1 · B" }));
-    await waitFor(() => expect(asset("txt1")?.pick).toBe(1));
-    await user.click(screen.getByRole("button", { name: "锁定为参考" }));
-    let dialog = await screen.findByRole("alertdialog");
-    expect(dialog).toHaveTextContent("候选 B 的字和要求不一致");
-    expect(dialog).toHaveTextContent("OCR 读出来是「楼下便利店，等你到十二占。」");
-    expect(dialog).toHaveTextContent("要求是「楼下便利店，等你到十二点。」");
-    await user.click(within(dialog).getByRole("button", { name: "取消" }));
-    await waitFor(() => expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument());
-    expect(productOf("txt1")?.locked_hash).toBeNull();
-
-    await user.click(screen.getByRole("button", { name: "锁定为参考" }));
-    dialog = await screen.findByRole("alertdialog");
-    await user.click(within(dialog).getByRole("button", { name: "仍然锁定" }));
-    expect(await screen.findByText("已锁定 8 / 10")).toBeInTheDocument();
-    expect(productOf("txt1")?.locked_hash).not.toBeNull();
-    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    await user.click(item(/黄色便利贴/));
+    const keep = async () => {
+      const dialog = await screen.findByRole("alertdialog");
+      expect(dialog).toHaveTextContent("「黄色便利贴」已锁定，改动会影响下游");
+      await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
+    };
+    const size = screen.getByLabelText("真实尺寸");
+    await user.clear(size);
+    await user.type(size, "7.5 cm 见方");
+    await user.tab();
+    await keep();
+    await waitFor(() => expect(asset("note")?.physical?.size).toBe("7.5 cm 见方"));
+    expect(asset("note")?.physical?.material).toBe("黄色便利贴纸");
+    expect(screen.getByLabelText("道具上的字（逐字核对）")).toHaveValue(
+      "楼下便利店，等你到十二点。",
+    );
+    expect(screen.queryByRole("radiogroup", { name: "做法" })).not.toBeInTheDocument();
+    const styles = screen.getByRole("radiogroup", { name: "字体风格" });
+    expect(within(styles).queryByRole("radio", { name: "屏幕界面" })).not.toBeInTheDocument();
+    const pens = screen.getByRole("radiogroup", { name: "用什么写" });
+    expect(within(pens).getByRole("radio", { name: "圆珠笔" })).toHaveAttribute(
+      "aria-checked",
+      "true",
+    );
+    await user.click(within(pens).getByRole("radio", { name: "马克笔" }));
+    await keep();
+    await waitFor(() => expect(asset("note")?.text?.pen).toBe("marker"));
   });
 
-  it("picks a candidate and locks it; the count goes to 8 / 10", async () => {
+  it("a prop shows its scale reference next to a character; 重画这张 redraws it", async () => {
+    const views = fakeAssets.views[0];
+    if (!views) throw new Error("no views product");
+    const scale = structuredClone(views);
+    Object.assign(scale, { id: "demo-p-scale-umbrella", owner_id: "umbrella", slot: "ref_scale" });
+    const v = scale.versions.find((x) => x.id === scale.adopted_version_id);
+    const file = v?.files[0];
+    if (!v || !file) throw new Error("no adopted views picture");
+    v.payload = { character: "林晚" };
+    v.files = [{ ...file, role: "scale", idx: 0 }];
+    fakeAssets.views.push(scale);
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/红色长柄伞/));
+    const region = await screen.findByRole("region", { name: "比例参考" });
+    expect(within(region).getByText("和林晚同框，看大小对不对")).toBeInTheDocument();
+    expect(await within(region).findByRole("img", { name: "林晚和它同框" })).toBeInTheDocument();
+    expect(screen.getByLabelText("真实尺寸")).toHaveValue(asset("umbrella")?.physical?.size);
+  });
+
+  it("picks a candidate and locks it; the count goes to 8 / 9", async () => {
     const user = userEvent.setup();
     renderAssets();
     await ready();
@@ -130,7 +142,7 @@ describe("AssetsPage", () => {
     await user.click(screen.getByRole("radio", { name: "v1 · C" }));
     await waitFor(() => expect(asset("band")?.pick).toBe(2));
     await user.click(screen.getByRole("button", { name: "锁定为参考" }));
-    expect(await screen.findByText("已锁定 8 / 10")).toBeInTheDocument();
+    expect(await screen.findByText("已锁定 8 / 9")).toBeInTheDocument();
     expect(item(/旧黑发圈/)).toHaveTextContent("已锁定");
     expect(productOf("band")?.locked_hash).not.toBeNull();
     expect(screen.getByRole("radio", { name: "v1 · C" })).toBeDisabled();
@@ -147,7 +159,7 @@ describe("AssetsPage", () => {
     expect(dialog).toHaveTextContent("分镜 · 1-02、1-06、1-09，共 3 个镜头用它做参考");
     expect(dialog).toHaveTextContent("其中镜头 1-02 已确认");
     await user.click(within(dialog).getByRole("button", { name: "只改这里，下游标待更新" }));
-    expect(await screen.findByText("已锁定 6 / 10")).toBeInTheDocument();
+    expect(await screen.findByText("已锁定 6 / 9")).toBeInTheDocument();
     expect(item(/红色长柄伞/)).toHaveTextContent("待选");
   });
 
@@ -207,8 +219,45 @@ describe("AssetsPage", () => {
     ).toEqual(["平静", "愤怒", "哭腔", "耳语", "喊叫"].map((e) => expect.stringContaining(e)));
     expect(screen.getByRole("button", { name: "播放：……周屿？" })).toBeInTheDocument();
     expect(screen.getByRole("radio", { name: "文字描述设计" })).toBeChecked();
-    // 声音克隆 comes later.
-    expect(screen.getByRole("radio", { name: "声音克隆" })).toBeDisabled();
+    expect(screen.getByRole("radio", { name: "声音克隆" })).toBeEnabled();
+  });
+
+  it("a voice clone: a sample, the speaker's consent, then the clone is the final", async () => {
+    const user = userEvent.setup();
+    renderAssets();
+    await ready();
+    await user.click(item(/^周屿\s*音色/));
+    await user.click(screen.getByRole("radio", { name: "声音克隆" }));
+    await waitFor(() => expect(asset("vzhouyu")?.voice?.method).toBe("clone"));
+    const panel = await screen.findByRole("region", { name: "声音样本" });
+    const local = within(panel).getByRole("button", { name: "用本地出终版（免费）" });
+    const clone = within(panel).getByRole("button", { name: "克隆 · 约 $1.40" });
+    expect(local).toBeDisabled();
+    expect(clone).toBeDisabled();
+    expect(panel).toHaveTextContent("先上传样本");
+    const consent = within(panel).getByRole("checkbox", { name: "我确认已获得声音本人的授权" });
+    expect(consent).toBeDisabled();
+
+    const file = new File(["RIFF"], "me.wav", { type: "audio/wav" });
+    await user.upload(within(panel).getByLabelText("上传样本"), file);
+    expect(await within(panel).findByText("me.wav · 14.2 秒")).toBeInTheDocument();
+    expect(fakeAssets.samples).toEqual([{ id: "vzhouyu", name: "me.wav" }]);
+    expect(within(panel).getByRole("button", { name: "播放：me.wav" })).toBeInTheDocument();
+    expect(panel).toHaveTextContent("先勾选授权");
+    expect(clone).toBeDisabled();
+
+    await user.click(consent);
+    await waitFor(() => expect(asset("vzhouyu")?.voice?.consent).toBe(true));
+    await waitFor(() => expect(clone).toBeEnabled());
+    await user.click(clone);
+    const final = await screen.findByRole("region", { name: "终版" });
+    expect(final).toHaveTextContent("终版 · MiniMax 克隆");
+    expect(fakeAssets.clones).toEqual([{ id: "vzhouyu", where: "api" }]);
+    // The sample is the final's anchor.
+    expect(productOf("vzhouyu")?.versions.at(-1)?.files[0]?.sha256).toBe("sample-vzhouyu-1");
+    await user.click(screen.getByRole("button", { name: "锁定为参考" }));
+    await waitFor(() => expect(item(/^周屿\s*音色/)).toHaveTextContent("已锁定"));
+    expect(within(panel).getByRole("button", { name: "换一段样本" })).toBeDisabled();
   });
 
   it("a voice: free auditions, then the final, which is what gets locked", async () => {
@@ -240,7 +289,7 @@ describe("AssetsPage", () => {
     await ready();
     await user.click(screen.getByRole("button", { name: "画面文字" }));
     expect(
-      await screen.findByText("当前产物 · 便利贴手写 · 文字素材 4 张候选"),
+      await screen.findByText("当前产物 · 手机锁屏时间 · 文字素材 4 张候选"),
     ).toBeInTheDocument();
   });
 
@@ -336,7 +385,7 @@ describe("AssetsPage", () => {
     );
     // A locked asset takes no upload.
     await user.click(item(/红色长柄伞/));
-    expect(screen.getByRole("button", { name: "上传参考图" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "换来源" })).toBeDisabled();
   });
 
   it("candidates are small cards; 放大 shows one at screen size, ← → the others", async () => {
