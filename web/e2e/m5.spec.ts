@@ -80,8 +80,9 @@ test("生成: takes for a shot, adopt and drop, the API final, then 生成确认
   const take = (n: number) => wall.getByRole("listitem", { name: `候选 T${n}` });
   await expect(take(2)).toBeVisible({ timeout: 30_000 });
   await expect(take(1)).toContainText("（本地）");
-  // Each take is checked against its shot's contract (M5.5 step 7): the card shows it.
-  await expect(take(1)).toContainText("契约检查");
+  // Each take is checked against its shot's contract: since M6 step 4 that is the auto QA's
+  // picture check (M5.5's in-run 契约检查 moved into it), and the card shows its row.
+  await expect(take(1)).toContainText("画面检查", { timeout: 15_000 });
 
   // Adopt T1, drop it, adopt T2.
   await take(1).getByRole("button", { name: "采纳", exact: true }).click();
