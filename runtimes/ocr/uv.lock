@@ -65,12 +65,14 @@ version = "0"
 source = { virtual = "." }
 dependencies = [
     { name = "onnxruntime" },
+    { name = "opencv-python-headless" },
     { name = "rapidocr" },
 ]
 
 [package.metadata]
 requires-dist = [
     { name = "onnxruntime", specifier = "==1.31.0" },
+    { name = "opencv-python-headless", specifier = "==5.0.0.93" },
     { name = "rapidocr", specifier = "==3.10.0" },
 ]
 

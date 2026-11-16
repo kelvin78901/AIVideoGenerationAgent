@@ -9,6 +9,7 @@ requires-python = "==3.12.*"
 dependencies = [
     "rapidocr==3.10.0",
     "onnxruntime==1.31.0",  # RapidOCR does not pull an engine in; the CPU build
+    "opencv-python-headless==5.0.0.93",  # rapidocr pulls it in; worker_video reads takes with it (M6)
 ]
 
 [tool.uv]

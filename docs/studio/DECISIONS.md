@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-16 · M6 第 5a 步：本地质检 worker
+
+- **一个 worker 文件、每个模型一个进程**：`workers/worker_qa.py`，`args.tool`（face / speaker / asr）决定启动时加载什么；发错种类的请求回 `unsupported_kind`。原因：AuraFace 用的 onnxruntime 和 sherpa-onnx 自带的不进同一个进程（调研第 10 节第 5 条）。编排（打分、窗口、回答格式）只用标准库，测试用假引擎；引擎在 qa 环境里才 import。
+- **人脸分数 = 每帧里每张脸归给最像的参考，参考的分 = 它拿到脸的那些帧的平均**（`detail` 里另有最低帧 `low` 和帧数）。原因：调研建议的「最好 3 帧的平均」在 5 秒、5 帧的 take 里会把另一个人的脸算进来（双人戏里只出现 2 帧的人被拉低）；平均能反映镜头中途脸变了。比 `min_face`（40 px）小的脸不看（远处路人；ArcFace 在这么小的脸上不可靠）。参考图里没脸、或这个人在 take 里没拿到脸 → None（不适用）。对齐用 numpy 写的 Umeyama（和 InsightFace 的 norm_crop 同一个变换），不用 LMEDS。
+- **说话人**：take 的声音按 1.5 秒窗口、0.75 秒步长切，静音窗口（RMS < 0.01 或短于 0.25 秒）跳过，每个声音取最高的窗口。窗口参数和阈值 5c 标定。
+- **OCR 读视频留在 `ocr` 环境**（`worker_rapidocr` 有 `every_s` 就按视频处理，`worker_video.frames` 顺序读、不 seek），`runtimes/ocr` 把 `opencv-python-headless==5.0.0.93` 写成显式依赖。
+- **`rt_qa`、`w_qa` 在 Mac 上也必需**（质检没有别的兜底）；Whisper 不拆成单独的 `w_asr`（质检的台词识别本来就要它）。英文名不带逗号：扫描结果的提示参数按逗号拆，名字会被截断。
+- **本机冒烟不走质检任务**：`scripts/smoke/local_qa.py` 在数据目录的副本上直接调 `Measure`。原因：质检任务最后一步是不达标自动重跑，会在真实 ComfyUI 上出 H3。
+
 ## 2026-11-15 · M6 第 5 步之前：本地质检工具选型（调研 `reports/m6-qa-tools-research.md`）
 
 - **SyncNet 照用**（Kelvin 2026-11-15）：VGG 的 `syncnet_v2.model` 写的是「供研究用途，CC BY」，训练数据 LRS2 只许非商用，能否商用不明确；代码 MIT。它只给 take 打口型分、不进成片，先用；以后要商用发行前再换（候选：LatentSync 的 stable_syncnet，打分口径不同、要重新校准）。

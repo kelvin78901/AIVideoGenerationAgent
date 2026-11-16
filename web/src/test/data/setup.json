@@ -339,6 +339,31 @@
           "install": null
         },
         {
+          "id": "rt_qa",
+          "group": "rt",
+          "name": {
+            "zh": "自动质检运行环境（人脸、台词、说话人）",
+            "en": "QA tools runtime (faces · lines · voices)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "QA tools runtime (faces · lines · voices)"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 240.0,
+          "install": null
+        },
+        {
           "id": "comfy",
           "group": "comfy",
           "name": {
@@ -732,6 +757,29 @@
           "install": null
         },
         {
+          "id": "w_qa",
+          "group": "w",
+          "name": {
+            "zh": "自动质检模型",
+            "en": "QA models"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 3400000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_llm",
           "group": "w",
           "name": {
@@ -887,6 +935,7 @@
         "rt_qwentts",
         "rt_indextts",
         "rt_ocr",
+        "rt_qa",
         "comfy",
         "node_flashvsr",
         "sage",
@@ -899,6 +948,7 @@
         "w_flashvsr",
         "w_sr",
         "w_tts",
+        "w_qa",
         "llmsrv"
       ],
       "confirm": [
@@ -1461,6 +1511,31 @@
           "install": null
         },
         {
+          "id": "rt_qa",
+          "group": "rt",
+          "name": {
+            "zh": "自动质检运行环境（人脸、台词、说话人）",
+            "en": "QA tools runtime (faces · lines · voices)"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "QA tools runtime (faces · lines · voices)"
+            }
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": null,
+          "work_s": 240.0,
+          "install": null
+        },
+        {
           "id": "comfy",
           "group": "comfy",
           "name": {
@@ -1852,6 +1927,29 @@
           "install": null
         },
         {
+          "id": "w_qa",
+          "group": "w",
+          "name": {
+            "zh": "自动质检模型",
+            "en": "QA models"
+          },
+          "status": "missing",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": true,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 3400000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_llm",
           "group": "w",
           "name": {
@@ -2005,6 +2103,7 @@
         "torch",
         "ffmpeg",
         "rt_ocr",
+        "rt_qa",
         "comfy",
         "comfy_manager",
         "node_vhs",
@@ -2013,6 +2112,7 @@
         "w_img_t2i",
         "w_flux3",
         "w_tts",
+        "w_qa",
         "llmsrv"
       ],
       "confirm": [

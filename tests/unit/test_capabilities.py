@@ -15,7 +15,7 @@ PC_READY = Capabilities.of(
         "os", "gpu", "driver", "python", "uv", "torch", "ffmpeg", "git", "comfy", "node_h3",
         "node_vhs", "node_seedvr2", "node_flashvsr", "node_ctrl", "node_dramastudio", "w_h3",
         "w_te", "w_img", "w_img_t2i", "w_flux3", "w_sr", "w_flashvsr", "w_tts", "w_llm", "llmsrv",
-        "rt_qwentts", "rt_indextts", "rt_ocr",
+        "rt_qwentts", "rt_indextts", "rt_ocr", "rt_qa", "w_qa",
     ],
 )  # fmt: skip
 # The Mac sample after its scan: no CUDA, no ComfyUI, no local LLM server.

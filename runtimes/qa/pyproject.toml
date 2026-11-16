@@ -1,0 +1,26 @@
+# QA tools worker environment, CPU only (setup item rt_qa, worker workers/worker_qa.py): YuNet face
+# detection + AuraFace embeddings (OpenCV + onnxruntime), faster-whisper (CTranslate2 int8), CAM++
+# speaker embeddings (sherpa-onnx). The installer runs `uv sync --locked` into
+# ~/.drama-studio/envs/qa; regenerate the lock with `uv lock --project runtimes/qa` after changing
+# this file. Weights come from setup item w_qa. Sources and licences: reports/m6-qa-tools-research.md.
+[project]
+name = "drama-studio-rt-qa"
+version = "0"
+requires-python = "==3.12.*"
+dependencies = [
+    "opencv-python-headless==4.14.0.94",  # YuNet 2023mar is the OpenCV 4.x model (opencv_zoo README)
+    "onnxruntime==1.31.0",                # AuraFace; same as the ocr env; faster-whisper wants <2
+    "faster-whisper==1.2.1",
+    "ctranslate2==4.8.5",
+    "av==19.0.2",                         # PyAV with FFmpeg bundled: audio straight from the mp4
+    "sherpa-onnx==2.0.1",
+    "numpy>=2,<3",
+]
+
+[tool.uv]
+package = false
+environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+    "sys_platform == 'darwin' and platform_machine == 'arm64'",
+]

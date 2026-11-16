@@ -138,6 +138,16 @@ items:
     detect: { type: py_import, env: ocr, module: rapidocr }
     install:
       - { type: uv_sync, env: ocr, project: runtimes/ocr, python: "3.12" }
+  - id: rt_qa
+    group: rt
+    name: { zh: 自动质检运行环境（人脸、台词、说话人）, en: QA tools runtime (faces · lines · voices) }
+    required: true
+    depends_on: [uv]
+    # YuNet + AuraFace（OpenCV 4.14、onnxruntime）、faster-whisper（CTranslate2 int8）、CAM++（sherpa-onnx），只用 CPU。
+    # 质检没有本地以外的兜底（台词识别的 API 兜底只在 asr 组件），所以 Mac 上也必需。M6 第 5a 步。
+    detect: { type: py_import, env: qa, module: sherpa_onnx }
+    install:
+      - { type: uv_sync, env: qa, project: runtimes/qa, python: "3.12" }
 
   # ---------- ComfyUI 与节点 ----------
   - id: comfy
@@ -447,6 +457,44 @@ items:
         files:
           - { path: config.json, sha256: 88a1f47acf747db0b21e97a389d838566147f7a5464583ff5c8d819d870f03ee }
           - { path: bigvgan_generator.pt, sha256: e95ba25972d3de0628d99cd156e9315a9c018899bf739988959ebe3544080ced }   # 0.45 GB
+  - id: w_qa
+    group: w
+    name: { zh: 自动质检模型, en: QA models }
+    required: true
+    # 不走 ComfyUI，放 {models}/qa；faster-whisper large-v3 也给 asr 组件用。来源、许可、sha256：reports/m6-qa-tools-research.md。
+    # AuraFace 只下 glintr100.onnx：同仓库另外 4 个 onnx 是 InsightFace 的非商用原文件（DECISIONS「M6 第 5 步之前」）。
+    detect: { type: downloads }
+    size_gb: 3.4
+    install:
+      - type: download
+        hf_repo: opencv/face_detection_yunet
+        revision: 3cc26e7f1014a5ee5d74a42acee58bafc9d0a310
+        dest: "{models}/qa"
+        files:
+          - { path: face_detection_yunet_2023mar.onnx, sha256: 8f2383e4dd3cfbb4553ea8718107fc0423210dc964f9f4280604804ed2552fa4 }   # 0.00 GB
+      - type: download
+        hf_repo: fal/AuraFace-v1
+        revision: af6d057c9b0ec4071d4c49c80e3539258798b609
+        dest: "{models}/qa/auraface"
+        files:
+          - { path: LICENSE.md }   # 0.00 GB
+          - { path: glintr100.onnx, sha256: a7933ea5330113b01c9b60351d8f4c33003f145d8470ac5f0e52ee2effe25c60 }   # 0.26 GB
+      - type: download
+        hf_repo: csukuangfj/speaker-embedding-models
+        revision: 0743f301363dec56491a490f6d6cbc9d67f9a3bf
+        dest: "{models}/qa"
+        files:
+          - { path: 3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx, sha256: f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11 }   # 0.03 GB
+      - type: download
+        hf_repo: Systran/faster-whisper-large-v3
+        revision: edaa852ec7e145841d8ffdb056a99866b5f0a478
+        dest: "{models}/faster-whisper-large-v3"
+        files:
+          - { path: config.json }   # 0.00 GB
+          - { path: model.bin, sha256: 69f74147e3334731bc3a76048724833325d2ec74642fb52620eda87352e3d4f1 }   # 3.09 GB
+          - { path: preprocessor_config.json }   # 0.00 GB
+          - { path: tokenizer.json }   # 0.00 GB
+          - { path: vocabulary.json }   # 0.00 GB
   - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, installable: false, fix: { optional: llm_optional }, macos: { variant: MLX, required: true, name: { zh: "Qwen3.6-27B（MLX 版）", en: "Qwen3.6-27B (MLX)" }, fix: { missing: weights_pending_p0 } }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
 
   # ---------- 网络与服务 ----------
