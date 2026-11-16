@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-15 · M6 第 5 步之前：本地质检工具选型（调研 `reports/m6-qa-tools-research.md`）
+
+- **SyncNet 照用**（Kelvin 2026-11-15）：VGG 的 `syncnet_v2.model` 写的是「供研究用途，CC BY」，训练数据 LRS2 只许非商用，能否商用不明确；代码 MIT。它只给 take 打口型分、不进成片，先用；以后要商用发行前再换（候选：LatentSync 的 stable_syncnet，打分口径不同、要重新校准）。
+- **AuraFace 只下 `glintr100.onnx`**：fal 仓库里另外 4 个 onnx 和 InsightFace antelopev2 的文件 sha256 相同（非商用），不下、不用 `insightface` 包；对齐用 YuNet 的 5 点 + ArcFace 模板（numpy / cv2）。
+- **说话人走 sherpa-onnx 的 CAM++ ONNX 导出**（不用 torch）；**OCR 读视频留在现有 `ocr` 环境**（opencv 自带 FFmpeg）。阈值 `speaker_sim 0.6`、`face_sim 0.75`、`syncnet_conf 6` 都没有一手依据（CAM++ 官方判定阈值 0.31），5c 本机校准。
+
+## 2026-11-15 · M6 第 4 步之后：任务队列停下时给运行中的任务 1 秒
+
+- `JobQueue.stop` 先等运行中的任务最多 `stop_grace_s`（1 秒）自己结束，再取消剩下的。原因：任务在等数据库时被 `task.cancel()` 取消，SQLite 连接会带着写锁留下（`Database.session` 的屏蔽只挡 Starlette 的取消），随后把它放回队列的那次写入报 `database is locked`。质检任务短、又总在测试结束时还在跑，CI 上第一次撞到（`test_takes_api` 收尾）。长任务照旧被取消、下次启动续跑。
+
 ## 2026-11-15 · M6 第 4 步：自动重跑和兜底
 
 - **「一批」= 同一个任务出的 take**（`job_id` 相同；终版 `stage: final` 不算）。这一批的质检都写完、没有一条通过、至少一条没过才动作；有一条「未检查」（`qa_pass` 为 None）也不动。镜头已采纳、已锁定、或正有任务在跑时不动（人已经做了决定）。同一批的两个质检任务可能同时结束：策略加一把锁，重复的那次 `start` 会 409 `product_busy`，忽略。

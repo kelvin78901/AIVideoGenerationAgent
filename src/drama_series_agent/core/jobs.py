@@ -170,6 +170,8 @@ class JobQueue:
         self._dispatcher: asyncio.Task[None] | None = None
         self._stopping = False
         self._finished: list[Callable[[Job], Awaitable[None]]] = []
+        # How long ``stop`` lets running jobs end by themselves before cancelling them.
+        self.stop_grace_s = 1.0
 
     # ------------------------------------------------------------------ registration
 
@@ -285,7 +287,13 @@ class JobQueue:
         self._dispatcher = asyncio.create_task(self._dispatch_loop(), name="job-dispatcher")
 
     async def stop(self) -> None:
-        """Stop dispatching. Running jobs are interrupted and re-queued for the next start."""
+        """Stop dispatching. Running jobs get ``stop_grace_s`` to end by themselves (a QA job
+        takes about a second); the rest are interrupted and re-queued for the next start.
+
+        A job cancelled while it waits on the database leaves its SQLite connection holding
+        the write lock (``Database.session`` only shields against Starlette's cancellation), and
+        the re-queue after it then fails with ``database is locked`` (M6 step 4, CI): the
+        grace keeps the short jobs that are always running at shutdown out of that."""
         self._stopping = True
         if self._dispatcher is not None:
             self._dispatcher.cancel()
@@ -293,6 +301,9 @@ class JobQueue:
                 await self._dispatcher
             self._dispatcher = None
         tasks = [t for slots in self._slots.values() for t in slots.running.values()]
+        if tasks and self.stop_grace_s > 0:
+            await asyncio.wait(tasks, timeout=self.stop_grace_s)
+        tasks = [t for t in tasks if not t.done()]
         for task in tasks:
             task.cancel()
         for task in tasks:

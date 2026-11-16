@@ -14,11 +14,12 @@
 - **1**（efe50c5）线框草图 `prototype/m6/`：`takes.html`（G1–G3）、`storyboard.html`（S1 连续性）。只改文档。
 - **2**（2feaccf）连续性账本：`shots/ledger.py`（现算、不建表，Kelvin 2026-11-15 同意）、`ShotOut.ledger`、`shots/service.py:ledger_inputs`；关键帧和视频编译加「接上一镜」并依赖来源镜头；web 测试数据 `shots.json` / `generate.json` 重新生成（只多了 `ledger`）。测试：`test_ledger.py` 10 passed、`test_shots_api.py` 14 passed、`test_keyframes_api.py` + `test_takes_api.py` 42 passed、`test_web_fixtures.py -k "shots or generate"` 2 passed；ruff、mypy 过。
 - **3**（a5cab1c）质检框架（Mock）：`pipeline/qa.py`（`QaService`：take 出完 `products.on_created` 排 `qa.take` 任务（cpu）；六项先量后判，`judge` / `rejudge`；写 `qa_json` / `qa_pass` 和出片调用 `params.call_id` 的 `qa_scores_json`；`version.qa` 事件；`POST /versions/{id}/qa`）；`takecheck` 路由并进 `qa`（迁移 `0025` 搬覆盖配置），看图加账本三项；生成规则阈值可写 + `qa_on` + `reset_qa`；`providers.yaml` 三个工具 key（没 worker）；前端只加 `speaker`、`version.qa`、标签。测试：`test_qa.py` 5、`test_qa_api.py` 5、`test_generate_api.py`、`test_web_fixtures.py -k "config or generate or shots"`、`test_storyboard_to_takes.py`、`test_takes_api.py` 全过；`pnpm -C web test`、lint、typecheck、format 过；ruff、mypy 过。
-- **4**（本提交）自动重跑和兜底：`pipeline/qa_policy.py`（`decide` 纯函数 + `QaPolicy.after_qa`，质检写完后调；重跑带 `fixes`、`auto_qa_rerun`；用完次数走 `vid` 兜底 `qa_fail`，`notify: ask` 等确认；兜底也没过就停）；`RunService.start` 加 `origin` / `fallback_reason` / `ask`；`vid.run` 去掉运行内看图和重画（只拼图）；运行记录 `take_fail_rerun/fallback/lip/stop` + 前端文案。测试：`test_qa_policy.py` 7、`test_qa_api.py` 8、`test_takes_api.py` 23、`test_generate_api.py`、`test_storyboard_to_takes.py`、`test_web_fixtures.py` 全过；`pnpm -C web test` 340、lint、typecheck、format 过；ruff、mypy（含 linux）过。
+- **4**（ffb6d9c）自动重跑和兜底：`pipeline/qa_policy.py`（`decide` 纯函数 + `QaPolicy.after_qa`，质检写完后调；重跑带 `fixes`、`auto_qa_rerun`；用完次数走 `vid` 兜底 `qa_fail`，`notify: ask` 等确认；兜底也没过就停）；`RunService.start` 加 `origin` / `fallback_reason` / `ask`；`vid.run` 去掉运行内看图和重画（只拼图）；运行记录 `take_fail_rerun/fallback/lip/stop` + 前端文案。测试：`test_qa_policy.py` 7、`test_qa_api.py` 8、`test_takes_api.py` 23、`test_generate_api.py`、`test_storyboard_to_takes.py`、`test_web_fixtures.py` 全过；`pnpm -C web test` 340、lint、typecheck、format 过；ruff、mypy（含 linux）过。
+- **4 补**（本提交）CI 修：`JobQueue.stop` 先给运行中的任务 1 秒（取消等数据库的任务会留下写锁，DECISIONS）；`test_qa_api` 阈值那条先采纳（免得触发自动重跑）。5a 调研 `reports/m6-qa-tools-research.md` 进库。测试：`test_jobs.py` + `test_qa_api.py` 22、`test_takes_api.py` + e2e restart 25 passed。
 
 ## 下一步
 
-- **第 5a 步**本地质检工具（环境 + 人脸 / 台词 / 说话人）：`runtimes/qa`（uv 锁文件）、`workers/worker_qa.py`（照 `workers/worker_rapidocr.py` 和 `modelhub/adapters/local_python.py` 的协议）、清单 `rt_qa` / `w_qa`（看 `setup/` 里 `rt_ocr` 怎么写）、`providers.yaml` 里 `local/auraface` / `local/campplus` / `local/whisper-large-v3` 补 `worker` / `env` / `needs`；请求和回答的格式见 `pipeline/qa.py:Measure`（`faces[{asset_id,name,sim}]`、`sims[{who,sim}]`、ASR 回文本）。RapidOCR worker 要认 `video` + `every_s`（回 `frames[{t,text}]`）。模型许可和下载地址按官方仓库核对（`verify: true`）。单元测试只测协议（假 worker，绝不触网）。
+- **第 5a 步**本地质检工具（环境 + 人脸 / 台词 / 说话人）：**先读 `reports/m6-qa-tools-research.md`**（包和版本、权重地址和 sha256、许可、推理代码、建议的 `runtimes/qa/pyproject.toml`、清单 `rt_qa` / `w_qa`、providers 条目；第 10 节是没核实的）。选型已定（DECISIONS「M6 第 5 步之前」）：AuraFace 只下 `glintr100.onnx`；CAM++ 走 sherpa-onnx；OCR 读视频放现有 `ocr` 环境；qa 环境锁 `opencv-python-headless==4.14.0.94` 配 YuNet `2023mar`（先实机试）。worker 照 `workers/worker_rapidocr.py` 的协议，请求 / 回答格式见 `pipeline/qa.py:Measure`。单元测试只测协议（假 worker，绝不触网）；装环境和下权重前先跟 Kelvin 说一声（large-v3 约 3 GB）。
 - **M6 草图 Kelvin 2026-11-15 同意**（`prototype/m6/`，前端第 9 步照它做；S1 只列这个镜头拍到的人，见 DECISIONS「M6 第 2 步」）。M5.5 草图 Kelvin 2026-11-15 也同意，ROADMAP 已勾。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
 - **约定**：生成页测试先 `confirmFakeStoryboard()`（其余页面测试的分镜是进行中）；改已确认内容先 `useImpactPreview`、后 `useApplyImpact`；页面测试用 `test/backend.ts` 的 `backend()`（已含空的 `/jobs`、PC 示例机器扫描前；`resetFakeSetup("pc", { scanned: true })` 直接到扫描后），看 toast 就挂 `<Toaster />`；演示延迟放 `mocks/events.ts:demoTiming`，测试里改短；AppShell 测试标题要改成页面 h1；i18n key 不能含冒号。
@@ -67,6 +68,8 @@
 - **改代码前先看 ruff 有没有已经改过行**：`ruff format` 会把长行拆开，之后用 sed 按原行号替换会留下碎片（第 4 步踩过）。
 
 ## 等 Kelvin 的事
+
+- 已定（2026-11-15）：SyncNet 权重许可不明确，照用、记 DECISIONS，商用发行前再换。
 
 - 以后：火山方舟开通 Seedance 2.5（要交保证金，Kelvin 先不管）后补跑 `live_video.py --only seedance`。 可选：想在本机 ComfyUI 里用 DramaStudio 节点，在 Setup 页勾「DramaStudio 节点包」安装（先存快照，没替你装），再重启 ComfyUI。已定：`w_h3` 的两个 Turbo LoRA 留着，以后可能做「快速草稿」档（2026-10-28）；本地 H3 20 步、原生配音合格（2026-10-27）。
 

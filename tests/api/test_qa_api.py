@@ -182,6 +182,8 @@ def test_on_screen_words_are_read_back(client: TestClient) -> None:
 def test_a_bad_face_fails_and_the_series_thresholds_judge_it_again(client: TestClient) -> None:
     _confirm_storyboard(client)
     take = _take(client, "1-04")
+    # Adopted, so its failing does not start a rerun (step 4) while the calls are counted.
+    client.post(f"{V1}/versions/{take['id']}/adopt").raise_for_status()
     _set_mock_qa(client, take["id"], {"face": 0.41})
     bad = _requa(client, take["id"])
     assert (_checks(bad)["face"]["ok"], bad["qa_pass"]) == (False, False)
