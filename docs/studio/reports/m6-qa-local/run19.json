@@ -1,0 +1,3208 @@
+{
+ "run": "run19",
+ "home": "C:\\Users\\kelvin\\AppData\\Local\\Temp\\drama-ep19-5Oilw8\\home",
+ "takes": [
+  {
+   "take": "1-01 T1",
+   "version_id": "demo-p-vid-1-01-v1",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 1.14
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-01 T2",
+   "version_id": "demo-p-vid-1-01-v2",
+   "model": "minimax/h3-regenerate-2k",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.3
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-01 T3",
+   "version_id": "4c5f433bd0fa4d2a8b291f0ab4c43b65",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.4589,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.4589,
+        "low": 0.3044,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.73
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-01 T4",
+   "version_id": "65e7f38885424953964dc8a1dd20f315",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.346,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.346,
+        "low": 0.2376,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.73
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-01 T5",
+   "version_id": "74baefc9827e4a5db8539b687bf698a4",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.2839,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.2839,
+        "low": 0.1988,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.84
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-01 T6",
+   "version_id": "6ecbe02e03b94479ba478d6ac5bbc628",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.2508,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.2508,
+        "low": 0.191,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.04
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-02 T1",
+   "version_id": "demo-p-vid-1-02-v1",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.2
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 3.31
+    }
+   ]
+  },
+  {
+   "take": "1-02 T2",
+   "version_id": "demo-p-vid-1-02-v2",
+   "model": "minimax/h3-regenerate-2k",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.97
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.26
+    }
+   ]
+  },
+  {
+   "take": "1-02 T3",
+   "version_id": "98c765be32cc4de3b3a82e5cf91bcd71",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.41
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "1",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "1"
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 3.6
+    }
+   ]
+  },
+  {
+   "take": "1-02 T4",
+   "version_id": "f7c39d98135f4ebea206a88e1da93c45",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.59
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "8JOTAL",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": "8JOTAL"
+       }
+      ]
+     },
+     "seconds": 2.77
+    }
+   ]
+  },
+  {
+   "take": "1-02 T5",
+   "version_id": "c96f9667789d4a8d94302ebaa29ed0a8",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.93
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 0.76
+    }
+   ]
+  },
+  {
+   "take": "1-02 T6",
+   "version_id": "2da237ab337f4350a91045aebffa199d",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.3566,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.3566,
+        "low": 0.2547,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.99
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "结个置现后，平作月十二点",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "结个置现后，平作月十二点"
+       },
+       {
+        "t": 1.0,
+        "text": "结医现后，平作月十二点。"
+       },
+       {
+        "t": 2.0,
+        "text": "结个星见后，早怀月十二点。"
+       },
+       {
+        "t": 3.0,
+        "text": "理星现后，年的月十二点。"
+       },
+       {
+        "t": 4.0,
+        "text": "竣宁显孔后，车的用十二点。"
+       }
+      ]
+     },
+     "seconds": 4.66
+    }
+   ]
+  },
+  {
+   "take": "1-03 T1",
+   "version_id": "demo-p-vid-1-03-v1",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 3.06
+    }
+   ]
+  },
+  {
+   "take": "1-03 T2",
+   "version_id": "demo-p-vid-1-03-v2",
+   "model": "minimax/h3-regenerate-2k",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.61
+    }
+   ]
+  },
+  {
+   "take": "1-03 T3",
+   "version_id": "244426c974c646109efcfe652f33fcf2",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": "local/rapidocr",
+     "match": true,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 1.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 2.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 3.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 4.0,
+        "text": "楼下便利店，等你到十二点。"
+       }
+      ]
+     },
+     "seconds": 4.48
+    }
+   ]
+  },
+  {
+   "take": "1-03 T4",
+   "version_id": "967a08e4169d4ababf4e8028a576f934",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "楼下便利店等你到十二点。",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 1.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 2.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 3.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 4.0,
+        "text": "楼下便利店等你到十二点。"
+       }
+      ]
+     },
+     "seconds": 5.49
+    }
+   ]
+  },
+  {
+   "take": "1-03 T5",
+   "version_id": "cf0d3a9a339845e8bccb4147069212da",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "楼下便利店等你到十二点",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 1.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 2.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 3.0,
+        "text": "楼下便利店等你到十二点"
+       },
+       {
+        "t": 4.0,
+        "text": "楼下便利店，等你到十二点。"
+       }
+      ]
+     },
+     "seconds": 4.16
+    }
+   ]
+  },
+  {
+   "take": "1-03 T6",
+   "version_id": "803442a305e944b8bedad9c45ec94993",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": "local/rapidocr",
+     "match": true,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 1.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 2.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 3.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 4.0,
+        "text": "楼下便利店，等你到十二点。"
+       }
+      ]
+     },
+     "seconds": 4.8
+    }
+   ]
+  },
+  {
+   "take": "1-04 T1",
+   "version_id": "demo-p-vid-1-04-v1",
+   "model": "comfy/h3-r2v",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.87
+    },
+    {
+     "metric": "asr",
+     "value": 1.0,
+     "text": "",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 4.88
+    },
+    {
+     "metric": "speaker",
+     "value": 0.0158,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.0158
+       }
+      ]
+     },
+     "seconds": 0.63
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 0.88
+    }
+   ]
+  },
+  {
+   "take": "1-04 T2",
+   "version_id": "demo-p-vid-1-04-v2",
+   "model": "comfy/h3-r2v",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.39
+    },
+    {
+     "metric": "asr",
+     "value": 1.0,
+     "text": "",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 0.03
+    },
+    {
+     "metric": "speaker",
+     "value": 0.0407,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.0407
+       }
+      ]
+     },
+     "seconds": 0.1
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 4.46
+    }
+   ]
+  },
+  {
+   "take": "1-04 T3",
+   "version_id": "demo-p-vid-1-04-v3",
+   "model": "minimax/h3-api",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.61
+    },
+    {
+     "metric": "asr",
+     "value": 1.0,
+     "text": "",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 0.03
+    },
+    {
+     "metric": "speaker",
+     "value": 0.029,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.029
+       }
+      ]
+     },
+     "seconds": 0.1
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.78
+    }
+   ]
+  },
+  {
+   "take": "1-04 T4",
+   "version_id": "demo-p-vid-1-04-v4",
+   "model": "volc/seedance-2.5",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": "local/auraface",
+     "na": true,
+     "detail": {
+      "faces": []
+     },
+     "seconds": 0.4
+    },
+    {
+     "metric": "asr",
+     "value": 1.0,
+     "text": "",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 0.04
+    },
+    {
+     "metric": "speaker",
+     "value": 0.0351,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.0351
+       }
+      ]
+     },
+     "seconds": 0.12
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.62
+    }
+   ]
+  },
+  {
+   "take": "1-04 T5",
+   "version_id": "2c5e6474d6f04009932b03c2a6cb03e7",
+   "model": "comfy/h3-r2v",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.4791,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.4791,
+        "low": 0.3985,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.98
+    },
+    {
+     "metric": "asr",
+     "value": 0.5,
+     "text": "周瑜",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 3.98
+    },
+    {
+     "metric": "speaker",
+     "value": 0.7184,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.7184
+       }
+      ]
+     },
+     "seconds": 0.07
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.75
+    }
+   ]
+  },
+  {
+   "take": "1-04 T6",
+   "version_id": "f3a958a2d910413a99288be52a392363",
+   "model": "comfy/h3-r2v",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.4742,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.4742,
+        "low": 0.4376,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.99
+    },
+    {
+     "metric": "asr",
+     "value": 0.5,
+     "text": "周瑜",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 3.96
+    },
+    {
+     "metric": "speaker",
+     "value": 0.7235,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.7235
+       }
+      ]
+     },
+     "seconds": 0.09
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.9
+    }
+   ]
+  },
+  {
+   "take": "1-04 T7",
+   "version_id": "5fff0caea4ea4d2e94ba28a286055d06",
+   "model": "comfy/h3-r2v",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.4769,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.4769,
+        "low": 0.4426,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.99
+    },
+    {
+     "metric": "asr",
+     "value": 0.5,
+     "text": "周瑜",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 3.93
+    },
+    {
+     "metric": "speaker",
+     "value": 0.7583,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.7583
+       }
+      ]
+     },
+     "seconds": 0.08
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.75
+    }
+   ]
+  },
+  {
+   "take": "1-04 T8",
+   "version_id": "eb84044bbf324da8a766e56ef47e97cd",
+   "model": "comfy/h3-r2v",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.6961,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.6961,
+        "low": 0.6107,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.98
+    },
+    {
+     "metric": "asr",
+     "value": 0.5,
+     "text": "周瑜",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 4.09
+    },
+    {
+     "metric": "speaker",
+     "value": 0.7386,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.7386
+       }
+      ]
+     },
+     "seconds": 0.07
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": "local/rapidocr",
+     "match": true,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 1.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 2.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 3.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 4.0,
+        "text": "楼下便利店，等你到十二点。"
+       }
+      ]
+     },
+     "seconds": 4.86
+    }
+   ]
+  },
+  {
+   "take": "1-04 T9",
+   "version_id": "d5a54e84eafb4257bd5a24983623f0c8",
+   "model": "comfy/h3-r2v",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.5377,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.5377,
+        "low": 0.4615,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 1.44
+    },
+    {
+     "metric": "asr",
+     "value": 0.5,
+     "text": "周瑜",
+     "model": "local/whisper-large-v3",
+     "detail": {
+      "expected": "……周屿？"
+     },
+     "seconds": 3.96
+    },
+    {
+     "metric": "speaker",
+     "value": 0.6991,
+     "text": null,
+     "model": "local/campplus",
+     "detail": {
+      "sims": [
+       {
+        "who": "林晚",
+        "sim": 0.6991
+       }
+      ]
+     },
+     "seconds": 0.09
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": "local/rapidocr",
+     "match": true,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 1.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 2.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 3.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 4.0,
+        "text": "楼下便利店，等你到十二点。"
+       }
+      ]
+     },
+     "seconds": 3.87
+    }
+   ]
+  },
+  {
+   "take": "1-05 T1",
+   "version_id": "1f41c450a1974ebb9fad723f4ad06f24",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 2.03
+    }
+   ]
+  },
+  {
+   "take": "1-05 T2",
+   "version_id": "d9928e6ae0e14e9e96572dbf96c4378c",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.72
+    }
+   ]
+  },
+  {
+   "take": "1-05 T3",
+   "version_id": "510e9eeefafd4ea58801264f19db5022",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": "",
+     "model": "local/rapidocr",
+     "match": false,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": ""
+       },
+       {
+        "t": 1.0,
+        "text": ""
+       },
+       {
+        "t": 2.0,
+        "text": ""
+       },
+       {
+        "t": 3.0,
+        "text": ""
+       },
+       {
+        "t": 4.0,
+        "text": ""
+       }
+      ]
+     },
+     "seconds": 1.82
+    }
+   ]
+  },
+  {
+   "take": "1-05 T4",
+   "version_id": "b6b0c28de2e2402ca08963d37cc0ab46",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": "local/rapidocr",
+     "match": true,
+     "detail": {
+      "expected": [
+       "楼下便利店，等你到十二点。"
+      ],
+      "frames": [
+       {
+        "t": 0.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 1.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 2.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 3.0,
+        "text": "楼下便利店，等你到十二点。"
+       },
+       {
+        "t": 4.0,
+        "text": "楼下便利店，等你到十二点。"
+       }
+      ]
+     },
+     "seconds": 4.18
+    }
+   ]
+  },
+  {
+   "take": "1-06 T1",
+   "version_id": "b1a2079ba1b0452b997247313927e4b9",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.3523,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.3523,
+        "low": 0.2214,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 1.4
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-06 T2",
+   "version_id": "7ff262bc6acf4b1f9b950226dffb0ee4",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.3156,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.3156,
+        "low": 0.1486,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.85
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-06 T3",
+   "version_id": "cd7d02609ed240348ac065ecc7fb7f8f",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.312,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.312,
+        "low": 0.1443,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.84
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-06 T4",
+   "version_id": "2f70e65967cd497fa491fa4c1b31c280",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.3971,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.3971,
+        "low": 0.3161,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.05
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-06 T5",
+   "version_id": "c4a18a0f06e4454ca9a4aa67f0bdd3e5",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.3336,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.3336,
+        "low": 0.2695,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.04
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-07 T1",
+   "version_id": "503f73d97ded4cac80a21c23f6d9efc2",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-07 T2",
+   "version_id": "ecd08dca8181477c8ae16db6685e46f4",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-07 T3",
+   "version_id": "48890dc46a1c4e34afafa12c49990573",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-07 T4",
+   "version_id": "719c5296badc4fd3b20cc068ea09688b",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-08 T1",
+   "version_id": "d5acd5a09a9b463f86cccb7e598b2165",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.2448,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.2448,
+        "low": 0.1526,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.04
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-08 T2",
+   "version_id": "48ee55f2d6804023b0e9cb76833b85a6",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.2515,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.2515,
+        "low": 0.1823,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.06
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-09 T1",
+   "version_id": "1029f5fe6f82467fb617854de6fcddd1",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.104,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.104,
+        "low": 0.0033,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.06
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-09 T2",
+   "version_id": "3616aaf5a7364e99b0c8377053630194",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.1337,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.1337,
+        "low": 0.1337,
+        "frames": 1
+       }
+      ]
+     },
+     "seconds": 0.33
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-09 T3",
+   "version_id": "4fcea371f6fe49abacaefea07c92c0da",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.1537,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.1537,
+        "low": 0.0283,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.06
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-09 T4",
+   "version_id": "06abd3889d5e411c933c75507f2e9b8b",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.197,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.197,
+        "low": 0.0615,
+        "frames": 7
+       }
+      ]
+     },
+     "seconds": 0.71
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-09 T5",
+   "version_id": "1d11e83f4b1e47bcaa3c3ad9740d72a8",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.3106,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.3106,
+        "low": 0.216,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.07
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-09 T6",
+   "version_id": "d26e1492f7e4440892ac60cff437a70d",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.4927,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.4927,
+        "low": 0.4115,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.04
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-09 T7",
+   "version_id": "e6560bceedd4448dbc03f670da950626",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.4955,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.4955,
+        "low": 0.4251,
+        "frames": 13
+       }
+      ]
+     },
+     "seconds": 1.04
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-10 T1",
+   "version_id": "eb0ccf170cfa4c289732608cc08901c5",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.0638,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.0638,
+        "low": 0.0034,
+        "frames": 9
+       }
+      ]
+     },
+     "seconds": 0.76
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-10 T2",
+   "version_id": "424a1131ac6f4fc99d67633e54671b0f",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.0811,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.0811,
+        "low": 0.0374,
+        "frames": 9
+       }
+      ]
+     },
+     "seconds": 0.77
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-10 T3",
+   "version_id": "4c122ed5f7234a08bea981ec5f2e6e8e",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.1604,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.1604,
+        "low": 0.0739,
+        "frames": 9
+       }
+      ]
+     },
+     "seconds": 0.77
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-10 T4",
+   "version_id": "700fdcfd1bfa4032b25792062a57eaec",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.1913,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.1913,
+        "low": 0.0839,
+        "frames": 9
+       }
+      ]
+     },
+     "seconds": 0.78
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-10 T5",
+   "version_id": "ba60789cc1f44916a69f92ed1c20d409",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.192,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.192,
+        "low": 0.1383,
+        "frames": 9
+       }
+      ]
+     },
+     "seconds": 0.77
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  },
+  {
+   "take": "1-10 T6",
+   "version_id": "ea0e9930ea7b4d688ebcde0b8a80d8fc",
+   "model": "comfy/h3",
+   "checks": [
+    {
+     "metric": "face",
+     "value": 0.4415,
+     "text": null,
+     "model": "local/auraface",
+     "detail": {
+      "faces": [
+       {
+        "asset_id": "linwan",
+        "name": "林晚",
+        "sim": 0.4415,
+        "low": 0.3665,
+        "frames": 10
+       }
+      ]
+     },
+     "seconds": 0.84
+    },
+    {
+     "metric": "asr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "speaker",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    },
+    {
+     "metric": "ocr",
+     "value": null,
+     "text": null,
+     "model": null,
+     "na": true,
+     "seconds": 0.0
+    }
+   ]
+  }
+ ]
+}

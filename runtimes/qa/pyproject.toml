@@ -12,7 +12,7 @@ dependencies = [
     "onnxruntime==1.31.0",                # AuraFace; same as the ocr env; faster-whisper wants <2
     "faster-whisper==1.2.1",
     "ctranslate2==4.8.5",
-    "av==19.0.2",                         # PyAV with FFmpeg bundled: audio straight from the mp4
+    "av==18.0.0",                         # PyAV with FFmpeg bundled; 19 dropped open(metadata_errors=), which faster-whisper 1.2.1 passes
     "sherpa-onnx==2.0.1",
     "numpy>=2,<3",
 ]

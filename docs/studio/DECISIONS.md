@@ -10,6 +10,7 @@
 - **OCR 读视频留在 `ocr` 环境**（`worker_rapidocr` 有 `every_s` 就按视频处理，`worker_video.frames` 顺序读、不 seek），`runtimes/ocr` 把 `opencv-python-headless==5.0.0.93` 写成显式依赖。
 - **`rt_qa`、`w_qa` 在 Mac 上也必需**（质检没有别的兜底）；Whisper 不拆成单独的 `w_asr`（质检的台词识别本来就要它）。英文名不带逗号：扫描结果的提示参数按逗号拆，名字会被截断。
 - **本机冒烟不走质检任务**：`scripts/smoke/local_qa.py` 在数据目录的副本上直接调 `Measure`。原因：质检任务最后一步是不达标自动重跑，会在真实 ComfyUI 上出 H3。
+- **本机实测后（同日）**：`av` 固定 18.0.0。PyAV 19 去掉了 `open(metadata_errors=)`，faster-whisper 1.2.1 解码音频时还在传，台词识别会报 `TypeError`；18.0.0 实测能用。`glintr100.onnx` 输入 `[N,3,112,112]`、输出 512 维，图的开头直接是 Conv、没有 Sub / Mul，按 InsightFace 的规则取 `input_mean = input_std = 127.5`（就是现在的默认值）。YuNet 2023mar 在 OpenCV 4.14 上能用。
 
 ## 2026-11-15 · M6 第 5 步之前：本地质检工具选型（调研 `reports/m6-qa-tools-research.md`）
 
