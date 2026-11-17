@@ -14,6 +14,12 @@ worker), so the onnxruntime that AuraFace uses and the one inside sherpa-onnx ne
   the take's sound (``window_s`` / ``hop_s``; several people may speak in one shot), each voice
   keeps its best window. Silent windows are skipped; no voiced window → None.
 - ``asr``: faster-whisper large-v3, int8 on the CPU, straight from the mp4 (PyAV).
+- ``sync`` (``qa_sync``): SyncNet (``syncnet.py``, CPU torch) as syncnet_python runs it, with
+  YuNet for S3FD: the take on a 25 fps grid, faces tracked across frames, each track cropped
+  (224×224) and scored against the same stretch of sound; the most confident track counts.
+  ``conf`` = median − min of the mean distances over ±``vshift`` audio offsets, the mean taken
+  over the windows with sound only (syncnet_python takes every window: ``syncnet.py`` says why);
+  ``offset`` is syncnet_python's (frames at 25 fps; 0 = in sync).
 
 Requests and answers are the ones ``pipeline/qa.py:Measure`` sends and reads. Everything in this
 file above "engines" is the standard library, so the unit tests drive it with fake engines; the
@@ -167,6 +173,149 @@ def asr(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
     return {"text": text, "json": {"text": text, "segments": segments}}
 
 
+# --------------------------------------------------------------------------- sync
+
+SYNC_FPS = 25  # SyncNet's video rate; the take is read on a 25 fps grid
+IOU = 0.5  # a face continues a track when it overlaps the track's last box this much
+MAX_GAP = 25  # frames a track may go without its face before it ends (num_failed_det)
+SMOOTH = 13  # median filter over a track's box centres and sizes (crop_video)
+
+Box = tuple[float, float, float, float]  # x1, y1, x2, y2
+
+
+class SyncEngine(Protocol):
+    sample_rate: int
+
+    def grid(self, path: str) -> Iterator[tuple[int, Any]]: ...  # frames at SYNC_FPS
+    def boxes(self, frame: Any) -> list[Box]: ...  # the largest first
+    def crop(self, frame: Any, x: float, y: float, half: float) -> Any: ...
+    def audio(self, path: str) -> Any: ...
+    def score(self, crops: list[Any], samples: Any) -> dict[str, Any] | None: ...
+
+
+def iou(a: Box, b: Box) -> float:
+    w = max(0.0, min(a[2], b[2]) - max(a[0], b[0]))
+    h = max(0.0, min(a[3], b[3]) - max(a[1], b[1]))
+    inter = w * h
+    union = (a[2] - a[0]) * (a[3] - a[1]) + (b[2] - b[0]) * (b[3] - b[1]) - inter
+    return inter / union if union > 0 else 0.0
+
+
+def tracks(found: list[list[Box]], min_len: int, min_face: float) -> list[dict[str, Any]]:
+    """Face tracks over the frames (syncnet_python ``run_pipeline.track_shot``): a face continues
+    the track whose last box it overlaps most (IoU > 0.5) if that track had a face in the last
+    ``MAX_GAP`` frames, else starts one. Kept: more than ``min_len`` detections and a mean box
+    side over ``min_face`` px. Frames between detections get boxes by linear interpolation.
+    → ``[{frames: [k …], boxes: [Box …]}]`` with one box per frame."""
+    seen: list[dict[str, Any]] = []
+    for k, boxes in enumerate(found):
+        taken: set[int] = set()
+        for box in boxes:
+            best, most = -1, IOU
+            for n, t in enumerate(seen):
+                if n in taken or k - t["frames"][-1] > MAX_GAP:
+                    continue
+                overlap = iou(box, t["boxes"][-1])
+                if overlap > most:
+                    best, most = n, overlap
+            if best < 0:
+                seen.append({"frames": [k], "boxes": [box]})
+                best = len(seen) - 1
+            else:
+                seen[best]["frames"].append(k)
+                seen[best]["boxes"].append(box)
+            taken.add(best)
+    out = []
+    for t in seen:
+        if len(t["frames"]) <= min_len:
+            continue
+        frames, boxes = _fill(t["frames"], t["boxes"])
+        side = max(
+            sum(b[2] - b[0] for b in boxes) / len(boxes),
+            sum(b[3] - b[1] for b in boxes) / len(boxes),
+        )
+        if side > min_face:
+            out.append({"frames": frames, "boxes": boxes})
+    return out
+
+
+def _fill(frames: list[int], boxes: list[Box]) -> tuple[list[int], list[Box]]:
+    out: list[Box] = []
+    for (k0, b0), (k1, b1) in zip(
+        zip(frames, boxes, strict=True), zip(frames[1:], boxes[1:], strict=True), strict=False
+    ):
+        for k in range(k0, k1):
+            f = (k - k0) / (k1 - k0)
+            out.append(tuple(a + (b - a) * f for a, b in zip(b0, b1, strict=True)))  # type: ignore[arg-type]
+    out.append(boxes[-1])
+    return list(range(frames[0], frames[-1] + 1)), out
+
+
+def medfilt(values: list[float], size: int = SMOOTH) -> list[float]:
+    """``scipy.signal.medfilt``: the median of each ``size`` neighbourhood, zeros past the ends."""
+    half = size // 2
+    padded = [0.0] * half + list(values) + [0.0] * half
+    return [sorted(padded[i : i + size])[half] for i in range(len(values))]
+
+
+def _r3(x: Any) -> float | None:
+    return None if x is None else round(float(x), 3)
+
+
+def sync(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
+    """SyncNet confidence of the take's sound against each face track, over the windows with
+    sound; the best track counts (the one speaking). No track long enough, or too little sound
+    → ``conf`` None (``qa.py``: 不适用)."""
+    eng: SyncEngine = state["engine"]
+    video = _path(msg)
+    try:
+        sound = eng.audio(video)
+        found = [eng.boxes(frame) for _k, frame in eng.grid(video)]
+    except OSError as exc:
+        raise WorkerError("qa_bad_video", str(exc)) from exc
+    kept = tracks(found, int(state["min_track"]), float(state["min_face"]))
+    plans = []  # per track: frame → crop centre and half size, smoothed as in crop_video
+    for t in kept:
+        xs = medfilt([(b[0] + b[2]) / 2 for b in t["boxes"]])
+        ys = medfilt([(b[1] + b[3]) / 2 for b in t["boxes"]])
+        ss = medfilt([max(b[2] - b[0], b[3] - b[1]) / 2 for b in t["boxes"]])
+        plans.append(dict(zip(t["frames"], zip(xs, ys, ss, strict=True), strict=True)))
+    crops: list[list[Any]] = [[] for _ in plans]
+    if plans:
+        for k, frame in eng.grid(video):
+            for i, plan in enumerate(plans):
+                if k in plan:
+                    crops[i].append(eng.crop(frame, *plan[k]))
+    per = eng.sample_rate // SYNC_FPS
+    scored = []
+    for t, faces in zip(kept, crops, strict=True):
+        first, last = t["frames"][0], t["frames"][-1]
+        got = eng.score(faces, sound[first * per : (last + 1) * per]) or {}
+        scored.append(
+            {
+                "start": round(first / SYNC_FPS, 2),
+                "end": round((last + 1) / SYNC_FPS, 2),
+                "conf": _r3(got.get("conf")),
+                "offset": got.get("offset"),
+                "min_dist": _r3(got.get("min_dist")),
+                "voiced": got.get("voiced"),  # windows with sound, of
+                "windows": got.get("windows"),
+                "conf_all": _r3(got.get("conf_all")),  # over every window, as syncnet_python
+            }
+        )
+    rated = [s for s in scored if s["conf"] is not None]
+    best = max(rated, key=lambda s: s["conf"]) if rated else {}
+    return {
+        "json": {
+            "conf": best.get("conf"),
+            "offset": best.get("offset"),
+            "min_dist": best.get("min_dist"),
+            "tracks": scored,
+            "frames": len(found),
+        }
+    }
+
+
 # --------------------------------------------------------------------------- engines
 
 # ArcFace's 5-point template for a 112×112 crop (InsightFace face_align.py; OpenCV's
@@ -181,6 +330,27 @@ ARCFACE = [
 ]
 
 
+class _YuNet:
+    """YuNet (OpenCV ``FaceDetectorYN``): rows ``x, y, w, h``, the 5 points' x / y, at the
+    picture's own scale, the largest face first."""
+
+    def __init__(self, cv2: Any, model: str, score: float) -> None:
+        self.cv2 = cv2
+        self.net = cv2.FaceDetectorYN.create(model, "", (320, 320), score, 0.3, 5000)
+
+    def detect(self, picture: Any) -> list[Any]:
+        # YuNet is trained on faces of about 10–300 px: a close-up at 768p is shrunk first.
+        h, w = picture.shape[:2]
+        scale = min(1.0, 640 / max(h, w))
+        small = self.cv2.resize(picture, None, fx=scale, fy=scale) if scale < 1 else picture
+        self.net.setInputSize((small.shape[1], small.shape[0]))
+        _, found = self.net.detect(small)
+        if found is None:
+            return []
+        rows = sorted(found, key=lambda r: float(r[2] * r[3]), reverse=True)
+        return [r[:14] / scale for r in rows]
+
+
 class _Face:
     """YuNet + AuraFace. ``args``: detector, recognizer, threads, score, min_face, input_mean,
     input_std."""
@@ -191,9 +361,7 @@ class _Face:
         import onnxruntime as ort
 
         self.cv2, self.np = cv2, np
-        self.detector = cv2.FaceDetectorYN.create(
-            str(args["detector"]), "", (320, 320), float(args.get("score", 0.8)), 0.3, 5000
-        )
+        self.detector = _YuNet(cv2, str(args["detector"]), float(args.get("score", 0.8)))
         so = ort.SessionOptions()
         so.intra_op_num_threads = int(args.get("threads", 4))
         self.rec = ort.InferenceSession(
@@ -218,19 +386,10 @@ class _Face:
         return frames(path, every_s)
 
     def faces(self, picture: Any) -> list[Any]:
-        # YuNet is trained on faces of about 10–300 px: a close-up at 768p is shrunk first.
-        h, w = picture.shape[:2]
-        scale = min(1.0, 640 / max(h, w))
-        small = self.cv2.resize(picture, None, fx=scale, fy=scale) if scale < 1 else picture
-        self.detector.setInputSize((small.shape[1], small.shape[0]))
-        _, found = self.detector.detect(small)
-        if found is None:
-            return []
-        rows = sorted(found, key=lambda r: float(r[2] * r[3]), reverse=True)
         return [
-            r[4:14].reshape(5, 2).astype(self.np.float64) / scale
-            for r in rows
-            if min(float(r[2]), float(r[3])) / scale >= self.min_face
+            r[4:14].reshape(5, 2).astype(self.np.float64)
+            for r in self.detector.detect(picture)
+            if min(float(r[2]), float(r[3])) >= self.min_face
         ]
 
     def embed(self, picture: Any, face: Any) -> Any:
@@ -333,15 +492,74 @@ class _Asr:
         return "".join(s["text"] for s in out), out
 
 
+class _Sync:
+    """YuNet + SyncNet (``syncnet.py``, CPU torch). ``args``: detector, weights, threads, score,
+    vshift, batch, min_rms, min_voiced."""
+
+    sample_rate = 16000
+    CROP_SCALE = 0.4  # run_pipeline --crop_scale
+
+    def __init__(self, args: dict[str, Any]) -> None:
+        import cv2
+        from syncnet import SyncNet
+
+        self.cv2 = cv2
+        self.detector = _YuNet(cv2, str(args["detector"]), float(args.get("score", 0.8)))
+        self.net = SyncNet(
+            str(args["weights"]),
+            threads=int(args.get("threads", 4)),
+            vshift=int(args.get("vshift", 15)),
+            batch=int(args.get("batch", 20)),
+            min_rms=float(args.get("min_rms", 0.01)),
+            min_voiced=int(args.get("min_voiced", 10)),
+        )
+
+    def grid(self, path: str) -> Iterator[tuple[int, Any]]:
+        from worker_video import grid
+
+        return grid(path, float(SYNC_FPS))
+
+    def boxes(self, frame: Any) -> list[Box]:
+        return [
+            (float(r[0]), float(r[1]), float(r[0] + r[2]), float(r[1] + r[3]))
+            for r in self.detector.detect(frame)
+        ]
+
+    def crop(self, frame: Any, x: float, y: float, half: float) -> Any:
+        # crop_video: the box's centre, a square from just above the eyes to below the chin,
+        # the picture padded with grey 110 first; 224×224.
+        cs = self.CROP_SCALE
+        pad = int(half * (1 + 2 * cs))
+        big = self.cv2.copyMakeBorder(
+            frame, pad, pad, pad, pad, self.cv2.BORDER_CONSTANT, value=(110, 110, 110)
+        )
+        my, mx = y + pad, x + pad
+        face = big[
+            int(my - half) : int(my + half * (1 + 2 * cs)),
+            int(mx - half * (1 + cs)) : int(mx + half * (1 + cs)),
+        ]
+        return self.cv2.resize(face, (224, 224))
+
+    def audio(self, path: str) -> Any:
+        from worker_video import audio
+
+        return audio(path)
+
+    def score(self, crops: list[Any], samples: Any) -> dict[str, Any] | None:
+        return self.net.score(crops, samples)
+
+
 ENGINES: dict[str, Callable[[dict[str, Any]], Any]] = {
     "face": _Face,
     "speaker": _Speaker,
     "asr": _Asr,
+    "sync": _Sync,
 }
 TOOLS: dict[str, tuple[str, Callable[[dict[str, Any], dict[str, Any]], dict[str, Any]]]] = {
     "qa_face": ("face", face),
     "qa_speaker": ("speaker", speaker),
     "asr": ("asr", asr),
+    "qa_sync": ("sync", sync),
 }
 
 
@@ -370,6 +588,8 @@ def init(args: dict[str, Any]) -> dict[str, Any]:
         "window_s": args.get("window_s", 1.5),
         "hop_s": args.get("hop_s", 0.75),
         "lang": args.get("lang"),
+        "min_track": args.get("min_track", 25),
+        "min_face": args.get("min_face", 50),
     }
 
 

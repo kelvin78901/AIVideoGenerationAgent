@@ -1,9 +1,9 @@
-"""The local QA workers (M6 step 5a) without their models: ``workers/worker_qa.py`` with fake
+"""The local QA workers (M6 steps 5a, 5b) without their models: ``workers/worker_qa.py`` with fake
 engines, in process and through the real protocol (``LocalPythonAdapter``), and the video branch of
 ``workers/worker_rapidocr.py``. What they answer is what ``pipeline/qa.py:Measure`` reads.
 
-Never the real engines here (no OpenCV, onnxruntime, faster-whisper or sherpa-onnx in the app's
-environment, no weights): those run in ``scripts/smoke/local_qa.py`` on the real machine.
+Never the real engines here (no OpenCV, onnxruntime, faster-whisper, sherpa-onnx or torch in the
+app's environment, no weights): those run in ``scripts/smoke/local_qa.py`` on the real machine.
 """
 
 from __future__ import annotations
@@ -165,6 +165,96 @@ def test_a_silent_take_scores_no_voice(monkeypatch: pytest.MonkeyPatch) -> None:
     assert _code("qa_speaker", _speaker_state(), path="take.mp4", voices=[]) == "qa_no_voices"
 
 
+# --------------------------------------------------------------------------- sync (SyncNet)
+
+
+class Lips:
+    """A take on the 25 fps grid: each frame is its list of face boxes. A crop is its rounded
+    centre and half size; a track's confidence is its crop's x / 10."""
+
+    sample_rate = 100  # 4 samples per frame
+
+    def __init__(self, frames: list[list[worker_qa.Box]]) -> None:
+        self.shown = frames
+        self.scored: list[tuple[list[Any], list[int]]] = []
+
+    def grid(self, path: str) -> Iterator[tuple[int, Any]]:
+        if path.endswith(".txt"):
+            raise OSError("not a video")
+        yield from enumerate(self.shown)
+
+    def boxes(self, frame: Any) -> list[worker_qa.Box]:
+        return list(frame)
+
+    def crop(self, frame: Any, x: float, y: float, half: float) -> Any:
+        return (round(x), round(y), round(half))
+
+    def audio(self, path: str) -> Any:
+        return list(range(4 * len(self.shown)))
+
+    def score(self, crops: list[Any], samples: Any) -> dict[str, Any] | None:
+        self.scored.append((crops, samples))
+        if len(crops) < 5:
+            return None
+        n = len(crops) - 4
+        return {"conf": crops[0][0] / 10, "offset": 1, "min_dist": 7.04, "voiced": n, "windows": n}
+
+
+SPEAKER = (300.0, 0.0, 380.0, 80.0)  # centre (340, 40), half size 40
+LISTENER = (0.0, 0.0, 100.0, 100.0)
+EXTRA = (500.0, 0.0, 520.0, 20.0)  # too small to read lips from
+PASSING = (600.0, 600.0, 700.0, 700.0)  # in 5 frames only
+
+
+def _lips_state(frames: list[list[worker_qa.Box]]) -> dict[str, Any]:
+    return {"tool": "sync", "engine": Lips(frames), "min_track": 8, "min_face": 50}
+
+
+def test_sync_scores_each_face_track_and_keeps_the_most_confident() -> None:
+    frames: list[list[worker_qa.Box]] = []
+    for k in range(40):
+        shown = [LISTENER, EXTRA]
+        if k >= 10 and k != 20:  # the speaker comes in at 0.4 s; YuNet misses them once
+            shown.append(SPEAKER)
+        if k < 5:
+            shown.append(PASSING)
+        frames.append(shown)
+    state = _lips_state(frames)
+    out = _run("qa_sync", state, path="take.mp4")["json"]
+    assert (out["conf"], out["offset"], out["min_dist"], out["frames"]) == (34.0, 1, 7.04, 40)
+    same = {"offset": 1, "min_dist": 7.04, "conf_all": None}
+    assert out["tracks"] == [
+        {"start": 0.0, "end": 1.6, "conf": 5.0, "voiced": 36, "windows": 36, **same},
+        {"start": 0.4, "end": 1.6, "conf": 34.0, "voiced": 26, "windows": 26, **same},
+    ]
+    crops, samples = state["engine"].scored[1]
+    assert len(crops) == 30 and set(crops) == {(340, 40, 40)}  # frame 20 filled in
+    assert samples == list(range(40, 160))  # the same stretch of sound: 0.4 s to 1.6 s
+
+
+def test_sync_without_a_face_track_is_not_scored() -> None:
+    out = _run("qa_sync", _lips_state([[EXTRA]] * 30), path="take.mp4")["json"]
+    assert (out["conf"], out["offset"], out["tracks"]) == (None, None, [])
+    state = {**_lips_state([[LISTENER]] * 4), "min_track": 3}
+    short = _run("qa_sync", state, path="take.mp4")["json"]
+    assert short["conf"] is None and short["tracks"][0]["conf"] is None  # under one window
+    assert _code("qa_sync", _lips_state([]), path="take.txt") == "qa_bad_video"
+    assert _code("qa_sync", _lips_state([])) == "qa_no_video"
+
+
+def test_tracks_follow_a_moving_face_and_end_after_a_long_gap() -> None:
+    moving = [[(10.0 * k, 0.0, 10.0 * k + 100, 100.0)] for k in range(12)]
+    (one,) = worker_qa.tracks(moving, min_len=8, min_face=50)
+    assert one["frames"] == list(range(12)) and one["boxes"][11] == moving[11][0]
+    gap = [[LISTENER]] * 10 + [[]] * (worker_qa.MAX_GAP + 1) + [[LISTENER]] * 10
+    assert len(worker_qa.tracks(gap, min_len=8, min_face=50)) == 2
+
+
+def test_medfilt_is_scipys_zero_padded_median() -> None:
+    assert worker_qa.medfilt([1, 2, 3, 4, 5], 3) == [1, 2, 3, 4, 4]
+    assert worker_qa.medfilt([50.0] * 20) == [50.0] * 20  # 13 wide: the ends keep their value
+
+
 # --------------------------------------------------------------------------- asr, one tool each
 
 
@@ -180,20 +270,20 @@ def test_a_worker_only_does_the_tool_it_loaded() -> None:
     state = {"tool": "face", "engine": Faces([])}
     assert _code("asr", state, path="take.mp4") == "unsupported_kind"
     with pytest.raises(WorkerError) as err:
-        worker_qa.init({"tool": "lipsync"})  # step 5b
+        worker_qa.init({"tool": "lipsync"})  # the tool is "sync"
     assert err.value.code == "qa_unknown_tool"
 
 
 def test_the_configured_qa_models_name_a_tool_of_their_worker() -> None:
     models = {m.key: m for m in get_config().providers.local_models}
-    for key in ("local/auraface", "local/campplus", "local/whisper-large-v3"):
+    for key in ("local/auraface", "local/campplus", "local/whisper-large-v3", "local/syncnet"):
         m = models[key]
         assert (m.worker, m.env, m.gpu, m.needs) == ("worker_qa", "qa", False, ["rt_qa", "w_qa"])
         assert worker_qa.TOOLS[m.kind][0] == m.args["tool"], key
         assert m.args["tool"] in worker_qa.ENGINES
     assert (WORKERS_DIR / "worker_qa.py").is_file()
     tools = get_config().components.component("qa").tools
-    assert {tools["face"], tools["speaker"], tools["asr"]} <= set(models)
+    assert {tools["face"], tools["speaker"], tools["asr"], tools["lipsync"]} <= set(models)
 
 
 # --------------------------------------------------------------------------- RapidOCR on a take
@@ -287,6 +377,10 @@ async def test_the_workers_answer_what_measure_reads(
     req = ModelRequest(kind="asr", params={"path": "take.mp4", "lang": "zh"})
     assert (await asr.run(req, CallContext())).text == "三年了。"
 
+    lips = _adapter(made, tmp_path, "local/syncnet", "qa_sync", tool="sync", min_track=8)
+    got = await lips.run(ModelRequest(kind="qa_sync", params={"path": "take.mp4"}), CallContext())
+    assert (got.json["conf"], got.json["offset"]) == (4.0, 0)
+
     with pytest.raises(ModelError) as err:
-        await _adapter(made, tmp_path, "x", "qa_sync", tool="sync").run(req, CallContext())
+        await _adapter(made, tmp_path, "x", "qa_face", tool="nope").run(req, CallContext())
     assert err.value.code == "qa_unknown_tool"

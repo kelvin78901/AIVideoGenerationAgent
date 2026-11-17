@@ -2,6 +2,15 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-16 · M6 第 5b 步：SyncNet 口型分
+
+- **qa 环境加 CPU 版 torch 2.14.1**（Kelvin 2026-11-16 同意；PyTorch 的 CPU 源，三个平台都是 CPU wheel，锁里没有 nvidia 包），不装 torchvision / torchaudio / scipy。原因：SyncNet 只有 PyTorch 权重；质检在 CPU 上跑，不和出片抢显卡；Linux 上 PyPI 的 torch 会带几 GB 的 CUDA。`rt_qa` 检测改看 `torch`（第 5a 步装的环境没有它，扫描会提示再装一次）。
+- **SyncNet 网络和 MFCC 抄进 `workers/syncnet.py`**（syncnet_python 和 python_speech_features 0.6 都是 MIT，版权声明照抄），不装 `python_speech_features`（2017 年后没维护，只有 sdist）；DCT 写成矩阵，不要 scipy。核对：MFCC 和原版最大差 3e-13；官方 `example.avi` 直接打分 offset 3 / min dist 5.352 / conf 10.048（官方 3 / 5.353 / 10.021）。
+- **人脸检测用 YuNet 代替 S3FD**，跟踪（IoU 0.5、断 25 帧）、中值平滑（13）、裁剪（`crop_scale` 0.4，灰边 110，224×224）照 `run_pipeline.py`；视频按 25 fps 取最近帧（`worker_video.grid`），不转码。`min_track` 25 帧（原版 100 帧 = 4 秒，比我们的 take 还长）、`min_face` 50 px。几条轨迹取 conf 最高的（说话的人）。
+- **conf 只算有声的窗口**（窗口 0.2 秒内 RMS ≥ 0.01，少于 10 个 → 不适用），比对时也只用真实存在的音频（不比原版补的零）。原因：短剧一句台词常常只占 4–5 秒 take 的 1 秒、而且在末尾；原版整条平均时，第十九轮 1-04 一条口型看得出在动的 take 只有 0.7。原版的整条值记在 `conf_all` 里备查。
+- **权重从 HF `ByteDance/LatentSync-1.6` 下**（`auxiliary/syncnet_v2.model`，能走镜像）：和 VGG 官网下载的文件逐字节相同（2026-11-16 两边 sha256 都是 `961e86…`）。许可仍按「M6 第 5 步之前」那条（照用、不进成片）。
+- **口型分在 H3 take 上偏低**（第十九轮 1-04 T5–T9 只算有声窗口后 1.4–2.6，示例视频 11），阈值 6 会全拦。音频人为提前 0.4 秒时 SyncNet 能找回 offset 9–10，说明信号是真的；阈值留给 5c 用坏样本（错位、换别条 take 的声音）标定。
+
 ## 2026-11-16 · M6 第 5a 步：本地质检 worker
 
 - **一个 worker 文件、每个模型一个进程**：`workers/worker_qa.py`，`args.tool`（face / speaker / asr）决定启动时加载什么；发错种类的请求回 `unsupported_kind`。原因：AuraFace 用的 onnxruntime 和 sherpa-onnx 自带的不进同一个进程（调研第 10 节第 5 条）。编排（打分、窗口、回答格式）只用标准库，测试用假引擎；引擎在 qa 环境里才 import。

@@ -5,7 +5,7 @@ script opens a **copy** of that run's data directory with ``DRAMA_MOCK=1 DRAMA_R
 measuring half of 自动质检 (``pipeline/qa.py:Measure``) one tool at a time, timed.
 
     uv run --no-sync python scripts/smoke/local_qa.py [--home <data dir>] [--episode 1]
-        [--only face,asr,speaker,ocr] [--shots 1-04,1-06] [--studio http://127.0.0.1:8000]
+        [--only face,lipsync,asr,speaker,ocr] [--shots 1-04,1-06] [--studio http://127.0.0.1:8000]
 
 - It does **not** go through the QA job: the job's last step is 不达标自动重跑 (``qa_policy``),
   which would start real H3 takes. Nothing is written to the copy either; jobs left queued in it
@@ -74,7 +74,7 @@ def main() -> int:
     ap.add_argument("--home", default=str(ROUND19), help="the data directory of a local run")
     ap.add_argument("--run", default="run19", help="the report's name")
     ap.add_argument("--episode", type=int, default=1)
-    ap.add_argument("--only", default="face,asr,speaker,ocr", help=f"of {','.join(TOOLS)}")
+    ap.add_argument("--only", default=",".join(TOOLS), help=f"of {','.join(TOOLS)}")
     ap.add_argument("--shots", default="", help="only these, e.g. 1-04,1-06")
     ap.add_argument("--studio", default="http://127.0.0.1:8000", help="the studio you have open")
     args = ap.parse_args()
@@ -174,14 +174,9 @@ def main() -> int:
             results.append(row)
 
     OUT.mkdir(parents=True, exist_ok=True)
-    (OUT / f"{args.run}.json").write_text(
-        json.dumps(
-            {"run": args.run, "home": str(args.home), "takes": results},
-            ensure_ascii=False,
-            indent=1,
-        ),
-        encoding="utf-8",
-    )
+    with open(OUT / f"{args.run}.json", "w", encoding="utf-8", newline="\n") as f:
+        report = {"run": args.run, "home": str(args.home), "takes": results}
+        f.write(json.dumps(report, ensure_ascii=False, indent=1) + "\n")
     with open(OUT / f"{args.run}.txt", "w", encoding="utf-8", newline="\n") as f:
         f.write("\n".join(lines) + "\n")
     print(f"→ {OUT / args.run}.json / .txt")

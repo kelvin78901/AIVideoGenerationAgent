@@ -140,12 +140,13 @@ items:
       - { type: uv_sync, env: ocr, project: runtimes/ocr, python: "3.12" }
   - id: rt_qa
     group: rt
-    name: { zh: 自动质检运行环境（人脸、台词、说话人）, en: QA tools runtime (faces · lines · voices) }
+    name: { zh: 自动质检运行环境（人脸、口型、台词、说话人）, en: QA tools runtime (faces · lips · lines · voices) }
     required: true
     depends_on: [uv]
-    # YuNet + AuraFace（OpenCV 4.14、onnxruntime）、faster-whisper（CTranslate2 int8）、CAM++（sherpa-onnx），只用 CPU。
-    # 质检没有本地以外的兜底（台词识别的 API 兜底只在 asr 组件），所以 Mac 上也必需。M6 第 5a 步。
-    detect: { type: py_import, env: qa, module: sherpa_onnx }
+    # YuNet + AuraFace（OpenCV 4.14、onnxruntime）、faster-whisper（CTranslate2 int8）、CAM++（sherpa-onnx）、
+    # SyncNet（CPU 版 torch），只用 CPU。质检没有本地以外的兜底（台词识别的 API 兜底只在 asr 组件），所以 Mac 上也必需。
+    # 检测看 torch（第 5b 步最后加的包）：第 5a 步装的环境没有它，会再同步一次。
+    detect: { type: py_import, env: qa, module: torch }
     install:
       - { type: uv_sync, env: qa, project: runtimes/qa, python: "3.12" }
 
@@ -485,6 +486,14 @@ items:
         dest: "{models}/qa"
         files:
           - { path: 3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx, sha256: f682b514c05d947ee3fa91cd6ec6c5c7543479a128373fa29b1faedccd21fd11 }   # 0.03 GB
+      # SyncNet（VGG）：和 robots.ox.ac.uk 官方下载的 syncnet_v2.model 逐字节相同（2026-11-16 两边 sha256 一致），
+      # 走 HF 能用镜像。权重许可见 DECISIONS「M6 第 5 步之前」。
+      - type: download
+        hf_repo: ByteDance/LatentSync-1.6
+        revision: c42c7e6c8e9c213626389fa7d9a3c444b8536353
+        dest: "{models}/qa"
+        files:
+          - { path: auxiliary/syncnet_v2.model, sha256: 961e8696f888fce4f3f3a6c3d5b3267cf5b343100b238e79b2659bff2c605442 }   # 0.05 GB
       - type: download
         hf_repo: Systran/faster-whisper-large-v3
         revision: edaa852ec7e145841d8ffdb056a99866b5f0a478

@@ -41,6 +41,34 @@ def frames(path: str, every_s: float) -> Iterator[tuple[float, Any]]:
         cap.release()
 
 
+def grid(path: str, fps: float = 25.0) -> Iterator[tuple[int, Any]]:
+    """(k, BGR frame) for k = 0, 1, 2 … at ``fps``: frame k is the source frame nearest to
+    ``k / fps`` (what ``ffmpeg -r 25`` does to a 24 / 30 fps clip), read in order, never seeking.
+    A frame is repeated or skipped when the source rate differs; the source's rate unknown → taken
+    as ``fps``."""
+    import cv2
+
+    cap = cv2.VideoCapture(path, cv2.CAP_FFMPEG)
+    if not cap.isOpened():
+        raise OSError(f"cannot open {path}")
+    src = cap.get(cv2.CAP_PROP_FPS) or fps
+    try:
+        index, k = 0, 0
+        while cap.grab():
+            want = round(k * src / fps)
+            if want == index:
+                ok, frame = cap.retrieve()
+                if not ok or frame is None:
+                    return
+                while want == index:
+                    yield k, frame
+                    k += 1
+                    want = round(k * src / fps)
+            index += 1
+    finally:
+        cap.release()
+
+
 def audio(path: str) -> Any:
     """Mono float32 samples in [-1, 1] at 16 kHz (``faster_whisper.audio.decode_audio``'s way).
 

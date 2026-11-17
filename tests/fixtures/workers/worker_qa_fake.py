@@ -3,6 +3,7 @@ models), for ``tests/unit/test_worker_qa.py``: the reply has to be what ``pipeli
 
 Pictures are their file names; a take is a list of frames, each the names of the faces in it
 (``FRAMES``). A voice's reference "sound" is its name repeated; the take's sound is ``SOUND``.
+For SyncNet a take is one face for 30 frames (``Sync``).
 """
 
 from __future__ import annotations
@@ -58,10 +59,32 @@ class Asr:
         return "三年了。", [{"start": 0.0, "end": 1.2, "text": "三年了。", "lang": lang}]
 
 
+class Sync:
+    """One face for 30 frames of the 25 fps grid; every track scores conf 4 (samples per crop)."""
+
+    sample_rate = 100
+
+    def grid(self, path: str) -> Iterator[tuple[int, Any]]:
+        yield from enumerate([[(0.0, 0.0, 100.0, 100.0)]] * 30)
+
+    def boxes(self, frame: Any) -> list[Any]:
+        return list(frame)
+
+    def crop(self, frame: Any, x: float, y: float, half: float) -> Any:
+        return (x, y, half)
+
+    def audio(self, path: str) -> Any:
+        return [0] * 120
+
+    def score(self, crops: list[Any], samples: Any) -> dict[str, Any]:
+        return {"conf": len(samples) / len(crops), "offset": 0, "min_dist": 5.0}
+
+
 worker_qa.ENGINES = {
     "face": lambda a: Face(),
     "speaker": lambda a: Speaker(),
     "asr": lambda a: Asr(),
+    "sync": lambda a: Sync(),
 }
 
 if __name__ == "__main__":

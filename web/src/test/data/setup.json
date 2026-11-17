@@ -342,8 +342,8 @@
           "id": "rt_qa",
           "group": "rt",
           "name": {
-            "zh": "自动质检运行环境（人脸、台词、说话人）",
-            "en": "QA tools runtime (faces · lines · voices)"
+            "zh": "自动质检运行环境（人脸、口型、台词、说话人）",
+            "en": "QA tools runtime (faces · lips · lines · voices)"
           },
           "status": "missing",
           "found": {
@@ -353,7 +353,7 @@
           "fix": {
             "code": "install_named",
             "params": {
-              "name": "QA tools runtime (faces · lines · voices)"
+              "name": "QA tools runtime (faces · lips · lines · voices)"
             }
           },
           "required": true,
@@ -1514,8 +1514,8 @@
           "id": "rt_qa",
           "group": "rt",
           "name": {
-            "zh": "自动质检运行环境（人脸、台词、说话人）",
-            "en": "QA tools runtime (faces · lines · voices)"
+            "zh": "自动质检运行环境（人脸、口型、台词、说话人）",
+            "en": "QA tools runtime (faces · lips · lines · voices)"
           },
           "status": "missing",
           "found": {
@@ -1525,7 +1525,7 @@
           "fix": {
             "code": "install_named",
             "params": {
-              "name": "QA tools runtime (faces · lines · voices)"
+              "name": "QA tools runtime (faces · lips · lines · voices)"
             }
           },
           "required": true,

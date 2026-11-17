@@ -427,7 +427,9 @@ local_models:
   - { key: local/auraface,          kind: qa_face,    display: AuraFace 人脸（本地）,      runtime: python, worker: worker_qa, env: qa, gpu: false,
       args: { tool: face, detector: "{models}/qa/face_detection_yunet_2023mar.onnx", recognizer: "{models}/qa/auraface/glintr100.onnx", threads: 4, score: 0.8 },
       needs: [rt_qa, w_qa] }
-  - { key: local/syncnet,           kind: qa_sync,    display: SyncNet 口型（本地）,       runtime: python, gpu: false, verify: true }
+  - { key: local/syncnet,           kind: qa_sync,    display: SyncNet 口型（本地）,       runtime: python, worker: worker_qa, env: qa, gpu: false,
+      args: { tool: sync, detector: "{models}/qa/face_detection_yunet_2023mar.onnx", weights: "{models}/qa/auxiliary/syncnet_v2.model", threads: 4, score: 0.8, vshift: 15, batch: 20, min_track: 25, min_face: 50 },
+      needs: [rt_qa, w_qa] }
   - { key: local/campplus,          kind: qa_speaker, display: CAM++ 说话人（本地）,       runtime: python, worker: worker_qa, env: qa, gpu: false,
       args: { tool: speaker, model: "{models}/qa/3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx", threads: 2, window_s: 1.5, hop_s: 0.75 },
       needs: [rt_qa, w_qa] }

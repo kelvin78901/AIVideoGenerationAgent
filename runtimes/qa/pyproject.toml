@@ -1,8 +1,9 @@
 # QA tools worker environment, CPU only (setup item rt_qa, worker workers/worker_qa.py): YuNet face
 # detection + AuraFace embeddings (OpenCV + onnxruntime), faster-whisper (CTranslate2 int8), CAM++
-# speaker embeddings (sherpa-onnx). The installer runs `uv sync --locked` into
-# ~/.drama-studio/envs/qa; regenerate the lock with `uv lock --project runtimes/qa` after changing
-# this file. Weights come from setup item w_qa. Sources and licences: reports/m6-qa-tools-research.md.
+# speaker embeddings (sherpa-onnx), SyncNet lip sync (CPU torch). The installer runs
+# `uv sync --locked` into ~/.drama-studio/envs/qa; regenerate the lock with
+# `uv lock --project runtimes/qa` after changing this file. Weights come from setup item w_qa.
+# Sources and licences: reports/m6-qa-tools-research.md.
 [project]
 name = "drama-studio-rt-qa"
 version = "0"
@@ -14,6 +15,7 @@ dependencies = [
     "ctranslate2==4.8.5",
     "av==18.0.0",                         # PyAV with FFmpeg bundled; 19 dropped open(metadata_errors=), which faster-whisper 1.2.1 passes
     "sherpa-onnx==2.0.1",
+    "torch==2.14.1",                      # SyncNet only; the CPU build (no torchvision / torchaudio)
     "numpy>=2,<3",
 ]
 
@@ -24,3 +26,11 @@ environments = [
     "sys_platform == 'linux' and platform_machine == 'x86_64'",
     "sys_platform == 'darwin' and platform_machine == 'arm64'",
 ]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }         # the CPU index also carries the macOS arm64 wheel
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true
