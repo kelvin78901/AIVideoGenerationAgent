@@ -2,6 +2,18 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-17 · M6 第 6 步：2K 精修接 take
+
+- **组件 `up`（`pipeline/components/up.py`）跑在镜头的视频产物上**，和图片放大 `iup` 跑在关键帧上一样（`RunService.start(component_id="up")`，不建自己的产物）。`POST /versions/{id}/upscale` 按版本类型分：视频 take → `up`，图片 → `iup`（原样）。新版本 origin `upscale`、父版本 = 原 take、`stage = final`、`params.finish = {kind: upscale, version_id}`，依赖照抄原 take（原 take 过期它也过期）。质检照常（`on_created` 对视频产物的每个新版本都排）。
+- **本地**：从存下来的 take（已裁掉开头 0.3 秒）放大到成片尺寸（`output_spec`，硬规则 10），不再裁；**声音不管工作流返回什么，都从原 take 原样拷回去**（`media/video.py:with_sound_of`，流复制），所以音轨逐字节相同。SeedVR2 失败或超时按路由兜底 FlashVSR（组件自己的 `run_flow`）。
+- **API（H3 Regenerate-2K）只接本地 H3 草稿**：就是「用 API 出终版」那段（`VidComponent._final`，从未裁的草稿和它的请求重生成）。路由是 API 而 take 不是本地 H3 草稿 → 409 `upscale_unavailable`（`not_regenerable`）；take 已经是成片尺寸（API 出的）→ 409 `upscale_not_needed`。检查放在 `choose_model(ask=True)`，入队时就拒。Topaz 没有适配器，照旧不可选。
+- **自动采纳（Kelvin 2026-11-14 定，2026-11-17 补「不比原片差」）**：精修版第一次质检写完后（`QaPolicy.after_check` → `adopt_finished`），原 take 是已采纳的那条、产品没锁、**精修版没有原 take 通过而它不过的项** → 采纳；否则只做候选。本机实测 1-04 T9 原片就口型不过（5c 0.53），放大后也不过（0.45）：按「全部通过」它永远进不了采纳，Kelvin 选了「不比原片差就采纳」。原 take 从没质检过时，精修版任何一项不过都算变差。「重新质检」和改阈值后的重判都不触发采纳。口型修复、局部修复（第 7、8 步）用同一条（`params.finish`）。
+- **按钮的价钱和耗时**：视频产物的估价多一个 `estimate.finishing.up`（`Component.finishing`，视频组件声明 `("up",)`）：路由的模型、钱（含质检看一眼的约 $0.0015）、秒数（ComfyUI 适配器按 `caps.est_seconds_per_s` × 镜头秒数；Mock 是它自己的延迟）。前端第 9 步改读它（现在还是前端自己按单价算）。web 测试数据重新生成：每个产品的估价多了 `finishing`（空或 `up`）。
+- **`seedvr2-up`、`flashvsr-up` 加 `caps.exact_size: true`**：本机第一次跑出来是 944×1680——没有这一项时 ComfyUI 适配器按默认像素上限（160 万）缩尺寸。两个工作流最后都是普通缩放节点（SeedVR2 自己补边裁回），1080 不必是 16 的倍数。加了单元测试。
+- 「用 API 出终版」的版本也记 `params.call_id`（质检分写回那次调用）。
+- MSW 的 take 2K 精修假接口删了（`mocks/handlers/generate.ts`），页面测试的假后端在 `test/fakes/generate.ts`。
+- **本机核对**（`scripts/smoke/local_upscale.py`，第十九轮数据目录的副本，报告 `reports/m6-upscale-local/`）：1-04 T9（本地 H3 r2v，768×1344，4.89 秒）→ SeedVR2 1080×1920，24 fps、4.89 秒、声音逐字节相同，199 秒（估价 160 秒）；1:1 裁图睫毛、发丝、皮肤和墙面纹理明显更清楚，脸没变。
+
 ## 2026-11-17 · M6 第 5c 步：本机校准（第十九轮，报告 `reports/m6-qa-calibration.md`）
 
 - **默认阈值**：人脸 `face_sim` 0.75 → **0.18**，口型 `syncnet_conf` 6 → **1.0**（量纲换成 `in_sync`，见下），字错率 `cer_max` 0.10 → **0.2**，说话人 `speaker_sim` 0.6 → **0.65**。每部剧照旧可改、可关。总分里口型按 `in_sync / 4` 折到 0–1。

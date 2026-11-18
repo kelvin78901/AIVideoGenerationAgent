@@ -42,7 +42,7 @@ from drama_series_agent.pipeline.component import (
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.generate import load_rules
 from drama_series_agent.pipeline.products import ProductService, require_product
-from drama_series_agent.pipeline.schema import EstimateOut, ProductOut, PromptOut
+from drama_series_agent.pipeline.schema import EstimateOut, FinishingOut, ProductOut, PromptOut
 
 PRODUCT_RUN = "product.run"
 Mode = Literal["run", "rerun", "switch"]
@@ -218,7 +218,32 @@ class RunService:
             priced=est.priced,
             final_usd=self._final_api_cost(comp, inputs, compiled, model)
             or comp.api_final_usd(inputs, compiled, settings),
+            finishing=await self._finishing(comp, product, inputs),
         )
+
+    async def _finishing(
+        self, comp: Component, product: Product, inputs: Inputs
+    ) -> dict[str, FinishingOut]:
+        """Each finishing component's price and time on its route (``Component.finishing``)."""
+        out: dict[str, FinishingOut] = {}
+        for cid in comp.finishing:
+            other = self.components.get(cid)
+            if other is None:
+                continue
+            settings = await self.services.router.settings(cid, item_of(product))
+            try:
+                model = Router.primary_model(settings)
+                est = other.estimate(inputs, "", model)
+            except (LookupError, PipelineError, ComponentError, ModelError):
+                continue
+            out[cid] = FinishingOut(
+                model_key=model,
+                where=self.services.registry.spec(model).where,
+                cost_usd=round(est.cost_usd, 4),
+                seconds=est.seconds,
+                priced=est.priced,
+            )
+        return out
 
     def _final_api_cost(
         self, comp: Component, inputs: Inputs, compiled: str, model: str

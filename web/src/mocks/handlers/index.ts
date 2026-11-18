@@ -21,7 +21,8 @@
  * GET /episodes/{id}/progress and GET /episodes/{id}/shots are the backend's too; the demo lays
  * episode 1's 后期 over the badges until M7. The video takes and 生成确认, GET / PUT
  * /series/{id}/generate-rules, GET /episodes/{id}/generate-log, POST /products/{id}/unadopt,
- * PATCH /versions/{id} and the impact previews' videos (M5). GET /metrics/summary is the
+ * PATCH /versions/{id} and the impact previews' videos (M5); a take's 2K 精修 POST
+ * /versions/{id}/upscale (M6). GET /metrics/summary is the
  * backend's with the demo's dashboard numbers on top until M8.
  * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
  *
@@ -42,7 +43,6 @@
  * | PUT /products/{id}/prompt        | M2             |
  * | POST /products/{id}/compile      | M2             |
  * | POST /gates/{gate}/confirm, reopen | M2           |
- * | POST /versions/{id}/upscale (takes) | M6          |
  * | GET /episodes/{id}/timeline      | M7             |
  * | PATCH /clips/{id}, /subtitles/{id} | M7           |
  * | GET /episodes/{id}/export/checks, POST /episodes/{id}/export | M7 |
@@ -50,7 +50,6 @@
  * | POST /sync/run, GET /sync/log, GET /sync/board | M9 |
  */
 import { gateHandlers } from "@/mocks/handlers/gates";
-import { generateHandlers } from "@/mocks/handlers/generate";
 import { metricsHandlers } from "@/mocks/handlers/metrics";
 import { postHandlers } from "@/mocks/handlers/post";
 import { productHandlers } from "@/mocks/handlers/products";
@@ -62,7 +61,6 @@ export const handlers = [
   ...metricsHandlers,
   ...productHandlers,
   ...gateHandlers,
-  ...generateHandlers,
   ...postHandlers,
   ...syncHandlers,
 ];

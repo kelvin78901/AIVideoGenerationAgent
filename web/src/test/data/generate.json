@@ -1391,7 +1391,16 @@
         "cost_usd": 0.0108,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": 0.169
+        "final_usd": 0.169,
+        "finishing": {
+          "up": {
+            "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
+          }
+        }
       },
       "running": null,
       "pick": null,
@@ -1647,7 +1656,16 @@
         "cost_usd": 0.0107,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": 0.1268
+        "final_usd": 0.1268,
+        "finishing": {
+          "up": {
+            "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
+          }
+        }
       },
       "running": null,
       "pick": null,
@@ -1903,7 +1921,16 @@
         "cost_usd": 0.0107,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": 0.1268
+        "final_usd": 0.1268,
+        "finishing": {
+          "up": {
+            "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
+          }
+        }
       },
       "running": null,
       "pick": null,
@@ -2424,7 +2451,16 @@
         "cost_usd": 0.0108,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": 0.1901
+        "final_usd": 0.1901,
+        "finishing": {
+          "up": {
+            "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
+          }
+        }
       },
       "running": null,
       "pick": null,
@@ -2455,7 +2491,16 @@
         "cost_usd": 0.0108,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": 0.1268
+        "final_usd": 0.1268,
+        "finishing": {
+          "up": {
+            "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
+          }
+        }
       },
       "running": null,
       "pick": null,
@@ -2486,7 +2531,16 @@
         "cost_usd": 0.0108,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": 0.2113
+        "final_usd": 0.2113,
+        "finishing": {
+          "up": {
+            "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
+          }
+        }
       },
       "running": null,
       "pick": null,
@@ -2517,7 +2571,16 @@
         "cost_usd": 0.0107,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": 0.0845
+        "final_usd": 0.0845,
+        "finishing": {
+          "up": {
+            "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0014,
+            "seconds": 0.0,
+            "priced": true
+          }
+        }
       },
       "running": null,
       "pick": null,

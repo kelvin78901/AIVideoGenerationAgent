@@ -258,6 +258,22 @@ SHEET_FRAMES = 6  # take 检查 (M5.5): frames evenly through the clip, on one 3
 SHEET_W = 360  # each frame's width on the sheet
 
 
+def _sound_of(data: bytes, source: bytes) -> bytes:
+    with TemporaryDirectory() as tmp:
+        pic, snd, out = Path(tmp) / "pic.mp4", Path(tmp) / "snd.mp4", Path(tmp) / "out.mp4"
+        pic.write_bytes(data)
+        snd.write_bytes(source)
+        if not _probe_file(snd).has_audio:
+            _run("-i", str(pic), "-map", "0:v:0", "-c", "copy", "-movflags", "+faststart",
+                 "-y", str(out))  # fmt: skip
+        else:
+            _run(
+                "-i", str(pic), "-i", str(snd), "-map", "0:v:0", "-map", "1:a:0",
+                "-c", "copy", "-movflags", "+faststart", "-y", str(out),
+            )  # fmt: skip
+        return out.read_bytes()
+
+
 def _sheet(data: bytes, frames: int) -> tuple[bytes, list[float]]:
     with TemporaryDirectory() as tmp:
         src, out = Path(tmp) / "in.mp4", Path(tmp) / "sheet.png"
@@ -295,6 +311,12 @@ async def trim_head(data: bytes, seconds: float = TRIM_HEAD_S) -> bytes:
 async def frame(data: bytes, which: Literal["first", "last"]) -> bytes:
     """The first or last frame of a clip as a PNG."""
     return await asyncio.to_thread(_frame, data, which)
+
+
+async def with_sound_of(data: bytes, source: bytes) -> bytes:
+    """``data``'s picture with ``source``'s sound track as it is (stream copy; none when the
+    source has none): an upscaled take keeps the take's sound exactly (M6 2K 精修)."""
+    return await asyncio.to_thread(_sound_of, data, source)
 
 
 async def tail_clip(

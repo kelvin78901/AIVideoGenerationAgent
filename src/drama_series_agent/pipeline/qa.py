@@ -596,7 +596,7 @@ class QaService:
         )
         await self.products.announce(product.id)
         if self.policy is not None:
-            await self.policy.after_qa(product.id)
+            await self.policy.after_check(version.id, first=version.qa_json is None)
         return {"version_id": version.id, "qa_pass": passed, "score": qa["score"]}
 
     async def _write(self, version_id: str, qa: dict[str, Any], passed: bool | None) -> None:

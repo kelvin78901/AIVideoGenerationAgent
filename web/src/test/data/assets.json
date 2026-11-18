@@ -696,7 +696,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -730,7 +731,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,
@@ -908,7 +910,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -1042,7 +1045,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,
@@ -1073,7 +1077,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,
@@ -1251,7 +1256,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -1457,7 +1463,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -1591,7 +1598,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,
@@ -1769,7 +1777,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -1975,7 +1984,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -3254,7 +3264,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -3288,7 +3299,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,
@@ -3460,7 +3472,8 @@
         "cost_usd": 0.0,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,

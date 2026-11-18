@@ -325,6 +325,19 @@ export function generateHandlers() {
       return HttpResponse.json(p);
     }),
 
+    // 2K 精修 of a take (M6): queued on the `up` route; the fake never finishes it.
+    http.post("*/api/v1/versions/:id/upscale", ({ params }) => {
+      const found = findVersion(params.id);
+      if (!found) return undefined;
+      const model = primaryModel(fakeResolve("up", null)?.values ?? null) ?? "comfy/seedvr2";
+      return HttpResponse.json({
+        ...job(found.product, `up-${found.version.id}`, model, "run", 0),
+        component_id: "up",
+        state: "queued",
+        result: null,
+      });
+    }),
+
     http.post("*/api/v1/products/:id/unadopt", ({ params }) => {
       const p = videoById(params.id);
       if (!p) return undefined;

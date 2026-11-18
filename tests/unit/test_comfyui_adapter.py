@@ -718,3 +718,12 @@ async def test_an_image_upscale_is_the_size_asked_for(root: Path, store: BlobSto
     assert (size["resize_type.width"], size["resize_type.height"]) == (1080, 1920)
     assert by_title["Colour fix"]["color_correction_method"] == "lab"
     assert fake.uploads == [("dramastudio", f"{sha}.png")]
+
+
+@pytest.mark.parametrize("slug", ["seedvr2-up", "flashvsr-up"])
+def test_a_take_is_finished_at_the_delivery_size(slug: str) -> None:
+    """2K 精修 (M6 step 6): a take goes to the delivery size as asked (``caps.exact_size``), not
+    fitted into the default pixel budget (1080×1920 came out 944×1680 on this machine)."""
+    adapter = ComfyUIAdapter.__new__(ComfyUIAdapter)
+    req = ModelRequest(kind="upscale", prompt="", params={"width": 1080, "height": 1920})
+    assert adapter.size_for(shipped_workflow(slug), req) == (1080, 1920)

@@ -20,6 +20,13 @@ product locked (the person decided).
 
 What was decided is kept on the take that decided it, ``qa_json.policy`` ``{action, job_id,
 model}``, for the run log (``pipeline/generate.py``).
+
+A finished take (2K 精修, later 口型修复 and 局部修复: ``params.finish``) is no take of a batch:
+once checked (the first time; 「重新质检」 adopts nothing) it is adopted when the take it came
+from is the adopted one, it fails nothing that take passed, and the product is not locked
+(Kelvin 2026-11-14: asking for it is asking to use it; the take stays in the history). A check
+the take failed already and was kept anyway does not count (Kelvin 2026-11-17: 不比原片差就采纳).
+Otherwise it stays a candidate.
 """
 
 from __future__ import annotations
@@ -43,6 +50,7 @@ if TYPE_CHECKING:
     from drama_series_agent.pipeline.runs import RunService
 
 AUTO_RERUN = "auto_qa_rerun"
+FINISH = "finish"  # ``params.finish`` {kind, version_id} (``components/up.py``)
 QA_FAIL = "qa_fail"
 # Versions that are takes of a run (a final, an upscale, a repair are not).
 BATCH_ORIGINS = ("run", "rerun", "switch", "fallback", AUTO_RERUN)
@@ -59,6 +67,11 @@ class Decision:
 
 def is_take(v: ProductVersion) -> bool:
     return v.origin in BATCH_ORIGINS and v.stage != "final"
+
+
+def is_finished(v: ProductVersion) -> bool:
+    """A take finished from another (2K 精修 …: ``params.finish``)."""
+    return isinstance((v.params_json or {}).get(FINISH), dict)
 
 
 def automatic(v: ProductVersion) -> bool:
@@ -78,6 +91,12 @@ def failing(version: ProductVersion) -> list[dict[str, Any]]:
         for c in (version.qa_json or {}).get("checks") or []
         if c.get("ok") is False and not c.get("off")
     ]
+
+
+def worse(version: ProductVersion, source: ProductVersion) -> list[str]:
+    """The checks ``version`` fails that ``source`` (the take it was finished from) did not."""
+    had = {c["metric"] for c in failing(source)}
+    return [c["metric"] for c in failing(version) if c["metric"] not in had]
 
 
 FIX_LINES = {
@@ -137,6 +156,40 @@ class QaPolicy:
         self.services = runs.services
         # Two QA jobs of one batch may end together: one decision at a time.
         self._lock = asyncio.Lock()
+
+    async def after_check(self, version_id: str, *, first: bool = True) -> None:
+        """After a version's QA: a take's batch decided, a finished take maybe adopted (on its
+        first check only: 「重新质检」 later adopts nothing)."""
+        async with self.services.db.session() as session:
+            v = await session.get(ProductVersion, version_id)
+        if v is None:
+            return
+        if is_finished(v):
+            if first:
+                await self.adopt_finished(v.id)
+        elif is_take(v):
+            await self.after_qa(v.product_id)
+
+    async def adopt_finished(self, version_id: str) -> bool:
+        """Adopt a checked finished take that replaces the adopted one (see the module doc)."""
+        async with self.services.db.session() as session:
+            v = await session.get(ProductVersion, version_id)
+            if v is None or not is_finished(v):
+                return False
+            p = await session.get(Product, v.product_id)
+            source = await session.get(ProductVersion, str(v.params_json[FINISH]["version_id"]))
+        if p is None or source is None or v.qa_json is None:
+            return False
+        if p.locked_hash or p.adopted_version_id != source.id:
+            return False
+        if worse(v, source):
+            return False
+        try:
+            await self.runs.products.adopt(v.id)
+        except PipelineError as exc:  # locked meanwhile
+            logger.info("finished take {} left a candidate: {}", v.id, exc.code)
+            return False
+        return True
 
     async def after_qa(self, product_id: str) -> Decision:
         async with self._lock:

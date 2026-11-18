@@ -70,6 +70,7 @@ from drama_series_agent.pipeline.components.scale import ScaleComponent
 from drama_series_agent.pipeline.components.script import ScriptComponent
 from drama_series_agent.pipeline.components.split import SplitComponent
 from drama_series_agent.pipeline.components.text import TextComponent
+from drama_series_agent.pipeline.components.up import UpComponent
 from drama_series_agent.pipeline.components.vid import VidComponent
 from drama_series_agent.pipeline.components.views import ViewsComponent
 from drama_series_agent.pipeline.components.voice import VoiceComponent
@@ -202,6 +203,7 @@ class StudioState:
         components.add(PlanCheckComponent(components.services))
         components.add(KfComponent(components.services))
         components.add(VidComponent(components.services))
+        components.add(UpComponent(components.services))
         # A line's audio is one of dozens: lists of them skip the per-product estimate.
         products.quiet_slots.add(LINE_AUDIO_SLOT)
         episodes = EpisodeService(db, products, invalidation)

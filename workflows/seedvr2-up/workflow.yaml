@@ -24,3 +24,6 @@ caps:
   est_seconds_per_s: 40
   duration_s: [1, 15]
   multiple: 16
+  # 成片尺寸原样填（SeedVR2Preprocess 补边、PostProcessing 裁回，1080 不必是 16 的倍数）。M6 第 6 步本机发现：没有这一项时
+  # 适配器按默认像素上限（160 万）缩，1080×1920 出成了 944×1680。
+  exact_size: true

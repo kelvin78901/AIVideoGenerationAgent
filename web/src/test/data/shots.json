@@ -1906,7 +1906,8 @@
       "cost_usd": 0.0263,
       "seconds": 0.0,
       "priced": true,
-      "final_usd": null
+      "final_usd": null,
+      "finishing": {}
     },
     "running": null,
     "pick": null,
@@ -2113,7 +2114,8 @@
         "cost_usd": 0.0112,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -2324,7 +2326,8 @@
         "cost_usd": 0.0116,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -2531,7 +2534,8 @@
         "cost_usd": 0.0114,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": {
@@ -2669,7 +2673,8 @@
         "cost_usd": 0.0117,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,
@@ -2802,7 +2807,8 @@
         "cost_usd": 0.0118,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,
@@ -2936,7 +2942,8 @@
         "cost_usd": 0.0115,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,
@@ -3069,7 +3076,8 @@
         "cost_usd": 0.0113,
         "seconds": 0.0,
         "priced": true,
-        "final_usd": null
+        "final_usd": null,
+        "finishing": {}
       },
       "running": null,
       "pick": null,

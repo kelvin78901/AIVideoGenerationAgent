@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 OwnerType = Literal["series", "episode", "scene", "shot", "asset", "line"]
 ProductStatus = Literal[
@@ -69,6 +69,14 @@ class PromptOut(BaseModel):
     model_key: str
 
 
+class FinishingOut(BaseModel):
+    model_key: str
+    where: Literal["local", "api"]
+    cost_usd: float
+    seconds: float | None
+    priced: bool = True
+
+
 class EstimateOut(BaseModel):
     model_key: str
     where: Literal["local", "api"]
@@ -79,6 +87,9 @@ class EstimateOut(BaseModel):
     # 「用 API 出终版」 of a take where the component has a ``final_api`` (videos: Regenerate-2K
     # of the shot's length), or a voice's clone on its API model (M5.5); None elsewhere.
     final_usd: float | None = None
+    # What finishing a version costs and takes on that component's route, by component id
+    # (M6: the video's 2K 精修 ``up``, of the shot's length); absent elsewhere.
+    finishing: dict[str, FinishingOut] = Field(default_factory=dict)
 
 
 class RunningOut(BaseModel):

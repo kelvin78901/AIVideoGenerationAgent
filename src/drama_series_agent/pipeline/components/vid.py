@@ -43,7 +43,7 @@ import json
 import math
 from dataclasses import dataclass, replace
 from functools import partial
-from typing import Any
+from typing import Any, ClassVar
 
 from loguru import logger
 from sqlmodel import col, select
@@ -591,12 +591,12 @@ def head_s(params: dict[str, Any], fps: float) -> float:
 async def clip_files(
     store: BlobStore, sha256: str, *, raw: bool, head: float = TRIM_HEAD_S
 ) -> tuple[list[dict[str, Any]], VideoInfo]:
-    """A take as stored: the head cut off (``head`` seconds), its poster and last frame; a local
-    draft keeps the untrimmed clip too (``raw``: what Regenerate-2K takes). The demo seed makes
-    its takes so."""
+    """A take as stored: the head cut off (``head`` seconds; 0: kept whole), its poster and
+    last frame; a local draft keeps the untrimmed clip too (``raw``: what Regenerate-2K takes).
+    The demo seed makes its takes so."""
     try:
         original = store.path_for(sha256).read_bytes()
-        clip = await trim_head(original, head)
+        clip = await trim_head(original, head) if head > 0 else original
         info = await probe(clip)
         poster, last = await frame(clip, "first"), await frame(clip, "last")
         whole = await probe(original) if raw else None
@@ -644,6 +644,7 @@ class VidComponent(MediaComponent):
     slot = VIDEO_SLOT
     owner_type = "shot"
     auto_adopt = False
+    finishing: ClassVar[tuple[str, ...]] = ("up",)
 
     async def default_intent(self, session: AsyncSession, product: Product, lang: str) -> str:
         """The keyframe's description (the user's words there), else the plan's."""
@@ -884,7 +885,10 @@ class VidComponent(MediaComponent):
         payload.pop("prompt_ir", None)
         payload.pop("check", None)  # a draft's M5.5 take check
         files = await self._sheet(files, payload)
-        draft = self.media_draft(ctx, inputs, payload, files, [call], prompt, stage="final")
+        draft = self.media_draft(
+            ctx, inputs, payload, files, [call], prompt, stage="final",
+            params={"call_id": call.call_id},
+        )  # fmt: skip
         draft.params["source"] = {"version_id": source.id}
         return draft
 

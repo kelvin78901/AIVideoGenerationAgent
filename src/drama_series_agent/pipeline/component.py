@@ -173,6 +173,9 @@ class Component(ABC):
     # The origin of the versions it makes on another component's product (M5.5: ``redraw``,
     # ``inpaint``; ``iup`` makes ``upscale``); its id when None.
     origin: ClassVar[str | None] = None
+    # Components that finish its versions on the same product, priced with it for the buttons
+    # (``EstimateOut.finishing``; M6: the video's 2K 精修 ``up``).
+    finishing: ClassVar[tuple[str, ...]] = ()
 
     def __init__(self, services: Services) -> None:
         self.services = services

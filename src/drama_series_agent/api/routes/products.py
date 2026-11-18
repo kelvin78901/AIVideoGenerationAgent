@@ -1,7 +1,8 @@
 """Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``; 以这张为底重画
 ``POST /versions/{id}/redraw``, 局部修复 ``POST /versions/{id}/inpaint`` and 图片超分
 ``POST /versions/{id}/upscale`` (M5.5, ``pipeline/components/redraw.py``, ``inpaint.py``,
-``iup.py``); 重新质检 ``POST /versions/{id}/qa`` (M6, ``pipeline/qa.py``)."""
+``iup.py``; a take's 2K 精修, M6 ``up.py``); 重新质检 ``POST /versions/{id}/qa`` (M6,
+``pipeline/qa.py``)."""
 
 from __future__ import annotations
 
@@ -13,11 +14,13 @@ from pydantic import BaseModel, ConfigDict, Field
 from drama_series_agent.api.state import StudioState, get_state
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.jobs import job_public
+from drama_series_agent.core.models_db import Product, ProductVersion
 from drama_series_agent.media.image import MAX_UPLOAD_BYTES
 from drama_series_agent.pipeline.components.inpaint import inpaint_params
 from drama_series_agent.pipeline.components.iup import refuse_if_unavailable
 from drama_series_agent.pipeline.components.redraw import DEFAULT_STRENGTH, redraw_target
 from drama_series_agent.pipeline.errors import PipelineError
+from drama_series_agent.pipeline.qa import VIDEO_SLOT
 from drama_series_agent.pipeline.schema import ProductOut
 
 router = APIRouter(tags=["products"])
@@ -221,7 +224,8 @@ async def inpaint_version(
 
 
 class UpscaleBody(BaseModel):
-    """图片超分: picture ``idx`` of the version (a candidate, or a view's number)."""
+    """图片超分: picture ``idx`` of the version (a candidate, or a view's number); a take has
+    one (2K 精修)."""
 
     model_config = ConfigDict(extra="forbid")
 
@@ -230,10 +234,22 @@ class UpscaleBody(BaseModel):
 
 @router.post("/versions/{version_id}/upscale")
 async def upscale_version(version_id: str, body: UpscaleBody, state: State) -> dict[str, Any]:
-    """→ the queued run (component ``iup``, origin ``upscale``): a keyframe at the delivery
-    size, a reference picture or a view at a long edge of 2048; one candidate, or that view
-    replaced. Only locally: 409 ``upscale_unavailable`` with the reason (``machine_cuda``,
-    ``machine_missing`` + count) on a machine that cannot run it."""
+    """→ the queued run (origin ``upscale``). A take (M6 2K 精修, component ``up``): one
+    version at the delivery size, adopted after QA when the take was the adopted one and it
+    passes; 409 ``upscale_not_needed`` for a take that large already, ``upscale_unavailable``
+    (``not_regenerable``) when the route's API model cannot take it. A picture (component
+    ``iup``): a keyframe at the delivery size, a reference picture or a view at a long edge of
+    2048; one candidate, or that view replaced. Only locally: 409 ``upscale_unavailable`` with
+    the reason (``machine_cuda``, ``machine_missing`` + count) on a machine that cannot run
+    it."""
+    async with state.db.session() as session:
+        v = await session.get(ProductVersion, version_id)
+        take = await session.get(Product, v.product_id) if v is not None else None
+    if take is not None and take.slot == VIDEO_SLOT and not take.retired:
+        job = await state.runs.start(
+            take.id, "run", component_id="up", params={"up_version_id": version_id}
+        )
+        return job_public(job)
     refuse_if_unavailable(get_config(), await state.setup.capabilities())
     async with state.db.session() as session:
         product, _ = await redraw_target(session, version_id, body.idx, "upscale")
