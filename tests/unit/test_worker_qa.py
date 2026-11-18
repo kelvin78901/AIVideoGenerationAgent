@@ -63,7 +63,8 @@ def _code(kind: str, state: dict[str, Any], **params: Any) -> str:
 
 
 class Faces:
-    """A take's faces are (who, how alike); a reference picture is its file name."""
+    """A take's faces are (who, how alike); a reference picture is its file name. A face whose
+    who starts with "~" is turned away (not ``usable``)."""
 
     def __init__(self, frames: list[list[tuple[str, float]]], blank: tuple[str, ...] = ()) -> None:
         self.shown = frames
@@ -88,6 +89,9 @@ class Faces:
     def embed(self, picture: Any, face: Any) -> Any:
         return face
 
+    def usable(self, face: Any, embedding: Any) -> bool:
+        return not str(face[0]).startswith("~")
+
     def sim(self, a: Any, b: Any) -> float:
         who, alike = b
         return alike if who == a else 0.1
@@ -99,17 +103,33 @@ def test_each_face_is_scored_against_the_reference_it_is_closest_to() -> None:
         [("lin", 0.5), ("chen", 0.8)],  # a two-hander: each against their own picture
         [],
         [("stranger", 0.0)],  # nobody's: it goes to the nearest and pulls it down
+        [("lin", 0.6), ("~chen", 0.0)],  # a profile says nothing
+        [("chen", 0.7)],
     ]
-    state = {"tool": "face", "engine": Faces(frames, blank=("zhao",))}
+    state = {"tool": "face", "engine": Faces(frames, blank=("zhao",)), "min_frames": 3}
     refs = [*REFS, {"asset_id": "a-zhao", "name": "赵", "path": "refs/zhao.png"}]
     out = _run("qa_face", state, path="take.mp4", refs=refs, every_s=1.0)["json"]
-    assert (out["frames"], out["with_face"]) == (4, 3)
+    assert (out["frames"], out["with_face"], out["turned"]) == (6, 5, 1)
     assert out["faces"] == [
-        {"asset_id": "a-lin", "name": "林晚", "sim": 0.7, "low": 0.5, "frames": 2},
-        {"asset_id": "a-chen", "name": "陈默", "sim": 0.45, "low": 0.1, "frames": 2},
+        {"asset_id": "a-lin", "name": "林晚", "sim": 0.6, "low": 0.5, "frames": 3},  # median
+        {"asset_id": "a-chen", "name": "陈默", "sim": 0.7, "low": 0.1, "frames": 3},
         # no face in the picture → not scored (qa.py: 不适用)
         {"asset_id": "a-zhao", "name": "赵", "sim": None, "low": None, "frames": 0},
     ]
+
+
+def test_too_few_usable_faces_are_not_scored() -> None:
+    frames = [[("lin", 0.9)], [("~lin", 0.1)], [("~lin", 0.0)], [("lin", 0.8)]]
+    state = {"tool": "face", "engine": Faces(frames)}  # min_frames: 3
+    out = _run("qa_face", state, path="take.mp4", refs=REFS)["json"]
+    assert out["faces"][0] == {
+        "asset_id": "a-lin",
+        "name": "林晚",
+        "sim": None,
+        "low": 0.8,
+        "frames": 2,
+    }
+    assert out["turned"] == 2
 
 
 def test_a_take_without_faces_scores_nobody() -> None:
@@ -197,7 +217,15 @@ class Lips:
         if len(crops) < 5:
             return None
         n = len(crops) - 4
-        return {"conf": crops[0][0] / 10, "offset": 1, "min_dist": 7.04, "voiced": n, "windows": n}
+        conf = crops[0][0] / 10
+        return {
+            "conf": conf,
+            "in_sync": conf - 1,
+            "offset": 1,
+            "min_dist": 7.04,
+            "voiced": n,
+            "windows": n,
+        }
 
 
 SPEAKER = (300.0, 0.0, 380.0, 80.0)  # centre (340, 40), half size 40
@@ -221,11 +249,12 @@ def test_sync_scores_each_face_track_and_keeps_the_most_confident() -> None:
         frames.append(shown)
     state = _lips_state(frames)
     out = _run("qa_sync", state, path="take.mp4")["json"]
-    assert (out["conf"], out["offset"], out["min_dist"], out["frames"]) == (34.0, 1, 7.04, 40)
-    same = {"offset": 1, "min_dist": 7.04, "conf_all": None}
+    assert (out["conf"], out["in_sync"], out["offset"]) == (34.0, 33.0, 1)
+    assert (out["min_dist"], out["frames"]) == (7.04, 40)
+    same = {"end": 1.6, "offset": 1, "min_dist": 7.04, "conf_all": None}
     assert out["tracks"] == [
-        {"start": 0.0, "end": 1.6, "conf": 5.0, "voiced": 36, "windows": 36, **same},
-        {"start": 0.4, "end": 1.6, "conf": 34.0, "voiced": 26, "windows": 26, **same},
+        {"start": 0.0, "conf": 5.0, "in_sync": 4.0, "voiced": 36, "windows": 36, **same},
+        {"start": 0.4, "conf": 34.0, "in_sync": 33.0, "voiced": 26, "windows": 26, **same},
     ]
     crops, samples = state["engine"].scored[1]
     assert len(crops) == 30 and set(crops) == {(340, 40, 40)}  # frame 20 filled in
@@ -234,7 +263,7 @@ def test_sync_scores_each_face_track_and_keeps_the_most_confident() -> None:
 
 def test_sync_without_a_face_track_is_not_scored() -> None:
     out = _run("qa_sync", _lips_state([[EXTRA]] * 30), path="take.mp4")["json"]
-    assert (out["conf"], out["offset"], out["tracks"]) == (None, None, [])
+    assert (out["conf"], out["in_sync"], out["offset"], out["tracks"]) == (None, None, None, [])
     state = {**_lips_state([[LISTENER]] * 4), "min_track": 3}
     short = _run("qa_sync", state, path="take.mp4")["json"]
     assert short["conf"] is None and short["tracks"][0]["conf"] is None  # under one window
@@ -264,6 +293,9 @@ def test_asr_answers_text_and_segments() -> None:
     assert out["text"] == "三年了。" and out["json"]["text"] == "三年了。"
     assert out["json"]["segments"][0]["lang"] == "zh"  # the worker's default
     assert _run("asr", state, path="take.mp4", lang="en")["json"]["segments"][0]["lang"] == "en"
+    hinted = _run("asr", state, path="take.mp4", prompt="人物：周屿、林晚。")
+    assert hinted["json"]["segments"][0]["prompt"] == "人物：周屿、林晚。"
+    assert out["json"]["segments"][0]["prompt"] is None
 
 
 def test_a_worker_only_does_the_tool_it_loaded() -> None:
@@ -355,7 +387,7 @@ def _adapter(
 async def test_the_workers_answer_what_measure_reads(
     made: list[LocalPythonAdapter], tmp_path: Path
 ) -> None:
-    face = _adapter(made, tmp_path, "local/auraface", "qa_face", tool="face")
+    face = _adapter(made, tmp_path, "local/auraface", "qa_face", tool="face", min_frames=2)
     req = ModelRequest(kind="qa_face", params={"path": "take.mp4", "refs": REFS, "every_s": 1.0})
     got = (await face.run(req, CallContext())).json
     assert [(f["asset_id"], f["sim"], f["frames"]) for f in got["faces"]] == [
@@ -379,7 +411,7 @@ async def test_the_workers_answer_what_measure_reads(
 
     lips = _adapter(made, tmp_path, "local/syncnet", "qa_sync", tool="sync", min_track=8)
     got = await lips.run(ModelRequest(kind="qa_sync", params={"path": "take.mp4"}), CallContext())
-    assert (got.json["conf"], got.json["offset"]) == (4.0, 0)
+    assert (got.json["conf"], got.json["in_sync"], got.json["offset"]) == (4.0, 3.5, 0)
 
     with pytest.raises(ModelError) as err:
         await _adapter(made, tmp_path, "x", "qa_face", tool="nope").run(req, CallContext())

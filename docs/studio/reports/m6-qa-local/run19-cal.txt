@@ -1,0 +1,332 @@
+M6 local QA tools · run19-cal · 2026-11-17 17:51
+
+== 1-01 T1 (comfy/h3)
+  face     不适用 · 1.03 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 4.92 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-01 T2 (minimax/h3-regenerate-2k)
+  face     不适用 · 0.33 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.04 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-01 T3 (comfy/h3)
+  face     0.4865 · 1.0 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.4865, "low": 0.3045, "frames": 10}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-01 T4 (comfy/h3)
+  face     0.3574 · 0.95 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3574, "low": 0.2378, "frames": 10}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-01 T5 (comfy/h3)
+  face     0.2961 · 0.97 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.2961, "low": 0.199, "frames": 10}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-01 T6 (comfy/h3)
+  face     0.2575 · 1.23 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.2575, "low": 0.1911, "frames": 13}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-02 T1 (comfy/h3)
+  face     不适用 · 0.22 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.03 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 2.89 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}]}
+== 1-02 T2 (minimax/h3-regenerate-2k)
+  face     不适用 · 0.28 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.03 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 1.24 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}]}
+== 1-02 T3 (comfy/h3)
+  face     不适用 · 0.39 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 4.19 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "1"}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-02 T4 (comfy/h3)
+  face     不适用 · 0.82 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 2.83 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": "8JOTAL"}]}
+== 1-02 T5 (comfy/h3)
+  face     不适用 · 0.87 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.72 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-02 T6 (comfy/h3)
+  face     0.3873 · 1.1 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3873, "low": 0.293, "frames": 6}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.08 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不一致：'结个置现后，平作月十二点' · 5.03 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "结个置现后，平作月十二点"}, {"t": 1.0, "text": "结医现后，平作月十二点。"}, {"t": 2.0, "text": "结个星见后，早怀月十二点。"}, {"t": 3.0, "text": "理星现后，年的月十二点。"}, {"t": 4.0, "text": "竣宁显孔后，车的用十二点。"}]}
+== 1-03 T1 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 3.42 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}]}
+== 1-03 T2 (minimax/h3-regenerate-2k)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 1.66 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}]}
+== 1-03 T3 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      一致 · 5.13 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "楼下便利店，等你到十二点。"}, {"t": 1.0, "text": "楼下便利店，等你到十二点。"}, {"t": 2.0, "text": "楼下便利店，等你到十二点。"}, {"t": 3.0, "text": "楼下便利店，等你到十二点。"}, {"t": 4.0, "text": "楼下便利店，等你到十二点。"}]}
+== 1-03 T4 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      一致 · 5.45 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "楼下便利店，等你到十二点。"}, {"t": 1.0, "text": "楼下便利店，等你到十二点。"}, {"t": 2.0, "text": "楼下便利店，等你到十二点。"}, {"t": 3.0, "text": "楼下便利店，等你到十二点。"}, {"t": 4.0, "text": "楼下便利店等你到十二点。"}]}
+== 1-03 T5 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      一致 · 5.59 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "楼下便利店，等你到十二点。"}, {"t": 1.0, "text": "楼下便利店，等你到十二点。"}, {"t": 2.0, "text": "楼下便利店，等你到十二点。"}, {"t": 3.0, "text": "楼下便利店等你到十二点"}, {"t": 4.0, "text": "楼下便利店，等你到十二点。"}]}
+== 1-03 T6 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      一致 · 5.63 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "楼下便利店，等你到十二点。"}, {"t": 1.0, "text": "楼下便利店，等你到十二点。"}, {"t": 2.0, "text": "楼下便利店，等你到十二点。"}, {"t": 3.0, "text": "楼下便利店，等你到十二点。"}, {"t": 4.0, "text": "楼下便利店，等你到十二点。"}]}
+== 1-04 T1 (comfy/h3-r2v)
+  face     不适用 · 0.82 s · {"faces": []}
+  lipsync  不适用 · 2.63 s · {"offset": null, "conf": null}
+  asr      1.0 · 0.03 s · {"expected": "……周屿？"}
+  speaker  0.0158 · 0.6 s · {"sims": [{"who": "林晚", "sim": 0.0158}]}
+  ocr      不适用 · 0.99 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-04 T2 (comfy/h3-r2v)
+  face     不适用 · 0.39 s · {"faces": []}
+  lipsync  不适用 · 1.09 s · {"offset": null, "conf": null}
+  asr      1.0 · 0.04 s · {"expected": "……周屿？"}
+  speaker  0.0407 · 0.13 s · {"sims": [{"who": "林晚", "sim": 0.0407}]}
+  ocr      不适用 · 4.97 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-04 T3 (minimax/h3-api)
+  face     不适用 · 0.82 s · {"faces": []}
+  lipsync  不适用 · 1.26 s · {"offset": null, "conf": null}
+  asr      1.0 · 0.04 s · {"expected": "……周屿？"}
+  speaker  0.029 · 0.14 s · {"sims": [{"who": "林晚", "sim": 0.029}]}
+  ocr      不适用 · 1.64 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-04 T4 (volc/seedance-2.5)
+  face     不适用 · 0.39 s · {"faces": []}
+  lipsync  不适用 · 1.24 s · {"offset": null, "conf": null}
+  asr      1.0 · 0.04 s · {"expected": "……周屿？"}
+  speaker  0.0351 · 0.14 s · {"sims": [{"who": "林晚", "sim": 0.0351}]}
+  ocr      不适用 · 1.45 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-04 T5 (comfy/h3-r2v)
+  face     0.4741 · 1.1 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.4741, "low": 0.3985, "frames": 10}]}
+  lipsync  1.775 · 3.84 s · {"offset": -1, "conf": 1.775}
+  asr      0.0 '周屿?' · 4.37 s · {"expected": "……周屿？"}
+  speaker  0.7184 · 0.08 s · {"sims": [{"who": "林晚", "sim": 0.7184}]}
+  ocr      不适用 · 1.84 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-04 T6 (comfy/h3-r2v)
+  face     0.4734 · 1.1 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.4734, "low": 0.4377, "frames": 10}]}
+  lipsync  2.042 · 3.83 s · {"offset": 0, "conf": 2.042}
+  asr      0.0 '周屿?' · 4.48 s · {"expected": "……周屿？"}
+  speaker  0.7235 · 0.09 s · {"sims": [{"who": "林晚", "sim": 0.7235}]}
+  ocr      不适用 · 1.88 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-04 T7 (comfy/h3-r2v)
+  face     0.482 · 1.09 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.482, "low": 0.4426, "frames": 10}]}
+  lipsync  2.62 · 3.87 s · {"offset": 0, "conf": 2.62}
+  asr      0.0 '周屿?' · 4.37 s · {"expected": "……周屿？"}
+  speaker  0.7583 · 0.09 s · {"sims": [{"who": "林晚", "sim": 0.7583}]}
+  ocr      不适用 · 1.86 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-04 T8 (comfy/h3-r2v)
+  face     0.703 · 1.1 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.703, "low": 0.6107, "frames": 10}]}
+  lipsync  1.388 · 3.89 s · {"offset": 0, "conf": 1.388}
+  asr      0.0 '周屿' · 4.37 s · {"expected": "……周屿？"}
+  speaker  0.7386 · 0.08 s · {"sims": [{"who": "林晚", "sim": 0.7386}]}
+  ocr      一致 · 5.05 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "楼下便利店，等你到十二点。"}, {"t": 1.0, "text": "楼下便利店，等你到十二点。"}, {"t": 2.0, "text": "楼下便利店，等你到十二点。"}, {"t": 3.0, "text": "楼下便利店，等你到十二点。"}, {"t": 4.0, "text": "楼下便利店，等你到十二点。"}]}
+== 1-04 T9 (comfy/h3-r2v)
+  face     0.5441 · 1.55 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.5441, "low": 0.4614, "frames": 10}]}
+  lipsync  0.534 · 3.75 s · {"offset": 10, "conf": 2.248}
+  asr      0.0 '周屿?' · 4.42 s · {"expected": "……周屿？"}
+  speaker  0.6991 · 0.11 s · {"sims": [{"who": "林晚", "sim": 0.6991}]}
+  ocr      一致 · 4.98 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "楼下便利店，等你到十二点。"}, {"t": 1.0, "text": "楼下便利店，等你到十二点。"}, {"t": 2.0, "text": "楼下便利店，等你到十二点。"}, {"t": 3.0, "text": "楼下便利店，等你到十二点。"}, {"t": 4.0, "text": "楼下便利店，等你到十二点。"}]}
+== 1-05 T1 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 2.48 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-05 T2 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 1.88 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-05 T3 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 1.85 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": ""}, {"t": 1.0, "text": ""}, {"t": 2.0, "text": ""}, {"t": 3.0, "text": ""}, {"t": 4.0, "text": ""}]}
+== 1-05 T4 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      一致 · 4.97 s · {"expected": ["楼下便利店，等你到十二点。"], "frames": [{"t": 0.0, "text": "楼下便利店，等你到十二点。"}, {"t": 1.0, "text": "楼下便利店，等你到十二点。"}, {"t": 2.0, "text": "楼下便利店，等你到十二点。"}, {"t": 3.0, "text": "楼下便利店，等你到十二点。"}, {"t": 4.0, "text": "楼下便利店，等你到十二点。"}]}
+== 1-06 T1 (comfy/h3)
+  face     0.3475 · 1.49 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3475, "low": 0.2215, "frames": 10}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      1.0 '三年了,他凭什么?' · 4.57 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-06 T2 (comfy/h3)
+  face     0.3558 · 0.97 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3558, "low": 0.2772, "frames": 8}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      1.0 '三年了,他凭什么?' · 4.65 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-06 T3 (comfy/h3)
+  face     0.3296 · 1.0 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3296, "low": 0.2871, "frames": 8}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      1.0 '三年了,他凭什么?' · 4.63 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-06 T4 (comfy/h3)
+  face     0.3943 · 1.22 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3943, "low": 0.3159, "frames": 13}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.06 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-06 T5 (comfy/h3)
+  face     0.3451 · 1.23 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3451, "low": 0.2695, "frames": 13}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-07 T1 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-07 T2 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-07 T3 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-07 T4 (comfy/h3)
+  face     不适用 · 0.0 s · {}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-08 T1 (comfy/h3)
+  face     0.2476 · 1.24 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.2476, "low": 0.1526, "frames": 12}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-08 T2 (comfy/h3)
+  face     0.2515 · 1.26 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.2515, "low": 0.1823, "frames": 13}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.0 s · {}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-09 T1 (comfy/h3)
+  face     不适用 · 1.25 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-09 T2 (comfy/h3)
+  face     不适用 · 0.37 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-09 T3 (comfy/h3)
+  face     0.2965 · 1.22 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.2965, "low": 0.2211, "frames": 3}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.08 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-09 T4 (comfy/h3)
+  face     0.3268 · 0.8 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3268, "low": 0.2918, "frames": 3}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.06 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-09 T5 (comfy/h3)
+  face     0.3489 · 1.24 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.3489, "low": 0.2161, "frames": 9}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.07 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-09 T6 (comfy/h3)
+  face     0.4934 · 1.27 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.4934, "low": 0.4115, "frames": 13}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.04 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-09 T7 (comfy/h3)
+  face     0.4951 · 1.23 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.4951, "low": 0.4251, "frames": 13}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 5.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-10 T1 (comfy/h3)
+  face     不适用 · 0.88 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.04 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-10 T2 (comfy/h3)
+  face     不适用 · 0.89 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.06 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-10 T3 (comfy/h3)
+  face     不适用 · 0.88 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.05 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-10 T4 (comfy/h3)
+  face     不适用 · 0.89 s · {"faces": []}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.06 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-10 T5 (comfy/h3)
+  face     0.2017 · 0.89 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.2017, "low": 0.1381, "frames": 6}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.06 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}
+== 1-10 T6 (comfy/h3)
+  face     0.449 · 1.05 s · {"faces": [{"asset_id": "linwan", "name": "林晚", "sim": 0.449, "low": 0.3661, "frames": 10}]}
+  lipsync  不适用 · 0.0 s · {}
+  asr      不适用 · 0.06 s · {"expected": ""}
+  speaker  不适用 · 0.0 s · {}
+  ocr      不适用 · 0.0 s · {}

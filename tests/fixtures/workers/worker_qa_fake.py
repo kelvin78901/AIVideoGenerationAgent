@@ -33,6 +33,9 @@ class Face:
     def embed(self, picture: Any, face: Any) -> Any:
         return face
 
+    def usable(self, face: Any, embedding: Any) -> bool:
+        return True
+
     def sim(self, a: Any, b: Any) -> float:
         return 0.9 if a == b else 0.1
 
@@ -55,8 +58,11 @@ class Speaker:
 
 
 class Asr:
-    def transcribe(self, path: str, lang: str | None) -> tuple[str, list[dict[str, Any]]]:
-        return "三年了。", [{"start": 0.0, "end": 1.2, "text": "三年了。", "lang": lang}]
+    def transcribe(
+        self, path: str, lang: str | None, prompt: str | None
+    ) -> tuple[str, list[dict[str, Any]]]:
+        seg = {"start": 0.0, "end": 1.2, "text": "三年了。", "lang": lang, "prompt": prompt}
+        return "三年了。", [seg]
 
 
 class Sync:
@@ -77,7 +83,8 @@ class Sync:
         return [0] * 120
 
     def score(self, crops: list[Any], samples: Any) -> dict[str, Any]:
-        return {"conf": len(samples) / len(crops), "offset": 0, "min_dist": 5.0}
+        conf = len(samples) / len(crops)
+        return {"conf": conf, "in_sync": conf - 0.5, "offset": 0, "min_dist": 5.0}
 
 
 worker_qa.ENGINES = {

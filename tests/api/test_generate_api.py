@@ -70,10 +70,10 @@ def test_rules_default_to_the_config_and_save_per_series(client: TestClient) -> 
         "qa_retry_max": 2,  # fallback_defaults.qa_fail_n
         "shot_cap_usd": 2.0,
         "thresholds": {
-            "face_sim": 0.75,
-            "syncnet_conf": 6.0,
-            "cer_max": 0.1,
-            "speaker_sim": 0.6,
+            "face_sim": 0.18,
+            "syncnet_conf": 1.0,
+            "cer_max": 0.2,
+            "speaker_sim": 0.65,
         },
         "qa_on": {m: True for m in ("face", "lipsync", "asr", "speaker", "ocr", "vlm")},
     }

@@ -418,17 +418,17 @@ local_models:
   - { key: local/mmaudio,           kind: sfx,     display: MMAudio（本地）,          runtime: python, verify: true }
   # faster-whisper int8 on the CPU（worker_qa，args.tool 选工具：每个 key 一个进程，只 import 自己的库）。
   - { key: local/whisper-large-v3,  kind: asr,     display: Whisper large-v3（本地）, runtime: python, worker: worker_qa, env: qa, gpu: false,
-      args: { tool: asr, model_dir: "{models}/faster-whisper-large-v3", compute_type: int8, beam_size: 5, vad: true, threads: 8, lang: zh },
+      args: { tool: asr, model_dir: "{models}/faster-whisper-large-v3", compute_type: int8, beam_size: 5, vad: true, threads: 8, lang: zh, max_no_speech: 0.5 },
       needs: [rt_qa, w_qa] }
   - { key: local/paraformer,        kind: asr,     display: Paraformer（本地）,       runtime: python }
   - { key: local/rapidocr,          kind: ocr,     display: RapidOCR（本地）,         runtime: python, worker: worker_rapidocr, env: ocr, gpu: false, caps: { langs: [zh, en] }, needs: [rt_ocr] }
   # 自动质检的本地工具（M6，pipeline/qa.py；CPU、$0；workers/worker_qa.py，环境 rt_qa、权重 w_qa）。
   # 来源和许可见 reports/m6-qa-tools-research.md；AuraFace 只用 glintr100.onnx（DECISIONS「M6 第 5 步之前」）。
   - { key: local/auraface,          kind: qa_face,    display: AuraFace 人脸（本地）,      runtime: python, worker: worker_qa, env: qa, gpu: false,
-      args: { tool: face, detector: "{models}/qa/face_detection_yunet_2023mar.onnx", recognizer: "{models}/qa/auraface/glintr100.onnx", threads: 4, score: 0.8 },
+      args: { tool: face, detector: "{models}/qa/face_detection_yunet_2023mar.onnx", recognizer: "{models}/qa/auraface/glintr100.onnx", threads: 4, score: 0.8, min_norm: 16, max_yaw: 0.6, min_frames: 3 },
       needs: [rt_qa, w_qa] }
   - { key: local/syncnet,           kind: qa_sync,    display: SyncNet 口型（本地）,       runtime: python, worker: worker_qa, env: qa, gpu: false,
-      args: { tool: sync, detector: "{models}/qa/face_detection_yunet_2023mar.onnx", weights: "{models}/qa/auxiliary/syncnet_v2.model", threads: 4, score: 0.8, vshift: 15, batch: 20, min_track: 25, min_face: 50 },
+      args: { tool: sync, detector: "{models}/qa/face_detection_yunet_2023mar.onnx", weights: "{models}/qa/auxiliary/syncnet_v2.model", threads: 4, score: 0.8, vshift: 15, batch: 20, near: 2, min_track: 25, min_face: 50 },
       needs: [rt_qa, w_qa] }
   - { key: local/campplus,          kind: qa_speaker, display: CAM++ 说话人（本地）,       runtime: python, worker: worker_qa, env: qa, gpu: false,
       args: { tool: speaker, model: "{models}/qa/3dspeaker_speech_campplus_sv_zh-cn_16k-common.onnx", threads: 2, window_s: 1.5, hop_s: 0.75 },

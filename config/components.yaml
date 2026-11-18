@@ -364,7 +364,9 @@ components:
 
   # 自动质检（M6 第 3 步，pipeline/qa.py）：每条新 take 出完自动排一个质检任务（cpu 队列）。这一行的路由是「画面检查」：
   # M5.5 的 take 检查并进来（6 帧拼图对着镜头契约和连续性账本看，按拼图缓存，约 $0.001 一条），默认沿用 Gemini 3.1 Flash-Lite。
-  # tools：其余各项用的本地工具（CPU，$0；第 5 步装）。thresholds：默认阈值，每部剧可在生成规则里改、可关（5c 本机校准后更新）。
+  # tools：其余各项用的本地工具（CPU，$0；第 5 步装）。thresholds：默认阈值，每部剧可在生成规则里改、可关。
+  # 第 5c 步拿第十九轮的 take 本机校准（reports/m6-qa-calibration.md、DECISIONS）：人脸只拦明显换了人（像她的人分不开）；
+  # 口型是「按原样对得上」的 SyncNet 分（in_sync，±2 帧）；字错率放到 0.2（台词短，错一个字不重跑）；说话人 0.65 拦 H3 自带的女声。
   - id: qa
     stage: generate
     name: { zh: 自动质检, en: Auto QA }
@@ -375,7 +377,7 @@ components:
     per_call_cap_usd: 0.02
     cheap_api: google/gemini-3.1-flash-lite
     tools: { face: local/auraface, lipsync: local/syncnet, asr: local/whisper-large-v3, speaker: local/campplus, ocr: local/rapidocr }
-    thresholds: { face_sim: 0.75, syncnet_conf: 6, cer_max: 0.10, speaker_sim: 0.6 }
+    thresholds: { face_sim: 0.18, syncnet_conf: 1.0, cer_max: 0.2, speaker_sim: 0.65 }
     note: 每条 take 自动质检；画面检查失败只是这一项不查
 
   - id: music

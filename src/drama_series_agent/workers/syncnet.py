@@ -196,6 +196,7 @@ class SyncNet:
         batch: int = 20,
         min_rms: float = 0.01,
         min_voiced: int = 10,
+        near: int = 2,
     ) -> None:
         torch.set_num_threads(threads)
         self.net = S()
@@ -204,6 +205,7 @@ class SyncNet:
         self.net.eval()
         self.vshift, self.batch = vshift, batch
         self.min_rms, self.min_voiced = min_rms, min_voiced
+        self.near = near
 
     @torch.no_grad()
     def score(self, crops: list[Any], samples: Any) -> dict[str, Any] | None:
@@ -256,7 +258,7 @@ class SyncNet:
         conf_all = best(dists)[0]
         out: dict[str, Any] = {"voiced": voiced, "windows": len(im), "conf_all": conf_all}
         if voiced < self.min_voiced:
-            return {**out, "conf": None, "offset": None, "min_dist": None}
+            return {**out, "conf": None, "offset": None, "min_dist": None, "in_sync": None}
         # Only pairs with real sound on both sides: the original's zero padding stands in for the
         # sound past the take's ends, and a line at the very end (the usual place) would be
         # compared with it for half of the offsets.
@@ -270,6 +272,12 @@ class SyncNet:
         mdist = torch.where(counts > 0, mdist, torch.full_like(mdist, float("nan")))
         ok = ~torch.isnan(mdist)
         minval, minidx = torch.min(torch.where(ok, mdist, torch.inf), 0)
-        conf = float(torch.median(mdist[ok]) - minval)
+        middle = torch.median(mdist[ok])
+        conf = float(middle - minval)
         offset, min_dist = int(self.vshift - int(minidx)), float(minval)
-        return {**out, "conf": conf, "offset": offset, "min_dist": min_dist}
+        # The take as it is: how much closer the sound is within ``near`` frames of where it sits
+        # than at a typical offset (``conf`` asks the same of the best offset anywhere).
+        here = mdist[self.vshift - self.near : self.vshift + self.near + 1]
+        here = here[~torch.isnan(here)]
+        in_sync = float(middle - torch.min(here)) if len(here) else None
+        return {**out, "conf": conf, "offset": offset, "min_dist": min_dist, "in_sync": in_sync}

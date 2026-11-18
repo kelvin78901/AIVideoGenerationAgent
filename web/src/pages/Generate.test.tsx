@@ -323,7 +323,7 @@ describe("GeneratePage", () => {
     await user.type(cap, "3{Enter}");
     await waitFor(() => expect(fakeGenerate.rules.shot_cap_usd).toBe(3));
     expect(await screen.findByText("单镜上限 $3，超了会先问你")).toBeInTheDocument();
-    expect(screen.getByText(/人脸一致性 ≥ 0.75.*错字率 ≤ 10%/)).toBeInTheDocument();
+    expect(screen.getByText(/人脸一致性 ≥ 0.18.*错字率 ≤ 20%/)).toBeInTheDocument();
   });
 
   it("lists the run log newest first", async () => {

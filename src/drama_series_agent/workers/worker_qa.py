@@ -4,22 +4,30 @@
 worker), so the onnxruntime that AuraFace uses and the one inside sherpa-onnx never share a process:
 
 - ``face`` (``qa_face``): YuNet finds faces and their 5 points (OpenCV 4.x, ``2023mar``); the
-  face is aligned to the ArcFace template and AuraFace's ``glintr100.onnx`` embeds it. In each
-  sampled frame every face goes to the character reference it is closest to (cosine), so in a
-  two-hander each person is scored against their own picture; a reference's ``sim`` is the mean
-  over the frames where it got a face, so a face that drifts mid-shot pulls it down. Faces
-  smaller than ``min_face`` px (extras far back) are not looked at. A reference with no face in
-  its picture, or that got no face in the take, → None (``qa.py`` counts that as 不适用).
+  face is aligned to the ArcFace template and AuraFace's ``glintr100.onnx`` embeds it. Only
+  faces it can judge count (``usable``): the embedding's length before it is normalised is low
+  for a face turned or bowed away (under ``min_norm``), and a profile has its nose off the line
+  between the eyes and the mouth (more than ``max_yaw`` eye-widths); those score near 0 against
+  the right person, so they say nothing (M6 step 5c). In each sampled frame every usable face goes
+  to the character reference it is closest to (cosine), so in a two-hander each person is scored
+  against their own picture; a reference's ``sim`` is the median over the frames where it got a
+  face, once there are ``min_frames`` of them. Faces smaller than ``min_face`` px (extras far
+  back) are not looked at. A reference with no face in its picture, or too few usable faces in
+  the take, → None (``qa.py`` counts that as 不适用).
 - ``speaker`` (``qa_speaker``): CAM++ (sherpa-onnx) embeds each voice's reference and windows of
   the take's sound (``window_s`` / ``hop_s``; several people may speak in one shot), each voice
   keeps its best window. Silent windows are skipped; no voiced window → None.
-- ``asr``: faster-whisper large-v3, int8 on the CPU, straight from the mp4 (PyAV).
+- ``asr``: faster-whisper large-v3, int8 on the CPU, straight from the mp4 (PyAV). ``prompt``
+  (the series' names) is Whisper's ``initial_prompt``; a segment Whisper itself thinks is not
+  speech (``no_speech_prob`` over ``max_no_speech``: its 「谢谢大家」 over rain) is dropped.
 - ``sync`` (``qa_sync``): SyncNet (``syncnet.py``, CPU torch) as syncnet_python runs it, with
   YuNet for S3FD: the take on a 25 fps grid, faces tracked across frames, each track cropped
   (224×224) and scored against the same stretch of sound; the most confident track counts.
   ``conf`` = median − min of the mean distances over ±``vshift`` audio offsets, the mean taken
   over the windows with sound only (syncnet_python takes every window: ``syncnet.py`` says why);
-  ``offset`` is syncnet_python's (frames at 25 fps; 0 = in sync).
+  ``offset`` is syncnet_python's (frames at 25 fps; 0 = in sync). The speaking track is the most
+  confident one; its ``in_sync`` (median − min within ``near`` frames of no offset) is what QA
+  judges: a take whose sound is 0.4 s early still has a confident best offset (M6 step 5c).
 
 Requests and answers are the ones ``pipeline/qa.py:Measure`` sends and reads. Everything in this
 file above "engines" is the standard library, so the unit tests drive it with fake engines; the
@@ -36,6 +44,7 @@ from typing import Any, Protocol
 from worker_protocol import WorkerError, serve
 
 FACE_EVERY_S = 1.0
+MIN_FACE_FRAMES = 3  # usable faces a reference needs before it is scored
 MAX_FACES = 6  # per frame / reference picture, the largest first
 
 
@@ -44,6 +53,7 @@ class FaceEngine(Protocol):
     def frames(self, path: str, every_s: float) -> Iterator[tuple[float, Any]]: ...
     def faces(self, picture: Any) -> list[Any]: ...  # the largest first
     def embed(self, picture: Any, face: Any) -> Any: ...
+    def usable(self, face: Any, embedding: Any) -> bool: ...
     def sim(self, a: Any, b: Any) -> float: ...
 
 
@@ -57,7 +67,9 @@ class SpeakerEngine(Protocol):
 
 
 class AsrEngine(Protocol):
-    def transcribe(self, path: str, lang: str | None) -> tuple[str, list[dict[str, Any]]]: ...
+    def transcribe(
+        self, path: str, lang: str | None, prompt: str | None
+    ) -> tuple[str, list[dict[str, Any]]]: ...
 
 
 def _path(msg: dict[str, Any]) -> str:
@@ -85,10 +97,19 @@ def face(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
         except OSError as exc:
             raise WorkerError("qa_bad_ref", f"{r.get('name')}: {exc}") from exc
         looks.append([eng.embed(picture, f) for f in eng.faces(picture)[:MAX_FACES]])
+    least = int(state.get("min_frames", MIN_FACE_FRAMES))
     seen: list[list[Any]] = []
+    skipped = 0  # faces turned away
     try:
         for _t, frame in eng.frames(video, every):
-            seen.append([eng.embed(frame, f) for f in eng.faces(frame)[:MAX_FACES]])
+            shown = []
+            for f in eng.faces(frame)[:MAX_FACES]:
+                e = eng.embed(frame, f)
+                if eng.usable(f, e):
+                    shown.append(e)
+                else:
+                    skipped += 1
+            seen.append(shown)
     except OSError as exc:
         raise WorkerError("qa_bad_video", str(exc)) from exc
     got: list[list[float]] = [[] for _ in refs]  # per reference, its best face in each frame
@@ -105,14 +126,22 @@ def face(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
         {
             "asset_id": r.get("asset_id"),
             "name": r.get("name"),
-            "sim": round(sum(sims) / len(sims), 4) if sims else None,
+            "sim": round(_median(sims), 4) if len(sims) >= least else None,
             "low": round(min(sims), 4) if sims else None,
             "frames": len(sims),
         }
         for r, sims in zip(refs, got, strict=True)
     ]
     with_face = sum(1 for shown in seen if shown)
-    return {"json": {"faces": faces, "frames": len(seen), "with_face": with_face}}
+    return {
+        "json": {"faces": faces, "frames": len(seen), "with_face": with_face, "turned": skipped}
+    }
+
+
+def _median(values: list[float]) -> float:
+    ordered = sorted(values)
+    mid = len(ordered) // 2
+    return ordered[mid] if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
 
 
 # --------------------------------------------------------------------------- speaker
@@ -165,9 +194,10 @@ def speaker(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
 
 def asr(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
     eng: AsrEngine = state["engine"]
-    lang = (msg.get("params") or {}).get("lang") or state.get("lang")
+    params = msg.get("params") or {}
+    lang = params.get("lang") or state.get("lang")
     try:
-        text, segments = eng.transcribe(_path(msg), lang)
+        text, segments = eng.transcribe(_path(msg), lang, params.get("prompt") or None)
     except OSError as exc:
         raise WorkerError("qa_bad_video", str(exc)) from exc
     return {"text": text, "json": {"text": text, "segments": segments}}
@@ -296,6 +326,7 @@ def sync(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
                 "start": round(first / SYNC_FPS, 2),
                 "end": round((last + 1) / SYNC_FPS, 2),
                 "conf": _r3(got.get("conf")),
+                "in_sync": _r3(got.get("in_sync")),
                 "offset": got.get("offset"),
                 "min_dist": _r3(got.get("min_dist")),
                 "voiced": got.get("voiced"),  # windows with sound, of
@@ -308,6 +339,7 @@ def sync(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
     return {
         "json": {
             "conf": best.get("conf"),
+            "in_sync": best.get("in_sync"),
             "offset": best.get("offset"),
             "min_dist": best.get("min_dist"),
             "tracks": scored,
@@ -353,7 +385,8 @@ class _YuNet:
 
 class _Face:
     """YuNet + AuraFace. ``args``: detector, recognizer, threads, score, min_face, input_mean,
-    input_std."""
+    input_std, min_norm, max_yaw. ``embed`` keeps the length (``usable`` reads it); ``sim`` is
+    the cosine."""
 
     def __init__(self, args: dict[str, Any]) -> None:
         import cv2
@@ -372,6 +405,8 @@ class _Face:
         self.std = float(args.get("input_std", 127.5))
         self.template = np.array(ARCFACE, np.float64)
         self.min_face = float(args.get("min_face", 40))
+        self.min_norm = float(args.get("min_norm", 16.0))
+        self.max_yaw = float(args.get("max_yaw", 0.6))
 
     def image(self, path: str) -> Any:
         data = self.np.fromfile(path, self.np.uint8)  # imread cannot open non-ASCII paths
@@ -398,11 +433,23 @@ class _Face:
         blob = self.cv2.dnn.blobFromImage(
             crop, 1.0 / self.std, (112, 112), (self.mean,) * 3, swapRB=True
         )
-        e = np.asarray(self.rec.run(None, {self.input: blob})[0][0], np.float32)
-        return e / (np.linalg.norm(e) or 1.0)
+        return np.asarray(self.rec.run(None, {self.input: blob})[0][0], np.float32)
+
+    def usable(self, face: Any, embedding: Any) -> bool:
+        np = self.np
+        if float(np.linalg.norm(embedding)) < self.min_norm:
+            return False
+        right, left, nose, mouth_r, mouth_l = face
+        eyes = (right + left) / 2
+        down = (mouth_r + mouth_l) / 2 - eyes
+        down = down / (np.linalg.norm(down) or 1.0)
+        across = np.array([down[1], -down[0]])
+        yaw = float(np.dot(nose - eyes, across)) / (float(np.linalg.norm(left - right)) or 1.0)
+        return abs(yaw) <= self.max_yaw
 
     def sim(self, a: Any, b: Any) -> float:
-        return float(self.np.dot(a, b))
+        np = self.np
+        return float(np.dot(a, b) / ((np.linalg.norm(a) * np.linalg.norm(b)) or 1.0))
 
 
 def umeyama(np: Any, src: Any, dst: Any) -> Any:
@@ -462,7 +509,8 @@ class _Speaker:
 
 
 class _Asr:
-    """faster-whisper. ``args``: model_dir, compute_type, beam_size, vad, threads, lang."""
+    """faster-whisper. ``args``: model_dir, compute_type, beam_size, vad, threads, lang,
+    max_no_speech."""
 
     def __init__(self, args: dict[str, Any]) -> None:
         from faster_whisper import WhisperModel
@@ -476,25 +524,35 @@ class _Asr:
         )
         self.beam = int(args.get("beam_size", 5))
         self.vad = bool(args.get("vad", True))
+        self.max_no_speech = float(args.get("max_no_speech", 0.5))
 
-    def transcribe(self, path: str, lang: str | None) -> tuple[str, list[dict[str, Any]]]:
+    def transcribe(
+        self, path: str, lang: str | None, prompt: str | None
+    ) -> tuple[str, list[dict[str, Any]]]:
         segments, _info = self.model.transcribe(
             path,
             language=lang or None,
             beam_size=self.beam,
             vad_filter=self.vad,
             condition_on_previous_text=False,
+            initial_prompt=prompt,
         )
         out = [
-            {"start": round(s.start, 2), "end": round(s.end, 2), "text": s.text.strip()}
+            {
+                "start": round(s.start, 2),
+                "end": round(s.end, 2),
+                "text": s.text.strip(),
+                "no_speech": round(s.no_speech_prob, 3),
+            }
             for s in segments  # a generator: decoding happens here
+            if s.no_speech_prob <= self.max_no_speech
         ]
         return "".join(s["text"] for s in out), out
 
 
 class _Sync:
     """YuNet + SyncNet (``syncnet.py``, CPU torch). ``args``: detector, weights, threads, score,
-    vshift, batch, min_rms, min_voiced."""
+    vshift, batch, min_rms, min_voiced, near."""
 
     sample_rate = 16000
     CROP_SCALE = 0.4  # run_pipeline --crop_scale
@@ -512,6 +570,7 @@ class _Sync:
             batch=int(args.get("batch", 20)),
             min_rms=float(args.get("min_rms", 0.01)),
             min_voiced=int(args.get("min_voiced", 10)),
+            near=int(args.get("near", 2)),
         )
 
     def grid(self, path: str) -> Iterator[tuple[int, Any]]:
@@ -590,6 +649,7 @@ def init(args: dict[str, Any]) -> dict[str, Any]:
         "lang": args.get("lang"),
         "min_track": args.get("min_track", 25),
         "min_face": args.get("min_face", 50),
+        "min_frames": args.get("min_frames", MIN_FACE_FRAMES),
     }
 
 

@@ -137,10 +137,10 @@ def default_rules() -> GenerateRules:
         qa_retry_max=cfg.fallback_defaults.qa_fail_n,
         shot_cap_usd=cfg.shot_cap_usd,
         thresholds=QaThresholds(
-            face_sim=float(raw.get("face_sim", 0.75)),
-            syncnet_conf=float(raw.get("syncnet_conf", 6)),
-            cer_max=float(raw.get("cer_max", 0.1)),
-            speaker_sim=float(raw.get("speaker_sim", 0.6)),
+            face_sim=float(raw.get("face_sim", 0.18)),
+            syncnet_conf=float(raw.get("syncnet_conf", 1.0)),
+            cer_max=float(raw.get("cer_max", 0.2)),
+            speaker_sim=float(raw.get("speaker_sim", 0.65)),
         ),
     )
 

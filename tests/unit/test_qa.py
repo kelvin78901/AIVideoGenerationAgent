@@ -15,7 +15,7 @@ def _rules(**on: bool) -> GenerateRules:
         takes_per_shot=2,
         qa_retry_max=2,
         shot_cap_usd=2,
-        thresholds=QaThresholds(face_sim=0.75, syncnet_conf=6, cer_max=0.1, speaker_sim=0.6),
+        thresholds=QaThresholds(face_sim=0.18, syncnet_conf=1.0, cer_max=0.2, speaker_sim=0.65),
         qa_on=QaSwitches(**on),
     )
 
@@ -45,21 +45,21 @@ def test_character_error_rate_ignores_punctuation_width_and_spaces() -> None:
 
 def test_each_metric_is_held_to_its_threshold() -> None:
     checks, score, passed = judge(
-        _raw(face=0.8, lipsync=7.5, asr=0.05, speaker=0.7, ocr=True, vlm=True), _rules()
+        _raw(face=0.8, lipsync=3.0, asr=0.05, speaker=0.7, ocr=True, vlm=True), _rules()
     )
     assert passed is True and all(c["ok"] for c in checks)
     assert {c["metric"]: c["threshold"] for c in checks} == {
-        "face": 0.75,
-        "lipsync": 6,
-        "asr": 0.1,
-        "speaker": 0.6,
+        "face": 0.18,
+        "lipsync": 1.0,
+        "asr": 0.2,
+        "speaker": 0.65,
         "ocr": None,
         "vlm": None,
     }
-    # face 0.8, lipsync 0.75, asr 0.95, speaker 0.7, ocr 1, vlm 1
+    # face 0.8, lipsync 3 / 4, asr 0.95, speaker 0.7, ocr 1, vlm 1
     assert score == pytest.approx((0.8 + 0.75 + 0.95 + 0.7 + 1 + 1) / 6, abs=1e-3)
 
-    checks, _, passed = judge(_raw(face=0.41, asr=0.3, ocr=False), _rules())
+    checks, _, passed = judge(_raw(face=0.1, asr=0.3, ocr=False), _rules())
     assert passed is False
     by = {c["metric"]: c for c in checks}
     assert (by["face"]["ok"], by["face"]["issue"]) == (False, "face_mismatch")
@@ -78,7 +78,7 @@ def test_a_check_that_does_not_apply_or_could_not_run_counts_for_nothing() -> No
 
 
 def test_a_check_turned_off_is_shown_but_fails_nothing() -> None:
-    checks, score, passed = judge(_raw(face=0.41, vlm=True), _rules(face=False))
+    checks, score, passed = judge(_raw(face=0.1, vlm=True), _rules(face=False))
     face = checks[0]
     assert (face["ok"], face["off"]) == (False, True)
     assert (score, passed) == (1.0, True)
@@ -87,7 +87,7 @@ def test_a_check_turned_off_is_shown_but_fails_nothing() -> None:
 def test_the_result_keeps_the_rules_and_what_model_call_keeps() -> None:
     qa, passed = result(_raw(face=0.8, ocr=False), _rules(), ran_at="t")
     assert passed is False
-    assert qa["thresholds"]["face_sim"] == 0.75 and qa["qa_on"]["ocr"] is True
+    assert qa["thresholds"]["face_sim"] == 0.18 and qa["qa_on"]["ocr"] is True
     assert qa["ran_at"] == "t"
     assert scores(qa) == {
         "checks": {

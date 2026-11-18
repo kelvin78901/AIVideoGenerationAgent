@@ -9,14 +9,21 @@ never holds up the video queue; 「重新质检」 (``POST /versions/{id}/qa``) 
 
 - ``face``: each character the shot films against their locked reference picture (the tool's
   per-character median similarity); the take's value is the lowest. No character: n/a.
-- ``lipsync``: SyncNet confidence of the take's own sound against its picture; only a shot with
-  a line said on screen and sound in the take.
+- ``lipsync``: SyncNet confidence that the take's own sound fits its picture as it is (within
+  2 frames; ``in_sync``, M6 step 5c); only a shot with a line said on screen and sound in the
+  take.
 - ``asr``: the take's speech read back and compared with the lines said on screen (character
-  error rate, NFKC, punctuation and spaces out); only a 原生同步 take speaks them itself.
+  error rate, NFKC, punctuation and spaces out); only a 原生同步 take speaks them itself. The
+  series' character names go to the recogniser as a hint (Whisper writes 周屿 as 周瑜 without
+  it). A 原生同步 shot with no line said on screen is read too: speech heard there (an inner
+  line the take says aloud) fails it, nothing heard is n/a (M6 step 5c).
 - ``speaker``: each line's voice against the speaker's locked voice (the lowest similarity);
   原生同步 takes with locked voices only.
-- ``ocr``: the on-screen text the model draws (``method: model``) read once a second; every
-  frame that reads anything must read one of the texts, and each text must be read somewhere.
+- ``ocr``: the on-screen text the model draws (``method: model``) read once a second. Only
+  frames that read something like one of the texts are compared (two of its characters at
+  least: a shop sign or OCR noise is not the text), punctuation left out (OCR drops a comma in
+  one frame of five); each must read one of the texts whole. Nothing read: n/a, the text too
+  small in a medium shot (M6 step 5c).
 - ``vlm``: the take check (M5.5 ``pipeline/takecheck.py``, its route merged into this one): the
   take's six-frame sheet looked at against its contract and the 连续性账本, with the take's own
   measures (a cut inside it, a still opening). Cached by sheet and question, so the look the run
@@ -24,7 +31,7 @@ never holds up the video queue; 「重新质检」 (``POST /versions/{id}/qa``) 
 
 Every tool is a ``router.call()`` on the route ``qa`` with the tool's model (``tools`` in
 ``components.yaml``; local, on the CPU, $0, each logged in ``model_call``). Mock answers each
-with stable passing values; a take's ``params.mock_qa`` (``{"face": 0.41, "ocr": "23:58"}``) says
+with stable passing values; a take's ``params.mock_qa`` (``{"face": 0.1, "ocr": "23:58"}``) says
 what Mock should measure instead — only Mock reads it (the demo's bad takes, tests).
 
 **Measured, then judged.** The checks keep what was measured; ``judge`` holds it to the series'
@@ -50,7 +57,15 @@ from sqlmodel import col, select
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.events import EventBus, EventType
 from drama_series_agent.core.jobs import JobContext, JobError, JobQueue
-from drama_series_agent.core.models_db import Job, ModelCall, Product, ProductVersion, Shot, utcnow
+from drama_series_agent.core.models_db import (
+    Asset,
+    Job,
+    ModelCall,
+    Product,
+    ProductVersion,
+    Shot,
+    utcnow,
+)
 from drama_series_agent.media.video import VideoError, contact_sheet
 from drama_series_agent.modelhub.adapters.base import CallContext, ModelError, ModelRequest
 from drama_series_agent.pipeline import takecheck
@@ -61,7 +76,7 @@ from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.generate import GenerateRules, load_rules
 from drama_series_agent.pipeline.products import ProductService
 from drama_series_agent.pipeline.runs import item_of
-from drama_series_agent.qa.ocr import contains, normalize
+from drama_series_agent.qa.ocr import normalize
 
 if TYPE_CHECKING:
     from drama_series_agent.pipeline.component import ComponentRegistry
@@ -93,6 +108,11 @@ def _plain(text: str) -> str:
     return "".join(
         ch for ch in normalize(text) if not unicodedata.category(ch).startswith(("P", "S"))
     )
+
+
+def _like(read: str, want: str) -> bool:
+    """``read`` is trying to be ``want``: two of its characters at least (all, if fewer)."""
+    return len(set(read) & set(want)) >= min(2, len(set(want)))
 
 
 def _distance(a: str, b: str) -> int:
@@ -136,7 +156,7 @@ def _scaled(check: dict[str, Any]) -> float:
     if metric == "ocr" or value is None:
         return float(check["ok"])
     v = float(value)
-    raw = {"lipsync": v / 10, "asr": 1 - v}.get(metric, v)
+    raw = {"lipsync": v / 4, "asr": 1 - v}.get(metric, v)  # in_sync: 1–3 in sync (5c)
     return min(1.0, max(0.0, raw))
 
 
@@ -313,23 +333,39 @@ class Measure:
         if error:
             return _check("lipsync", model=model, error=error)
         data = routed.json or {}
-        conf = data.get("conf")
-        detail = {"offset": data.get("offset")}
-        if conf is None:
+        here = data.get("in_sync")
+        detail = {"offset": data.get("offset"), "conf": data.get("conf")}
+        if here is None:
             return _check("lipsync", model=model, na=True, detail=detail)
-        return _check("lipsync", value=round(float(conf), 3), model=model, detail=detail)
+        return _check("lipsync", value=round(float(here), 3), model=model, detail=detail)
 
     async def asr(self) -> dict[str, Any]:
-        if not self._native():
+        if self.context.get("audio_mode") != "native":  # dubbed or silent: nobody speaks in it
             return _check("asr", na=True)
-        expected = "".join(str(d["text"]) for d in self.context["dialogue"])
-        routed, model, error = await self._tool("asr", {"lang": "zh"}, expect=expected)
+        expected = "".join(str(d["text"]) for d in self.context.get("dialogue") or [])
+        params: dict[str, Any] = {"lang": "zh"}
+        names = await self._names()
+        if names:
+            params["prompt"] = f"人物：{'、'.join(names)}。"
+        routed, model, error = await self._tool("asr", params, expect=expected)
         if error:
             return _check("asr", model=model, error=error)
         said = str(routed.text or "")
+        if not expected and not _plain(said):  # no line, nothing heard
+            return _check("asr", model=model, na=True, detail={"expected": ""})
         return _check(
             "asr", value=cer(said, expected), text=said, model=model, detail={"expected": expected}
         )
+
+    async def _names(self) -> list[str]:
+        """The series' characters, for the recogniser's hint."""
+        async with self.services.db.session() as session:
+            rows = await session.exec(
+                select(Asset.name).where(
+                    Asset.series_id == self.product.series_id, Asset.kind == "character"
+                )
+            )
+            return sorted({str(n) for n in rows if n})
 
     async def speaker(self) -> dict[str, Any]:
         voices = [
@@ -362,18 +398,14 @@ class Measure:
             {"t": f.get("t"), "text": str(f.get("text") or "")}
             for f in (routed.json or {}).get("frames") or []
         ]
-        read = [f for f in frames if normalize(f["text"])]
-        wrong = [f for f in read if not any(contains(f["text"], e) for e in expected)]
-        unseen = [e for e in expected if not any(contains(f["text"], e) for f in read)]
-        match = not wrong and not unseen
-        text = wrong[0]["text"] if wrong else "" if unseen else None
-        return _check(
-            "ocr",
-            text=text,
-            model=model,
-            match=match,
-            detail={"expected": expected, "frames": frames},
-        )
+        detail = {"expected": expected, "frames": frames}
+        wants = [_plain(e) for e in expected]
+        read = [f for f in frames if any(_like(_plain(f["text"]), w) for w in wants)]
+        if not read:
+            return _check("ocr", model=model, na=True, detail=detail)
+        wrong = [f for f in read if not any(w in _plain(f["text"]) for w in wants)]
+        text = wrong[0]["text"] if wrong else None
+        return _check("ocr", text=text, model=model, match=not wrong, detail=detail)
 
     async def vlm(self) -> dict[str, Any]:
         payload = self.version.payload_json or {}
@@ -431,8 +463,9 @@ def mock_face(req: ModelRequest) -> dict[str, Any]:
 
 
 def mock_lipsync(req: ModelRequest) -> dict[str, Any]:
-    conf = _given(req, "lipsync")
-    return {"conf": float(conf) if conf is not None else _stable(req, 7.0, 9.0), "offset": 0}
+    given = _given(req, "lipsync")
+    here = float(given) if given is not None else _stable(req, 2.0, 3.0)
+    return {"in_sync": here, "conf": here, "offset": 0}
 
 
 def mock_asr(req: ModelRequest) -> str:

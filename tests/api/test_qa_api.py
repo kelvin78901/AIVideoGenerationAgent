@@ -127,17 +127,17 @@ def test_a_new_take_is_measured_and_judged(client: TestClient) -> None:
     assert list(checks) == ["face", "lipsync", "asr", "speaker", "ocr", "vlm"]
     # 1-04: she is in it and says her line on screen, in her own locked voice, the note in view.
     assert checks["face"]["ok"] is True and 0.8 <= checks["face"]["value"] <= 0.92
-    assert checks["lipsync"]["ok"] is True and checks["lipsync"]["value"] >= 6
+    assert checks["lipsync"]["ok"] is True and checks["lipsync"]["value"] >= 1
     assert (checks["asr"]["ok"], checks["asr"]["value"]) == (True, 0.0)
     assert checks["speaker"]["ok"] is True
     assert checks["ocr"]["ok"] is True
     assert checks["vlm"]["ok"] is True and checks["vlm"]["model"] == "google/gemini-3.1-flash-lite"
     assert take["qa_pass"] is True and 0 < qa["score"] <= 1
     assert qa["thresholds"] == {
-        "face_sim": 0.75,
-        "syncnet_conf": 6,
-        "cer_max": 0.1,
-        "speaker_sim": 0.6,
+        "face_sim": 0.18,
+        "syncnet_conf": 1.0,
+        "cer_max": 0.2,
+        "speaker_sim": 0.65,
     }
     # QA is metadata: the content hash is the one the run gave.
     (row,) = _rows(client, ProductVersion, ProductVersion.id == take["id"])
@@ -172,11 +172,27 @@ def test_on_screen_words_are_read_back(client: TestClient) -> None:
     # Nobody in it, nothing said.
     assert all(checks[m]["ok"] is None for m in ("face", "lipsync", "asr", "speaker"))
 
-    _set_mock_qa(client, take["id"], {"ocr": "错的字"})
+    want = str(checks["ocr"]["detail"]["expected"][0])
+    bad = want.replace(want[1], "错", 1)
+    _set_mock_qa(client, take["id"], {"ocr": bad})
     again = _requa(client, take["id"])
     ocr = _checks(again)["ocr"]
-    assert (ocr["ok"], ocr["issue"], ocr["text"]) == (False, "text_mismatch", "错的字")
+    assert (ocr["ok"], ocr["issue"], ocr["text"]) == (False, "text_mismatch", bad)
     assert again["qa_pass"] is False
+    # Read without its punctuation, or nothing like it (a sign, OCR noise): not a wrong text
+    # (M6 step 5c: a comma missed in one frame, a note too small to read in a medium shot).
+    plain = "".join(ch for ch in want if ch.isalnum())
+    _set_mock_qa(client, take["id"], {"ocr": plain})
+    assert _checks(_requa(client, take["id"]))["ocr"]["ok"] is True
+    _set_mock_qa(client, take["id"], {"ocr": "8JOTAL"})
+    assert _checks(_requa(client, take["id"]))["ocr"]["na"] is True
+
+    # Nothing is said in it, so a voice heard in the take fails it (M6 step 5c: 1-06 said an
+    # inner line aloud in round 19).
+    _set_mock_qa(client, take["id"], {"asr": "三年了，他凭什么？"})
+    asr = _checks(_requa(client, take["id"]))["asr"]
+    assert (asr["ok"], asr["value"], asr["text"]) == (False, 1.0, "三年了，他凭什么？")
+    assert asr["detail"] == {"expected": ""}
 
 
 def test_a_bad_face_fails_and_the_series_thresholds_judge_it_again(client: TestClient) -> None:
@@ -184,7 +200,7 @@ def test_a_bad_face_fails_and_the_series_thresholds_judge_it_again(client: TestC
     take = _take(client, "1-04")
     # Adopted, so its failing does not start a rerun (step 4) while the calls are counted.
     client.post(f"{V1}/versions/{take['id']}/adopt").raise_for_status()
-    _set_mock_qa(client, take["id"], {"face": 0.41})
+    _set_mock_qa(client, take["id"], {"face": 0.1})
     bad = _requa(client, take["id"])
     assert (_checks(bad)["face"]["ok"], bad["qa_pass"]) == (False, False)
     clip = _rows(client, ModelCall, ModelCall.id == take["params"]["call_id"])[0]
@@ -193,20 +209,20 @@ def test_a_bad_face_fails_and_the_series_thresholds_judge_it_again(client: TestC
 
     series = "demo"
     resp = client.put(
-        f"{V1}/series/{series}/generate-rules", json={"thresholds": {"face_sim": 0.4}}
+        f"{V1}/series/{series}/generate-rules", json={"thresholds": {"face_sim": 0.08}}
     )
     assert resp.status_code == 200, resp.text
-    assert resp.json()["thresholds"]["face_sim"] == 0.4
-    assert resp.json()["thresholds"]["syncnet_conf"] == 6  # one item at a time
+    assert resp.json()["thresholds"]["face_sim"] == 0.08
+    assert resp.json()["thresholds"]["syncnet_conf"] == 1.0  # one item at a time
     pid = _shots(client)["1-04"]["video_product_id"]
     now = client.get(f"{V1}/products/{pid}").json()["versions"][-1]
-    assert (now["qa_pass"], _checks(now)["face"]["threshold"]) == (True, 0.4)
+    assert (now["qa_pass"], _checks(now)["face"]["threshold"]) == (True, 0.08)
     assert len(_rows(client, ModelCall)) == calls  # judged again, not measured again
 
-    # Back to 0.75, the face check turned off: shown, failing nothing.
+    # Back to 0.18, the face check turned off: shown, failing nothing.
     client.put(f"{V1}/series/{series}/generate-rules", json={"reset_qa": True}).raise_for_status()
     resp = client.put(f"{V1}/series/{series}/generate-rules", json={"qa_on": {"face": False}})
-    assert resp.json()["qa_on"]["face"] is False and resp.json()["thresholds"]["face_sim"] == 0.75
+    assert resp.json()["qa_on"]["face"] is False and resp.json()["thresholds"]["face_sim"] == 0.18
     now = client.get(f"{V1}/products/{pid}").json()["versions"][-1]
     face = _checks(now)["face"]
     assert (face["ok"], face["off"], now["qa_pass"]) == (False, True, True)
@@ -239,7 +255,7 @@ def _failing_faces(client: TestClient) -> None:
 
     def face(req: ModelRequest) -> dict[str, Any]:
         refs = req.params.get("refs") or []
-        return {"faces": [{"asset_id": r["asset_id"], "name": r["name"], "sim": 0.3} for r in refs]}
+        return {"faces": [{"asset_id": r["asset_id"], "name": r["name"], "sim": 0.1} for r in refs]}
 
     _state(client).registry.add_mock_responder("qa", "face", face)
 
@@ -328,7 +344,7 @@ def test_an_adopted_shot_is_left_alone(client: TestClient) -> None:
     _confirm_storyboard(client)
     take = _take(client, "1-04")
     client.post(f"{V1}/versions/{take['id']}/adopt").raise_for_status()
-    _set_mock_qa(client, take["id"], {"face": 0.41})
+    _set_mock_qa(client, take["id"], {"face": 0.1})
     _requa(client, take["id"])
     _settled(client)
     pid = _shots(client)["1-04"]["video_product_id"]
