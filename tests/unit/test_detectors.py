@@ -88,7 +88,10 @@ PC: dict[str, Row] = {
         "missing", "not_found", "install_named", x_name="RapidOCR runtime (on-screen text checks)"
     ),
     "rt_qa": _r(
-        "missing", "not_found", "install_named", x_name="QA tools runtime (faces · lips · lines · voices)"
+        "missing",
+        "not_found",
+        "install_named",
+        x_name="QA tools runtime (faces · lips · lines · voices)",
     ),
     "comfy": _r("old", "outdated", "update_latest"),
     "comfy_manager": _r("ok", "version", f_version="4.2.2"),
@@ -132,7 +135,10 @@ MAC: dict[str, Row] = {
         "missing", "not_found", "install_named", x_name="RapidOCR runtime (on-screen text checks)"
     ),
     "rt_qa": _r(
-        "missing", "not_found", "install_named", x_name="QA tools runtime (faces · lips · lines · voices)"
+        "missing",
+        "not_found",
+        "install_named",
+        x_name="QA tools runtime (faces · lips · lines · voices)",
     ),
     "comfy": _r("optional", "not_found", "comfy_images_only"),
     "comfy_manager": _r("optional", "not_found", "install_nodes"),
