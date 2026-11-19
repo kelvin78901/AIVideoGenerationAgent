@@ -131,13 +131,40 @@ export const QaCheckSchema = z.object({
   issue: QaIssueSchema.nullable(),
   /** null = does not apply to this shot (no dialogue, no on-screen text …). */
   ok: z.boolean().nullable(),
+  /** Turned off in the series' rules: shown, not counted (M6). */
+  off: z.boolean().optional(),
+  /** The limit it was held to (asr: at most; the others: at least); null for ocr / vlm. */
+  threshold: z.number().nullable().optional(),
+  /** vlm: the contract check's lines (M5.5 take 检查), with the 连续性账本's (M6). */
+  items: z
+    .array(
+      z.object({
+        check: z.string(),
+        ok: z.boolean(),
+        note: z.string(),
+        frame: z.number().nullable().optional(),
+      }),
+    )
+    .optional(),
 });
 export type QaCheck = z.infer<typeof QaCheckSchema>;
+
+/** What QA's policy did after this take's batch failed (`pipeline/qa_policy.py`). */
+export const QaActionSchema = z.enum(["none", "wait", "lip", "rerun", "fallback", "stop"]);
+export type QaAction = z.infer<typeof QaActionSchema>;
 
 export const QaResultSchema = z.object({
   checks: z.array(QaCheckSchema),
   /** Total used to recommend a take: the highest passing score (SPEC 4.2). */
   score: z.number(),
+  policy: z
+    .object({
+      action: QaActionSchema,
+      job_id: z.string().nullable(),
+      /** The fallback's model. */
+      model: z.string().nullable(),
+    })
+    .optional(),
 });
 export type QaResult = z.infer<typeof QaResultSchema>;
 
@@ -191,6 +218,20 @@ export const ProductPromptSchema = z.object({
 });
 export type ProductPrompt = z.infer<typeof ProductPromptSchema>;
 
+const FinishingRouteSchema = z.object({
+  model_key: z.string(),
+  where: WhereSchema,
+  cost_usd: z.number(),
+  seconds: z.number().nullable(),
+  priced: z.boolean().optional(),
+});
+
+export const FinishingSchema = FinishingRouteSchema.extend({
+  alt: FinishingRouteSchema.nullable().optional(),
+});
+export type FinishingRoute = z.infer<typeof FinishingRouteSchema>;
+export type Finishing = z.infer<typeof FinishingSchema>;
+
 /** `estimate()` for the next rerun on the current route (hard rule 6: price before spending). */
 export const RunEstimateSchema = z.object({
   model_key: z.string(),
@@ -201,6 +242,9 @@ export const RunEstimateSchema = z.object({
   priced: z.boolean().optional(),
   /** 「用 API 出终版」 of a take (videos: Regenerate-2K of the shot's length); null elsewhere. */
   final_usd: z.number().nullable().optional(),
+  /** What finishing a take costs and takes on each finishing component's route (M6: `up`,
+   * `lip`, `vinpaint`), with the route's model on the other side as `alt`. */
+  finishing: z.record(z.string(), FinishingSchema).optional(),
 });
 export type RunEstimate = z.infer<typeof RunEstimateSchema>;
 

@@ -18,8 +18,9 @@ export function takeStatus(
   return "not_started";
 }
 
+/** The checks a take failed; one turned off in the rules is shown but not counted. */
 export function qaFails(v: ProductVersion): QaCheck[] {
-  return v.qa?.checks.filter((c) => c.ok === false) ?? [];
+  return v.qa?.checks.filter((c) => c.ok === false && !c.off) ?? [];
 }
 
 /**
@@ -44,17 +45,34 @@ export type TakeNote =
   | "hybrid_final"
   | "fallback_error"
   | "fallback_timeout"
-  | "fallback_qa_fail";
+  | "fallback_qa_fail"
+  | "upscale"
+  | "lipsync"
+  | "inpaint"
+  | "auto_lip";
 
-export function takeNote(product: Product, v: ProductVersion): TakeNote | null {
-  if (v.origin === "switch") return "switch";
-  if (v.origin === "fallback") return `fallback_${v.fallback_reason ?? "error"}`;
-  if (v.origin === "auto_qa_rerun") return "auto_rerun";
-  if (v.stage === "final") return "hybrid_final";
+/** A finishing version's kind (M6: 2K 精修, 口型修复, 视频局部修复 of a take). */
+const FINISHES = { upscale: "upscale", lipsync: "lipsync", inpaint: "inpaint" } as const;
+
+/** The note and, for a finishing version, the take it was made from (`n`). */
+export function takeNote(
+  product: Product,
+  v: ProductVersion,
+): { key: TakeNote; n?: number } | null {
+  if (v.origin in FINISHES) {
+    const from = product.versions.find((c) => c.id === v.parent_version_id);
+    const key =
+      v.params.auto === "auto_lip" ? "auto_lip" : FINISHES[v.origin as keyof typeof FINISHES];
+    return { key, n: from?.n };
+  }
+  if (v.origin === "switch") return { key: "switch" };
+  if (v.origin === "fallback") return { key: `fallback_${v.fallback_reason ?? "error"}` };
+  if (v.origin === "auto_qa_rerun") return { key: "auto_rerun" };
+  if (v.stage === "final") return { key: "hybrid_final" };
   const rerun = product.versions.some(
     (c) => c.parent_version_id === v.id && c.origin === "auto_qa_rerun",
   );
-  return v.qa_pass === false && rerun ? "rerun_after_fail" : null;
+  return v.qa_pass === false && rerun ? { key: "rerun_after_fail" } : null;
 }
 
 /** The shot that starts from this shot's last frame and was waiting for it (「下游镜头」). */

@@ -75,8 +75,19 @@
     "redrawn": "检查没过，带着没过的几条自动重出了 {{count}} 次，这条过了。",
     "redrawnStill": "检查没过，自动重出了 {{count}} 次仍没过，留下的是问题最少的一条：只是提示，可以照常采纳。",
     "checkFails": "{{count}} 处提示",
-    "checkLater": "人脸、口型、字错率：M6",
-    "sheet": "检查看的 6 帧"
+    "sheet": "检查看的 6 帧",
+    "requa": "重新质检",
+    "off": "已关",
+    "onlyLips": "只差口型",
+    "lip": "口型修复",
+    "lipApi": "口型修复（API）",
+    "vinpaint": "涂一块区域重画…",
+    "routeLocal": "本地 · 约 {{minutes}} 分钟",
+    "routeLocalPlain": "本地",
+    "routeApi": "{{model}} · 约 {{cost}}",
+    "noDialogue": "这个镜头没人说话，用不上口型修复",
+    "showItems": "展开画面检查的各项",
+    "hideItems": "收起画面检查的各项"
   },
   "qa": {
     "face": "人脸一致性",
@@ -93,7 +104,11 @@
     "hybrid_final": "混合模式出终版",
     "fallback_timeout": "本地超时，自动兜底到 API",
     "fallback_error": "出错，自动兜底",
-    "fallback_qa_fail": "质检连续不过，自动兜底"
+    "fallback_qa_fail": "质检连续不过，自动兜底",
+    "upscale": "2K 精修自 T{{n}}",
+    "lipsync": "口型修复自 T{{n}}",
+    "inpaint": "局部修复自 T{{n}}",
+    "auto_lip": "只差口型，自动口型修复自 T{{n}}"
   },
   "empty": {
     "running": "{{model}} 正在出第 {{n}} 条候选。出来后会自动质检，然后出现在这里。",
@@ -109,10 +124,12 @@
     "unblocked": "{{id}} 现在可以开始生成了。",
     "unadopted": "已取消采纳 {{id}} T{{n}}。",
     "final": "已开始出 {{id}} T{{n}} 的 2K 终版（API）。",
-    "fix": "视频局部修复在 M6 提供（和口型修复一起）。",
     "upLocal": "已把 {{id}} T{{n}} 送去 2K 精修（{{model}}），本地跑，不计费。",
     "upApi": "已把 {{id}} T{{n}} 送去 2K 精修（{{model}}），预计 {{cost}}。",
-    "rated": "{{id}} T{{n}}：{{stars}} 分"
+    "rated": "{{id}} T{{n}}：{{stars}} 分",
+    "lipLocal": "已把 {{id}} T{{n}} 送去口型修复（{{model}}），本地跑，不计费。",
+    "lipApi": "已把 {{id}} T{{n}} 送去口型修复（{{model}}），预计 {{cost}}。",
+    "requa": "已开始重新质检 {{id}} T{{n}}。"
   },
   "rules": {
     "title": "自动规则",
@@ -145,5 +162,12 @@
     "final": "用 API 出终版 → {{model}} 出 T{{take}}{{cost}}",
     "waiting": "等你确认 · {{model}}{{cost}}",
     "failed": "{{model}} 出错（{{error}}）"
+  },
+  "policy": {
+    "lip": "只差口型 → 已自动送去口型修复",
+    "rerun": "质检没过 → 已自动重跑",
+    "fallback": "连续没过 → 已换 {{model}} 兜底",
+    "stop": "兜底也没过，停下来等你看，不再花钱",
+    "wait": "下一次要花钱，等你确认"
   }
 }

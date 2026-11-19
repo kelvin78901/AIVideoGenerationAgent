@@ -5,7 +5,7 @@ import { useTranslation } from "react-i18next";
 import { Link, useSearchParams } from "react-router";
 
 import { useAssets } from "@/api/hooks/assets";
-import { useComponentCatalog, useComponentModels, useResolvedConfig } from "@/api/hooks/config";
+import { useComponentCatalog, useComponentModels } from "@/api/hooks/config";
 import { useGenerateLog, useGenerateRules } from "@/api/hooks/generate";
 import { useProduct, useProducts } from "@/api/hooks/products";
 import { useMetricsSummary, useOutputSpec, useRouteEpisode } from "@/api/hooks/series";
@@ -28,8 +28,7 @@ import { RulesPanel } from "@/pages/generate/RulesPanel";
 import { RunLog } from "@/pages/generate/RunLog";
 import { ShotPills } from "@/pages/generate/ShotPills";
 import { StatusCards } from "@/pages/generate/StatusCards";
-import { TakeWall, type UpscaleRoute } from "@/pages/generate/TakeWall";
-import { primaryModelKey } from "@/lib/config";
+import { TakeWall } from "@/pages/generate/TakeWall";
 import { useInspectorStore } from "@/stores/inspector";
 
 export default function GeneratePage() {
@@ -46,7 +45,6 @@ export default function GeneratePage() {
   const summary = useMetricsSummary("episode", episode?.id);
   const rules = useGenerateRules(seriesId);
   const log = useGenerateLog(episode?.id);
-  const upConfig = useResolvedConfig("up");
   const component = useInspectorStore((s) => s.component) ?? "vid";
   const show = useInspectorStore((s) => s.show);
   const models = useComponentModels(component);
@@ -90,20 +88,6 @@ export default function GeneratePage() {
   const queued = list.filter((s) => statusOf(s) === "queued");
   const textInPost = (s: Shot) =>
     (assets.data ?? []).some((a) => s.asset_ids.includes(a.id) && a.text?.method === "composite");
-
-  const upKey = upConfig.data ? primaryModelKey(upConfig.data.values) : undefined;
-  const upModel = catalog.data?.models.find((m) => m.key === upKey);
-  const upscale: UpscaleRoute | undefined =
-    upModel && shot
-      ? {
-          model: upModel.key,
-          where: upModel.where,
-          costUsd:
-            upModel.price && upModel.price.unit === "second"
-              ? Math.round(upModel.price.amount * shot.duration_s * 100) / 100
-              : 0,
-        }
-      : undefined;
 
   const what = () => {
     if (component === "up") return t("what.up", { count: adoptedCount });
@@ -191,7 +175,6 @@ export default function GeneratePage() {
                 queuePos={queued.findIndex((s) => s.id === shot.id) + 1}
                 textInPost={textInPost(shot)}
                 modelName={modelName}
-                upscale={upscale}
                 episodeId={episode?.id}
               />
               <div className="flex flex-wrap items-start gap-5">

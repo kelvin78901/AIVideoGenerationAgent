@@ -285,10 +285,22 @@ async def upscale_version(version_id: str, body: UpscaleBody, state: State) -> d
     return job_public(job)
 
 
+class LipsyncBody(BaseModel):
+    """口型修复 on the route's local or API model (the 「局部修复 ▾」 menu offers both); the
+    route's own mode when None."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    where: Literal["local", "api"] | None = None
+
+
 @router.post("/versions/{version_id}/lipsync")
-async def lipsync_version(version_id: str, state: State) -> dict[str, Any]:
+async def lipsync_version(
+    version_id: str, state: State, body: LipsyncBody | None = None
+) -> dict[str, Any]:
     """口型修复 of a take → the queued run (component ``lip``, origin ``lipsync``): the mouths
-    redrawn to the shot's dubbed lines, adopted after QA as 2K 精修 is. 404 for no such take;
+    redrawn to the shot's dubbed lines, adopted after QA as 2K 精修 is. ``where`` picks the
+    route's local or API model. 404 for no such take;
     409 ``lipsync_no_dialogue`` when nobody speaks on screen, ``line_audio_missing`` (count)
     for a line not dubbed yet; over a limit it waits for 确认 (hard rule 6)."""
     async with state.db.session() as session:
@@ -297,7 +309,11 @@ async def lipsync_version(version_id: str, state: State) -> dict[str, Any]:
     if take is None or take.slot != VIDEO_SLOT or take.retired:
         raise PipelineError(404, "version_not_found", id=version_id)
     job = await state.runs.start(
-        take.id, "run", component_id="lip", params={"lip_version_id": version_id}
+        take.id,
+        "run",
+        component_id="lip",
+        where=body.where if body else None,
+        params={"lip_version_id": version_id},
     )
     return job_public(job)
 

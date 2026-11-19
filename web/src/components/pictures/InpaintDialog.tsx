@@ -28,24 +28,54 @@ const UNDO_STEPS = 20;
 /** The stroke colour on screen (shown at half opacity). */
 const PAINT = "rgb(230, 40, 40)";
 
-/** 局部修复 (草图 S7): paint where the picture changes, say what goes there; one new candidate. */
+/** 视频局部修复 of a take (M6 草图 G2): painted on its frames, one mask for the whole take, only
+ * locally (Wan VACE). */
+export interface TakeInpaint {
+  /** The take's clip, to look at another frame; the poster (`target.src`) when null. */
+  video: string | null;
+  /** The route's model name. */
+  model: string;
+  /** About how long one take takes; null when unknown. */
+  minutes: number | null;
+}
+
+/** 局部修复 (草图 S7): paint where the picture changes, say what goes there; one new candidate.
+ * With `take`, a video take's region (草图 G2): the prompt is optional, the model fixed. */
 export function InpaintDialog({
   target,
+  take,
   onClose,
 }: {
   target: PictureTarget | null;
+  take?: TakeInpaint;
   onClose: () => void;
 }) {
   return target ? (
-    <InpaintForm key={target.versionId + target.idx} target={target} onClose={onClose} />
+    <InpaintForm
+      key={target.versionId + target.idx}
+      target={target}
+      take={take}
+      onClose={onClose}
+    />
   ) : null;
 }
 
-function InpaintForm({ target, onClose }: { target: PictureTarget; onClose: () => void }) {
+function InpaintForm({
+  target,
+  take,
+  onClose,
+}: {
+  target: PictureTarget;
+  take: TakeInpaint | undefined;
+  onClose: () => void;
+}) {
   const { t } = useTranslation("components");
   const { t: tc } = useTranslation();
   const inpaint = useInpaint();
   const { choices, initial } = useWhereChoices("inpaint");
+  const [at, setAt] = useState(0);
+  const [length, setLength] = useState(0);
+  const clip = useRef<HTMLVideoElement | null>(null);
   const [prompt, setPrompt] = useState("");
   const [where, setWhere] = useState<Where | null>(null);
   const [tool, setTool] = useState<"brush" | "eraser">("brush");
@@ -128,11 +158,15 @@ function InpaintForm({ target, onClose }: { target: PictureTarget; onClose: () =
         idx: target.idx,
         prompt,
         mask,
-        where: choices.length ? picked : undefined,
+        where: !take && choices.length ? picked : undefined,
       },
       {
         onSuccess: () => {
-          toast.info(t("pictures.inpaint.started", { name: target.name }));
+          toast.info(
+            take
+              ? t("pictures.inpaint.take.started", { name: target.name })
+              : t("pictures.inpaint.started", { name: target.name }),
+          );
           onClose();
         },
         onError: (err) => toast.error(errorMessage(tc, err)),
@@ -144,35 +178,79 @@ function InpaintForm({ target, onClose }: { target: PictureTarget; onClose: () =
     <Dialog open onOpenChange={(open) => (open ? undefined : onClose())}>
       <DialogContent className="max-w-3xl gap-3.5" closeLabel={t("pictures.cancel")}>
         <DialogTitle className="text-base font-bold">
-          {t("pictures.inpaint.title", { name: target.name })}
+          {take
+            ? t("pictures.inpaint.take.title", { name: target.name })
+            : t("pictures.inpaint.title", { name: target.name })}
         </DialogTitle>
-        <DialogDescription className="sr-only">{t("pictures.inpaint.keep")}</DialogDescription>
+        <DialogDescription className="sr-only">
+          {take ? t("pictures.inpaint.take.keep") : t("pictures.inpaint.keep")}
+        </DialogDescription>
         <div className="flex flex-col gap-4 sm:flex-row">
-          <div
-            className="relative w-full max-w-60 shrink-0 self-start overflow-hidden rounded-md bg-media"
-            style={{ aspectRatio: `${rw} / ${rh}` }}
-          >
-            {target.src ? (
-              <img
-                src={target.src}
-                alt={target.name}
-                draggable={false}
-                className="absolute inset-0 size-full object-cover select-none"
+          <div className="flex w-full max-w-60 shrink-0 flex-col gap-1.5 self-start">
+            <div
+              className="relative w-full overflow-hidden rounded-md bg-media"
+              style={{ aspectRatio: `${rw} / ${rh}` }}
+            >
+              {take?.video ? (
+                <video
+                  src={take.video}
+                  poster={target.src ?? undefined}
+                  muted
+                  playsInline
+                  preload="metadata"
+                  aria-label={target.name}
+                  ref={clip}
+                  onLoadedMetadata={(e) => setLength(e.currentTarget.duration || 0)}
+                  className="absolute inset-0 size-full object-cover select-none"
+                />
+              ) : target.src ? (
+                <img
+                  src={target.src}
+                  alt={target.name}
+                  draggable={false}
+                  className="absolute inset-0 size-full object-cover select-none"
+                />
+              ) : null}
+              <canvas
+                ref={canvas}
+                width={cw}
+                height={ch}
+                aria-label={t("pictures.inpaint.canvas")}
+                className="absolute inset-0 size-full cursor-crosshair touch-none opacity-50"
+                onPointerDown={down}
+                onPointerMove={(e) => {
+                  if (e.buttons & 1 || e.pressure > 0) stroke(e);
+                }}
+                onPointerUp={() => (last.current = null)}
+                onPointerLeave={() => (last.current = null)}
+              />
+              {take ? (
+                <span className="absolute top-1.5 left-1.5 rounded bg-white px-1.5 py-0.5 text-[11px] text-neutral-900">
+                  {at ? `${at.toFixed(1)}s` : t("pictures.inpaint.take.frame")}
+                </span>
+              ) : null}
+            </div>
+            {take?.video && length > 0 ? (
+              <input
+                type="range"
+                min={0}
+                max={length}
+                step={0.1}
+                value={at}
+                aria-label={t("pictures.inpaint.take.scrub")}
+                onChange={(e) => {
+                  const time = Number(e.target.value);
+                  setAt(time);
+                  if (clip.current) clip.current.currentTime = time;
+                }}
+                className="w-full accent-primary"
               />
             ) : null}
-            <canvas
-              ref={canvas}
-              width={cw}
-              height={ch}
-              aria-label={t("pictures.inpaint.canvas")}
-              className="absolute inset-0 size-full cursor-crosshair touch-none opacity-50"
-              onPointerDown={down}
-              onPointerMove={(e) => {
-                if (e.buttons & 1 || e.pressure > 0) stroke(e);
-              }}
-              onPointerUp={() => (last.current = null)}
-              onPointerLeave={() => (last.current = null)}
-            />
+            {take ? (
+              <span className="text-xs text-muted-foreground">
+                {t("pictures.inpaint.take.scrub")}
+              </span>
+            ) : null}
           </div>
           <div className="flex min-w-0 grow flex-col gap-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -224,32 +302,50 @@ function InpaintForm({ target, onClose }: { target: PictureTarget; onClose: () =
               </Button>
             </div>
             <div className="flex flex-col gap-1.5">
-              <Label htmlFor="inpaint-prompt">{t("pictures.inpaint.prompt")}</Label>
+              <Label htmlFor="inpaint-prompt">
+                {take ? t("pictures.inpaint.take.prompt") : t("pictures.inpaint.prompt")}
+              </Label>
               <Textarea
                 id="inpaint-prompt"
                 rows={3}
                 maxLength={2000}
                 value={prompt}
-                placeholder={t("pictures.inpaint.placeholder")}
+                placeholder={
+                  take ? t("pictures.inpaint.take.placeholder") : t("pictures.inpaint.placeholder")
+                }
                 onChange={(e) => setPrompt(e.target.value)}
               />
             </div>
             <div className="flex flex-col gap-1.5">
               <div className="text-sm font-medium">{t("pictures.model")}</div>
-              <WherePicker choices={choices} value={picked} onChange={setWhere} />
-              <p className="text-xs text-muted-foreground">{t("pictures.inpaint.keep")}</p>
+              {take ? (
+                <p className="text-sm text-muted-foreground">
+                  {take.minutes
+                    ? t("pictures.inpaint.take.model", { model: take.model, minutes: take.minutes })
+                    : t("pictures.inpaint.take.modelPlain", { model: take.model })}
+                </p>
+              ) : (
+                <WherePicker choices={choices} value={picked} onChange={setWhere} />
+              )}
+              <p className="text-xs text-muted-foreground">
+                {take ? t("pictures.inpaint.take.keep") : t("pictures.inpaint.keep")}
+              </p>
             </div>
           </div>
         </div>
         <DialogFooter className="items-center">
           <span className="mr-auto text-xs text-muted-foreground">
-            {painted ? t("pictures.oneCandidate") : t("pictures.inpaint.paintFirst")}
+            {!painted
+              ? t("pictures.inpaint.paintFirst")
+              : take
+                ? t("pictures.inpaint.take.result")
+                : t("pictures.oneCandidate")}
           </span>
           <Button variant="outline" onClick={onClose}>
             {t("pictures.cancel")}
           </Button>
           <Button disabled={!painted || inpaint.isPending} onClick={() => void submit()}>
-            {t("pictures.inpaint.submit")}
+            {take ? t("pictures.inpaint.take.submit") : t("pictures.inpaint.submit")}
           </Button>
         </DialogFooter>
       </DialogContent>

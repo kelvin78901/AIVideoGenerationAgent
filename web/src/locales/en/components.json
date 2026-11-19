@@ -353,7 +353,20 @@
       "paintFirst": "Paint over what should change first",
       "submit": "Inpaint",
       "started": "Inpainting {{name}}: one new candidate.",
-      "noCanvas": "This browser cannot draw the mask."
+      "noCanvas": "This browser cannot draw the mask.",
+      "take": {
+        "title": "Region repair · {{name}}",
+        "frame": "First frame",
+        "scrub": "Look at another frame (one mask for the whole take)",
+        "prompt": "What this part should become (optional)",
+        "placeholder": "e.g. remove the red umbrella, showing the wall behind",
+        "keep": "Best for removing things and fixing flaws. Outside the mask the picture stays as it is and the sound is untouched; when the camera moves, whatever moves into the mask is redrawn too.",
+        "model": "{{model}} (local) · about {{minutes}} min per take · no API cost",
+        "modelPlain": "{{model}} (local) · no API cost",
+        "result": "It comes out as a new take; the original stays in the history",
+        "submit": "Start repair",
+        "started": "Repairing a region of {{name}}: one new take."
+      }
     },
     "upscale": {
       "item": "Upscale to {{w}}×{{h}}",

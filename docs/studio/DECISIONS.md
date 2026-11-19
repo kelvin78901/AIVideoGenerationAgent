@@ -2,6 +2,14 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-18 · M6 第 9a 步：候选卡的质检、局部修复菜单
+
+- **口型修复菜单本地、API 两行都给**（草图 G1）：估价的 `finishing.<组件>` 加 `alt`＝路由另一边的模型（价格、耗时），`POST /versions/{id}/lipsync` 收可选的 `{where}`。原因：`lip` 默认混合（本地 LatentSync、API sync.so），两边效果不同，让人自己挑；不另开接口。
+- **菜单里跑不了的行灰掉写原因**：读组件目录的 `unavailable[where]`（缺运行环境、没显卡）；没人说话的镜头口型修复两行都灰掉（「这个镜头没人说话」），不等后端 409。
+- **视频局部修复复用图片的 `InpaintDialog`**（加 `take` 模式）：画在 take 的首帧上，可以拖动换一帧看（遮罩整条用同一块），没有本地 / API 选择，模型那一行写死 Wan VACE（本地）。
+- **规则里关掉的项照样显示分数，写「已关」，不算没过**（草图 G3 便签）：`qaFails` 跳过 `off`，卡片角标「未过 n 项 / 只差口型」、采纳时的提示都按这个算。
+- **2K 精修按钮读估价的 `finishing.up`**，不再在页面里按路由配置和单价自己算。
+
 ## 2026-11-18 · M6 第 8b 步：视频局部修复后端
 
 - **组件 `vinpaint`（`pipeline/components/vinpaint.py`）和 2K 精修、口型修复一样跑在镜头的视频产物上**（`UpComponent` 的子类）。接口还是图片局部修复那个 `POST /versions/{id}/inpaint`（multipart：`mask`、可选 `prompt`）：版本是 take 就走 `vinpaint`（`idx`、`where`、`model` 不看），否则照旧走图片的 `inpaint`。origin 用现有的 `inpaint`（不新加），`params.finish = {kind: inpaint, version_id}`，stage 跟原 take，依赖照抄原 take；质检、自动采纳和 2K 精修同一条（`adopt_finished`：原 take 已采纳、没锁、不比原片差）。

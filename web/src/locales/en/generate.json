@@ -64,7 +64,7 @@
     "exact": "Exact match",
     "adopt": "Adopt",
     "unadopt": "Unadopt",
-    "fix": "Fix a region",
+    "fix": "Repair",
     "upscale": "2K finish · {{cost}}",
     "upLocal": "local",
     "generating": "New take generating",
@@ -75,8 +75,19 @@
     "redrawn": "The check failed; made again with what failed, this one passed after {{count}} more tries.",
     "redrawnStill": "The check failed and still fails after {{count}} more tries; this is the try with the fewest problems: only a warning, it can be adopted.",
     "checkFails": "{{count}} to look at",
-    "checkLater": "Face, lip sync, word errors: M6",
-    "sheet": "The 6 frames checked"
+    "sheet": "The 6 frames checked",
+    "requa": "QA again",
+    "off": "Off",
+    "onlyLips": "Lips only",
+    "lip": "Lip-sync repair",
+    "lipApi": "Lip-sync repair (API)",
+    "vinpaint": "Repaint a region…",
+    "routeLocal": "local · about {{minutes}} min",
+    "routeLocalPlain": "local",
+    "routeApi": "{{model}} · about {{cost}}",
+    "noDialogue": "Nobody speaks in this shot, so there are no lips to repair",
+    "showItems": "Show the picture check's items",
+    "hideItems": "Hide the picture check's items"
   },
   "qa": {
     "face": "Face match",
@@ -93,7 +104,11 @@
     "hybrid_final": "Hybrid mode final",
     "fallback_timeout": "Local timed out, fell back to API",
     "fallback_error": "Error, fell back automatically",
-    "fallback_qa_fail": "Failed QA repeatedly, fell back"
+    "fallback_qa_fail": "Failed QA repeatedly, fell back",
+    "upscale": "2K finish of T{{n}}",
+    "lipsync": "Lip-sync repair of T{{n}}",
+    "inpaint": "Region repair of T{{n}}",
+    "auto_lip": "Only the lips failed: lip-sync repair of T{{n}}"
   },
   "empty": {
     "running": "{{model}} is making take {{n}}. It is checked automatically and then shows up here.",
@@ -109,10 +124,12 @@
     "unblocked": "{{id}} can be generated now.",
     "unadopted": "Unadopted {{id}} T{{n}}.",
     "final": "Making the 2K final of {{id}} T{{n}} on the API.",
-    "fix": "Repairing part of a take comes in M6 (with the lip-sync fix).",
     "upLocal": "Sent {{id}} T{{n}} to 2K finishing ({{model}}); runs locally, no charge.",
     "upApi": "Sent {{id}} T{{n}} to 2K finishing ({{model}}), est. {{cost}}.",
-    "rated": "{{id}} T{{n}}: {{stars}} / 5"
+    "rated": "{{id}} T{{n}}: {{stars}} / 5",
+    "lipLocal": "Sent {{id}} T{{n}} to lip-sync repair ({{model}}); runs locally, no charge.",
+    "lipApi": "Sent {{id}} T{{n}} to lip-sync repair ({{model}}), est. {{cost}}.",
+    "requa": "Checking {{id}} T{{n}} again."
   },
   "rules": {
     "title": "Auto rules",
@@ -145,5 +162,12 @@
     "final": "Final on the API → {{model}} made T{{take}}{{cost}}",
     "waiting": "Waiting for your OK · {{model}}{{cost}}",
     "failed": "{{model}} failed ({{error}})"
+  },
+  "policy": {
+    "lip": "Only the lips failed → sent to lip-sync repair",
+    "rerun": "Failed QA → rerun automatically",
+    "fallback": "Failed repeatedly → falling back to {{model}}",
+    "stop": "The fallback failed too: stopped for you to look, nothing more spent",
+    "wait": "The next try costs money: waiting for your yes"
   }
 }

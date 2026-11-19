@@ -10,6 +10,8 @@
  *   「用 API 出终版」 one 2K take on Regenerate-2K whose parent is the draft;
  * - 采纳 (one per shot), 取消采纳, 打分; 生成确认 needs every shot adopted (409
  *   `takes_not_adopted`) and locks them;
+ * - a take's 2K 精修, 口型修复 (409 `lipsync_no_dialogue` for a shot nobody speaks in), 视频局部修复
+ *   and 重新质检 (M6) are queued on their route and recorded in `repairs`; they never finish;
  * - the 生成 badge: 未开始 before 分镜确认, then the shots with an adopted take.
  *
  * The other tests see the same takes, with 分镜 still in progress (`test/fakes/shots.ts`);
@@ -65,7 +67,19 @@ export const fakeGenerate = {
   confirmed: new Set<string>(),
   /** Every run asked for, in order. */
   runs: [] as ({ id: string } & RunRequest)[],
+  /** Every finishing, repair or QA asked of a take (M6), in order. */
+  repairs: [] as TakeRepair[],
 };
+
+/** What was asked of a take: `where` of a lip-sync repair, the mask's size and the prompt of a
+ * region repair. */
+export interface TakeRepair {
+  kind: "upscale" | "lipsync" | "inpaint" | "qa";
+  version: string;
+  where?: string | null;
+  prompt?: string | null;
+  mask?: number;
+}
 
 export function resetFakeGenerate() {
   fakeGenerate.videos = structuredClone(demoVideos);
@@ -75,6 +89,7 @@ export function resetFakeGenerate() {
   fakeGenerate.summary = structuredClone(demoSummary);
   fakeGenerate.confirmed = new Set();
   fakeGenerate.runs = [];
+  fakeGenerate.repairs = [];
 }
 
 /** 分镜确认 as the seeded demo has it: every shot confirmed, the plan locked. */
@@ -325,14 +340,38 @@ export function generateHandlers() {
       return HttpResponse.json(p);
     }),
 
-    // 2K 精修 of a take (M6): queued on the `up` route; the fake never finishes it.
-    http.post("*/api/v1/versions/:id/upscale", ({ params }) => {
+    // 2K 精修, 口型修复, 视频局部修复 and 重新质检 of a take (M6): queued on the component's
+    // route; the fake never finishes them.
+    http.post("*/api/v1/versions/:id/:op", async ({ params, request }) => {
+      const op = String(params.op);
+      const component = { upscale: "up", lipsync: "lip", inpaint: "vinpaint", qa: "qa" }[op];
       const found = findVersion(params.id);
-      if (!found) return undefined;
-      const model = primaryModel(fakeResolve("up", null)?.values ?? null) ?? "comfy/seedvr2";
+      if (!component || !found) return undefined;
+      const repair: TakeRepair = { kind: op as TakeRepair["kind"], version: found.version.id };
+      let where: string | undefined;
+      if (op === "inpaint") {
+        const form = await request.formData();
+        const mask = form.get("mask");
+        const prompt = form.get("prompt");
+        repair.prompt = typeof prompt === "string" ? prompt : null;
+        repair.mask = typeof mask === "object" && mask ? mask.size : 0;
+      } else if (op === "lipsync") {
+        const text = await request.text();
+        const body = (text ? JSON.parse(text) : {}) as { where?: string };
+        where = body.where;
+        repair.where = where ?? null;
+        if (!shotOf(found.product)?.dialogue)
+          return error(409, "lipsync_no_dialogue", { id: found.product.id });
+      }
+      const values = fakeResolve(component, null)?.values ?? null;
+      const model =
+        (where === "api" ? values?.api_model : where === "local" ? values?.local_model : null) ??
+        primaryModel(values) ??
+        "comfy/seedvr2";
+      fakeGenerate.repairs.push(repair);
       return HttpResponse.json({
-        ...job(found.product, `up-${found.version.id}`, model, "run", 0),
-        component_id: "up",
+        ...job(found.product, `${op}-${found.version.id}`, String(model), "run", 0),
+        component_id: component,
         state: "queued",
         result: null,
       });

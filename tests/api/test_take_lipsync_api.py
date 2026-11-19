@@ -208,3 +208,23 @@ def test_a_shot_not_dubbed_gets_a_rerun_instead(client: TestClient) -> None:
     versions = _product(client, "1-04")["versions"]
     assert [v["origin"] for v in versions] == ["run", "auto_qa_rerun"]
     assert versions[0]["qa"]["policy"]["action"] == "rerun"
+
+
+def test_the_api_route_is_offered_and_taken(client: TestClient, sent: list[Any]) -> None:
+    """The menu offers both of the route's models: LatentSync here, sync.so on the API."""
+    _confirm_storyboard(client)
+    _dubbed(client, "1-04")
+    take = _take(client, "1-04")
+    alt = _product(client, "1-04")["estimate"]["finishing"]["lip"]["alt"]
+    assert (alt["model_key"], alt["where"], alt["alt"]) == ("sync/lipsync-2-pro", "api", None)
+    assert alt["cost_usd"] > 0
+
+    resp = client.post(f"{V1}/versions/{take['id']}/lipsync", json={"where": "api"})
+    assert resp.status_code == 200, resp.text
+    _wait(client, resp.json()["id"])
+    v = _product(client, "1-04")["versions"][-1]
+    assert (v["origin"], v["model_key"]) == ("lipsync", "sync/lipsync-2-pro")
+    assert (
+        client.post(f"{V1}/versions/{take['id']}/lipsync", json={"where": "moon"}).status_code
+        == 422
+    )

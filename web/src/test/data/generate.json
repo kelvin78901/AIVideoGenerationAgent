@@ -1398,21 +1398,38 @@
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "minimax/h3-regenerate-2k",
+              "where": "api",
+              "cost_usd": 0.1705,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "lip": {
             "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "sync/lipsync-2-pro",
+              "where": "api",
+              "cost_usd": 0.3345,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "vinpaint": {
             "model_key": "comfy/vace-inpaint",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": null
           }
         }
       },
@@ -1677,21 +1694,38 @@
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "minimax/h3-regenerate-2k",
+              "where": "api",
+              "cost_usd": 0.1282,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "lip": {
             "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "sync/lipsync-2-pro",
+              "where": "api",
+              "cost_usd": 0.2512,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "vinpaint": {
             "model_key": "comfy/vace-inpaint",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": null
           }
         }
       },
@@ -1956,21 +1990,38 @@
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "minimax/h3-regenerate-2k",
+              "where": "api",
+              "cost_usd": 0.1282,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "lip": {
             "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "sync/lipsync-2-pro",
+              "where": "api",
+              "cost_usd": 0.2512,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "vinpaint": {
             "model_key": "comfy/vace-inpaint",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": null
           }
         }
       },
@@ -2500,21 +2551,38 @@
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "minimax/h3-regenerate-2k",
+              "where": "api",
+              "cost_usd": 0.1917,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "lip": {
             "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "sync/lipsync-2-pro",
+              "where": "api",
+              "cost_usd": 0.3761,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "vinpaint": {
             "model_key": "comfy/vace-inpaint",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": null
           }
         }
       },
@@ -2554,21 +2622,38 @@
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "minimax/h3-regenerate-2k",
+              "where": "api",
+              "cost_usd": 0.1283,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "lip": {
             "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "sync/lipsync-2-pro",
+              "where": "api",
+              "cost_usd": 0.2513,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "vinpaint": {
             "model_key": "comfy/vace-inpaint",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": null
           }
         }
       },
@@ -2608,21 +2693,38 @@
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "minimax/h3-regenerate-2k",
+              "where": "api",
+              "cost_usd": 0.2128,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "lip": {
             "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "sync/lipsync-2-pro",
+              "where": "api",
+              "cost_usd": 0.4178,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "vinpaint": {
             "model_key": "comfy/vace-inpaint",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": null
           }
         }
       },
@@ -2662,21 +2764,38 @@
             "where": "local",
             "cost_usd": 0.0014,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "minimax/h3-regenerate-2k",
+              "where": "api",
+              "cost_usd": 0.086,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "lip": {
             "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0014,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": {
+              "model_key": "sync/lipsync-2-pro",
+              "where": "api",
+              "cost_usd": 0.1679,
+              "seconds": 0.0,
+              "priced": true,
+              "alt": null
+            }
           },
           "vinpaint": {
             "model_key": "comfy/vace-inpaint",
             "where": "local",
             "cost_usd": 0.0014,
             "seconds": 0.0,
-            "priced": true
+            "priced": true,
+            "alt": null
           }
         }
       },

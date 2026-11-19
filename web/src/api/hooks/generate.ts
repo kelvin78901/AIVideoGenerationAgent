@@ -11,7 +11,8 @@ import {
   type GenerateRulesPatch,
   type WorkflowRulesPut,
 } from "@/api/schemas/generate";
-import { JobSchema } from "@/api/schemas/jobs";
+import type { Where } from "@/api/schemas/common";
+import { JobSchema, type Job } from "@/api/schemas/jobs";
 import { ProductSchema, type Product, type VersionPatch } from "@/api/schemas/products";
 
 const enc = encodeURIComponent;
@@ -106,9 +107,35 @@ export function usePatchVersion() {
   });
 }
 
-/** 2K 精修 a take on the finishing component's route → job. */
-export function useUpscale() {
+interface TakeRef {
+  productId: string;
+  versionId: string;
+}
+
+/** A run on a take (2K 精修, 口型修复, 重新质检) → its job; the shot's product turns busy and the
+ * result arrives with an event. */
+function useTakeRun<V extends TakeRef>(fn: (vars: V) => Promise<Job>) {
+  const client = useQueryClient();
   return useMutation({
-    mutationFn: (versionId: string) => post(`/versions/${enc(versionId)}/upscale`, JobSchema),
+    mutationFn: fn,
+    onSuccess: (_job, vars) =>
+      client.invalidateQueries({ queryKey: productKeys.detail(vars.productId) }),
   });
+}
+
+/** 2K 精修 a take on the finishing component's route. */
+export function useUpscale() {
+  return useTakeRun((r: TakeRef) => post(`/versions/${enc(r.versionId)}/upscale`, JobSchema, {}));
+}
+
+/** 口型修复 a take on the route's local or API model (`where`; the route's mode when absent). */
+export function useLipsync() {
+  return useTakeRun((r: TakeRef & { where?: Where }) =>
+    post(`/versions/${enc(r.versionId)}/lipsync`, JobSchema, r.where ? { where: r.where } : {}),
+  );
+}
+
+/** 重新质检: QA the take again (after the thresholds changed, or a tool was installed). */
+export function useRequa() {
+  return useTakeRun((r: TakeRef) => post(`/versions/${enc(r.versionId)}/qa`, JobSchema));
 }

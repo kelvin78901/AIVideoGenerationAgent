@@ -231,19 +231,35 @@ class RunService:
             if other is None:
                 continue
             settings = await self.services.router.settings(cid, item_of(product))
-            try:
-                model = Router.primary_model(settings)
-                est = other.estimate(inputs, "", model)
-            except (LookupError, PipelineError, ComponentError, ModelError):
+            main = self._finishing_route(other, settings, inputs, None)
+            if main is None:
                 continue
-            out[cid] = FinishingOut(
-                model_key=model,
-                where=self.services.registry.spec(model).where,
-                cost_usd=round(est.cost_usd, 4),
-                seconds=est.seconds,
-                priced=est.priced,
+            alt = self._finishing_route(
+                other, settings, inputs, "api" if main.where == "local" else "local"
             )
+            if alt is not None and alt.where != main.where:
+                main.alt = alt
+            out[cid] = main
         return out
+
+    def _finishing_route(
+        self, comp: Component, settings: Resolved, inputs: Inputs, where: Where | None
+    ) -> FinishingOut | None:
+        """One finishing component's price and time on its route's model ``where`` (the
+        route's own mode when None); None when it has no model there."""
+        try:
+            model = Router.primary_model(settings, where)
+            est = comp.estimate(inputs, "", model)
+            spec = self.services.registry.spec(model)
+        except (LookupError, PipelineError, ComponentError, ModelError):
+            return None
+        return FinishingOut(
+            model_key=model,
+            where=spec.where,
+            cost_usd=round(est.cost_usd, 4),
+            seconds=est.seconds,
+            priced=est.priced,
+        )
 
     def _final_api_cost(
         self, comp: Component, inputs: Inputs, compiled: str, model: str

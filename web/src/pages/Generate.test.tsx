@@ -1,4 +1,4 @@
-import { screen, waitFor, within } from "@testing-library/react";
+import { fireEvent, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { http, HttpResponse } from "msw";
 import { Route, Routes } from "react-router";
@@ -306,6 +306,117 @@ describe("GeneratePage", () => {
     expect(
       await screen.findByText("已把 1-04 T3 送去 2K 精修（SeedVR2（本地）），本地跑，不计费。"),
     ).toBeInTheDocument();
+  });
+
+  it("shows a take's QA with the picture check's items, what QA did, and checks it again", async () => {
+    const user = userEvent.setup();
+    const t1 = video("1-04")?.versions[0];
+    if (!t1) throw new Error("no take");
+    t1.qa_pass = false;
+    t1.qa = {
+      checks: [
+        { metric: "face", value: 0.83, text: null, issue: null, ok: true, threshold: 0.18 },
+        { metric: "lipsync", value: 0.5, text: null, issue: null, ok: false, threshold: 1 },
+        { metric: "asr", value: 0, text: null, issue: null, ok: true, threshold: 0.2 },
+        { metric: "speaker", value: 0.4, text: null, issue: null, ok: false, off: true },
+        { metric: "ocr", value: null, text: null, issue: null, ok: null },
+        {
+          metric: "vlm",
+          value: null,
+          text: null,
+          issue: null,
+          ok: true,
+          items: [{ check: "林晚右手拿伞", ok: true, note: "" }],
+        },
+      ],
+      score: 0.7,
+      policy: { action: "lip", job_id: "job-lip", model: null },
+    };
+    renderGenerate();
+    await ready();
+    const card = take(1);
+    // Only the lips count against it (the voice is turned off in the rules).
+    expect(within(card).getAllByText("只差口型")).toHaveLength(1);
+    expect(card).toHaveTextContent("音色相似度0.40已关");
+    expect(card).toHaveTextContent("只差口型 → 已自动送去口型修复");
+    expect(card).not.toHaveTextContent("林晚右手拿伞");
+    await user.click(within(card).getByRole("button", { name: "展开画面检查的各项" }));
+    expect(card).toHaveTextContent("林晚右手拿伞");
+
+    await user.click(within(card).getByRole("button", { name: "重新质检" }));
+    await waitFor(() => expect(fakeGenerate.repairs).toEqual([{ kind: "qa", version: t1.id }]));
+    expect(await screen.findByText("已开始重新质检 1-04 T1。")).toBeInTheDocument();
+  });
+
+  it("局部修复 ▾ repairs the lips locally or on the API", async () => {
+    const user = userEvent.setup();
+    renderGenerate();
+    await ready();
+    const t2 = video("1-04")?.versions[1];
+    await user.click(within(take(2)).getByRole("button", { name: "局部修复" }));
+    const menu = await screen.findByRole("menu");
+    expect(within(menu).getByRole("menuitem", { name: /^口型修复本地/ })).toBeEnabled();
+    const api = within(menu).getByRole("menuitem", { name: /口型修复（API）/ });
+    expect(api).toHaveTextContent(/sync lipsync-2-pro · 约 \$0\.\d\d/);
+    await user.click(api);
+    await waitFor(() =>
+      expect(fakeGenerate.repairs).toEqual([{ kind: "lipsync", version: t2?.id, where: "api" }]),
+    );
+    expect(
+      await screen.findByText(/已把 1-04 T2 送去口型修复（sync lipsync-2-pro），预计 \$0\.\d\d。/),
+    ).toBeInTheDocument();
+  });
+
+  it("greys lip sync on a shot nobody speaks in", async () => {
+    const user = userEvent.setup();
+    renderGenerate();
+    await ready();
+    await user.click(pill("1-03"));
+    await screen.findByRole("heading", { name: "镜头 1-03 的候选" });
+    await user.click(within(take(1)).getByRole("button", { name: "局部修复" }));
+    const menu = await screen.findByRole("menu");
+    const lips = within(menu).getAllByRole("menuitem", { name: /^口型修复/ });
+    expect(lips).toHaveLength(2);
+    for (const item of lips) {
+      expect(item).toHaveAttribute("aria-disabled", "true");
+      expect(item).toHaveTextContent("这个镜头没人说话，用不上口型修复");
+    }
+    expect(within(menu).getByRole("menuitem", { name: /涂一块区域重画/ })).toBeEnabled();
+  });
+
+  it("涂一块区域重画: one mask on the take's frame, the prompt optional", async () => {
+    const user = userEvent.setup();
+    // jsdom has no canvas: a context that draws nothing and a mask of a few bytes.
+    const ctx = new Proxy({} as Record<string, unknown>, {
+      get: (_, key) => (key === "getImageData" ? () => ({}) : () => undefined),
+      set: () => true,
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
+    vi.spyOn(HTMLCanvasElement.prototype, "toBlob").mockImplementation((cb) =>
+      cb(new File(["mask"], "mask.png", { type: "image/png" })),
+    );
+    renderGenerate();
+    await ready();
+    const t2 = video("1-04")?.versions[1];
+    await user.click(within(take(2)).getByRole("button", { name: "局部修复" }));
+    await user.click(await screen.findByRole("menuitem", { name: /涂一块区域重画/ }));
+    const dialog = await screen.findByRole("dialog", { name: "局部修复 · 1-04 T2" });
+    expect(dialog).toHaveTextContent("Wan VACE");
+    expect(dialog).toHaveTextContent("适合去掉东西");
+    expect(within(dialog).queryByRole("radio", { name: /API/ })).not.toBeInTheDocument();
+    const submit = within(dialog).getByRole("button", { name: "开始修复" });
+    expect(submit).toBeDisabled();
+    fireEvent.pointerDown(within(dialog).getByLabelText("在图上涂出要改的地方"));
+    expect(dialog).toHaveTextContent("出来是一条新候选，原来的留在历史里");
+    await user.click(submit);
+    await waitFor(() =>
+      expect(fakeGenerate.repairs).toEqual([
+        { kind: "inpaint", version: t2?.id, prompt: null, mask: 4 },
+      ]),
+    );
+    expect(await screen.findByText("已开始局部修复 1-04 T2：出一条新候选。")).toBeInTheDocument();
   });
 
   it("saves the auto rules and shows the QA thresholds", async () => {

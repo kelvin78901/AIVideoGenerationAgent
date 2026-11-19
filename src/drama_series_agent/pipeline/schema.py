@@ -76,6 +76,9 @@ class FinishingOut(BaseModel):
     cost_usd: float
     seconds: float | None
     priced: bool = True
+    # The route's model on the other side (M6 口型修复: local LatentSync and the API's sync.so
+    # are both offered); None when the route has only one.
+    alt: FinishingOut | None = None
 
 
 class EstimateOut(BaseModel):
