@@ -2,6 +2,17 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-18 · M6 第 8a 步：视频局部修复本机验证（Wan VACE 14B）
+
+- **范围缩成「去掉 / 修瑕疵」**（Kelvin 2026-11-18 定）：本机试跑的结论是去掉东西好用，换成别的东西不可靠（下面）。8b 照做，默认 CausVid 4 步；遮罩弹窗的文案写明适合去掉东西、提示词可选、镜头在动时移进遮罩的东西也会被重画。不加 LoRA 的「精细档」不做。
+- **权重**（Kelvin 2026-11-18 同意下载）：和 ComfyUI 官方模板 `video_wan_vace_inpainting`（templates 0.11.86）一套，共约 42 GB，放 `ComfyUI-Shared/models`，sha256 和 HF 一致：`Comfy-Org/Wan-2.1`（原名 Wan_2.1_ComfyUI_repackaged，Apache 2.0，commit d6258323）的 `wan2.1_vace_14B_fp16`（34.7 GB，按 `fp8_e4m3fn_fast` 加载）、`umt5_xxl_fp8_e4m3fn_scaled`、`wan_2.1_vae`；`Kijai/WanVideo_comfy`（commit 8260d429）的 `Wan21_CausVid_14B_T2V_lora_rank32`。8b 写进安装清单 `w_vace`（可选、`requires_cuda`）。
+- **CausVid LoRA 是 CC BY-NC-SA 4.0（非商用）**（上游 tianweiy/CausVid 的 LICENSE.md）：和 buffalo_l、SyncNet 一样照用、记在这里，**商用发行前再换**（许可干净的蒸馏 LoRA，或者不加 LoRA：cfg 6、慢约 5 倍）。Kelvin 2026-11-18 定。
+- **工作流 `workflows/vace-inpaint`**：官方模板改成 API 格式，和官方不同的三处——① 静态遮罩先复制成 `length` 帧：`WanVaceToVideo` 只给一张遮罩时，把后面的帧补成全白，等于整帧重画；② 送进 VACE 的控制视频先把遮罩里填成 50% 灰（VACE 的约定）：第一次直接送原片，模型把原来的伞照抄了回来（遮罩里平均只差 3–5 级灰度）；③ 解码后裁回原帧数，再按羽化 8 像素的遮罩贴回原片。按 take 自己的尺寸（宽高取 16 的倍数）和帧率跑，`length` 取 ≥ 帧数的 4n+1。帧数还没有绑定槽位，8b 加。
+- **本机实测**（`scripts/smoke/local_vace.py`，直接调 ComfyUI，报告 `reports/m6-vace-local/`）：1-04 T9（768×1344，24 fps，116 帧），遮罩是左下角红伞那块（0,720–260,1344）。尺寸、帧率、帧数都不变；遮罩外和原片平均差约 1 级灰度（H.264 重新编码的噪声）。声音被 `CreateVideo` 重新编码了，8b 照 2K 精修的做法，由后端从原 take 复制回去。
+  - CausVid 4 步 / cfg 1：**215 秒**（含加载，采样每步约 44 秒），显存峰值约 26 GB（32 GB 够，16 fps 降采样不必要）。红伞去得很干净，风衣边缘看不出接缝，前后帧连贯；但提示词几乎不起作用：长提示词时只出空墙，短提示词「黑伞」出了一根像鞭子的黑杆。8 步 390 秒，效果和 4 步差不多。
+  - 不加 LoRA / cfg 6 / 12 步：1071 秒（约 18 分钟），按提示词画出了伞，但伞面被便利贴染成黄色、大小不对。
+  - 静态遮罩配移动镜头：便利贴第二行在镜头推近时移进了遮罩，被重画成乱码。用户画遮罩时要避开会移进来的东西（弹窗提示）；跟踪遮罩不做。
+
 ## 2026-11-18 · M6 第 7b 步：本地 LatentSync
 
 - **LatentSync 1.6 照用官方的 buffalo_l 找脸**（Kelvin 2026-11-18 定）：LatentSync 用 InsightFace buffalo_l 的检测（det_10g）和 106 点（2d106det）对齐人脸，InsightFace 的模型是「仅限非商业研究」许可（M6 第 5 步质检就因此没用它）。和 SyncNet 一样照用、记在这里，**商用发行前再换**；找脸单独在 `workers/latentsync_faces.py`，以后换只改这一处（YuNet 只有 5 个点，要拟合到它用的眉心和鼻子位置，和训练时的对齐不同，要 A/B）。另外 LatentSync 1.6 的**权重是 openrail++**（允许商用，有用途限制），不是计划里写的 Apache 2.0（Apache 2.0 是代码）。

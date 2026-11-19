@@ -1,0 +1,180 @@
+{
+  "1": {
+    "class_type": "LoadVideo",
+    "_meta": { "title": "Video in" },
+    "inputs": { "file": "example.mp4" }
+  },
+  "2": {
+    "class_type": "GetVideoComponents",
+    "_meta": { "title": "Frames and sound" },
+    "inputs": { "video": ["1", 0] }
+  },
+  "3": {
+    "class_type": "LoadImageMask",
+    "_meta": { "title": "Mask" },
+    "inputs": { "image": "example.png", "channel": "red" }
+  },
+  "4": {
+    "class_type": "GrowMask",
+    "_meta": { "title": "Grow mask" },
+    "inputs": { "mask": ["3", 0], "expand": 16, "tapered_corners": true }
+  },
+  "5": {
+    "class_type": "MaskToImage",
+    "_meta": { "title": "Mask as image" },
+    "inputs": { "mask": ["4", 0] }
+  },
+  "6": {
+    "class_type": "RepeatImageBatch",
+    "_meta": { "title": "Mask per frame" },
+    "inputs": { "image": ["5", 0], "amount": 117 }
+  },
+  "7": {
+    "class_type": "ImageToMask",
+    "_meta": { "title": "Masks" },
+    "inputs": { "image": ["6", 0], "channel": "red" }
+  },
+  "8": {
+    "class_type": "UNETLoader",
+    "_meta": { "title": "Wan VACE 14B" },
+    "inputs": { "unet_name": "wan2.1_vace_14B_fp16.safetensors", "weight_dtype": "fp8_e4m3fn_fast" }
+  },
+  "9": {
+    "class_type": "LoraLoaderModelOnly",
+    "_meta": { "title": "CausVid LoRA" },
+    "inputs": {
+      "model": ["8", 0],
+      "lora_name": "Wan21_CausVid_14B_T2V_lora_rank32.safetensors",
+      "strength_model": 0.3
+    }
+  },
+  "10": {
+    "class_type": "ModelSamplingSD3",
+    "_meta": { "title": "Shift" },
+    "inputs": { "model": ["9", 0], "shift": 5.0 }
+  },
+  "11": {
+    "class_type": "CLIPLoader",
+    "_meta": { "title": "Load text encoder" },
+    "inputs": { "clip_name": "umt5_xxl_fp8_e4m3fn_scaled.safetensors", "type": "wan", "device": "default" }
+  },
+  "12": {
+    "class_type": "VAELoader",
+    "_meta": { "title": "Wan VAE" },
+    "inputs": { "vae_name": "wan_2.1_vae.safetensors" }
+  },
+  "13": {
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Prompt" },
+    "inputs": { "clip": ["11", 0], "text": "" }
+  },
+  "14": {
+    "class_type": "CLIPTextEncode",
+    "_meta": { "title": "Negative prompt" },
+    "inputs": {
+      "clip": ["11", 0],
+      "text": "色调艳丽，过曝，静态，细节模糊不清，字幕，风格，作品，画作，画面，静止，整体发灰，最差质量，低质量，JPEG压缩残留，丑陋的，残缺的，多余的手指，画得不好的手部，画得不好的脸部，畸形的，毁容的，形态畸形的肢体，手指融合，静止不动的画面，杂乱的背景，三条腿，背景人很多，倒着走"
+    }
+  },
+  "15": {
+    "class_type": "WanVaceToVideo",
+    "_meta": { "title": "VACE" },
+    "inputs": {
+      "positive": ["13", 0],
+      "negative": ["14", 0],
+      "vae": ["12", 0],
+      "width": 768,
+      "height": 1344,
+      "length": 117,
+      "batch_size": 1,
+      "strength": 1.0,
+      "control_video": ["26", 0],
+      "control_masks": ["7", 0]
+    }
+  },
+  "16": {
+    "class_type": "KSampler",
+    "_meta": { "title": "Sampler" },
+    "inputs": {
+      "model": ["10", 0],
+      "seed": 832378512055965,
+      "steps": 4,
+      "cfg": 1.0,
+      "sampler_name": "uni_pc",
+      "scheduler": "simple",
+      "positive": ["15", 0],
+      "negative": ["15", 1],
+      "latent_image": ["15", 2],
+      "denoise": 1.0
+    }
+  },
+  "17": {
+    "class_type": "TrimVideoLatent",
+    "_meta": { "title": "Trim latent" },
+    "inputs": { "samples": ["16", 0], "trim_amount": ["15", 3] }
+  },
+  "18": {
+    "class_type": "VAEDecode",
+    "_meta": { "title": "Decode" },
+    "inputs": { "samples": ["17", 0], "vae": ["12", 0] }
+  },
+  "19": {
+    "class_type": "ImageFromBatch",
+    "_meta": { "title": "Frames" },
+    "inputs": { "image": ["18", 0], "batch_index": 0, "length": 116 }
+  },
+  "20": {
+    "class_type": "ImageBlur",
+    "_meta": { "title": "Feather" },
+    "inputs": { "image": ["5", 0], "blur_radius": 8, "sigma": 4.0 }
+  },
+  "21": {
+    "class_type": "ImageToMask",
+    "_meta": { "title": "Paste mask" },
+    "inputs": { "image": ["20", 0], "channel": "red" }
+  },
+  "22": {
+    "class_type": "ImageCompositeMasked",
+    "_meta": { "title": "Paste back" },
+    "inputs": {
+      "destination": ["2", 0],
+      "source": ["19", 0],
+      "x": 0,
+      "y": 0,
+      "resize_source": false,
+      "mask": ["21", 0]
+    }
+  },
+  "23": {
+    "class_type": "CreateVideo",
+    "_meta": { "title": "Video" },
+    "inputs": { "images": ["22", 0], "audio": ["2", 1], "fps": ["2", 2] }
+  },
+  "24": {
+    "class_type": "SaveVideo",
+    "_meta": { "title": "Output" },
+    "inputs": {
+      "video": ["23", 0],
+      "filename_prefix": "dramastudio/vace-inpaint",
+      "format": "auto",
+      "format.codec": "auto"
+    }
+  },
+  "25": {
+    "class_type": "EmptyImage",
+    "_meta": { "title": "Grey" },
+    "inputs": { "width": 64, "height": 64, "batch_size": 1, "color": 8355711 }
+  },
+  "26": {
+    "class_type": "ImageCompositeMasked",
+    "_meta": { "title": "Control video" },
+    "inputs": {
+      "destination": ["2", 0],
+      "source": ["25", 0],
+      "x": 0,
+      "y": 0,
+      "resize_source": true,
+      "mask": ["4", 0]
+    }
+  }
+}
