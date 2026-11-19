@@ -14,7 +14,8 @@ kept loaded between requests:
   shell commands with unquoted paths) and it runs there (it writes ``temp/`` next to itself).
   LatentSync resamples the picture to 25 fps and makes as many frames as the audio lasts (the
   picture played back and forth when the audio is longer); the result is brought back to the
-  take's ``fps`` with its sound.
+  take's ``fps`` and frame count (the last frame repeated if the round trip lost some), with
+  its sound.
 - **ffmpeg**: LatentSync shells out to ``ffmpeg``; imageio-ffmpeg's binary is copied into the
   environment as ``ffmpeg(.exe)`` and put first on ``PATH`` (another ``ffmpeg`` on the machine's
   ``PATH`` is never used).
@@ -107,6 +108,20 @@ def init(args: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def frame_count(path: Path) -> int:
+    """The clip's frames, decoded and counted (the container's count can be off)."""
+    import cv2
+
+    cap = cv2.VideoCapture(str(path))
+    n = 0
+    while cap.grab():
+        n += 1
+    cap.release()
+    if n == 0:
+        raise WorkerError("worker_error", f"no frames in {path.name}")
+    return n
+
+
 def _seed(seed: int) -> None:
     import numpy as np
     import torch
@@ -152,11 +167,15 @@ def lipsync(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
     if not synced.is_file():
         raise WorkerError("worker_error", "LatentSync wrote no video")
     out = out_path(msg, ".mp4")
-    fps = str(int(params.get("fps") or 25))
+    fps = int(params.get("fps") or 25)
+    # Back to the take's frame rate and exactly its frame count: 24 → 25 → 24 fps loses a frame
+    # or two at the end (1-04 T9: 116 → 114), the last one is repeated instead.
+    frames = frame_count(video)
+    graph = f"fps={fps},tpad=stop_mode=clone:stop=12"
     subprocess.run(
-        [state["ffmpeg"], "-y", "-loglevel", "error", "-nostdin", "-i", str(synced), "-r", fps,
-         "-c:v", "libx264", "-crf", "16", "-pix_fmt", "yuv420p", "-c:a", "copy",
-         "-movflags", "+faststart", out],
+        [state["ffmpeg"], "-y", "-loglevel", "error", "-nostdin", "-i", str(synced), "-vf", graph,
+         "-frames:v", str(frames), "-c:v", "libx264", "-crf", "16", "-pix_fmt", "yuv420p",
+         "-c:a", "copy", "-movflags", "+faststart", out],
         check=True,
     )  # fmt: skip
     return {"files": [{"path": out, "role": "video", "mime": "video/mp4"}]}

@@ -438,7 +438,7 @@ local_models:
   - { key: local/latentsync,        kind: lipsync, display: LatentSync 1.6（本地）,   runtime: python, worker: worker_latentsync, env: latentsync,
       args: { src: "{envs}/latentsync-src", unet: "{models}/latentsync/latentsync_unet.pt", whisper: "{models}/latentsync/whisper/tiny.pt",
               vae: "{models}/latentsync/sd-vae-ft-mse", faces: "{models}/latentsync/models/buffalo_l", steps: 20, guidance: 1.5, deepcache: true },
-      caps: { est_seconds_per_s: 12, est_start_s: 40 }, needs: [rt_latentsync, w_latentsync], requires_cuda: true }
+      caps: { est_seconds_per_s: 16, est_start_s: 30 }, needs: [rt_latentsync, w_latentsync], requires_cuda: true }
   - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python, requires_cuda: true }
   - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server, needs: [llmsrv] }
   - { key: local/ace-step,          kind: music,   display: ACE-Step（本地）,         runtime: python }

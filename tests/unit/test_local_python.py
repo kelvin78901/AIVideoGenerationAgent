@@ -164,7 +164,7 @@ async def test_a_clip_model_estimates_its_time_by_the_clip(tmp_path: Path) -> No
     adapter = LocalPythonAdapter(spec, paths=paths, lease=VramLease(), workers_dir=FAKE_WORKERS)
     req = ModelRequest(kind="lipsync", prompt="", params={"duration_s": 5.0})
     est = adapter.estimate(req)
-    assert (est.cost_usd, est.seconds) == (0.0, 40 + 12 * 5.0)
+    assert (est.cost_usd, est.seconds) == (0.0, 30 + 16 * 5.0)
     # Without a clip length, by the text as before.
     tts = LocalPythonAdapter(SPEC, paths=paths, lease=VramLease(), workers_dir=FAKE_WORKERS)
     assert tts.estimate(_say("一二三")).seconds == pytest.approx(5.6)
