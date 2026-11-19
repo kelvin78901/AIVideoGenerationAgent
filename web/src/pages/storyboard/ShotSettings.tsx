@@ -38,6 +38,7 @@ import { formatUsd } from "@/lib/format";
 import { cn } from "@/lib/utils";
 import { currentVersion } from "@/lib/versions";
 import { Blocking } from "@/pages/storyboard/Blocking";
+import { LedgerSection } from "@/pages/storyboard/LedgerSection";
 import { ContractSection } from "@/pages/storyboard/ContractSection";
 import { durationSource } from "@/pages/storyboard/duration";
 import { ShotRefs } from "@/pages/storyboard/ShotRefs";
@@ -388,6 +389,7 @@ export function ShotSettings({
   novelPath,
   busy,
   canMerge,
+  labelOf,
   onPatch,
   onSplit,
   onMerge,
@@ -409,6 +411,8 @@ export function ShotSettings({
   busy: boolean;
   /** The next shot is in the same scene. */
   canMerge: boolean;
+  /** A shot's label (「1-02」) by its id (the 连续性 rows say where a state was carried from). */
+  labelOf: (shotId: string) => string;
   onPatch: (patch: ShotPatch) => void;
   onSplit: (afterLineId?: string) => void;
   onMerge: () => void;
@@ -567,14 +571,26 @@ export function ShotSettings({
       </div>
       <DurationNote shot={shot} onPatch={onPatch} />
 
-      <ContractSection
-        key={JSON.stringify(shot.contract)}
-        shot={shot}
-        lines={lines}
-        assets={assets}
-        disabled={busy}
-        onPatch={onPatch}
-      />
+      <div id={`${ids}-contract`} className="scroll-mt-4">
+        <ContractSection
+          key={JSON.stringify(shot.contract)}
+          shot={shot}
+          lines={lines}
+          assets={assets}
+          disabled={busy}
+          onPatch={onPatch}
+        />
+      </div>
+
+      {shot.ledger ? (
+        <LedgerSection
+          ledger={shot.ledger}
+          blockingId={`${ids}-blocking`}
+          contractId={`${ids}-contract`}
+          assetsPath={assetsPath}
+          labelOf={labelOf}
+        />
+      ) : null}
 
       <div className="flex flex-col gap-1.5">
         <Label htmlFor={`${ids}-desc`}>{t("shot.desc")}</Label>
@@ -654,7 +670,7 @@ export function ShotSettings({
       </Field>
 
       <Field label={t("shot.blocking")}>
-        <div className="max-w-md">
+        <div id={`${ids}-blocking`} className="max-w-md scroll-mt-4">
           <Blocking
             items={shot.blocking}
             framing={shot.framing}

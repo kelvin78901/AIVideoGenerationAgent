@@ -250,5 +250,46 @@
       "holding": "手里拿的东西",
       "outfit": "服装不变"
     }
+  },
+  "ledger": {
+    "title": "连续性",
+    "hint": "这个镜头开始时每个人在哪、手里拿着什么、穿什么、几点；从站位、契约和素材描述推出来，按场往下接。质检拿它对 take 的画面。",
+    "colCharacter": "角色",
+    "colPosition": "站位",
+    "colFacing": "朝向",
+    "colHolding": "手里",
+    "colOutfit": "服装",
+    "colProp": "道具",
+    "colState": "状态",
+    "colFrom": "从哪来",
+    "position": {
+      "left": "画面左侧",
+      "center": "画面中间",
+      "right": "画面右侧"
+    },
+    "depth": {
+      "near": "近",
+      "mid": "中",
+      "far": "远"
+    },
+    "fromShot": "（从 {{id}} 接）",
+    "fromAsset": "（素材描述）",
+    "own": "这个镜头的契约",
+    "endOf": "{{id}} 结束时",
+    "time": "时间",
+    "timeOfDay": {
+      "day": "日",
+      "night": "夜",
+      "dawn": "清晨",
+      "dusk": "黄昏"
+    },
+    "clockFrom": "（屏幕上的钟，从 {{id}} 接）",
+    "clock": "（屏幕上的钟）",
+    "edit": "去改",
+    "editPosition": "去改 {{name}} 的站位",
+    "editHolding": "去改 {{name}} 手里的东西",
+    "editOutfit": "去改 {{name}} 的服装",
+    "editProp": "去改 {{name}} 的状态",
+    "empty": "这个镜头没有拍到人，也没有要接的道具。"
   }
 }

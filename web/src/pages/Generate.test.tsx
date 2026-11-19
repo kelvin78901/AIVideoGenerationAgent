@@ -491,12 +491,15 @@ describe("GeneratePage", () => {
     expect(pill("1-02")).toHaveAttribute("aria-pressed", "true");
   });
 
-  it("the run bar follows the Inspector: 2K 精修", async () => {
+  it("the Inspector's 2K 精修 shows its route; results land on the shot's takes", async () => {
     const user = userEvent.setup();
     renderGenerate();
     await ready();
+    expect(screen.getByText(/当前产物 · 镜头 1-04 视频候选/)).toBeInTheDocument();
     await user.click(screen.getByRole("button", { name: "2K 精修" }));
-    expect(await screen.findByText("当前产物 · 2K 精修队列 · 3 条")).toBeInTheDocument();
+    expect(await screen.findByText("SeedVR2（本地）")).toBeInTheDocument();
+    // No product of its own (M6: a 2K take is a version of the shot's video): no run bar.
+    expect(screen.queryByText(/当前产物/)).not.toBeInTheDocument();
   });
 
   it("the Inspector says which workflow a shot's take went to and why", async () => {

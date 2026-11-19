@@ -21,8 +21,8 @@
  * GET /episodes/{id}/progress and GET /episodes/{id}/shots are the backend's too; the demo lays
  * episode 1's 后期 over the badges until M7. The video takes and 生成确认, GET / PUT
  * /series/{id}/generate-rules, GET /episodes/{id}/generate-log, POST /products/{id}/unadopt,
- * PATCH /versions/{id} and the impact previews' videos (M5); a take's 2K 精修 POST
- * /versions/{id}/upscale (M6). GET /metrics/summary is the
+ * PATCH /versions/{id} and the impact previews' videos (M5); a take's 2K 精修, 口型修复, 局部修复 and 重新质检 POST
+ * /versions/{id}/upscale|lipsync|inpaint|qa (M6). GET /metrics/summary is the
  * backend's with the demo's dashboard numbers on top until M8.
  * Never demo data: GET / POST /series, PATCH /series/{id}, POST /series/{id}/novel.
  *

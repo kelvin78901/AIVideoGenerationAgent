@@ -11,7 +11,8 @@
   "what": {
     "image": "{{name}} · 参考图 4 张候选",
     "text": "{{name}} · 文字素材 4 张候选",
-    "voice": "{{name}} · 音色候选 3 个"
+    "voice": "{{name}} · 音色候选 3 个",
+    "voiceClone": "{{name}} · 用样本克隆一个音色"
   },
   "list": {
     "label": "素材清单",

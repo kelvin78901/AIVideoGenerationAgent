@@ -250,5 +250,46 @@
       "holding": "holding what they held",
       "outfit": "the same clothes"
     }
+  },
+  "ledger": {
+    "title": "Continuity",
+    "hint": "Where everyone is when this shot starts, what they hold, what they wear and what time it is; worked out from the top view, the contract and the asset descriptions, carried on through the scene. QA checks the takes against it.",
+    "colCharacter": "Character",
+    "colPosition": "Position",
+    "colFacing": "Facing",
+    "colHolding": "Holding",
+    "colOutfit": "Outfit",
+    "colProp": "Prop",
+    "colState": "State",
+    "colFrom": "From",
+    "position": {
+      "left": "frame left",
+      "center": "frame centre",
+      "right": "frame right"
+    },
+    "depth": {
+      "near": "near",
+      "mid": "mid",
+      "far": "far"
+    },
+    "fromShot": " (carried from {{id}})",
+    "fromAsset": " (asset description)",
+    "own": "This shot's contract",
+    "endOf": "End of {{id}}",
+    "time": "Time",
+    "timeOfDay": {
+      "day": "day",
+      "night": "night",
+      "dawn": "dawn",
+      "dusk": "dusk"
+    },
+    "clockFrom": " (clock on screen, carried from {{id}})",
+    "clock": " (clock on screen)",
+    "edit": "Edit",
+    "editPosition": "Edit where {{name}} stands",
+    "editHolding": "Edit what {{name}} holds",
+    "editOutfit": "Edit {{name}}'s outfit",
+    "editProp": "Edit the state of {{name}}",
+    "empty": "Nobody is filmed in this shot and no props carry on."
   }
 }

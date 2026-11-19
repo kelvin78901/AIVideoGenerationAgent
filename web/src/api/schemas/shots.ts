@@ -62,6 +62,40 @@ export const BlockingItemSchema = z.object({
 });
 export type BlockingItem = z.infer<typeof BlockingItemSchema>;
 
+/** 连续性账本 (M6, `shots/ledger.py`): each filmed person at the shot's start, the props'
+ * states and the time; `*_from` the earlier shot (label) it was carried from. */
+export const ShotLedgerSchema = z.object({
+  characters: z.array(
+    z.object({
+      asset_id: z.string(),
+      name: z.string(),
+      position: z.enum(["left", "center", "right"]).nullable(),
+      depth: z.enum(["near", "mid", "far"]).nullable(),
+      facing: z.string().nullable(),
+      holding: z.array(z.string()),
+      holding_names: z.array(z.string()),
+      holding_from: z.string().nullable(),
+      outfit: z.string().nullable(),
+      outfit_from: z.string().nullable(),
+    }),
+  ),
+  props: z.array(
+    z.object({
+      asset_id: z.string(),
+      name: z.string(),
+      state: z.string(),
+      /** null: this shot's own contract. */
+      from_shot: z.string().nullable(),
+    }),
+  ),
+  time: z.object({
+    time_of_day: z.string().nullable(),
+    clock: z.string().nullable(),
+    clock_from: z.string().nullable(),
+  }),
+});
+export type ShotLedger = z.infer<typeof ShotLedgerSchema>;
+
 export const ShotSchema = z.object({
   id: z.string(),
   episode_id: z.string(),
@@ -117,6 +151,8 @@ export const ShotSchema = z.object({
   /** Confirmed, but the shot's settings or its keyframe changed since (「待更新」). */
   confirm_stale: z.boolean(),
   contract: ShotContractSchema,
+  /** 连续性账本 (M6): where the shot starts, worked out on read; read-only here. */
+  ledger: ShotLedgerSchema.optional(),
 });
 export type Shot = z.infer<typeof ShotSchema>;
 

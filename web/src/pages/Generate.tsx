@@ -79,22 +79,9 @@ export default function GeneratePage() {
   const modelName = (key: string | null | undefined) => nameOf(catalog.data?.models ?? [], key);
 
   const episodeVideos = list.map(videoOf).filter((p): p is Product => !!p);
-  const adoptedCount = episodeVideos.filter((p) => p.adopted_version_id).length;
-  const lipCount = episodeVideos.filter((p) =>
-    p.versions
-      .find((v) => v.id === p.adopted_version_id)
-      ?.qa?.checks.some((c) => c.metric === "lipsync" && c.ok === false),
-  ).length;
   const queued = list.filter((s) => statusOf(s) === "queued");
   const textInPost = (s: Shot) =>
     (assets.data ?? []).some((a) => s.asset_ids.includes(a.id) && a.text?.method === "composite");
-
-  const what = () => {
-    if (component === "up") return t("what.up", { count: adoptedCount });
-    if (component === "lip") return t("what.lip", { count: lipCount });
-    if (component === "qa") return t("what.qa");
-    return t("what.vid", { id: shot?.label ?? "" });
-  };
 
   return (
     <StepLayout
@@ -158,7 +145,7 @@ export default function GeneratePage() {
               {product ? (
                 <RunBar
                   product={product}
-                  what={what()}
+                  what={t("what.vid", { id: shot.label })}
                   models={models}
                   variant={component === "vid" ? "take" : "default"}
                   onEditPrompt={() => show("prompt", component)}

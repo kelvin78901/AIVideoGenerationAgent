@@ -229,6 +229,9 @@ describe("AssetsPage", () => {
     await user.click(item(/^周屿\s*音色/));
     await user.click(screen.getByRole("radio", { name: "声音克隆" }));
     await waitFor(() => expect(asset("vzhouyu")?.voice?.method).toBe("clone"));
+    // The run bar says one voice is cloned, not 3 candidates.
+    expect(await screen.findByText(/· 用样本克隆一个音色$/)).toBeInTheDocument();
+    expect(screen.queryByText(/音色候选 3 个/)).not.toBeInTheDocument();
     const panel = await screen.findByRole("region", { name: "声音样本" });
     const local = within(panel).getByRole("button", { name: "用本地出终版（免费）" });
     const clone = within(panel).getByRole("button", { name: "克隆 · 约 $1.40" });

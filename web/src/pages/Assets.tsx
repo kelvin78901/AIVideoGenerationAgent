@@ -3,7 +3,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Layers } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { Link } from "react-router";
+import { Link, useSearchParams } from "react-router";
 import { toast } from "sonner";
 
 import { errorMessage } from "@/api/client";
@@ -59,7 +59,9 @@ export default function AssetsPage() {
   const component = useInspectorStore((s) => s.component);
   const show = useInspectorStore((s) => s.show);
   const [filter, setFilter] = useState<AssetKind | "all">("all");
-  const [selectedId, setSelectedId] = useState("linwan");
+  // 分镜页「连续性」的「去改」 links here with ?asset=<id> (that person's description).
+  const [search] = useSearchParams();
+  const [selectedId, setSelectedId] = useState(() => search.get("asset") ?? "linwan");
   const [unlocking, setUnlocking] = useState<Asset | null>(null);
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<View>("list");
@@ -197,7 +199,15 @@ export default function AssetsPage() {
         <RunBar
           product={product.data}
           what={t(
-            `what.${selected.kind === "voice" ? "voice" : selected.kind === "text" ? "text" : "image"}`,
+            `what.${
+              selected.kind === "voice"
+                ? selected.voice?.method === "clone"
+                  ? "voiceClone"
+                  : "voice"
+                : selected.kind === "text"
+                  ? "text"
+                  : "image"
+            }`,
             {
               name: selected.name,
             },

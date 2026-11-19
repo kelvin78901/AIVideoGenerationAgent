@@ -294,6 +294,7 @@ export default function StoryboardPage() {
                 novelPath={(idx) => `${paths.step(seriesId, ep, "novel")}?para=${idx}`}
                 busy={busy}
                 canMerge={list[list.indexOf(shot) + 1]?.scene_id === shot.scene_id}
+                labelOf={(id) => list.find((s) => s.id === id)?.label ?? id}
                 onPatch={(change) => edit(shot, { kind: "patch", change })}
                 onSplit={(after) => edit(shot, { kind: "split", after })}
                 onMerge={() => edit(shot, { kind: "merge" })}

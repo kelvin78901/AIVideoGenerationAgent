@@ -11,7 +11,8 @@
   "what": {
     "image": "{{name}} · 4 reference candidates",
     "text": "{{name}} · 4 text candidates",
-    "voice": "{{name}} · 3 voice candidates"
+    "voice": "{{name}} · 3 voice candidates",
+    "voiceClone": "{{name}} · one voice cloned from the sample"
   },
   "list": {
     "label": "Asset list",

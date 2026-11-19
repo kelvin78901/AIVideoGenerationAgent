@@ -127,6 +127,38 @@ describe("StoryboardPage", () => {
     );
   });
 
+  it("shows the shot's continuity, read-only, with where each state came from", async () => {
+    const user = userEvent.setup();
+    renderBoard("/s/demo/e/1/storyboard?shot=demo-shot-1-09");
+    expect(await screen.findByRole("heading", { name: "镜头 1-09" })).toBeInTheDocument();
+    const section = screen.getByRole("region", { name: "连续性" });
+    const people = within(section).getByRole("table", { name: "角色" });
+    const row = within(people).getByRole("row", { name: /林晚/ });
+    expect(row).toHaveTextContent("画面右侧 · 中");
+    expect(row).toHaveTextContent("望向门外地上");
+    expect(row).toHaveTextContent("米色风衣湿了半边（素材描述）");
+    expect(within(row).getByRole("link", { name: "去改 林晚 的服装" })).toHaveAttribute(
+      "href",
+      "/s/demo/e/1/assets?asset=linwan",
+    );
+    const props = within(section).getByRole("table", { name: "道具" });
+    expect(within(props).getByRole("row", { name: /红色长柄伞/ })).toHaveTextContent(
+      "靠在门外墙边这个镜头的契约",
+    );
+    // The clock on screen is carried from 1-07 (its id mapped to the label).
+    expect(section).toHaveTextContent("夜 · 23:52（屏幕上的钟，从 1-07 接）");
+    // 「去改」 the position scrolls to the top view.
+    const scroll = vi.fn();
+    const original = Element.prototype.scrollIntoView;
+    Element.prototype.scrollIntoView = scroll;
+    try {
+      await user.click(within(row).getByRole("button", { name: "去改 林晚 的站位" }));
+      expect(scroll).toHaveBeenCalled();
+    } finally {
+      Element.prototype.scrollIntoView = original;
+    }
+  });
+
   it("marks references that are not locked yet", async () => {
     const user = userEvent.setup();
     renderBoard();

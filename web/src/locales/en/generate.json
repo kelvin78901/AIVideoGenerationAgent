@@ -37,10 +37,7 @@
     "not_started": "Not started"
   },
   "what": {
-    "vid": "Shot {{id}} video takes",
-    "up": "2K finishing queue · {{count}}",
-    "lip": "Lip-sync repair · {{count}}",
-    "qa": "QA model"
+    "vid": "Shot {{id}} video takes"
   },
   "wall": {
     "label": "Takes",

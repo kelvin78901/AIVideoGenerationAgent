@@ -21,7 +21,6 @@ import {
 import { series } from "@/mocks/fixtures/demo/series";
 import { audio, postProducts, subtitles, type ClipSettings } from "@/mocks/fixtures/demo/post";
 import { syncLog, syncRules, syncTargets } from "@/mocks/fixtures/demo/sync";
-import { finishingProducts } from "@/mocks/fixtures/demo/finishing";
 
 function createDb() {
   return structuredClone({
@@ -42,7 +41,7 @@ function createDb() {
       qa: qaMetrics,
       episodes: episodeMetrics,
     },
-    products: Object.fromEntries([...finishingProducts, ...postProducts].map((p) => [p.id, p])),
+    products: Object.fromEntries(postProducts.map((p) => [p.id, p])),
     assets,
     /** Episode 1's shots and video takes as the backend last answered them (`handlers/shots.ts`). */
     shots: [] as Shot[],
