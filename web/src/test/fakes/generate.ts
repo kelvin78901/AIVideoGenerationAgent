@@ -404,8 +404,16 @@ export function generateHandlers() {
       if (params.id !== "demo") return error(404, "series_not_found");
       const body = GenerateRulesPatchSchema.strict().safeParse(await request.json());
       if (!body.success) return error(422, "invalid_request");
-      Object.assign(fakeGenerate.rules, body.data);
-      return HttpResponse.json(fakeGenerate.rules);
+      const { thresholds, qa_on, reset_qa, ...rest } = body.data;
+      const rules = fakeGenerate.rules;
+      Object.assign(rules, rest);
+      if (reset_qa) {
+        rules.thresholds = structuredClone(demoRules.thresholds);
+        rules.qa_on = structuredClone(demoRules.qa_on);
+      }
+      Object.assign(rules.thresholds, thresholds);
+      Object.assign(rules.qa_on, qa_on);
+      return HttpResponse.json(rules);
     }),
 
     http.get("*/api/v1/series/:id/workflow-rules", ({ params }) =>

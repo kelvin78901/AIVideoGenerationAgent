@@ -15,8 +15,21 @@ export const QaThresholdsSchema = z.object({
   syncnet_conf: z.number(),
   /** ASR character error rate, ≤. */
   cer_max: z.number(),
+  /** The lines' voice against the locked voice, ≥ (M6). */
+  speaker_sim: z.number(),
 });
 export type QaThresholds = z.infer<typeof QaThresholdsSchema>;
+
+/** Which checks can fail a take; one turned off is still shown (M6). */
+export const QaSwitchesSchema = z.object({
+  face: z.boolean(),
+  lipsync: z.boolean(),
+  asr: z.boolean(),
+  speaker: z.boolean(),
+  ocr: z.boolean(),
+  vlm: z.boolean(),
+});
+export type QaSwitches = z.infer<typeof QaSwitchesSchema>;
 
 /** `GET / PUT /series/{id}/generate-rules` */
 export const GenerateRulesSchema = z.object({
@@ -26,12 +39,24 @@ export const GenerateRulesSchema = z.object({
   qa_retry_max: z.number().int().min(0).max(5),
   /** Stop and ask once a shot's spend would pass this. */
   shot_cap_usd: z.number().min(0),
-  /** Read-only here; set in components.yaml. */
+  /** The series' QA thresholds (components.yaml's unless changed here, M6). */
   thresholds: QaThresholdsSchema,
+  qa_on: QaSwitchesSchema,
 });
 export type GenerateRules = z.infer<typeof GenerateRulesSchema>;
 
-export const GenerateRulesPatchSchema = GenerateRulesSchema.omit({ thresholds: true }).partial();
+/** A change of some rules; a change to the thresholds or switches judges the takes again
+ * (not measured again). `reset_qa`: 恢复默认, both back to the config's. */
+export const GenerateRulesPatchSchema = GenerateRulesSchema.omit({
+  thresholds: true,
+  qa_on: true,
+})
+  .extend({
+    thresholds: QaThresholdsSchema.partial(),
+    qa_on: QaSwitchesSchema.partial(),
+    reset_qa: z.boolean(),
+  })
+  .partial();
 export type GenerateRulesPatch = z.infer<typeof GenerateRulesPatchSchema>;
 
 /** 按镜头选工作流 (SPEC 6.4.8): a rule's conditions; a field left out matches any shot. */

@@ -139,7 +139,28 @@
     "retryAfter": "次，仍不过就按兜底设置换模型",
     "capBefore": "单个镜头花费超过 $",
     "capAfter": "就停下来问我",
-    "thresholds": "质检阈值：人脸一致性 ≥ {{face}}（对比锁定参考）· 口型同步置信度 ≥ {{sync}} · 台词识别错字率 ≤ {{cer}} · 画面文字 OCR 逐字一致 · 画面检查由视觉模型看瑕疵和是否符合描述。"
+    "lipsOnly": "只有口型没过：",
+    "lipsAction": "自动口型修复",
+    "lipsNote": "（不整条重跑）",
+    "qaTitle": "质检阈值",
+    "qaLead": "只影响这部剧；改了已有的 take 会按新阈值重新判，不重新算分",
+    "colCheck": "项目",
+    "colLimit": "阈值",
+    "colOn": "开",
+    "colNote": "说明",
+    "limitOf": "{{name}}的阈值",
+    "switchOf": "{{name}}算不算没过",
+    "exact": "逐字一致",
+    "noIssue": "没问题",
+    "reset": "恢复默认",
+    "note": {
+      "face": "对比锁定的角色参考",
+      "lipsync": "SyncNet 分：±2 帧内对得上的程度，只查有对白的镜头",
+      "asr": "识别结果对剧本台词",
+      "speaker": "对锁定音色",
+      "ocr": "OCR 每秒一帧",
+      "vlm": "视觉模型对契约和连续性账本"
+    }
   },
   "log": {
     "title": "运行记录",

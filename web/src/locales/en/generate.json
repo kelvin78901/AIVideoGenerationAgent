@@ -139,7 +139,28 @@
     "retryAfter": "times, then switch models per the fallback settings",
     "capBefore": "When a shot would cost more than $",
     "capAfter": "stop and ask me",
-    "thresholds": "QA thresholds: face match ≥ {{face}} (against the locked reference) · lip-sync confidence ≥ {{sync}} · dialogue character error rate ≤ {{cer}} · on-screen text must match exactly (OCR) · the vision model checks for defects and whether the picture matches the description."
+    "lipsOnly": "Only the lips failed:",
+    "lipsAction": "Automatic lip-sync repair",
+    "lipsNote": "(no full rerun)",
+    "qaTitle": "QA thresholds",
+    "qaLead": "This series only; existing takes are judged again by the new limits, not measured again",
+    "colCheck": "Check",
+    "colLimit": "Limit",
+    "colOn": "On",
+    "colNote": "What it compares",
+    "limitOf": "Limit for {{name}}",
+    "switchOf": "Whether {{name}} can fail a take",
+    "exact": "Exact match",
+    "noIssue": "No issues",
+    "reset": "Reset to defaults",
+    "note": {
+      "face": "Against the locked character references",
+      "lipsync": "SyncNet score: how well it lines up within ±2 frames; dialogue shots only",
+      "asr": "What is heard against the script's lines",
+      "speaker": "Against the locked voice",
+      "ocr": "OCR, one frame a second",
+      "vlm": "Vision model against the contract and the continuity ledger"
+    }
   },
   "log": {
     "title": "Run log",

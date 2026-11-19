@@ -36,7 +36,12 @@ export function useSaveGenerateRules(seriesId: string) {
   return useMutation({
     mutationFn: (body: GenerateRulesPatch) =>
       put(`/series/${enc(seriesId)}/generate-rules`, GenerateRulesSchema, body),
-    onSuccess: (rules) => client.setQueryData(generateKeys.rules(seriesId), rules),
+    onSuccess: (rules, body) => {
+      client.setQueryData(generateKeys.rules(seriesId), rules);
+      // The takes were judged again: their passes and the 推荐 may have changed.
+      if (body.thresholds || body.qa_on || body.reset_qa)
+        void client.invalidateQueries({ queryKey: productKeys.all });
+    },
   });
 }
 

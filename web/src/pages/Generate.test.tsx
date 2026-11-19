@@ -434,7 +434,42 @@ describe("GeneratePage", () => {
     await user.type(cap, "3{Enter}");
     await waitFor(() => expect(fakeGenerate.rules.shot_cap_usd).toBe(3));
     expect(await screen.findByText("单镜上限 $3，超了会先问你")).toBeInTheDocument();
-    expect(screen.getByText(/人脸一致性 ≥ 0.18.*错字率 ≤ 20%/)).toBeInTheDocument();
+  });
+
+  it("edits the QA thresholds, switches a check off and resets them", async () => {
+    const user = userEvent.setup();
+    renderGenerate();
+    await ready();
+    const table = await screen.findByRole("table", { name: "质检阈值" });
+    const face = within(table).getByLabelText("人脸一致性的阈值");
+    expect(face).toHaveValue(0.18);
+    // The error rate is shown in %.
+    const cer = within(table).getByLabelText("台词识别的阈值");
+    expect(cer).toHaveValue(20);
+    await user.clear(cer);
+    await user.type(cer, "15{Enter}");
+    await waitFor(() => expect(fakeGenerate.rules.thresholds.cer_max).toBeCloseTo(0.15));
+    await user.clear(face);
+    await user.type(face, "0.3");
+    await user.tab();
+    await waitFor(() => expect(fakeGenerate.rules.thresholds.face_sim).toBe(0.3));
+    // Out of range snaps back.
+    const sync = within(table).getByLabelText("口型同步的阈值");
+    await user.clear(sync);
+    await user.type(sync, "99{Enter}");
+    expect(sync).toHaveValue(1);
+
+    const speaker = within(table).getByRole("switch", { name: "音色相似度算不算没过" });
+    expect(speaker).toBeChecked();
+    await user.click(speaker);
+    await waitFor(() => expect(fakeGenerate.rules.qa_on.speaker).toBe(false));
+    expect(speaker).not.toBeChecked();
+
+    await user.click(screen.getByRole("button", { name: "恢复默认" }));
+    await waitFor(() => expect(fakeGenerate.rules.qa_on.speaker).toBe(true));
+    expect(fakeGenerate.rules.thresholds.face_sim).toBe(0.18);
+    await waitFor(() => expect(within(table).getByLabelText("人脸一致性的阈值")).toHaveValue(0.18));
+    expect(within(table).getByLabelText("台词识别的阈值")).toHaveValue(20);
   });
 
   it("lists the run log newest first", async () => {
