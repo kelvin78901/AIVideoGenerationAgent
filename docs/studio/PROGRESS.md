@@ -19,7 +19,7 @@
 - **9b**（63e00b3）自动规则的质检阈值表（草图 G3）：每项阈值可改（字错率按 %、超出范围弹回）、开关（`qa_on`）、「恢复默认」（`reset_qa`）；「只有口型没过：自动口型修复」一行；改了就刷新产物（后端 `rejudge` 已有）。前端 schema 加 `speaker_sim`、`qa_on`、补丁的 `thresholds` / `qa_on` / `reset_qa`；面板 basis 改 30rem（窄屏排到运行记录上面）。测试：Vitest Generate 24、i18n、typecheck、lint、format 过。
 - **9c**（3cf2da1）分镜页镜头详情「连续性」只读一节（`pages/storyboard/LedgerSection.tsx`，草图 S1：角色站位 / 朝向 / 手里 / 服装、道具状态和来源、时间和屏幕上的钟；`*_from` 的镜头 id 换成镜头号；「去改」滚到站位图 / 契约，服装跳素材页 `?asset=`）；素材页克隆模式运行条改文案；删 MSW `fixtures/demo/finishing.ts` 和 `what.up/lip/qa`。DECISIONS「M6 第 9c 步」。测试：Vitest Storyboard 35、Assets 27、Generate 24、products / Post / Sync / storyboard 共 128、i18n、typecheck、lint、format 过。**第 9 步做完。**
 - **8a 重跑**（9862ee2）Kelvin 看对比图发现 8a 的遮罩盖住了字条第二行（字被重画乱）、不加 LoRA 那轮伞变黄。两块框只盖伞重跑（`reports/m6-vace-local/1-04-T9-s4-remove-tight-*`）：伞去掉、字条原样、无接缝，伞钩尖留一个红点。`local_vace.py` 加多框和 `--keep`。DECISIONS「M6 第 8a 步更正」。ruff、mypy（脚本）过。
-- **9d**（本提交）遮罩盖到字时提醒：`worker_rapidocr` 每帧带回文字框；质检 OCR 存 `regions`（Mock 给 `qa.MOCK_TEXT_BOX`）；`InpaintDialog` take 模式虚线画框，涂抹（加 24 px 扩边羽化）碰到就提醒，可照样提交。本机 RapidOCR 核对过框的格式（N×4×2）。DECISIONS「M6 第 8a 步更正」。测试：`test_worker_qa.py`、`test_qa_api.py`、`test_qa.py` 29；Vitest Generate + pictures 34、i18n、typecheck、lint、format；ruff、mypy（含 linux）过。
+- **9d**（cc2060e）遮罩盖到字时提醒：`worker_rapidocr` 每帧带回文字框；质检 OCR 存 `regions`（Mock 给 `qa.MOCK_TEXT_BOX`）；`InpaintDialog` take 模式虚线画框，涂抹（加 24 px 扩边羽化）碰到就提醒，可照样提交。本机 RapidOCR 核对过框的格式（N×4×2）。DECISIONS「M6 第 8a 步更正」。测试：`test_worker_qa.py`、`test_qa_api.py`、`test_qa.py` 29；Vitest Generate + pictures 34、i18n、typecheck、lint、format；ruff、mypy（含 linux）过。
 
 ## 下一步
 
