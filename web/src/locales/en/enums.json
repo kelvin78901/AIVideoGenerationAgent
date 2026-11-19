@@ -23,7 +23,8 @@
     "upload": "Uploaded",
     "redraw": "Redrawn from a picture",
     "inpaint": "Fixed in part",
-    "upscale": "Upscaled"
+    "upscale": "Upscaled",
+    "lipsync": "Lip-sync repair"
   },
   "emotion": {
     "calm": "Calm",

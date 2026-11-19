@@ -937,10 +937,10 @@
         "where": "api",
         "price": {
           "unit": "second",
-          "amount": 0.067,
+          "amount": 0.08325,
           "currency": "USD"
         },
-        "priced": false,
+        "priced": true,
         "tier": null
       },
       {

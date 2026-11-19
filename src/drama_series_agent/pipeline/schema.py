@@ -12,10 +12,11 @@ ProductStatus = Literal[
     "empty", "queued", "running", "ready", "stale", "adopted", "locked", "failed"
 ]  # fmt: skip
 # ``pick``: the candidate the user locked, alone (M3); ``upload``: the user's own file;
-# ``redraw`` / ``inpaint`` / ``upscale``: a picture made from another one (M5.5).
+# ``redraw`` / ``inpaint`` / ``upscale``: a picture made from another one (M5.5), a take's 2K
+# (M6); ``lipsync``: a take's 口型修复 (M6).
 VersionOrigin = Literal[
     "run", "rerun", "switch", "edit", "fallback", "import", "auto_qa_rerun", "comfy_ingest",
-    "pick", "upload", "redraw", "inpaint", "upscale",
+    "pick", "upload", "redraw", "inpaint", "upscale", "lipsync",
 ]  # fmt: skip
 
 

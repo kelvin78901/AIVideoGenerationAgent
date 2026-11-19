@@ -74,6 +74,8 @@ export const VersionOriginSchema = z.enum([
   "redraw",
   "inpaint",
   "upscale",
+  /** A take's 口型修复 (M6). */
+  "lipsync",
 ]);
 export type VersionOrigin = z.infer<typeof VersionOriginSchema>;
 

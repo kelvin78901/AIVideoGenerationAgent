@@ -23,7 +23,8 @@
     "upload": "上传",
     "redraw": "以这张为底重画",
     "inpaint": "局部修复",
-    "upscale": "放大"
+    "upscale": "放大",
+    "lipsync": "口型修复"
   },
   "emotion": {
     "calm": "平静",

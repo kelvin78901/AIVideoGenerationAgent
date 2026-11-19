@@ -274,6 +274,18 @@ def _sound_of(data: bytes, source: bytes) -> bytes:
         return out.read_bytes()
 
 
+def _with_track(data: bytes, track: bytes) -> bytes:
+    with TemporaryDirectory() as tmp:
+        pic, snd, out = Path(tmp) / "pic.mp4", Path(tmp) / "snd.wav", Path(tmp) / "out.mp4"
+        pic.write_bytes(data)
+        snd.write_bytes(track)
+        _run(
+            "-i", str(pic), "-i", str(snd), "-map", "0:v:0", "-map", "1:a:0", "-c:v", "copy",
+            "-c:a", "aac", "-b:a", "192k", "-shortest", "-movflags", "+faststart", "-y", str(out),
+        )  # fmt: skip
+        return out.read_bytes()
+
+
 def _sheet(data: bytes, frames: int) -> tuple[bytes, list[float]]:
     with TemporaryDirectory() as tmp:
         src, out = Path(tmp) / "in.mp4", Path(tmp) / "sheet.png"
@@ -317,6 +329,12 @@ async def with_sound_of(data: bytes, source: bytes) -> bytes:
     """``data``'s picture with ``source``'s sound track as it is (stream copy; none when the
     source has none): an upscaled take keeps the take's sound exactly (M6 2K 精修)."""
     return await asyncio.to_thread(_sound_of, data, source)
+
+
+async def with_track(data: bytes, track: bytes) -> bytes:
+    """``data``'s picture (stream copy) with ``track`` (a WAV) as its sound, cut where the
+    picture ends: a lip-synced take carries the dub its lips were made to (M6 口型修复)."""
+    return await asyncio.to_thread(_with_track, data, track)
 
 
 async def tail_clip(

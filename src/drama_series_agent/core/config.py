@@ -109,6 +109,9 @@ class LlmProvider(_Loose):
     sites: dict[str, Site] = Field(default_factory=dict)
     default_site: str | None = None
     verify: bool = False
+    # An account for media models only (sync.so, M6): no writing models, no ``GET /models``;
+    # its connection test is its media models' own.
+    media_only: bool = False
     # Ask the server for a context of ``max_context`` (``options.num_ctx``, Ollama): its
     # default can be as small as 2–4k and silently cuts long prompts.
     send_num_ctx: bool = False

@@ -3,7 +3,10 @@
 Once the last QA job of a run's takes (one job's versions, a 「批」) has written, and none of
 them passes:
 
-1. only lip sync failed (on the best of them) → 口型修复 (step 7a; until then, a rerun);
+1. only lip sync failed (on the best of them) → 口型修复 of that take (component ``lip``,
+   ``params.auto: auto_lip``; step 7a). Once a repair of a take of the batch is checked: it
+   passed → nothing more; it failed → on to 2 (a take is never repaired twice). A shot it
+   cannot be done on (nobody speaks on screen, a line not dubbed) gets a rerun instead;
 2. fewer automatic reruns since the last run a person started than the series'
    ``qa_retry_max`` → the same model makes one more take (origin ``auto_qa_rerun``), told what
    failed (``fixes``, to its prompt);
@@ -21,12 +24,12 @@ product locked (the person decided).
 What was decided is kept on the take that decided it, ``qa_json.policy`` ``{action, job_id,
 model}``, for the run log (``pipeline/generate.py``).
 
-A finished take (2K 精修, later 口型修复 and 局部修复: ``params.finish``) is no take of a batch:
+A finished take (2K 精修, 口型修复, later 局部修复: ``params.finish``) is no take of a batch:
 once checked (the first time; 「重新质检」 adopts nothing) it is adopted when the take it came
 from is the adopted one, it fails nothing that take passed, and the product is not locked
 (Kelvin 2026-11-14: asking for it is asking to use it; the take stays in the history). A check
 the take failed already and was kept anyway does not count (Kelvin 2026-11-17: 不比原片差就采纳).
-Otherwise it stays a candidate.
+Otherwise it stays a candidate. A repair QA asked for is judged with its batch (1.).
 """
 
 from __future__ import annotations
@@ -50,7 +53,9 @@ if TYPE_CHECKING:
     from drama_series_agent.pipeline.runs import RunService
 
 AUTO_RERUN = "auto_qa_rerun"
-FINISH = "finish"  # ``params.finish`` {kind, version_id} (``components/up.py``)
+AUTO_LIP = "auto_lip"  # 口型修复 QA asked for (``params.auto``)
+FINISH = "finish"  # ``params.finish`` {kind, version_id} (``components/up.py``, ``lip.py``)
+LIPSYNC = "lipsync"  # 口型修复's origin and ``finish.kind``
 QA_FAIL = "qa_fail"
 # Versions that are takes of a run (a final, an upscale, a repair are not).
 BATCH_ORIGINS = ("run", "rerun", "switch", "fallback", AUTO_RERUN)
@@ -63,15 +68,29 @@ class Decision:
     model: str | None = None
     fixes: list[str] = field(default_factory=list)
     source: ProductVersion | None = None  # the take the next one answers (the best failed)
+    # Where the decision is noted (``qa_json.policy``, the run log): ``source``, or the failed
+    # 口型修复 of it the decision followed.
+    noted: ProductVersion | None = None
 
 
 def is_take(v: ProductVersion) -> bool:
-    return v.origin in BATCH_ORIGINS and v.stage != "final"
+    # A finished take that fell back is origin ``fallback`` too: still no take of a batch.
+    return v.origin in BATCH_ORIGINS and v.stage != "final" and not is_finished(v)
 
 
 def is_finished(v: ProductVersion) -> bool:
     """A take finished from another (2K 精修 …: ``params.finish``)."""
     return isinstance((v.params_json or {}).get(FINISH), dict)
+
+
+def repairs_of(versions: Sequence[ProductVersion], ids: set[str]) -> list[ProductVersion]:
+    """The 口型修复 made of the takes ``ids``."""
+    out: list[ProductVersion] = []
+    for v in versions:
+        finish = (v.params_json or {}).get(FINISH)
+        if isinstance(finish, dict) and finish.get("kind") == LIPSYNC:
+            out += [v] if str(finish.get("version_id")) in ids else []
+    return out
 
 
 def automatic(v: ProductVersion) -> bool:
@@ -136,8 +155,23 @@ def decide(versions: Sequence[ProductVersion], *, retry_max: int, fallback: str 
     if any(v.qa_pass is not False for v in batch):
         return Decision("none")  # one passed, or could not be checked
     best = max(batch, key=lambda v: float((v.qa_json or {}).get("score") or 0))
-    if {c["metric"] for c in failing(best)} == {"lipsync"}:
-        return Decision("lip", best.model_key, source=best)
+    repairs = repairs_of(versions, {v.id for v in batch})
+    if any(r.qa_json is None for r in repairs):
+        return Decision("wait")
+    if any(r.qa_pass is not False for r in repairs):
+        return Decision("none")  # a repair passed, or could not be checked
+    if not repairs and {c["metric"] for c in failing(best)} == {"lipsync"}:
+        return Decision("lip", source=best)
+    decision = _next(takes, best, retry_max=retry_max, fallback=fallback)
+    if repairs:
+        decision.noted = max(repairs, key=lambda r: r.n)
+    return decision
+
+
+def _next(
+    takes: list[ProductVersion], best: ProductVersion, *, retry_max: int, fallback: str | None
+) -> Decision:
+    """Once the batch failed (and its repair did): rerun, fall back or stop."""
     manual = [i for i, v in enumerate(takes) if not automatic(v)]
     since = takes[manual[-1] + 1 :] if manual else takes
     reruns = len({v.job_id for v in since if automatic(v) and v.fallback_reason != QA_FAIL})
@@ -165,8 +199,9 @@ class QaPolicy:
         if v is None:
             return
         if is_finished(v):
-            if first:
-                await self.adopt_finished(v.id)
+            adopted = first and await self.adopt_finished(v.id)
+            if not adopted and (v.params_json or {})[FINISH].get("kind") == LIPSYNC:
+                await self.after_qa(v.product_id)  # a repair is judged with its batch
         elif is_take(v):
             await self.after_qa(v.product_id)
 
@@ -221,12 +256,25 @@ class QaPolicy:
         decision = decide(versions, retry_max=rules.qa_retry_max, fallback=fallback)
         if decision.action in ("none", "wait"):
             return decision
-        if decision.action == "lip":  # 口型修复 comes with step 7a; a rerun until then
-            assert decision.source is not None
-            decision = Decision(
-                "rerun", decision.model, fix_lines(decision.source), decision.source
-            )
         job_id: str | None = None
+        if decision.action == "lip":
+            source = decision.source
+            assert source is not None
+            try:
+                job = await self.runs.start(
+                    product_id,
+                    "run",
+                    component_id="lip",
+                    params={"lip_version_id": source.id},
+                    origin=AUTO_LIP,
+                )
+            except PipelineError as exc:  # nobody speaks on screen, a line not dubbed …
+                logger.info("no 口型修复 for {} ({}): rerun or fall back", product_id, exc.code)
+                ordered = sorted(takes, key=lambda v: v.n)
+                decision = _next(ordered, source, retry_max=rules.qa_retry_max, fallback=fallback)
+            else:
+                await self._note(source.id, decision, job.id)
+                return decision
         try:
             if decision.action == "rerun":
                 job = await self.runs.start(
@@ -254,8 +302,9 @@ class QaPolicy:
         except PipelineError as exc:  # a run started meanwhile, a component off …
             logger.info("QA left {} as it is: {}", product_id, exc.code)
             return Decision("none")
-        assert decision.source is not None
-        await self._note(decision.source.id, decision, job_id)
+        noted = decision.noted or decision.source
+        assert noted is not None
+        await self._note(noted.id, decision, job_id)
         return decision
 
     def _confirm(self, failed: ProductVersion) -> dict[str, Any]:

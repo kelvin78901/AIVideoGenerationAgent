@@ -58,6 +58,7 @@ from drama_series_agent.pipeline.components.img import ImgComponent
 from drama_series_agent.pipeline.components.inpaint import InpaintComponent
 from drama_series_agent.pipeline.components.iup import IupComponent
 from drama_series_agent.pipeline.components.kf import KfComponent, stale_aspect
+from drama_series_agent.pipeline.components.lip import LipComponent
 from drama_series_agent.pipeline.components.plan import (
     SHOT_PLAN_SLOT,
     PlanComponent,
@@ -204,6 +205,7 @@ class StudioState:
         components.add(KfComponent(components.services))
         components.add(VidComponent(components.services))
         components.add(UpComponent(components.services))
+        components.add(LipComponent(components.services))
         # A line's audio is one of dozens: lists of them skip the per-product estimate.
         products.quiet_slots.add(LINE_AUDIO_SLOT)
         episodes = EpisodeService(db, products, invalidation)

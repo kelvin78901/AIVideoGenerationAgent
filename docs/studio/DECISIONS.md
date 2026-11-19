@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-18 · M6 第 7a 步：口型修复后端
+
+- **组件 `lip`（`pipeline/components/lip.py`）和 2K 精修一样跑在镜头的视频产物上**（`UpComponent` 的子类）。`POST /versions/{id}/lipsync` → 一个版本：origin `lipsync`（新加进 `VersionOrigin`，前端 schema 和词表同时加）、父版本 = 原 take、**stage 跟原 take**（草稿修完还是草稿）、`params.finish = {kind: lipsync, version_id}`；依赖 = 原 take 的 + 用到的台词配音。质检、自动采纳和 2K 精修同一条（`adopt_finished`：原 take 已采纳、没锁、不比原片差）。
+- **声音 = 这个镜头说出口的台词的已采纳配音**（`dialogue_track`），原生同步的镜头也一样（PLAN 模式 C，原片的环境声没了）。起点：出片请求里台词从 0.3 秒开始、存下来的 take 裁掉了开头（`head_s`，续写镜头按尾帧数），所以起点 = max(0, 0.3 − 裁掉的)；2K 版 / 修过的版本往回找最初那条 take 的请求。不管模型返回什么声音，都把这条配音轨压回去（`media/video.py:with_track`，AAC，按画面长度截）。没有在画面里说的台词 → 409 `lipsync_no_dialogue`；有台词没配音 → 409 `line_audio_missing`（`count`）。出片输入的上下文多一项 `lip`（每句的配音和缺几句），不改哈希。
+- **sync.so 适配器**（`modelhub/adapters/sync_so.py`，2026-11-18 按官方文档核对）：本地文件先走官方推荐的素材上传（`/v2/assets/upload` 拿预签名地址 → PUT → `/v2/assets` 登记拿 `assetId`），再 `POST /v2/generate`（`sync_mode: cut_off`），轮询 `GET /v2/generate/{id}`。`NO_OP`（找不到在说话的脸）→ 新错误码 `lipsync_no_face`，`REJECTED` → `bad_request`，`FAILED` → `provider_error`。**按输出帧计费**：Hobbyist / Creator $0.00333 / 帧；`providers.yaml` 填官方表上的每秒价 $0.08325（按 25 fps），适配器把用量记成「帧数 / 25」秒，24 fps 的 5 秒 = 120 帧 = $0.40。Mock 按秒乘单价，高估约 4%。测试连接用 `GET /v2/generations?limit=1`（免费）。
+- **sync.so 单独一个账号**：`llm_providers` 加 `sync`（`SYNC_API_KEY`），新字段 `media_only: true` = 没有写作模型、「测试连接」不调 `GET /models`，只看它名下媒体模型的连通性（全通才算通）。原因：密钥只认账号（硬规则 3 + M5 第 7a 步的账号表），sync 不卖写作模型。服务页会多一张「sync.so（口型）」卡片，没有可勾的写作模型（前端第 9 步再看要不要专门处理）。
+- **质检策略接上「只差口型 → 自动修」**（`qa_policy`）：一批 take 全没过、最好那条只有口型没过 → 对它跑 `lip`（`origin=auto_lip`，版本上 `params.auto: auto_lip`；估价、单镜上限、`waiting_confirm` 照 `RunService.start`）。修复版质检完：通过 → 停（不自动采纳，人来挑，和 take 通过一样）；没过 → **不再修第二次**，按原规则重跑 / 兜底 / 停，决定记在修复版上（运行记录里 take 那行是「自动口型修复」、修复版那行是后面的决定）。镜头修不了（没有说出口的台词、台词没配音）→ 直接走重跑。每一批新的 take 只差口型时都会再修一次（受单镜上限管）。`is_take` 排除 `params.finish` 的版本：兜底到别的模型的修复版 origin 是 `fallback`，也不算一批 take。
+- **本地 LatentSync / InfiniteTalk 还没接（第 7b 步）**：`needs` 只能写清单里有的项（`test_every_need_is_a_manifest_item`），所以第 7a 步不加；路由 `lip` 照旧 hybrid（本地 LatentSync 优先）。**第 7b 步之前在真实模式下点口型修复会先撞 `adapter_unavailable`**：Mock 下不受影响。第 7b 步加 `rt_latentsync` / `w_latentsync` 和 `needs`，没装时能力过滤让路由走 sync。
+- 估价多一项 `estimate.finishing.lip`（视频组件 `finishing = ("up", "lip")`），web 测试数据重新生成；`config.json` 里 sync 的单价从区间下限 0.067（未定价）变成 0.08325（已定价）。
+
 ## 2026-11-17 · M6 第 6 步：2K 精修接 take
 
 - **组件 `up`（`pipeline/components/up.py`）跑在镜头的视频产物上**，和图片放大 `iup` 跑在关键帧上一样（`RunService.start(component_id="up")`，不建自己的产物）。`POST /versions/{id}/upscale` 按版本类型分：视频 take → `up`，图片 → `iup`（原样）。新版本 origin `upscale`、父版本 = 原 take、`stage = final`、`params.finish = {kind: upscale, version_id}`，依赖照抄原 take（原 take 过期它也过期）。质检照常（`on_created` 对视频产物的每个新版本都排）。

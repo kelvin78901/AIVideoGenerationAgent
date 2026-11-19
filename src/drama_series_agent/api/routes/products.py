@@ -1,7 +1,8 @@
 """Products and versions (SPEC 4.2, 9.1): ``/products``, ``/versions``; 以这张为底重画
 ``POST /versions/{id}/redraw``, 局部修复 ``POST /versions/{id}/inpaint`` and 图片超分
 ``POST /versions/{id}/upscale`` (M5.5, ``pipeline/components/redraw.py``, ``inpaint.py``,
-``iup.py``; a take's 2K 精修, M6 ``up.py``); 重新质检 ``POST /versions/{id}/qa`` (M6,
+``iup.py``; a take's 2K 精修, M6 ``up.py``); 口型修复 ``POST /versions/{id}/lipsync`` (M6,
+``lip.py``); 重新质检 ``POST /versions/{id}/qa`` (M6,
 ``pipeline/qa.py``)."""
 
 from __future__ import annotations
@@ -258,6 +259,23 @@ async def upscale_version(version_id: str, body: UpscaleBody, state: State) -> d
         "run",
         component_id="iup",
         params={"iup_version_id": version_id, "iup_idx": body.idx},
+    )
+    return job_public(job)
+
+
+@router.post("/versions/{version_id}/lipsync")
+async def lipsync_version(version_id: str, state: State) -> dict[str, Any]:
+    """口型修复 of a take → the queued run (component ``lip``, origin ``lipsync``): the mouths
+    redrawn to the shot's dubbed lines, adopted after QA as 2K 精修 is. 404 for no such take;
+    409 ``lipsync_no_dialogue`` when nobody speaks on screen, ``line_audio_missing`` (count)
+    for a line not dubbed yet; over a limit it waits for 确认 (hard rule 6)."""
+    async with state.db.session() as session:
+        v = await session.get(ProductVersion, version_id)
+        take = await session.get(Product, v.product_id) if v is not None else None
+    if take is None or take.slot != VIDEO_SLOT or take.retired:
+        raise PipelineError(404, "version_not_found", id=version_id)
+    job = await state.runs.start(
+        take.id, "run", component_id="lip", params={"lip_version_id": version_id}
     )
     return job_public(job)
 

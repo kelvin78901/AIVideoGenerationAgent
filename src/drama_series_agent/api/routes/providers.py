@@ -30,7 +30,7 @@ from drama_series_agent.core.config import (
     listed_model,
 )
 from drama_series_agent.core.models_db import ModelSetting, ProviderAccount, utcnow
-from drama_series_agent.modelhub.adapters.base import ModelSpec
+from drama_series_agent.modelhub.adapters.base import Health, ModelSpec
 from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 from drama_series_agent.modelhub.media_adapters import has_media_adapter, media_adapter
 
@@ -281,8 +281,7 @@ async def test_connection(provider_id: str, state: State) -> dict[str, Any]:
     )
     adapter = OpenAICompatAdapter(spec, get_key=secrets.get_secret, transport=state.http_transport)
     media = _media_specs(state, provider.id)
-    health, *checks = await asyncio.gather(
-        adapter.health(),
+    checks = await asyncio.gather(
         *(
             media_adapter(
                 m, get_key=secrets.get_secret, store=state.store, transport=state.http_transport
@@ -290,7 +289,14 @@ async def test_connection(provider_id: str, state: State) -> dict[str, Any]:
             for m in media
         ),
     )
-    if health.ok and provider.where == "api":
+    if provider.media_only:  # no writing models: the key works when its media models answer
+        failed = next((h for h in checks if not h.ok), None)
+        health = Health(
+            ok=bool(checks) and failed is None, detail=failed.detail if failed else None
+        )
+    else:
+        health = await adapter.health()
+    if health.ok and provider.where == "api" and not provider.media_only:
         await _store_list(state, provider, site, health.models)
     return {
         "ok": health.ok,

@@ -173,6 +173,15 @@ llm_providers:
       - { key: openrouter/claude-sonnet-5.5, display: Claude Sonnet 5.5（经 OpenRouter）, model_id: null, price: null, note: "按 OpenRouter 实时价" }
       - { key: openrouter/any, display: 任意模型, model_id: null, price: null, note: "用户自填" }
 
+  # 只放媒体模型的账号（M6 第 7a 步）：没有写作模型，「测试连接」只查这个账号下的媒体模型。
+  - id: sync
+    name: sync.so（口型）
+    base_url: https://api.sync.so
+    key_name: SYNC_API_KEY
+    docs: https://sync.so/docs/api-reference
+    media_only: true
+    models: []
+
   - id: custom
     name: 自定义（OpenAI 兼容）
     base_url: null
@@ -371,7 +380,20 @@ media_models:
     caps: { request: { language_boost: auto } }
   - { key: elevenlabs/v3, kind: tts, display: ElevenLabs v3, unit: char, price: null, docs: https://invideo.io/blog/ai-voice-model-pricing/, verify: true }
   # 口型、超分、配乐、字幕、3D
-  - { key: sync/lipsync-2-pro, kind: lipsync, display: sync lipsync-2-pro, unit: second, price_range: [0.067, 0.083], currency: USD }
+  # sync.so（2026-11-18 按官方文档核对，M6 第 7a 步，DECISIONS 同日）：按输出帧计费，Hobbyist / Creator
+  # $0.00333 / 帧（表上每秒 $0.08325 按 25 fps；Growth 便宜 5%、Scale 20%）；cut_off 只做、只收音视频里短的那段。
+  # 适配器 adapters/sync_so.py：素材先上传成 asset，再建任务、轮询。options：每次都带上的选项（官方默认 temperature 0.5）。
+  - key: sync/lipsync-2-pro
+    kind: lipsync
+    display: sync lipsync-2-pro
+    account: sync
+    adapter: sync_so
+    model_id: lipsync-2-pro
+    unit: second
+    price: 0.08325
+    currency: USD
+    caps: { options: {}, timeout_s: 1800 }
+    docs: https://sync.so/docs/models/lipsync
   - { key: topaz/starlight-precise-2.5, kind: upscale, display: Topaz Starlight Precise 2.5, unit: second, price: 0.12, currency: USD, note: "1080p，按积分换算" }
   - { key: elevenlabs/music, kind: music, display: ElevenLabs Music, unit: subscription, price: 22, currency: USD, period: month }
   - { key: elevenlabs/sfx, kind: sfx, display: ElevenLabs Sound Effects, unit: call, price: null, verify: true }
@@ -411,6 +433,7 @@ local_models:
   - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python, worker: worker_indextts, env: indextts, args: { model_dir: "{models}/IndexTTS-2.5", cwd: "{envs}/indextts-src", bf16: true, lang: zh }, needs: [w_tts, rt_indextts], requires_cuda: true }
   - { key: local/cosyvoice,         kind: tts,     display: CosyVoice（本地）,        runtime: python }
   - { key: local/qwen3-tts,         kind: tts,     display: Qwen3-TTS（本地试听）,     runtime: python, worker: worker_qwentts, env: qwentts, args: { model: "{models}/Qwen3-TTS-12Hz-1.7B-VoiceDesign", language: Chinese }, needs: [rt_qwentts], requires_cuda: true }
+  # 口型修复本地：第 7b 步接 worker、加清单项 rt_latentsync / w_latentsync 和 needs（needs 只能写清单里有的项）。
   - { key: local/latentsync,        kind: lipsync, display: LatentSync（本地）,       runtime: python, requires_cuda: true }
   - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python, requires_cuda: true }
   - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server, needs: [llmsrv] }

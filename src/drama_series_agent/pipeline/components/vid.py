@@ -366,6 +366,16 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             p, f = audio[x.id]
             deps.append(await invalidation.dependency(session, p.id))
             dub.append({"sha256": f["sha256"]})
+    # 口型修复 (M6 step 7a) lays the on-screen lines' dub on any take of the shot, 原生同步 too
+    # (PLAN 模式 C): each dubbed line's audio, and how many are not dubbed yet.
+    lip = {
+        "lines": [
+            {"sha256": audio[x.id][1]["sha256"], "product_id": audio[x.id][0].id}
+            for x in voiced
+            if x.id in audio
+        ],
+        "missing": sum(1 for x in voiced if x.id not in audio),
+    }
     voices: list[dict[str, Any]] = []
     if mode == "native":
         seen: set[str] = set()
@@ -531,6 +541,7 @@ async def gather(session: AsyncSession, invalidation: Invalidation, product: Pro
             "audio_mode": mode,
             "dialogue": dialogue,
             "dub": dub,
+            "lip": lip,
             "voices": voices,
             "seconds": seconds,
             "look": look,
@@ -644,7 +655,7 @@ class VidComponent(MediaComponent):
     slot = VIDEO_SLOT
     owner_type = "shot"
     auto_adopt = False
-    finishing: ClassVar[tuple[str, ...]] = ("up",)
+    finishing: ClassVar[tuple[str, ...]] = ("up", "lip")
 
     async def default_intent(self, session: AsyncSession, product: Product, lang: str) -> str:
         """The keyframe's description (the user's words there), else the plan's."""

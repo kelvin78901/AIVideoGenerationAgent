@@ -227,6 +227,8 @@
     "out_of_memory": "Not enough GPU memory",
     "ref_missing": "This workflow is missing an input (reference picture, first frame or audio)",
     "not_installed": "The local runtime is not installed yet; install it under Environment",
-    "worker_crashed": "The local model process quit unexpectedly"
+    "worker_crashed": "The local model process quit unexpectedly",
+    "lipsync_no_face": "No talking face found in the clip; the lips could not be synced",
+    "input_too_large": "The file is over the provider account's size limit"
   }
 }

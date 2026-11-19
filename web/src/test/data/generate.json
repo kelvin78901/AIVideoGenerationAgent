@@ -1399,6 +1399,13 @@
             "cost_usd": 0.0015,
             "seconds": 0.0,
             "priced": true
+          },
+          "lip": {
+            "model_key": "local/latentsync",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
           }
         }
       },
@@ -1664,6 +1671,13 @@
             "cost_usd": 0.0015,
             "seconds": 0.0,
             "priced": true
+          },
+          "lip": {
+            "model_key": "local/latentsync",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
           }
         }
       },
@@ -1925,6 +1939,13 @@
         "finishing": {
           "up": {
             "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
+          },
+          "lip": {
+            "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
@@ -2459,6 +2480,13 @@
             "cost_usd": 0.0015,
             "seconds": 0.0,
             "priced": true
+          },
+          "lip": {
+            "model_key": "local/latentsync",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
           }
         }
       },
@@ -2495,6 +2523,13 @@
         "finishing": {
           "up": {
             "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
+          },
+          "lip": {
+            "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0015,
             "seconds": 0.0,
@@ -2539,6 +2574,13 @@
             "cost_usd": 0.0015,
             "seconds": 0.0,
             "priced": true
+          },
+          "lip": {
+            "model_key": "local/latentsync",
+            "where": "local",
+            "cost_usd": 0.0015,
+            "seconds": 0.0,
+            "priced": true
           }
         }
       },
@@ -2575,6 +2617,13 @@
         "finishing": {
           "up": {
             "model_key": "comfy/seedvr2",
+            "where": "local",
+            "cost_usd": 0.0014,
+            "seconds": 0.0,
+            "priced": true
+          },
+          "lip": {
+            "model_key": "local/latentsync",
             "where": "local",
             "cost_usd": 0.0014,
             "seconds": 0.0,

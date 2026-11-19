@@ -133,6 +133,46 @@ def test_test_connection_checks_the_media_models_on_the_key(
     client.delete("/api/v1/providers/google_llm/key")
 
 
+SYNC_KEY = "sk-sync-0123456789"
+
+
+@respx.mock(assert_all_called=False)
+def test_a_media_only_account_is_tested_by_its_media_models(
+    client: TestClient, respx_mock: respx.MockRouter
+) -> None:
+    """sync.so (M6 口型修复) has no writing models: no ``GET /models``, its lipsync model's own
+    key check is the test."""
+    respx_mock.route(host="127.0.0.1").pass_through()
+    sync = next(p for p in client.get("/api/v1/providers").json()["providers"] if p["id"] == "sync")
+    assert [m["key"] for m in sync["media"]] == ["sync/lipsync-2-pro"]
+    client.post("/api/v1/providers/sync/key", json={"api_key": SYNC_KEY})
+    listed = respx_mock.get("https://api.sync.so/v2/generations").mock(
+        return_value=httpx.Response(200, json=[])
+    )
+    models = respx_mock.get("https://api.sync.so/models")
+    resp = client.post("/api/v1/providers/sync/test")
+    assert resp.json() == {
+        "ok": True,
+        "detail": None,
+        "site": "main",
+        "models": [],
+        "media": [
+            {
+                "key": "sync/lipsync-2-pro",
+                "display": "sync lipsync-2-pro",
+                "ok": True,
+                "detail": None,
+            }
+        ],
+    }
+    assert listed.calls.last.request.headers["x-api-key"] == SYNC_KEY and not models.called
+    listed.mock(return_value=httpx.Response(401))
+    resp = client.post("/api/v1/providers/sync/test")
+    assert (resp.json()["ok"], resp.json()["detail"]) == (False, "auth_failed")
+    assert SYNC_KEY not in resp.text
+    client.delete("/api/v1/providers/sync/key")
+
+
 def test_real_mode_uses_openai_compat_for_llms(client: TestClient) -> None:
     from drama_series_agent.modelhub.adapters.openai_compat import OpenAICompatAdapter
 
@@ -151,6 +191,7 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
     from drama_series_agent.modelhub.adapters.minimax_video import MiniMaxVideoAdapter
     from drama_series_agent.modelhub.adapters.openai_images import OpenAIImageAdapter
     from drama_series_agent.modelhub.adapters.seedance import SeedanceAdapter
+    from drama_series_agent.modelhub.adapters.sync_so import SyncSoAdapter
     from drama_series_agent.modelhub.adapters.volcengine import SeedreamAdapter
     from drama_series_agent.modelhub.registry import UnavailableAdapter
 
@@ -175,6 +216,7 @@ def test_real_mode_uses_the_media_adapters(client: TestClient) -> None:
     for key in ("minimax/h3-api", "minimax/h3-regenerate-2k", "minimax/context-ir"):
         assert isinstance(registry.get(key), MiniMaxVideoAdapter)
     assert isinstance(registry.get("volc/seedance-2.5"), SeedanceAdapter)
+    assert isinstance(registry.get("sync/lipsync-2-pro"), SyncSoAdapter)
     assert isinstance(registry.get("kling/kling-3.0"), UnavailableAdapter)  # not yet
     for key in ("local/qwen3-tts", "local/indextts2", "local/rapidocr"):
         assert isinstance(registry.get(key), LocalPythonAdapter)

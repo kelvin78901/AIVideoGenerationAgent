@@ -79,9 +79,34 @@ def test_a_persons_own_run_starts_the_count_again() -> None:
 
 
 def test_only_lip_sync_failing_goes_to_lip_sync_repair() -> None:
-    d = decide([_take(1, "j1", fails=("lipsync",))], retry_max=2, fallback=FALLBACK)
-    assert d.action == "lip"
+    take = _take(1, "j1", fails=("lipsync",))
+    d = decide([take], retry_max=2, fallback=FALLBACK)
+    assert (d.action, d.source) == ("lip", take)
     assert _decide(_take(1, "j1", fails=("lipsync", "face"))) == "rerun"
+
+
+def _repair(n: int, of: ProductVersion, **kw: Any) -> ProductVersion:
+    finish = {"kind": "lipsync", "version_id": of.id}
+    return _take(n, f"lip{n}", origin="lipsync", params_json={"finish": finish}, **kw)
+
+
+def test_a_take_is_repaired_once_then_judged_with_its_repair() -> None:
+    take = _take(1, "j1", fails=("lipsync",))
+    # The repair is no take of a batch; until it is checked, wait for it.
+    assert _decide(take, _repair(2, take, checked=False)) == "wait"
+    # It passed: nothing more (the person adopts it or not).
+    assert _decide(take, _repair(2, take, passed=True)) == "none"
+    # It failed too: never repaired again, the takes are made again; noted on the repair.
+    failed = _repair(2, take, fails=("lipsync",))
+    d = decide([take, failed], retry_max=2, fallback=FALLBACK)
+    assert (d.action, d.source, d.noted) == ("rerun", take, failed)
+    # Another shot's or an older batch's repair does not count.
+    new = _take(3, "j3", origin="rerun", fails=("lipsync",))
+    assert _decide(take, failed, new) == "lip"
+    # A repair that fell back (origin ``fallback``) is still a repair, not a take.
+    fell = _repair(2, take, passed=True)
+    fell.origin, fell.fallback_reason = "fallback", "error"
+    assert _decide(take, fell) == "none"
 
 
 def test_the_best_take_of_the_batch_says_what_to_fix() -> None:
