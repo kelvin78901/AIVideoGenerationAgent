@@ -3,12 +3,15 @@ ComfyUI, straight through ComfyUI's HTTP API with ``workflows/vace-inpaint`` (no
 spent). Answers: does it run at the take's own size and frame rate, how long, how much GPU
 memory, and is everything outside the mask kept.
 
-    uv run --no-sync python scripts/smoke/local_vace.py [--take <mp4>] [--box x0,y0,x1,y1]
-        [--prompt "..."] [--steps 4] [--seed 1] [--fps 0] [--tag name] [--comfy http://127.0.0.1:8188]
+    uv run --no-sync python scripts/smoke/local_vace.py [--take <mp4>] [--box x0,y0,x1,y1 ...]
+        [--keep x0,y0,x1,y1] [--prompt "..."] [--steps 4] [--seed 1] [--fps 0] [--tag name]
+        [--comfy http://127.0.0.1:8188]
 
-- The mask is a white box on black at the take's size (one mask for the whole take, as the
-  take card's mask dialog will send). ``--fps 16`` resamples the take to 16 fps first (Wan's
-  native rate) instead of running it at its own rate.
+- The mask is white boxes on black at the take's size (``--box`` again for another; one mask
+  for the whole take, as the take card's mask dialog sends). ``--keep``: a region that must not
+  change (e.g. a note's writing next to the mask); its mean difference is reported and checked.
+  ``--fps 16`` resamples the take to 16 fps first (Wan's native rate) instead of running it at
+  its own rate.
 - Checked: size, frame rate, frame count, sound stream byte for byte, and the mean difference
   outside the mask (grown and feathered by the workflow, plus a margin) against the take.
 - Pictures (left: the take, right: the inpaint; whole frame and a 1:1 crop of the box) and the
@@ -66,8 +69,16 @@ def gray(path: Path, at: float) -> bytes:
     )  # fmt: skip
 
 
-def inside_box(x: int, y: int, box: tuple[int, int, int, int]) -> bool:
+Box = tuple[int, int, int, int]
+
+
+def inside_box(x: int, y: int, box: Box) -> bool:
     return box[0] <= x < box[2] and box[1] <= y < box[3]
+
+
+def parse_box(text: str) -> Box:
+    x0, y0, x1, y1 = (int(v) for v in text.split(","))
+    return x0, y0, x1, y1
 
 
 def mean_diff(a: bytes, b: bytes, w: int, h: int, keep: Callable[[int, int], bool]) -> float:
@@ -127,7 +138,10 @@ def by_title(graph: dict[str, Any], title: str) -> dict[str, Any]:
 def main() -> int:
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawTextHelpFormatter)
     ap.add_argument("--take", default=str(TAKE))
-    ap.add_argument("--box", default="0,720,260,1344", help="x0,y0,x1,y1 in the take's pixels")
+    ap.add_argument(
+        "--box", action="append", help="x0,y0,x1,y1 in the take's pixels (again for another)"
+    )
+    ap.add_argument("--keep", default="", help="x0,y0,x1,y1 that must stay as it is")
     ap.add_argument("--prompt", default=PROMPT)
     ap.add_argument("--steps", type=int, default=4)
     ap.add_argument("--seed", type=int, default=1)
@@ -155,14 +169,20 @@ def main() -> int:
     frames = _frame_count(take)
     length = ((frames - 1 + 3) // 4) * 4 + 1  # VACE wants 4n+1 frames; extra ones are cut after
     w16, h16 = info.w // 16 * 16, info.h // 16 * 16
-    x0, y0, x1, y1 = (int(v) for v in args.box.split(","))
+    boxes = [parse_box(b) for b in (args.box or ["0,720,260,1344"])]
+    keep = parse_box(args.keep) if args.keep else None
+    x0, y0 = min(b[0] for b in boxes), min(b[1] for b in boxes)
+    x1, y1 = max(b[2] for b in boxes), max(b[3] for b in boxes)
     tag = args.tag or f"s{args.steps}-{'f' + str(int(args.fps)) if args.fps else 'native'}"
     name = f"{take.stem.replace('-take', '')}-{tag}"
 
     mask_path = tmp / "mask.png"
     ffmpeg(
         "-f", "lavfi", "-i", f"color=black:s={info.w}x{info.h}",
-        "-vf", f"drawbox=x={x0}:y={y0}:w={x1 - x0}:h={y1 - y0}:color=white:t=fill,format=gray",
+        "-vf", ",".join(
+            f"drawbox=x={b[0]}:y={b[1]}:w={b[2] - b[0]}:h={b[3] - b[1]}:color=white:t=fill"
+            for b in boxes
+        ) + ",format=gray",
         "-frames:v", "1", "-y", str(mask_path),
     )  # fmt: skip
 
@@ -241,7 +261,8 @@ def main() -> int:
     ]
     # Outside the box plus a margin for the grown, feathered mask: the take, up to the encoder.
     margin = 16 + 16
-    hole = (x0 - margin, y0 - margin, x1 + margin, y1 + margin)
+    holes = [(b[0] - margin, b[1] - margin, b[2] + margin, b[3] + margin) for b in boxes]
+    keeps = []
     cx0, cy0 = max(0, x0 - 64), max(0, y0 - 64)
     cx1, cy1 = min(info.w, x1 + 64), min(info.h, y1 + 64)
     diffs = []
@@ -249,10 +270,19 @@ def main() -> int:
     for pct in (10, 50, 90):
         at = info.duration_s * pct / 100
         a, b = gray(take, at), gray(clip, at)
-        outside = mean_diff(a, b, info.w, info.h, lambda x, y: not inside_box(x, y, hole))
-        inside = mean_diff(a, b, info.w, info.h, lambda x, y: inside_box(x, y, (x0, y0, x1, y1)))
+        outside = mean_diff(
+            a, b, info.w, info.h, lambda x, y: not any(inside_box(x, y, h) for h in holes)
+        )
+        inside = mean_diff(
+            a, b, info.w, info.h, lambda x, y: any(inside_box(x, y, m) for m in boxes)
+        )
         diffs.append(outside)
-        lines.append(f"{pct}%: outside {outside:.2f}, inside {inside:.1f}")
+        line = f"{pct}%: outside {outside:.2f}, inside {inside:.1f}"
+        if keep is not None:
+            kept = mean_diff(a, b, info.w, info.h, lambda x, y: inside_box(x, y, keep))
+            keeps.append(kept)
+            line += f", keep {kept:.2f}"
+        lines.append(line)
         for kind, crop, scale in (
             ("whole", None, f"{info.w // 2}:{info.h // 2}"),
             ("crop", f"{cx1 - cx0}:{cy1 - cy0}:{cx0}:{cy0}", None),
@@ -268,10 +298,13 @@ def main() -> int:
                 str(OUT / f"{name}-{pct}-{kind}.jpg"),
             )  # fmt: skip
     checks.append(("outside the mask kept (mean diff < 1)", max(diffs) < 1.0))
+    if keeps:
+        checks.append((f"keep region {args.keep} unchanged (mean diff < 2)", max(keeps) < 2.0))
 
     report = [
         f"{datetime.now():%Y-%m-%d %H:%M} · {name} · {info.w}×{info.h} {info.fps} fps "
-        f"{frames} frames · box {args.box} · steps {args.steps} · seed {args.seed}"
+        f"{frames} frames · box {' + '.join(args.box or ['0,720,260,1344'])}"
+        f" · steps {args.steps} · seed {args.seed}"
         f"{' · no LoRA, cfg 6' if args.no_lora else ' · CausVid 0.3, cfg 1'}",
         f"  took {took:.0f} s · GPU memory peak {gpu.peak} MiB (before {before} MiB)",
         f"  out {got.w}×{got.h} {got.fps} fps {got_frames} frames audio={got.has_audio}",

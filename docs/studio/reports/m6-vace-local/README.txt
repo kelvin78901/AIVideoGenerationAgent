@@ -58,3 +58,16 @@
   diff 50%: outside 1.13, inside 54.6
   diff 90%: outside 1.22, inside 37.8
   prompt: A closed black umbrella with a curved black handle leans against the wall.
+2026-11-18 22:30 · 1-04-T9-s4-remove-tight · 768×1344 24.0 fps 116 frames · box 0,750,80,850 + 0,850,240,1344 · steps 4 · seed 1 · CausVid 0.3, cfg 1
+  took 214 s · GPU memory peak 26003 MiB (before 2515 MiB)
+  out 768×1344 24.0 fps 116 frames audio=True
+  ok  size kept
+  ok  frame rate kept
+  ok  frames kept (116)
+  BAD sound kept byte for byte
+  BAD outside the mask kept (mean diff < 1)
+  ok  keep region 100,680,315,800 unchanged (mean diff < 2)
+  diff 10%: outside 1.07, inside 13.7, keep 1.41
+  diff 50%: outside 1.15, inside 14.8, keep 1.77
+  diff 90%: outside 1.23, inside 14.2, keep 1.57
+  prompt: 斑驳的灰绿色旧墙面，墙边什么都没有，昏暗潮湿的楼道

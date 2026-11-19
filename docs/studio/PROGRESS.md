@@ -18,12 +18,13 @@
 - **9a**（0f4e671）候选卡：质检块接真实数据（`off` 写「已关」不算没过、画面检查可展开看各项和拼图、`qa.policy` 写自动做了什么）、「重新质检」（`POST /versions/{id}/qa`）、角标「未过 n 项 / 只差口型」；「局部修复 ▾」菜单：口型修复本地 / API 两行（估价 `finishing.lip.alt`，接口收 `where`）、涂一块区域重画（`InpaintDialog` 的 `take` 模式，首帧 + 拖动换帧，发 `/inpaint`）；跑不了 / 没人说话灰掉写原因；2K 精修读 `finishing.up`；`takeNote` 认 2K / 口型 / 局部修复版本（「口型修复自 T2」）。删了 `toast.fix`、`wall.checkLater`。DECISIONS「M6 第 9a 步」。测试：`test_take_lipsync_api.py` 6、take upscale / inpaint 8、web fixtures 12 过；Vitest Generate 23 + pictures + Assets 共 59、i18n、typecheck、lint、format 过；ruff、mypy（含 linux）过。
 - **9b**（63e00b3）自动规则的质检阈值表（草图 G3）：每项阈值可改（字错率按 %、超出范围弹回）、开关（`qa_on`）、「恢复默认」（`reset_qa`）；「只有口型没过：自动口型修复」一行；改了就刷新产物（后端 `rejudge` 已有）。前端 schema 加 `speaker_sim`、`qa_on`、补丁的 `thresholds` / `qa_on` / `reset_qa`；面板 basis 改 30rem（窄屏排到运行记录上面）。测试：Vitest Generate 24、i18n、typecheck、lint、format 过。
 - **9c**（3cf2da1）分镜页镜头详情「连续性」只读一节（`pages/storyboard/LedgerSection.tsx`，草图 S1：角色站位 / 朝向 / 手里 / 服装、道具状态和来源、时间和屏幕上的钟；`*_from` 的镜头 id 换成镜头号；「去改」滚到站位图 / 契约，服装跳素材页 `?asset=`）；素材页克隆模式运行条改文案；删 MSW `fixtures/demo/finishing.ts` 和 `what.up/lip/qa`。DECISIONS「M6 第 9c 步」。测试：Vitest Storyboard 35、Assets 27、Generate 24、products / Post / Sync / storyboard 共 128、i18n、typecheck、lint、format 过。**第 9 步做完。**
+- **8a 重跑**（本提交）Kelvin 看对比图发现 8a 的遮罩盖住了字条第二行（字被重画乱）、不加 LoRA 那轮伞变黄。两块框只盖伞重跑（`reports/m6-vace-local/1-04-T9-s4-remove-tight-*`）：伞去掉、字条原样、无接缝，伞钩尖留一个红点。`local_vace.py` 加多框和 `--keep`。DECISIONS「M6 第 8a 步更正」。ruff、mypy（脚本）过。
 
 ## 下一步
 
+- **第 9d 步（Kelvin 2026-11-18 加）遮罩盖到字时提醒**：RapidOCR worker（`workers/worker_rapidocr.py`）把每帧的文字框也带回（`result.boxes`，按帧宽高归一化到 0–1）；质检 OCR 那一项把读到字的帧的框并成 `regions` 存进 `qa_json` 的 ocr 检查（Mock 也给）；`InpaintDialog` 的 take 模式把这些框虚线画在画布上，涂抹碰到框就写「遮罩盖到了画面上的字，字会被重画、可能变乱」（不拦，照样能提交）；没质检过的 take 不提醒。测试：worker 协议、qa、Vitest Generate。缘由见 DECISIONS「M6 第 8a 步更正」。
 - **第 10 步 示例剧坏 take + 端到端**（`plans/M6.md` G 节和第 10 步）：`studio/demo.py` 第 1 集放三条故意的坏 take（`params.mock_qa`：1-04 T1 人脸不对 → 自动重跑；1-07 屏幕时间读错 → 自动重跑；一个对白镜头口型错 → 自动口型修复）；`tests/e2e/test_qa_loop.py`；Playwright `m6`（候选墙看到没过的项、推荐、阈值改了重新判、2K 精修和口型修复各出一条并自动采纳）；截图 `reports/ui/generate-qa.*`（亮、暗、2000 px 宽），顺手重截 generate / storyboard。示例剧的 take 现在不质检（第 3 步定的），先看 `studio/demo.py` 的 `DEMO_TAKES` 和 `pipeline/qa.py` 怎么入队。
-- **请 Kelvin 看局部修复对比图**：`docs/studio/reports/m6-vace-local/1-04-T9-s4-short-50-crop.jpg`、`-s4-native-grey-50-crop.jpg`、`-s12-nolora-50-crop.jpg`（左原片、右修复，1:1）。
-- **请 Kelvin 看口型修复对比图**：`docs/studio/reports/m6-lipsync-local/1-04-T9-{25,50,75}-crop.jpg`（左原片、右修复，1:1）。
+- **请 Kelvin 看局部修复重跑**：`docs/studio/reports/m6-vace-local/1-04-T9-s4-remove-tight-{50,90}-crop.jpg`（左原片、右修复，1:1）。口型修复 Kelvin 2026-11-18 看过：还行。
 - **5c 留给 Kelvin 看片**：1-04 T9 口型分 0.53 不过（SyncNet 量到声音比嘴早约 0.4 秒），1-06 T1–T3 念了内心独白（字错率不过）。
 - **M6 草图 Kelvin 2026-11-15 同意**（`prototype/m6/`，前端第 9 步照它做；S1 只列这个镜头拍到的人，见 DECISIONS「M6 第 2 步」）。M5.5 草图 Kelvin 2026-11-15 也同意，ROADMAP 已勾。
 - **踩坑**：Claude Code 在会话空闲时会因内存不足回收后台任务（H3 + TTS 时内存只剩约 8 GB）：长任务一个镜头一个镜头在前台跑（`--from X --to X`，每条 ≤ 10 分钟）；超过 10 分钟的只能后台，被回收后 ComfyUI 里的任务还会跑完，可以从 `/history` 取回结果。被回收的任务下次启动应用会被「恢复」，脚本退出时会取消它。
