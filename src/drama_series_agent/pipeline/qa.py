@@ -229,6 +229,21 @@ def _check(metric: str, **fields: Any) -> dict[str, Any]:
     return {"metric": metric, "value": None, "text": None, "model": None, **fields}
 
 
+MAX_REGIONS = 40
+
+
+def _regions(boxes: Any) -> list[list[float]]:
+    """Where the expected text was read (``[x0, y0, x1, y1]`` on 0–1, the frames reading it),
+    the same box once; what the take's mask dialog warns about (M6, Kelvin 2026-11-18)."""
+    out: list[list[float]] = []
+    for frame in boxes:
+        for box in frame or []:
+            b = [round(float(v), 3) for v in box][:4]
+            if len(b) == 4 and b not in out:
+                out.append(b)
+    return out[:MAX_REGIONS]
+
+
 def _file(version: ProductVersion, role: str) -> dict[str, Any] | None:
     return next((f for f in version.files_json if f.get("role") == role), None)
 
@@ -394,18 +409,23 @@ class Measure:
         routed, model, error = await self._tool("ocr", {"every_s": OCR_EVERY_S}, expect=expected)
         if error:
             return _check("ocr", model=model, error=error)
-        frames = [
-            {"t": f.get("t"), "text": str(f.get("text") or "")}
-            for f in (routed.json or {}).get("frames") or []
-        ]
+        raw = (routed.json or {}).get("frames") or []
+        frames = [{"t": f.get("t"), "text": str(f.get("text") or "")} for f in raw]
         detail = {"expected": expected, "frames": frames}
         wants = [_plain(e) for e in expected]
-        read = [f for f in frames if any(_like(_plain(f["text"]), w) for w in wants)]
+        read = [i for i, f in enumerate(frames) if any(_like(_plain(f["text"]), w) for w in wants)]
         if not read:
             return _check("ocr", model=model, na=True, detail=detail)
-        wrong = [f for f in read if not any(w in _plain(f["text"]) for w in wants)]
+        wrong = [frames[i] for i in read if not any(w in _plain(frames[i]["text"]) for w in wants)]
         text = wrong[0]["text"] if wrong else None
-        return _check("ocr", text=text, model=model, match=not wrong, detail=detail)
+        return _check(
+            "ocr",
+            text=text,
+            model=model,
+            match=not wrong,
+            regions=_regions(raw[i].get("boxes") for i in read),
+            detail=detail,
+        )
 
     async def vlm(self) -> dict[str, Any]:
         payload = self.version.payload_json or {}
@@ -479,10 +499,18 @@ def mock_speaker(req: ModelRequest) -> dict[str, Any]:
     return {"sims": [{"who": v.get("who"), "sim": value} for v in req.params.get("voices") or []]}
 
 
+# Where the Mock reads its text: a note's lines left of the middle, a third of the way down.
+MOCK_TEXT_BOX = [0.08, 0.44, 0.42, 0.6]
+
+
 def mock_ocr(req: ModelRequest) -> dict[str, Any]:
     read = _given(req, "ocr")
     texts = [str(read)] if read is not None else list(req.meta.get("expect") or [])
-    return {"frames": [{"t": float(i), "text": t} for i, t in enumerate(texts)]}
+    return {
+        "frames": [
+            {"t": float(i), "text": t, "boxes": [MOCK_TEXT_BOX]} for i, t in enumerate(texts)
+        ]
+    }
 
 
 MOCKS: dict[str, Callable[[ModelRequest], Any]] = {

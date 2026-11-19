@@ -5,7 +5,9 @@ models come in the wheel. First run on the real machine in M3 step 13. args: non
 
 A take (M6 自动质检): ``params.every_s`` given → the video is sampled every ``every_s`` seconds
 (``worker_video.frames``, OpenCV's FFmpeg) and each frame read; the answer carries
-``json.frames[{t, text}]``. RapidOCR takes a BGR ndarray as it is, so the frames go in directly.
+``json.frames[{t, text, boxes}]``, ``boxes`` where the text is on the frame as
+``[x0, y0, x1, y1]`` on 0–1 (M6: the take's mask dialog warns when the mask covers it).
+RapidOCR takes a BGR ndarray as it is, so the frames go in directly.
 """
 
 from __future__ import annotations
@@ -27,6 +29,29 @@ def _text(state: dict[str, Any], picture: Any) -> str:
     return "".join(str(t) for t in (getattr(result, "txts", None) or ()))
 
 
+def _read(state: dict[str, Any], picture: Any) -> dict[str, Any]:
+    """A frame's text and where it is: each detected line's box (its four corners) as the
+    rectangle around it on 0–1 of the frame."""
+    result = state["engine"](picture)
+    text = "".join(str(t) for t in (getattr(result, "txts", None) or ()))
+    h, w = picture.shape[:2]
+    boxes = []
+    for quad in (
+        getattr(result, "boxes", None) if getattr(result, "boxes", None) is not None else ()
+    ):
+        xs = [float(p[0]) for p in quad]
+        ys = [float(p[1]) for p in quad]
+        boxes.append(
+            [
+                round(min(xs) / w, 4),
+                round(min(ys) / h, 4),
+                round(max(xs) / w, 4),
+                round(max(ys) / h, 4),
+            ]
+        )
+    return {"text": text, "boxes": boxes}
+
+
 def read(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
     params = msg.get("params") or {}
     path = params.get("path")
@@ -37,7 +62,7 @@ def read(state: dict[str, Any], msg: dict[str, Any]) -> dict[str, Any]:
         text = _text(state, str(path))
         return {"text": text, "json": {"text": text}}
     try:
-        frames = [{"t": t, "text": _text(state, f)} for t, f in state["frames"](str(path), every)]
+        frames = [{"t": t, **_read(state, f)} for t, f in state["frames"](str(path), every)]
     except OSError as exc:
         raise WorkerError("ocr_bad_video", str(exc)) from exc
     text = "\n".join(f["text"] for f in frames if f["text"])

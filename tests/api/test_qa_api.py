@@ -19,6 +19,7 @@ from sqlmodel import select
 from drama_series_agent.api.app import create_app
 from drama_series_agent.api.state import StudioState
 from drama_series_agent.core.models_db import Job, ModelCall, ProductVersion
+from drama_series_agent.pipeline import qa
 
 LOCAL = "http://127.0.0.1"
 V1 = "/api/v1"
@@ -169,6 +170,8 @@ def test_on_screen_words_are_read_back(client: TestClient) -> None:
     take = _take(client, "1-03")
     checks = _checks(take)
     assert checks["ocr"]["ok"] is True and checks["ocr"]["detail"]["expected"]
+    # Where the text was read, for the take's mask dialog (the Mock reads it in one place).
+    assert checks["ocr"]["regions"] == [qa.MOCK_TEXT_BOX]
     # Nobody in it, nothing said.
     assert all(checks[m]["ok"] is None for m in ("face", "lipsync", "asr", "speaker"))
 

@@ -24,6 +24,9 @@ import { maskBlob } from "@/lib/mask";
 
 /** The painting canvas's long edge; the backend scales the mask to the picture. */
 const CANVAS_LONG = 1024;
+/** How far past the painted edge a take's repair reaches, in the take's pixels: the workflow
+ * grows the mask 16 px and feathers it 8 px (`workflows/vace-inpaint`). */
+const TAKE_REACH_PX = 24;
 const UNDO_STEPS = 20;
 /** The stroke colour on screen (shown at half opacity). */
 const PAINT = "rgb(230, 40, 40)";
@@ -37,6 +40,9 @@ export interface TakeInpaint {
   model: string;
   /** About how long one take takes; null when unknown. */
   minutes: number | null;
+  /** Where QA read the shot's on-screen text (`[x0, y0, x1, y1]` on 0–1): outlined, and a mask
+   * reaching it is warned about (the writing would be redrawn, Kelvin 2026-11-18). */
+  textRegions?: number[][];
 }
 
 /** 局部修复 (草图 S7): paint where the picture changes, say what goes there; one new candidate.
@@ -75,6 +81,8 @@ function InpaintForm({
   const { choices, initial } = useWhereChoices("inpaint");
   const [at, setAt] = useState(0);
   const [length, setLength] = useState(0);
+  const [onText, setOnText] = useState(false);
+  const regions = take?.textRegions ?? [];
   const clip = useRef<HTMLVideoElement | null>(null);
   const [prompt, setPrompt] = useState("");
   const [where, setWhere] = useState<Where | null>(null);
@@ -128,11 +136,30 @@ function InpaintForm({
     stroke(e);
     if (tool === "brush") setPainted(true);
   };
+  /** Whether the mask, as far as the repair reaches past it, covers any of the text. */
+  const checkText = () => {
+    const c = ctx();
+    if (!c || !regions.length) return;
+    const reach = Math.ceil((TAKE_REACH_PX * cw) / (target.w || cw));
+    const hit = regions.some(([x0 = 0, y0 = 0, x1 = 0, y1 = 0]) => {
+      const left = Math.max(0, Math.floor(x0 * cw) - reach);
+      const top = Math.max(0, Math.floor(y0 * ch) - reach);
+      const w = Math.min(cw, Math.ceil(x1 * cw) + reach) - left;
+      const h = Math.min(ch, Math.ceil(y1 * ch) + reach) - top;
+      if (w <= 0 || h <= 0) return false;
+      const data = c.getImageData(left, top, w, h).data as Uint8ClampedArray | undefined;
+      if (!data) return false;
+      for (let i = 3; i < data.length; i += 4) if (data[i]) return true;
+      return false;
+    });
+    setOnText(hit);
+  };
   const clear = () => {
     ctx()?.clearRect(0, 0, cw, ch);
     undo.current = [];
     setSteps(0);
     setPainted(false);
+    setOnText(false);
   };
   const back = () => {
     const prev = undo.current.at(-1);
@@ -140,6 +167,7 @@ function InpaintForm({
     setSteps(undo.current.length);
     if (prev) ctx()?.putImageData(prev, 0, 0);
     if (!undo.current.length) setPainted(false);
+    checkText();
   };
 
   const submit = async () => {
@@ -221,9 +249,25 @@ function InpaintForm({
                 onPointerMove={(e) => {
                   if (e.buttons & 1 || e.pressure > 0) stroke(e);
                 }}
-                onPointerUp={() => (last.current = null)}
+                onPointerUp={() => {
+                  last.current = null;
+                  checkText();
+                }}
                 onPointerLeave={() => (last.current = null)}
               />
+              {regions.map(([x0 = 0, y0 = 0, x1 = 0, y1 = 0], i) => (
+                <span
+                  key={i}
+                  aria-hidden
+                  className="pointer-events-none absolute rounded-sm border border-dashed border-amber-300"
+                  style={{
+                    left: `${x0 * 100}%`,
+                    top: `${y0 * 100}%`,
+                    width: `${(x1 - x0) * 100}%`,
+                    height: `${(y1 - y0) * 100}%`,
+                  }}
+                />
+              ))}
               {take ? (
                 <span className="absolute top-1.5 left-1.5 rounded bg-white px-1.5 py-0.5 text-[11px] text-neutral-900">
                   {at ? `${at.toFixed(1)}s` : t("pictures.inpaint.take.frame")}
@@ -330,6 +374,11 @@ function InpaintForm({
               <p className="text-xs text-muted-foreground">
                 {take ? t("pictures.inpaint.take.keep") : t("pictures.inpaint.keep")}
               </p>
+              {onText ? (
+                <p role="status" className="text-xs font-medium text-tone-warn-fg">
+                  {t("pictures.inpaint.take.onText")}
+                </p>
+              ) : null}
             </div>
           </div>
         </div>

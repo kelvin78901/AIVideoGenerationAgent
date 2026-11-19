@@ -340,6 +340,7 @@ export function TakeWall({
                 video: fileOf(inpaint, "video"),
                 model: modelName(vinpaint?.model_key),
                 minutes: minutesOf(vinpaint),
+                textRegions: inpaint.qa?.checks.find((c) => c.metric === "ocr")?.regions,
               }
             : undefined
         }

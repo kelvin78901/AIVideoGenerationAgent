@@ -365,7 +365,8 @@
         "modelPlain": "{{model}} (local) · no API cost",
         "result": "It comes out as a new take; the original stays in the history",
         "submit": "Start repair",
-        "started": "Repairing a region of {{name}}: one new take."
+        "started": "Repairing a region of {{name}}: one new take.",
+        "onText": "The mask reaches the on-screen text (dashed boxes): the writing will be redrawn and may come out garbled. To keep it, keep the mask clear of the boxes."
       }
     },
     "upscale": {

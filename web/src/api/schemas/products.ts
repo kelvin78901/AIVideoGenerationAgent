@@ -135,6 +135,8 @@ export const QaCheckSchema = z.object({
   off: z.boolean().optional(),
   /** The limit it was held to (asr: at most; the others: at least); null for ocr / vlm. */
   threshold: z.number().nullable().optional(),
+  /** ocr: where the expected text was read (`[x0, y0, x1, y1]` on 0–1 of the frame). */
+  regions: z.array(z.array(z.number()).length(4)).optional(),
   /** vlm: the contract check's lines (M5.5 take 检查), with the 连续性账本's (M6). */
   items: z
     .array(

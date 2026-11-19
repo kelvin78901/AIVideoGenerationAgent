@@ -419,6 +419,54 @@ describe("GeneratePage", () => {
     expect(await screen.findByText("已开始局部修复 1-04 T2：出一条新候选。")).toBeInTheDocument();
   });
 
+  it("warns when the mask reaches the text QA read on the take", async () => {
+    const user = userEvent.setup();
+    const t2 = video("1-04")?.versions[1];
+    if (!t2) throw new Error("no take");
+    t2.qa = {
+      checks: [
+        {
+          metric: "ocr",
+          value: null,
+          text: null,
+          issue: null,
+          ok: true,
+          regions: [[0.1, 0.4, 0.4, 0.6]],
+        },
+      ],
+      score: 1,
+    };
+    // jsdom has no canvas: the first stroke reads back as clear of the text, the next as on it.
+    let painted = false;
+    const ctx = new Proxy({} as Record<string, unknown>, {
+      get: (_, key) =>
+        key === "getImageData"
+          ? () => ({ data: new Uint8ClampedArray([0, 0, 0, painted ? 255 : 0]) })
+          : () => undefined,
+      set: () => true,
+    });
+    vi.spyOn(HTMLCanvasElement.prototype, "getContext").mockReturnValue(
+      ctx as unknown as CanvasRenderingContext2D,
+    );
+    renderGenerate();
+    await ready();
+    await user.click(within(take(2)).getByRole("button", { name: "局部修复" }));
+    await user.click(await screen.findByRole("menuitem", { name: /涂一块区域重画/ }));
+    const dialog = await screen.findByRole("dialog", { name: "局部修复 · 1-04 T2" });
+    const canvas = within(dialog).getByLabelText("在图上涂出要改的地方");
+    fireEvent.pointerDown(canvas);
+    fireEvent.pointerUp(canvas);
+    expect(within(dialog).queryByRole("status")).not.toBeInTheDocument();
+    painted = true;
+    fireEvent.pointerDown(canvas);
+    fireEvent.pointerUp(canvas);
+    expect(within(dialog).getByRole("status")).toHaveTextContent("遮罩盖到了画面上的字");
+    // Only a warning: it can still be sent.
+    expect(within(dialog).getByRole("button", { name: "开始修复" })).toBeEnabled();
+    await user.click(within(dialog).getByRole("button", { name: "清除" }));
+    expect(within(dialog).queryByRole("status")).not.toBeInTheDocument();
+  });
+
   it("saves the auto rules and shows the QA thresholds", async () => {
     const user = userEvent.setup();
     renderGenerate();

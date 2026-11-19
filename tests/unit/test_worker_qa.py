@@ -324,12 +324,18 @@ def test_the_configured_qa_models_name_a_tool_of_their_worker() -> None:
 def _ocr_state(texts: list[list[str]]) -> dict[str, Any]:
     def frames(path: str, every_s: float) -> Iterator[tuple[float, Any]]:
         for i in range(len(texts)):
-            yield i * every_s, i
+            yield i * every_s, SimpleNamespace(i=i, shape=(100, 200, 3))
 
     def engine(picture: Any) -> Any:
         if isinstance(picture, str):
             return SimpleNamespace(txts=("招牌",))
-        return SimpleNamespace(txts=tuple(texts[picture]) or None)
+        lines = texts[picture.i]
+        # A line at a time down a 200×100 frame, each 100 wide and 10 high.
+        quads = [
+            [[20, 10 + 20 * n], [120, 10 + 20 * n], [120, 20 + 20 * n], [20, 20 + 20 * n]]
+            for n in range(len(lines))
+        ]
+        return SimpleNamespace(txts=tuple(lines) or None, boxes=quads or None)
 
     return {"engine": engine, "frames": frames}
 
@@ -339,9 +345,9 @@ def test_rapidocr_reads_a_take_frame_by_frame() -> None:
     msg = {"id": "r", "kind": "ocr", "params": {"path": "take.mp4", "every_s": 1.0}}
     out = worker_rapidocr.read(state, msg)
     assert out["json"]["frames"] == [
-        {"t": 0.0, "text": "回春堂"},
-        {"t": 1.0, "text": ""},
-        {"t": 2.0, "text": "回春堂"},
+        {"t": 0.0, "text": "回春堂", "boxes": [[0.1, 0.1, 0.6, 0.2], [0.1, 0.3, 0.6, 0.4]]},
+        {"t": 1.0, "text": "", "boxes": []},
+        {"t": 2.0, "text": "回春堂", "boxes": [[0.1, 0.1, 0.6, 0.2]]},
     ]
     assert out["text"] == "回春堂\n回春堂"
     # A picture as before.
