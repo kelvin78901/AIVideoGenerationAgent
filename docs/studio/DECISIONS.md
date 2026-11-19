@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-18 · M6 第 8b 步：视频局部修复后端
+
+- **组件 `vinpaint`（`pipeline/components/vinpaint.py`）和 2K 精修、口型修复一样跑在镜头的视频产物上**（`UpComponent` 的子类）。接口还是图片局部修复那个 `POST /versions/{id}/inpaint`（multipart：`mask`、可选 `prompt`）：版本是 take 就走 `vinpaint`（`idx`、`where`、`model` 不看），否则照旧走图片的 `inpaint`。origin 用现有的 `inpaint`（不新加），`params.finish = {kind: inpaint, version_id}`，stage 跟原 take，依赖照抄原 take；质检、自动采纳和 2K 精修同一条（`adopt_finished`：原 take 已采纳、没锁、不比原片差）。
+- **遮罩**：请求里的遮罩（画在 take 首帧上，任意大小、同形状）用 `media/image.py:mask_for` 做成 take 的尺寸（灰度，白 = 要改），记在 `payload.inpaint {mask, share}`；没涂、形状不对 422 `bad_mask`。
+- **提示词**：用户写的原样发给 VACE（遮罩里应该是什么），没写就发空串，让模型按四周补（8a 第一组就是这样补出干净的墙面）。不经编译层（模板 `prompts/templates/vinpaint/` 只给记录用）。
+- **送给模型的**：存下来的 take（`video_in`）、遮罩、take 宽高取 16 的倍数（工作流 `caps.exact_size`）、take 解码数出的帧数 `frames`（`media/video.py:frame_count`）。工作流加了两个槽位：`frames`（解码后裁回）和 `length`（≥ frames 的 4n+1，`comfyui.py:vace_length` 算，同时填给 VACE 和「遮罩复制成几帧」）。声音由后端从原 take 流复制回去（`with_sound_of`，工作流里的 `CreateVideo` 重新编码过）。
+- **只有本地**：模型 `comfy/vace-inpaint`（kind `vinpaint`，`needs: [comfy, w_vace]`，`requires_cuda`），没有 API；机器跑不了时 409 `inpaint_unavailable`，带目录给的原因（`machine_cuda` / `machine_missing` + 数量），和图片超分同一个办法。视频产物的估价多一项 `finishing.vinpaint`（按 45 秒 / 秒）。
+- **清单 `w_vace`**（可选，42 GB，`requires_cuda`，`depends_on: [comfy]`）：8a 下的四个文件，按 commit 和 sha256 锁定，放 ComfyUI 的模型目录（Kelvin 本机已经有，重新扫描会认出来）。条目数散在的测试一起改了（detectors、manifest、setup API / install、Setup Vitest、smoke e2e）。
+- 本机真跑一次留到第 11 步（整集冒烟里涂一块、出一条），这一步只测 Mock：适配器的图（帧数、遮罩、贴回）和接口。
+
 ## 2026-11-18 · M6 第 8a 步：视频局部修复本机验证（Wan VACE 14B）
 
 - **范围缩成「去掉 / 修瑕疵」**（Kelvin 2026-11-18 定）：本机试跑的结论是去掉东西好用，换成别的东西不可靠（下面）。8b 照做，默认 CausVid 4 步；遮罩弹窗的文案写明适合去掉东西、提示词可选、镜头在动时移进遮罩的东西也会被重画。不加 LoRA 的「精细档」不做。

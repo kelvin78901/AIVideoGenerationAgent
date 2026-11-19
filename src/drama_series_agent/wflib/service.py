@@ -97,6 +97,7 @@ KIND_COMPONENTS: dict[str, tuple[str, ...]] = {
     "image": ("kf", "img"),
     "upscale": ("up",),
     "lipsync": ("lip",),
+    "vinpaint": ("vinpaint",),
 }
 BOARD_PREFIX = "DramaStudio 素材板"  # the studio's own asset board in ComfyUI's list (M9)
 
@@ -649,7 +650,11 @@ class WorkflowLibrary:
         assert self.router is not None
         component = self.out(row).components[0] if self.out(row).components else "kf"
         w, h, seconds = _trial_size(row)
-        kind = row.kind if row.kind in ("image", "video", "upscale", "lipsync") else "image"
+        kind = (
+            row.kind
+            if row.kind in ("image", "video", "upscale", "lipsync", "vinpaint")
+            else "image"
+        )
         req = ModelRequest(
             kind=kind,
             prompt=TRIAL_PROMPT,

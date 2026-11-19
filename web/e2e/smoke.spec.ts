@@ -95,7 +95,7 @@ test("first run: / opens 环境与安装; installing into ComfyUI asks first, sn
   await expect(page.getByRole("region", { name: "你的 ComfyUI" })).toContainText("D:\\ComfyUI");
 
   await page.getByRole("button", { name: "全选" }).click();
-  await page.getByRole("button", { name: "安装选中的 22 项" }).click();
+  await page.getByRole("button", { name: "安装选中的 23 项" }).click();
   const dialog = page.getByRole("alertdialog", { name: "开始安装前请确认" });
   await expect(dialog.getByText("会改动你的 ComfyUI（12 项）")).toBeVisible();
   await dialog.getByRole("button", { name: "确认，开始安装" }).click();

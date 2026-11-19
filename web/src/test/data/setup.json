@@ -736,6 +736,29 @@
           "install": null
         },
         {
+          "id": "w_vace",
+          "group": "w",
+          "name": {
+            "zh": "Wan VACE 14B（视频局部修复）",
+            "en": "Wan VACE 14B (video inpaint)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": true,
+          "size_bytes": 42000000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_sr",
           "group": "w",
           "name": {
@@ -995,6 +1018,7 @@
         "w_img_t2i",
         "w_flux3",
         "w_flashvsr",
+        "w_vace",
         "w_sr",
         "w_tts",
         "w_qa",
@@ -1111,6 +1135,16 @@
         {
           "code": "comfy_change",
           "params": {
+            "item": "w_vace",
+            "action": "install",
+            "to": "d625832",
+            "source": "Comfy-Org/Wan-2.1",
+            "gb": 42.0
+          }
+        },
+        {
+          "code": "comfy_change",
+          "params": {
             "item": "w_sr",
             "action": "install",
             "to": "df48879",
@@ -1151,6 +1185,13 @@
           "params": {
             "item": "w_flux3",
             "gb": 20.8
+          }
+        },
+        {
+          "code": "large_download",
+          "params": {
+            "item": "w_vace",
+            "gb": 42.0
           }
         }
       ]
@@ -1950,6 +1991,29 @@
           "installable": false,
           "touches_comfy": false,
           "size_bytes": 6700000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_vace",
+          "group": "w",
+          "name": {
+            "zh": "Wan VACE 14B（视频局部修复）",
+            "en": "Wan VACE 14B (video inpaint)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 42000000000,
           "work_s": 0.0,
           "install": null
         },

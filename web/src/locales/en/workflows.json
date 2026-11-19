@@ -114,6 +114,8 @@
     "height": "Height",
     "fps": "Frame rate",
     "seconds": "Duration (s)",
+    "frames": "Frames",
+    "length": "Frames (4n+1)",
     "seed": "Seed",
     "video_out": "Video output",
     "image_out": "Image output",

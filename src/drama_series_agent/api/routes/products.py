@@ -2,8 +2,8 @@
 ``POST /versions/{id}/redraw``, 局部修复 ``POST /versions/{id}/inpaint`` and 图片超分
 ``POST /versions/{id}/upscale`` (M5.5, ``pipeline/components/redraw.py``, ``inpaint.py``,
 ``iup.py``; a take's 2K 精修, M6 ``up.py``); 口型修复 ``POST /versions/{id}/lipsync`` (M6,
-``lip.py``); 重新质检 ``POST /versions/{id}/qa`` (M6,
-``pipeline/qa.py``)."""
+``lip.py``); a take's 视频局部修复 on ``/inpaint`` (M6, ``vinpaint.py``); 重新质检
+``POST /versions/{id}/qa`` (M6, ``pipeline/qa.py``)."""
 
 from __future__ import annotations
 
@@ -20,6 +20,10 @@ from drama_series_agent.media.image import MAX_UPLOAD_BYTES
 from drama_series_agent.pipeline.components.inpaint import inpaint_params
 from drama_series_agent.pipeline.components.iup import refuse_if_unavailable
 from drama_series_agent.pipeline.components.redraw import DEFAULT_STRENGTH, redraw_target
+from drama_series_agent.pipeline.components.vinpaint import (
+    refuse_if_unavailable as refuse_if_no_vinpaint,
+)
+from drama_series_agent.pipeline.components.vinpaint import vinpaint_params
 from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.qa import VIDEO_SLOT
 from drama_series_agent.pipeline.schema import ProductOut
@@ -205,10 +209,28 @@ async def inpaint_version(
     the picture's shape, any size; light = change), as ``prompt`` says → the queued run
     (component ``inpaint``): one candidate for a keyframe or reference picture, that view
     replaced for a views set. 422 ``bad_mask`` for another shape or nothing painted; over a
-    limit it waits for 确认 like any run (hard rule 6)."""
+    limit it waits for 确认 like any run (hard rule 6).
+
+    A take (M6 视频局部修复, component ``vinpaint``): the mask painted on its first frame, for
+    the whole take, ``prompt`` optional (what the part should show); one version, adopted after
+    QA as 2K 精修 is. Only locally: 409 ``inpaint_unavailable`` with the reason
+    (``machine_cuda``, ``machine_missing`` + count) on a machine that cannot run it."""
     data = await mask.read(MAX_UPLOAD_BYTES + 1)
     if len(data) > MAX_UPLOAD_BYTES:
         raise PipelineError(413, "file_too_large", limit=MAX_UPLOAD_BYTES)
+    async with state.db.session() as session:
+        v = await session.get(ProductVersion, version_id)
+        take = await session.get(Product, v.product_id) if v is not None else None
+    if v is not None and take is not None and take.slot == VIDEO_SLOT and not take.retired:
+        refuse_if_no_vinpaint(get_config(), await state.setup.capabilities())
+        job = await state.runs.start(
+            take.id,
+            "run",
+            intent=(prompt or "").strip() or None,
+            component_id="vinpaint",
+            params=await vinpaint_params(state.store, v, data, version_id),
+        )
+        return job_public(job)
     async with state.db.session() as session:
         product, picture = await redraw_target(session, version_id, idx, "inpaint")
     params = await inpaint_params(state.store, picture, data, version_id, idx)

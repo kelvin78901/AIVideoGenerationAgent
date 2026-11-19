@@ -50,7 +50,7 @@ from drama_series_agent.modelhub.workflows import workflow_sha256
 LLM_KINDS = {"llm", "llm_aux", "vlm"}
 IMAGE_KINDS = {"image"}
 AUDIO_KINDS = {"tts", "voice_design", "music"}
-VIDEO_KINDS = {"video", "upscale", "lipsync"}
+VIDEO_KINDS = {"video", "upscale", "lipsync", "vinpaint"}
 OCR_KINDS = {"ocr"}
 
 # Answers a writing request in Mock mode: JSON-able data for ``json_mode``, else text.

@@ -655,7 +655,7 @@ class VidComponent(MediaComponent):
     slot = VIDEO_SLOT
     owner_type = "shot"
     auto_adopt = False
-    finishing: ClassVar[tuple[str, ...]] = ("up", "lip")
+    finishing: ClassVar[tuple[str, ...]] = ("up", "lip", "vinpaint")
 
     async def default_intent(self, session: AsyncSession, product: Product, lang: str) -> str:
         """The keyframe's description (the user's words there), else the plan's."""

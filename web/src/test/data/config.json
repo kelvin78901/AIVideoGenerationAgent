@@ -502,6 +502,16 @@
         "unavailable": {}
       },
       {
+        "id": "vinpaint",
+        "stage": "generate",
+        "kind": "vinpaint",
+        "api_models": [],
+        "local_models": [
+          "comfy/vace-inpaint"
+        ],
+        "unavailable": {}
+      },
+      {
         "id": "qa",
         "stage": "generate",
         "kind": "vlm",
@@ -1114,6 +1124,14 @@
       {
         "key": "comfy/flashvsr",
         "display": "FlashVSR（本地）",
+        "where": "local",
+        "price": null,
+        "priced": true,
+        "tier": "recommended"
+      },
+      {
+        "key": "comfy/vace-inpaint",
+        "display": "Wan VACE 视频局部修复（本地）",
         "where": "local",
         "price": null,
         "priced": true,
@@ -1970,6 +1988,25 @@
         ],
         "per_call_cap_usd": 0.5
       },
+      "vinpaint": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/vace-inpaint",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
+      },
       "qa": {
         "mode": "api",
         "api_model": "google/gemini-3.1-flash-lite",
@@ -2772,6 +2809,25 @@
           "sync/lipsync-2-pro"
         ],
         "per_call_cap_usd": 0.5
+      },
+      "vinpaint": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/vace-inpaint",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "qa": {
         "mode": "api",
@@ -3596,6 +3652,25 @@
         ],
         "per_call_cap_usd": 0.5
       },
+      "vinpaint": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/vace-inpaint",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
+      },
       "qa": {
         "mode": "local",
         "api_model": "google/gemini-3.1-flash-lite",
@@ -4230,6 +4305,25 @@
           "local/infinitetalk"
         ],
         "per_call_cap_usd": 0.5
+      },
+      "vinpaint": {
+        "mode": "local",
+        "api_model": null,
+        "local_model": "comfy/vace-inpaint",
+        "fallback": {
+          "enabled": false,
+          "on": [
+            "error",
+            "timeout",
+            "qa_fail"
+          ],
+          "qa_fail_n": 2,
+          "timeout_s": 600,
+          "to": null,
+          "notify": "after"
+        },
+        "alt_order": [],
+        "per_call_cap_usd": null
       },
       "qa": {
         "mode": "local",

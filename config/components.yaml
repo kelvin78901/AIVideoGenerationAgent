@@ -362,6 +362,17 @@ components:
     balanced: { mode: hybrid, api: sync/lipsync-2-pro, local: local/latentsync, fallback_to: local/infinitetalk }
     per_call_cap_usd: 0.5
 
+  # 视频局部修复（M6 第 8 步，pipeline/components/vinpaint.py）：在 take 首帧上涂遮罩，整条 take 用同一块重画，遮罩外和声音不变。
+  # 本机试跑后 Kelvin 2026-11-18 定只用来「去掉 / 修瑕疵」（加新东西不可靠）。只有本地 Wan VACE；没装时按钮灰掉写原因。
+  - id: vinpaint
+    stage: generate
+    name: { zh: 视频局部修复, en: Video inpaint }
+    kind: vinpaint
+    api: []
+    local: [comfy/vace-inpaint]
+    balanced: { mode: local, local: comfy/vace-inpaint }
+    note: 手动出，一次一条；适合去掉东西、修瑕疵，提示词可选；镜头在动时移进遮罩的东西也会被重画
+
   # 自动质检（M6 第 3 步，pipeline/qa.py）：每条新 take 出完自动排一个质检任务（cpu 队列）。这一行的路由是「画面检查」：
   # M5.5 的 take 检查并进来（6 帧拼图对着镜头契约和连续性账本看，按拼图缓存，约 $0.001 一条），默认沿用 Gemini 3.1 Flash-Lite。
   # tools：其余各项用的本地工具（CPU，$0；第 5 步装）。thresholds：默认阈值，每部剧可在生成规则里改、可关。

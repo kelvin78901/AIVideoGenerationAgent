@@ -3048,6 +3048,397 @@
       "updated_at": "2026-10-18T09:00:00Z"
     },
     {
+      "id": "wf_vace-inpaint",
+      "slug": "vace-inpaint",
+      "model_key": "comfy/vace-inpaint",
+      "name": "Wan VACE 14B 视频局部修复",
+      "tier": "recommended",
+      "source": "repo",
+      "origin": null,
+      "components": [
+        "vinpaint"
+      ],
+      "caps": {
+        "aspects": [],
+        "max_seconds": null,
+        "refs": null,
+        "vram_gb": null
+      },
+      "file_sha256": "693283d0432dce87a61d81b1e7ee6225c7b9863a514542fc31417a49f36c33c3",
+      "file_changed": false,
+      "uses_dramastudio_nodes": false,
+      "bindings": [
+        {
+          "slot": "video_in",
+          "index": null,
+          "node_title": "Video in",
+          "node_class": "LoadVideo",
+          "field": "file",
+          "state": "confirmed"
+        },
+        {
+          "slot": "mask",
+          "index": null,
+          "node_title": "Mask",
+          "node_class": "LoadImageMask",
+          "field": "image",
+          "state": "confirmed"
+        },
+        {
+          "slot": "prompt",
+          "index": null,
+          "node_title": "Prompt",
+          "node_class": "CLIPTextEncode",
+          "field": "text",
+          "state": "confirmed"
+        },
+        {
+          "slot": "width",
+          "index": null,
+          "node_title": "VACE",
+          "node_class": "WanVaceToVideo",
+          "field": "width",
+          "state": "confirmed"
+        },
+        {
+          "slot": "height",
+          "index": null,
+          "node_title": "VACE",
+          "node_class": "WanVaceToVideo",
+          "field": "height",
+          "state": "confirmed"
+        },
+        {
+          "slot": "seed",
+          "index": null,
+          "node_title": "Sampler",
+          "node_class": "KSampler",
+          "field": "seed",
+          "state": "confirmed"
+        },
+        {
+          "slot": "length",
+          "index": null,
+          "node_title": "VACE",
+          "node_class": "WanVaceToVideo",
+          "field": "length",
+          "state": "confirmed"
+        },
+        {
+          "slot": "length",
+          "index": null,
+          "node_title": "Mask per frame",
+          "node_class": "RepeatImageBatch",
+          "field": "amount",
+          "state": "confirmed"
+        },
+        {
+          "slot": "frames",
+          "index": null,
+          "node_title": "Frames",
+          "node_class": "ImageFromBatch",
+          "field": "length",
+          "state": "confirmed"
+        },
+        {
+          "slot": "video_out",
+          "index": null,
+          "node_title": "Output",
+          "node_class": "SaveVideo",
+          "field": null,
+          "state": "confirmed"
+        }
+      ],
+      "nodes": [
+        {
+          "title": "Video in",
+          "class_type": "LoadVideo",
+          "fields": [
+            "file"
+          ]
+        },
+        {
+          "title": "Frames and sound",
+          "class_type": "GetVideoComponents",
+          "fields": []
+        },
+        {
+          "title": "Mask",
+          "class_type": "LoadImageMask",
+          "fields": [
+            "image",
+            "channel"
+          ]
+        },
+        {
+          "title": "Grow mask",
+          "class_type": "GrowMask",
+          "fields": [
+            "expand",
+            "tapered_corners"
+          ]
+        },
+        {
+          "title": "Mask as image",
+          "class_type": "MaskToImage",
+          "fields": []
+        },
+        {
+          "title": "Mask per frame",
+          "class_type": "RepeatImageBatch",
+          "fields": [
+            "amount"
+          ]
+        },
+        {
+          "title": "Masks",
+          "class_type": "ImageToMask",
+          "fields": [
+            "channel"
+          ]
+        },
+        {
+          "title": "Wan VACE 14B",
+          "class_type": "UNETLoader",
+          "fields": [
+            "unet_name",
+            "weight_dtype"
+          ]
+        },
+        {
+          "title": "CausVid LoRA",
+          "class_type": "LoraLoaderModelOnly",
+          "fields": [
+            "lora_name",
+            "strength_model"
+          ]
+        },
+        {
+          "title": "Shift",
+          "class_type": "ModelSamplingSD3",
+          "fields": [
+            "shift"
+          ]
+        },
+        {
+          "title": "Load text encoder",
+          "class_type": "CLIPLoader",
+          "fields": [
+            "clip_name",
+            "type",
+            "device"
+          ]
+        },
+        {
+          "title": "Wan VAE",
+          "class_type": "VAELoader",
+          "fields": [
+            "vae_name"
+          ]
+        },
+        {
+          "title": "Prompt",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "Negative prompt",
+          "class_type": "CLIPTextEncode",
+          "fields": [
+            "text"
+          ]
+        },
+        {
+          "title": "VACE",
+          "class_type": "WanVaceToVideo",
+          "fields": [
+            "width",
+            "height",
+            "length",
+            "batch_size",
+            "strength"
+          ]
+        },
+        {
+          "title": "Sampler",
+          "class_type": "KSampler",
+          "fields": [
+            "seed",
+            "steps",
+            "cfg",
+            "sampler_name",
+            "scheduler",
+            "denoise"
+          ]
+        },
+        {
+          "title": "Trim latent",
+          "class_type": "TrimVideoLatent",
+          "fields": []
+        },
+        {
+          "title": "Decode",
+          "class_type": "VAEDecode",
+          "fields": []
+        },
+        {
+          "title": "Frames",
+          "class_type": "ImageFromBatch",
+          "fields": [
+            "batch_index",
+            "length"
+          ]
+        },
+        {
+          "title": "Feather",
+          "class_type": "ImageBlur",
+          "fields": [
+            "blur_radius",
+            "sigma"
+          ]
+        },
+        {
+          "title": "Paste mask",
+          "class_type": "ImageToMask",
+          "fields": [
+            "channel"
+          ]
+        },
+        {
+          "title": "Paste back",
+          "class_type": "ImageCompositeMasked",
+          "fields": [
+            "x",
+            "y",
+            "resize_source"
+          ]
+        },
+        {
+          "title": "Video",
+          "class_type": "CreateVideo",
+          "fields": []
+        },
+        {
+          "title": "Output",
+          "class_type": "SaveVideo",
+          "fields": [
+            "filename_prefix",
+            "format",
+            "format.codec"
+          ]
+        },
+        {
+          "title": "Grey",
+          "class_type": "EmptyImage",
+          "fields": [
+            "width",
+            "height",
+            "batch_size",
+            "color"
+          ]
+        },
+        {
+          "title": "Control video",
+          "class_type": "ImageCompositeMasked",
+          "fields": [
+            "x",
+            "y",
+            "resize_source"
+          ]
+        }
+      ],
+      "check": {
+        "at": "2026-10-18T09:00:00Z",
+        "status": "broken",
+        "node_classes": {
+          "found": 11,
+          "total": 23
+        },
+        "missing_packs": [],
+        "missing_models": [],
+        "problems": [
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "EmptyImage"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "GrowMask"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "ImageBlur"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "ImageCompositeMasked"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "ImageFromBatch"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "ImageToMask"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "LoadImageMask"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "MaskToImage"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "ModelSamplingSD3"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "RepeatImageBatch"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "TrimVideoLatent"
+            }
+          },
+          {
+            "code": "unknown_node",
+            "params": {
+              "class": "WanVaceToVideo"
+            }
+          }
+        ]
+      },
+      "trial": null,
+      "branches": [],
+      "created_at": "2026-10-18T09:00:00Z",
+      "updated_at": "2026-10-18T09:00:00Z"
+    },
+    {
       "id": "wf_ltx2",
       "slug": "ltx2",
       "model_key": "comfy/ltx2",
@@ -3443,6 +3834,7 @@
     ],
     "wf_flux3-klein-redraw": [],
     "wf_klein-inpaint": [],
+    "wf_vace-inpaint": [],
     "wf_ltx2": [
       {
         "code": "comfy_change",

@@ -73,6 +73,10 @@ Slot = Literal[
     "height",
     "fps",
     "seconds",
+    # A video inpaint's frames (M6 ``vinpaint``): the take's own count, and that count made
+    # 4n+1 for Wan VACE (``length``; the frames past the take's are cut after decoding).
+    "frames",
+    "length",
     "seed",
     "video_out",
     "image_out",

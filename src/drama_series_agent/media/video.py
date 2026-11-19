@@ -315,6 +315,11 @@ async def probe(data: bytes) -> VideoInfo:
     return await asyncio.to_thread(_probe, data)
 
 
+async def frame_count(path: Path) -> int:
+    """The clip's picture frames, decoded and counted (a video inpaint makes as many, M6)."""
+    return await asyncio.to_thread(_frame_count, path)
+
+
 async def trim_head(data: bytes, seconds: float = TRIM_HEAD_S) -> bytes:
     """``data`` without its first ``seconds``, re-encoded (H.264, AAC when it has sound)."""
     return await asyncio.to_thread(_trim_head, data, seconds)

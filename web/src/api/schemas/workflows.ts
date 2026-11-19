@@ -30,6 +30,9 @@ export const SlotSchema = z.enum([
   "height",
   "fps",
   "seconds",
+  // 视频局部修复 (M6): the take's frames, and that count made 4n+1 for Wan VACE.
+  "frames",
+  "length",
   "seed",
   "video_out",
   "image_out",

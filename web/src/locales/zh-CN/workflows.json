@@ -114,6 +114,8 @@
     "height": "高",
     "fps": "帧率",
     "seconds": "时长（秒）",
+    "frames": "帧数",
+    "length": "帧数（4n+1）",
     "seed": "种子",
     "video_out": "视频输出",
     "image_out": "图片输出",

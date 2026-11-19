@@ -24,7 +24,12 @@ from drama_series_agent.modelhub.adapters.base import (
     ModelRequest,
     ModelSpec,
 )
-from drama_series_agent.modelhub.adapters.comfyui import ComfyTarget, ComfyUIAdapter, WsConnect
+from drama_series_agent.modelhub.adapters.comfyui import (
+    ComfyTarget,
+    ComfyUIAdapter,
+    WsConnect,
+    vace_length,
+)
 from drama_series_agent.modelhub.adapters.mock import sine_wav, solid_mp4, solid_png
 from drama_series_agent.modelhub.vram import VramLease
 from drama_series_agent.modelhub.workflows import (
@@ -77,7 +82,8 @@ class FakeComfy:
     ends with this status; ``lost``: the prompt is neither queued nor in the history."""
 
     def __init__(self) -> None:
-        self.video: bytes | None = None  # answer with this clip from node 92 (h3-i2v's output)
+        self.video: bytes | None = None  # answer with this clip from ``video_node``
+        self.video_node = "92"  # h3-i2v's output
         self.image_node = "8"  # the node a picture comes from (fake-edit's output)
         self.sockets: list[asyncio.Queue[str | None]] = []
         self.polls = 0
@@ -132,7 +138,7 @@ class FakeComfy:
             status = {"status_str": "success", "completed": True, "messages": []}
             if self.video is not None:
                 clip = {"filename": f"{pid}.mp4", "subfolder": "dramastudio", "type": "output"}
-                outputs = {"92": {"images": [clip], "animated": [True]}}
+                outputs = {self.video_node: {"images": [clip], "animated": [True]}}
                 return httpx.Response(200, json={pid: {"outputs": outputs, "status": status}})
             out = {"images": [{"filename": f"{pid}.png", "subfolder": "", "type": "temp"}]}
             return httpx.Response(
@@ -727,3 +733,47 @@ def test_a_take_is_finished_at_the_delivery_size(slug: str) -> None:
     adapter = ComfyUIAdapter.__new__(ComfyUIAdapter)
     req = ModelRequest(kind="upscale", prompt="", params={"width": 1080, "height": 1920})
     assert adapter.size_for(shipped_workflow(slug), req) == (1080, 1920)
+
+
+VACE = ModelSpec(
+    key="comfy/vace-inpaint", kind="vinpaint", where="local", display="Wan VACE inpaint",
+    runtime="comfyui", workflow="vace-inpaint",
+)  # fmt: skip
+
+
+@pytest.mark.parametrize(("frames", "length"), [(1, 1), (116, 117), (117, 117), (118, 121)])
+def test_vace_takes_4n_plus_1_frames(frames: int, length: int) -> None:
+    assert vace_length(frames) == length
+
+
+async def test_a_video_inpaint_runs_on_every_frame_of_the_take(
+    root: Path, store: BlobStore
+) -> None:
+    """视频局部修复 (M6 step 8b): the take and the mask are uploaded; Wan VACE gets the take's
+    size as asked (multiples of 16) and its frames made 4n+1, the mask repeated as many times,
+    the decoded frames cut back to the take's count and pasted onto the take."""
+    shutil.copytree(WORKFLOWS_DIR / "vace-inpaint", root / "vace-inpaint")
+    fake = FakeComfy()
+    fake.video = await solid_mp4(96, 176, 2.0, 24, "336699", audio_hz=440)
+    fake.video_node = "24"
+    take = store.put_bytes(fake.video)
+    mask = store.put_bytes(solid_png(8, 8, (255, 255, 255)))
+    req = ModelRequest(
+        kind="vinpaint",
+        prompt="",
+        seed=3,
+        params={"video_in": take, "mask": mask, "width": 96, "height": 176, "frames": 48,
+                "fps": 24, "duration_s": 2.0},
+    )  # fmt: skip
+    result = await _adapter(fake, root, store, spec=VACE).run(req, CallContext())
+    by_title = {n["_meta"]["title"]: n["inputs"] for n in fake.prompts[0].values()}
+    assert by_title["Video in"]["file"] == f"dramastudio/{take}.mp4"
+    assert by_title["Mask"]["image"] == f"dramastudio/{mask}.png"
+    vace = by_title["VACE"]
+    assert (vace["width"], vace["height"], vace["length"]) == (96, 176, 49)
+    assert by_title["Mask per frame"]["amount"] == 49
+    assert by_title["Frames"]["length"] == 48
+    assert by_title["Sampler"]["seed"] == 3 and by_title["Prompt"]["text"] == ""
+    assert by_title["Paste back"]["destination"] == ["2", 0]
+    [clip] = result.files
+    assert (clip.role, clip.w, clip.h) == ("video", 96, 176)

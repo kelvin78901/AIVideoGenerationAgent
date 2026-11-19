@@ -347,6 +347,9 @@ class ComfyUIAdapter:
                     values["negative"] = str(req.params["negative"])
                 if req.params.get("denoise") is not None:  # a redraw's 改动幅度 (M5.5)
                     values["denoise"] = float(req.params["denoise"])
+                if req.params.get("frames"):  # a video inpaint (M6 ``vinpaint``)
+                    values["frames"] = int(req.params["frames"])
+                    values["length"] = vace_length(int(req.params["frames"]))
                 # The dubbed lines start after the tail clip's frames (M5 step 15e).
                 tail = int(req.params.get("tail_frames") or 0) if "tail_clip" in inputs else 0
                 values["dialogue_frame"] = tail
@@ -660,6 +663,11 @@ class ComfyUIAdapter:
                 await client.post("/queue", json={"delete": [prompt_id]})
         except httpx.HTTPError as exc:
             logger.warning("comfy: could not stop prompt {}: {}", prompt_id, exc)
+
+
+def vace_length(frames: int) -> int:
+    """The fewest frames Wan VACE takes (4n+1) that hold ``frames``."""
+    return (max(1, frames) + 2) // 4 * 4 + 1
 
 
 def seconds_for(caps: dict[str, Any], req: ModelRequest) -> float:

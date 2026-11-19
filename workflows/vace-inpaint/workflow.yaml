@@ -1,4 +1,4 @@
-# 视频局部修复（M6 第 8a 步，组件 vinpaint）：Wan2.1 VACE 14B，按 ComfyUI 官方模板 video_wan_vace_inpainting
+# 视频局部修复（M6 第 8a 步试跑，第 8b 步接组件 vinpaint）：Wan2.1 VACE 14B，按 ComfyUI 官方模板 video_wan_vace_inpainting
 # （templates 0.11.86，「Video Inpainting (Wan2.1 VACE)」子图）改写成 API 格式。和官方相同：fp8_e4m3fn_fast 加载、
 # CausVid LoRA 0.3、shift 5、uni_pc / simple、cfg 1、遮罩外扩 16 像素（官方 20）。和官方不同：
 # - 遮罩是一张静态 PNG（白色 = 要改，读红通道），整条 take 用同一块；先复制成 length 帧（Mask per frame）——
@@ -9,7 +9,7 @@
 # - 解码后按羽化过的遮罩贴回原片（Paste back），遮罩外的像素就是原片；原片的声音、帧率原样带过去。
 # 节点和输入名 2026-11-18 按本机 ComfyUI 0.41.2 的 /object_info 核对。
 name: { zh: Wan VACE 14B 视频局部修复, en: Wan VACE 14B video inpaint }
-kind: video_inpaint
+kind: vinpaint
 tier: recommended
 bindings:
   - { slot: video_in, node: Video in, field: file }
@@ -18,8 +18,10 @@ bindings:
   - { slot: width, node: VACE, field: width }
   - { slot: height, node: VACE, field: height }
   - { slot: seed, node: Sampler, field: seed }
-  # 帧数（第 8b 步加槽位）：VACE.length 和 Mask per frame.amount 填 ≥ 帧数的 4n+1，Frames.length 填 take 的帧数。
-  # 第 8a 步的 scripts/smoke/local_vace.py 按节点标题直接填。
+  # 帧数：frames 是 take 的帧数（解码后裁回），length 是 ≥ 它的 4n+1（适配器算，comfyui.py:vace_length）
+  - { slot: length, node: VACE, field: length }
+  - { slot: length, node: Mask per frame, field: amount }
+  - { slot: frames, node: Frames, field: length }
   - { slot: video_out, node: Output }
 models:
   - { folder: diffusion_models, name: wan2.1_vace_14B_fp16.safetensors }
@@ -31,3 +33,5 @@ caps:
   # （含加载，采样每步约 44 s），显存峰值约 26 GB；8 步 390 s；不加 LoRA cfg 6 12 步 1071 s。比 5 秒长的 take 还没试。
   est_seconds_per_s: 45
   multiple: 16
+  # 宽高原样填（组件送 take 的宽高取 16 的倍数）；贴回的是 take 原尺寸的帧
+  exact_size: true
