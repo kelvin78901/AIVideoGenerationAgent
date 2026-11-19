@@ -150,6 +150,22 @@ items:
     install:
       - { type: uv_sync, env: qa, project: runtimes/qa, python: "3.12" }
 
+  - id: rt_latentsync
+    group: rt
+    name: { zh: LatentSync 运行环境（本地口型修复）, en: LatentSync runtime (local lip-sync repair) }
+    requires_cuda: true
+    required: false
+    depends_on: [uv, git]
+    # M6 第 7b 步。LatentSync 源码锁 main 的 commit（1.6，2025-06-20；代码 Apache 2.0），不是 Python 包：worker 把它放进
+    # sys.path。环境 runtimes/latentsync：Python 3.12、PyTorch 2.11 cu130（5090 要 CUDA 12.8+，仓库锁的是 2.5.1 cu121），
+    # 不装 insightface（只有源码包，要编译）：找脸用 buffalo_l 的两个 onnx，worker 自己用 onnxruntime 在 CPU 上跑。
+    # 可选：口型修复有 sync.so API。检测看 DeepCache（环境里最后才用到的包）。
+    detect: { type: py_import, env: latentsync, module: DeepCache, gpu: true }
+    size_gb: 4.5
+    install:
+      - { type: git_clone, url: https://github.com/bytedance/LatentSync, ref: a229c3948406bc2cf6eaf4873e662e70c6a04746, version: "1.6", dest: "{envs}/latentsync-src" }
+      - { type: uv_sync, env: latentsync, project: runtimes/latentsync, python: "3.12" }
+
   # ---------- ComfyUI 与节点 ----------
   - id: comfy
     group: comfy
@@ -504,6 +520,40 @@ items:
           - { path: preprocessor_config.json }   # 0.00 GB
           - { path: tokenizer.json }   # 0.00 GB
           - { path: vocabulary.json }   # 0.00 GB
+  - id: w_latentsync
+    group: w
+    name: { zh: LatentSync 1.6 口型模型, en: LatentSync 1.6 lip-sync model }
+    requires_cuda: true
+    required: false
+    # 只下推理要的：U-Net 和 Whisper tiny（权重 openrail++）、VAE（官方运行时从 HF 拉 stabilityai/sd-vae-ft-mse，MIT），
+    # 找脸的 buffalo_l 只要检测（det_10g）和 106 点（2d106det）两个：InsightFace 官方 zip 里的文件和 HF 镜像
+    # public-data/insightface 逐字节相同（2026-11-18 两边 sha256 一致）。buffalo_l 是 InsightFace 的「非商业研究」许可，
+    # Kelvin 2026-11-18 定照用、商用发行前再换（DECISIONS「M6 第 7b 步」）。auxiliary/ 里其余是训练和评测用的，不下。
+    detect: { type: downloads }
+    size_gb: 5.5
+    install:
+      - type: download
+        hf_repo: ByteDance/LatentSync-1.6
+        revision: c42c7e6c8e9c213626389fa7d9a3c444b8536353
+        dest: "{models}/latentsync"
+        files:
+          - { path: README.md }   # 0.00 GB
+          - { path: latentsync_unet.pt, sha256: 0a478e89eb660f82da4c35dbdde8a5adfb27f99d1b4e50edd03729e1e98316d3 }   # 5.07 GB
+          - { path: whisper/tiny.pt, sha256: 65147644a518d12f04e32d6f3b26facc3f8dd46e5390956a9424a650c0ce22b9 }   # 0.08 GB
+      - type: download
+        hf_repo: stabilityai/sd-vae-ft-mse
+        revision: 31f26fdeee1355a5c34592e401dd41e45d25a493
+        dest: "{models}/latentsync/sd-vae-ft-mse"
+        files:
+          - { path: config.json }   # 0.00 GB
+          - { path: diffusion_pytorch_model.safetensors, sha256: a1d993488569e928462932c8c38a0760b874d166399b14414135bd9c42df5815 }   # 0.33 GB
+      - type: download
+        hf_repo: public-data/insightface
+        revision: 33c1063c49c785b7652d3fd529f86fa4f149392b
+        dest: "{models}/latentsync"
+        files:
+          - { path: models/buffalo_l/det_10g.onnx, sha256: 5838f7fe053675b1c7a08b633df49e7af5495cee0493c7dcf6697200b85b5b91 }   # 0.02 GB
+          - { path: models/buffalo_l/2d106det.onnx, sha256: f001b856447c413801ef5c42091ed0cd516fcd21f2d6b79635b1e733a7109dbf }   # 0.01 GB
   - { id: w_llm, group: w, name: { zh: "Qwen3.6-27B（本地 LLM）", en: "Qwen3.6-27B (local LLM)" }, required: false, installable: false, fix: { optional: llm_optional }, macos: { variant: MLX, required: true, name: { zh: "Qwen3.6-27B（MLX 版）", en: "Qwen3.6-27B (MLX)" }, fix: { missing: weights_pending_p0 } }, detect: { type: service_model, server: llmsrv, model: TODO }, install: [ { type: script, run: "ollama pull TODO" } ] }
 
   # ---------- 网络与服务 ----------

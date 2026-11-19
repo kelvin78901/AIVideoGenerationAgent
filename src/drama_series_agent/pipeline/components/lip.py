@@ -10,8 +10,9 @@ parent = the take, the take's stage), checked by QA like every take.
   end. A 原生同步 take gets the dub too (PLAN 模式 C); its own sound is gone. A shot with no
   line said on screen is refused (409 ``lipsync_no_dialogue``), a line not dubbed yet too
   (409 ``line_audio_missing``). The track is laid on the result whatever the model returns.
-- **Models**: the route's (API sync lipsync-2-pro; locally LatentSync, step 7b), one
-  ``ModelRequest(kind="lipsync")``: ``video_in`` / ``audio_in`` by sha256.
+- **Models**: the route's (locally LatentSync 1.6, ``workers/worker_latentsync.py``; the API
+  sync lipsync-2-pro), one ``ModelRequest(kind="lipsync")``: ``video_in`` / ``audio_in`` by
+  sha256 (the API uploads them), ``video`` / ``audio`` as paths (the worker reads them).
 - **Adopted** after QA as 2K 精修 is (``pipeline/qa_policy.py:adopt_finished``); a repair QA
   asked for (``params.auto``: ``auto_lip``) is a candidate the policy judges (``qa_policy.decide``).
 - It keeps the take's dependencies and adds the dubs'.
@@ -87,6 +88,10 @@ class LipComponent(UpComponent):
                 params={
                     "video_in": str(video["sha256"]),
                     "audio_in": audio_in,
+                    # a local worker reads files (``workers/worker_latentsync.py``)
+                    "video": str(store.path_for(str(video["sha256"]))),
+                    "audio": str(store.path_for(audio_in)),
+                    "seed": ctx.seed,
                     "width": int(video.get("w") or 0),
                     "height": int(video.get("h") or 0),
                     "fps": int(fps),

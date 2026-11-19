@@ -1145,7 +1145,7 @@
       },
       {
         "key": "local/latentsync",
-        "display": "LatentSync（本地）",
+        "display": "LatentSync 1.6（本地）",
         "where": "local",
         "price": null,
         "priced": true,

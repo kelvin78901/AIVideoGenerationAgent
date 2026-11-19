@@ -26,9 +26,11 @@ INSTALL = f"{V1}/setup/install"
 # ControlNet and SeedVR2 nodes come with ComfyUI itself and our own nodes are not out yet, so
 # the scan finds them missing but offers no install.
 PC_INSTALLABLE = [
-    "torch", "ffmpeg", "rt_qwentts", "rt_indextts", "rt_ocr", "rt_qa", "comfy", "node_flashvsr",
+    "torch", "ffmpeg", "rt_qwentts", "rt_indextts", "rt_ocr", "rt_qa", "rt_latentsync", "comfy",
+    "node_flashvsr",
     "node_dramastudio", "sage",
     "w_h3", "w_te", "w_img", "w_img_t2i", "w_flux3", "w_flashvsr", "w_sr", "w_tts", "w_qa",
+    "w_latentsync",
     "llmsrv",
 ]  # fmt: skip
 
@@ -145,7 +147,7 @@ def test_install_everything_on_the_pc(client: TestClient) -> None:
 
     done = _wait(client, "done")
     states = _states(done)
-    assert Counter(states.values()) == {"done": 19, "failed": 1}
+    assert Counter(states.values()) == {"done": 21, "failed": 1}
     assert done["download_bps"] == 25e6  # what the weights' downloads measured
     sage = next(x for x in done["items"] if x["id"] == "sage")
     assert sage["install"] == {
@@ -200,7 +202,7 @@ def test_rescan_only_reports_the_difference(client: TestClient) -> None:
     after = _scan(client)
     by_id = {x["id"]: x for x in after["items"]}
     assert Counter(x["status"] for x in after["items"]) == {
-        "ok": 29,
+        "ok": 31,
         "missing": 2,
         "optional": 6,
         "warn": 1,

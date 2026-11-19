@@ -2,6 +2,16 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-18 · M6 第 7b 步：本地 LatentSync
+
+- **LatentSync 1.6 照用官方的 buffalo_l 找脸**（Kelvin 2026-11-18 定）：LatentSync 用 InsightFace buffalo_l 的检测（det_10g）和 106 点（2d106det）对齐人脸，InsightFace 的模型是「仅限非商业研究」许可（M6 第 5 步质检就因此没用它）。和 SyncNet 一样照用、记在这里，**商用发行前再换**；找脸单独在 `workers/latentsync_faces.py`，以后换只改这一处（YuNet 只有 5 个点，要拟合到它用的眉心和鼻子位置，和训练时的对齐不同，要 A/B）。另外 LatentSync 1.6 的**权重是 openrail++**（允许商用，有用途限制），不是计划里写的 Apache 2.0（Apache 2.0 是代码）。
+- **不装 insightface 包**：PyPI 上只有源码包，Windows 上要 C++ 编译。`latentsync_faces.py` 照抄 insightface 0.7.3（MIT）的 SCRFD 检测、106 点和对齐变换，用 onnxruntime **在 CPU 上**跑两个 onnx，worker 启动时塞进 `sys.modules` 顶替 `insightface.app.FaceAnalysis`，LatentSync 源码一行不改。两个 onnx 从 HF 镜像 `public-data/insightface` 下，和 InsightFace 官方 `buffalo_l.zip` 里的逐字节相同（sha256 核对过）；只下这两个（buffalo_l 其余 260 MB 是识别、性别年龄、3D 点，用不到）。onnxruntime 用 CPU 版：onnxruntime-gpu 是 CUDA 12 的，环境里的 torch 是 CUDA 13。
+- **环境 `runtimes/latentsync`**（清单 `rt_latentsync`，可选：口型修复有 sync.so）：LatentSync 源码按 commit a229c39（main，2025-06-20）拉到 `{envs}/latentsync-src`，不是 Python 包，worker 放进 `sys.path`。Python 3.12（仓库是 3.10）、PyTorch 2.11 cu130（和 Qwen3-TTS 一样，5090 要 CUDA 12.8+；仓库锁 2.5.1 cu121），其余按仓库的 requirements 锁（diffusers 0.32.2、transformers 4.48.0、decord 0.6.0、kornia 0.8.0、opencv 4.9.0.80、numpy 1.26.4 …；opencv 4.10+ 要 numpy 2），不装训练和数据处理用的（gradio、mediapipe、lpips、scenedetect、face-alignment、accelerate）。
+- **权重 `w_latentsync`**（可选，5.5 GB）：U-Net（5.07 GB）和 Whisper tiny、VAE `stabilityai/sd-vae-ft-mse`（官方脚本运行时从 Hub 拉；这里安装时下好，`HF_HUB_OFFLINE`）、两个找脸 onnx。`auxiliary/` 里其余（2.9 GB）和 `stable_syncnet.pt` 是训练、评测用的，不下。`local/latentsync` 加 `needs: [rt_latentsync, w_latentsync]`：没装时能力过滤让路由走 sync.so（7a 遗留的 `adapter_unavailable` 解决）。两项都是 `requires_cuda`，Mac 上跳过。
+- **worker `workers/worker_latentsync.py`** 照官方 `scripts/inference.py`：U-Net 配置 `stage2_512.yaml`、20 步、guidance 1.5、DeepCache（间隔 3），fp16；模型常驻（GPU 租约，换模型前先让 ComfyUI 释放）。LatentSync 用 shell 拼命令调 `ffmpeg`、路径不加引号、在当前目录写 `temp/`：worker 把输入拷进请求的临时目录、改成简单文件名、在那里跑；把 imageio-ffmpeg 的二进制拷进环境当 `ffmpeg.exe` 放到 PATH 最前（这台机器 PATH 上的 ffmpeg 是惠普显示助手带的）。LatentSync 把画面转成 25 fps、按音频长度出帧，worker 再转回镜头的 fps（硬规则 10）。有一帧找不到脸它就整条停下 → `lipsync_no_face`。请求里多传 `video` / `audio` 两个路径和 `seed`（sync.so 照旧用 sha256 上传）。
+- `LocalPythonAdapter.estimate` 认 `caps.est_start_s` + `est_seconds_per_s` × 片长（先填 40 秒 + 12 秒 / 秒，本机实测后改）。
+- 清单多两项：detectors / manifest / setup API / setup install 测试、Setup Vitest、smoke e2e 的条目数和体积跟着改，web 测试数据重新生成。
+
 ## 2026-11-18 · M6 第 7a 步：口型修复后端
 
 - **组件 `lip`（`pipeline/components/lip.py`）和 2K 精修一样跑在镜头的视频产物上**（`UpComponent` 的子类）。`POST /versions/{id}/lipsync` → 一个版本：origin `lipsync`（新加进 `VersionOrigin`，前端 schema 和词表同时加）、父版本 = 原 take、**stage 跟原 take**（草稿修完还是草稿）、`params.finish = {kind: lipsync, version_id}`；依赖 = 原 take 的 + 用到的台词配音。质检、自动采纳和 2K 精修同一条（`adopt_finished`：原 take 已采纳、没锁、不比原片差）。

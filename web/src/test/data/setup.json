@@ -364,6 +364,31 @@
           "install": null
         },
         {
+          "id": "rt_latentsync",
+          "group": "rt",
+          "name": {
+            "zh": "LatentSync 运行环境（本地口型修复）",
+            "en": "LatentSync runtime (local lip-sync repair)"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "install_named",
+            "params": {
+              "name": "LatentSync runtime (local lip-sync repair)"
+            }
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 4500000000,
+          "work_s": 260.0,
+          "install": null
+        },
+        {
           "id": "comfy",
           "group": "comfy",
           "name": {
@@ -780,6 +805,29 @@
           "install": null
         },
         {
+          "id": "w_latentsync",
+          "group": "w",
+          "name": {
+            "zh": "LatentSync 1.6 口型模型",
+            "en": "LatentSync 1.6 lip-sync model"
+          },
+          "status": "optional",
+          "found": {
+            "code": "not_found",
+            "params": {}
+          },
+          "fix": {
+            "code": "download",
+            "params": {}
+          },
+          "required": false,
+          "installable": true,
+          "touches_comfy": false,
+          "size_bytes": 5500000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
           "id": "w_llm",
           "group": "w",
           "name": {
@@ -936,6 +984,7 @@
         "rt_indextts",
         "rt_ocr",
         "rt_qa",
+        "rt_latentsync",
         "comfy",
         "node_flashvsr",
         "sage",
@@ -949,6 +998,7 @@
         "w_sr",
         "w_tts",
         "w_qa",
+        "w_latentsync",
         "llmsrv"
       ],
       "confirm": [
@@ -1536,6 +1586,29 @@
           "install": null
         },
         {
+          "id": "rt_latentsync",
+          "group": "rt",
+          "name": {
+            "zh": "LatentSync 运行环境（本地口型修复）",
+            "en": "LatentSync runtime (local lip-sync repair)"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 4500000000,
+          "work_s": 260.0,
+          "install": null
+        },
+        {
           "id": "comfy",
           "group": "comfy",
           "name": {
@@ -1946,6 +2019,29 @@
           "installable": true,
           "touches_comfy": false,
           "size_bytes": 3400000000,
+          "work_s": 0.0,
+          "install": null
+        },
+        {
+          "id": "w_latentsync",
+          "group": "w",
+          "name": {
+            "zh": "LatentSync 1.6 口型模型",
+            "en": "LatentSync 1.6 lip-sync model"
+          },
+          "status": "skip",
+          "found": {
+            "code": "needs_cuda",
+            "params": {}
+          },
+          "fix": {
+            "code": "unsupported_skip",
+            "params": {}
+          },
+          "required": false,
+          "installable": false,
+          "touches_comfy": false,
+          "size_bytes": 5500000000,
           "work_s": 0.0,
           "install": null
         },

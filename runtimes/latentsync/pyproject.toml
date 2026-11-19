@@ -1,0 +1,56 @@
+# LatentSync 1.6 lip-sync worker environment (setup item rt_latentsync, worker
+# workers/worker_latentsync.py, M6 step 7b). The LatentSync source is cloned by the installer at a
+# fixed commit ({envs}/latentsync-src, not a package) and put on sys.path by the worker. Pins follow
+# the repo's requirements.txt (diffusers 0.32.2, transformers 4.48.0, decord 0.6.0, kornia 0.8.0,
+# numpy 1.26.4 …) except: Python 3.12 and PyTorch 2.11 cu130 (the RTX 5090 needs CUDA 12.8+; the
+# repo pins 2.5.1 cu121), no insightface (sdist only: it would need a C++ compiler; the worker runs
+# buffalo_l's two ONNX models with onnxruntime itself), onnxruntime on the CPU (onnxruntime-gpu is
+# built for CUDA 12, torch here brings CUDA 13), no training / data tools (gradio, mediapipe,
+# lpips, scenedetect, face-alignment, accelerate). The installer runs `uv sync --locked` into
+# ~/.drama-studio/envs/latentsync; regenerate the lock with `uv lock --project runtimes/latentsync`.
+[project]
+name = "drama-studio-rt-latentsync"
+version = "0"
+requires-python = "==3.12.*"
+dependencies = [
+    "torch==2.11.0",
+    "torchvision==0.26.0",
+    "diffusers==0.32.2",
+    "transformers==4.48.0",   # the Whisper tokenizer import only
+    "DeepCache==0.1.1",
+    "einops==0.7.0",
+    "omegaconf==2.3.0",
+    "opencv-python-headless==4.9.0.80",   # the repo's 4.9.0.80 (4.10+ wants numpy 2)
+    "decord==0.6.0",          # latentsync.utils.util imports it at module level
+    "imageio==2.31.1",
+    "imageio-ffmpeg==0.5.1",  # the ffmpeg the worker puts first on PATH (LatentSync shells out to `ffmpeg`)
+    "ffmpeg-python==0.2.0",   # the Whisper audio loader
+    "kornia==0.8.0",
+    "soundfile",
+    "matplotlib",             # latentsync.utils.util imports pyplot
+    "librosa==0.10.1",
+    "scipy",
+    "regex",
+    "more-itertools",
+    "onnxruntime==1.31.0",
+    "onnx",                   # reads the landmark model's normalisation as insightface does
+    "numpy==1.26.4",
+    "huggingface-hub==0.30.2",
+    "safetensors",
+]
+
+[tool.uv]
+package = false
+environments = [
+    "sys_platform == 'win32' and platform_machine == 'AMD64'",
+    "sys_platform == 'linux' and platform_machine == 'x86_64'",
+]
+
+[tool.uv.sources]
+torch = { index = "pytorch-cu130" }
+torchvision = { index = "pytorch-cu130" }
+
+[[tool.uv.index]]
+name = "pytorch-cu130"
+url = "https://download.pytorch.org/whl/cu130"
+explicit = true

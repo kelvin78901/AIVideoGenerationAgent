@@ -149,3 +149,22 @@ async def test_not_installed(tmp_path: Path) -> None:
     with pytest.raises(ModelError) as exc:
         await adapter.run(_say("一"), CallContext())
     assert exc.value.code == "not_installed"
+
+
+async def test_a_clip_model_estimates_its_time_by_the_clip(tmp_path: Path) -> None:
+    """LatentSync (M6 step 7b): ``caps`` give a start and seconds per second of the clip."""
+    from drama_series_agent.core.config import get_config
+    from drama_series_agent.modelhub.registry import specs_from_config
+
+    async def paths() -> RuntimePaths:
+        return RuntimePaths(envs=tmp_path / "envs", models=None)
+
+    spec = next(s for s in specs_from_config(get_config()) if s.key == "local/latentsync")
+    assert (spec.worker, spec.env, spec.gpu) == ("worker_latentsync", "latentsync", True)
+    adapter = LocalPythonAdapter(spec, paths=paths, lease=VramLease(), workers_dir=FAKE_WORKERS)
+    req = ModelRequest(kind="lipsync", prompt="", params={"duration_s": 5.0})
+    est = adapter.estimate(req)
+    assert (est.cost_usd, est.seconds) == (0.0, 40 + 12 * 5.0)
+    # Without a clip length, by the text as before.
+    tts = LocalPythonAdapter(SPEC, paths=paths, lease=VramLease(), workers_dir=FAKE_WORKERS)
+    assert tts.estimate(_say("一二三")).seconds == pytest.approx(5.6)

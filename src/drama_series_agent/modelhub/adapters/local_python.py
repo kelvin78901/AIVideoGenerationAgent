@@ -185,6 +185,15 @@ class LocalPythonAdapter:
     # ------------------------------------------------------------------ protocol
 
     def estimate(self, req: ModelRequest) -> Estimate:
+        """Free. The time: a clip's model says it per second of the clip (``caps``
+        ``est_start_s`` + ``est_seconds_per_s`` × ``duration_s``, LatentSync); else by the text."""
+        caps = self.spec.caps.model_extra or {}
+        per_s = caps.get("est_seconds_per_s")
+        if per_s and req.params.get("duration_s"):
+            start = float(caps.get("est_start_s") or 0)
+            return Estimate(
+                cost_usd=0.0, seconds=start + float(per_s) * float(req.params["duration_s"])
+            )
         return Estimate(cost_usd=0.0, seconds=5.0 + len(req.text()) * 0.2)
 
     async def health(self) -> Health:

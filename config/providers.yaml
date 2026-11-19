@@ -433,8 +433,12 @@ local_models:
   - { key: local/indextts2,         kind: tts,     display: IndexTTS2（本地）,        runtime: python, worker: worker_indextts, env: indextts, args: { model_dir: "{models}/IndexTTS-2.5", cwd: "{envs}/indextts-src", bf16: true, lang: zh }, needs: [w_tts, rt_indextts], requires_cuda: true }
   - { key: local/cosyvoice,         kind: tts,     display: CosyVoice（本地）,        runtime: python }
   - { key: local/qwen3-tts,         kind: tts,     display: Qwen3-TTS（本地试听）,     runtime: python, worker: worker_qwentts, env: qwentts, args: { model: "{models}/Qwen3-TTS-12Hz-1.7B-VoiceDesign", language: Chinese }, needs: [rt_qwentts], requires_cuda: true }
-  # 口型修复本地：第 7b 步接 worker、加清单项 rt_latentsync / w_latentsync 和 needs（needs 只能写清单里有的项）。
-  - { key: local/latentsync,        kind: lipsync, display: LatentSync（本地）,       runtime: python, requires_cuda: true }
+  # 口型修复本地（M6 第 7b 步）：LatentSync 1.6，workers/worker_latentsync.py，环境 rt_latentsync、权重 w_latentsync。
+  # 显存官方写 18 GB（GPU 租约，先让 ComfyUI 释放）；est_seconds_per_s 是每秒片长的耗时估计（本机实测后改）。
+  - { key: local/latentsync,        kind: lipsync, display: LatentSync 1.6（本地）,   runtime: python, worker: worker_latentsync, env: latentsync,
+      args: { src: "{envs}/latentsync-src", unet: "{models}/latentsync/latentsync_unet.pt", whisper: "{models}/latentsync/whisper/tiny.pt",
+              vae: "{models}/latentsync/sd-vae-ft-mse", faces: "{models}/latentsync/models/buffalo_l", steps: 20, guidance: 1.5, deepcache: true },
+      caps: { est_seconds_per_s: 12, est_start_s: 40 }, needs: [rt_latentsync, w_latentsync], requires_cuda: true }
   - { key: local/infinitetalk,      kind: lipsync, display: InfiniteTalk（本地）,     runtime: python, requires_cuda: true }
   - { key: local/qwen3-vl-32b,      kind: vlm,     display: Qwen3-VL-32B（本地）,     runtime: llm_server, needs: [llmsrv] }
   - { key: local/ace-step,          kind: music,   display: ACE-Step（本地）,         runtime: python }
