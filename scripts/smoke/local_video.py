@@ -70,7 +70,9 @@ EP_RUN = "run11-episode"
 EP_OUT = SMOKE_DIR / "originals" / EP_RUN  # git-ignored: the clips and the cuts
 EP_SHEETS = SMOKE_DIR / EP_RUN  # in git: small JPEG contact sheets
 EP_PICTURES = ("linwan", "hall", "room", "umbrella", "note", "band", "phone")
-EP_TEXTS = ("txt1", "txt2")  # on-screen text pictures: locked on a candidate OCR read right
+# On-screen text pictures: locked on a candidate OCR read right (txt1, the note's handwriting,
+# left the demo in M5.5: the words are in the note's own description).
+EP_TEXTS = ("txt2",)
 EP_TAKES = 2
 EP_RECORD = "episode-takes.json"  # in the data directory: each shot's takes, for ``cut``
 STEPS = [

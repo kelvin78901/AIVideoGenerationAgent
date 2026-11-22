@@ -1,0 +1,43 @@
+M5 local smoke · 2026-11-22 13:17
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 27192 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== from 1-03: 1-01, 1-02 already made
+== take-1-03: 1-03 1 条（same_scene_cut，closeup，声音 native）
+   1 job(s) in 166.4 s, GPU memory peak 31664 MiB
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call deepseek/v4.1-flash [api] success 4.2 s audio=Nones
+   call deepseek/v4.1-flash [api] success 3.0 s audio=Nones
+   call comfy/h3 [local] success 156.0 s audio=5.17s
+   model comfy/h3 [local], files: take-1-03-1-video.mp4 (768x1344 4.89s), take-1-03-1-poster.png (768x1344), take-1-03-1-last_frame.png (768x1344), take-1-03-1-raw.mp4 (768x1344 5.17s), take-1-03-1-sheet.png (?)
+   clip 768x1344 4.89s @ 24.0 fps, sound yes; asked 3.00s (minus the 0.3s cut: 2.70s; a model's shortest clip can be longer); voices [], refs []
+   model comfy/h3 [local], files: take-1-03-2-video.mp4 (768x1344 4.89s), take-1-03-2-poster.png (768x1344), take-1-03-2-last_frame.png (768x1344), take-1-03-2-raw.mp4 (768x1344 5.17s), take-1-03-2-sheet.png (?)
+   clip 768x1344 4.89s @ 24.0 fps, sound yes; asked 3.00s (minus the 0.3s cut: 2.70s; a model's shortest clip can be longer); voices [], refs []
+   model comfy/h3 [local], files: take-1-03-3-video.mp4 (768x1344 4.89s), take-1-03-3-poster.png (768x1344), take-1-03-3-last_frame.png (768x1344), take-1-03-3-raw.mp4 (768x1344 5.17s), take-1-03-3-sheet.png (?)
+   clip 768x1344 4.89s @ 24.0 fps, sound yes; asked 3.00s (minus the 0.3s cut: 2.70s; a model's shortest clip can be longer); voices [], refs []
+   1-03-1 T3 run comfy/h3 [local] 质检没过 score 0.938: face —，lipsync —，asr —，speaker —，ocr ✓，vlm ✗ → rerun comfy/h3
+   1-03-2 T4 auto_qa_rerun comfy/h3 [local] 质检没过 score 0.938: face —，lipsync —，asr —，speaker —，ocr ✓，vlm ✗ → rerun comfy/h3
+   1-03-3 T5 auto_qa_rerun comfy/h3 [local] 质检过 score 1.0: face —，lipsync —，asr —，speaker —，ocr ✓，vlm ✓
+   adopted 1-03-3 (T5); model comfy/h3, select default, rewritten by deepseek/v4.1-flash
+   1-03-1 画面检查：repeat ✓，event ✓，solid ✓，text ✗ 便利贴的折角形状发生了明显变化，light ✓，place ✓，cut ✓，hold ✓
+   1-03-2 画面检查：repeat ✓，event ✗ 水滴在多帧之间不仅移动，还在持续不断地涌出和下落，属于明显的自动变动，solid ✓，text ✓，light ✓，place ✓，cut ✓，hold ✓
+   1-03-3 画面检查：repeat ✓，event ✓，solid ✓，text ✓，light ✓，place ✓，cut ✓，hold ✓
+   deepseek/v4.1-flash in this data dir: 13 call(s), $0.0257
+   google/gemini-3.1-flash-lite in this data dir: 46 call(s), $0.0259
+== cut: 粗剪（每镜按镜头时长裁 / 不裁）
+   1-01: take 1, 4.89s, shot 4.0s, cut 0.00-4.00s
+   1-02: take 3, 4.89s, shot 3.0s, cut 0.17-3.17s
+   1-03: take 3, 4.89s, shot 3.0s, cut 0.00-3.00s
+   1-04: no take, left out
+   1-05: no take, left out
+   1-06: no take, left out
+   1-07: no take, left out
+   1-08: no take, left out
+   1-09: no take, left out
+   ep1-cut.mp4: 10.00s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run21-qa\ep1-cut.mp4
+   ep1-uncut.mp4: 14.67s → C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run21-qa\ep1-uncut.mp4
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run21-qa
+data: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-3rgls348\home

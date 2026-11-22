@@ -17,12 +17,11 @@
 
 - **11 准备**（aa30968）冒烟脚本接上 M6，还没真跑：`local_video.py --only episode` 每个镜头出片后等自动质检和它自己起的重跑 / 口型修复都跑完（`settle`），记每条 take 各项的分和质检的决定，采纳通过的里分最高的（都没过：分最高的，写明）；示例剧里已采纳的镜头先「取消采纳」（已采纳的镜头质检策略不动）；被中断的镜头在记录里是 `pending`，再跑同一条命令只等它恢复的任务、不重新出片；`cut` 用采纳的那条。`local_assets.py` 给本机冒烟关掉示例坏 take（`DRAMA_DEMO_QA=0`：真质检工具会把色块 take 全判不过、在本机重出）。`local_lipsync.py --where api`：同一条 take 走 sync lipsync-2-pro（先连接测试、单次上限 `--cap`、超了取消；报告 `README-sync.txt`）。Mock 试跑 1-01 到 1-04 过（scratchpad 脚本，没进仓库）；ruff 过，mypy 没有新增。
 
+- **11 进行中**（这次提交）第二十一轮 `run21-qa`：准备阶段过（`EP_TEXTS` 去掉示例剧已没有的 `txt1`），数据目录 `%TEMP%\drama-local-video-3rgls348\home`，一镜一条命令 `sh %TEMP%/drama-ep21/take.sh 1-0X`。1-01 一条过；1-02 三条画面文字都没过（自动重跑 2 次后停，采纳分最高的 T5）；1-03 前两条画面检查没过、第三条过；**1-04 第一条出完（217 秒），之后的质检 / 重跑超过 10 分钟被转后台、又因内存不足（剩 5 GB）被 Claude Code 回收，记录里是 `pending`**：再跑 `take.sh 1-04` 只等恢复的任务，不重新出片（先看 ComfyUI 队列空了没有）。报告和拼图在 `reports/m5-local-smoke/run21-qa/`。Kelvin 2026-11-22 定不跑 sync.so（DECISIONS「M6 第 11 步」）。
+
 ## 下一步
 
-- **第 11 步真实冒烟，等 Kelvin 三件事**（2026-11-22 查：钥匙串里没有 `SYNC_API_KEY`；ComfyUI 8188 和后端 8000 都没开）：① 在「模型与兜底」里填 sync.so 的密钥；② 打开 ComfyUI 和 `start.ps1`（脚本从开着的工作台读安装目录和 ComfyUI 地址）；③ 说一声 GPU 能占 1–2 小时。然后按顺序跑：
-  1. 整集（第二十一轮，第二十轮在 M5.5 用过）：先 `PYTHONIOENCODING=utf-8 DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/local_video.py --only episode --keep --to prepare --run run21-qa --takes 1`（配音、素材、关键帧；记下它打印的 `data:` 目录），再一个镜头一条命令 `… --only episode --home <data 目录> --from 1-0X --to 1-0X --run run21-qa --takes 1`（前台，超时 10 分钟；被杀了就原样再跑一次）。真调用只有 DeepSeek 改写和 Gemini 看图（质检的画面检查就是「API 质检看图」），约 $0.1–0.2。
-  2. sync：`PYTHONIOENCODING=utf-8 DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/local_lipsync.py --where api --home <第二十一轮 data 目录> --shot 1-04`（4 秒约 $0.33，上限 $1）。第十九轮的数据目录（`%TEMP%\drama-ep19-5Oilw8`）还在，也能用；**第二十轮的（`drama-ep20b`）blobs 已被系统清掉，不能用**。
-  3. 每条的分和结论写 `reports/m5-local-smoke/run21-qa/README.md`，粗剪给 Kelvin 看。
+- **第 11 步接着跑**（要 Kelvin 说可以再开始：上次是内存不足被回收的）：`take.sh 1-04`（pending，只等）→ 1-05 … 1-09，每条前台、超时 10 分钟，被杀就原样再跑；有对白的镜头（质检 + 重跑 + 口型修复）会超过 10 分钟。跑完：每条的分和结论写 `reports/m5-local-smoke/run21-qa/README.md`，粗剪（`--only cut --home … --run run21-qa`）给 Kelvin 看；然后第 12 步收尾。sync.so 不跑。
 - **Kelvin 本机**：要看坏 take，先停后端、`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`，再启动。
 - **请 Kelvin 看局部修复重跑**：`docs/studio/reports/m6-vace-local/1-04-T9-s4-remove-tight-{50,90}-crop.jpg`（左原片、右修复，1:1）。口型修复 Kelvin 2026-11-18 看过：还行。
 - **5c 留给 Kelvin 看片**：1-04 T9 口型分 0.53 不过（SyncNet 量到声音比嘴早约 0.4 秒），1-06 T1–T3 念了内心独白（字错率不过）。

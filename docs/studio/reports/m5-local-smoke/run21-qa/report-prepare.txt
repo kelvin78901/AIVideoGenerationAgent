@@ -1,0 +1,152 @@
+M5 local smoke · 2026-11-22 12:51
+GPU NVIDIA GeForce RTX 5090 32607 MiB, driver 621.01; in use before 2448 MiB
+ComfyUI 0.41.2 at http://127.0.0.1:8188
+output spec 9:16 1080p 24 fps
+
+== voice: 林晚换本地音色（先解锁）· Qwen3-TTS VoiceDesign 试听
+   1 job(s) in 66.2 s, GPU memory peak 7245 MiB
+   call local/qwen3-tts [local] success 34.8 s audio=0.72s
+   call local/qwen3-tts [local] success 4.7 s audio=2.0s
+   call local/qwen3-tts [local] success 3.9 s audio=1.6s
+   call local/qwen3-tts [local] success 11.4 s audio=4.72s
+   call local/qwen3-tts [local] success 2.0 s audio=0.8s
+   call local/qwen3-tts [local] success 8.0 s audio=3.44s
+== voice-final: 林晚本地终版 · IndexTTS-2.5，锁定
+   1 job(s) in 70.0 s, GPU memory peak 9490 MiB
+   call local/indextts2 [local] success 51.9 s audio=0.7546485260770975s
+   call local/indextts2 [local] success 4.2 s audio=1.3119274376417234s
+   call local/indextts2 [local] success 4.3 s audio=1.230657596371882s
+   call local/indextts2 [local] success 4.2 s audio=1.3931972789115645s
+   call local/indextts2 [local] success 4.2 s audio=1.3931972789115645s
+   lock: locked
+== dub: 全部配音 · 林晚的本地音色走 IndexTTS-2.5
+   2 job(s) in 3.6 s, GPU memory peak 9570 MiB
+   call local/indextts2 [local] success 1.4 s audio=1.0681179138321995s
+   call local/indextts2 [local] success 3.3 s audio=2.0317460317460316s
+== pictures: 第 1 集用到的素材全部本机重画（linwan、hall、room、umbrella、note、band、phone、txt2），锁定
+   8 job(s) in 141.2 s, GPU memory peak 31290 MiB
+   call comfy/qwen-image [local] success 50.2 s images=4
+   call comfy/qwen-image [local] success 11.3 s images=4
+   call comfy/qwen-image [local] success 11.0 s images=4
+   call comfy/qwen-image [local] success 11.3 s images=4
+   call comfy/qwen-image [local] success 11.4 s images=4
+   call local/rapidocr [local] success 2.5 s images=1
+   call local/rapidocr [local] success 0.9 s images=1
+   call local/rapidocr [local] success 1.3 s images=1
+   call local/rapidocr [local] success 1.4 s images=1
+   call comfy/qwen-image [local] success 11.8 s images=4
+   call comfy/qwen-image [local] success 11.2 s images=4
+   call comfy/qwen-image [local] success 11.1 s images=4
+   call local/rapidocr [local] success 0.6 s images=1
+   call local/rapidocr [local] success 1.5 s images=1
+   call local/rapidocr [local] success 1.1 s images=1
+   call local/rapidocr [local] success 1.4 s images=1
+   model comfy/qwen-image [local], files: linwan-candidate-0.png (928x1664), linwan-candidate-1.png (928x1664), linwan-candidate-2.png (928x1664), linwan-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: hall-candidate-0.png (1664x928), hall-candidate-1.png (1664x928), hall-candidate-2.png (1664x928), hall-candidate-3.png (1664x928)
+   model comfy/qwen-image [local], files: room-candidate-0.png (1664x928), room-candidate-1.png (1664x928), room-candidate-2.png (1664x928), room-candidate-3.png (1664x928)
+   model comfy/qwen-image [local], files: umbrella-candidate-0.png (928x1664), umbrella-candidate-1.png (928x1664), umbrella-candidate-2.png (928x1664), umbrella-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: note-candidate-0.png (928x1664), note-candidate-1.png (928x1664), note-candidate-2.png (928x1664), note-candidate-3.png (928x1664)
+   OCR #0: '楼下便利店，等你到十二点。' ok=True
+   OCR #1: '楼下便利店，等你到十二点。' ok=True
+   OCR #2: '楼下便利店，等你到十二点。' ok=True
+   OCR #3: '楼下便利店，等你到十二点。' ok=True
+   model comfy/qwen-image [local], files: band-candidate-0.png (928x1664), band-candidate-1.png (928x1664), band-candidate-2.png (928x1664), band-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: phone-candidate-0.png (928x1664), phone-candidate-1.png (928x1664), phone-candidate-2.png (928x1664), phone-candidate-3.png (928x1664)
+   model comfy/qwen-image [local], files: txt2-candidate-0.png (928x1664), txt2-candidate-1.png (928x1664), txt2-candidate-2.png (928x1664), txt2-candidate-3.png (928x1664)
+   OCR #0: '23:52IE' ok=False
+   OCR #1: '08SM会把23:52IF' ok=False
+   OCR #2: '23:52IF' ok=False
+   OCR #3: '店岩23:52' ok=False
+   txt2: locked candidate 0 (OCR '23:52IE')
+== kf: 关键帧草稿（本地）1-01、1-02、1-03、1-04、1-05、1-06、1-07，各确认第 1 张
+   7 job(s) in 513.8 s, GPU memory peak 25363 MiB
+   call comfy/flux3-klein [local] success 34.1 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call comfy/flux3-klein [local] success 24.4 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.2 s audio=Nones
+   call comfy/flux3-klein [local] success 41.5 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call comfy/flux3-klein [local] success 42.2 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.0 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call comfy/flux3-klein [local] success 42.9 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.3 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call comfy/flux3-klein [local] success 17.9 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   call local/rapidocr [local] success 0.3 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call comfy/flux3-klein [local] success 42.6 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.8 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call google/gemini-3.1-flash-lite [api] success 2.4 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call comfy/flux3-klein [local] success 42.3 s images=3
+   call google/gemini-3.1-flash-lite [api] success 2.0 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.9 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call comfy/flux3-klein [local] success 33.1 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.8 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call local/rapidocr [local] success 0.4 s images=1
+   call google/gemini-3.1-flash-lite [api] success 1.8 s audio=Nones
+   call local/rapidocr [local] success 0.5 s images=1
+   call comfy/flux3-klein [local] success 42.8 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.4 s audio=Nones
+   call comfy/flux3-klein [local] success 42.6 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.3 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.2 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 2.0 s audio=Nones
+   call comfy/flux3-klein [local] success 24.4 s images=3
+   call google/gemini-3.1-flash-lite [api] success 1.6 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.5 s audio=Nones
+   call google/gemini-3.1-flash-lite [api] success 1.7 s audio=Nones
+   model comfy/flux3-klein [local], files: kf-1-01-candidate-0.png (928x1664), kf-1-01-candidate-1.png (928x1664), kf-1-01-candidate-2.png (928x1664)
+   1-01: refs sent ['林晚', '老小区楼道 · 夜']
+   model comfy/flux3-klein [local], files: kf-1-02-candidate-0.png (928x1664), kf-1-02-candidate-1.png (928x1664), kf-1-02-candidate-2.png (928x1664)
+   1-02: refs sent ['老小区楼道 · 夜', '门那边：林晚出租屋 · 夜', '红色长柄伞', '黄色便利贴']
+   model comfy/flux3-klein [local], files: kf-1-03-candidate-0.png (928x1664), kf-1-03-candidate-1.png (928x1664), kf-1-03-candidate-2.png (928x1664)
+   1-03: refs sent ['黄色便利贴']
+   model comfy/flux3-klein [local], files: kf-1-04-candidate-0.png (928x1664), kf-1-04-candidate-1.png (928x1664), kf-1-04-candidate-2.png (928x1664)
+   1-04: refs sent ['林晚', '老小区楼道 · 夜', '门那边：林晚出租屋 · 夜', '黄色便利贴']
+   model comfy/flux3-klein [local], files: kf-1-05-candidate-0.png (928x1664), kf-1-05-candidate-1.png (928x1664), kf-1-05-candidate-2.png (928x1664)
+   1-05: refs sent ['黄色便利贴', '旧黑发圈', '红色长柄伞']
+   model comfy/flux3-klein [local], files: kf-1-06-candidate-0.png (928x1664), kf-1-06-candidate-1.png (928x1664), kf-1-06-candidate-2.png (928x1664)
+   1-06: refs sent ['林晚', '林晚出租屋 · 夜', '门那边：老小区楼道 · 夜', '红色长柄伞']
+   model comfy/flux3-klein [local], files: kf-1-07-candidate-0.png (928x1664), kf-1-07-candidate-1.png (928x1664), kf-1-07-candidate-2.png (928x1664)
+   1-07: refs sent ['手机', '手机锁屏时间']
+   分镜 confirmed 9/9
+   deepseek/v4.1-flash in this data dir: 0 call(s), $0.0000
+   google/gemini-3.1-flash-lite in this data dir: 36 call(s), $0.0199
+
+result: all local steps ran
+files: C:\dev\drama-studio\docs\studio\reports\m5-local-smoke\originals\run21-qa
+data: C:\Users\kelvin\AppData\Local\Temp\drama-local-video-3rgls348\home

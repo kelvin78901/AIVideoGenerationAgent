@@ -2,6 +2,13 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-22 · M6 第 11 步：真实冒烟的范围
+
+- **不跑 sync.so**（Kelvin 2026-11-22 定）：没有 sync.so 的密钥，`sync/lipsync-2-pro` 的真实调用不做；适配器只按官方文档写、用 Mock 测过（7a），`providers.yaml` 那一条仍是「按文档核对、没真跑过」。脚本留着（`local_lipsync.py --where api`），以后有密钥再补。口型修复的真实核对只有本地 LatentSync（7b 和这一轮整集）。
+- **整集叫第二十一轮**（`run21-qa`）：计划写「第二十轮」，这个编号 M5.5 已经用过。从头准备（示例剧的分镜，不接第十九 / 二十轮的数据目录：第二十轮的文件已被系统清掉）。
+- **整集脚本先等质检再采纳**（`local_video.py:takes`）：以前一出片就采纳第一条，而已采纳的镜头质检策略不动（`qa_policy`）；现在等自动质检和它起的重跑 / 口型修复都跑完，采纳通过的里分最高的。示例剧里已采纳的 Mock take 先取消采纳。本机冒烟一律 `DRAMA_DEMO_QA=0`（示例坏 take 是色块，真质检工具会全判不过、在本机重出）。
+- 「API 质检看图」不另跑：质检的画面检查就是它（第 3 步起并进质检），整集里每条 take 都真调一次 Gemini。
+
 ## 2026-11-21 · M6 第 10b 步：Playwright `m6`、两处加载修正
 
 - **Playwright 多开一个后端**（`playwright.config.ts`）：8766 端口，`DRAMA_DEMO_QA=1`，自己的数据目录（`DRAMA_E2E_HOME/qa`），前面一个 `VITE_DEMO_DATA=0` 的 Vite（5185）。项目 `m6`（进 `pnpm e2e`，CI 跑）和 `shots-qa`（进 `pnpm shots`，截 `generate-qa.*`）用它，和原来那串 `seeded → … → smoke` 互不影响；两者开头都等全部任务结束（`fixtures.ts:settleJobs`）。代价是每次 `pnpm e2e` / `pnpm shots` 多起两个服务（并行启动，多十几秒）。
