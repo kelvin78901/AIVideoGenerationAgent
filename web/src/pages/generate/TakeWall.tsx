@@ -401,6 +401,9 @@ function EmptyText({
   return [t("empty.queued", { pos }), ...extra].join("");
 }
 
+/** Longer QA values (free text) go on a line of their own under the check's row. */
+const QA_VALUE_INLINE_CHARS = 8;
+
 function qaValue(t: TFunction<"generate">, te: TFunction<"enums">, c: QaCheck): string {
   if (c.ok === null) return "—";
   switch (c.metric) {
@@ -580,6 +583,10 @@ function TakeCard({
           </div>
           {v.qa.checks.map((c) => {
             const items = c.metric === "vlm" ? (c.items ?? []) : [];
+            const value = qaValue(t, te, c);
+            // Free text (what OCR read, what the picture check found) gets its own line under
+            // the row: in the row it squeezed the check's name into a one-character column.
+            const long = value.length > QA_VALUE_INLINE_CHARS;
             return (
               <div key={c.metric} className="flex flex-col gap-1">
                 <div className="flex items-center gap-2 text-xs">
@@ -589,7 +596,7 @@ function TakeCard({
                       aria-expanded={itemsOpen}
                       aria-label={t(itemsOpen ? "wall.hideItems" : "wall.showItems")}
                       onClick={() => setItemsOpen((open) => !open)}
-                      className="flex flex-1 items-center gap-0.5 text-left text-muted-foreground hover:text-foreground"
+                      className="flex flex-1 items-center gap-0.5 text-left whitespace-nowrap text-muted-foreground hover:text-foreground"
                     >
                       {t(`qa.${c.metric}`)}
                       {itemsOpen ? (
@@ -599,9 +606,11 @@ function TakeCard({
                       )}
                     </button>
                   ) : (
-                    <span className="flex-1 text-muted-foreground">{t(`qa.${c.metric}`)}</span>
+                    <span className="flex-1 whitespace-nowrap text-muted-foreground">
+                      {t(`qa.${c.metric}`)}
+                    </span>
                   )}
-                  <span className="font-mono">{qaValue(t, te, c)}</span>
+                  {long ? null : <span className="font-mono">{value}</span>}
                   <span
                     className={cn(
                       "w-11 text-right font-medium",
@@ -623,6 +632,7 @@ function TakeCard({
                     )}
                   </span>
                 </div>
+                {long ? <div className="text-xs break-words">{value}</div> : null}
                 {items.length && itemsOpen ? (
                   <div className="flex flex-col gap-1 border-l-2 pl-2">
                     <CheckLines items={items} />
