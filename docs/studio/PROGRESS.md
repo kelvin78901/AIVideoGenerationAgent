@@ -21,9 +21,15 @@
 
 - **10b**（1b996b5）Playwright `m6`：多开一个 `DRAMA_DEMO_QA=1` 的后端（8766，自己的数据目录）+ Vite 5185，项目 `m6`（进 `pnpm e2e`）走三条坏 take 被拦下 / 重跑 / 口型修复和运行记录、改人脸阈值重判再「恢复默认」、采纳 1-04 T1 后口型修复和 2K 精修各出一条并自动采纳；`shots-qa`（进 `pnpm shots`）截 `generate-qa.{light,dark}` 和 2000 px 宽，重截 generate / storyboard，填了 README。顺手修两处（DECISIONS「M6 第 10b 步」）：`makeQueryClient` 的 `invalidateQueries` 会重来还在跑的第一次请求（采纳时 take 列表还在第一次加载，镜头按钮一直「待挑选」，约 1/6 偶发）；生成页等 take 列表到了再画（以前先显示「未开始」「通过 0 · 未过 0」）。测试：Playwright `m6` 连跑 5 次过、`m5` 链（seeded、m4、m5）过、shots 过；Vitest queryClient / events / useEventStream / DevJobs / Generate 共 39 过；lint、typecheck、format 过。**第 10 步做完。** **CI 修**（c683fb7）0933cab 那轮 Playwright `smoke` 红：8b 加的 Wan VACE 让安装确认框「会改动你的 ComfyUI」12 → 13 项（之前几轮 CI 停在 Vitest 或被取消，没跑到 Playwright）；第一次失败没把示例机器复原，重试和「左侧导航」那条跟着红。本机整套 `pnpm e2e`（含 `m6`）只红这两条，改完这两条单独跑过。 **候选卡质检行**（4dc3573，Kelvin 看截图发现）：OCR 读到的长文字把「画面文字」挤成一字一行，改成项目名不折行、超过 8 个字的值另起一行（`TakeWall.tsx:QA_VALUE_INLINE_CHARS`）；Vitest Generate 25、typecheck、lint 过，本机 Edge 截卡片核对。示例的画面是色块、质检分是种子预设的（`mock_qa`），真画面是第 11 步。
 
+- **11 准备**（aa30968）冒烟脚本接上 M6，还没真跑：`local_video.py --only episode` 每个镜头出片后等自动质检和它自己起的重跑 / 口型修复都跑完（`settle`），记每条 take 各项的分和质检的决定，采纳通过的里分最高的（都没过：分最高的，写明）；示例剧里已采纳的镜头先「取消采纳」（已采纳的镜头质检策略不动）；被中断的镜头在记录里是 `pending`，再跑同一条命令只等它恢复的任务、不重新出片；`cut` 用采纳的那条。`local_assets.py` 给本机冒烟关掉示例坏 take（`DRAMA_DEMO_QA=0`：真质检工具会把色块 take 全判不过、在本机重出）。`local_lipsync.py --where api`：同一条 take 走 sync lipsync-2-pro（先连接测试、单次上限 `--cap`、超了取消；报告 `README-sync.txt`）。Mock 试跑 1-01 到 1-04 过（scratchpad 脚本，没进仓库）；ruff 过，mypy 没有新增。
+
 ## 下一步
 
-- **第 11 步真实冒烟**（`plans/M6.md` 第 11 步）：`DRAMA_LIVE=1` 跑一次 sync lipsync-2-pro（上限 $1）和一次 API 质检看图；本机整集第二十轮（第 1 集 9 个镜头出片 → 自动质检 → 重跑 / 修复，记每条的分和结论）。长任务一个镜头一个镜头前台跑（见下面「踩坑」）；开始前先问 Kelvin 本机 ComfyUI 空不空、能不能占几个小时 GPU。**Kelvin 本机**：要看坏 take，先停后端、`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`，再启动。
+- **第 11 步真实冒烟，等 Kelvin 三件事**（2026-11-22 查：钥匙串里没有 `SYNC_API_KEY`；ComfyUI 8188 和后端 8000 都没开）：① 在「模型与兜底」里填 sync.so 的密钥；② 打开 ComfyUI 和 `start.ps1`（脚本从开着的工作台读安装目录和 ComfyUI 地址）；③ 说一声 GPU 能占 1–2 小时。然后按顺序跑：
+  1. 整集（第二十一轮，第二十轮在 M5.5 用过）：先 `PYTHONIOENCODING=utf-8 DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/local_video.py --only episode --keep --to prepare --run run21-qa --takes 1`（配音、素材、关键帧；记下它打印的 `data:` 目录），再一个镜头一条命令 `… --only episode --home <data 目录> --from 1-0X --to 1-0X --run run21-qa --takes 1`（前台，超时 10 分钟；被杀了就原样再跑一次）。真调用只有 DeepSeek 改写和 Gemini 看图（质检的画面检查就是「API 质检看图」），约 $0.1–0.2。
+  2. sync：`PYTHONIOENCODING=utf-8 DRAMA_LIVE=1 uv run --no-sync python scripts/smoke/local_lipsync.py --where api --home <第二十一轮 data 目录> --shot 1-04`（4 秒约 $0.33，上限 $1）。第十九轮的数据目录（`%TEMP%\drama-ep19-5Oilw8`）还在，也能用；**第二十轮的（`drama-ep20b`）blobs 已被系统清掉，不能用**。
+  3. 每条的分和结论写 `reports/m5-local-smoke/run21-qa/README.md`，粗剪给 Kelvin 看。
+- **Kelvin 本机**：要看坏 take，先停后端、`uv run --no-sync python -m drama_series_agent.studio_cli demo --reset`，再启动。
 - **请 Kelvin 看局部修复重跑**：`docs/studio/reports/m6-vace-local/1-04-T9-s4-remove-tight-{50,90}-crop.jpg`（左原片、右修复，1:1）。口型修复 Kelvin 2026-11-18 看过：还行。
 - **5c 留给 Kelvin 看片**：1-04 T9 口型分 0.53 不过（SyncNet 量到声音比嘴早约 0.4 秒），1-06 T1–T3 念了内心独白（字错率不过）。
 - **M6 草图 Kelvin 2026-11-15 同意**（`prototype/m6/`，前端第 9 步照它做；S1 只列这个镜头拍到的人，见 DECISIONS「M6 第 2 步」）。M5.5 草图 Kelvin 2026-11-15 也同意，ROADMAP 已勾。
