@@ -120,57 +120,63 @@ export default function GeneratePage() {
       />
 
       <QueryState query={shots} skeleton={<Skeleton className="h-96 w-full" />}>
-        {() =>
-          shot ? (
-            <>
-              <StatusCards
-                jobs={jobs.data}
-                profile={profile.data}
-                shots={list}
-                products={episodeVideos}
-                spentUsd={summary.data?.spent_usd}
-                shotCapUsd={rules.data?.shot_cap_usd}
-                modelName={modelName}
-                dashboardPath={paths.dashboard(seriesId)}
-              />
-              <ShotPills
-                shots={list}
-                statusOf={statusOf}
-                selectedId={shot.id}
-                onSelect={(id) => {
-                  setSelectedId(id);
-                  useInspectorStore.getState().select("vid");
-                }}
-              />
-              {product ? (
-                <RunBar
-                  product={product}
-                  what={t("what.vid", { id: shot.label })}
-                  models={models}
-                  variant={component === "vid" ? "take" : "default"}
-                  onEditPrompt={() => show("prompt", component)}
-                  onOpenHistory={() => show("history", component)}
-                />
-              ) : null}
-              <TakeWall
-                key={shot.id}
-                shot={shot}
-                shots={list}
-                status={statusOf(shot)}
-                product={videoProduct}
-                aspect={aspect}
-                queuePos={queued.findIndex((s) => s.id === shot.id) + 1}
-                textInPost={textInPost(shot)}
-                modelName={modelName}
-                episodeId={episode?.id}
-              />
-              <div className="flex flex-wrap items-start gap-5">
-                {rules.data ? <RulesPanel seriesId={seriesId} rules={rules.data} /> : null}
-                <RunLog entries={log.data ?? []} modelName={modelName} />
-              </div>
-            </>
-          ) : null
-        }
+        {() => (
+          // The cards and pills read the episode's take list: until it is in, a shot would read
+          // 未开始 and the QA card 0 (it is the slowest of the page's queries).
+          <QueryState query={videos} skeleton={<Skeleton className="h-96 w-full" />}>
+            {() =>
+              shot ? (
+                <>
+                  <StatusCards
+                    jobs={jobs.data}
+                    profile={profile.data}
+                    shots={list}
+                    products={episodeVideos}
+                    spentUsd={summary.data?.spent_usd}
+                    shotCapUsd={rules.data?.shot_cap_usd}
+                    modelName={modelName}
+                    dashboardPath={paths.dashboard(seriesId)}
+                  />
+                  <ShotPills
+                    shots={list}
+                    statusOf={statusOf}
+                    selectedId={shot.id}
+                    onSelect={(id) => {
+                      setSelectedId(id);
+                      useInspectorStore.getState().select("vid");
+                    }}
+                  />
+                  {product ? (
+                    <RunBar
+                      product={product}
+                      what={t("what.vid", { id: shot.label })}
+                      models={models}
+                      variant={component === "vid" ? "take" : "default"}
+                      onEditPrompt={() => show("prompt", component)}
+                      onOpenHistory={() => show("history", component)}
+                    />
+                  ) : null}
+                  <TakeWall
+                    key={shot.id}
+                    shot={shot}
+                    shots={list}
+                    status={statusOf(shot)}
+                    product={videoProduct}
+                    aspect={aspect}
+                    queuePos={queued.findIndex((s) => s.id === shot.id) + 1}
+                    textInPost={textInPost(shot)}
+                    modelName={modelName}
+                    episodeId={episode?.id}
+                  />
+                  <div className="flex flex-wrap items-start gap-5">
+                    {rules.data ? <RulesPanel seriesId={seriesId} rules={rules.data} /> : null}
+                    <RunLog entries={log.data ?? []} modelName={modelName} />
+                  </div>
+                </>
+              ) : null
+            }
+          </QueryState>
+        )}
       </QueryState>
     </StepLayout>
   );

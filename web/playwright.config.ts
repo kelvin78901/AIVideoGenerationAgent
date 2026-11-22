@@ -1,11 +1,13 @@
 /**
  * Playwright: `pnpm e2e` (smoke tests and the no-demo-data round with the flows they depend on,
- * `seeded` → `m4` → `m5` → `m55` → `real` → `smoke`; run in CI) and `pnpm shots`
+ * `seeded` → `m4` → `m5` → `m55` → `real` → `smoke`, and `m6`; run in CI) and `pnpm shots`
  * (screenshots for docs/studio/reports/ui/). Starts its own mock backend (temporary DRAMA_HOME)
  * and two Vite servers on separate ports — one with the MSW demo data, one without
- * (`VITE_DEMO_DATA=0`) — so a running `start.ps1` / `start.sh` session is never touched.
+ * (`VITE_DEMO_DATA=0`) — so a running `start.ps1` / `start.sh` session is never touched; and a
+ * second backend with the demo's QA scenario on (`DRAMA_DEMO_QA=1`, its own data folder) behind
+ * a third Vite server, for `m6` and `shots-qa`.
  */
-import { mkdtempSync, writeFileSync } from "node:fs";
+import { mkdirSync, mkdtempSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
 
@@ -16,12 +18,17 @@ const WEB_PORT = 5183;
 const BASE_URL = `http://127.0.0.1:${WEB_PORT}`;
 const REAL_PORT = 5184; // VITE_DEMO_DATA=0: the backend only
 const REAL_URL = `http://127.0.0.1:${REAL_PORT}`;
+const QA_BACKEND_PORT = 8766; // DRAMA_DEMO_QA=1: the demo's bad takes, checked as it starts
+const QA_PORT = 5185; // VITE_DEMO_DATA=0, on that backend
+const QA_URL = `http://127.0.0.1:${QA_PORT}`;
 
 // Playwright loads this config in every worker; the env var keeps one data folder per run.
 const home = process.env.DRAMA_E2E_HOME ?? mkdtempSync(join(tmpdir(), "drama-e2e-"));
 process.env.DRAMA_E2E_HOME = home;
 const envFile = join(home, "empty.env"); // never read the developer's real .env
 writeFileSync(envFile, "");
+const qaHome = join(home, "qa");
+mkdirSync(qaHome, { recursive: true });
 
 // The prototype artboards are 1440 px wide; the device preset alone would give 1280 × 720.
 // Demo timestamps are Beijing time (+08:00); pin the zone so screenshots match the prototype.
@@ -78,7 +85,11 @@ export default defineConfig({
       dependencies: ["seeded", "m4", "m5", "m55", "real"],
       use: { ...desktop },
     },
-    { name: "shots", testMatch: /shots\.spec\.ts/, use: { ...desktop } },
+    // M6: the demo's three bad takes held back and fixed by QA, thresholds, 2K and lip sync.
+    { name: "m6", testMatch: /m6\.spec\.ts/, use: { ...desktop, baseURL: QA_URL } },
+    { name: "shots", testMatch: /(?<!qa-)shots\.spec\.ts/, use: { ...desktop } },
+    // The QA screenshots (generate-qa.*), on the QA backend as it settles after starting.
+    { name: "shots-qa", testMatch: /qa-shots\.spec\.ts/, use: { ...desktop, baseURL: QA_URL } },
   ],
   webServer: [
     {
@@ -110,6 +121,27 @@ export default defineConfig({
       reuseExistingServer: false,
       timeout: 120_000,
       env: { DRAMA_BACKEND_URL: `http://127.0.0.1:${BACKEND_PORT}`, VITE_DEMO_DATA: "0" },
+    },
+    {
+      command: `uv run python -m drama_series_agent.studio_cli dev --port ${QA_BACKEND_PORT}`,
+      cwd: "..",
+      url: `http://127.0.0.1:${QA_BACKEND_PORT}/api/v1/health`,
+      reuseExistingServer: false,
+      timeout: 180_000,
+      env: {
+        DRAMA_HOME: qaHome,
+        DRAMA_MOCK: "1",
+        DRAMA_DEMO_QA: "1",
+        DRAMA_ENV_FILE: envFile,
+        DRAMA_WEB_ORIGINS: QA_URL,
+      },
+    },
+    {
+      command: `pnpm exec vite --port ${QA_PORT} --strictPort`,
+      url: QA_URL,
+      reuseExistingServer: false,
+      timeout: 120_000,
+      env: { DRAMA_BACKEND_URL: `http://127.0.0.1:${QA_BACKEND_PORT}`, VITE_DEMO_DATA: "0" },
     },
   ],
 });

@@ -2,6 +2,12 @@
 
 新的决定加在最上面：日期、决定、原因、影响。
 
+## 2026-11-21 · M6 第 10b 步：Playwright `m6`、两处加载修正
+
+- **Playwright 多开一个后端**（`playwright.config.ts`）：8766 端口，`DRAMA_DEMO_QA=1`，自己的数据目录（`DRAMA_E2E_HOME/qa`），前面一个 `VITE_DEMO_DATA=0` 的 Vite（5185）。项目 `m6`（进 `pnpm e2e`，CI 跑）和 `shots-qa`（进 `pnpm shots`，截 `generate-qa.*`）用它，和原来那串 `seeded → … → smoke` 互不影响；两者开头都等全部任务结束（`fixtures.ts:settleJobs`）。代价是每次 `pnpm e2e` / `pnpm shots` 多起两个服务（并行启动，多十几秒）。
+- **`invalidateQueries` 也重来还在跑的第一次请求**（`api/queryClient.ts:FreshQueryClient`，`makeQueryClient` 用它）：TanStack 只在查询已经有数据时才「取消再重取」；还没数据时把失效挂到正在跑的请求上，而那个请求可能读的是改动之前的状态，回来后再没人重取。`m6` 偶发（约 1/6）踩到：本集 take 列表第一次加载要 1 秒左右，这期间「采纳」，镜头按钮一直是「待挑选」。改在 QueryClient 一处，74 个调用点都受益；Vitest `queryClient.test.ts` 同时验证普通 QueryClient 会留旧数据。
+- **生成页等 take 列表到了再画**：镜头按钮、质检卡读本集 take 列表，以前没标加载中，列表没到时显示「未开始」「通过 0 · 未过 0」（截图就截到了这个）。现在和镜头列表一样套 `QueryState`，没到时是灰块（带 `data-loading`）。
+
 ## 2026-11-21 · M6 第 10a 步：示例剧的坏 take
 
 - **Kelvin 定（2026-11-21）**：1-04 的原型故事（T1–T4：两条草稿、超时兜底到 API、换 Seedance 待挑）不改。坏 take 放在质检会去处理的地方：自动质检只看一个镜头**最新的一批** take（`qa_policy.decide`），1-04 的 T1 坏了也只会标没过、不会重跑。

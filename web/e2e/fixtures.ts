@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
 
 export type Theme = "light" | "dark";
 export type Lang = "zh-CN" | "en";
@@ -57,4 +57,18 @@ export function note(missing: Set<string>): void {
   for (const path of [...missing].sort()) {
     test.info().annotations.push({ type: "404 (later milestone)", description: path });
   }
+}
+
+/** Until every job has ended (none queued or running), e.g. the QA the demo starts with and
+ * the reruns and repairs it starts (`DRAMA_DEMO_QA=1`); a QA job queues what it starts before
+ * it ends, so there is no gap in between. */
+export async function settleJobs(request: APIRequestContext, timeout = 120_000): Promise<void> {
+  const open = async () => {
+    const resp = await request.get("/api/v1/jobs?limit=500");
+    expect(resp.ok(), "GET /jobs").toBe(true);
+    const jobs = (await resp.json()) as { state: string }[];
+    if (!jobs.length) return -1;
+    return jobs.filter((j) => !["succeeded", "failed", "canceled"].includes(j.state)).length;
+  };
+  await expect.poll(open, { timeout, intervals: [250, 500, 1000] }).toBe(0);
 }
