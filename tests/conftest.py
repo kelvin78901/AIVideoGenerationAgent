@@ -65,11 +65,19 @@ def _demo_gates_open(monkeypatch: pytest.MonkeyPatch) -> None:
     """The Mock demo starts with 小说 and episode 1's 剧本 confirmed; tests edit it directly, so
     by default it is seeded with its gates open. `demo_gates` seeds them as the app does."""
     monkeypatch.setattr(demo, "CONFIRMED_GATES", ())
+    # Nor are its takes checked: the background QA and the reruns it starts would make fixtures
+    # and call counts vary. `demo_qa` checks them as the app does.
+    monkeypatch.setattr(demo, "DEMO_QA", False)
 
 
 @pytest.fixture
 def demo_gates(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(demo, "CONFIRMED_GATES", SEEDED_GATES)
+
+
+@pytest.fixture
+def demo_qa(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(demo, "DEMO_QA", True)
 
 
 @pytest.fixture

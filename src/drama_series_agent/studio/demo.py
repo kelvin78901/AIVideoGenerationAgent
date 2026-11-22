@@ -15,7 +15,9 @@ draft then the Nano Banana Pro final, confirmed; 1-04–1-07 a draft), each asse
 Mock run would. Ids and times match ``web/src/mocks/fixtures/demo/``. Then the novel gate,
 episode 1's script gate and its storyboard gate (its other shots confirmed first) are
 confirmed, once: a gate the user reopened stays open. Once the storyboard is confirmed, episode
-1's video takes (``DEMO_TAKES``) are made like Mock runs too.
+1's video takes (``DEMO_TAKES``) are made like Mock runs too, three of them deliberately bad
+(``DEMO_BAD_TAKES``); the app queues them for QA, whose automatic reruns and 口型修复 run as
+any would (M6 step 10).
 ``drama-studio demo [--reset]`` runs the same seeding on demand; ``--reset`` deletes the demo
 series first.
 """
@@ -24,6 +26,7 @@ from __future__ import annotations
 
 import asyncio
 import hashlib
+import os
 from datetime import UTC, datetime
 from typing import Any
 
@@ -43,6 +46,7 @@ from drama_series_agent.core.models_db import (
     Episode,
     Product,
     ProductVersion,
+    ScriptLine,
     Series,
     Shot,
     SuggestionDecision,
@@ -61,6 +65,7 @@ from drama_series_agent.modelhub.pricing import to_usd
 from drama_series_agent.novel.service import NOVEL_SLOT, FixedIds, NovelService, novel_slicer
 from drama_series_agent.pipeline.components import (
     assets,
+    dub,
     enrich,
     kf,
     plan,
@@ -84,6 +89,8 @@ from drama_series_agent.pipeline.errors import PipelineError
 from drama_series_agent.pipeline.gates import GateService
 from drama_series_agent.pipeline.invalidation import Invalidation
 from drama_series_agent.pipeline.products import ProductService
+from drama_series_agent.pipeline.qa import QaService
+from drama_series_agent.pipeline.timing import line_seconds
 from drama_series_agent.pipeline.vselect import default_rules
 from drama_series_agent.prompts.compiler import PromptCompiler
 from drama_series_agent.qa import ocr
@@ -203,8 +210,8 @@ CONFIRMED_GATES = (("novel", DEMO_SERIES_ID), ("script", "demo-e1"), ("storyboar
 # Episode 1's takes (prototype Generate.dc.html), each (model, time, origin, fallback reason):
 # 1-01–1-03 a local H3 draft, then 「用 API 出终版」 from it (Regenerate-2K), adopted; 1-04 the
 # first run's two drafts, a third that timed out locally and was made on the H3 API, a fourth
-# 「不满意换一个」 on Seedance 2.5, still to pick. 1-05–1-07 have not run; 1-08 and 1-09 wait for
-# the shot they continue.
+# 「不满意换一个」 on Seedance 2.5, still to pick. 1-05–1-07 have not run (with ``DEMO_QA``, 1-05
+# and 1-06 have); 1-08 and 1-09 wait for the shot they continue.
 TAKE_LOCAL = "comfy/h3"
 # 1-04 is 原生同步 with 林晚's locked voice: local takes go to the workflow that takes it.
 TAKE_VOICED = "comfy/h3-r2v"
@@ -220,6 +227,33 @@ DEMO_TAKES: dict[str, tuple[tuple[str, str, str, str | None], ...]] = {
         ("volc/seedance-2.5", "11:52", "switch", None),
     ),
 }
+# With ``DEMO_QA``: a first local take of 1-05 and of 1-06.
+DEMO_QA_TAKES: dict[str, tuple[tuple[str, str, str, str | None], ...]] = {
+    "1-05": ((TAKE_LOCAL, "11:58", "run", None),),
+    "1-06": ((TAKE_LOCAL, "12:01", "run", None),),
+}
+# The deliberately bad takes (M6 step 10, Kelvin 2026-11-21; with ``DEMO_QA``), what Mock's QA
+# measures on them
+# (``params.mock_qa``): QA then does what it does with any take once the app runs — 1-05 T1
+# the note's writing drawn wrong (十点 for 十二点) → an automatic rerun; 1-06 T1 someone else's
+# face → an automatic rerun; 1-04 T4 only the mouths off → an automatic 口型修复. (1-07's
+# screen time is composited in post, so QA reads no writing there; 1-05 films no face.)
+DEMO_BAD_TAKES: dict[tuple[str, int], dict[str, Any]] = {
+    ("1-04", 4): {"lipsync": 0.4},
+    ("1-05", 1): {"ocr": "楼下便利店，等你到十点。"},
+    ("1-06", 1): {"face": 0.1},
+}
+# The shots whose lines are dubbed (in the speaker's locked voice, before the takes): 1-04's,
+# so its 口型修复 has the dub to lay on the take; 1-06's voice-over, which its take is cut to.
+DEMO_DUBBED = ("1-04", "1-06")
+DUB_MODEL = "minimax/speech-2.8-hd"
+DUB_AT = "11:28"
+DUB_PRICE_CNY_PER_CHAR = 350 / 1_000_000  # providers.yaml, the China site
+# The QA scenario (``DRAMA_DEMO_QA``, on unless ``0``): the bad takes and the dubs they need,
+# every take checked once the app runs. Off for the tests and flows written before it (the
+# background QA and what it starts would make fixtures and call counts vary, and they run 1-05
+# and 1-06 themselves); ``tests/e2e/test_qa_loop.py`` and Playwright ``m6`` turn it on.
+DEMO_QA = os.environ.get("DRAMA_DEMO_QA", "1") != "0"
 # What a second of each cost (元, the China-site prices in providers.yaml: H3 at the delivery
 # tier, Seedance at 1080p, a final its output and input video).
 TAKE_PRICE_CNY = {
@@ -275,11 +309,13 @@ async def seed_demo(
     products: ProductService | None = None,
     compiler: PromptCompiler | None = None,
     gates: GateService | None = None,
+    qa: QaService | None = None,
     cfg: SpecConfig | None = None,
     force: bool = False,
 ) -> bool:
     """Create the demo series if there is no series at all (or ``force``), then fill in its
-    missing blocks. Returns True if the series was created."""
+    missing blocks; with ``qa``, its takes not checked yet are queued for QA. Returns True if
+    the series was created."""
     created = await _seed_series(db, cfg, force=force)
     async with db.session() as session:
         exists = await session.get(Series, DEMO_SERIES_ID) is not None
@@ -354,7 +390,11 @@ async def seed_demo(
         if gates is not None:
             await _seed_gates(db, gates, products)
         if products is not None and compiler is not None:
+            if DEMO_QA:
+                await _seed_dubs(db, products, compiler)
             await _seed_takes(db, products, compiler)
+        if qa is not None and DEMO_QA:
+            await qa.queue_unchecked(video_product_id(label) for label in _demo_takes())
     return created
 
 
@@ -1096,6 +1136,71 @@ async def _confirm_shots(db: Database, products: ProductService, episode_id: str
         )
 
 
+def _demo_takes() -> dict[str, tuple[tuple[str, str, str, str | None], ...]]:
+    return {**DEMO_TAKES, **DEMO_QA_TAKES} if DEMO_QA else DEMO_TAKES
+
+
+async def _seed_dubs(db: Database, products: ProductService, compiler: PromptCompiler) -> None:
+    """The spoken lines of ``DEMO_DUBBED`` in their speaker's locked voice, as a Mock dub run
+    stores them (``components/dub.py``: a tone as long as the line is estimated, adopted),
+    once."""
+    store = BlobStore()
+    invalidation = slicers()
+    for label in DEMO_DUBBED:
+        async with db.session() as session:
+            shot = await session.get(Shot, f"demo-shot-{label}")
+            rows = [await session.get(ScriptLine, i) for i in (shot.line_ids_json if shot else [])]
+        lines = [x for x in rows if x is not None and x.type in dub.SPEAKING and not x.retired]
+        for line in lines:
+            product = await products.ensure(
+                series_id=DEMO_SERIES_ID,
+                owner_type="line",
+                owner_id=line.id,
+                slot=dub.LINE_AUDIO_SLOT,
+                component_id=dub.DubComponent.id,
+                product_id=f"demo-p-dub-{line.id}",
+            )
+            if product.current_version_id is not None:
+                continue
+            async with db.session() as session:
+                found = await dub.voice_of(session, line)
+                script = await episodes.script_product(session, line.episode_id)
+                if found is None or script is None or not found[1].locked_hash:
+                    continue
+                deps = [
+                    await invalidation.dependency(session, script.id, f"line:{line.id}"),
+                    await invalidation.dependency(session, found[1].id, ""),
+                ]
+            # As long as the script estimated, so the shots keep the prototype's seconds.
+            seconds = line_seconds(line.text, line.duration_s, None)
+            sha = store.put_bytes(sine_wav(seconds, freq_hz=240))
+            audio = file_entry(
+                "audio", sha, "audio/wav", duration_s=seconds, waveform=_demo_wave(1)
+            )
+            prompt_sha = store.put_bytes(line.text.encode("utf-8"))
+            emotion = get_config().voice.emotion_of(line.tone)
+            await products.append(
+                product.id,
+                VersionDraft(
+                    payload={"emotion": emotion, "duration_s": audio["duration_s"]},
+                    files=[audio, file_entry("prompt", prompt_sha, "text/plain; charset=utf-8")],
+                    intent=line.text,
+                    compiled=compiler.compile(dub.DubComponent.id, line.text, DUB_MODEL),
+                    model_key=DUB_MODEL,
+                    where="api",
+                    seed=2001,
+                    params={"mode": "run", "calls": 1},
+                    cost_usd=round(to_usd(DUB_PRICE_CNY_PER_CHAR * len(line.text), "CNY"), 6),
+                    dependencies=deps,
+                    id=f"{product.id}-v1",
+                    created_at=_demo_time(DUB_AT),
+                ),
+                origin="run",
+                adopt=True,
+                hooks=False,
+            )
+
+
 async def _seed_takes(db: Database, products: ProductService, compiler: PromptCompiler) -> None:
     """Episode 1's video takes (``DEMO_TAKES``), each made from what a run reads
     (``vid.gather``) and stored as a Mock run stores it; once 分镜 is confirmed, for a shot with
@@ -1105,7 +1210,7 @@ async def _seed_takes(db: Database, products: ProductService, compiler: PromptCo
     async with db.session() as session:
         if not await gate_confirmed(session, shots_service.STORYBOARD_GATE, "demo-e1"):
             return
-    for label, seeds in DEMO_TAKES.items():
+    for label, seeds in _demo_takes().items():
         async with db.session() as session:
             product = await session.get(Product, video_product_id(label))
             if product is None or product.current_version_id is not None:
@@ -1124,13 +1229,16 @@ async def _seed_takes(db: Database, products: ProductService, compiler: PromptCo
             take = await _take_draft(
                 store, compiler, product, inputs, intent, (model, n, at, origin, fallback), source
             )
+            bad = DEMO_BAD_TAKES.get((label, n)) if DEMO_QA else None
+            if bad is not None:
+                take.params = {**take.params, "mock_qa": bad}
             last = await products.append(
                 product.id,
                 take,
                 origin="run" if origin == "final" else origin,
                 parent_version_id=source.id if source is not None else None,
                 adopt=False,
-                # Not queued for QA: the demo's checked takes come with M6 step 10.
+                # QA is queued by ``seed_demo`` (also for takes ``drama-studio demo`` seeded).
                 hooks=False,
             )
             first = first or last

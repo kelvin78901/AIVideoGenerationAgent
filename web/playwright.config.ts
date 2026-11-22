@@ -91,6 +91,8 @@ export default defineConfig({
       env: {
         DRAMA_HOME: home,
         DRAMA_MOCK: "1",
+        // The demo's QA scenario (M6 step 10) is on in the app; the flows here start without it.
+        DRAMA_DEMO_QA: "0",
         DRAMA_ENV_FILE: envFile,
         DRAMA_WEB_ORIGINS: `${BASE_URL},${REAL_URL}`,
       },

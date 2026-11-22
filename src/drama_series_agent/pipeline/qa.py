@@ -48,7 +48,7 @@ from __future__ import annotations
 
 import hashlib
 import unicodedata
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from typing import TYPE_CHECKING, Any
 
 from loguru import logger
@@ -56,7 +56,7 @@ from sqlmodel import col, select
 
 from drama_series_agent.core.config import get_config
 from drama_series_agent.core.events import EventBus, EventType
-from drama_series_agent.core.jobs import JobContext, JobError, JobQueue
+from drama_series_agent.core.jobs import TERMINAL, JobContext, JobError, JobQueue
 from drama_series_agent.core.models_db import (
     Asset,
     Job,
@@ -562,6 +562,40 @@ class QaService:
             component_id=QA,
             max_attempts=1,
         )
+
+    async def queue_unchecked(self, product_ids: Iterable[str]) -> int:
+        """QA for each take of ``product_ids`` not checked yet and not queued: the demo's takes
+        (seeded without the hook, also by ``drama-studio demo``), measured once the app runs."""
+        ids = list(product_ids)
+        async with self.services.db.session() as session:
+            products = {
+                p.id: p
+                for p in (await session.exec(select(Product).where(col(Product.id).in_(ids)))).all()
+            }
+            versions = (
+                await session.exec(
+                    select(ProductVersion)
+                    .where(col(ProductVersion.product_id).in_(ids))
+                    .order_by(col(ProductVersion.product_id), col(ProductVersion.n))
+                )
+            ).all()
+            queued = {
+                str((j.params_json or {}).get("version_id"))
+                for j in (
+                    await session.exec(
+                        select(Job).where(Job.kind == QA_JOB).where(col(Job.state).not_in(TERMINAL))
+                    )
+                ).all()
+            }
+        n = 0
+        for v in versions:
+            product = products.get(v.product_id)
+            if product is None or v.qa_json is not None or v.id in queued or not has_clip(v):
+                continue
+            if product.component_id == VIDEO_COMPONENT:
+                await self._enqueue(product, v)
+                n += 1
+        return n
 
     async def request(self, version_id: str) -> Job:
         """「重新质检」: measure the take again."""

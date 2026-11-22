@@ -29,7 +29,14 @@ class Backend:
         self.proc: subprocess.Popen[bytes] | None = None
 
     def start(self, **extra_env: str) -> None:
-        env = {**os.environ, "DRAMA_HOME": str(self.home), "DRAMA_MOCK": "1", **extra_env}
+        env = {
+            **os.environ,
+            "DRAMA_HOME": str(self.home),
+            "DRAMA_MOCK": "1",
+            # The demo's QA scenario (M6 step 10) only where a test asks for it.
+            "DRAMA_DEMO_QA": "0",
+            **extra_env,
+        }
         cmd = [sys.executable, "-m", "drama_series_agent.studio_cli", "dev", "--port"]
         self.proc = subprocess.Popen(
             [*cmd, str(self.port)], env=env, stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL
