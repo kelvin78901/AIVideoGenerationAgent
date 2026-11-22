@@ -40,6 +40,10 @@ from typing import Any
 import httpx
 
 REAL_HOME = Path(os.environ.get("DRAMA_HOME") or Path.home() / ".drama-studio")
+# The demo's deliberately bad takes (M6 step 10a) are Mock pictures with Mock QA scores: with the
+# real QA tools they would all fail and be made again on this machine. Every local script imports
+# this module before the app.
+os.environ.setdefault("DRAMA_DEMO_QA", "0")
 REPORT = Path(__file__).resolve().parents[2] / "docs" / "studio" / "reports" / "m3-local-smoke.txt"
 STEPS = ["img", "text", "views", "voice", "voice_final", "dub"]
 V1 = "/api/v1"

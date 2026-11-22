@@ -373,21 +373,27 @@ def prepare(smoke: Smoke) -> bool:
 
 
 def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None, stop: str | None) -> None:
-    """Each shot in order, ``EP_TAKES`` takes, the first adopted; the record is written after
-    every shot (``cut`` reads it)."""
+    """Each shot in order: ``EP_TAKES`` takes, then 自动质检 and what it starts on its own (a
+    rerun told what failed, 口型修复) until nothing runs (M6 step 11); the best take that passed
+    is adopted (none passed: the best one, said so). The record is written after every shot
+    (``cut`` reads it). A shot the last run was stopped in (``pending``) is not started again:
+    its jobs resume with the app and are waited for."""
     import json
 
     path = home / EP_RECORD
     record: dict[str, Any] = json.loads(path.read_text("utf-8")) if path.exists() else {}
     labels = list(shots(smoke))
+    resumed = start is not None and bool((record.get(start) or {}).get("pending"))
     if start is not None:
         # A job the stopped run left resumes when the app starts: cancel it (made again below).
-        for j in smoke.get("/jobs", limit=200):
+        for j in [] if resumed else smoke.get("/jobs", limit=200):
             if j["state"] in ("queued", "running", "waiting_confirm"):
                 smoke.post(f"/jobs/{j['id']}/cancel")
                 smoke.wait(j["id"])
                 smoke.say(f"   canceled a job the stopped run left: {j['id']}")
         for label in labels[: labels.index(start)]:  # what the stopped run had adopted
+            if "takes" in record.get(label, {}):
+                continue
             shot = shots(smoke)[label]
             product = smoke.get(f"/products/{shot['video_product_id']}")
             adopted = next(
@@ -417,13 +423,38 @@ def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None, stop: str
         kind, mode = shot.get("shot_type"), shot.get("audio_mode")
         tail = f"，接 {shot['tail_from']} 的尾帧" if shot.get("tail_from") else ""
         title = f"{label} {EP_TAKES} 条（{kind}，{shot.get('framing')}，声音 {mode}{tail}）"
-        job = smoke.step(f"take-{label}", title, take)
-        if job is None or job["state"] != "succeeded":
-            smoke.say(f"   {label}: no takes; the shots after it that continue it fail too")
-            continue
+        if (record.get(label) or {}).get("pending"):
+            before = int(record[label]["after"])
+            smoke.say(f"== take-{label}: the stopped run's jobs go on (takes after T{before})")
+        else:
+            had = smoke.get(f"/products/{product_id}")
+            if had["adopted_version_id"]:
+                # QA leaves a shot with an adopted take alone (the person decided): the demo's
+                # adopted Mock takes are given up first.
+                smoke.post(f"/products/{product_id}/unadopt")
+            before = max((v["n"] for v in had["versions"]), default=0)
+            record[label] = {"pending": True, "after": before}
+            path.write_text(json.dumps(record, ensure_ascii=False, indent=1), "utf-8")
+            job = smoke.step(f"take-{label}", title, take)
+            if job is None or job["state"] != "succeeded":
+                smoke.say(f"   {label}: no takes; the shots after it that continue it fail too")
+                del record[label]
+                path.write_text(json.dumps(record, ensure_ascii=False, indent=1), "utf-8")
+                continue
+        waiting = settle(smoke)
         made = [
-            v for v in smoke.get(f"/products/{product_id}")["versions"] if v["job_id"] == job["id"]
+            v
+            for v in smoke.get(f"/products/{product_id}")["versions"]
+            if v["n"] > before and any(f["role"] == "video" for f in v["files"])
         ]
+        if not made:
+            smoke.ok = False
+            smoke.say(f"   {label}: no takes; the shots after it that continue it fail too")
+            del record[label]
+            path.write_text(json.dumps(record, ensure_ascii=False, indent=1), "utf-8")
+            continue
+        for j in waiting:
+            smoke.say(f"   job {j['id']} ({j['kind']}) waits for a yes: left as it is")
         for n, v in enumerate(made, 1):
             keep_take(smoke, f"{label}-{n}", v)
             clip = next(f for f in v["files"] if f["role"] == "video")
@@ -431,25 +462,82 @@ def takes(smoke: Smoke, comfy_url: str, home: Path, start: str | None, stop: str
         prompt = next(f for f in made[0]["files"] if f["role"] == "prompt")
         text = smoke.state.store.path_for(prompt["sha256"]).read_text("utf-8")
         (smoke.out / f"prompt-{label}.txt").write_text(text, encoding="utf-8", newline="\n")
-        smoke.post(f"/versions/{made[0]['id']}/adopt")
-        record[label] = {"takes": [v["id"] for v in made], "seconds": shot["duration_s"]}
+        for n, v in enumerate(made, 1):
+            smoke.say(f"   {label}-{n} {qa_line(v)}")
+        passed = [v for v in made if v.get("qa_pass")]
+        pick = max(passed or made, key=lambda v: float((v.get("qa") or {}).get("score") or 0))
+        smoke.post(f"/versions/{pick['id']}/adopt")
+        record[label] = {
+            "takes": [v["id"] for v in made],
+            "seconds": shot["duration_s"],
+            "adopted": pick["id"],
+            "qa": [qa_record(v) for v in made],
+        }
         smoke.say(
-            f"   adopted {label}-1; model {made[0]['model_key']}, "
+            f"   adopted {label}-{made.index(pick) + 1} (T{pick['n']}"
+            f"{'' if passed else '; NONE PASSED QA, the best one'}); model {made[0]['model_key']}, "
             f"select {(made[0]['params'].get('select') or {}).get('by')}, "
             f"rewritten by {made[0]['payload'].get('prompt_rewrite')}"
         )
-        for n, v in enumerate(made, 1):  # take 检查 and its redraws (M5.5 9e-5)
-            check = v["payload"].get("check") or {}
+        for n, v in enumerate(made, 1):  # 画面检查's items (the take check, in QA since M6)
+            checks = (v.get("qa") or {}).get("checks") or []
+            look: dict[str, Any] = next((c for c in checks if c["metric"] == "vlm"), {})
             said = "，".join(
-                f"{x['check']} {'✓' if x['ok'] else '✗ ' + x['note']}"
-                for x in check.get("items") or []
+                f"{x['check']} {'✓' if x['ok'] else '✗ ' + str(x.get('note') or '')}"
+                for x in look.get("items") or []
             )
-            redone = v["payload"].get("redraws")
-            smoke.say(
-                f"   {label}-{n} 检查 {'过' if check.get('ok') else '没过'}"
-                f"{f'（重出 {redone} 次）' if redone else ''}：{said or '没有检查'}"
-            )
+            smoke.say(f"   {label}-{n} 画面检查：{said or '没有检查'}")
         path.write_text(json.dumps(record, ensure_ascii=False, indent=1), "utf-8")
+
+
+def settle(smoke: Smoke, limit_s: float = 3600) -> list[dict[str, Any]]:
+    """Wait until nothing is queued or running (three looks 2 s apart: QA queues what it
+    decides before its own job ends) → the jobs waiting for a yes."""
+    import time
+
+    quiet, deadline = 0, time.monotonic() + limit_s
+    while True:
+        jobs = smoke.get("/jobs", limit=200)
+        quiet = 0 if any(j["state"] in ("queued", "running") for j in jobs) else quiet + 1
+        if quiet >= 3:
+            return [j for j in jobs if j["state"] == "waiting_confirm"]
+        if time.monotonic() > deadline:
+            raise RuntimeError(f"jobs still running after {limit_s:.0f} s")
+        time.sleep(2)
+
+
+def qa_record(v: dict[str, Any]) -> dict[str, Any]:
+    qa = v.get("qa") or {}
+    return {
+        "n": v["n"],
+        "id": v["id"],
+        "origin": v["origin"],
+        "model": v["model_key"],
+        "where": v["where"],
+        "pass": v.get("qa_pass"),
+        "score": qa.get("score"),
+        "checks": qa.get("checks") or [],
+        "policy": qa.get("policy"),
+    }
+
+
+def qa_line(v: dict[str, Any]) -> str:
+    """One take's 自动质检: each check's verdict and value, and what QA did about it."""
+    qa = v.get("qa") or {}
+    rows = []
+    for c in qa.get("checks") or []:
+        verdict = "—" if c.get("ok") is None else "✓" if c["ok"] else "✗"
+        value = "" if c.get("value") is None else f" {c['value']}"
+        rows.append(f"{c['metric']} {verdict}{value}")
+    passed = {True: "过", False: "没过", None: "未检查"}[v.get("qa_pass")]
+    policy = qa.get("policy") or {}
+    did = ""
+    if policy:
+        did = f" → {policy['action']}" + (f" {policy['model']}" if policy.get("model") else "")
+    return (
+        f"T{v['n']} {v['origin']} {v['model_key']} [{v['where']}] 质检{passed} "
+        f"score {qa.get('score')}: {'，'.join(rows) or '没有检查'}{did}"
+    )
 
 
 def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
@@ -479,8 +567,13 @@ def cut(smoke: Smoke, home: Path, picks: dict[str, int]) -> None:
         if label not in record:
             smoke.say(f"   {label}: no take, left out")
             continue
+        if record[label].get("pending"):
+            smoke.say(f"   {label}: its takes were not finished, left out")
+            continue
         takes = record[label]["takes"]
-        version_id = takes[picks.get(label, 1) - 1]
+        version_id = record[label].get("adopted") or takes[0]  # before M6: the first one
+        if label in picks:
+            version_id = takes[picks[label] - 1]
         product = smoke.get(f"/products/{shots(smoke)[label]['video_product_id']}")
         version = next(v for v in product["versions"] if v["id"] == version_id)
         video = next(f for f in version["files"] if f["role"] == "video")

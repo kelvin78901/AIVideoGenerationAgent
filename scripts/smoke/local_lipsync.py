@@ -21,6 +21,12 @@ through the studio's own ``POST /versions/{id}/lipsync``. Nothing is spent: the 
 
 Setup items rt_latentsync and w_latentsync must be installed. Do not run it next to the full
 pytest or a ComfyUI job (LatentSync takes about 18 GB of VRAM).
+
+``--where api`` (M6 step 11; **spends money**, needs ``DRAMA_LIVE=1`` and ``SYNC_API_KEY``): the
+same take repaired on sync.so lipsync-2-pro instead, the only model that runs for real besides
+the local QA tools (``DRAMA_REAL_MODELS``). sync.so's connection test first (free); the run is
+priced before it starts and one over ``--cap`` (default $1) waits for a yes and is canceled.
+The report is ``README-sync.txt`` and the pictures and clips are named ``-sync``.
 """
 
 from __future__ import annotations
@@ -44,6 +50,7 @@ from local_qa import ROUND19, copy_home
 from local_upscale import frame, side_by_side
 
 ROOT = Path(__file__).resolve().parents[2]
+API_MODEL, API_KEY, API_PROVIDER = "sync/lipsync-2-pro", "SYNC_API_KEY", "sync"
 OUT = ROOT / "docs" / "studio" / "reports" / "m6-lipsync-local"
 ORIGINALS = ROOT / "docs" / "studio" / "reports" / "m5-local-smoke" / "originals" / "m6-lipsync"
 DONE = ("succeeded", "failed", "canceled")
@@ -106,7 +113,22 @@ def main() -> int:
     ap.add_argument("--shot", default="1-04")
     ap.add_argument("--take", type=int, default=None, help="the take's number (default: adopted)")
     ap.add_argument("--studio", default="http://127.0.0.1:8000", help="the studio you have open")
+    ap.add_argument("--where", choices=("local", "api"), default="local")
+    ap.add_argument("--cap", type=float, default=1.0, help="--where api: spending cap in USD")
     args = ap.parse_args()
+    api = args.where == "api"
+    if api:
+        from drama_series_agent.core import secrets
+
+        if os.environ.get("DRAMA_LIVE") != "1":
+            print("--where api costs money: set DRAMA_LIVE=1 to run it", file=sys.stderr)
+            return 2
+        if secrets.has_secret(API_KEY) == "none":
+            print(f"no {API_KEY} in the keyring or .env", file=sys.stderr)
+            return 2
+        os.environ["DRAMA_REAL_MODELS"] = API_MODEL
+    want = API_MODEL if api else "local/latentsync"
+    tag = "-sync" if api else ""
 
     facts = studio_facts(args.studio.rstrip("/"))
     home = copy_home(Path(args.home))
@@ -142,9 +164,16 @@ def main() -> int:
 
         def wait_job(job: dict[str, Any]) -> dict[str, Any]:
             while job["state"] not in DONE:
+                if job["state"] == "waiting_confirm":  # over the cap: never confirmed here
+                    client.post(f"{V1}/jobs/{job['id']}/cancel").raise_for_status()
                 time.sleep(2)
                 job = get(f"/jobs/{job['id']}")
             return job
+
+        def write_report() -> None:
+            OUT.mkdir(parents=True, exist_ok=True)
+            with open(OUT / f"README{tag}.txt", "w", encoding="utf-8", newline="\n") as f:
+                f.write("\n".join(lines) + "\n")
 
         def checked(product_id: str, version_id: str, after: float) -> dict[str, Any]:
             """The version once QA has written on it (after ``after``)."""
@@ -173,7 +202,16 @@ def main() -> int:
         )
         video = next(f for f in take["files"] if f["role"] == "video")
         src = store.path_for(video["sha256"])
-        say(f"M6 口型修复 local smoke · {datetime.now():%Y-%m-%d %H:%M} · {args.home}")
+        say(f"M6 口型修复 {args.where} smoke · {datetime.now():%Y-%m-%d %H:%M} · {args.home}")
+        if api:
+            test = client.post(f"{V1}/providers/{API_PROVIDER}/test").json()
+            if not test.get("ok"):
+                say(f"STOPPED: sync.so connection test failed: {test.get('detail')}")
+                return 1
+            say(f"connection {API_PROVIDER}: ok · cap ${args.cap}")
+            body = {"scope": "component", "scope_id": None, "component_id": "lip",
+                    "data": {"per_call_cap_usd": args.cap}}  # fmt: skip
+            client.put(f"{V1}/config/override", json=body).raise_for_status()
         say(f"{args.shot} T{take['n']} ({take['model_key']}, {video['w']}×{video['h']}, "
             f"{video['duration_s']} s){' · adopted' if take['id'] == adopted else ''}")  # fmt: skip
         est = (product.get("estimate") or {}).get("finishing", {}).get("lip")
@@ -190,19 +228,25 @@ def main() -> int:
 
         t = time.time()
         t0 = time.monotonic()
-        resp = client.post(f"{V1}/versions/{take['id']}/lipsync")
+        resp = client.post(f"{V1}/versions/{take['id']}/lipsync", json={"where": args.where})
         if resp.status_code != 200:
             say(f"REFUSED: {resp.status_code} {resp.text}")
             return 1
+        queued = resp.json()
+        if queued["state"] == "waiting_confirm":
+            say(f"over the cap, waits for a yes: {queued.get('confirm') or queued.get('estimate')}")
         with GpuPeak() as gpu:
-            job = wait_job(resp.json())
+            job = wait_job(queued)
         took = time.monotonic() - t0
         if job["state"] != "succeeded":
             say(f"FAILED: {job['state']} {job.get('error')}")
-            OUT.mkdir(parents=True, exist_ok=True)
-            with open(OUT / "README.txt", "w", encoding="utf-8", newline="\n") as f:
-                f.write("\n".join(lines) + "\n")
+            write_report()
             return 1
+        if api:
+            calls = [c for c in get("/dev/model-calls", limit=200) if c.get("job_id") == job["id"]]
+            for c in calls:
+                say(f"call {c['model_key']} [{c['where']}] {c['status']} ${c.get('cost_usd')} "
+                    f"for {c.get('output_seconds')} s")  # fmt: skip
         say(f"lipsync job {job['state']} in {took:.0f} s · GPU memory peak {gpu.peak} MiB "
             f"(before {gpu.start} MiB)")  # fmt: skip
         after = get(f"/products/{product['id']}")
@@ -214,7 +258,7 @@ def main() -> int:
         dst = store.path_for(out["sha256"])
         a, b = (client.portal.call(probe, p.read_bytes()) for p in (src, dst))  # type: ignore[union-attr]
         checks = {
-            "on LatentSync locally": v["model_key"] == "local/latentsync" and v["where"] == "local",
+            f"on {want} ({args.where})": v["model_key"] == want and v["where"] == args.where,
             "size kept": (a.w, a.h) == (b.w, b.h),
             "frame rate kept": a.fps == b.fps,
             "length kept (±0.1 s)": abs(a.duration_s - b.duration_s) <= 0.1,
@@ -241,7 +285,7 @@ def main() -> int:
         OUT.mkdir(parents=True, exist_ok=True)
         ORIGINALS.mkdir(parents=True, exist_ok=True)
         name = f"{args.shot}-T{take['n']}"
-        shutil.copyfile(dst, ORIGINALS / f"{name}-lipsync.mp4")
+        shutil.copyfile(dst, ORIGINALS / f"{name}-lipsync{tag}.mp4")
         shutil.copyfile(src, ORIGINALS / f"{name}-take.mp4")
         with tempfile.TemporaryDirectory() as tmp:
             for pct in (25, 50, 75):
@@ -249,16 +293,15 @@ def main() -> int:
                 at = a.duration_s * pct / 100
                 frame(src, at, fa)
                 frame(dst, at, fb)
-                side_by_side(fa, fb, OUT / f"{name}-{pct}-whole.jpg")
+                side_by_side(fa, fb, OUT / f"{name}{tag}-{pct}-whole.jpg")
                 size = min(b.w, b.h) // 2
                 crop = f"{size}:{size}:{(b.w - size) // 2}:{b.h // 6}"
-                side_by_side(fa, fb, OUT / f"{name}-{pct}-crop.jpg", crop=crop)
-        say(f"  pictures: {OUT.relative_to(ROOT)}/{name}-{{25,50,75}}-whole.jpg, -crop.jpg "
-            f"(left: the take, right: LatentSync; the crop is 1:1)")  # fmt: skip
+                side_by_side(fa, fb, OUT / f"{name}{tag}-{pct}-crop.jpg", crop=crop)
+        say(f"  pictures: {OUT.relative_to(ROOT)}/{name}{tag}-{{25,50,75}}-whole.jpg, -crop.jpg "
+            f"(left: the take, right: {want}; the crop is 1:1)")  # fmt: skip
         say(f"  took {took:.0f} s for {a.duration_s} s of take")
 
-    with open(OUT / "README.txt", "w", encoding="utf-8", newline="\n") as f:
-        f.write("\n".join(lines) + "\n")
+        write_report()
     shutil.rmtree(home.parent, ignore_errors=True)
     print("ALL OK" if ok else "SOMETHING FAILED")
     return 0 if ok else 1
